@@ -36,24 +36,24 @@ export function ChatPanel({
 
   const exampleMessages = [
     {
-      heading: 'I want to create a campaign',
-      subheading: 'to generate leads?',
-      message: `What are the trending memecoins today?`
+      heading: 'I want to create a campaign to generate leads?',
+      subheading: 'Create a new campaign with Reeply AI',
+      message: `I want to create a campaign to generate leads?`
     },
     {
       heading: 'What are the results of my campaign',
-      subheading: 'for today?',
-      message: 'What is the price of $DOGE right now?'
+      subheading: 'Check the results of your campaign',
+      message: 'What are the results of my campaign for today?'
     },
     {
-      heading: 'I would like to change my campaign',
-      subheading: 'target group',
-      message: `I would like to buy 42 $DOGE`
+      heading: 'I would like to change my campaign budget',
+      subheading: 'Change the daily ad spent for your campaign',
+      message: `I would like to change my campaign budget`
     },
     {
-      heading: 'What are some',
-      subheading: `recent events in my campaign?`,
-      message: `What are some recent events about $DOGE?`
+      heading: 'What are some recent events in my camapign?',
+      subheading: `stay up to date with your campaign's progress`,
+      message: `What are some recent events in my campaign?`
     }
   ]
 
