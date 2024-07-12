@@ -157,7 +157,9 @@ async function submitUserMessage(content: string) {
   
   Step 2: How much do you want to spend on your campaign daily? Ideally, spend at least €300 a month to maximize Facebook ads' potential.
   Reasoning: Set the ad budget, ensuring the user understands the impact of budget size.
-  Response: "Okay, thank you. I will set your ad budget accordingly. In what geographical area do you want to advertise?"
+  Response: Call \`show_ad_budget_ui\` to show the budget UI when the user told you how much he wants to spend on the campaign!
+  
+  second action to always do after setting budget when creating a campaign!: "In what geographical area do you want to advertise?"
   Reasoning: Determine the ad group targeting size.
   Response: Acknowledge the area and mention that it will be reviewed by the team.
   
