@@ -36,12 +36,12 @@ export function ChatPanel({
 
   const exampleMessages = [
     {
-      heading: 'I want to create a campaign to generate leads?',
+      heading: 'I want to create a campaign to generate leads',
       subheading: 'Create a new campaign with Reeply AI',
-      message: `I want to create a campaign to generate leads?`
+      message: `I want to create a campaign to generate leads`
     },
     {
-      heading: 'What are the results of my campaign',
+      heading: 'What are the results of my campaign?',
       subheading: 'Check the results of your campaign',
       message: 'What are the results of my campaign for today?'
     },
