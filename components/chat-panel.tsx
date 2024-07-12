@@ -51,7 +51,7 @@ export function ChatPanel({
       message: `I would like to change my campaign budget`
     },
     {
-      heading: 'What are some recent events in my camapign?',
+      heading: 'What are some recent events in my campaign?',
       subheading: `stay up to date with your campaign's progress`,
       message: `What are some recent events in my campaign?`
     }

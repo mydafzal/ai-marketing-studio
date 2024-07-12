@@ -1,15 +1,15 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { useActions, useAIState, useUIState } from 'ai/rsc'
-import { formatNumber } from '@/lib/utils'
+import { useState } from 'react';
+import { useActions, useAIState, useUIState } from 'ai/rsc';
+import { formatNumber } from '@/lib/utils';
 
-import type { AI } from '@/lib/chat/actions'
+import type { AI } from '@/lib/chat/actions';
 
 interface Purchase {
-  symbol: string
-  price: number
-  status: 'requires_action' | 'completed' | 'expired'
+  symbol: string;
+  price: number;
+  status: 'requires_action' | 'completed' | 'expired';
 }
 
 export function Purchase({
@@ -18,20 +18,19 @@ export function Purchase({
   props: Purchase
 }) {
   const days = 30; // Fixed days for the budget period
-  const [budget, setBudget] = useState(100) // Initial budget
-  const [purchasingUI, setPurchasingUI] = useState<null | React.ReactNode>(null)
-  const [aiState, setAIState] = useAIState<typeof AI>()
-  const [, setMessages] = useUIState<typeof AI>()
-  const { confirmPurchase } = useActions()
+  const [budget, setBudget] = useState(10); // Initial budget set to 10
+  const [purchasingUI, setPurchasingUI] = useState<null | React.ReactNode>(null);
+  const [aiState, setAIState] = useAIState<typeof AI>();
+  const [, setMessages] = useUIState<typeof AI>();
+  const { confirmPurchase } = useActions();
 
   function onBudgetChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const newBudget = Number(e.target.value)
-    setBudget(newBudget)
-    // Updating AI State for system tracking, adapt as needed
+    const newBudget = Number(e.target.value);
+    setBudget(newBudget);
     setAIState({
       ...aiState,
-      messages: [...aiState.messages, { id: 'budget-change', role: 'system', content: `Budget updated to ${newBudget}` }]
-    })
+      messages: [...aiState.messages, { id: 'budget-change', role: 'system', content: `Budget updated to ${newBudget}. Total cost for 30 days: $${formatNumber(newBudget * days)}.` }]
+    });
   }
 
   return (
@@ -52,19 +51,25 @@ export function Purchase({
               onChange={onBudgetChange}
               className="w-full h-1 rounded-lg appearance-none cursor-pointer bg-zinc-600 accent-green-500"
             />
+            <div className="absolute w-full flex justify-between text-xs px-2">
+              
+              <span>10</span> {/* Minimum */}
+              <span>500</span>
+              <span>1000</span> {/* Maximum */}
+            </div>
           </div>
           <div className="mt-6">
             <p>Total cost</p>
             <div className="text-xl font-bold">
-              {days} Days × ${budget.toFixed(2)} per day = ${formatNumber(days * budget)}
+              {days} Days × ${formatNumber(budget)} per day = ${formatNumber(days * budget)}
             </div>
           </div>
           <button
             className="w-full px-4 py-2 mt-6 font-bold text-zinc-900 bg-green-400 rounded-lg hover:bg-green-500"
             onClick={async () => {
-              const response = await confirmPurchase(symbol, price, budget)
-              setPurchasingUI(response.purchasingUI)
-              setMessages((currentMessages) => [...currentMessages, response.newMessage])
+              const response = await confirmPurchase(symbol, price, budget);
+              setPurchasingUI(response.purchasingUI);
+              setMessages((currentMessages) => [...currentMessages, response.newMessage]);
             }}
           >
             Set Ad Budget
@@ -72,5 +77,5 @@ export function Purchase({
         </>
       )}
     </div>
-  )
+  );
 }
