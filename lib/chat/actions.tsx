@@ -25,6 +25,8 @@ import { Events } from '@/components/stocks/events'
 import { StocksSkeleton } from '@/components/stocks/stocks-skeleton'
 import { Stocks } from '@/components/stocks/stocks'
 import { StockSkeleton } from '@/components/stocks/stock-skeleton'
+import { CampaignResult } from '@/components/stocks/stock' // Adjust the import path as needed
+
 import {
   formatNumber,
   runAsyncFnWithoutBlocking,
@@ -305,17 +307,13 @@ async function submitUserMessage(content: string) {
           )
         }
       },
-      showStockPrice: {
+      getCampaignResults: {
         description:
           'Get the current ad budget per day of a given digital marketing campaign from this user. Use this to show the current daily ad spent to the user.',
         parameters: z.object({
-          symbol: z
-            .string()
-            .describe(
-              'The name of the campaign. e.g. Lead Campaign Frankfurt.'
-            ),
-          price: z.number().describe('The daily amount of ad spent.'),
-          delta: z.number().describe('The change in amount of ad spent')
+          symbol: z.string().describe('The name of the campaign. e.g. Lead Campaign Frankfurt.'),
+          price: z.string().describe('The daily amount of ad spent.'),
+          delta: z.string().describe('The change in amount of ad spent')
         }),
         generate: async function* ({ symbol, price, delta }) {
           yield (
@@ -323,11 +321,30 @@ async function submitUserMessage(content: string) {
               <StockSkeleton />
             </BotCard>
           )
-
+      
           await sleep(1000)
-
+      
           const toolCallId = nanoid()
-
+      
+          const campaignData: CampaignResult = {
+            name: symbol,
+            status: "active", // Mock value
+            daily_budget: "500", // Mock value
+            created_time: new Date().toISOString(), // Mock value
+            id: "123", // Mock value
+            clicks: "1000", // Mock value
+            impressions: "2000", // Mock value
+            spend: price, // Use the price parameter
+            ctr: "2%", // Mock value
+            reach: "1500", // Mock value
+            frequency: "1.5", // Mock value
+            unique_clicks: "800", // Mock value
+            actions: [], // Mock value
+            date_start: new Date().toISOString(), // Mock value
+            date_stop: new Date().toISOString(), // Mock value
+            device_platform: "mobile" // Mock value
+          }
+      
           aiState.done({
             ...aiState.get(),
             messages: [
@@ -338,7 +355,7 @@ async function submitUserMessage(content: string) {
                 content: [
                   {
                     type: 'tool-call',
-                    toolName: 'showStockPrice',
+                    toolName: 'getCampaignResults',
                     toolCallId,
                     args: { symbol, price, delta }
                   }
@@ -350,7 +367,7 @@ async function submitUserMessage(content: string) {
                 content: [
                   {
                     type: 'tool-result',
-                    toolName: 'showStockPrice',
+                    toolName: 'getCampaignResults',
                     toolCallId,
                     result: { symbol, price, delta }
                   }
@@ -358,15 +375,17 @@ async function submitUserMessage(content: string) {
               }
             ]
           })
-
+      
           return (
             <BotCard>
-              <Stock props={{ symbol, price, delta }} />
+              <Stock props={campaignData} />
             </BotCard>
           )
         }
-      },
-      showStockPurchase: {
+      }
+      
+      
+      ,showStockPurchase: {
         description:
           'Show Facebook Ad Campaign name and the UI to set ad budget. Use this if the user wants to change his ad budget.',
         parameters: z.object({
