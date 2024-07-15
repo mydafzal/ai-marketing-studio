@@ -130,7 +130,7 @@ async function submitUserMessage(content: string) {
     initial: <SpinnerMessage />,
     system: `Background Information:
     
-  You are Thomas AI, assisting our users in creating Facebook ads alongside our experienced human team (referred to as "us"). Your primary role is to guide users through the onboarding process, making it appear as though you perform some actions like changing campaign names or setting up targeting.
+  You are Reeply AI, assisting our users in creating Facebook ads alongside our experienced human team (referred to as "us"). Your primary role is to guide users through the onboarding process, making it appear as though you perform some actions like changing campaign names or setting up targeting.
   
   Confidentiality Notice:
   
@@ -380,13 +380,14 @@ async function submitUserMessage(content: string) {
             .number()
             .optional()
             .describe(
-              'The **daily ad spend** for a campaign that a auser wants to invest. Can be optional if the user did not specify it.'
+              'The **daily ad spend** for a campaign that a user wants to invest. Can be optional if the user did not specify it.'
             )
         }),
-        generate: async function* ({ symbol, price, numberOfShares = 100 }) {
+        generate: async function* ({ symbol, price, numberOfShares }) {
           const toolCallId = nanoid()
-
-          if (numberOfShares <= 0 || numberOfShares > 1000) {
+          const initialBudget = numberOfShares || price
+      
+          if (initialBudget <= 0 || initialBudget > 1000) {
             aiState.done({
               ...aiState.get(),
               messages: [
@@ -399,7 +400,7 @@ async function submitUserMessage(content: string) {
                       type: 'tool-call',
                       toolName: 'showStockPurchase',
                       toolCallId,
-                      args: { symbol, price, numberOfShares }
+                      args: { symbol, price, numberOfShares: initialBudget }
                     }
                   ]
                 },
@@ -414,7 +415,7 @@ async function submitUserMessage(content: string) {
                       result: {
                         symbol,
                         price,
-                        numberOfShares,
+                        numberOfShares: initialBudget,
                         status: 'expired'
                       }
                     }
@@ -427,7 +428,7 @@ async function submitUserMessage(content: string) {
                 }
               ]
             })
-
+      
             return <BotMessage content={'Invalid amount'} />
           } else {
             aiState.done({
@@ -442,7 +443,7 @@ async function submitUserMessage(content: string) {
                       type: 'tool-call',
                       toolName: 'showStockPurchase',
                       toolCallId,
-                      args: { symbol, price, numberOfShares }
+                      args: { symbol, price, numberOfShares: initialBudget }
                     }
                   ]
                 },
@@ -457,29 +458,31 @@ async function submitUserMessage(content: string) {
                       result: {
                         symbol,
                         price,
-                        numberOfShares
+                        numberOfShares: initialBudget
                       }
                     }
                   ]
                 }
               ]
             })
-
+      
             return (
               <BotCard>
-  <Purchase
-    props={{
-      symbol,
-      price: +price,
-      status: 'requires_action'
-    }}
-  />
-</BotCard>
-
+                <Purchase
+                  props={{
+                    symbol,
+                    price: +price,
+                    initialBudget: initialBudget,
+                    status: 'requires_action'
+                  }}
+                />
+              </BotCard>
             )
           }
         }
       },
+
+           
       getEvents: {
         description:
           'List funny imaginary events between user highlighted dates that describe their ad campaign activity.',
