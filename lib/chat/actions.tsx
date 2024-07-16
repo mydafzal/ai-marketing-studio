@@ -413,7 +413,7 @@ async function submitUserMessage(content: string) {
           )
         }
       },
-      showStockPurchase: {
+      showAdBudgetUI: {
         description:
           'Show Facebook Ad Campaign name and the UI to set ad budget. Use this if the user wants to change his ad budget.',
         parameters: z.object({
@@ -445,7 +445,7 @@ async function submitUserMessage(content: string) {
                   content: [
                     {
                       type: 'tool-call',
-                      toolName: 'showStockPurchase',
+                      toolName: 'showAdBudgetUI',
                       toolCallId,
                       args: { symbol, price, numberOfShares: initialBudget }
                     }
@@ -457,7 +457,7 @@ async function submitUserMessage(content: string) {
                   content: [
                     {
                       type: 'tool-result',
-                      toolName: 'showStockPurchase',
+                      toolName: 'showAdBudgetUI',
                       toolCallId,
                       result: {
                         symbol,
@@ -488,7 +488,7 @@ async function submitUserMessage(content: string) {
                   content: [
                     {
                       type: 'tool-call',
-                      toolName: 'showStockPurchase',
+                      toolName: 'showAdBudgetUI',
                       toolCallId,
                       args: { symbol, price, numberOfShares: initialBudget }
                     }
@@ -500,7 +500,7 @@ async function submitUserMessage(content: string) {
                   content: [
                     {
                       type: 'tool-result',
-                      toolName: 'showStockPurchase',
+                      toolName: 'showAdBudgetUI',
                       toolCallId,
                       result: {
                         symbol,
@@ -695,7 +695,7 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                 {/* @ts-expect-error */}
                 <Stock props={tool.result} />
               </BotCard>
-            ) : tool.toolName === 'showStockPurchase' ? (
+            ) : tool.toolName === 'showAdBudgetUI' ? (
               <BotCard>
                 {/* @ts-expect-error */}
                 <Purchase props={tool.result} />
