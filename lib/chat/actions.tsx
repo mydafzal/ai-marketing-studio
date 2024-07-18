@@ -16,18 +16,17 @@ import {
   BotMessage,
   SystemMessage,
   Stock,
-  Purchase
+  Purchase,
 } from '@/components/stocks'
-
+import { AdTextSelectionSkeleton } from '@/components/stocks/ad-text-selection-skeleton'
 import { z } from 'zod'
 import { EventsSkeleton } from '@/components/stocks/events-skeleton'
 import { Events } from '@/components/stocks/events'
 import { StocksSkeleton } from '@/components/stocks/stocks-skeleton'
 import { Stocks } from '@/components/stocks/stocks'
 import { StockSkeleton } from '@/components/stocks/stock-skeleton'
-import { CampaignResult } from '@/components/stocks/stock' 
+import { CampaignResult } from '@/components/stocks/stock'
 import { AdTextSelection } from '@/components/stocks/ad-text-selection'
-
 
 import {
   formatNumber,
@@ -40,29 +39,70 @@ import { SpinnerMessage, UserMessage } from '@/components/stocks/message'
 import { Chat, Message } from '@/lib/types'
 import { auth } from '@/auth'
 
-async function showAdTextSelection(campaignName: string, suggestedTexts: string[]) {
+export async function confirmAdText(campaignName: string, selectedTexts: string[]) {
   'use server'
 
   const aiState = getMutableAIState<typeof AI>();
+  const concatenatedTexts = selectedTexts.join(', ');
 
-  const selectionUI = createStreamableUI(
-    <AdTextSelection props={{ campaignName, suggestedTexts, onConfirm: (selectedTexts: string[]) => {} }} />
+  const confirmingText = createStreamableUI(
+    <div className="inline-flex items-start gap-1 md:items-center">
+      {spinner}
+      <p className="mb-2">
+        Setting the ad text for {campaignName}...
+      </p>
+    </div>
   );
 
-  aiState.done({
-    ...aiState.get(),
-    messages: [
-      ...aiState.get().messages,
-      {
-        id: nanoid(),
-        role: 'system',
-        content: `[User is selecting ad text for campaign "${campaignName}"]`
-      }
-    ]
+  const systemMessage = createStreamableUI(null);
+
+  runAsyncFnWithoutBlocking(async () => {
+    await sleep(1000);
+
+    confirmingText.update(
+      <div className="inline-flex items-start gap-1 md:items-center">
+        {spinner}
+        <p className="mb-2">
+          Almost there, configuring the ad text for {campaignName}...
+        </p>
+      </div>
+    );
+
+    await sleep(1000);
+
+    confirmingText.done(
+      <div>
+        <p className="mb-2">
+          You have successfully set your ad text for {campaignName}. Selected text: {concatenatedTexts}.
+        </p>
+      </div>
+    );
+
+    systemMessage.done(
+      <SystemMessage>
+        Your ad campaign &apos;{campaignName}&apos; now has the following ad text: {concatenatedTexts}.
+      </SystemMessage>
+    );
+
+    aiState.done({
+      ...aiState.get(),
+      messages: [
+        ...aiState.get().messages,
+        {
+          id: nanoid(),
+          role: 'system',
+          content: `[Ad text confirmed for campaign "${campaignName}": ${concatenatedTexts}]`
+        }
+      ]
+    });
   });
 
   return {
-    selectionUI: selectionUI.value
+    confirmingTextUI: confirmingText.value,
+    newMessage: {
+      id: nanoid(),
+      display: systemMessage.value
+    }
   };
 }
 
@@ -133,7 +173,6 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
     }
   }
 }
-
 
 async function submitUserMessage(content: string) {
   'use server'
@@ -220,6 +259,13 @@ async function submitUserMessage(content: string) {
     After the user says whether he has an ad text or not:
     ALWAYS Call \`showAdTextSelection\` to show the ad text selection UI and let the user choose or input their ad text.
     Confirm final text before proceeding.
+    When generating ad texts, please follow these guidelines:
+1. Create three distinct versions with different tones: Professional, Emoji-rich, and Conversational.
+2. Each ad text should be at least 2-3 sentences long.
+3. The Emoji-rich version should include relevant emojis throughout the text.
+4. Vary the length and style slightly between versions to offer diverse options.
+5. Label each version as "Version 1: Professional", "Version 2: Emoji-rich", and "Version 3: Conversational".
+
     
     Step 6: Lead Questionnaire: Determine the required information from leads.
     Question: "Do you want to ask for contact details only, or also pre-qualify leads with additional questions such as [examples]? I can help with the creation, or you can provide your ideas."
@@ -250,7 +296,6 @@ async function submitUserMessage(content: string) {
         name: message.name
       }))
     ],
-  
     text: ({ content, done, delta }) => {
       if (!textStream) {
         textStream = createStreamableValue('')
@@ -595,11 +640,80 @@ async function submitUserMessage(content: string) {
         description: 'Show UI to select or input ad text for a campaign.',
         parameters: z.object({
           campaignName: z.string().describe('The name of the campaign'),
-          suggestedTexts: z.array(z.string()).describe('List of suggested ad texts')
+          suggestedTexts: z.array(z.object({
+            date: z.string(),
+            text: z.string(),
+            headline: z.string().optional()  // Make headline optional
+          })).optional().describe('List of suggested ad texts')
         }),
-        generate: async function* ({ campaignName, suggestedTexts }) {
-          const response = await showAdTextSelection(campaignName, suggestedTexts);
-          return response.selectionUI;
+        generate: async function* ({ campaignName, suggestedTexts = [] }) {
+          yield (
+            <BotCard>
+              <AdTextSelectionSkeleton />
+            </BotCard>
+          );
+      
+          await sleep(1000);
+      
+          const toolCallId = nanoid();
+      
+          // If no suggested texts are provided or if they're missing headlines, generate default ones
+          if (suggestedTexts.length === 0 || !suggestedTexts[0].headline) {
+            suggestedTexts = [
+              { 
+                date: new Date().toISOString(), 
+                text: suggestedTexts[0]?.text || `Experience the power of AI-driven marketing with ${campaignName}. Our cutting-edge solutions revolutionize how you connect with your audience, driving engagement and boosting ROI. Don't just advertise - innovate with ${campaignName}.`,
+                headline: 'Version 1: Professional'
+              },
+              { 
+                date: new Date().toISOString(), 
+                text: suggestedTexts[1]?.text || `🚀 Blast off to marketing success with ${campaignName}! 🎯 Our AI wizardry turns your campaigns into pure gold. Ready to watch your metrics soar? Let's make some marketing magic together! ✨💼📈`,
+                headline: 'Version 2: Emoji-rich'
+              },
+              { 
+                date: new Date().toISOString(), 
+                text: suggestedTexts[2]?.text || `Tired of lackluster campaign results? ${campaignName} is your secret weapon. We harness the latest in AI technology to craft campaigns that don't just speak to your audience - they start a conversation. Discover what true engagement looks like with ${campaignName}.`,
+                headline: 'Version 3: Conversational'
+              },
+            ];
+          }
+      
+          aiState.done({
+            ...aiState.get(),
+            messages: [
+              ...aiState.get().messages,
+              {
+                id: nanoid(),
+                role: 'assistant',
+                content: [
+                  {
+                    type: 'tool-call',
+                    toolName: 'showAdTextSelection',
+                    toolCallId,
+                    args: { campaignName, suggestedTexts }
+                  }
+                ]
+              },
+              {
+                id: nanoid(),
+                role: 'tool',
+                content: [
+                  {
+                    type: 'tool-result',
+                    toolName: 'showAdTextSelection',
+                    toolCallId,
+                    result: { campaignName, suggestedTexts }
+                  }
+                ]
+              }
+            ]
+          });
+      
+          return (
+            <BotCard>
+              <AdTextSelection props={suggestedTexts} />
+            </BotCard>
+          );
         }
       }
     }
@@ -609,7 +723,6 @@ async function submitUserMessage(content: string) {
     display: result.value
   }
 }
-
 
 export type AIState = {
   chatId: string
@@ -625,7 +738,8 @@ export const AI = createAI<AIState, UIState>({
   actions: {
     submitUserMessage,
     confirmPurchase,
-    showAdTextSelection
+    AdTextSelection,
+    confirmAdText
   },
   initialUIState: [],
   initialAIState: { chatId: nanoid(), messages: [] },
@@ -708,7 +822,7 @@ export const getUIStateFromAIState = (aiState: Chat) => {
             ) : tool.toolName === 'showAdTextSelection' ? (
               <BotCard>
                 {/* @ts-expect-error */}
-                <AdTextSelection props={tool.result} />
+                <Events props={tool.result} />
               </BotCard>
             ) : null
           })
