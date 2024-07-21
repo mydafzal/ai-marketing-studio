@@ -1,6 +1,5 @@
 import 'server-only'
 
-
 import {
     createAI,
     createStreamableUI,
@@ -39,7 +38,7 @@ import {saveChat} from '@/app/actions'
 import {SpinnerMessage, UserMessage} from '@/components/stocks/message'
 import {Chat, Message} from '@/lib/types'
 import {auth} from '@/auth'
-import {setMonthlyBudget} from '@/lib/api/fasty-adjust-campaign';
+import {setDailyBudget} from '@/lib/api/fasty-adjust-campaign';
 
 
 export async function confirmAdText(campaignName: string, selectedTexts: string[]) {
@@ -141,7 +140,7 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
             </div>
         );
 
-        const updateSuccess = await setMonthlyBudget(campaignId, totalBudget);
+        const updateSuccess = await setDailyBudget(campaignId, budget);
 
         if (updateSuccess) {
             purchasing.done(
