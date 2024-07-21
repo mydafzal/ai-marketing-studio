@@ -1,203 +1,229 @@
 import 'server-only'
 
+
 import {
-  createAI,
-  createStreamableUI,
-  getMutableAIState,
-  getAIState,
-  streamUI,
-  createStreamableValue
+    createAI,
+    createStreamableUI,
+    getMutableAIState,
+    getAIState,
+    streamUI,
+    createStreamableValue
 } from 'ai/rsc'
-import { openai } from '@ai-sdk/openai'
+import {openai} from '@ai-sdk/openai'
 
 import {
-  spinner,
-  BotCard,
-  BotMessage,
-  SystemMessage,
-  Stock,
-  Purchase,
+    spinner,
+    BotCard,
+    BotMessage,
+    SystemMessage,
+    Stock,
+    Purchase,
 } from '@/components/stocks'
-import { AdTextSelectionSkeleton } from '@/components/stocks/ad-text-selection-skeleton'
-import { z } from 'zod'
-import { EventsSkeleton } from '@/components/stocks/events-skeleton'
-import { Events } from '@/components/stocks/events'
-import { StocksSkeleton } from '@/components/stocks/stocks-skeleton'
-import { Stocks } from '@/components/stocks/stocks'
-import { StockSkeleton } from '@/components/stocks/stock-skeleton'
-import { CampaignResult } from '@/components/stocks/stock'
-import { AdTextSelection } from '@/components/stocks/ad-text-selection'
+import {AdTextSelectionSkeleton} from '@/components/stocks/ad-text-selection-skeleton'
+import {z} from 'zod'
+import {EventsSkeleton} from '@/components/stocks/events-skeleton'
+import {Events} from '@/components/stocks/events'
+import {StocksSkeleton} from '@/components/stocks/stocks-skeleton'
+import {Stocks} from '@/components/stocks/stocks'
+import {StockSkeleton} from '@/components/stocks/stock-skeleton'
+import {CampaignResult} from '@/components/stocks/stock'
+import {AdTextSelection} from '@/components/stocks/ad-text-selection'
 
 import {
-  formatNumber,
-  runAsyncFnWithoutBlocking,
-  sleep,
-  nanoid
+    formatNumber,
+    runAsyncFnWithoutBlocking,
+    sleep,
+    nanoid
 } from '@/lib/utils'
-import { saveChat } from '@/app/actions'
-import { SpinnerMessage, UserMessage } from '@/components/stocks/message'
-import { Chat, Message } from '@/lib/types'
-import { auth } from '@/auth'
+import {saveChat} from '@/app/actions'
+import {SpinnerMessage, UserMessage} from '@/components/stocks/message'
+import {Chat, Message} from '@/lib/types'
+import {auth} from '@/auth'
+import {setMonthlyBudget} from '@/lib/api/fasty-adjust-campaign';
+
 
 export async function confirmAdText(campaignName: string, selectedTexts: string[]) {
-  'use server'
+    'use server'
 
-  const aiState = getMutableAIState<typeof AI>();
-  const concatenatedTexts = selectedTexts.join(', ');
+    const aiState = getMutableAIState<typeof AI>();
+    const concatenatedTexts = selectedTexts.join(', ');
 
-  const confirmingText = createStreamableUI(
-    <div className="inline-flex items-start gap-1 md:items-center">
-      {spinner}
-      <p className="mb-2">
-        Setting the ad text for {campaignName}...
-      </p>
-    </div>
-  );
-
-  const systemMessage = createStreamableUI(null);
-
-  runAsyncFnWithoutBlocking(async () => {
-    await sleep(1000);
-
-    confirmingText.update(
-      <div className="inline-flex items-start gap-1 md:items-center">
-        {spinner}
-        <p className="mb-2">
-          Almost there, configuring the ad text for {campaignName}...
-        </p>
-      </div>
+    const confirmingText = createStreamableUI(
+        <div className="inline-flex items-start gap-1 md:items-center">
+            {spinner}
+            <p className="mb-2">
+                Setting the ad text for {campaignName}...
+            </p>
+        </div>
     );
 
-    await sleep(1000);
+    const systemMessage = createStreamableUI(null);
 
-    confirmingText.done(
-      <div>
-        <p className="mb-2">
-          You have successfully set your ad text for {campaignName}. Selected text: {concatenatedTexts}.
-        </p>
-      </div>
-    );
+    runAsyncFnWithoutBlocking(async () => {
+        await sleep(1000);
 
-    systemMessage.done(
-      <SystemMessage>
-        Your ad campaign &apos;{campaignName}&apos; now has the following ad text: {concatenatedTexts}.
-      </SystemMessage>
-    );
+        confirmingText.update(
+            <div className="inline-flex items-start gap-1 md:items-center">
+                {spinner}
+                <p className="mb-2">
+                    Almost there, configuring the ad text for {campaignName}...
+                </p>
+            </div>
+        );
 
-    aiState.done({
-      ...aiState.get(),
-      messages: [
-        ...aiState.get().messages,
-        {
-          id: nanoid(),
-          role: 'system',
-          content: `[Ad text confirmed for campaign "${campaignName}": ${concatenatedTexts}]`
-        }
-      ]
+        await sleep(1000);
+
+        confirmingText.done(
+            <div>
+                <p className="mb-2">
+                    You have successfully set your ad text for {campaignName}. Selected text: {concatenatedTexts}.
+                </p>
+            </div>
+        );
+
+        systemMessage.done(
+            <SystemMessage>
+                Your ad campaign &apos;{campaignName}&apos; now has the following ad text: {concatenatedTexts}.
+            </SystemMessage>
+        );
+
+        aiState.done({
+            ...aiState.get(),
+            messages: [
+                ...aiState.get().messages,
+                {
+                    id: nanoid(),
+                    role: 'system',
+                    content: `[Ad text confirmed for campaign "${campaignName}": ${concatenatedTexts}]`
+                }
+            ]
+        });
     });
-  });
 
-  return {
-    confirmingTextUI: confirmingText.value,
-    newMessage: {
-      id: nanoid(),
-      display: systemMessage.value
-    }
-  };
+    return {
+        confirmingTextUI: confirmingText.value,
+        newMessage: {
+            id: nanoid(),
+            display: systemMessage.value
+        }
+    };
 }
 
 async function confirmPurchase(campaignName: string, budget: number, days: number = 30) {
-  'use server'
+    'use server'
 
-  const aiState = getMutableAIState<typeof AI>();
-  const totalBudget = budget * days; // Calculate the total budget
+    const aiState = getMutableAIState<typeof AI>();
+    const totalBudget = budget * days;
+    const campaignId = process.env.HARDCODED_MODE === '1'
+        ? Number(process.env.HARDCODED_CAMPAIGN_ID) ?? 0
+        : 0; // todo: Replace 0 with actual logic to get the campaign ID when not in hardcoded mode
 
-  const purchasing = createStreamableUI(
-    <div className="inline-flex items-start gap-1 md:items-center">
-      {spinner}
-      <p className="mb-2">
-        Setting the ad budget for {campaignName} to ${formatNumber(budget)} per day...
-      </p>
-    </div>
-  );
-
-  const systemMessage = createStreamableUI(null);
-
-  runAsyncFnWithoutBlocking(async () => {
-    await sleep(1000);
-
-    purchasing.update(
-      <div className="inline-flex items-start gap-1 md:items-center">
-        {spinner}
-        <p className="mb-2">
-          Almost there, configuring the budget for {campaignName}...
-        </p>
-      </div>
+    const purchasing = createStreamableUI(
+        <div className="inline-flex items-start gap-1 md:items-center">
+            {spinner}
+            <p className="mb-2">
+                Setting the ad budget for {campaignName} to ${formatNumber(budget)} per day...
+            </p>
+        </div>
     );
 
-    await sleep(1000);
+    const systemMessage = createStreamableUI(null);
 
-    purchasing.done(
-      <div>
-        <p className="mb-2">
-          You have successfully set your ad budget for {campaignName}. Daily budget: ${formatNumber(budget)}, Total for {days} days: ${formatNumber(totalBudget)}.
-        </p>
-      </div>
-    );
+    runAsyncFnWithoutBlocking(async () => {
+        await sleep(1000);
 
-    systemMessage.done(
-      <SystemMessage>
-        Your ad campaign &apos;{campaignName}&apos; is now set to run for {days} days with a daily budget of ${formatNumber(budget)}. Total budget: ${formatNumber(totalBudget)}.
-      </SystemMessage>
-    );
+        purchasing.update(
+            <div className="inline-flex items-start gap-1 md:items-center">
+                {spinner}
+                <p className="mb-2">
+                    Almost there, configuring the budget for {campaignName}...
+                </p>
+            </div>
+        );
 
-    // Prompting AI to ask a follow-up question or make a suggestion
-    aiState.done({
-      ...aiState.get(),
-      messages: [
-        ...aiState.get().messages,
-        {
-          id: nanoid(),
-          role: 'assistant',
-          content: 'Would you like to review any other settings or start another campaign?'
+        const updateSuccess = await setMonthlyBudget(campaignId, totalBudget);
+
+        if (updateSuccess) {
+            purchasing.done(
+                <div>
+                    <p className="mb-2">
+                        You have successfully set your ad budget for {campaignName}. Daily budget:
+                        ${formatNumber(budget)}, Total for {days} days: ${formatNumber(totalBudget)}.
+                    </p>
+                </div>
+            );
+
+            systemMessage.done(
+                <SystemMessage>
+                    Your ad campaign &apos;{campaignName}&apos; is now set to run for {days} days with a daily budget of
+                    ${formatNumber(budget)}. Total budget: ${formatNumber(totalBudget)}. The budget has been updated on
+                    Facebook.
+                </SystemMessage>
+            );
+        } else {
+            purchasing.done(
+                <div>
+                    <p className="mb-2 text-red-500">
+                        Error: Failed to set the ad budget for {campaignName}. Please try again later.
+                    </p>
+                </div>
+            );
+
+            systemMessage.done(
+                <SystemMessage>
+                    There was an error updating the budget for campaign &apos;{campaignName}&apos; on Facebook. Please
+                    check your connection and try again.
+                </SystemMessage>
+            );
         }
-      ]
-    });
-  });
 
-  return {
-    purchasingUI: purchasing.value,
-    newMessage: {
-      id: nanoid(),
-      display: systemMessage.value
+        // Prompting AI to ask a follow-up question or make a suggestion
+        aiState.done({
+            ...aiState.get(),
+            messages: [
+                ...aiState.get().messages,
+                {
+                    id: nanoid(),
+                    role: 'assistant',
+                    content: 'Would you like to review any other settings or start another campaign?'
+                }
+            ]
+        });
+    });
+
+    return {
+        purchasingUI: purchasing.value,
+        newMessage: {
+            id: nanoid(),
+            display: systemMessage.value
+        }
     }
-  }
 }
 
 async function submitUserMessage(content: string) {
-  'use server'
+    'use server'
 
-  const aiState = getMutableAIState<typeof AI>()
+    const aiState = getMutableAIState<typeof AI>()
 
-  aiState.update({
-    ...aiState.get(),
-    messages: [
-      ...aiState.get().messages,
-      {
-        id: nanoid(),
-        role: 'user',
-        content
-      }
-    ]
-  })
+    aiState.update({
+        ...aiState.get(),
+        messages: [
+            ...aiState.get().messages,
+            {
+                id: nanoid(),
+                role: 'user',
+                content
+            }
+        ]
+    })
 
-  let textStream: undefined | ReturnType<typeof createStreamableValue<string>>
-  let textNode: undefined | React.ReactNode
+    let textStream: undefined | ReturnType<typeof createStreamableValue<string>>
+    let textNode: undefined | React.ReactNode
 
-  const result = await streamUI({
-    model: openai('gpt-4o'),
-    initial: <SpinnerMessage />,
-    system: `Background Information:
+    const result = await streamUI({
+        model: openai('gpt-4o'),
+        initial: <SpinnerMessage/>,
+        system: `Background Information:
       
     You are Reeply AI, assisting our users in creating Facebook ads alongside our experienced human team (referred to as "us"). Your primary role is to guide users through the onboarding process, making it appear as though you perform some actions like changing campaign names or setting up targeting.
     
@@ -289,548 +315,548 @@ async function submitUserMessage(content: string) {
     If the user wants to pause a campaign, or complete another specific task, respond that you are a demo and cannot perform that action.
     
     Besides that, you can also chat with users and perform budget calculations if needed.`,
-    messages: [
-      ...aiState.get().messages.map((message: any) => ({
-        role: message.role,
-        content: message.content,
-        name: message.name
-      }))
-    ],
-    text: ({ content, done, delta }) => {
-      if (!textStream) {
-        textStream = createStreamableValue('')
-        textNode = <BotMessage content={textStream.value} />
-      }
-  
-      if (done) {
-        textStream.done()
-        aiState.done({
-          ...aiState.get(),
-          messages: [
-            ...aiState.get().messages,
-            {
-              id: nanoid(),
-              role: 'assistant',
-              content
+        messages: [
+            ...aiState.get().messages.map((message: any) => ({
+                role: message.role,
+                content: message.content,
+                name: message.name
+            }))
+        ],
+        text: ({content, done, delta}) => {
+            if (!textStream) {
+                textStream = createStreamableValue('')
+                textNode = <BotMessage content={textStream.value}/>
             }
-          ]
-        })
-      } else {
-        textStream.update(delta)
-      }
-  
-      return textNode
-    },
-    tools: {
-      listAds: {
-        description: 'List three imaginary ads that are currently running.',
-        parameters: z.object({
-          stocks: z.array(
-            z.object({
-              symbol: z.string().describe('The name of the campaign'),
-              price: z.number().describe('The daily ad budget of the campaign'),
-              delta: z.number().describe('The change of the daily ad budget')
-            })
-          )
-        }),
-        generate: async function* ({ stocks }) {
-          yield (
-            <BotCard>
-              <StocksSkeleton />
-            </BotCard>
-          )
-  
-          await sleep(1000)
-  
-          const toolCallId = nanoid()
-  
-          aiState.done({
-            ...aiState.get(),
-            messages: [
-              ...aiState.get().messages,
-              {
-                id: nanoid(),
-                role: 'assistant',
-                content: [
-                  {
-                    type: 'tool-call',
-                    toolName: 'listAds',
-                    toolCallId,
-                    args: { stocks }
-                  }
-                ]
-              },
-              {
-                id: nanoid(),
-                role: 'tool',
-                content: [
-                  {
-                    type: 'tool-result',
-                    toolName: 'listAds',
-                    toolCallId,
-                    result: stocks
-                  }
-                ]
-              }
-            ]
-          })
-  
-          return (
-            <BotCard>
-              <Stocks props={stocks} />
-            </BotCard>
-          )
-        }
-      },
-      getCampaignResults: {
-        description:
-          'Get the current ad budget per day of a given digital marketing campaign from this user. Use this to show the current daily ad spent to the user.',
-        parameters: z.object({
-          symbol: z.string().describe('The name of the campaign. e.g. Lead Campaign Frankfurt.'),
-          price: z.string().describe('The daily amount of ad spent.'),
-          delta: z.string().describe('The change in amount of ad spent')
-        }),
-        generate: async function* ({ symbol, price, delta }) {
-          yield (
-            <BotCard>
-              <StockSkeleton />
-            </BotCard>
-          )
-      
-          await sleep(1000)
-      
-          const toolCallId = nanoid()
-      
-          const campaignData: CampaignResult = {
-            name: symbol,
-            status: "active", // Mock value
-            daily_budget: "500", // Mock value
-            created_time: new Date().toISOString(), // Mock value
-            id: "123", // Mock value
-            clicks: "1000", // Mock value
-            impressions: "2000", // Mock value
-            spend: price, // Use the price parameter
-            ctr: "2%", // Mock value
-            reach: "1500", // Mock value
-            frequency: "1.5", // Mock value
-            unique_clicks: "800", // Mock value
-            actions: [], // Mock value
-            date_start: new Date().toISOString(), // Mock value
-            date_stop: new Date().toISOString(), // Mock value
-            device_platform: "mobile" // Mock value
-          }
-      
-          aiState.done({
-            ...aiState.get(),
-            messages: [
-              ...aiState.get().messages,
-              {
-                id: nanoid(),
-                role: 'assistant',
-                content: [
-                  {
-                    type: 'tool-call',
-                    toolName: 'getCampaignResults',
-                    toolCallId,
-                    args: { symbol, price, delta }
-                  }
-                ]
-              },
-              {
-                id: nanoid(),
-                role: 'tool',
-                content: [
-                  {
-                    type: 'tool-result',
-                    toolName: 'getCampaignResults',
-                    toolCallId,
-                    result: { symbol, price, delta }
-                  }
-                ]
-              }
-            ]
-          })
-      
-          return (
-            <BotCard>
-              <Stock props={campaignData} />
-            </BotCard>
-          )
-        }
-      },
-      showAdBudgetUI: {
-        description:
-          'Show Facebook Ad Campaign name and the UI to set ad budget. Use this if the user wants to change his ad budget.',
-        parameters: z.object({
-          symbol: z
-            .string()
-            .describe(
-              'The name of the digital marketing campaign. e.g. Recruiting Campaign Chef Cook.'
-            ),
-          price: z.number().describe('The current daily amount of ad budget spent.'),
-          numberOfShares: z
-            .number()
-            .optional()
-            .describe(
-              'The **daily ad spend** for a campaign that a user wants to invest. Can be optional if the user did not specify it.'
-            )
-        }),
-        generate: async function* ({ symbol, price, numberOfShares }) {
-          const toolCallId = nanoid()
-          const initialBudget = numberOfShares || price
-      
-          if (initialBudget <= 0 || initialBudget > 1000) {
-            aiState.done({
-              ...aiState.get(),
-              messages: [
-                ...aiState.get().messages,
-                {
-                  id: nanoid(),
-                  role: 'assistant',
-                  content: [
-                    {
-                      type: 'tool-call',
-                      toolName: 'showAdBudgetUI',
-                      toolCallId,
-                      args: { symbol, price, numberOfShares: initialBudget }
-                    }
-                  ]
-                },
-                {
-                  id: nanoid(),
-                  role: 'tool',
-                  content: [
-                    {
-                      type: 'tool-result',
-                      toolName: 'showAdBudgetUI',
-                      toolCallId,
-                      result: {
-                        symbol,
-                        price,
-                        numberOfShares: initialBudget,
-                        status: 'expired'
-                      }
-                    }
-                  ]
-                },
-                {
-                  id: nanoid(),
-                  role: 'system',
-                  content: `[User has selected an invalid amount]`
+
+            if (done) {
+                textStream.done()
+                aiState.done({
+                    ...aiState.get(),
+                    messages: [
+                        ...aiState.get().messages,
+                        {
+                            id: nanoid(),
+                            role: 'assistant',
+                            content
+                        }
+                    ]
+                })
+            } else {
+                textStream.update(delta)
+            }
+
+            return textNode
+        },
+        tools: {
+            listAds: {
+                description: 'List three imaginary ads that are currently running.',
+                parameters: z.object({
+                    stocks: z.array(
+                        z.object({
+                            symbol: z.string().describe('The name of the campaign'),
+                            price: z.number().describe('The daily ad budget of the campaign'),
+                            delta: z.number().describe('The change of the daily ad budget')
+                        })
+                    )
+                }),
+                generate: async function* ({stocks}) {
+                    yield (
+                        <BotCard>
+                            <StocksSkeleton/>
+                        </BotCard>
+                    )
+
+                    await sleep(1000)
+
+                    const toolCallId = nanoid()
+
+                    aiState.done({
+                        ...aiState.get(),
+                        messages: [
+                            ...aiState.get().messages,
+                            {
+                                id: nanoid(),
+                                role: 'assistant',
+                                content: [
+                                    {
+                                        type: 'tool-call',
+                                        toolName: 'listAds',
+                                        toolCallId,
+                                        args: {stocks}
+                                    }
+                                ]
+                            },
+                            {
+                                id: nanoid(),
+                                role: 'tool',
+                                content: [
+                                    {
+                                        type: 'tool-result',
+                                        toolName: 'listAds',
+                                        toolCallId,
+                                        result: stocks
+                                    }
+                                ]
+                            }
+                        ]
+                    })
+
+                    return (
+                        <BotCard>
+                            <Stocks props={stocks}/>
+                        </BotCard>
+                    )
                 }
-              ]
-            })
-      
-            return <BotMessage content={'Invalid amount'} />
-          } else {
-            aiState.done({
-              ...aiState.get(),
-              messages: [
-                ...aiState.get().messages,
-                {
-                  id: nanoid(),
-                  role: 'assistant',
-                  content: [
-                    {
-                      type: 'tool-call',
-                      toolName: 'showAdBudgetUI',
-                      toolCallId,
-                      args: { symbol, price, numberOfShares: initialBudget }
+            },
+            getCampaignResults: {
+                description:
+                    'Get the current ad budget per day of a given digital marketing campaign from this user. Use this to show the current daily ad spent to the user.',
+                parameters: z.object({
+                    symbol: z.string().describe('The name of the campaign. e.g. Lead Campaign Frankfurt.'),
+                    price: z.string().describe('The daily amount of ad spent.'),
+                    delta: z.string().describe('The change in amount of ad spent')
+                }),
+                generate: async function* ({symbol, price, delta}) {
+                    yield (
+                        <BotCard>
+                            <StockSkeleton/>
+                        </BotCard>
+                    )
+
+                    await sleep(1000)
+
+                    const toolCallId = nanoid()
+
+                    const campaignData: CampaignResult = {
+                        name: symbol,
+                        status: "active", // Mock value
+                        daily_budget: "500", // Mock value
+                        created_time: new Date().toISOString(), // Mock value
+                        id: "123", // Mock value
+                        clicks: "1000", // Mock value
+                        impressions: "2000", // Mock value
+                        spend: price, // Use the price parameter
+                        ctr: "2%", // Mock value
+                        reach: "1500", // Mock value
+                        frequency: "1.5", // Mock value
+                        unique_clicks: "800", // Mock value
+                        actions: [], // Mock value
+                        date_start: new Date().toISOString(), // Mock value
+                        date_stop: new Date().toISOString(), // Mock value
+                        device_platform: "mobile" // Mock value
                     }
-                  ]
-                },
-                {
-                  id: nanoid(),
-                  role: 'tool',
-                  content: [
-                    {
-                      type: 'tool-result',
-                      toolName: 'showAdBudgetUI',
-                      toolCallId,
-                      result: {
-                        symbol,
-                        price,
-                        numberOfShares: initialBudget
-                      }
-                    }
-                  ]
+
+                    aiState.done({
+                        ...aiState.get(),
+                        messages: [
+                            ...aiState.get().messages,
+                            {
+                                id: nanoid(),
+                                role: 'assistant',
+                                content: [
+                                    {
+                                        type: 'tool-call',
+                                        toolName: 'getCampaignResults',
+                                        toolCallId,
+                                        args: {symbol, price, delta}
+                                    }
+                                ]
+                            },
+                            {
+                                id: nanoid(),
+                                role: 'tool',
+                                content: [
+                                    {
+                                        type: 'tool-result',
+                                        toolName: 'getCampaignResults',
+                                        toolCallId,
+                                        result: {symbol, price, delta}
+                                    }
+                                ]
+                            }
+                        ]
+                    })
+
+                    return (
+                        <BotCard>
+                            <Stock props={campaignData}/>
+                        </BotCard>
+                    )
                 }
-              ]
-            })
-      
-            return (
-              <BotCard>
-                <Purchase
-                  props={{
-                    symbol,
-                    price: +price,
-                    initialBudget: initialBudget,
-                    status: 'requires_action'
-                  }}
-                />
-              </BotCard>
-            )
-          }
+            },
+            showAdBudgetUI: {
+                description:
+                    'Show Facebook Ad Campaign name and the UI to set ad budget. Use this if the user wants to change his ad budget.',
+                parameters: z.object({
+                    symbol: z
+                        .string()
+                        .describe(
+                            'The name of the digital marketing campaign. e.g. Recruiting Campaign Chef Cook.'
+                        ),
+                    price: z.number().describe('The current daily amount of ad budget spent.'),
+                    numberOfShares: z
+                        .number()
+                        .optional()
+                        .describe(
+                            'The **daily ad spend** for a campaign that a user wants to invest. Can be optional if the user did not specify it.'
+                        )
+                }),
+                generate: async function* ({symbol, price, numberOfShares}) {
+                    const toolCallId = nanoid()
+                    const initialBudget = numberOfShares || price
+
+                    if (initialBudget <= 0 || initialBudget > 1000) {
+                        aiState.done({
+                            ...aiState.get(),
+                            messages: [
+                                ...aiState.get().messages,
+                                {
+                                    id: nanoid(),
+                                    role: 'assistant',
+                                    content: [
+                                        {
+                                            type: 'tool-call',
+                                            toolName: 'showAdBudgetUI',
+                                            toolCallId,
+                                            args: {symbol, price, numberOfShares: initialBudget}
+                                        }
+                                    ]
+                                },
+                                {
+                                    id: nanoid(),
+                                    role: 'tool',
+                                    content: [
+                                        {
+                                            type: 'tool-result',
+                                            toolName: 'showAdBudgetUI',
+                                            toolCallId,
+                                            result: {
+                                                symbol,
+                                                price,
+                                                numberOfShares: initialBudget,
+                                                status: 'expired'
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    id: nanoid(),
+                                    role: 'system',
+                                    content: `[User has selected an invalid amount]`
+                                }
+                            ]
+                        })
+
+                        return <BotMessage content={'Invalid amount'}/>
+                    } else {
+                        aiState.done({
+                            ...aiState.get(),
+                            messages: [
+                                ...aiState.get().messages,
+                                {
+                                    id: nanoid(),
+                                    role: 'assistant',
+                                    content: [
+                                        {
+                                            type: 'tool-call',
+                                            toolName: 'showAdBudgetUI',
+                                            toolCallId,
+                                            args: {symbol, price, numberOfShares: initialBudget}
+                                        }
+                                    ]
+                                },
+                                {
+                                    id: nanoid(),
+                                    role: 'tool',
+                                    content: [
+                                        {
+                                            type: 'tool-result',
+                                            toolName: 'showAdBudgetUI',
+                                            toolCallId,
+                                            result: {
+                                                symbol,
+                                                price,
+                                                numberOfShares: initialBudget
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        })
+
+                        return (
+                            <BotCard>
+                                <Purchase
+                                    props={{
+                                        symbol,
+                                        price: +price,
+                                        initialBudget: initialBudget,
+                                        status: 'requires_action'
+                                    }}
+                                />
+                            </BotCard>
+                        )
+                    }
+                }
+            },
+            getEvents: {
+                description:
+                    'List funny imaginary events between user highlighted dates that describe their ad campaign activity.',
+                parameters: z.object({
+                    events: z.array(
+                        z.object({
+                            date: z
+                                .string()
+                                .describe('The date of the event, in ISO-8601 format'),
+                            headline: z.string().describe('The headline of the event'),
+                            description: z.string().describe('The description of the event')
+                        })
+                    )
+                }),
+                generate: async function* ({events}) {
+                    yield (
+                        <BotCard>
+                            <EventsSkeleton/>
+                        </BotCard>
+                    )
+
+                    await sleep(1000)
+
+                    const toolCallId = nanoid()
+
+                    aiState.done({
+                        ...aiState.get(),
+                        messages: [
+                            ...aiState.get().messages,
+                            {
+                                id: nanoid(),
+                                role: 'assistant',
+                                content: [
+                                    {
+                                        type: 'tool-call',
+                                        toolName: 'getEvents',
+                                        toolCallId,
+                                        args: {events}
+                                    }
+                                ]
+                            },
+                            {
+                                id: nanoid(),
+                                role: 'tool',
+                                content: [
+                                    {
+                                        type: 'tool-result',
+                                        toolName: 'getEvents',
+                                        toolCallId,
+                                        result: events
+                                    }
+                                ]
+                            }
+                        ]
+                    })
+
+                    return (
+                        <BotCard>
+                            <Events props={events}/>
+                        </BotCard>
+                    )
+                }
+            },
+            showAdTextSelection: {
+                description: 'Show UI to select or input ad text for a campaign.',
+                parameters: z.object({
+                    campaignName: z.string().describe('The name of the campaign'),
+                    suggestedTexts: z.array(z.object({
+                        date: z.string(),
+                        text: z.string(),
+                        headline: z.string().optional()  // Make headline optional
+                    })).optional().describe('List of suggested ad texts')
+                }),
+                generate: async function* ({campaignName, suggestedTexts = []}) {
+                    yield (
+                        <BotCard>
+                            <AdTextSelectionSkeleton/>
+                        </BotCard>
+                    );
+
+                    await sleep(1000);
+
+                    const toolCallId = nanoid();
+
+                    // If no suggested texts are provided or if they're missing headlines, generate default ones
+                    if (suggestedTexts.length === 0 || !suggestedTexts[0].headline) {
+                        suggestedTexts = [
+                            {
+                                date: new Date().toISOString(),
+                                text: suggestedTexts[0]?.text || `Experience the power of AI-driven marketing with ${campaignName}. Our cutting-edge solutions revolutionize how you connect with your audience, driving engagement and boosting ROI. Don't just advertise - innovate with ${campaignName}.`,
+                                headline: 'Version 1: Professional'
+                            },
+                            {
+                                date: new Date().toISOString(),
+                                text: suggestedTexts[1]?.text || `🚀 Blast off to marketing success with ${campaignName}! 🎯 Our AI wizardry turns your campaigns into pure gold. Ready to watch your metrics soar? Let's make some marketing magic together! ✨💼📈`,
+                                headline: 'Version 2: Emoji-rich'
+                            },
+                            {
+                                date: new Date().toISOString(),
+                                text: suggestedTexts[2]?.text || `Tired of lackluster campaign results? ${campaignName} is your secret weapon. We harness the latest in AI technology to craft campaigns that don't just speak to your audience - they start a conversation. Discover what true engagement looks like with ${campaignName}.`,
+                                headline: 'Version 3: Conversational'
+                            },
+                        ];
+                    }
+
+                    aiState.done({
+                        ...aiState.get(),
+                        messages: [
+                            ...aiState.get().messages,
+                            {
+                                id: nanoid(),
+                                role: 'assistant',
+                                content: [
+                                    {
+                                        type: 'tool-call',
+                                        toolName: 'showAdTextSelection',
+                                        toolCallId,
+                                        args: {campaignName, suggestedTexts}
+                                    }
+                                ]
+                            },
+                            {
+                                id: nanoid(),
+                                role: 'tool',
+                                content: [
+                                    {
+                                        type: 'tool-result',
+                                        toolName: 'showAdTextSelection',
+                                        toolCallId,
+                                        result: {campaignName, suggestedTexts}
+                                    }
+                                ]
+                            }
+                        ]
+                    });
+
+                    return (
+                        <BotCard>
+                            <AdTextSelection props={suggestedTexts}/>
+                        </BotCard>
+                    );
+                }
+            }
         }
-      },
-      getEvents: {
-        description:
-          'List funny imaginary events between user highlighted dates that describe their ad campaign activity.',
-        parameters: z.object({
-          events: z.array(
-            z.object({
-              date: z
-                .string()
-                .describe('The date of the event, in ISO-8601 format'),
-              headline: z.string().describe('The headline of the event'),
-              description: z.string().describe('The description of the event')
-            })
-          )
-        }),
-        generate: async function* ({ events }) {
-          yield (
-            <BotCard>
-              <EventsSkeleton />
-            </BotCard>
-          )
-  
-          await sleep(1000)
-  
-          const toolCallId = nanoid()
-  
-          aiState.done({
-            ...aiState.get(),
-            messages: [
-              ...aiState.get().messages,
-              {
-                id: nanoid(),
-                role: 'assistant',
-                content: [
-                  {
-                    type: 'tool-call',
-                    toolName: 'getEvents',
-                    toolCallId,
-                    args: { events }
-                  }
-                ]
-              },
-              {
-                id: nanoid(),
-                role: 'tool',
-                content: [
-                  {
-                    type: 'tool-result',
-                    toolName: 'getEvents',
-                    toolCallId,
-                    result: events
-                  }
-                ]
-              }
-            ]
-          })
-  
-          return (
-            <BotCard>
-              <Events props={events} />
-            </BotCard>
-          )
-        }
-      },
-      showAdTextSelection: {
-        description: 'Show UI to select or input ad text for a campaign.',
-        parameters: z.object({
-          campaignName: z.string().describe('The name of the campaign'),
-          suggestedTexts: z.array(z.object({
-            date: z.string(),
-            text: z.string(),
-            headline: z.string().optional()  // Make headline optional
-          })).optional().describe('List of suggested ad texts')
-        }),
-        generate: async function* ({ campaignName, suggestedTexts = [] }) {
-          yield (
-            <BotCard>
-              <AdTextSelectionSkeleton />
-            </BotCard>
-          );
-      
-          await sleep(1000);
-      
-          const toolCallId = nanoid();
-      
-          // If no suggested texts are provided or if they're missing headlines, generate default ones
-          if (suggestedTexts.length === 0 || !suggestedTexts[0].headline) {
-            suggestedTexts = [
-              { 
-                date: new Date().toISOString(), 
-                text: suggestedTexts[0]?.text || `Experience the power of AI-driven marketing with ${campaignName}. Our cutting-edge solutions revolutionize how you connect with your audience, driving engagement and boosting ROI. Don't just advertise - innovate with ${campaignName}.`,
-                headline: 'Version 1: Professional'
-              },
-              { 
-                date: new Date().toISOString(), 
-                text: suggestedTexts[1]?.text || `🚀 Blast off to marketing success with ${campaignName}! 🎯 Our AI wizardry turns your campaigns into pure gold. Ready to watch your metrics soar? Let's make some marketing magic together! ✨💼📈`,
-                headline: 'Version 2: Emoji-rich'
-              },
-              { 
-                date: new Date().toISOString(), 
-                text: suggestedTexts[2]?.text || `Tired of lackluster campaign results? ${campaignName} is your secret weapon. We harness the latest in AI technology to craft campaigns that don't just speak to your audience - they start a conversation. Discover what true engagement looks like with ${campaignName}.`,
-                headline: 'Version 3: Conversational'
-              },
-            ];
-          }
-      
-          aiState.done({
-            ...aiState.get(),
-            messages: [
-              ...aiState.get().messages,
-              {
-                id: nanoid(),
-                role: 'assistant',
-                content: [
-                  {
-                    type: 'tool-call',
-                    toolName: 'showAdTextSelection',
-                    toolCallId,
-                    args: { campaignName, suggestedTexts }
-                  }
-                ]
-              },
-              {
-                id: nanoid(),
-                role: 'tool',
-                content: [
-                  {
-                    type: 'tool-result',
-                    toolName: 'showAdTextSelection',
-                    toolCallId,
-                    result: { campaignName, suggestedTexts }
-                  }
-                ]
-              }
-            ]
-          });
-      
-          return (
-            <BotCard>
-              <AdTextSelection props={suggestedTexts} />
-            </BotCard>
-          );
-        }
-      }
+    });
+    return {
+        id: nanoid(),
+        display: result.value
     }
-  });
-  return {
-    id: nanoid(),
-    display: result.value
-  }
 }
 
 export type AIState = {
-  chatId: string
-  messages: Message[]
+    chatId: string
+    messages: Message[]
 }
 
 export type UIState = {
-  id: string
-  display: React.ReactNode
+    id: string
+    display: React.ReactNode
 }[]
 
 export const AI = createAI<AIState, UIState>({
-  actions: {
-    submitUserMessage,
-    confirmPurchase,
-    AdTextSelection,
-    confirmAdText
-  },
-  initialUIState: [],
-  initialAIState: { chatId: nanoid(), messages: [] },
-  onGetUIState: async () => {
-    'use server'
+    actions: {
+        submitUserMessage,
+        confirmPurchase,
+        AdTextSelection,
+        confirmAdText
+    },
+    initialUIState: [],
+    initialAIState: {chatId: nanoid(), messages: []},
+    onGetUIState: async () => {
+        'use server'
 
-    const session = await auth()
+        const session = await auth()
 
-    if (session && session.user) {
-      const aiState = getAIState() as Chat
+        if (session && session.user) {
+            const aiState = getAIState() as Chat
 
-      if (aiState) {
-        const uiState = getUIStateFromAIState(aiState)
-        return uiState
-      }
-    } else {
-      return
+            if (aiState) {
+                const uiState = getUIStateFromAIState(aiState)
+                return uiState
+            }
+        } else {
+            return
+        }
+    },
+    onSetAIState: async ({state}) => {
+        'use server'
+
+        const session = await auth()
+
+        if (session && session.user) {
+            const {chatId, messages} = state
+
+            const createdAt = new Date()
+            const userId = session.user.id as string
+            const path = `/chat/${chatId}`
+
+            const firstMessageContent = messages[0].content as string
+            const title = firstMessageContent.substring(0, 100)
+
+            const chat: Chat = {
+                id: chatId,
+                title,
+                userId,
+                createdAt,
+                messages,
+                path
+            }
+
+            await saveChat(chat)
+        } else {
+            return
+        }
     }
-  },
-  onSetAIState: async ({ state }) => {
-    'use server'
-
-    const session = await auth()
-
-    if (session && session.user) {
-      const { chatId, messages } = state
-
-      const createdAt = new Date()
-      const userId = session.user.id as string
-      const path = `/chat/${chatId}`
-
-      const firstMessageContent = messages[0].content as string
-      const title = firstMessageContent.substring(0, 100)
-
-      const chat: Chat = {
-        id: chatId,
-        title,
-        userId,
-        createdAt,
-        messages,
-        path
-      }
-
-      await saveChat(chat)
-    } else {
-      return
-    }
-  }
 })
 
 export const getUIStateFromAIState = (aiState: Chat) => {
-  return aiState.messages
-    .filter(message => message.role !== 'system')
-    .map((message, index) => ({
-      id: `${aiState.chatId}-${index}`,
-      display:
-        message.role === 'tool' ? (
-          message.content.map(tool => {
-            return tool.toolName === 'listAds' ? (
-              <BotCard>
-                {/* TODO: Infer types based on the tool result*/}
-                {/* @ts-expect-error */}
-                <Stocks props={tool.result} />
-              </BotCard>
-            ) : tool.toolName === 'showStockPrice' ? (
-              <BotCard>
-                {/* @ts-expect-error */}
-                <Stock props={tool.result} />
-              </BotCard>
-            ) : tool.toolName === 'showAdBudgetUI' ? (
-              <BotCard>
-                {/* @ts-expect-error */}
-                <Purchase props={tool.result} />
-              </BotCard>
-            ) : tool.toolName === 'getEvents' ? (
-              <BotCard>
-                {/* @ts-expect-error */}
-                <Events props={tool.result} />
-              </BotCard>
-            ) : tool.toolName === 'showAdTextSelection' ? (
-              <BotCard>
-                {/* @ts-expect-error */}
-                <Events props={tool.result} />
-              </BotCard>
-            ) : null
-          })
-        ) : message.role === 'user' ? (
-          <UserMessage>{message.content as string}</UserMessage>
-        ) : message.role === 'assistant' &&
-          typeof message.content === 'string' ? (
-          <BotMessage content={message.content} />
-        ) : null
-    }))
+    return aiState.messages
+        .filter(message => message.role !== 'system')
+        .map((message, index) => ({
+            id: `${aiState.chatId}-${index}`,
+            display:
+                message.role === 'tool' ? (
+                    message.content.map(tool => {
+                        return tool.toolName === 'listAds' ? (
+                            <BotCard>
+                                {/* TODO: Infer types based on the tool result*/}
+                                {/* @ts-expect-error */}
+                                <Stocks props={tool.result}/>
+                            </BotCard>
+                        ) : tool.toolName === 'showStockPrice' ? (
+                            <BotCard>
+                                {/* @ts-expect-error */}
+                                <Stock props={tool.result}/>
+                            </BotCard>
+                        ) : tool.toolName === 'showAdBudgetUI' ? (
+                            <BotCard>
+                                {/* @ts-expect-error */}
+                                <Purchase props={tool.result}/>
+                            </BotCard>
+                        ) : tool.toolName === 'getEvents' ? (
+                            <BotCard>
+                                {/* @ts-expect-error */}
+                                <Events props={tool.result}/>
+                            </BotCard>
+                        ) : tool.toolName === 'showAdTextSelection' ? (
+                            <BotCard>
+                                {/* @ts-expect-error */}
+                                <Events props={tool.result}/>
+                            </BotCard>
+                        ) : null
+                    })
+                ) : message.role === 'user' ? (
+                    <UserMessage>{message.content as string}</UserMessage>
+                ) : message.role === 'assistant' &&
+                typeof message.content === 'string' ? (
+                    <BotMessage content={message.content}/>
+                ) : null
+        }))
 }
