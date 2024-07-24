@@ -63,7 +63,7 @@ export function Header() {
           rel="noopener noreferrer"
           className={cn(buttonVariants({ variant: 'outline' }))}
         >
-          <IconNextChat />
+          
           <span className="hidden ml-2 md:flex">New Chat</span>
         </a>
         <a
