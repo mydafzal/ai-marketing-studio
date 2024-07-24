@@ -63,8 +63,7 @@ export function Header() {
           rel="noopener noreferrer"
           className={cn(buttonVariants({ variant: 'outline' }))}
         >
-          
-          <span className="hidden ml-2 md:flex">New Chat</span>
+          <span className="ml-2">New Chat</span>
         </a>
         <a
           href="https://vercel.com/templates/Next.js/nextjs-ai-chatbot"
@@ -72,7 +71,7 @@ export function Header() {
           className={cn(buttonVariants())}
         >
           <IconUser className="mr-2" />
-          <span className="hidden sm:block">My Account</span>
+          <span className="block">My Account</span>
           <span className="sm:hidden">Deploy</span>
         </a>
       </div>
