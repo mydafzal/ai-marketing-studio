@@ -72,7 +72,7 @@ export function Header() {
         >
           <IconUser className="mr-2" />
           <span className="block">My Account</span>
-          <span className="sm:hidden">Deploy</span>
+          <span className="sm:hidden">My Account</span>
         </a>
       </div>
     </header>
