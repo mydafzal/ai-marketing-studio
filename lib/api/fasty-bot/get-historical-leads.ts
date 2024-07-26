@@ -7,6 +7,11 @@ async function getCampaignHistoricalLeadsResults(campaignId: string, timeline: '
 }> {
     const fetchedCampaignId = getCampaignIdFromUrl()?.toString() || '0';
 
+    // Check if mock data should be returned
+    if (process.env.NEXT_PUBLIC_MOCK_CHART_DATA == '1') {
+        return getMockData(fetchedCampaignId, timeline);
+    }
+
     // If the campaign ID is '0', return immediately with an empty lead_results array
     if (fetchedCampaignId === '0') {
         return {
@@ -15,6 +20,7 @@ async function getCampaignHistoricalLeadsResults(campaignId: string, timeline: '
             lead_results: []
         };
     }
+
 
     const fastyEndpoint = process.env.NEXT_PUBLIC_FASTY_API_URL;
     const apiUrl = `${fastyEndpoint}/facebook/read/insights/get-campaign-historical-leads-results?campaign_id=${fetchedCampaignId}&timeline=${timeline}`;
@@ -42,6 +48,25 @@ async function getCampaignHistoricalLeadsResults(campaignId: string, timeline: '
             lead_results: []
         };
     }
+}
+
+function getMockData(campaignId: string, timeline: string) {
+    const startDate = new Date('2024-06-26');
+    const endDate = new Date('2024-07-25');
+    const leadResults = [];
+
+    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+        leadResults.push({
+            date: d.toISOString().split('T')[0],
+            leads: Math.floor(Math.random() * 5000) + 1000 // Random number between 1000 and 6000
+        });
+    }
+
+    return {
+        campaign_id: campaignId,
+        timeline: timeline,
+        lead_results: leadResults
+    };
 }
 
 export {getCampaignHistoricalLeadsResults};
