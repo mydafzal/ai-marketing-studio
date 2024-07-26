@@ -38,7 +38,7 @@ import {saveChat} from '@/app/actions'
 import {SpinnerMessage, UserMessage} from '@/components/stocks/message'
 import {Chat, Message} from '@/lib/types'
 import {auth} from '@/auth'
-import {setDailyBudget} from '@/lib/api/fasty-adjust-campaign';
+import {setDailyBudget} from '@/lib/api/fasty-bot/set-campaign-budget';
 
 
 export async function confirmAdText(campaignName: string, selectedTexts: string[]) {
@@ -442,7 +442,7 @@ async function submitUserMessage(content: string) {
                         actions: [], // Mock value
                         date_start: new Date().toISOString(), // Mock value
                         date_stop: new Date().toISOString(), // Mock value
-                        device_platform: "mobile" // Mock value
+                        device_platform: "Mobile" // Mock value
                     }
 
                     aiState.done({
