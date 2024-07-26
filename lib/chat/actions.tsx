@@ -102,7 +102,7 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
         <div className="inline-flex items-start gap-1 md:items-center">
             {spinner}
             <p className="mb-2">
-                Setting the ad budget for {campaignName} to ${formatNumber(budget)} per day...
+                Setting the ad budget for {campaignName} to {formatNumber(budget)} per day...
             </p>
         </div>
     );
@@ -128,7 +128,7 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
                 <div>
                     <p className="mb-2">
                         You have successfully set your ad budget for {campaignName}. Daily budget:
-                        ${formatNumber(budget)}, Total for {days} days: ${formatNumber(totalBudget)}.
+                        {formatNumber(budget)}, Total for {days} days: {formatNumber(totalBudget)}.
                     </p>
                 </div>
             );
@@ -136,7 +136,7 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
             systemMessage.done(
                 <SystemMessage>
                     Your ad campaign &apos;{campaignName}&apos; is now set to run for {days} days with a daily budget of
-                    ${formatNumber(budget)}. Total budget: ${formatNumber(totalBudget)}. The budget has been updated on
+                    {formatNumber(budget)}. Total budget: {formatNumber(totalBudget)}. The budget has been updated on
                     Facebook.
                 </SystemMessage>
             );

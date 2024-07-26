@@ -30,14 +30,14 @@ export function Purchase({
     setBudget(newBudget);
     setAIState({
       ...aiState,
-      messages: [...aiState.messages, { id: 'budget-change', role: 'system', content: `Budget updated to ${newBudget}. Total cost for 30 days: $${formatNumber(newBudget * days)}.` }]
+      messages: [...aiState.messages, { id: 'budget-change', role: 'system', content: `Budget updated to ${newBudget}. Total cost for 30 days: ${formatNumber(newBudget * days)}.` }]
     });
   }
 
   return (
     <div className="p-4 text-green-400 border rounded-xl bg-zinc-950">
       <div className="text-lg text-zinc-300">{symbol}</div>
-      <div className="text-3xl font-bold">${formatNumber(budget)}</div>
+      <div className="text-3xl font-bold">{formatNumber(budget)}</div>
       {purchasingUI ? (
         <div className="mt-4 text-zinc-200">{purchasingUI}</div>
       ) : (
@@ -53,15 +53,15 @@ export function Purchase({
               className="w-full h-1 rounded-lg appearance-none cursor-pointer bg-zinc-600 accent-green-500"
             />
             <div className="absolute w-full flex justify-between text-xs px-2">
-              <span>$10</span>
-              <span>$500</span>
-              <span>$1000</span>
+              <span>€10</span>
+              <span>€500</span>
+              <span>€1000</span>
             </div>
           </div>
           <div className="mt-6">
             <p>Total cost</p>
             <div className="text-xl font-bold">
-              {days} Days × ${formatNumber(budget)} per day = ${formatNumber(days * budget)}
+              {days} Days × {formatNumber(budget)} per day = {formatNumber(days * budget)}
             </div>
           </div>
           <button
