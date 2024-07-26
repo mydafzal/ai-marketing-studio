@@ -1,23 +1,9 @@
 import 'server-only'
 
-import {
-    createAI,
-    createStreamableUI,
-    getMutableAIState,
-    getAIState,
-    streamUI,
-    createStreamableValue
-} from 'ai/rsc'
+import {createAI, createStreamableUI, createStreamableValue, getAIState, getMutableAIState, streamUI} from 'ai/rsc'
 import {openai} from '@ai-sdk/openai'
 
-import {
-    spinner,
-    BotCard,
-    BotMessage,
-    SystemMessage,
-    Stock,
-    Purchase,
-} from '@/components/stocks'
+import {BotCard, BotMessage, Purchase, spinner, Stock, SystemMessage,} from '@/components/stocks'
 import {AdTextSelectionSkeleton} from '@/components/stocks/ad-text-selection-skeleton'
 import {z} from 'zod'
 import {EventsSkeleton} from '@/components/stocks/events-skeleton'
@@ -25,15 +11,10 @@ import {Events} from '@/components/stocks/events'
 import {StocksSkeleton} from '@/components/stocks/stocks-skeleton'
 import {Stocks} from '@/components/stocks/stocks'
 import {StockSkeleton} from '@/components/stocks/stock-skeleton'
-import {CampaignResult} from '@/components/stocks/stock'
 import {AdTextSelection} from '@/components/stocks/ad-text-selection'
 
-import {
-    formatNumber,
-    runAsyncFnWithoutBlocking,
-    sleep,
-    nanoid
-} from '@/lib/utils'
+
+import {formatNumber, nanoid, runAsyncFnWithoutBlocking, sleep} from '@/lib/utils'
 import {saveChat} from '@/app/actions'
 import {SpinnerMessage, UserMessage} from '@/components/stocks/message'
 import {Chat, Message} from '@/lib/types'
@@ -426,25 +407,6 @@ async function submitUserMessage(content: string) {
 
                     const toolCallId = nanoid()
 
-                    const campaignData: CampaignResult = {
-                        name: symbol,
-                        status: "active", // Mock value
-                        daily_budget: "500", // Mock value
-                        created_time: new Date().toISOString(), // Mock value
-                        id: "123", // Mock value
-                        clicks: "1000", // Mock value
-                        impressions: "2000", // Mock value
-                        spend: price, // Use the price parameter
-                        ctr: "2%", // Mock value
-                        reach: "1500", // Mock value
-                        frequency: "1.5", // Mock value
-                        unique_clicks: "800", // Mock value
-                        actions: [], // Mock value
-                        date_start: new Date().toISOString(), // Mock value
-                        date_stop: new Date().toISOString(), // Mock value
-                        device_platform: "Mobile" // Mock value
-                    }
-
                     aiState.done({
                         ...aiState.get(),
                         messages: [
@@ -478,7 +440,7 @@ async function submitUserMessage(content: string) {
 
                     return (
                         <BotCard>
-                            <Stock props={campaignData}/>
+                            <Stock />
                         </BotCard>
                     )
                 }

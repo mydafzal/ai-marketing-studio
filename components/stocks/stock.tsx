@@ -6,56 +6,15 @@ import { format, subDays } from 'date-fns'
 import { useResizeObserver } from 'usehooks-ts'
 import { useAIState } from 'ai/rsc'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import {getCampaignHistoricalLeadsResults} from "@/lib/api/fasty-bot/get-historical-leads";
+import { getCampaignHistoricalLeadsResults } from "@/lib/api/fasty-bot/get-historical-leads";
+import {CampaignSummary, getCampaignSummary} from "@/lib/api/fasty-bot/get-campaign-summary";
 
-export interface CampaignResult {
-  name: string
-  status: string
-  daily_budget: string
-  created_time: string
-  id: string
-  clicks: string
-  impressions: string
-  spend: string
-  ctr: string
-  reach: string
-  frequency: string
-  unique_clicks: string
-  actions: { action_type: string; value: string }[]
-  date_start: string
-  date_stop: string
-  device_platform: string
-  historical_leads?: { date: string; leads: number }[] // New property for historical leads data
-}
-
-const generateDailyData = async () => {
-  try {
-    const campaignId = '120209400813580149';
-    const results = await getCampaignHistoricalLeadsResults(campaignId, 'last_month');
-
-    return results.lead_results.map(item => ({
-      date: format(new Date(item.date), 'MMM d'),
-      leads: item.leads
-    }));
-  } catch (error) {
-    console.error('Error fetching historical leads data:', error);
-    return [];
-  }
-}
-
-export function Stock({ props: campaignData }: { props: CampaignResult }) {
+export function Stock() {
   const [aiState, setAIState] = useAIState();
   const id = useId();
   const [view, setView] = useState<'daily' | 'historical'>('daily');
   const [dailyData, setDailyData] = useState<Array<{ date: string; leads: number }>>([]);
-  const [dataAtTime, setDataAtTime] = useState({
-    time: '00:00',
-    value: campaignData.spend,
-    x: 0
-  });
-
-  const [startHighlight, setStartHighlight] = useState(0);
-  const [endHighlight, setEndHighlight] = useState(0);
+  const [campaignSummary, setCampaignSummary] = useState<CampaignSummary | null>(null);
 
   const chartRef = useRef<HTMLDivElement>(null);
   const { width = 0 } = useResizeObserver({
@@ -63,98 +22,62 @@ export function Stock({ props: campaignData }: { props: CampaignResult }) {
     box: 'border-box'
   });
 
-  const xToDate = scaleLinear(
-      [0, width],
-      [new Date(campaignData.date_start), new Date(campaignData.date_stop)]
-  );
-  const xToValue = scaleLinear(
-      [0, width],
-      [0, parseFloat(campaignData.spend) * 2]
-  );
-
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const campaignId = '120201366599580149'; // Hardcoded campaign ID
-        const results = await getCampaignHistoricalLeadsResults(campaignId, 'last_month');
+        const summary = await getCampaignSummary();
+        setCampaignSummary(summary);
+
+        const results = await getCampaignHistoricalLeadsResults(summary.campaign_id, 'last_month');
         const formattedData = results.lead_results.map(item => ({
           date: format(new Date(item.date), 'MMM d'),
           leads: item.leads
         }));
         setDailyData(formattedData);
       } catch (error) {
-        console.error('Error fetching historical leads data:', error);
-        setDailyData([]);
+        console.error('Error fetching campaign data:', error);
       }
     };
     fetchData();
   }, []);
 
-  useEffect(() => {
-    if (startHighlight && endHighlight) {
-      const message = {
-        id,
-        role: 'system' as const,
-        content: `[User has highlighted dates between ${format(
-            xToDate(startHighlight),
-            'd LLL'
-        )} and ${format(xToDate(endHighlight), 'd LLL, yyyy')}]`
-      };
-
-      if (aiState.messages[aiState.messages.length - 1]?.id === id) {
-        setAIState({
-          ...aiState,
-          messages: [...aiState.messages.slice(0, -1), message]
-        });
-      } else {
-        setAIState({
-          ...aiState,
-          messages: [...aiState.messages, message]
-        });
-      }
-    }
-  }, [startHighlight, endHighlight, id, aiState, setAIState, xToDate]);
-
-  const totalLeads = dailyData.reduce((sum, day) => sum + day.leads, 0);
+  if (!campaignSummary) {
+    return <div>Loading...</div>;
+  }
 
   return (
       <div className="rounded-xl border bg-zinc-950 p-4 text-green-400">
         <div className="float-right inline-block rounded-full bg-white/10 px-2 py-1 text-xs">
-          {campaignData.status}
+          {campaignSummary.status}
         </div>
-        <div className="text-lg text-zinc-300">{campaignData.name}</div>
-        <div className="text-3xl font-bold">{totalLeads} Leads</div>
+        <div className="text-lg text-zinc-300">{campaignSummary.campaign_name}</div>
+        <div className="text-3xl font-bold">{campaignSummary.total_leads} Leads</div>
         <div className="text mt-1 text-xs text-zinc-500">
-          Created: {format(new Date(campaignData.created_time), 'MMM d, yyyy HH:mm')}
+          Created: {format(new Date(campaignSummary.creation_date), 'MMM d, yyyy HH:mm')}
         </div>
 
         <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
           <div>
-            <span className="text-zinc-500">Clicks:</span> {campaignData.clicks}
+            <span className="text-zinc-500">Clicks:</span> {campaignSummary.clicks}
           </div>
           <div>
-            <span className="text-zinc-500">Impressions:</span> {campaignData.impressions}
+            <span className="text-zinc-500">Impressions:</span> {campaignSummary.impressions}
           </div>
           <div>
-            <span className="text-zinc-500">CTR:</span> {campaignData.ctr}%
+            <span className="text-zinc-500">CTR:</span> {campaignSummary.ctr.toFixed(2)}%
           </div>
           <div>
-            <span className="text-zinc-500">Reach:</span> {campaignData.reach}
+            <span className="text-zinc-500">Reach:</span> {campaignSummary.reach}
           </div>
           <div>
-            <span className="text-zinc-500">Frequency:</span> {campaignData.frequency}
+            <span className="text-zinc-500">Frequency:</span> {campaignSummary.frequency.toFixed(2)}
           </div>
           <div>
-            <span className="text-zinc-500">Unique Clicks:</span> {campaignData.unique_clicks}
+            <span className="text-zinc-500">Unique Clicks:</span> {campaignSummary.unique_clicks}
           </div>
           <div>
-            <span className="text-zinc-500">Device Platform:</span> {campaignData.device_platform}
+            <span className="text-zinc-500">Total Spent:</span> ${campaignSummary.total_spent.toFixed(2)}
           </div>
-          {campaignData.actions.map((action, index) => (
-              <div key={index}>
-                <span className="text-zinc-500">{action.action_type}:</span> {action.value}
-              </div>
-          ))}
         </div>
 
         <div className="mt-4 flex justify-between">

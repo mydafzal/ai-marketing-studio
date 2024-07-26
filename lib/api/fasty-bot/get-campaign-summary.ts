@@ -1,0 +1,83 @@
+import { getCampaignIdFromUrl } from "@/lib/api/fasty-bot/helpers/campaign-id-from-url-helper";
+
+interface CampaignSummary {
+    campaign_id: string;
+    campaign_name: string;
+    total_leads: number;
+    total_spent: number;
+    creation_date: string;
+    status: string;
+    clicks: number;
+    ctr: number;
+    frequency: number;
+    impressions: number;
+    reach: number;
+    unique_clicks: number;
+}
+
+export async function getCampaignSummary(): Promise<CampaignSummary> {
+    const fetchedCampaignId = getCampaignIdFromUrl()?.toString() || '0';
+
+    // Check if mock data should be returned
+    if (process.env.NEXT_PUBLIC_MOCK_CHART_DATA == '1') {
+        return getMockData(fetchedCampaignId);
+    }
+
+    // Default values
+    const defaultSummary: CampaignSummary = {
+        campaign_id: fetchedCampaignId,
+        campaign_name: "Your campaign is not connected",
+        total_leads: 0,
+        total_spent: 0,
+        creation_date: new Date().toISOString(), // Use current date as default
+        status: "Not Connected",
+        clicks: 0,
+        ctr: 0,
+        frequency: 0,
+        impressions: 0,
+        reach: 0,
+        unique_clicks: 0
+    };
+
+    // If the campaign ID is '0', return immediately with default values
+    if (fetchedCampaignId === '0') {
+        return defaultSummary;
+    }
+
+    const apiUrl = `http://localhost:8000/facebook/read/insights/get-campaign-total-summary?campaign_id=${fetchedCampaignId}`;
+
+    try {
+        const response = await fetch(apiUrl);
+
+        if (!response.ok) {
+            console.error(`HTTP error! status: ${response.status}`);
+            return defaultSummary;
+        }
+
+        const data: CampaignSummary = await response.json();
+        console.log('API Response:', data);
+        return { ...data, campaign_id: fetchedCampaignId };
+    } catch (error) {
+        console.error('Error fetching campaign summary:', error);
+        return defaultSummary;
+    }
+}
+
+function getMockData(campaignId: string): CampaignSummary {
+    return {
+        campaign_id: campaignId,
+        campaign_name: "Mock Campaign",
+        total_leads: 50,
+        total_spent: 500,
+        creation_date: new Date().toISOString(),
+        status: "ACTIVE",
+        clicks: 1000,
+        impressions: 2000,
+        ctr: 2,
+        reach: 1500,
+        frequency: 1.5,
+        unique_clicks: 800
+    };
+}
+
+export type { CampaignSummary };
