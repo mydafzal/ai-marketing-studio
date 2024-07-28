@@ -1,4 +1,4 @@
-import {getCampaignIdFromUrl} from "@/lib/api/fasty-bot/helpers/campaign-id-from-url-helper";
+import { getCampaignIdFromUrl } from "@/lib/api/fasty-bot/helpers/campaign-id-from-url-helper";
 
 interface CampaignSummary {
     campaign_id: string;
@@ -19,7 +19,7 @@ export async function getCampaignSummary(): Promise<CampaignSummary> {
     let fetchedCampaignId = getCampaignIdFromUrl()?.toString() || '0';
 
     // Check if mock data should be returned
-    if (process.env.NEXT_PUBLIC_MOCK_CHART_DATA == '1') {
+    if (process.env.NEXT_PUBLIC_MOCK_CHART_DATA === '1') {
         return getMockData(fetchedCampaignId);
     }
 
@@ -34,7 +34,7 @@ export async function getCampaignSummary(): Promise<CampaignSummary> {
         campaign_name: "Your campaign is not connected",
         total_leads: 0,
         total_spent: 0,
-        creation_date: new Date().toISOString(), // Use current date as default
+        creation_date: new Date().toISOString(),
         status: "Not Connected",
         clicks: 0,
         ctr: 0,
@@ -49,7 +49,7 @@ export async function getCampaignSummary(): Promise<CampaignSummary> {
         return defaultSummary;
     }
 
-    const apiUrl = `http://localhost:8000/facebook/read/insights/get-campaign-total-summary?campaign_id=${fetchedCampaignId}`;
+    const apiUrl = `/api/fasty-bot/proxy-get-campaign-summary?campaign_id=${fetchedCampaignId}`;
 
     try {
         const response = await fetch(apiUrl);
@@ -85,4 +85,4 @@ function getMockData(campaignId: string): CampaignSummary {
     };
 }
 
-export type {CampaignSummary};
+export type { CampaignSummary };

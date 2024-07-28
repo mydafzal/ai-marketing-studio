@@ -1,24 +1,25 @@
 import 'server-only'
 
-import { createAI, createStreamableUI, createStreamableValue, getAIState, getMutableAIState, streamUI } from 'ai/rsc'
-import { openai } from '@ai-sdk/openai'
+import {createAI, createStreamableUI, createStreamableValue, getAIState, getMutableAIState, streamUI} from 'ai/rsc'
+import {openai} from '@ai-sdk/openai'
 
-import { BotCard, BotMessage, Purchase, spinner, Stock, SystemMessage, } from '@/components/stocks'
-import { AdTextSelectionSkeleton } from '@/components/stocks/ad-text-selection-skeleton'
-import { z } from 'zod'
-import { EventsSkeleton } from '@/components/stocks/events-skeleton'
-import { Events } from '@/components/stocks/events'
-import { StocksSkeleton } from '@/components/stocks/stocks-skeleton'
-import { Stocks } from '@/components/stocks/stocks'
-import { StockSkeleton } from '@/components/stocks/stock-skeleton'
-import { AdTextSelection } from '@/components/stocks/ad-text-selection'
+import {BotCard, BotMessage, Purchase, spinner, Stock, SystemMessage,} from '@/components/stocks'
+import {AdTextSelectionSkeleton} from '@/components/stocks/ad-text-selection-skeleton'
+import {z} from 'zod'
+import {EventsSkeleton} from '@/components/stocks/events-skeleton'
+import {Events} from '@/components/stocks/events'
+import {StocksSkeleton} from '@/components/stocks/stocks-skeleton'
+import {Stocks} from '@/components/stocks/stocks'
+import {StockSkeleton} from '@/components/stocks/stock-skeleton'
+import {AdTextSelection} from '@/components/stocks/ad-text-selection'
 
-import { formatNumber, nanoid, runAsyncFnWithoutBlocking, sleep } from '@/lib/utils'
-import { saveChat } from '@/app/actions'
-import { SpinnerMessage, UserMessage } from '@/components/stocks/message'
-import { Chat, Message } from '@/lib/types'
-import { auth } from '@/auth'
-import { setDailyBudget } from '@/lib/api/fasty-bot/set-campaign-budget'
+
+import {formatNumber, nanoid, runAsyncFnWithoutBlocking, sleep} from '@/lib/utils'
+import {saveChat} from '@/app/actions'
+import {SpinnerMessage, UserMessage} from '@/components/stocks/message'
+import {Chat, Message} from '@/lib/types';
+import {auth} from '@/auth'
+import {setDailyCampaignBudget} from '@/lib/api/fasty-bot/set-daily-campaign-budget';
 
 interface ToolResult {
     toolName: string;
@@ -125,7 +126,7 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
             </div>
         );
 
-        const updateSuccess = await setDailyBudget(campaignId, budget);
+        const updateSuccess = await setDailyCampaignBudget(campaignId, budget);
 
         if (updateSuccess) {
             purchasing.done(
@@ -570,7 +571,7 @@ async function submitUserMessage(content: string) {
                 parameters: z.object({
                     events: z.array(
                         z.object({
-                            
+
                             headline: z.string().describe('The headline of the event'),
                             description: z.string().describe('The description of the event')
                         })
