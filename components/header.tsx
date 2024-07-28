@@ -1,24 +1,23 @@
-import * as React from 'react'
-import Link from 'next/link'
+import * as React from 'react';
+import Link from 'next/link';
 
-import { cn } from '@/lib/utils'
-import { auth } from '@/auth'
-import { Button, buttonVariants } from '@/components/ui/button'
+import { cn } from '@/lib/utils';
+import { auth } from '@/auth';
+import { Button, buttonVariants } from '@/components/ui/button';
 import {
   IconGitHub,
-  IconNextChat,
   IconSeparator,
   IconUser,
   IconVercel
-} from '@/components/ui/icons'
-import { UserMenu } from '@/components/user-menu'
-import { SidebarMobile } from './sidebar-mobile'
-import { SidebarToggle } from './sidebar-toggle'
-import { ChatHistory } from './chat-history'
-import { Session } from '@/lib/types'
+} from '@/components/ui/icons';
+import { UserMenu } from '@/components/user-menu';
+import { SidebarMobile } from './sidebar-mobile';
+import { SidebarToggle } from './sidebar-toggle';
+import { ChatHistory } from './chat-history';
+import { Session } from '@/lib/types';
 
 async function UserOrLogin() {
-  const session = (await auth()) as Session
+  const session = (await auth()) as Session;
   return (
     <>
       {session?.user ? (
@@ -30,8 +29,18 @@ async function UserOrLogin() {
         </>
       ) : (
         <Link href="/new" rel="nofollow">
-          <IconNextChat className="size-6 mr-2 dark:hidden" inverted />
-          <IconNextChat className="hidden size-6 mr-2 dark:block" />
+          <img
+            src="/Reeply-logo-schwarz.png"
+            alt="Reeply Logo"
+            className="mr-2 dark:hidden"
+            style={{ width: '80px', height: 'auto' }}
+          />
+          <img
+            src="/Reeply-logo-schwarz.png"
+            alt="Reeply Logo"
+            className="hidden mr-2 dark:block"
+            style={{ width: '80px', height: 'auto' }}
+          />
         </Link>
       )}
       <div className="flex items-center">
@@ -45,7 +54,7 @@ async function UserOrLogin() {
         )}
       </div>
     </>
-  )
+  );
 }
 
 export function Header() {
@@ -62,6 +71,7 @@ export function Header() {
           href="https://github.com/vercel/nextjs-ai-chatbot/"
           rel="noopener noreferrer"
           className={cn(buttonVariants({ variant: 'outline' }))}
+          style={{ display: 'none' }}
         >
           <span className="ml-2">New Chat</span>
         </a>
@@ -69,12 +79,12 @@ export function Header() {
           href="https://vercel.com/templates/Next.js/nextjs-ai-chatbot"
           target="_blank"
           className={cn(buttonVariants())}
+          style={{ display: 'none' }}
         >
           <IconUser className="mr-2" />
           <span className="block">My Account</span>
-          
         </a>
       </div>
     </header>
-  )
+  );
 }
