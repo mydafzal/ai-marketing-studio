@@ -294,7 +294,6 @@ async function submitUserMessage(content: string) {
     
     If the user requests setting or changing the ad budget, call \`show_ad_budget_ui\` to show the budget UI.
     If the user just wants to view the current budget, call \`show_current_budget\` to display it.
-    If you want to show active campaigns, respond that the AI can currently not access all running campaigns but that the feature will be available soon.
     If you want to show campaign results, call \`get_campaign_results\`.
     If you want to provide ad texts to the user Call \`showAdTextSelection\` to show the ad text selection UI and let the user choose or input their ad text.
     If the user wants to pause a campaign, or complete another specific task, respond that you are a demo and cannot perform that action.
