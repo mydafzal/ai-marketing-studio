@@ -1,4 +1,4 @@
-import { getCampaignIdFromUrl } from "@/lib/api/fasty-bot/helpers/campaign-id-from-url-helper";
+import {getCampaignIdFromUrl} from "@/lib/api/fasty-bot/helpers/campaign-id-from-url-helper";
 
 interface CampaignSummary {
     campaign_id: string;
@@ -16,11 +16,16 @@ interface CampaignSummary {
 }
 
 export async function getCampaignSummary(): Promise<CampaignSummary> {
-    const fetchedCampaignId = getCampaignIdFromUrl()?.toString() || '0';
+    let fetchedCampaignId = getCampaignIdFromUrl()?.toString() || '0';
 
     // Check if mock data should be returned
     if (process.env.NEXT_PUBLIC_MOCK_CHART_DATA == '1') {
         return getMockData(fetchedCampaignId);
+    }
+
+    // Check for hardcoded mode
+    if (process.env.NEXT_PUBLIC_HARDCODED_MODE === '1' && process.env.NEXT_PUBLIC_HARDCODED_CAMPAIGN_ID) {
+        fetchedCampaignId = process.env.NEXT_PUBLIC_HARDCODED_CAMPAIGN_ID;
     }
 
     // Default values
