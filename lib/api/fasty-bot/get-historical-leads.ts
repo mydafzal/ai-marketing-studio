@@ -1,4 +1,4 @@
-import {getCampaignIdFromUrl} from "@/lib/api/fasty-bot/helpers/campaign-id-from-url-helper";
+import { getCampaignIdFromUrl } from "@/lib/api/fasty-bot/helpers/campaign-id-from-url-helper";
 
 async function getCampaignHistoricalLeadsResults(campaignId: string, timeline: 'today' | 'last_week' | 'last_month' | 'last_year'): Promise<{
     campaign_id: string;
@@ -8,7 +8,7 @@ async function getCampaignHistoricalLeadsResults(campaignId: string, timeline: '
     let fetchedCampaignId = getCampaignIdFromUrl()?.toString() || '0';
 
     // Check if mock data should be returned
-    if (process.env.NEXT_PUBLIC_MOCK_CHART_DATA == '1') {
+    if (process.env.NEXT_PUBLIC_MOCK_CHART_DATA === '1') {
         return getMockData(fetchedCampaignId, timeline);
     }
 
@@ -26,9 +26,7 @@ async function getCampaignHistoricalLeadsResults(campaignId: string, timeline: '
         };
     }
 
-
-    const fastyEndpoint = process.env.NEXT_PUBLIC_FASTY_API_URL;
-    const apiUrl = `${fastyEndpoint}/facebook/read/insights/get-campaign-historical-leads-results?campaign_id=${fetchedCampaignId}&timeline=${timeline}`;
+    const apiUrl = `/api/fasty-bot/proxy-get-historical-leads?campaign_id=${fetchedCampaignId}&timeline=${timeline}`;
 
     try {
         const response = await fetch(apiUrl);
@@ -54,7 +52,6 @@ async function getCampaignHistoricalLeadsResults(campaignId: string, timeline: '
         };
     }
 }
-
 function getMockData(campaignId: string, timeline: string) {
     const startDate = new Date('2024-06-26');
     const endDate = new Date('2024-07-25');

@@ -1,12 +1,26 @@
-async function setDailyBudget(campaignId: number, dailyBudget: number): Promise<boolean> {
+import {headers} from 'next/headers';
+
+async function setDailyCampaignBudget(campaignId: number, dailyBudget: number): Promise<boolean> {
     if (campaignId === 0) { // todo: once fasty bot is live and campaign ids are available, this will be removed
         console.log('Bypassing API call for campaign ID 0');
         return true;
     }
 
     try {
-        const fastyEndpoint = process.env.NEXT_PUBLIC_FASTY_API_URL;
-        const response = await fetch(`${fastyEndpoint}/facebook/exec/direct/adjust-campaign/set-daily-budget`, {
+        let url: string;
+
+        // Check if we're in a browser environment
+        if (typeof window !== 'undefined') {
+            // We're on the client side
+            url = '/api/fasty-bot/proxy-set-daily-budget';
+        } else {
+            // We're on the server side
+            const host = headers().get('host') || 'localhost:3000';
+            const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+            url = `${protocol}://${host}/api/fasty-bot/proxy-set-daily-campaign-budget`;
+        }
+
+        const response = await fetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -16,6 +30,7 @@ async function setDailyBudget(campaignId: number, dailyBudget: number): Promise<
                 daily_budget: dailyBudget
             })
         });
+
         if (!response.ok) {
             const errorBody = await response.text();
             console.error('Error setting daily budget:', {
@@ -25,11 +40,13 @@ async function setDailyBudget(campaignId: number, dailyBudget: number): Promise<
             });
             return false;
         }
-        return true;
+
+        const result = await response.json();
+        return result.success;
     } catch (error) {
         console.error('Error setting daily budget:', error);
         return false;
     }
 }
 
-export {setDailyBudget};
+export {setDailyCampaignBudget};
