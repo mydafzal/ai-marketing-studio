@@ -12,7 +12,7 @@ async function setDailyCampaignBudget(campaignId: number, dailyBudget: number): 
         // Check if we're in a browser environment
         if (typeof window !== 'undefined') {
             // We're on the client side
-            url = '/api/fasty-bot/proxy-set-daily-budget';
+            url = '/api/fasty-bot/proxy-set-daily-campaign-budget';
         } else {
             // We're on the server side
             const host = headers().get('host') || 'localhost:3000';
