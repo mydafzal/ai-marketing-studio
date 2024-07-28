@@ -1,4 +1,3 @@
-
 async function setDailyBudget(campaignId: number, dailyBudget: number): Promise<boolean> {
     if (campaignId === 0) { // todo: once fasty bot is live and campaign ids are available, this will be removed
         console.log('Bypassing API call for campaign ID 0');

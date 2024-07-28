@@ -61,7 +61,7 @@ export async function getCampaignSummary(): Promise<CampaignSummary> {
 
         const data: CampaignSummary = await response.json();
         console.log('API Response:', data);
-        return { ...data, campaign_id: fetchedCampaignId };
+        return {...data, campaign_id: fetchedCampaignId};
     } catch (error) {
         console.error('Error fetching campaign summary:', error);
         return defaultSummary;
@@ -85,4 +85,4 @@ function getMockData(campaignId: string): CampaignSummary {
     };
 }
 
-export type { CampaignSummary };
+export type {CampaignSummary};
