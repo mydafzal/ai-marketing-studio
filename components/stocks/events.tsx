@@ -1,7 +1,7 @@
 import { format, parseISO } from 'date-fns'
 
 interface Event {
-  date: string
+  
   headline: string
   description: string
   category?: string
@@ -13,7 +13,7 @@ export function Events({ props: events }: { props: Event[] }) {
     <div className="-mt-2 flex w-full flex-col gap-4 py-4">
       {events.map(event => (
         <div
-          key={event.date}
+          key={event.headline}
           className={`flex shrink-0 flex-col gap-2 rounded-lg p-4 ${
             event.importance === 'high'
               ? 'bg-red-800'
@@ -23,7 +23,7 @@ export function Events({ props: events }: { props: Event[] }) {
           }`}
         >
           <div className="text-xs text-zinc-400">
-            {format(parseISO(event.date), 'dd LLL, yyyy')}
+            
           </div>
           <div className="flex items-center justify-between">
             <div className="text-lg font-bold text-zinc-200">{event.headline}</div>

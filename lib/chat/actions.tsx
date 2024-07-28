@@ -566,13 +566,11 @@ async function submitUserMessage(content: string) {
             },
             getEvents: {
                 description:
-                    'List funny imaginary events between user highlighted dates that describe their ad campaign activity.',
+                    'List Tips which provide helpful information to users on how they could improve their campaigns.',
                 parameters: z.object({
                     events: z.array(
                         z.object({
-                            date: z
-                                .string()
-                                .describe('The date of the event, in ISO-8601 format'),
+                            
                             headline: z.string().describe('The headline of the event'),
                             description: z.string().describe('The description of the event')
                         })
