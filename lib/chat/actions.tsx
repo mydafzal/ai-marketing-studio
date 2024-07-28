@@ -17,9 +17,15 @@ import {AdTextSelection} from '@/components/stocks/ad-text-selection'
 import {formatNumber, nanoid, runAsyncFnWithoutBlocking, sleep} from '@/lib/utils'
 import {saveChat} from '@/app/actions'
 import {SpinnerMessage, UserMessage} from '@/components/stocks/message'
-import {Chat, Message} from '@/lib/types'
+import {Chat, Message} from '@/lib/types';
 import {auth} from '@/auth'
 import {setDailyBudget} from '@/lib/api/fasty-bot/set-campaign-budget';
+
+interface ToolResult {
+    toolName: string;
+    toolCallId: string;
+    result: any; // You might want to make this more specific based on your data
+}
 
 
 export async function confirmAdText(campaignName: string, selectedTexts: string[]) {
@@ -95,7 +101,7 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
     const aiState = getMutableAIState<typeof AI>();
     const totalBudget = budget * days;
     const campaignId = process.env.NEXT_PUBLIC_HARDCODED_MODE === '1'
-        ? Number(process.env.HARDCODED_CAMPAIGN_ID) ?? 0
+        ? Number(process.env.NEXT_PUBLIC_HARDCODED_CAMPAIGN_ID) ?? 0
         : 0; // todo: Replace 0 with actual logic to get the campaign ID when not in hardcoded mode
 
     const purchasing = createStreamableUI(
@@ -440,7 +446,7 @@ async function submitUserMessage(content: string) {
 
                     return (
                         <BotCard>
-                            <Stock />
+                            <Stock/>
                         </BotCard>
                     )
                 }
@@ -739,8 +745,7 @@ export const AI = createAI<AIState, UIState>({
             const aiState = getAIState() as Chat
 
             if (aiState) {
-                const uiState = getUIStateFromAIState(aiState)
-                return uiState
+                return getUIStateFromAIState(aiState)
             }
         } else {
             return
@@ -777,41 +782,49 @@ export const AI = createAI<AIState, UIState>({
     }
 })
 
+
+function isToolResultArray(content: string | ToolResult[]): content is ToolResult[] {
+    return Array.isArray(content);
+}
+
 export const getUIStateFromAIState = (aiState: Chat) => {
     return aiState.messages
-        .filter(message => message.role !== 'system')
-        .map((message, index) => ({
+        .filter((message: Message) => message.role !== 'system')
+        .map((message: Message, index: number) => ({
             id: `${aiState.chatId}-${index}`,
             display:
-                message.role === 'tool' ? (
-                    message.content.map(tool => {
-                        return tool.toolName === 'listAds' ? (
-                            <BotCard>
-                                {/* TODO: Infer types based on the tool result*/}
-                                {/* @ts-expect-error */}
-                                <Stocks props={tool.result}/>
-                            </BotCard>
-                        ) : tool.toolName === 'showStockPrice' ? (
-                            <BotCard>
-                                {/* @ts-expect-error */}
-                                <Stock props={tool.result}/>
-                            </BotCard>
-                        ) : tool.toolName === 'showAdBudgetUI' ? (
-                            <BotCard>
-                                {/* @ts-expect-error */}
-                                <Purchase props={tool.result}/>
-                            </BotCard>
-                        ) : tool.toolName === 'getEvents' ? (
-                            <BotCard>
-                                {/* @ts-expect-error */}
-                                <Events props={tool.result}/>
-                            </BotCard>
-                        ) : tool.toolName === 'showAdTextSelection' ? (
-                            <BotCard>
-                                {/* @ts-expect-error */}
-                                <Events props={tool.result}/>
-                            </BotCard>
-                        ) : null
+                message.role === 'tool' && isToolResultArray(message.content) ? (
+                    message.content.map((tool: ToolResult) => {
+                        switch (tool.toolName) {
+                            case 'listAds':
+                                return (
+                                    <BotCard key={tool.toolCallId}>
+                                        <Stocks props={tool.result}/>
+                                    </BotCard>
+                                );
+                            case 'showStockPrice':
+                            case 'getCampaignResults':
+                                return (
+                                    <BotCard key={tool.toolCallId}>
+                                        <Stock/>
+                                    </BotCard>
+                                );
+                            case 'showAdBudgetUI':
+                                return (
+                                    <BotCard key={tool.toolCallId}>
+                                        <Purchase props={tool.result}/>
+                                    </BotCard>
+                                );
+                            case 'getEvents':
+                            case 'showAdTextSelection':
+                                return (
+                                    <BotCard key={tool.toolCallId}>
+                                        <Events props={tool.result}/>
+                                    </BotCard>
+                                );
+                            default:
+                                return null;
+                        }
                     })
                 ) : message.role === 'user' ? (
                     <UserMessage>{message.content as string}</UserMessage>
