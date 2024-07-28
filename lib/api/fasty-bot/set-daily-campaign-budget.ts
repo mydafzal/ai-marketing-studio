@@ -1,7 +1,9 @@
-import {headers} from 'next/headers';
+import { headers } from 'next/headers';
 
 async function setDailyCampaignBudget(campaignId: number, dailyBudget: number): Promise<boolean> {
-    if (campaignId === 0) { // todo: once fasty bot is live and campaign ids are available, this will be removed
+    console.log('setDailyCampaignBudget called with:', { campaignId, dailyBudget });
+
+    if (campaignId === 0) {
         console.log('Bypassing API call for campaign ID 0');
         return true;
     }
@@ -9,17 +11,17 @@ async function setDailyCampaignBudget(campaignId: number, dailyBudget: number): 
     try {
         let url: string;
 
-        // Check if we're in a browser environment
         if (typeof window !== 'undefined') {
-            // We're on the client side
             url = '/api/fasty-bot/proxy-set-daily-campaign-budget';
+            console.log('Client-side request. URL:', url);
         } else {
-            // We're on the server side
             const host = headers().get('host') || 'localhost:3000';
             const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
             url = `${protocol}://${host}/api/fasty-bot/proxy-set-daily-campaign-budget`;
+            console.log('Server-side request. URL:', url);
         }
 
+        console.log('Sending request to proxy');
         const response = await fetch(url, {
             method: 'POST',
             headers: {
@@ -30,10 +32,11 @@ async function setDailyCampaignBudget(campaignId: number, dailyBudget: number): 
                 daily_budget: dailyBudget
             })
         });
+        console.log('Received response from proxy. Status:', response.status);
 
         if (!response.ok) {
             const errorBody = await response.text();
-            console.error('Error setting daily budget:', {
+            console.error('Error setting daily campaign budget:', {
                 status: response.status,
                 statusText: response.statusText,
                 body: errorBody
@@ -42,11 +45,12 @@ async function setDailyCampaignBudget(campaignId: number, dailyBudget: number): 
         }
 
         const result = await response.json();
+        console.log('Proxy response:', result);
         return result.success;
     } catch (error) {
-        console.error('Error setting daily budget:', error);
+        console.error('Error in setDailyCampaignBudget:', error);
         return false;
     }
 }
 
-export {setDailyCampaignBudget};
+export { setDailyCampaignBudget };
