@@ -36,7 +36,7 @@ async function UserOrLogin() {
             style={{ width: '80px', height: 'auto' }}
           />
           <img
-            src="/Reeply-logo-schwarz.png"
+            src="/logo-white.png"
             alt="Reeply Logo"
             className="hidden mr-2 dark:block"
             style={{ width: '80px', height: 'auto' }}
