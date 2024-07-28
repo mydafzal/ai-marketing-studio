@@ -94,7 +94,7 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
 
     const aiState = getMutableAIState<typeof AI>();
     const totalBudget = budget * days;
-    const campaignId = process.env.HARDCODED_MODE === '1'
+    const campaignId = process.env.NEXT_PUBLIC_HARDCODED_MODE === '1'
         ? Number(process.env.HARDCODED_CAMPAIGN_ID) ?? 0
         : 0; // todo: Replace 0 with actual logic to get the campaign ID when not in hardcoded mode
 

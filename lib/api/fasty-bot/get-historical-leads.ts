@@ -5,11 +5,16 @@ async function getCampaignHistoricalLeadsResults(campaignId: string, timeline: '
     timeline: string;
     lead_results: Array<{ date: string; leads: number }>
 }> {
-    const fetchedCampaignId = getCampaignIdFromUrl()?.toString() || '0';
+    let fetchedCampaignId = getCampaignIdFromUrl()?.toString() || '0';
 
     // Check if mock data should be returned
     if (process.env.NEXT_PUBLIC_MOCK_CHART_DATA == '1') {
         return getMockData(fetchedCampaignId, timeline);
+    }
+
+    // Check for hardcoded mode
+    if (process.env.NEXT_PUBLIC_HARDCODED_MODE === '1' && process.env.NEXT_PUBLIC_HARDCODED_CAMPAIGN_ID) {
+        fetchedCampaignId = process.env.NEXT_PUBLIC_HARDCODED_CAMPAIGN_ID;
     }
 
     // If the campaign ID is '0', return immediately with an empty lead_results array
