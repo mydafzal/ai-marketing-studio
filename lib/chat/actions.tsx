@@ -1,32 +1,30 @@
 import 'server-only'
 
-import {createAI, createStreamableUI, createStreamableValue, getAIState, getMutableAIState, streamUI} from 'ai/rsc'
-import {openai} from '@ai-sdk/openai'
+import { createAI, createStreamableUI, createStreamableValue, getAIState, getMutableAIState, streamUI } from 'ai/rsc'
+import { openai } from '@ai-sdk/openai'
 
-import {BotCard, BotMessage, Purchase, spinner, Stock, SystemMessage,} from '@/components/stocks'
-import {AdTextSelectionSkeleton} from '@/components/stocks/ad-text-selection-skeleton'
-import {z} from 'zod'
-import {EventsSkeleton} from '@/components/stocks/events-skeleton'
-import {Events} from '@/components/stocks/events'
-import {StocksSkeleton} from '@/components/stocks/stocks-skeleton'
-import {Stocks} from '@/components/stocks/stocks'
-import {StockSkeleton} from '@/components/stocks/stock-skeleton'
-import {AdTextSelection} from '@/components/stocks/ad-text-selection'
+import { BotCard, BotMessage, Purchase, spinner, Stock, SystemMessage, } from '@/components/stocks'
+import { AdTextSelectionSkeleton } from '@/components/stocks/ad-text-selection-skeleton'
+import { z } from 'zod'
+import { EventsSkeleton } from '@/components/stocks/events-skeleton'
+import { Events } from '@/components/stocks/events'
+import { StocksSkeleton } from '@/components/stocks/stocks-skeleton'
+import { Stocks } from '@/components/stocks/stocks'
+import { StockSkeleton } from '@/components/stocks/stock-skeleton'
+import { AdTextSelection } from '@/components/stocks/ad-text-selection'
 
-
-import {formatNumber, nanoid, runAsyncFnWithoutBlocking, sleep} from '@/lib/utils'
-import {saveChat} from '@/app/actions'
-import {SpinnerMessage, UserMessage} from '@/components/stocks/message'
-import {Chat, Message} from '@/lib/types';
-import {auth} from '@/auth'
-import {setDailyBudget} from '@/lib/api/fasty-bot/set-campaign-budget';
+import { formatNumber, nanoid, runAsyncFnWithoutBlocking, sleep } from '@/lib/utils'
+import { saveChat } from '@/app/actions'
+import { SpinnerMessage, UserMessage } from '@/components/stocks/message'
+import { Chat, Message } from '@/lib/types'
+import { auth } from '@/auth'
+import { setDailyBudget } from '@/lib/api/fasty-bot/set-campaign-budget'
 
 interface ToolResult {
     toolName: string;
     toolCallId: string;
     result: any; // You might want to make this more specific based on your data
 }
-
 
 export async function confirmAdText(campaignName: string, selectedTexts: string[]) {
     'use server'
@@ -295,7 +293,7 @@ async function submitUserMessage(content: string) {
     
     If the user requests setting or changing the ad budget, call \`show_ad_budget_ui\` to show the budget UI.
     If the user just wants to view the current budget, call \`show_current_budget\` to display it.
-    If you want to show active campaigns, call \`list_campaigns\`.
+    If you want to show active campaigns, respond that the AI can currently not access all running campaigns but that the feature will be available soon.
     If you want to show campaign results, call \`get_campaign_results\`.
     If you want to provide ad texts to the user Call \`showAdTextSelection\` to show the ad text selection UI and let the user choose or input their ad text.
     If the user wants to pause a campaign, or complete another specific task, respond that you are a demo and cannot perform that action.
@@ -334,66 +332,66 @@ async function submitUserMessage(content: string) {
             return textNode
         },
         tools: {
-            listAds: {
-                description: 'List three imaginary ads that are currently running.',
-                parameters: z.object({
-                    stocks: z.array(
-                        z.object({
-                            symbol: z.string().describe('The name of the campaign'),
-                            price: z.number().describe('The daily ad budget of the campaign'),
-                            delta: z.number().describe('The change of the daily ad budget')
-                        })
-                    )
-                }),
-                generate: async function* ({stocks}) {
-                    yield (
-                        <BotCard>
-                            <StocksSkeleton/>
-                        </BotCard>
-                    )
+            // listAds: {
+            //     description: 'List three imaginary ads that are currently running.',
+            //     parameters: z.object({
+            //         stocks: z.array(
+            //             z.object({
+            //                 symbol: z.string().describe('The name of the campaign'),
+            //                 price: z.number().describe('The daily ad budget of the campaign'),
+            //                 delta: z.number().describe('The change of the daily ad budget')
+            //             })
+            //         )
+            //     }),
+            //     generate: async function* ({stocks}) {
+            //         yield (
+            //             <BotCard>
+            //                 <StocksSkeleton/>
+            //             </BotCard>
+            //         )
 
-                    await sleep(1000)
+            //         await sleep(1000)
 
-                    const toolCallId = nanoid()
+            //         const toolCallId = nanoid()
 
-                    aiState.done({
-                        ...aiState.get(),
-                        messages: [
-                            ...aiState.get().messages,
-                            {
-                                id: nanoid(),
-                                role: 'assistant',
-                                content: [
-                                    {
-                                        type: 'tool-call',
-                                        toolName: 'listAds',
-                                        toolCallId,
-                                        args: {stocks}
-                                    }
-                                ]
-                            },
-                            {
-                                id: nanoid(),
-                                role: 'tool',
-                                content: [
-                                    {
-                                        type: 'tool-result',
-                                        toolName: 'listAds',
-                                        toolCallId,
-                                        result: stocks
-                                    }
-                                ]
-                            }
-                        ]
-                    })
+            //         aiState.done({
+            //             ...aiState.get(),
+            //             messages: [
+            //                 ...aiState.get().messages,
+            //                 {
+            //                     id: nanoid(),
+            //                     role: 'assistant',
+            //                     content: [
+            //                         {
+            //                             type: 'tool-call',
+            //                             toolName: 'listAds',
+            //                             toolCallId,
+            //                             args: {stocks}
+            //                         }
+            //                     ]
+            //                 },
+            //                 {
+            //                     id: nanoid(),
+            //                     role: 'tool',
+            //                     content: [
+            //                         {
+            //                             type: 'tool-result',
+            //                             toolName: 'listAds',
+            //                             toolCallId,
+            //                             result: stocks
+            //                         }
+            //                     ]
+            //                 }
+            //             ]
+            //         })
 
-                    return (
-                        <BotCard>
-                            <Stocks props={stocks}/>
-                        </BotCard>
-                    )
-                }
-            },
+            //         return (
+            //             <BotCard>
+            //                 <Stocks props={stocks}/>
+            //             </BotCard>
+            //         )
+            //     }
+            // },
             getCampaignResults: {
                 description:
                     'Get the current ad budget per day of a given digital marketing campaign from this user. Use this to show the current daily ad spent to the user.',
@@ -782,7 +780,6 @@ export const AI = createAI<AIState, UIState>({
     }
 })
 
-
 function isToolResultArray(content: string | ToolResult[]): content is ToolResult[] {
     return Array.isArray(content);
 }
@@ -796,12 +793,12 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                 message.role === 'tool' && isToolResultArray(message.content) ? (
                     message.content.map((tool: ToolResult) => {
                         switch (tool.toolName) {
-                            case 'listAds':
-                                return (
-                                    <BotCard key={tool.toolCallId}>
-                                        <Stocks props={tool.result}/>
-                                    </BotCard>
-                                );
+                            // case 'listAds':
+                            //     return (
+                            //         <BotCard key={tool.toolCallId}>
+                            //             <Stocks props={tool.result}/>
+                            //         </BotCard>
+                            //     );
                             case 'showStockPrice':
                             case 'getCampaignResults':
                                 return (
