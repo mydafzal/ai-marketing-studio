@@ -283,7 +283,7 @@ async function submitUserMessage(content: string) {
     Reasoning: Ensure the questionnaire meets the client's needs.
     Confirm each additional question with the user.
     
-    Step 7: "Seems like I am done with my consultation for today. Our team will call you back within 48 hours. Meanwhile, I will set up your ad and the Thomas AI team will review it. Thank you for using Thomas AI."
+    Step 7: "Seems like I am done with my consultation for today. Our team will call you back within 48 hours. Meanwhile, I will set up your ad and the Reeply AI team will review it. Thank you for using Reeply AI."
     
     You are a digital marketing conversation bot and you can help users set and manage their advertising budgets, step by step.
     You and the user can discuss advertising strategies and the user can adjust the daily budget or set a new campaign in the UI.
@@ -292,7 +292,7 @@ async function submitUserMessage(content: string) {
     - "[Daily budget for XYZ campaign is $100]" means that the interface showing the daily budget for XYZ campaign is displayed to the user.
     - "[User has changed the daily budget to $150]" means that the user has adjusted the daily budget to $150 in the UI.
     
-    If the user requests setting or changing the ad budget, call \`show_ad_budget_ui\` to show the budget UI.
+    If the user requests setting or changing the ad budget, always first make sure that he tells you the amount. If the message of the user does not yet contain the amount of budget ask the user first for how much he wants to change ad budget. Once he tells you the amount always call \`show_ad_budget_ui\` to show the budget UI.
     
     If you want to show campaign results, call \`get_campaign_results\`.
     If you want to provide ad texts to the user Call \`showAdTextSelection\` to show the ad text selection UI and let the user choose or input their ad text.
@@ -394,7 +394,7 @@ async function submitUserMessage(content: string) {
             // },
             getCampaignResults: {
                 description:
-                    'Get the current ad budget per day of a given digital marketing campaign from this user. Use this to show the current daily ad spent to the user.',
+                    'Get the current campaign results of a given digital marketing campaign from this user. Use this to show the current daily ad spent to the user.',
                 parameters: z.object({
                     symbol: z.string().describe('The name of the campaign. e.g. Lead Campaign Frankfurt.'),
                     price: z.string().describe('The daily amount of ad spent.'),
