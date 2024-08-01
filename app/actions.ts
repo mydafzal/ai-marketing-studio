@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { kv } from '@vercel/kv'
 
 import { auth } from '@/auth'
+import {deleteChatToDB, saveChatToDB} from '@/lib/db/chat-campaign'
 import { type Chat } from '@/lib/types'
 
 export async function getChats(userId?: string | null) {
@@ -58,6 +59,7 @@ export async function removeChat({ id, path }: { id: string; path: string }) {
     }
   }
 
+  deleteChatToDB(id)
   await kv.del(`chat:${id}`)
   await kv.zrem(`user:chat:${session.user.id}`, `chat:${id}`)
 
@@ -138,6 +140,7 @@ export async function saveChat(chat: Chat) {
       score: Date.now(),
       member: `chat:${chat.id}`
     })
+    saveChatToDB(chat.id, chat.userId, session.user.email || '')
     await pipeline.exec()
   } else {
     return

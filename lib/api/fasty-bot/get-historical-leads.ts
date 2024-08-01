@@ -5,7 +5,7 @@ async function getCampaignHistoricalLeadsResults(campaignId: string, timeline: '
     timeline: string;
     lead_results: Array<{ date: string; leads: number }>
 }> {
-    let fetchedCampaignId = getCampaignIdFromUrl()?.toString() || '0';
+    let fetchedCampaignId = campaignId;
 
     // Check if mock data should be returned
     if (process.env.NEXT_PUBLIC_MOCK_CHART_DATA === '1') {

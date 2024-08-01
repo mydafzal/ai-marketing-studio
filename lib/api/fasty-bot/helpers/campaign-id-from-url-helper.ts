@@ -19,6 +19,7 @@ export function getCampaignIdFromUrl(): string | null {
         return null;
     }
 
+    //TODO: This need to be update as per new way by fetching from DB
     // Then, use the chat ID to get the campaign ID
     const campaignId = chatToCampaignMapping[chatId];
 
@@ -36,7 +37,7 @@ export function getCampaignIdFromUrl(): string | null {
  *
  * @returns {string|null} The chat ID if found, or null if not found.
  */
-function getChatIdFromUrl(): string | null {
+export function getChatIdFromUrl(): string | null {
     const path = window.location.pathname;
     const pathParts = path.split('/');
 
