@@ -5,6 +5,7 @@ import { useActions, useAIState, useUIState } from 'ai/rsc';
 import { formatNumber } from '@/lib/utils';
 
 import type { AI } from '@/lib/chat/actions';
+import { getChatIdFromUrl } from '@/lib/api/fasty-bot/helpers/campaign-id-from-url-helper';
 
 interface Purchase {
   symbol: string;
@@ -67,7 +68,8 @@ export function Purchase({
           <button
             className="w-full px-4 py-2 mt-6 font-bold text-zinc-900 bg-green-400 rounded-lg hover:bg-green-500"
             onClick={async () => {
-              const response = await confirmPurchase(symbol, budget, days);
+              const chatId = getChatIdFromUrl()
+              const response = await confirmPurchase(symbol, budget, days, chatId);
               setPurchasingUI(response.purchasingUI);
               setMessages((currentMessages) => [...currentMessages, response.newMessage]);
             }}

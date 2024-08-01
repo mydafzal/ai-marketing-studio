@@ -94,11 +94,13 @@ export async function confirmAdText(campaignName: string, selectedTexts: string[
     };
 }
 
-async function confirmPurchase(campaignName: string, budget: number, days: number = 30) {
+async function confirmPurchase(campaignName: string, budget: number, days: number = 30, chatId: string) {
     'use server'
 
     const aiState = getMutableAIState<typeof AI>();
     const totalBudget = budget * days;
+    
+    // TODO: Need to update the campaign id from params {chatId}
     const campaignId = process.env.NEXT_PUBLIC_HARDCODED_MODE === '1'
         ? Number(process.env.NEXT_PUBLIC_HARDCODED_CAMPAIGN_ID) ?? 0
         : 0; // todo: Replace 0 with actual logic to get the campaign ID when not in hardcoded mode
