@@ -1,25 +1,18 @@
-import {headers} from 'next/headers';
+import { getBaseUrl } from '@/lib/helpers/vercel/get-base-url';
 
 async function setDailyCampaignBudget(campaignId: number, dailyBudget: number): Promise<boolean> {
-    if (campaignId === 0) { // todo: once fasty bot is live and campaign ids are available, this will be removed
+    if (campaignId === 0) { // TODO: Remove this once Fasty bot is live and campaign IDs are available
         console.log('Bypassing API call for campaign ID 0');
         return true;
     }
 
     try {
-        let url: string;
+        // Determine base URL using the utility function
+        const baseUrl = getBaseUrl();
+        // Construct the full URL
+        const url = `${baseUrl}/api/fasty-bot/proxy-set-daily-campaign-budget`;
 
-        // Check if we're in a browser environment
-        if (typeof window !== 'undefined') {
-            // We're on the client side
-            url = '/api/fasty-bot/proxy-set-daily-budget';
-        } else {
-            // We're on the server side
-            const host = headers().get('host') || 'localhost:3000';
-            const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
-            url = `${protocol}://${host}/api/fasty-bot/proxy-set-daily-campaign-budget`;
-        }
-
+        // Make the API call
         const response = await fetch(url, {
             method: 'POST',
             headers: {
@@ -31,6 +24,7 @@ async function setDailyCampaignBudget(campaignId: number, dailyBudget: number): 
             })
         });
 
+        // Handle the response
         if (!response.ok) {
             const errorBody = await response.text();
             console.error('Error setting daily budget:', {
@@ -41,6 +35,7 @@ async function setDailyCampaignBudget(campaignId: number, dailyBudget: number): 
             return false;
         }
 
+        // Parse and return the result
         const result = await response.json();
         return result.success;
     } catch (error) {
@@ -49,4 +44,4 @@ async function setDailyCampaignBudget(campaignId: number, dailyBudget: number): 
     }
 }
 
-export {setDailyCampaignBudget};
+export { setDailyCampaignBudget };
