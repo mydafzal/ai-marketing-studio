@@ -1,4 +1,6 @@
 import { getBaseUrl } from '@/lib/helpers/vercel/get-base-url';
+import {submitLog} from "@/lib/api/fasty-bot/submit-logs";
+import {isEnabled} from "@/lib/helpers/feature-toggle/server-feature-toggle-manager";
 
 async function setDailyCampaignBudget(campaignId: number, dailyBudget: number): Promise<boolean> {
     if (campaignId === 0) { // TODO: Remove this once Fasty bot is live and campaign IDs are available
@@ -9,6 +11,13 @@ async function setDailyCampaignBudget(campaignId: number, dailyBudget: number): 
     try {
         // Determine base URL using the utility function
         const baseUrl = getBaseUrl();
+
+        if(isEnabled('loggingToggle'))
+        {
+            submitLog('Campaign budget adjustment. Base Url:', baseUrl)
+            console.log('Campaign budget adjustment. Base Url:', baseUrl)
+        }
+
         // Construct the full URL
         const url = `${baseUrl}/api/fasty-bot/proxy-set-daily-campaign-budget`;
 
