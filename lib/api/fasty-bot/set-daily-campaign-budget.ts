@@ -1,29 +1,19 @@
-import {headers} from 'next/headers';
-
 async function setDailyCampaignBudget(campaignId: number, dailyBudget: number): Promise<boolean> {
-    if (campaignId === 0) { // todo: once fasty bot is live and campaign ids are available, this will be removed
+    if (campaignId === 0) { // TODO: Remove this once Fasty bot is live and campaign IDs are available
         console.log('Bypassing API call for campaign ID 0');
         return true;
     }
 
     try {
-        let url: string;
+        const fastyEndpoint = process.env.FASTY_API_URL;
+        const apiUrl = `${fastyEndpoint}/facebook/exec/direct/adjust-campaign/set-daily-budget`;
 
-        // Check if we're in a browser environment
-        if (typeof window !== 'undefined') {
-            // We're on the client side
-            url = '/api/fasty-bot/proxy-set-daily-budget';
-        } else {
-            // We're on the server side
-            const host = headers().get('host') || 'localhost:3000';
-            const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
-            url = `${protocol}://${host}/api/fasty-bot/proxy-set-daily-campaign-budget`;
-        }
-
-        const response = await fetch(url, {
+        // Make the direct API call
+        const response = await fetch(apiUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'Authorization': `Bearer ${process.env.FASTY_API_TOKEN}`
             },
             body: JSON.stringify({
                 campaign_id: campaignId,
@@ -31,18 +21,27 @@ async function setDailyCampaignBudget(campaignId: number, dailyBudget: number): 
             })
         });
 
+        // Parse the response
+        const responseData = await response.json();
+
+        // Handle the response
         if (!response.ok) {
-            const errorBody = await response.text();
             console.error('Error setting daily budget:', {
                 status: response.status,
                 statusText: response.statusText,
-                body: errorBody
+                body: responseData
             });
             return false;
         }
 
-        const result = await response.json();
-        return result.success;
+        // Check for success in the result
+        if (responseData.result && responseData.result.success === true) {
+            console.log('Successfully set daily budget:', responseData);
+            return true;
+        } else {
+            console.error('Unexpected response format:', responseData);
+            return false;
+        }
     } catch (error) {
         console.error('Error setting daily budget:', error);
         return false;
