@@ -24,24 +24,31 @@ async function setDailyCampaignBudget(campaignId: number, dailyBudget: number): 
             })
         });
 
+        // Parse the response
+        const responseData = await response.json();
+
         // Handle the response
         if (!response.ok) {
-            const errorBody = await response.text();
             console.error('Error setting daily budget:', {
                 status: response.status,
                 statusText: response.statusText,
-                body: errorBody
+                body: responseData
             });
             return false;
         }
 
-        // Parse and return the result
-        const result = await response.json();
-        return result.success;
+        // Check for success in the result
+        if (responseData.result && responseData.result.success === true) {
+            console.log('Successfully set daily budget:', responseData);
+            return true;
+        } else {
+            console.error('Unexpected response format:', responseData);
+            return false;
+        }
     } catch (error) {
         console.error('Error setting daily budget:', error);
         return false;
     }
 }
 
-export { setDailyCampaignBudget };
+export {setDailyCampaignBudget};
