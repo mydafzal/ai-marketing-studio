@@ -1,6 +1,3 @@
-import { getBaseUrl } from '@/lib/helpers/vercel/get-base-url';
-import {submitLog} from "@/lib/api/fasty-bot/submit-logs";
-
 async function setDailyCampaignBudget(campaignId: number, dailyBudget: number): Promise<boolean> {
     if (campaignId === 0) { // TODO: Remove this once Fasty bot is live and campaign IDs are available
         console.log('Bypassing API call for campaign ID 0');
@@ -8,20 +5,18 @@ async function setDailyCampaignBudget(campaignId: number, dailyBudget: number): 
     }
 
     try {
-        // Determine base URL using the utility function
-        const baseUrl = getBaseUrl();
+        const fastyEndpoint = process.env.FASTY_API_URL;
+        const apiUrl = `${fastyEndpoint}/facebook/exec/direct/adjust-campaign/set-daily-budget`;
 
-        console.log('Campaign budget adjustment. Base Url:', baseUrl)
-        submitLog('Campaign budget adjustment. Base Url:', baseUrl)
+        console.log('Campaign budget adjustment. API Url:', apiUrl);
+        // submitLog('Campaign budget adjustment. API Url:', apiUrl);
 
-        // Construct the full URL
-        const url = `${baseUrl}/api/fasty-bot/proxy-set-daily-campaign-budget`;
-
-        // Make the API call
-        const response = await fetch(url, {
+        // Make the direct API call
+        const response = await fetch(apiUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'Authorization': `Bearer ${process.env.FASTY_API_TOKEN}`
             },
             body: JSON.stringify({
                 campaign_id: campaignId,
