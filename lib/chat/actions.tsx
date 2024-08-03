@@ -20,6 +20,7 @@ import {SpinnerMessage, UserMessage} from '@/components/stocks/message'
 import {Chat, Message} from '@/lib/types';
 import {auth} from '@/auth'
 import {setDailyCampaignBudget} from '@/lib/api/fasty-bot/set-daily-campaign-budget';
+import {getCampaignIdFromUrl} from "@/lib/api/fasty-bot/helpers/campaign-id-from-url-helper";
 
 interface ToolResult {
     toolName: string;
@@ -99,9 +100,11 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
 
     const aiState = getMutableAIState<typeof AI>();
     const totalBudget = budget * days;
-    const campaignId = process.env.NEXT_PUBLIC_HARDCODED_MODE === '1'
-        ? Number(process.env.NEXT_PUBLIC_HARDCODED_CAMPAIGN_ID) ?? 0
-        : 0; // todo: Replace 0 with actual logic to get the campaign ID when not in hardcoded mode
+    let campaignId = Number(getCampaignIdFromUrl()) || 0; // for now just say you are updating even if no campaign id in place
+
+    if (process.env.NEXT_PUBLIC_HARDCODED_MODE === '1') {
+        campaignId = Number(process.env.NEXT_PUBLIC_HARDCODED_CAMPAIGN_ID)
+    }
 
     const purchasing = createStreamableUI(
         <div className="inline-flex items-start gap-1 md:items-center">
