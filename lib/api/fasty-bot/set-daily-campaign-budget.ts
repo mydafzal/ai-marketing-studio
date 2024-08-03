@@ -8,9 +8,6 @@ async function setDailyCampaignBudget(campaignId: number, dailyBudget: number): 
         const fastyEndpoint = process.env.FASTY_API_URL;
         const apiUrl = `${fastyEndpoint}/facebook/exec/direct/adjust-campaign/set-daily-budget`;
 
-        console.log('Campaign budget adjustment. API Url:', apiUrl);
-        // submitLog('Campaign budget adjustment. API Url:', apiUrl);
-
         // Make the direct API call
         const response = await fetch(apiUrl, {
             method: 'POST',
