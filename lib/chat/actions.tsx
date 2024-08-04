@@ -101,7 +101,6 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
     const aiState = getMutableAIState<typeof AI>();
     const totalBudget = budget * days;
     let campaignId = Number(getCampaignIdFromUrl()) || 0; // for now just say you are updating even if no campaign id in place
-
     if (process.env.NEXT_PUBLIC_HARDCODED_MODE === '1') {
         campaignId = Number(process.env.NEXT_PUBLIC_HARDCODED_CAMPAIGN_ID)
     }

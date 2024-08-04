@@ -10,6 +10,7 @@ const chatToCampaignMapping: Record<string, string> = {
     "AS5xryw": "23856096985670148", //Demo-campaign
     "4u4YJds": "23856096985670148", //Demo-campaign
     "d83tZY7": "23856096985670148", //Demo-campaign
+    "FKG1eR4": "23856096985670148", //Demo-campaign
     "DBiGirw": "123123123123"
     // Add more mappings as needed
 };
