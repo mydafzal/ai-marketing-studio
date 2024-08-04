@@ -1,4 +1,4 @@
-import {isEnabled as isEnabledServer} from '@/lib/helpers/feature-toggle/server-feature-toggle-manager';
+import {isFeatureToggleEnabled as isEnabledServer} from '@/lib/helpers/feature-toggle/feature-toggle-manager';
 import ClientSideDemo from './ClientSideDemo';
 
 export default function FeatureToggleDemo() {
