@@ -1,13 +1,13 @@
 'use client';
 
 import {useState, useEffect} from 'react';
-import {isEnabled as isEnabledClient} from '@/lib/helpers/feature-toggle/client-feature-toggle-manager';
+import {isFeatureToggleEnabled} from "@/lib/helpers/feature-toggle/feature-toggle-manager";
 
 export default function ClientSideDemo({initialToggleState}: { initialToggleState: boolean }) {
     const [isDemoToggleEnabled, setIsDemoToggleEnabled] = useState(initialToggleState);
 
     useEffect(() => {
-        const clientSideState = isEnabledClient('demoToggle');
+        const clientSideState = isFeatureToggleEnabled('demoToggle');
         setIsDemoToggleEnabled(clientSideState);
     }, []);
 

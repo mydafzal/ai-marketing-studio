@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import {featureToggles} from '@/lib/helpers/feature-toggle/feature-toggles';
-import {isEnabled, setFeatureToggle} from '@/lib/helpers/feature-toggle/server-feature-toggle-manager';
+import {isFeatureToggleEnabled} from '@/lib/helpers/feature-toggle/feature-toggle-manager';
+import {setFeatureToggle} from "@/lib/helpers/feature-toggle/server-set-feature-toggle";
 
 export default function FeatureToggles() {
     async function handleSubmit(formData: FormData) {
@@ -34,7 +35,7 @@ export default function FeatureToggles() {
                                         type="checkbox"
                                         name={toggle.name}
                                         id={toggle.name}
-                                        defaultChecked={isEnabled(toggle.name)}
+                                        defaultChecked={isFeatureToggleEnabled(toggle.name)}
                                         className="sr-only peer"
                                     />
                                     <div

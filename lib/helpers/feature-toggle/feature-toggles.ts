@@ -8,11 +8,11 @@ export interface FeatureToggle {
 export const featureToggles: FeatureToggle[] = [
     {
         name: "demoToggle",
-        description: "For checking feature toggle functionality on demo page"
+        description: "For checking feature toggle functionality on demo page (todo)"
     },
     {
         name: "loggingToggle",
-        description: "For enabling logging feature"
+        description: "For enabling logging feature (todo)"
     }
     // Add more feature toggles as needed
 ];
