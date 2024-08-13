@@ -6,10 +6,28 @@ import { AuthError } from 'next-auth'
 import { z } from 'zod'
 import { kv } from '@vercel/kv'
 import { ResultCode } from '@/lib/utils'
+import { isFeatureToggleEnabled } from '@/lib/helpers/feature-toggle/feature-toggle-manager'
+import prisma from '@/lib/db'
 
 export async function getUser(email: string) {
-  const user = await kv.hgetall<User>(`user:${email}`)
-  return user
+  if (isFeatureToggleEnabled("postgressDBToggle")) {
+    try {
+      const user = await prisma.users.findFirst({
+        where: {
+          email,
+          AND: {
+            discardedAt: null
+          }
+        }
+      })
+      return user
+    } catch (error) {
+      return null
+    }
+  } else {
+    const user = await kv.hgetall<User>(`user:${email}`)
+    return user
+  }
 }
 
 interface Result {

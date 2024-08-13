@@ -57,6 +57,15 @@ export const runAsyncFnWithoutBlocking = (
 export const sleep = (ms: number) =>
   new Promise(resolve => setTimeout(resolve, ms))
 
+export function canParse(text: string) {
+  try {
+    let parsedText = JSON.parse(text);
+    return parsedText
+  } catch (error) {
+    return text
+  }
+}
+
 export const getStringFromBuffer = (buffer: ArrayBuffer) =>
   Array.from(new Uint8Array(buffer))
     .map(b => b.toString(16).padStart(2, '0'))

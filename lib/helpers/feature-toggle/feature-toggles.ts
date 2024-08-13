@@ -17,6 +17,10 @@ export const featureToggles: FeatureToggle[] = [
     {
         name: "adminFeatures",
         description: "For enabling admin features such as creating new chats, deleting chats etc.x"
+    },
+    {
+        name: "postgressDBToggle",
+        description: "For enabling postgress db and replace the kv."
     }
     // Add more feature toggles as needed
 ];

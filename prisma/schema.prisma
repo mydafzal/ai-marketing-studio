@@ -1,0 +1,77 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model users {
+  id          String    @id
+  email       String
+  password    String
+  salt        String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  discardedAt DateTime?
+
+  chats            chats[]
+  messages         messages[]
+  user_credentials user_credentials[]
+
+  @@index([email, discardedAt])
+}
+
+model chats {
+  id          String    @id
+  userId      String
+  title       String
+  path        String
+  sharePath   String?
+  campaignId  String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  discardedAt DateTime?
+
+  user     users      @relation(fields: [userId], references: [id], onDelete: Restrict)
+  messages messages[]
+
+  @@index([userId, discardedAt])
+}
+
+model messages {
+  id          String    @id
+  chatId      String
+  userId      String
+  role        String
+  content     String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  discardedAt DateTime?
+
+  chat chats @relation(fields: [chatId], references: [id], onDelete: Restrict)
+  user users @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([chatId, userId, discardedAt])
+}
+
+model user_credentials {
+  id          String    @id
+  userId      String
+  fbApiToken  String
+  fbAccountId String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  discardedAt DateTime?
+
+  user users @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId, discardedAt])
+}

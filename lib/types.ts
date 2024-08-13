@@ -2,16 +2,24 @@ import { CoreMessage } from 'ai'
 
 export type Message = CoreMessage & {
   id: string
+  chatId?: string
+  userId?: string
+  createdAt?: Date
+  updatedAt?: Date
+  discardedAt?: Date | null
 }
 
 export interface Chat extends Record<string, any> {
   id: string
-  title: string
-  createdAt: Date
   userId: string
+  title: string
   path: string
-  messages: Message[]
-  sharePath?: string
+  campaignId?: string | null
+  messages?: Message[]
+  sharePath?: string | null
+  createdAt: Date
+  updatedAt: Date
+  discardedAt?: Date | null
 }
 
 export type ServerActionResult<Result> = Promise<
@@ -38,4 +46,7 @@ export interface User extends Record<string, any> {
   email: string
   password: string
   salt: string
+  createdAt: Date
+  updatedAt: Date
+  discardedAt: Date | null
 }

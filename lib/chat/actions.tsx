@@ -769,6 +769,7 @@ export const AI = createAI<AIState, UIState>({
                 title,
                 userId,
                 createdAt,
+                updatedAt: createdAt,
                 messages,
                 path
             }
@@ -785,8 +786,7 @@ function isToolResultArray(content: string | ToolResult[]): content is ToolResul
 }
 
 export const getUIStateFromAIState = (aiState: Chat) => {
-    return aiState.messages
-        .filter((message: Message) => message.role !== 'system')
+    return aiState?.messages?.filter((message: Message) => message.role !== 'system')
         .map((message: Message, index: number) => ({
             id: `${aiState.chatId}-${index}`,
             display:
@@ -834,5 +834,5 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                 typeof message.content === 'string' ? (
                     <BotMessage content={message.content}/>
                 ) : null
-        }))
+        }))|| []
 }
