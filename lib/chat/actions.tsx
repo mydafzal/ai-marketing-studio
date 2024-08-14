@@ -187,21 +187,21 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
     }
 }
 
-async function submitUserMessage(content: string) {
+async function submitUserMessage(content: string, contentImages?: []) {
     'use server'
 
     const aiState = getMutableAIState<typeof AI>()
 
     aiState.update({
-        ...aiState.get(),
-        messages: [
-            ...aiState.get().messages,
-            {
-                id: nanoid(),
-                role: 'user',
-                content
-            }
-        ]
+      ...aiState.get(),
+      messages: [
+        ...aiState.get().messages,
+        {
+          id: nanoid(),
+          role: 'user',
+          content: contentImages ? contentImages : content
+        }
+      ]
     })
 
     let textStream: undefined | ReturnType<typeof createStreamableValue<string>>
@@ -761,7 +761,8 @@ export const AI = createAI<AIState, UIState>({
             const userId = session.user.id as string
             const path = `/chat/${chatId}`
 
-            const firstMessageContent = messages[0].content as string
+            const firstMessageContent = (Array.isArray(messages[0].content) ? messages[0].content[0].text : messages[0].content) as string
+
             const title = firstMessageContent.substring(0, 100)
 
             const chat: Chat = {
@@ -813,15 +814,10 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                     </BotCard>
                                 );
                             case 'getEvents':
-                                return (
-                                    <BotCard key={tool.toolCallId}>
-                                        <Events props={tool.result}/>
-                                    </BotCard>
-                                );
                             case 'showAdTextSelection':
                                 return (
                                     <BotCard key={tool.toolCallId}>
-                                        <AdTextSelection props={tool.result.suggestedTexts}/>
+                                        <Events props={tool.result}/>
                                     </BotCard>
                                 );
                             default:
@@ -829,7 +825,7 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                         }
                     })
                 ) : message.role === 'user' ? (
-                    <UserMessage>{message.content as string}</UserMessage>
+                    <UserMessage>{(Array.isArray(message.content) ? message.content[0].text : message.content) as string}</UserMessage>
                 ) : message.role === 'assistant' &&
                 typeof message.content === 'string' ? (
                     <BotMessage content={message.content}/>

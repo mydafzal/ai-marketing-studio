@@ -30,7 +30,60 @@ export function PromptForm({
   const inputRef = React.useRef<HTMLTextAreaElement>(null)
   const { submitUserMessage } = useActions()
   const [_, setMessages] = useUIState<typeof AI>()
+  const fileInputRef = React.useRef<HTMLInputElement>(null)
 
+  const [selectedFiles, setSelectedFiles] = React.useState<FileList | null>(
+    null
+  )
+  const [uploading, setUploading] = React.useState(false)
+  const [urls, setUrls] = React.useState<string[]>([])
+  const handleFileChange = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const files = event.target.files
+    if (!files || files.length === 0) return
+
+    setUploading(true)
+
+    const formData = new FormData()
+    Array.from(files).forEach(file => {
+      formData.append('files', file)
+    })
+
+    try {
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      })
+
+      const data = await response.json()
+      if (response.ok) {
+        setUrls(data.urls)
+
+        const responseMessage = await submitUserMessage(`What’s in this image?`,[
+          {
+            type: 'text',
+            text: 'What’s in this image?'
+          },
+          {
+            type: 'image',
+            image: data.urls[0],
+            mimeType: 'image/png'
+          }
+        ])
+        setMessages(currentMessages => [...currentMessages, responseMessage])
+      } else {
+        console.error('Upload error:', data.error)
+      }
+    } catch (error) {
+      console.error('Upload failed:', error)
+    }
+
+    setUploading(false)
+  }
+  const handleButtonClick = () => {
+    fileInputRef.current?.click()
+  }
   React.useEffect(() => {
     if (inputRef.current) {
       inputRef.current.focus()
@@ -67,21 +120,28 @@ export function PromptForm({
       }}
     >
       <div className="relative flex max-h-60 w-full grow flex-col overflow-hidden bg-background px-8 sm:rounded-md sm:border sm:px-12">
+        <input
+          ref={fileInputRef}
+          style={{ display: 'none' }}
+          type="file"
+          multiple
+          accept="image/*"
+          onChange={handleFileChange}
+        />
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
               variant="outline"
               size="icon"
               className="absolute left-0 top-[14px] size-8 rounded-full bg-background p-0 sm:left-4"
-              onClick={() => {
-                router.push('/new')
-              }}
+              onClick={handleButtonClick}
+              disabled={uploading}
             >
               <IconPlus />
-              <span className="sr-only">New Chat</span>
+              <span className="sr-only">Upload Images</span>
             </Button>
           </TooltipTrigger>
-          <TooltipContent>New Chat</TooltipContent>
+          <TooltipContent>You can upload up to 10 images</TooltipContent>
         </Tooltip>
         <Textarea
           ref={inputRef}
