@@ -814,10 +814,15 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                     </BotCard>
                                 );
                             case 'getEvents':
-                            case 'showAdTextSelection':
                                 return (
                                     <BotCard key={tool.toolCallId}>
                                         <Events props={tool.result}/>
+                                    </BotCard>
+                                );
+                            case 'showAdTextSelection':
+                                return (
+                                    <BotCard key={tool.toolCallId}>
+                                        <AdTextSelection props={tool.result.suggestedTexts}/>
                                     </BotCard>
                                 );
                             default:
