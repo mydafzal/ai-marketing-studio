@@ -1,6 +1,8 @@
 'use client'
 
 import { IconSun, IconUser } from '@/components/ui/icons'
+import { UserContent, TextPart, ImagePart } from 'ai'
+import Image from 'next/image'
 import { cn } from '@/lib/utils'
 import { spinner } from './spinner'
 import { CodeBlock } from '../ui/codeblock'
@@ -12,16 +14,42 @@ import { useStreamableText } from '@/lib/hooks/use-streamable-text'
 
 // Different types of message bubbles.
 
-export function UserMessage({ children }: { children: React.ReactNode }) {
+export function UserMessage({
+  userContent,
+  children
+}: {
+  userContent?: UserContent
+  children: React.ReactNode
+}) {
   return (
-    <div className="group relative flex items-start md:-ml-12">
-      <div className="flex size-[25px] shrink-0 select-none items-center justify-center rounded-md border bg-background shadow-sm">
-        <IconUser />
+    <>
+      <div className="group relative flex items-start md:-ml-12">
+        <div className="flex size-[25px] shrink-0 select-none items-center justify-center rounded-md border bg-background shadow-sm">
+          <IconUser />
+        </div>
+        {Array.isArray(userContent) ? (
+          userContent
+            .filter(message => message.type === 'image')
+            .map((message, idx) => (
+              <div key={idx} className="ml-4 flex-1 pl-2">
+                <Image
+                  src={(message as ImagePart).image as string}
+                  alt="Reeply Logo"
+                  className="hidden mt-4 mr-2 dark:block"
+                  style={{ width: '500px', height: 'auto' }}
+                  width={300}
+                  height={160}
+                  sizes="(max-width: 500px) 100vw, 33vw"
+                />
+              </div>
+            ))
+        ) : (
+          <div className="ml-4 flex-1 space-y-2 overflow-hidden pl-2">
+            {children}
+          </div>
+        )}
       </div>
-      <div className="ml-4 flex-1 space-y-2 overflow-hidden pl-2">
-        {children}
-      </div>
-    </div>
+    </>
   )
 }
 

@@ -2,13 +2,14 @@
 
 import * as React from 'react'
 import Textarea from 'react-textarea-autosize'
-
-import { useActions, useUIState } from 'ai/rsc'
+import { UserContent, TextPart, ImagePart } from 'ai'
+import { useActions, useUIState, getMutableAIState } from 'ai/rsc'
+import chatToCampaignMapping from "@/lib/api/fasty-bot/helpers/campaign-id-list";
 
 import { UserMessage } from './stocks/message'
 import { type AI } from '@/lib/chat/actions'
 import { Button } from '@/components/ui/button'
-import { IconArrowElbow, IconPlus } from '@/components/ui/icons'
+import { IconArrowElbow, IconPlus, IconSpinner } from '@/components/ui/icons'
 import {
   Tooltip,
   TooltipContent,
@@ -16,7 +17,7 @@ import {
 } from '@/components/ui/tooltip'
 import { useEnterSubmit } from '@/lib/hooks/use-enter-submit'
 import { nanoid } from 'nanoid'
-import { useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 
 export function PromptForm({
   input,
@@ -25,13 +26,14 @@ export function PromptForm({
   input: string
   setInput: (value: string) => void
 }) {
-  const router = useRouter()
+  
+  const { id } = useParams()
   const { formRef, onKeyDown } = useEnterSubmit()
   const inputRef = React.useRef<HTMLTextAreaElement>(null)
   const { submitUserMessage } = useActions()
   const [_, setMessages] = useUIState<typeof AI>()
-  const fileInputRef = React.useRef<HTMLInputElement>(null)
 
+  const fileInputRef = React.useRef<HTMLInputElement>(null)
   const [selectedFiles, setSelectedFiles] = React.useState<FileList | null>(
     null
   )
@@ -46,6 +48,9 @@ export function PromptForm({
     setUploading(true)
 
     const formData = new FormData()
+    const campaignId = chatToCampaignMapping[id as string];
+
+    formData.append('id', (campaignId || id)  as string)
     Array.from(files).forEach(file => {
       formData.append('files', file)
     })
@@ -59,18 +64,33 @@ export function PromptForm({
       const data = await response.json()
       if (response.ok) {
         setUrls(data.urls)
-
-        const responseMessage = await submitUserMessage(`What’s in this image?`,[
+        const textPrompt = ''
+        const messageContent: UserContent = [
           {
             type: 'text',
-            text: 'What’s in this image?'
+            text: textPrompt
           },
-          {
+          ...data.urls.map((url: string) => ({
             type: 'image',
-            image: data.urls[0],
+            image: url,
             mimeType: 'image/png'
+          }))
+        ]
+        setMessages(currentMessages => [
+          ...currentMessages,
+          {
+            id: nanoid(),
+            display: (
+              <UserMessage userContent={messageContent}>
+                {textPrompt}
+              </UserMessage>
+            )
           }
         ])
+        const responseMessage = await submitUserMessage(
+          textPrompt,
+          messageContent
+        )
         setMessages(currentMessages => [...currentMessages, responseMessage])
       } else {
         console.error('Upload error:', data.error)
@@ -137,7 +157,7 @@ export function PromptForm({
               onClick={handleButtonClick}
               disabled={uploading}
             >
-              <IconPlus />
+              {uploading ? <IconSpinner /> : <IconPlus />}
               <span className="sr-only">Upload Images</span>
             </Button>
           </TooltipTrigger>

@@ -13,6 +13,7 @@ import {Stocks} from '@/components/stocks/stocks'
 import {StockSkeleton} from '@/components/stocks/stock-skeleton'
 import {AdTextSelection} from '@/components/stocks/ad-text-selection'
 
+import { TextPart, ImagePart  } from 'ai'
 
 import {formatNumber, nanoid, runAsyncFnWithoutBlocking, sleep} from '@/lib/utils'
 import {saveChat} from '@/app/actions'
@@ -32,6 +33,7 @@ export async function confirmAdText(campaignName: string, selectedTexts: string[
     'use server'
 
     const aiState = getMutableAIState<typeof AI>();
+    
     const concatenatedTexts = selectedTexts.join(', ');
 
     const confirmingText = createStreamableUI(
@@ -187,7 +189,7 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
     }
 }
 
-async function submitUserMessage(content: string, contentImages?: []) {
+async function submitUserMessage(content: string, contentImages?: Array<TextPart | ImagePart>) {
     'use server'
 
     const aiState = getMutableAIState<typeof AI>()
@@ -227,7 +229,9 @@ async function submitUserMessage(content: string, contentImages?: []) {
     Open the conversation:
     
     If the user says he wants to create a campaign, ask him if he wants to run a lead campaign or a campaign to recruit employees.
-    
+    If the user sent message contain images to the campaign please confirm that "Would you like to generate ad text examples for these images?" to the user, Please waiting for user confirm, then user response Yes. Please generate ad text examples about current campaign for each specific image
+
+
     Wait for the user’s response:
     After the user told you what he wants with his campaign follow these Survey Steps in order:
     
@@ -295,7 +299,6 @@ async function submitUserMessage(content: string, contentImages?: []) {
     - "[User has changed the daily budget to $150]" means that the user has adjusted the daily budget to $150 in the UI.
     
     If the user requests setting or changing the ad budget, always first make sure that he tells you the amount. If the message of the user does not yet contain the amount of budget ask the user first for how much he wants to change ad budget. Once he tells you the amount always call \`show_ad_budget_ui\` to show the budget UI.
-    
     If you want to show campaign results, call \`get_campaign_results\`.
     If you want to provide ad texts to the user Call \`showAdTextSelection\` to show the ad text selection UI and let the user choose or input their ad text.
     If the user wants to pause a campaign, or complete another specific task, respond that you are a demo and cannot perform that action.
@@ -761,7 +764,7 @@ export const AI = createAI<AIState, UIState>({
             const userId = session.user.id as string
             const path = `/chat/${chatId}`
 
-            const firstMessageContent = (Array.isArray(messages[0].content) ? messages[0].content[0].text : messages[0].content) as string
+            const firstMessageContent = (Array.isArray(messages[0].content) ? (messages[0].content[0] as TextPart).text  : messages[0].content) as string
 
             const title = firstMessageContent.substring(0, 100)
 
@@ -830,7 +833,7 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                         }
                     })
                 ) : message.role === 'user' ? (
-                    <UserMessage>{(Array.isArray(message.content) ? message.content[0].text : message.content) as string}</UserMessage>
+                    <UserMessage userContent={message.content}>{(Array.isArray(message.content) ? (message.content[0] as TextPart).text  : message.content) as string}</UserMessage>
                 ) : message.role === 'assistant' &&
                 typeof message.content === 'string' ? (
                     <BotMessage content={message.content}/>
