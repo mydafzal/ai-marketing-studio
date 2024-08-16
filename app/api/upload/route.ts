@@ -9,11 +9,6 @@ const s3Config: S3ClientConfig = {
   }
 }
 
-export const config = {
-  api: {
-    bodyParser: false // Disable the built-in body parser to handle file uploads manually
-  }
-}
 
 const s3Client = new S3Client(s3Config)
 
