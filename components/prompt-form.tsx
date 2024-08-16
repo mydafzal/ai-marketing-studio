@@ -14,6 +14,7 @@ import {
   TooltipContent,
   TooltipTrigger
 } from '@/components/ui/tooltip'
+import { Toaster, toast } from 'sonner'
 import { useEnterSubmit } from '@/lib/hooks/use-enter-submit'
 import { nanoid } from 'nanoid'
 import { useParams } from 'next/navigation'
@@ -53,14 +54,16 @@ export function PromptForm({
       formData.append('files', file)
     })
 
+    toast.info('Uploading your images, please wait...')
     try {
       const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData
       })
-
+      
       const data = await response.json()
       if (response.ok) {
+        toast.success('Images uploaded successfully!')
         setUrls(data.urls)
         const textPrompt = ''
         const messageContent: UserContent = [
@@ -91,10 +94,10 @@ export function PromptForm({
         )
         setMessages(currentMessages => [...currentMessages, responseMessage]);
       } else {
-        console.error('Upload error:', data.error)
+        toast.error('Failed to upload the image. Please try again.')
       }
     } catch (error) {
-      console.error('Upload failed:', error)
+      toast.error('Failed to upload the image. Please try again.')
     }
 
     setUploading(false)
