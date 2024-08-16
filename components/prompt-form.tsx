@@ -4,8 +4,7 @@ import * as React from 'react'
 import Textarea from 'react-textarea-autosize'
 import { UserContent, TextPart, ImagePart } from 'ai'
 import { useActions, useUIState, getMutableAIState } from 'ai/rsc'
-import chatToCampaignMapping from "@/lib/api/fasty-bot/helpers/campaign-id-list";
-
+import chatToCampaignMapping from '@/lib/api/fasty-bot/helpers/campaign-id-list'
 import { UserMessage } from './stocks/message'
 import { type AI } from '@/lib/chat/actions'
 import { Button } from '@/components/ui/button'
@@ -26,7 +25,6 @@ export function PromptForm({
   input: string
   setInput: (value: string) => void
 }) {
-  
   const { id } = useParams()
   const { formRef, onKeyDown } = useEnterSubmit()
   const inputRef = React.useRef<HTMLTextAreaElement>(null)
@@ -48,9 +46,9 @@ export function PromptForm({
     setUploading(true)
 
     const formData = new FormData()
-    const campaignId = chatToCampaignMapping[id as string];
+    const campaignId = chatToCampaignMapping[id as string]
 
-    formData.append('id', (campaignId || id)  as string)
+    formData.append('id', (campaignId || id) as string)
     Array.from(files).forEach(file => {
       formData.append('files', file)
     })
@@ -91,7 +89,7 @@ export function PromptForm({
           textPrompt,
           messageContent
         )
-        setMessages(currentMessages => [...currentMessages, responseMessage])
+        setMessages(currentMessages => [...currentMessages, responseMessage]);
       } else {
         console.error('Upload error:', data.error)
       }

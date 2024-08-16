@@ -12,6 +12,7 @@ import {StocksSkeleton} from '@/components/stocks/stocks-skeleton'
 import {Stocks} from '@/components/stocks/stocks'
 import {StockSkeleton} from '@/components/stocks/stock-skeleton'
 import {AdTextSelection} from '@/components/stocks/ad-text-selection'
+import {ChatImage} from '@/components/chat-images'
 
 import { TextPart, ImagePart  } from 'ai'
 
@@ -454,6 +455,60 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                     )
                 }
             },
+            getCampaignImages: {
+                description:
+                    'Get the current images of campaign of a given digital marketing campaign from this user. Use this to show the campaign images to the user.',
+                parameters: z.object({
+                }),
+                generate: async function* ({}) {
+                    yield (
+                        <BotCard>
+                            <StockSkeleton/>
+                        </BotCard>
+                    )
+
+                    await sleep(1000)
+
+                    const toolCallId = nanoid()
+
+                    aiState.done({
+                        ...aiState.get(),
+                        messages: [
+                            ...aiState.get().messages,
+                            {
+                                id: nanoid(),
+                                role: 'assistant',
+                                content: [
+                                    {
+                                        type: 'tool-call',
+                                        toolName: 'getCampaignImages',
+                                        toolCallId,
+                                        args: {}
+                                    }
+                                ]
+                            },
+                            {
+                                id: nanoid(),
+                                role: 'tool',
+                                content: [
+                                    {
+                                        type: 'tool-result',
+                                        toolName: 'getCampaignImages',
+                                        toolCallId,
+                                        result: {}
+                                    }
+                                ]
+                            }
+                        ]
+                    })
+
+                    return (
+                        <BotCard>
+                            <ChatImage/>
+                        </BotCard>
+                    )
+                }
+            },
             showAdBudgetUI: {
                 description:
                     'Show Facebook Ad Campaign name and the UI to set ad budget. Use this if the user wants to change his ad budget.',
@@ -826,6 +881,12 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                 return (
                                     <BotCard key={tool.toolCallId}>
                                         <AdTextSelection props={tool.result.suggestedTexts}/>
+                                    </BotCard>
+                                );
+                            case 'getCampaignImages':
+                                return (
+                                    <BotCard key={tool.toolCallId}>
+                                        <ChatImage/>
                                     </BotCard>
                                 );
                             default:

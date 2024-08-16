@@ -27,22 +27,25 @@ export function UserMessage({
         <div className="flex size-[25px] shrink-0 select-none items-center justify-center rounded-md border bg-background shadow-sm">
           <IconUser />
         </div>
+        
         {Array.isArray(userContent) ? (
-          userContent
+          <div className=" flex flex-wrap ">
+            {userContent
             .filter(message => message.type === 'image')
             .map((message, idx) => (
-              <div key={idx} className="ml-4 flex-1 pl-2">
+              <div key={idx} className="p-2 w-1/2">
                 <Image
                   src={(message as ImagePart).image as string}
-                  alt="Reeply Logo"
-                  className="hidden mt-4 mr-2 dark:block"
+                  alt=""
+                  className=" mt-4 mr-2 "
                   style={{ width: '500px', height: 'auto' }}
                   width={300}
                   height={160}
                   sizes="(max-width: 500px) 100vw, 33vw"
                 />
               </div>
-            ))
+            ))}
+          </div>
         ) : (
           <div className="ml-4 flex-1 space-y-2 overflow-hidden pl-2">
             {children}
