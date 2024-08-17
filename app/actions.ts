@@ -1,11 +1,11 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
-import { redirect } from 'next/navigation'
-import { kv } from '@vercel/kv'
+import {revalidatePath} from 'next/cache'
+import {redirect} from 'next/navigation'
+import {kv} from '@vercel/kv'
 
-import { auth } from '@/auth'
-import { type Chat } from '@/lib/types'
+import {auth} from '@/auth'
+import {type Chat} from '@/lib/types'
 
 export async function getChats(userId?: string | null) {
   if (!userId) {
@@ -153,4 +153,38 @@ export async function getMissingKeys() {
   return keysRequired
     .map(key => (process.env[key] ? '' : key))
     .filter(key => key !== '')
+}
+
+export async function updateChatExtraDetails(chatId: string, extraDetails: string) {
+  const session = await auth()
+
+  if (!session || !session.user) {
+    return {
+      error: 'User not authenticated'
+    }
+  }
+
+  try {
+    // Get the existing chat data
+    const chatKey = `chat:${chatId}`
+    const existingChat = await kv.hgetall(chatKey)
+
+    if (!existingChat) {
+      return {
+        error: 'Chat not found'
+      }
+    }
+
+    // Add the extraDetails field to the existing chat data
+    await kv.hset(chatKey, { extraDetails })
+
+    return {
+      success: true
+    }
+  } catch (error) {
+    console.error(`Error updating extraDetails for chat ${chatId}:`, error)
+    return {
+      error: 'Something went wrong'
+    }
+  }
 }
