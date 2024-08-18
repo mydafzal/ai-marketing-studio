@@ -15,12 +15,13 @@ import {AdTextSelection} from '@/components/stocks/ad-text-selection'
 
 
 import {formatNumber, nanoid, runAsyncFnWithoutBlocking, sleep} from '@/lib/utils'
-import {saveChat} from '@/app/actions'
+import {fetchChatExtraDetails, saveChat} from '@/app/actions'
 import {SpinnerMessage, UserMessage} from '@/components/stocks/message'
 import {Chat, Message} from '@/lib/types';
 import {auth} from '@/auth'
 import {setDailyCampaignBudget} from '@/lib/api/fasty-bot/set-daily-campaign-budget';
 import {getCampaignIdFromUrl} from "@/lib/api/fasty-bot/helpers/campaign-id-from-url-helper";
+import {getChatIdFromUrl} from "@/lib/api/fasty-bot/helpers/chat-id-from-url-helper";
 
 interface ToolResult {
     toolName: string;
@@ -192,6 +193,17 @@ async function submitUserMessage(content: string) {
 
     const aiState = getMutableAIState<typeof AI>()
 
+    const chatId = getChatIdFromUrl()?.toString() || '';
+
+    // Fetch extra details
+    let extraDetailsText = '';
+    if (chatId) {
+        const extraDetailsResult = await fetchChatExtraDetails(chatId);
+        if (extraDetailsResult.success && extraDetailsResult.extraDetails) {
+            extraDetailsText = `\n\nSome important contextual information about this client can be seen here: ${extraDetailsResult.extraDetails}`;
+        }
+    }
+
     aiState.update({
         ...aiState.get(),
         messages: [
@@ -299,8 +311,7 @@ async function submitUserMessage(content: string) {
     if you want to show campaign results always call \`get_campaign_results\` this basically shows the chart with the campaign results. if they ask about certain metrics about the campaign dont show the chart instead discuss those metrics.
     If you want to provide ad texts to the user Call \`showAdTextSelection\` to show the ad text selection UI and let the user choose or input their ad text.
     If the user wants to pause a campaign, or complete another specific task, respond that you are a demo and cannot perform that action.
-    
-    Besides that, you can also chat with users and perform budget calculations if needed.`,
+    Besides that, you can also chat with users and perform budget calculations if needed. ${extraDetailsText}`,
         messages: [
             ...aiState.get().messages.map((message: any) => ({
                 role: message.role,
