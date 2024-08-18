@@ -227,3 +227,82 @@ export async function fetchChatExtraDetails(chatId: string) {
         }
     }
 }
+
+export async function updateChatFbCampaignId(chatSlug: string, fbCampaignId: string) {
+    const session = await auth()
+
+    if (!session || !session.user) {
+        return {
+            error: 'User not authenticated'
+        }
+    }
+
+    try {
+        // Construct the chat key using the chatSlug
+        const chatKey = `chat:${chatSlug}`
+
+        // Check if the chat exists
+        const existingChat = await kv.hgetall(chatKey)
+
+        if (!existingChat) {
+            return {
+                error: 'Chat not found'
+            }
+        }
+
+        // Update or insert the fbCampaignId field
+        await kv.hset(chatKey, {fbCampaignId})
+
+        return {
+            success: true,
+            message: 'Facebook Campaign ID updated successfully'
+        }
+    } catch (error) {
+        console.error(`Error updating fbCampaignId for chat ${chatSlug}:`, error)
+        return {
+            error: 'Something went wrong'
+        }
+    }
+}
+
+export async function fetchChatFbCampaignId(chatSlug: string) {
+    const session = await auth()
+
+    if (!session || !session.user) {
+        return {
+            error: 'User not authenticated'
+        }
+    }
+
+    try {
+        // Construct the chat key using the chatSlug
+        const chatKey = `chat:${chatSlug}`
+
+        // Fetch the chat data
+        const chatData = await kv.hgetall(chatKey)
+
+        if (!chatData) {
+            return {
+                error: 'Chat not found'
+            }
+        }
+
+        const fbCampaignId = chatData.fbCampaignId
+
+        if (!fbCampaignId) {
+            return {
+                error: 'Facebook Campaign ID not found for this chat'
+            }
+        }
+
+        return {
+            success: true,
+            fbCampaignId
+        }
+    } catch (error) {
+        console.error(`Error fetching fbCampaignId for chat ${chatSlug}:`, error)
+        return {
+            error: 'Something went wrong'
+        }
+    }
+}
