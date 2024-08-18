@@ -1,11 +1,11 @@
-import { getCampaignIdFromUrl } from "@/lib/api/fasty-bot/helpers/campaign-id-from-url-helper";
+import {getCampaignIdFromUrl} from "@/lib/api/fasty-bot/helpers/campaign-id-from-url-helper";
 
 async function getCampaignHistoricalLeadsResults(campaignId: string, timeline: 'today' | 'last_week' | 'last_month' | 'last_year'): Promise<{
     campaign_id: string;
     timeline: string;
     lead_results: Array<{ date: string; leads: number }>
 }> {
-    let fetchedCampaignId = getCampaignIdFromUrl()?.toString() || '0';
+    let fetchedCampaignId = campaignId || (await getCampaignIdFromUrl())?.toString() || '0';
 
     // Check if mock data should be returned
     if (process.env.NEXT_PUBLIC_MOCK_CHART_DATA === '1') {
@@ -52,6 +52,7 @@ async function getCampaignHistoricalLeadsResults(campaignId: string, timeline: '
         };
     }
 }
+
 function getMockData(campaignId: string, timeline: string) {
     const startDate = new Date('2024-06-26');
     const endDate = new Date('2024-07-25');

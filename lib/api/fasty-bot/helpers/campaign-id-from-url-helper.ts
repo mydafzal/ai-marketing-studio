@@ -1,13 +1,51 @@
-import chatToCampaignMapping from "@/lib/api/fasty-bot/helpers/campaign-id-list";
-
-// Import the Next.js types without modifying them
 import type {NEXT_DATA} from 'next/dist/shared/lib/utils';
 
-export function getCampaignIdFromUrl(): string | undefined {
+interface CampaignIdResult {
+    success?: boolean;
+    fbCampaignId?: string | {};
+    error?: string;
+}
+
+async function fetchCampaignId(chatId: string, isServer: boolean): Promise<string | undefined> {
+    if (isServer) {
+        // Server-side fetch
+        const {fetchChatFbCampaignId} = await import('@/app/actions');
+        try {
+            const result: CampaignIdResult = await fetchChatFbCampaignId(chatId);
+            if (result.success && typeof result.fbCampaignId === 'string') {
+                return result.fbCampaignId;
+            } else {
+                console.warn(`No valid campaign ID found for chat ID: ${chatId}`);
+                return undefined;
+            }
+        } catch (error) {
+            console.error(`Server-side error fetching campaign ID for chat ID ${chatId}:`, error);
+            return undefined;
+        }
+    } else {
+        // Client-side fetch
+        try {
+            const response = await fetch(`/api/admin/fetch-chat-fb-campaign-id?chatSlug=${chatId}`);
+            const result: CampaignIdResult = await response.json();
+            if (result.success && typeof result.fbCampaignId === 'string') {
+                return result.fbCampaignId;
+            } else {
+                console.warn(`No valid campaign ID found for chat ID: ${chatId}`);
+                return undefined;
+            }
+        } catch (error) {
+            console.error(`Client-side error fetching campaign ID for chat ID ${chatId}:`, error);
+            return undefined;
+        }
+    }
+}
+
+export async function getCampaignIdFromUrl(): Promise<string | undefined> {
     let chatId: string | null = null;
+    const isServer = typeof window === 'undefined';
 
     // Try to get chatId in different environments
-    if (typeof window !== 'undefined') {
+    if (!isServer) {
         // Client-side
         const match = window.location.pathname.match(/\/chat\/([^\/]+)/);
         chatId = match ? match[1] : null;
@@ -39,12 +77,5 @@ export function getCampaignIdFromUrl(): string | undefined {
         return undefined;
     }
 
-    const campaignId = chatToCampaignMapping[chatId];
-
-    if (!campaignId) {
-        console.warn(`No campaign ID found for chat ID: ${chatId}`);
-        return undefined;
-    }
-
-    return campaignId;
+    return fetchCampaignId(chatId, isServer);
 }
