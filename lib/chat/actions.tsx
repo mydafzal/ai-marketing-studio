@@ -100,7 +100,7 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
 
     const aiState = getMutableAIState<typeof AI>();
     const totalBudget = budget * days;
-    let campaignId = Number(getCampaignIdFromUrl()) || 0; // for now just say you are updating even if no campaign id in place
+    let campaignId = Number(await getCampaignIdFromUrl()) || 0; // for now just say you are updating even if no campaign id in place
     if (process.env.NEXT_PUBLIC_HARDCODED_MODE === '1') {
         campaignId = Number(process.env.NEXT_PUBLIC_HARDCODED_CAMPAIGN_ID)
     }
@@ -296,7 +296,7 @@ async function submitUserMessage(content: string) {
     
     If the user requests setting or changing the ad budget, always first make sure that he tells you the amount. If the message of the user does not yet contain the amount of budget ask the user first for how much he wants to change ad budget. Once he tells you the amount always call \`show_ad_budget_ui\` to show the budget UI.
     
-    If you want to show campaign results, call \`get_campaign_results\`.
+    if you want to show campaign results always call \`get_campaign_results\` this basically shows the chart with the campaign results. if they ask about certain metrics about the campaign dont show the chart instead discuss those metrics.
     If you want to provide ad texts to the user Call \`showAdTextSelection\` to show the ad text selection UI and let the user choose or input their ad text.
     If the user wants to pause a campaign, or complete another specific task, respond that you are a demo and cannot perform that action.
     

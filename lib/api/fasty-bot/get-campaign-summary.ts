@@ -1,4 +1,4 @@
-import { getCampaignIdFromUrl } from "@/lib/api/fasty-bot/helpers/campaign-id-from-url-helper";
+import {getCampaignIdFromUrl} from "@/lib/api/fasty-bot/helpers/campaign-id-from-url-helper";
 
 interface CampaignSummary {
     campaign_id: string;
@@ -16,8 +16,19 @@ interface CampaignSummary {
 }
 
 export async function getCampaignSummary(): Promise<CampaignSummary> {
-    let fetchedCampaignId = getCampaignIdFromUrl()?.toString() || '0';
+    let fetchedCampaignId: string | undefined;
 
+    try {
+        fetchedCampaignId = await getCampaignIdFromUrl();
+        console.log("Fetched Campaign ID:", fetchedCampaignId);
+    } catch (error) {
+        console.error("Error fetching campaign ID:", error);
+    }
+
+    if (!fetchedCampaignId) {
+        console.warn("No campaign ID fetched, using default '0'");
+        fetchedCampaignId = '0';
+    }
     // Check if mock data should be returned
     if (process.env.NEXT_PUBLIC_MOCK_CHART_DATA === '1') {
         return getMockData(fetchedCampaignId);
@@ -85,4 +96,4 @@ function getMockData(campaignId: string): CampaignSummary {
     };
 }
 
-export type { CampaignSummary };
+export type {CampaignSummary};
