@@ -5,7 +5,7 @@ import { ChatList } from '@/components/chat-list'
 import { ChatPanel } from '@/components/chat-panel'
 import { EmptyScreen } from '@/components/empty-screen'
 import { useLocalStorage } from '@/lib/hooks/use-local-storage'
-import { useEffect, useCallback, useState } from 'react'
+import { useEffect, useRef, useCallback, useState } from 'react'
 import { useUIState, useAIState } from 'ai/rsc'
 import { Message, Session } from '@/lib/types'
 import { usePathname, useRouter } from 'next/navigation'
@@ -28,7 +28,7 @@ export function Chat({ id, className, session, missingKeys }: ChatProps) {
   const [input, setInput] = useState('')
   const [messages] = useUIState()
   const [aiState, setAIState] = useAIState()
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+  const lastUpdatedRef = useRef<Date | null>(null);
 
   const [_, setNewChatId] = useLocalStorage('newChatId', id)
 
@@ -48,7 +48,6 @@ export function Chat({ id, className, session, missingKeys }: ChatProps) {
   }, [aiState.messages, router])
 
   const fetchSummaryData = useCallback(async () => {
-    console.log("de");
     try {
       const summary = await getCampaignSummary()
       setAIState({
@@ -62,7 +61,7 @@ export function Chat({ id, className, session, missingKeys }: ChatProps) {
           }
         ]
       })
-      setLastUpdated(new Date())
+      lastUpdatedRef.current = new Date(); 
     } catch (error) {
       console.error('Error fetching campaign data:', error)
     }
@@ -74,26 +73,17 @@ export function Chat({ id, className, session, missingKeys }: ChatProps) {
 
   useEffect(() => {
     const ONE_HOUR = 60 * 60 * 1000
-    const now = new Date()
-
-    if (lastUpdated && now.getTime() - lastUpdated.getTime() > ONE_HOUR) {
-      fetchSummaryData()
-    }
-
     const interval = setInterval(
       () => {
-        if (
-          lastUpdated &&
-          new Date().getTime() - lastUpdated.getTime() > ONE_HOUR
-        ) {
+        if (lastUpdatedRef.current && (new Date().getTime() - lastUpdatedRef.current.getTime()) > ONE_HOUR) {
           fetchSummaryData()
         }
       },
-      5 * 60 * 1000
+     1 * 2 * 1000
     )
 
-    return () => clearInterval(interval)
-  }, [lastUpdated, fetchSummaryData])
+    return () => clearInterval(interval);
+  }, [lastUpdatedRef, fetchSummaryData])
 
   useEffect(() => {
     setNewChatId(id)
