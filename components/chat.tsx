@@ -50,7 +50,7 @@ export function Chat({ id, className, session, missingKeys }: ChatProps) {
   const fetchSummaryData = useCallback(async () => {
     try {
       const summary = await getCampaignSummary()
-      setAIState({
+      setAIState((aiState: any) => ({
         ...aiState,
         messages: [
           ...aiState.messages,
@@ -60,7 +60,7 @@ export function Chat({ id, className, session, missingKeys }: ChatProps) {
             content: `Knowledge Base about current campaign infomations: ${JSON.stringify(summary)}`
           }
         ]
-      })
+      }))
       lastUpdatedRef.current = new Date(); 
     } catch (error) {
       console.error('Error fetching campaign data:', error)
@@ -69,21 +69,21 @@ export function Chat({ id, className, session, missingKeys }: ChatProps) {
 
   useEffect(() => {
     fetchSummaryData()
-  }, [id, fetchSummaryData])
+  }, [])
 
   useEffect(() => {
-    const ONE_HOUR = 60 * 60 * 1000
+    const oneHour = 60 * 60 * 1000
+    const fiveMins = 5 * 60 * 1000
     const interval = setInterval(
       () => {
-        if (lastUpdatedRef.current && (new Date().getTime() - lastUpdatedRef.current.getTime()) > ONE_HOUR) {
+        if (lastUpdatedRef.current && (new Date().getTime() - lastUpdatedRef.current.getTime()) > oneHour) {
           fetchSummaryData()
         }
-      },
-     1 * 2 * 1000
+      }, fiveMins
     )
 
     return () => clearInterval(interval);
-  }, [lastUpdatedRef, fetchSummaryData])
+  }, [])
 
   useEffect(() => {
     setNewChatId(id)
