@@ -5,12 +5,15 @@ import { ChatList } from '@/components/chat-list'
 import { ChatPanel } from '@/components/chat-panel'
 import { EmptyScreen } from '@/components/empty-screen'
 import { useLocalStorage } from '@/lib/hooks/use-local-storage'
-import { useEffect, useState } from 'react'
+import { useEffect, useCallback, useState } from 'react'
 import { useUIState, useAIState } from 'ai/rsc'
 import { Message, Session } from '@/lib/types'
 import { usePathname, useRouter } from 'next/navigation'
 import { useScrollAnchor } from '@/lib/hooks/use-scroll-anchor'
 import { toast } from 'sonner'
+import {
+  getCampaignSummary
+} from '@/lib/api/fasty-bot/get-campaign-summary'
 
 export interface ChatProps extends React.ComponentProps<'div'> {
   initialMessages?: Message[]
@@ -24,7 +27,8 @@ export function Chat({ id, className, session, missingKeys }: ChatProps) {
   const path = usePathname()
   const [input, setInput] = useState('')
   const [messages] = useUIState()
-  const [aiState] = useAIState()
+  const [aiState, setAIState] = useAIState()
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
 
   const [_, setNewChatId] = useLocalStorage('newChatId', id)
 
@@ -42,6 +46,54 @@ export function Chat({ id, className, session, missingKeys }: ChatProps) {
       router.refresh()
     }
   }, [aiState.messages, router])
+
+  const fetchSummaryData = useCallback(async () => {
+    console.log("de");
+    try {
+      const summary = await getCampaignSummary()
+      setAIState({
+        ...aiState,
+        messages: [
+          ...aiState.messages,
+          {
+            id: 'campaign-info-data',
+            role: 'system',
+            content: `Knowledge Base about current campaign infomations: ${JSON.stringify(summary)}`
+          }
+        ]
+      })
+      setLastUpdated(new Date())
+    } catch (error) {
+      console.error('Error fetching campaign data:', error)
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchSummaryData()
+  }, [id, fetchSummaryData])
+
+  useEffect(() => {
+    const ONE_HOUR = 60 * 60 * 1000
+    const now = new Date()
+
+    if (lastUpdated && now.getTime() - lastUpdated.getTime() > ONE_HOUR) {
+      fetchSummaryData()
+    }
+
+    const interval = setInterval(
+      () => {
+        if (
+          lastUpdated &&
+          new Date().getTime() - lastUpdated.getTime() > ONE_HOUR
+        ) {
+          fetchSummaryData()
+        }
+      },
+      5 * 60 * 1000
+    )
+
+    return () => clearInterval(interval)
+  }, [lastUpdated, fetchSummaryData])
 
   useEffect(() => {
     setNewChatId(id)
