@@ -12,6 +12,7 @@ import {StocksSkeleton} from '@/components/stocks/stocks-skeleton'
 import {Stocks} from '@/components/stocks/stocks'
 import {StockSkeleton} from '@/components/stocks/stock-skeleton'
 import {AdTextSelection} from '@/components/stocks/ad-text-selection'
+import {AdTextSuggestion} from '@/components/stocks/ad-text-suggestion'
 import {ChatImage} from '@/components/chat-images'
 
 import { TextPart, ImagePart  } from 'ai'
@@ -230,7 +231,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
     Open the conversation:
     
     If the user says he wants to create a campaign, ask him if he wants to run a lead campaign or a campaign to recruit employees.
-    If the user sent message contain images to the campaign please confirm that "Would you like to generate ad text examples for these images?" to the user, Please waiting for user confirm, then user response Yes. Please generate ad text examples about current campaign for each specific image
+    If the user sent message contain images to the campaign please confirm that "Would you like to generate ad text examples for these images?" to the user, Please waiting for user confirm, then user response Yes. Please generate ad text examples about current campaign for each specific image and use \`showSuggestionAdText\` for show text examples and pass  image urls user has send to AI to \`showSuggestionAdText\` .
 
 
     Wait for the user’s response:
@@ -283,7 +284,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
 3. The Emoji-rich version should include relevant emojis throughout the text.
 4. Vary the length and style slightly between versions to offer diverse options.
 5. Label each version as "Version 1: Professional", "Version 2: Emoji-rich", and "Version 3: Conversational".
-
+ALWAYS Use \`showSuggestionAdText\` for show ad texts.
     
     Step 6: Lead Questionnaire: Determine the required information from leads.
     Question: "Do you want to ask for contact details only, or also pre-qualify leads with additional questions such as [examples]? I can help with the creation, or you can provide your ideas."
@@ -302,6 +303,8 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
     If the user requests setting or changing the ad budget, always first make sure that he tells you the amount. If the message of the user does not yet contain the amount of budget ask the user first for how much he wants to change ad budget. Once he tells you the amount always call \`show_ad_budget_ui\` to show the budget UI.
     If you want to show campaign results, call \`get_campaign_results\`.
     If you want to provide ad texts to the user Call \`showAdTextSelection\` to show the ad text selection UI and let the user choose or input their ad text.
+    If you want to generate ad text examples to the user Call \`showSuggestionAdText\` to show the ad text selection UI and let the user choose or input their ad text.
+
     If the user wants to pause a campaign, or complete another specific task, respond that you are a demo and cannot perform that action.
     
     Besides that, you can also chat with users and perform budget calculations if needed.`,
@@ -764,6 +767,68 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                         </BotCard>
                     );
                 }
+            },
+            showSuggestionAdText: {
+                description: 'Show UI to select or input ad text for each image a campaign.',
+                parameters: z.object({
+                    campaignName: z.string().describe('The name of the campaign'),
+                    images: z.array(z.object({
+                        suggestedTexts: z.array(z.object({
+                            image: z.string().optional().describe('The link of the image to display'),
+                            date: z.string(),
+                            text: z.string(),
+                            headline: z.string().optional()  // Make headline optional
+                        })).describe('List of suggested ad texts')})
+                    ).describe('List of images to display')
+                }),
+                generate: async function* ({campaignName, images = []}) {
+                    yield (
+                        <BotCard>
+                            <AdTextSelectionSkeleton/>
+                        </BotCard>
+                    );
+
+                    await sleep(1000);
+
+                    const toolCallId = nanoid();
+                   
+                    aiState.done({
+                        ...aiState.get(),
+                        messages: [
+                            ...aiState.get().messages,
+                            {
+                                id: nanoid(),
+                                role: 'assistant',
+                                content: [
+                                    {
+                                        type: 'tool-call',
+                                        toolName: 'showSuggestionAdText',
+                                        toolCallId,
+                                        args: {campaignName, images}
+                                    }
+                                ]
+                            },
+                            {
+                                id: nanoid(),
+                                role: 'tool',
+                                content: [
+                                    {
+                                        type: 'tool-result',
+                                        toolName: 'showSuggestionAdText',
+                                        toolCallId,
+                                        result: {campaignName, images}
+                                    }
+                                ]
+                            }
+                        ]
+                    });
+
+                    return (
+                        <BotCard>
+                            <AdTextSuggestion props={images}/>
+                        </BotCard>
+                    );
+                }
             }
         }
     });
@@ -881,6 +946,12 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                 return (
                                     <BotCard key={tool.toolCallId}>
                                         <AdTextSelection props={tool.result.suggestedTexts}/>
+                                    </BotCard>
+                                );
+                            case 'showSuggestionAdText':
+                                return (
+                                    <BotCard key={tool.toolCallId}>
+                                        <AdTextSuggestion props={tool.result.images}/>
                                     </BotCard>
                                 );
                             case 'getCampaignImages':

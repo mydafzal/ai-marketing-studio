@@ -66,6 +66,7 @@ export function PromptForm({
         toast.success('Images uploaded successfully!')
         setUrls(data.urls)
         const textPrompt = ''
+        const uploadedDate = new Date().getTime(); 
         const messageContent: UserContent = [
           {
             type: 'text',
@@ -74,6 +75,7 @@ export function PromptForm({
           ...data.urls.map((url: string) => ({
             type: 'image',
             image: url,
+            uploaded_date: uploadedDate,
             mimeType: 'image/png'
           }))
         ]
@@ -92,7 +94,12 @@ export function PromptForm({
           textPrompt,
           messageContent
         )
-        setMessages(currentMessages => [...currentMessages, responseMessage]);
+        const imagesLinks = {
+          id: nanoid(),
+          role: 'system',
+          content: `Knowledge Base: urls of the uploaded images: ${JSON.stringify(data.urls)}, uploaded time is ${new Date()}"`
+        }
+        setMessages(currentMessages => [...currentMessages, responseMessage, imagesLinks])
       } else {
         toast.error('Failed to upload the image. Please try again.')
       }
@@ -108,6 +115,17 @@ export function PromptForm({
   React.useEffect(() => {
     if (inputRef.current) {
       inputRef.current.focus()
+    }
+  }, [])
+  React.useEffect(() => {
+    function eventListener(e: CustomEvent) {
+      const adText = e.detail;
+      setInput(`Title:\n${adText.headline}\n\nDescription:\n${adText.text}`)
+    }
+    window.addEventListener("adjust-adtext", eventListener as EventListener)
+
+    return () => {
+      window.removeEventListener("adjust-adtext", eventListener as EventListener)
     }
   }, [])
 
