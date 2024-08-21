@@ -18,6 +18,13 @@ import { Toaster, toast } from 'sonner'
 import { useEnterSubmit } from '@/lib/hooks/use-enter-submit'
 import { nanoid } from 'nanoid'
 import { useParams } from 'next/navigation'
+import { useAIState } from 'ai/rsc'
+
+const containsTitleAndDescription = (text: string): boolean => {
+  const hasTitle = text.toLowerCase().includes("title:");
+  const hasDescription = text.toLowerCase().includes("description:");
+  return hasTitle && hasDescription;
+};
 
 export function PromptForm({
   input,
@@ -31,6 +38,7 @@ export function PromptForm({
   const inputRef = React.useRef<HTMLTextAreaElement>(null)
   const { submitUserMessage } = useActions()
   const [_, setMessages] = useUIState<typeof AI>()
+  const [aiState, setAIState] = useAIState()
 
   const fileInputRef = React.useRef<HTMLInputElement>(null)
   const [selectedFiles, setSelectedFiles] = React.useState<FileList | null>(
@@ -143,6 +151,19 @@ export function PromptForm({
         const value = input.trim()
         setInput('')
         if (!value) return
+        if (containsTitleAndDescription(input.trim())) {
+          setAIState({
+            ...aiState,
+            messages: [
+              ...aiState.messages,
+              {
+                id: nanoid(),
+                role: 'system',
+                content: `The user has accepted this text as campaign title and campaign description: ${value}`
+              }
+            ]
+          })
+        }
 
         // Optimistically add user message UI
         setMessages(currentMessages => [
