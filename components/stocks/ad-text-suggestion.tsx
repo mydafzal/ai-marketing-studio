@@ -161,12 +161,12 @@ export function AdTextSuggestion({ props }: { props: ImageSuggestionProps[] }) {
   })
 
   let items = images
-    .filter(a => a.uploaded_date)
-    .sort((a, b) => (b.uploaded_date || 0) - (a.uploaded_date || 0))
-  const maxUploadedTime = items[0].uploaded_date
+    .filter(a => a?.uploaded_date)
+    .sort((a, b) => (b?.uploaded_date || 0) - (a?.uploaded_date || 0))
+  const maxUploadedTime = items[0]?.uploaded_date
 
   const latestItems = items.filter(
-    item => item.uploaded_date === maxUploadedTime
+    item => item?.uploaded_date === maxUploadedTime
   )
 
   if (loading) {
