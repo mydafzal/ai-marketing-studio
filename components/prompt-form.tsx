@@ -2,29 +2,21 @@
 
 import * as React from 'react'
 import Textarea from 'react-textarea-autosize'
-import { UserContent, TextPart, ImagePart } from 'ai'
-import { useActions, useUIState, getMutableAIState } from 'ai/rsc'
-import chatToCampaignMapping from '@/lib/api/fasty-bot/helpers/campaign-id-list'
+
+import { useActions, useUIState } from 'ai/rsc'
+
 import { UserMessage } from './stocks/message'
 import { type AI } from '@/lib/chat/actions'
 import { Button } from '@/components/ui/button'
-import { IconArrowElbow, IconPlus, IconSpinner } from '@/components/ui/icons'
+import { IconArrowElbow, IconPlus } from '@/components/ui/icons'
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger
 } from '@/components/ui/tooltip'
-import { Toaster, toast } from 'sonner'
 import { useEnterSubmit } from '@/lib/hooks/use-enter-submit'
 import { nanoid } from 'nanoid'
-import { useParams } from 'next/navigation'
-import { useAIState } from 'ai/rsc'
-
-const containsTitleAndDescription = (text: string): boolean => {
-  const hasTitle = text.toLowerCase().includes("title:");
-  const hasDescription = text.toLowerCase().includes("description:");
-  return hasTitle && hasDescription;
-};
+import { useRouter } from 'next/navigation'
 
 export function PromptForm({
   input,
@@ -33,107 +25,15 @@ export function PromptForm({
   input: string
   setInput: (value: string) => void
 }) {
-  const { id } = useParams()
+  const router = useRouter()
   const { formRef, onKeyDown } = useEnterSubmit()
   const inputRef = React.useRef<HTMLTextAreaElement>(null)
   const { submitUserMessage } = useActions()
   const [_, setMessages] = useUIState<typeof AI>()
-  const [aiState, setAIState] = useAIState()
 
-  const fileInputRef = React.useRef<HTMLInputElement>(null)
-  const [selectedFiles, setSelectedFiles] = React.useState<FileList | null>(
-    null
-  )
-  const [uploading, setUploading] = React.useState(false)
-  const [urls, setUrls] = React.useState<string[]>([])
-  const handleFileChange = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const files = event.target.files
-    if (!files || files.length === 0) return
-
-    setUploading(true)
-
-    const formData = new FormData()
-    const campaignId = chatToCampaignMapping[id as string]
-
-    formData.append('id', (campaignId || id) as string)
-    Array.from(files).forEach(file => {
-      formData.append('files', file)
-    })
-
-    toast.info('Uploading your images, please wait...')
-    try {
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData
-      })
-      
-      const data = await response.json()
-      if (response.ok) {
-        toast.success('Images uploaded successfully!')
-        setUrls(data.urls)
-        const textPrompt = ''
-        const uploadedDate = new Date().getTime(); 
-        const messageContent: UserContent = [
-          {
-            type: 'text',
-            text: textPrompt
-          },
-          ...data.urls.map((url: string) => ({
-            type: 'image',
-            image: url,
-            uploaded_date: uploadedDate,
-            mimeType: 'image/png'
-          }))
-        ]
-        setMessages(currentMessages => [
-          ...currentMessages,
-          {
-            id: nanoid(),
-            display: (
-              <UserMessage userContent={messageContent}>
-                {textPrompt}
-              </UserMessage>
-            )
-          }
-        ])
-        const responseMessage = await submitUserMessage(
-          textPrompt,
-          messageContent
-        )
-        const imagesLinks = {
-          id: nanoid(),
-          role: 'system',
-          content: `Knowledge Base: urls of the uploaded images: ${JSON.stringify(data.urls)}, uploaded time is ${new Date()}"`
-        }
-        setMessages(currentMessages => [...currentMessages, responseMessage, imagesLinks])
-      } else {
-        toast.error('Failed to upload the image. Please try again.')
-      }
-    } catch (error) {
-      toast.error('Failed to upload the image. Please try again.')
-    }
-
-    setUploading(false)
-  }
-  const handleButtonClick = () => {
-    fileInputRef.current?.click()
-  }
   React.useEffect(() => {
     if (inputRef.current) {
       inputRef.current.focus()
-    }
-  }, [])
-  React.useEffect(() => {
-    function eventListener(e: CustomEvent) {
-      const adText = e.detail;
-      setInput(`Title:\n${adText.headline}\n\nDescription:\n${adText.text}`)
-    }
-    window.addEventListener("adjust-adtext", eventListener as EventListener)
-
-    return () => {
-      window.removeEventListener("adjust-adtext", eventListener as EventListener)
     }
   }, [])
 
@@ -151,19 +51,6 @@ export function PromptForm({
         const value = input.trim()
         setInput('')
         if (!value) return
-        if (containsTitleAndDescription(input.trim())) {
-          setAIState({
-            ...aiState,
-            messages: [
-              ...aiState.messages,
-              {
-                id: nanoid(),
-                role: 'system',
-                content: `The user has accepted this text as campaign title and campaign description: ${value}`
-              }
-            ]
-          })
-        }
 
         // Optimistically add user message UI
         setMessages(currentMessages => [
@@ -180,28 +67,21 @@ export function PromptForm({
       }}
     >
       <div className="relative flex max-h-60 w-full grow flex-col overflow-hidden bg-background px-8 sm:rounded-md sm:border sm:px-12">
-        <input
-          ref={fileInputRef}
-          style={{ display: 'none' }}
-          type="file"
-          multiple
-          accept="image/*"
-          onChange={handleFileChange}
-        />
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
               variant="outline"
               size="icon"
               className="absolute left-0 top-[14px] size-8 rounded-full bg-background p-0 sm:left-4"
-              onClick={handleButtonClick}
-              disabled={uploading}
+              onClick={() => {
+                router.push('/new')
+              }}
             >
-              {uploading ? <IconSpinner /> : <IconPlus />}
-              <span className="sr-only">Upload Images</span>
+              <IconPlus />
+              <span className="sr-only">New Chat</span>
             </Button>
           </TooltipTrigger>
-          <TooltipContent>You can upload up to 10 images</TooltipContent>
+          <TooltipContent>New Chat</TooltipContent>
         </Tooltip>
         <Textarea
           ref={inputRef}
