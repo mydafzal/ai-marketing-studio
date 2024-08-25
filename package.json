@@ -14,7 +14,6 @@
   },
   "dependencies": {
     "@ai-sdk/openai": "^0.0.34",
-    "@aws-sdk/client-s3": "^3.433.0",
     "@radix-ui/react-alert-dialog": "^1.1.1",
     "@radix-ui/react-dialog": "^1.1.1",
     "@radix-ui/react-dropdown-menu": "^2.1.1",
@@ -29,7 +28,6 @@
     "@vercel/kv": "^2.0.0",
     "@vercel/og": "^0.6.2",
     "ai": "^3.2.16",
-    "aws-sdk": "^2.1480.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "d3-scale": "^4.0.2",
@@ -76,5 +74,5 @@
     "tailwindcss-animate": "^1.0.7",
     "typescript": "^5.5.2"
   },
-  "packageManager": "pnpm@8.15.2"
+  "packageManager": "pnpm@8.6.3"
 }
