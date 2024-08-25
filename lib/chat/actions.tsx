@@ -20,12 +20,13 @@ import {ChatImage} from '@/components/chat-images'
 import { TextPart, ImagePart  } from 'ai'
 
 import {formatNumber, nanoid, runAsyncFnWithoutBlocking, sleep} from '@/lib/utils'
-import {saveChat} from '@/app/actions'
+import {fetchChatExtraDetails, saveChat} from '@/app/actions'
 import {SpinnerMessage, UserMessage} from '@/components/stocks/message'
 import {Chat, Message} from '@/lib/types';
 import {auth} from '@/auth'
 import {setDailyCampaignBudget} from '@/lib/api/fasty-bot/set-daily-campaign-budget';
 import {getCampaignIdFromUrl} from "@/lib/api/fasty-bot/helpers/campaign-id-from-url-helper";
+import {getChatIdFromUrl} from "@/lib/api/fasty-bot/helpers/chat-id-from-url-helper";
 
 interface ToolResult {
     toolName: string;
@@ -37,7 +38,7 @@ export async function confirmAdText(campaignName: string, selectedTexts: string[
     'use server'
 
     const aiState = getMutableAIState<typeof AI>();
-    
+
     const concatenatedTexts = selectedTexts.join(', ');
 
     const confirmingText = createStreamableUI(
@@ -106,7 +107,7 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
 
     const aiState = getMutableAIState<typeof AI>();
     const totalBudget = budget * days;
-    let campaignId = Number(getCampaignIdFromUrl()) || 0; // for now just say you are updating even if no campaign id in place
+    let campaignId = Number(await getCampaignIdFromUrl()) || 0; // for now just say you are updating even if no campaign id in place
     if (process.env.NEXT_PUBLIC_HARDCODED_MODE === '1') {
         campaignId = Number(process.env.NEXT_PUBLIC_HARDCODED_CAMPAIGN_ID)
     }
@@ -234,6 +235,17 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
 
     const aiState = getMutableAIState<typeof AI>()
 
+    const chatId = getChatIdFromUrl()?.toString() || '';
+
+    // Fetch extra details
+    let extraDetailsText = '';
+    if (chatId) {
+        const extraDetailsResult = await fetchChatExtraDetails(chatId);
+        if (extraDetailsResult.success && extraDetailsResult.extraDetails) {
+            extraDetailsText = `\n\nSome important contextual information about this client can be seen here: ${extraDetailsResult.extraDetails}`;
+        }
+    }
+
     aiState.update({
       ...aiState.get(),
       messages: [
@@ -341,13 +353,12 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
     - "[User has changed the daily budget to $150]" means that the user has adjusted the daily budget to $150 in the UI.
     
     If the user requests setting or changing the ad budget, always first make sure that he tells you the amount. If the message of the user does not yet contain the amount of budget ask the user first for how much he wants to change ad budget. Once he tells you the amount always call \`show_ad_budget_ui\` to show the budget UI.
-    If you want to show campaign results, call \`get_campaign_results\`.
+    if you want to show campaign results always call \`get_campaign_results\` this basically shows the chart with the campaign results. if they ask about certain metrics about the campaign dont show the chart instead discuss those metrics.
     If you want to provide ad texts to the user Call \`showSuggestionAdText\` to show the ad text selection UI and let the user choose or input their ad text.
     If you want to generate ad text examples to the user Call \`showSuggestionAdText\` to show the ad text selection UI and let the user choose or input their ad text.
     If you want to change status of campaign Call  \'showUpdateStatusChampaign\' to show the update status UI and let the user choose status of the campaign
     If the user wants to pause a campaign, or complete another specific task, respond that you are a demo and cannot perform that action.
-    
-    Besides that, you can also chat with users and perform budget calculations if needed.`,
+    Besides that, you can also chat with users and perform budget calculations if needed. ${extraDetailsText}`,
         messages: [
             ...aiState.get().messages.map((message: any) => ({
                 role: message.role,
@@ -831,7 +842,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                     await sleep(1000);
 
                     const toolCallId = nanoid();
-                   
+
                     aiState.done({
                         ...aiState.get(),
                         messages: [
@@ -886,7 +897,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                     await sleep(1000);
 
                     const toolCallId = nanoid();
-                   
+
                     aiState.done({
                         ...aiState.get(),
                         messages: [
