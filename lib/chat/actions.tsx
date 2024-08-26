@@ -427,8 +427,8 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
     If you want to provide ad texts to the user Call \`showSuggestionAdText\` to show the ad text selection UI and let the user choose or input their ad text.
     If you want to generate ad text examples to the user Call \`showSuggestionAdText\` to show the ad text selection UI and let the user choose or input their ad text.
     If you want to change status of campaign Call  \'showUpdateStatusChampaign\' to show the update status UI and let the user choose status of the campaign
-    
-    If the user wants to pause a campaign, or complete another specific task, respond that you are a demo and cannot perform that action.
+    If the user wants to pause a campaign Call  \'showUpdateStatusChampaign\' to show the update status UI and let the user choose status of the campaign
+    If the user wants to complete another specific task, respond that you are a demo and cannot perform that action.
     Besides that, you can also chat with users and perform budget calculations if needed. ${extraDetailsText}`,
         messages: [
             ...aiState.get().messages.map((message: any) => ({
