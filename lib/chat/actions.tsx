@@ -280,6 +280,18 @@ async function confirmCreateAd(data: any){
                     </p>
                 </div>
             );
+            aiState.done({
+                ...aiState.get(),
+                messages: [
+                    ...aiState.get().messages,
+                    {
+                        id: nanoid(),
+                        role: 'system',
+                        content: `This is the advertising ID that was generated: ${updateSuccess?.params?.id}`
+                    }
+                ]
+            });
+
         } else {
             createAd.done(
                 <div>
@@ -986,7 +998,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                 ]
                             },
                             {
-                                id: nanoid(),
+                                id: toolCallId,
                                 role: 'tool',
                                 content: [
                                     {
@@ -1002,7 +1014,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
 
                     return (
                       <BotCard>
-                        <CampaignStatus props={{ campaignName, status }} />
+                        <CampaignStatus props={{toolCallId, campaignName, status }} />
                       </BotCard>
                     )
                 }
@@ -1144,6 +1156,7 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                       <BotCard key={tool.toolCallId}>
                                         <CampaignStatus
                                           props={{
+                                            toolCallId: tool.toolCallId,
                                             campaignName:
                                                 tool.result.campaignName,
                                                 status: tool.result.status

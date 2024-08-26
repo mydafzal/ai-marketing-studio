@@ -177,7 +177,7 @@ export function AdTextSuggestion({ props }: { props: ImageSuggestionProps[] }) {
         {
           id: nanoid(),
           role: 'system',
-          content: `The user has accepted this text as campaign content: ${JSON.stringify(adText)}`
+          content: `The user has created an ad with ID: ${JSON.stringify(adText)}`
         }
       ]
     })

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { nanoid } from 'nanoid'
 import { toast } from 'sonner'
 import Image from 'next/image'
@@ -18,12 +18,14 @@ import {
 } from '@/lib/api/fasty-bot/get-campaign-summary'
 
 export interface CampaignStatusProps {
+  toolCallId?: string
   campaignName: string
   status: string
 }
 
 export function CampaignStatus({ props }: { props: CampaignStatusProps }) {
   const [currentStatus, setCurrentStatus] = useState<string>('ACTIVE')
+  const [isLoading, setIsLoading] = useState<boolean>(true)
   const [updateStatusUI, setUpdateStatusUI] = useState<null | React.ReactNode>(
     null
   )
@@ -45,12 +47,21 @@ export function CampaignStatus({ props }: { props: CampaignStatusProps }) {
       ]
     })
   }
+  const isLastedMessage = useMemo(() => {
+    const messages = aiState.messages.filter(message => message.role === 'tool')
+    if (messages.length > 0) {
+      return messages[messages.length - 1].id === props?.toolCallId
+    }
+    return false
+  }, [aiState.messages, props?.toolCallId])
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         const summary = await getCampaignSummary()
         setCampaignSummary(summary)
         setCurrentStatus(summary?.status)
+        setIsLoading(false)
       } catch (error) {
         console.error('Error fetching campaign data:', error)
       }
@@ -58,12 +69,17 @@ export function CampaignStatus({ props }: { props: CampaignStatusProps }) {
     fetchData()
   }, [])
 
+
+
+  if (isLoading) {
+    return <AdTextSelectionSkeleton />
+  }
   return (
     <div className="p-4 text-white-400 border rounded-xl  dark:bg-zinc-950">
       <div className="text-lg dark:text-zinc-300">{props.campaignName}</div>
       {updateStatusUI ? (
         <div className="mt-4 dark:text-zinc-200">{updateStatusUI}</div>
-      ) : (
+      ) : isLastedMessage ? (
         <>
           <div className="flex w-full flex-col my-10">
             <span className="text-white-700 mb-2">Status:</span>
@@ -75,7 +91,7 @@ export function CampaignStatus({ props }: { props: CampaignStatusProps }) {
                 }}
               />
               <span className="text-white-500 pl-3">
-                {currentStatus==='ACTIVE' ? 'Active' : 'Paused'}
+                {currentStatus === 'ACTIVE' ? 'Active' : 'Paused'}
               </span>
             </div>
           </div>
@@ -97,6 +113,12 @@ export function CampaignStatus({ props }: { props: CampaignStatusProps }) {
             Confirm
           </button>
         </>
+      ) : (
+        <div>
+          <p className="mb-2">
+            I updated the status to {currentStatus === 'ACTIVE' ? 'Active' : 'Paused'}.
+          </p>
+        </div>
       )}
     </div>
   )
