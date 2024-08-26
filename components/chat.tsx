@@ -5,12 +5,15 @@ import { ChatList } from '@/components/chat-list'
 import { ChatPanel } from '@/components/chat-panel'
 import { EmptyScreen } from '@/components/empty-screen'
 import { useLocalStorage } from '@/lib/hooks/use-local-storage'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useCallback, useState } from 'react'
 import { useUIState, useAIState } from 'ai/rsc'
 import { Message, Session } from '@/lib/types'
 import { usePathname, useRouter } from 'next/navigation'
 import { useScrollAnchor } from '@/lib/hooks/use-scroll-anchor'
 import { toast } from 'sonner'
+import {
+  getCampaignSummary
+} from '@/lib/api/fasty-bot/get-campaign-summary'
 
 export interface ChatProps extends React.ComponentProps<'div'> {
   initialMessages?: Message[]
@@ -22,9 +25,9 @@ export interface ChatProps extends React.ComponentProps<'div'> {
 export function Chat({ id, className, session, missingKeys }: ChatProps) {
   const router = useRouter()
   const path = usePathname()
-  const [input, setInput] = useState('')
   const [messages] = useUIState()
-  const [aiState] = useAIState()
+  const [aiState, setAIState] = useAIState()
+  const lastUpdatedRef = useRef<Date | null>(null);
 
   const [_, setNewChatId] = useLocalStorage('newChatId', id)
 
@@ -42,6 +45,44 @@ export function Chat({ id, className, session, missingKeys }: ChatProps) {
       router.refresh()
     }
   }, [aiState.messages, router])
+
+  const fetchSummaryData = useCallback(async () => {
+    try {
+      const summary = await getCampaignSummary()
+      setAIState((aiState: any) => ({
+        ...aiState,
+        messages: [
+          ...aiState.messages,
+          {
+            id: 'campaign-info-data',
+            role: 'system',
+            content: `Knowledge Base about current campaign infomations: ${JSON.stringify(summary)}`
+          }
+        ]
+      }))
+      lastUpdatedRef.current = new Date(); 
+    } catch (error) {
+      console.error('Error fetching campaign data:', error)
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchSummaryData()
+  }, [])
+
+  useEffect(() => {
+    const oneHour = 60 * 60 * 1000
+    const fiveMins = 5 * 60 * 1000
+    const interval = setInterval(
+      () => {
+        if (lastUpdatedRef.current && (new Date().getTime() - lastUpdatedRef.current.getTime()) > oneHour) {
+          fetchSummaryData()
+        }
+      }, fiveMins
+    )
+
+    return () => clearInterval(interval);
+  }, [])
 
   useEffect(() => {
     setNewChatId(id)
@@ -74,8 +115,6 @@ export function Chat({ id, className, session, missingKeys }: ChatProps) {
       </div>
       <ChatPanel
         id={id}
-        input={input}
-        setInput={setInput}
         isAtBottom={isAtBottom}
         scrollToBottom={scrollToBottom}
       />

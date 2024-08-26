@@ -306,3 +306,4 @@ export async function fetchChatFbCampaignId(chatSlug: string) {
         }
     }
 }
+
