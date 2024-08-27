@@ -8,18 +8,22 @@ import {AdTextSelectionSkeleton} from '@/components/stocks/ad-text-selection-ske
 import {z} from 'zod'
 import {EventsSkeleton} from '@/components/stocks/events-skeleton'
 import {Events} from '@/components/stocks/events'
-import {StocksSkeleton} from '@/components/stocks/stocks-skeleton'
-import {Stocks} from '@/components/stocks/stocks'
 import {StockSkeleton} from '@/components/stocks/stock-skeleton'
-import {AdTextSelection} from '@/components/stocks/ad-text-selection'
+import {AdTextSuggestion} from '@/components/stocks/ad-text-suggestion'
+import {CampaignStatus} from '@/components/stocks/campaign-status'
 
+import {ChatImage} from '@/components/chat-images'
+
+import { TextPart, ImagePart  } from 'ai'
 
 import {formatNumber, nanoid, runAsyncFnWithoutBlocking, sleep} from '@/lib/utils'
 import {fetchChatExtraDetails, saveChat} from '@/app/actions'
 import {SpinnerMessage, UserMessage} from '@/components/stocks/message'
-import {Chat, Message} from '@/lib/types';
+import {Chat, Message, Campaign} from '@/lib/types';
 import {auth} from '@/auth'
 import {setDailyCampaignBudget} from '@/lib/api/fasty-bot/set-daily-campaign-budget';
+import {setCampaignStatus} from '@/lib/api/fasty-bot/set-campaign-status';
+import {createCampaignAd} from '@/lib/api/fasty-bot/create-ad';
 import {getCampaignIdFromUrl} from "@/lib/api/fasty-bot/helpers/campaign-id-from-url-helper";
 import {getChatIdFromUrl} from "@/lib/api/fasty-bot/helpers/chat-id-from-url-helper";
 
@@ -29,72 +33,6 @@ interface ToolResult {
     result: any; // You might want to make this more specific based on your data
 }
 
-export async function confirmAdText(campaignName: string, selectedTexts: string[]) {
-    'use server'
-
-    const aiState = getMutableAIState<typeof AI>();
-    const concatenatedTexts = selectedTexts.join(', ');
-
-    const confirmingText = createStreamableUI(
-        <div className="inline-flex items-start gap-1 md:items-center">
-            {spinner}
-            <p className="mb-2">
-                Setting the ad text for {campaignName}...
-            </p>
-        </div>
-    );
-
-    const systemMessage = createStreamableUI(null);
-
-    runAsyncFnWithoutBlocking(async () => {
-        await sleep(1000);
-
-        confirmingText.update(
-            <div className="inline-flex items-start gap-1 md:items-center">
-                {spinner}
-                <p className="mb-2">
-                    Almost there, configuring the ad text for {campaignName}...
-                </p>
-            </div>
-        );
-
-        await sleep(1000);
-
-        confirmingText.done(
-            <div>
-                <p className="mb-2">
-                    You have successfully set your ad text for {campaignName}. Selected text: {concatenatedTexts}.
-                </p>
-            </div>
-        );
-
-        systemMessage.done(
-            <SystemMessage>
-                Your ad campaign &apos;{campaignName}&apos; now has the following ad text: {concatenatedTexts}.
-            </SystemMessage>
-        );
-
-        aiState.done({
-            ...aiState.get(),
-            messages: [
-                ...aiState.get().messages,
-                {
-                    id: nanoid(),
-                    role: 'system',
-                    content: `[Ad text confirmed for campaign "${campaignName}": ${concatenatedTexts}]`
-                }
-            ]
-        });
-    });
-
-    return {
-        confirmingTextUI: confirmingText.value,
-        newMessage: {
-            id: nanoid(),
-            display: systemMessage.value
-        }
-    };
-}
 
 async function confirmPurchase(campaignName: string, budget: number, days: number = 30) {
     'use server'
@@ -187,8 +125,143 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
         }
     }
 }
+async function confirmUpdateStatus(campaignName: string, status: string){
+    'use server'
+    const aiState = getMutableAIState<typeof AI>();
+    let campaignId = Number(await getCampaignIdFromUrl()) || 0; // for now just say you are updating even if no campaign id in place
+    if (process.env.NEXT_PUBLIC_HARDCODED_MODE === '1') {
+        campaignId = Number(process.env.NEXT_PUBLIC_HARDCODED_CAMPAIGN_ID)
+    }
 
-async function submitUserMessage(content: string) {
+    const updateStatus = createStreamableUI(
+        <div className="inline-flex items-start gap-1 md:items-center">
+            {spinner}
+            <p className="mb-2">
+                Setting the status for {campaignName} to {status}...
+            </p>
+        </div>
+    );
+    const systemMessage = createStreamableUI(null);
+    runAsyncFnWithoutBlocking(async () => {
+        await sleep(1000);
+
+        const updateSuccess = await setCampaignStatus(
+          campaignId,
+          status
+        )
+        if (updateSuccess) {
+            updateStatus.done(
+                <div>
+                    <p className="mb-2">
+                        You have successfully set status for {campaignName}: {status}.
+                    </p>
+                </div>
+            );
+            systemMessage.done(
+                <SystemMessage>
+                    You have successfully set status for {campaignName}: {status}.
+                </SystemMessage>
+            );
+        } else {
+            updateStatus.done(
+                <div>
+                    <p className="mb-2 text-red-500">
+                        Error: Failed to set the status for {campaignName}. Please try again later.
+                    </p>
+                </div>
+            );
+            systemMessage.done(
+                <SystemMessage>
+                     Error: Failed to set the status for {campaignName}. Please try again later.
+                </SystemMessage>
+            );
+        }
+
+      
+    });
+    return {
+        updateStatusUI: updateStatus.value,
+        newMessage: {
+            id: nanoid(),
+            display: systemMessage.value
+        }
+    }
+}
+async function confirmCreateAd(data: any){
+    'use server'
+    const aiState = getMutableAIState<typeof AI>();
+    let campaignId = Number(await getCampaignIdFromUrl()) || 0; // for now just say you are updating even if no campaign id in place
+    if (process.env.NEXT_PUBLIC_HARDCODED_MODE === '1') {
+        campaignId = Number(process.env.NEXT_PUBLIC_HARDCODED_CAMPAIGN_ID)
+    }
+
+    const createAd = createStreamableUI(
+        <div className="inline-flex items-start gap-1 md:items-center">
+            {spinner}
+            <p className="mb-2">
+                Creating campaign ad...
+            </p>
+        </div>
+    );
+    const systemMessage = createStreamableUI(null);
+    runAsyncFnWithoutBlocking(async () => {
+        await sleep(1000);
+
+        const updateSuccess = await createCampaignAd(
+          campaignId,
+          data
+        );        
+        if (updateSuccess) {
+            
+            createAd.done(
+                <div>
+                    <p className="mb-2">
+                        You have successfully create campaign ad ID: {updateSuccess?.params?.id}
+                    </p>
+                </div>
+            );
+            aiState.done({
+                ...aiState.get(),
+                messages: [
+                    ...aiState.get().messages,
+                    {
+                        id: nanoid(),
+                        role: 'system',
+                        content: `This is the advertising ID that was generated: ${updateSuccess?.params?.id}`
+                    }
+                ]
+            });
+            systemMessage.done(
+                <SystemMessage>
+                   You have successfully create campaign ad ID: {updateSuccess?.params?.id}
+                </SystemMessage>
+            );
+         
+
+        } else {
+            createAd.done(
+                <div>
+                    <p className="mb-2 text-red-500">
+                        Error: Failed to create campaign ad. Please try again later.
+                    </p>
+                </div>
+            );
+            systemMessage.done(
+                <SystemMessage>
+                    Error: Failed to create campaign ad. Please try again later.
+                </SystemMessage>
+            );
+        }
+    });
+    return {
+        createAdUI: createAd.value,
+        newMessage: {
+            id: nanoid(),
+            display: systemMessage.value
+        }
+    }
+}
+async function submitUserMessage(content: string, contentImages?: Array<TextPart | ImagePart>) {
     'use server'
 
     const aiState = getMutableAIState<typeof AI>()
@@ -205,15 +278,15 @@ async function submitUserMessage(content: string) {
     }
 
     aiState.update({
-        ...aiState.get(),
-        messages: [
-            ...aiState.get().messages,
-            {
-                id: nanoid(),
-                role: 'user',
-                content
-            }
-        ]
+      ...aiState.get(),
+      messages: [
+        ...aiState.get().messages,
+        {
+          id: nanoid(),
+          role: 'user',
+          content: contentImages ? contentImages : content
+        }
+      ]
     })
 
     let textStream: undefined | ReturnType<typeof createStreamableValue<string>>
@@ -239,7 +312,9 @@ async function submitUserMessage(content: string) {
     Open the conversation:
     
     If the user says he wants to create a campaign, ask him if he wants to run a lead campaign or a campaign to recruit employees.
-    
+    If the user sent message contain images to the campaign please confirm that "Would you like to generate ad text examples for these images?" to the user, Please waiting for user confirm, then user response Yes. Please generate ad text examples about current campaign for each specific image and use \`showSuggestionAdText\` for show text examples and pass  image urls user has send to AI to \`showSuggestionAdText\` .
+    If the user sent message contain status ALWAYS Use \`showUpdateStatusChampaign\` for show update status UI.
+ 
     Wait for the user’s response:
     After the user told you what he wants with his campaign follow these Survey Steps in order:
     
@@ -282,7 +357,7 @@ async function submitUserMessage(content: string) {
     
     Step 5: "Do you have an ad text, or should I suggest one?"
     After the user says whether he has an ad text or not:
-    ALWAYS Call \`showAdTextSelection\` to show the ad text selection UI and let the user choose or input their ad text.
+    ALWAYS Call \`showSuggestionAdText\` to show the ad text selection UI and let the user choose or input their ad text.
     Confirm final text before proceeding.
     When generating ad texts, please follow these guidelines:
 1. Create three distinct versions with different tones: Professional, Emoji-rich, and Conversational.
@@ -291,7 +366,9 @@ async function submitUserMessage(content: string) {
 4. Vary the length and style slightly between versions to offer diverse options.
 5. Label each version as "Version 1: Professional", "Version 2: Emoji-rich", and "Version 3: Conversational".
 
-    
+    ALWAYS Call \`showUpdateStatusChampaign\` to show the update status UI and let the user choose status of the campaign.
+
+
     Step 6: Lead Questionnaire: Determine the required information from leads.
     Question: "Do you want to ask for contact details only, or also pre-qualify leads with additional questions such as [examples]? I can help with the creation, or you can provide your ideas."
     Reasoning: Ensure the questionnaire meets the client's needs.
@@ -307,10 +384,12 @@ async function submitUserMessage(content: string) {
     - "[User has changed the daily budget to $150]" means that the user has adjusted the daily budget to $150 in the UI.
     
     If the user requests setting or changing the ad budget, always first make sure that he tells you the amount. If the message of the user does not yet contain the amount of budget ask the user first for how much he wants to change ad budget. Once he tells you the amount always call \`show_ad_budget_ui\` to show the budget UI.
-    
     if you want to show campaign results always call \`get_campaign_results\` this basically shows the chart with the campaign results. if they ask about certain metrics about the campaign dont show the chart instead discuss those metrics.
-    If you want to provide ad texts to the user Call \`showAdTextSelection\` to show the ad text selection UI and let the user choose or input their ad text.
-    If the user wants to pause a campaign, or complete another specific task, respond that you are a demo and cannot perform that action.
+    If you want to provide ad texts to the user Call \`showSuggestionAdText\` to show the ad text selection UI and let the user choose or input their ad text.
+    If you want to generate ad text examples to the user Call \`showSuggestionAdText\` to show the ad text selection UI and let the user choose or input their ad text.
+    If you want to change status of campaign Call  \'showUpdateStatusChampaign\' to show the update status UI and let the user choose status of the campaign
+    If the user wants to pause a campaign Call  \'showUpdateStatusChampaign\' to show the update status UI and let the user choose status of the campaign
+    If the user wants to complete another specific task, respond that you are a demo and cannot perform that action.
     Besides that, you can also chat with users and perform budget calculations if needed. ${extraDetailsText}`,
         messages: [
             ...aiState.get().messages.map((message: any) => ({
@@ -458,6 +537,60 @@ async function submitUserMessage(content: string) {
                     return (
                         <BotCard>
                             <Stock/>
+                        </BotCard>
+                    )
+                }
+            },
+            getCampaignImages: {
+                description:
+                    'Get the current images of campaign of a given digital marketing campaign from this user. Use this to show the campaign images to the user.',
+                parameters: z.object({
+                }),
+                generate: async function* ({}) {
+                    yield (
+                        <BotCard>
+                            <StockSkeleton/>
+                        </BotCard>
+                    )
+
+                    await sleep(1000)
+
+                    const toolCallId = nanoid()
+
+                    aiState.done({
+                        ...aiState.get(),
+                        messages: [
+                            ...aiState.get().messages,
+                            {
+                                id: nanoid(),
+                                role: 'assistant',
+                                content: [
+                                    {
+                                        type: 'tool-call',
+                                        toolName: 'getCampaignImages',
+                                        toolCallId,
+                                        args: {}
+                                    }
+                                ]
+                            },
+                            {
+                                id: nanoid(),
+                                role: 'tool',
+                                content: [
+                                    {
+                                        type: 'tool-result',
+                                        toolName: 'getCampaignImages',
+                                        toolCallId,
+                                        result: {}
+                                    }
+                                ]
+                            }
+                        ]
+                    })
+
+                    return (
+                        <BotCard>
+                            <ChatImage/>
                         </BotCard>
                     )
                 }
@@ -638,17 +771,20 @@ async function submitUserMessage(content: string) {
                     )
                 }
             },
-            showAdTextSelection: {
-                description: 'Show UI to select or input ad text for a campaign.',
+            showSuggestionAdText: {
+                description: 'Show UI to select or input ad text for each image a campaign.',
                 parameters: z.object({
                     campaignName: z.string().describe('The name of the campaign'),
-                    suggestedTexts: z.array(z.object({
-                        date: z.string(),
-                        text: z.string(),
-                        headline: z.string().optional()  // Make headline optional
-                    })).optional().describe('List of suggested ad texts')
+                    images: z.array(z.object({
+                        suggestedTexts: z.array(z.object({
+                            image: z.string().optional().describe('The link of the image to display'),
+                            date: z.string(),
+                            text: z.string(),
+                            headline: z.string().optional()  // Make headline optional
+                        })).describe('List of suggested ad texts')})
+                    ).describe('List of images to display')
                 }),
-                generate: async function* ({campaignName, suggestedTexts = []}) {
+                generate: async function* ({campaignName, images = []}) {
                     yield (
                         <BotCard>
                             <AdTextSelectionSkeleton/>
@@ -658,28 +794,7 @@ async function submitUserMessage(content: string) {
                     await sleep(1000);
 
                     const toolCallId = nanoid();
-
-                    // If no suggested texts are provided or if they're missing headlines, generate default ones
-                    if (suggestedTexts.length === 0 || !suggestedTexts[0].headline) {
-                        suggestedTexts = [
-                            {
-                                date: new Date().toISOString(),
-                                text: suggestedTexts[0]?.text || `Experience the power of AI-driven marketing with ${campaignName}. Our cutting-edge solutions revolutionize how you connect with your audience, driving engagement and boosting ROI. Don't just advertise - innovate with ${campaignName}.`,
-                                headline: 'Version 1: Professional'
-                            },
-                            {
-                                date: new Date().toISOString(),
-                                text: suggestedTexts[1]?.text || `🚀 Blast off to marketing success with ${campaignName}! 🎯 Our AI wizardry turns your campaigns into pure gold. Ready to watch your metrics soar? Let's make some marketing magic together! ✨💼📈`,
-                                headline: 'Version 2: Emoji-rich'
-                            },
-                            {
-                                date: new Date().toISOString(),
-                                text: suggestedTexts[2]?.text || `Tired of lackluster campaign results? ${campaignName} is your secret weapon. We harness the latest in AI technology to craft campaigns that don't just speak to your audience - they start a conversation. Discover what true engagement looks like with ${campaignName}.`,
-                                headline: 'Version 3: Conversational'
-                            },
-                        ];
-                    }
-
+                   
                     aiState.done({
                         ...aiState.get(),
                         messages: [
@@ -690,9 +805,9 @@ async function submitUserMessage(content: string) {
                                 content: [
                                     {
                                         type: 'tool-call',
-                                        toolName: 'showAdTextSelection',
+                                        toolName: 'showSuggestionAdText',
                                         toolCallId,
-                                        args: {campaignName, suggestedTexts}
+                                        args: {campaignName, images}
                                     }
                                 ]
                             },
@@ -702,9 +817,9 @@ async function submitUserMessage(content: string) {
                                 content: [
                                     {
                                         type: 'tool-result',
-                                        toolName: 'showAdTextSelection',
+                                        toolName: 'showSuggestionAdText',
                                         toolCallId,
-                                        result: {campaignName, suggestedTexts}
+                                        result: {campaignName, images}
                                     }
                                 ]
                             }
@@ -713,9 +828,64 @@ async function submitUserMessage(content: string) {
 
                     return (
                         <BotCard>
-                            <AdTextSelection props={suggestedTexts}/>
+                            <AdTextSuggestion props={images}/>
                         </BotCard>
                     );
+                }
+            },
+            showUpdateStatusChampaign:{
+                description: 'Show UI  to update status of the campaign.',
+                parameters: z.object({
+                    campaignName: z.string().describe('The name of the campaign'),
+                    status: z.string().describe('The current status of the campaign'),
+                }),
+                generate: async function* ({campaignName, status}) {
+                    yield (
+                        <BotCard>
+                            <AdTextSelectionSkeleton/>
+                        </BotCard>
+                    );
+
+                    await sleep(1000);
+
+                    const toolCallId = nanoid();
+                   
+                    aiState.done({
+                        ...aiState.get(),
+                        messages: [
+                            ...aiState.get().messages,
+                            {
+                                id: nanoid(),
+                                role: 'assistant',
+                                content: [
+                                    {
+                                        type: 'tool-call',
+                                        toolName: 'showUpdateStatusChampaign',
+                                        toolCallId,
+                                        args: {campaignName, status}
+                                    }
+                                ]
+                            },
+                            {
+                                id: toolCallId,
+                                role: 'tool',
+                                content: [
+                                    {
+                                        type: 'tool-result',
+                                        toolName: 'showUpdateStatusChampaign',
+                                        toolCallId,
+                                        result: {campaignName, status}
+                                    }
+                                ]
+                            }
+                        ]
+                    });
+
+                    return (
+                      <BotCard>
+                        <CampaignStatus props={{toolCallId, campaignName, status }} />
+                      </BotCard>
+                    )
                 }
             }
         }
@@ -740,8 +910,8 @@ export const AI = createAI<AIState, UIState>({
     actions: {
         submitUserMessage,
         confirmPurchase,
-        AdTextSelection,
-        confirmAdText
+        confirmUpdateStatus,
+        confirmCreateAd
     },
     initialUIState: [],
     initialAIState: {chatId: nanoid(), messages: []},
@@ -772,7 +942,8 @@ export const AI = createAI<AIState, UIState>({
             const userId = session.user.id as string
             const path = `/chat/${chatId}`
 
-            const firstMessageContent = messages[0].content as string
+            const firstMessageContent = (Array.isArray(messages[0].content) ? (messages[0].content[0] as TextPart).text  : messages[0].content) as string
+
             const title = firstMessageContent.substring(0, 100)
 
             const chat: Chat = {
@@ -829,18 +1000,37 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                         <Events props={tool.result}/>
                                     </BotCard>
                                 );
-                            case 'showAdTextSelection':
+                            case 'showSuggestionAdText':
                                 return (
                                     <BotCard key={tool.toolCallId}>
-                                        <AdTextSelection props={tool.result.suggestedTexts}/>
+                                        <AdTextSuggestion props={tool.result.images}/>
                                     </BotCard>
                                 );
+                            case 'getCampaignImages':
+                                return (
+                                    <BotCard key={tool.toolCallId}>
+                                        <ChatImage/>
+                                    </BotCard>
+                                );
+                                case 'showUpdateStatusChampaign':
+                                    return (
+                                      <BotCard key={tool.toolCallId}>
+                                        <CampaignStatus
+                                          props={{
+                                            toolCallId: tool.toolCallId,
+                                            campaignName:
+                                                tool.result.campaignName,
+                                                status: tool.result.status
+                                          }}
+                                        />
+                                      </BotCard>
+                                    )
                             default:
                                 return null;
                         }
                     })
                 ) : message.role === 'user' ? (
-                    <UserMessage>{message.content as string}</UserMessage>
+                    <UserMessage userContent={message.content}>{(Array.isArray(message.content) ? (message.content[0] as TextPart).text  : message.content) as string}</UserMessage>
                 ) : message.role === 'assistant' &&
                 typeof message.content === 'string' ? (
                     <BotMessage content={message.content}/>

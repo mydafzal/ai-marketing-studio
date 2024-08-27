@@ -1,4 +1,4 @@
-import { CoreMessage } from 'ai'
+import { CoreMessage  } from 'ai'
 
 export type Message = CoreMessage & {
   id: string
@@ -38,4 +38,11 @@ export interface User extends Record<string, any> {
   email: string
   password: string
   salt: string
+}
+
+export interface Campaign  extends Record<string, any> {
+  id: string
+  title: string
+  userId: string
+  content: string
 }
