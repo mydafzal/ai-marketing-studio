@@ -2,8 +2,8 @@
 
 import * as React from 'react'
 import Textarea from 'react-textarea-autosize'
-import { UserContent, TextPart, ImagePart } from 'ai'
-import { useActions, useUIState, getMutableAIState } from 'ai/rsc'
+import { UserContent, ImagePart } from 'ai'
+import { useActions, useUIState } from 'ai/rsc'
 import chatToCampaignMapping from '@/lib/api/fasty-bot/helpers/campaign-id-list'
 import { UserMessage } from './stocks/message'
 import { type AI } from '@/lib/chat/actions'
@@ -14,7 +14,7 @@ import {
   TooltipContent,
   TooltipTrigger
 } from '@/components/ui/tooltip'
-import { Toaster, toast } from 'sonner'
+import { toast } from 'sonner'
 import { useEnterSubmit } from '@/lib/hooks/use-enter-submit'
 import { nanoid } from 'nanoid'
 import { useParams } from 'next/navigation'

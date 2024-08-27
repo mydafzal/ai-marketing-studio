@@ -3,9 +3,7 @@
 import { useState, useEffect } from 'react'
 import { nanoid } from 'nanoid'
 import { toast } from 'sonner'
-import Image from 'next/image'
 import { IconSpinner } from '@/components/ui/icons'
-import { AdTextSelectionSkeleton } from '@/components/stocks/ad-text-selection-skeleton'
 import { useActions, useAIState, useUIState } from 'ai/rsc'
 import { sleep } from '@/lib/utils'
 import { ImagePart } from 'ai'
@@ -31,25 +29,14 @@ export function AdTextItem({
 }: {
   index: number
   adText: AdText
-  acceptText: (adText: AdText) => void
+  acceptText: (adText: AdText) => Promise<void>
   updateText: (idx: number, adText: AdText, newAdText: AdText) => void
 }) {
-  // const [isEditing, setIsEditing] = useState(false)
   const [isUpdating, setIsUpdating] = useState(false)
-
-  const [textEdit, setTextEdit] = useState(adText.text)
-  const handleSave = async () => {
-    setIsUpdating(true)
-    await sleep(1000)
-    updateText(index, adText, { ...adText, text: textEdit })
-    // setIsEditing(false)
-    setIsUpdating(false)
-    toast.success('Ad text added to your campaign successfully!')
-  }
   const handleAccept = async () => {
     setIsUpdating(true)
     await sleep(1000)
-    acceptText(adText)
+    await acceptText(adText)
     setIsUpdating(false)
     toast.success('Ad text added to your campaign successfully!')
   }
@@ -103,7 +90,6 @@ export function AdTextItem({
 }
 
 export function AdTextSuggestion({ props }: { props: ImageSuggestionProps[] }) {
-  const [loading, setLoading] = useState(false)
   const [adTexts, setAdTexts] = useState<AdText[]>(
     props.map(items => {
       return { ...items.suggestedTexts[0] }
@@ -143,9 +129,7 @@ export function AdTextSuggestion({ props }: { props: ImageSuggestionProps[] }) {
     item => item.uploaded_date === maxUploadedTime
   ) .sort((a, b) => (a.idx || 0) - (b.idx || 0))
 
-  if (loading) {
-    return <AdTextSelectionSkeleton />
-  }
+
 
   const acceptText = async (adText: AdText) => {
     const response = await confirmCreateAd({

@@ -8,10 +8,7 @@ import {AdTextSelectionSkeleton} from '@/components/stocks/ad-text-selection-ske
 import {z} from 'zod'
 import {EventsSkeleton} from '@/components/stocks/events-skeleton'
 import {Events} from '@/components/stocks/events'
-import {StocksSkeleton} from '@/components/stocks/stocks-skeleton'
-import {Stocks} from '@/components/stocks/stocks'
 import {StockSkeleton} from '@/components/stocks/stock-skeleton'
-import {AdTextSelection} from '@/components/stocks/ad-text-selection'
 import {AdTextSuggestion} from '@/components/stocks/ad-text-suggestion'
 import {CampaignStatus} from '@/components/stocks/campaign-status'
 
@@ -36,73 +33,6 @@ interface ToolResult {
     result: any; // You might want to make this more specific based on your data
 }
 
-export async function confirmAdText(campaignName: string, selectedTexts: string[]) {
-    'use server'
-
-    const aiState = getMutableAIState<typeof AI>();
-    
-    const concatenatedTexts = selectedTexts.join(', ');
-
-    const confirmingText = createStreamableUI(
-        <div className="inline-flex items-start gap-1 md:items-center">
-            {spinner}
-            <p className="mb-2">
-                Setting the ad text for {campaignName}...
-            </p>
-        </div>
-    );
-
-    const systemMessage = createStreamableUI(null);
-
-    runAsyncFnWithoutBlocking(async () => {
-        await sleep(1000);
-
-        confirmingText.update(
-            <div className="inline-flex items-start gap-1 md:items-center">
-                {spinner}
-                <p className="mb-2">
-                    Almost there, configuring the ad text for {campaignName}...
-                </p>
-            </div>
-        );
-
-        await sleep(1000);
-
-        confirmingText.done(
-            <div>
-                <p className="mb-2">
-                    You have successfully set your ad text for {campaignName}. Selected text: {concatenatedTexts}.
-                </p>
-            </div>
-        );
-
-        systemMessage.done(
-            <SystemMessage>
-                Your ad campaign &apos;{campaignName}&apos; now has the following ad text: {concatenatedTexts}.
-            </SystemMessage>
-        );
-
-        aiState.done({
-            ...aiState.get(),
-            messages: [
-                ...aiState.get().messages,
-                {
-                    id: nanoid(),
-                    role: 'system',
-                    content: `[Ad text confirmed for campaign "${campaignName}": ${concatenatedTexts}]`
-                }
-            ]
-        });
-    });
-
-    return {
-        confirmingTextUI: confirmingText.value,
-        newMessage: {
-            id: nanoid(),
-            display: systemMessage.value
-        }
-    };
-}
 
 async function confirmPurchase(campaignName: string, budget: number, days: number = 30) {
     'use server'
@@ -822,86 +752,6 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                     )
                 }
             },
-            showAdTextSelection: {
-                description: 'Show UI to select or input ad text for a campaign.',
-                parameters: z.object({
-                    campaignName: z.string().describe('The name of the campaign'),
-                    suggestedTexts: z.array(z.object({
-                        date: z.string(),
-                        text: z.string(),
-                        headline: z.string().optional()  // Make headline optional
-                    })).optional().describe('List of suggested ad texts')
-                }),
-                generate: async function* ({campaignName, suggestedTexts = []}) {
-                    yield (
-                        <BotCard>
-                            <AdTextSelectionSkeleton/>
-                        </BotCard>
-                    );
-
-                    await sleep(1000);
-
-                    const toolCallId = nanoid();
-
-                    // If no suggested texts are provided or if they're missing headlines, generate default ones
-                    if (suggestedTexts.length === 0 || !suggestedTexts[0].headline) {
-                        suggestedTexts = [
-                            {
-                                date: new Date().toISOString(),
-                                text: suggestedTexts[0]?.text || `Experience the power of AI-driven marketing with ${campaignName}. Our cutting-edge solutions revolutionize how you connect with your audience, driving engagement and boosting ROI. Don't just advertise - innovate with ${campaignName}.`,
-                                headline: 'Version 1: Professional'
-                            },
-                            {
-                                date: new Date().toISOString(),
-                                text: suggestedTexts[1]?.text || `🚀 Blast off to marketing success with ${campaignName}! 🎯 Our AI wizardry turns your campaigns into pure gold. Ready to watch your metrics soar? Let's make some marketing magic together! ✨💼📈`,
-                                headline: 'Version 2: Emoji-rich'
-                            },
-                            {
-                                date: new Date().toISOString(),
-                                text: suggestedTexts[2]?.text || `Tired of lackluster campaign results? ${campaignName} is your secret weapon. We harness the latest in AI technology to craft campaigns that don't just speak to your audience - they start a conversation. Discover what true engagement looks like with ${campaignName}.`,
-                                headline: 'Version 3: Conversational'
-                            },
-                        ];
-                    }
-
-                    aiState.done({
-                        ...aiState.get(),
-                        messages: [
-                            ...aiState.get().messages,
-                            {
-                                id: nanoid(),
-                                role: 'assistant',
-                                content: [
-                                    {
-                                        type: 'tool-call',
-                                        toolName: 'showAdTextSelection',
-                                        toolCallId,
-                                        args: {campaignName, suggestedTexts}
-                                    }
-                                ]
-                            },
-                            {
-                                id: nanoid(),
-                                role: 'tool',
-                                content: [
-                                    {
-                                        type: 'tool-result',
-                                        toolName: 'showAdTextSelection',
-                                        toolCallId,
-                                        result: {campaignName, suggestedTexts}
-                                    }
-                                ]
-                            }
-                        ]
-                    });
-
-                    return (
-                        <BotCard>
-                            <AdTextSelection props={suggestedTexts}/>
-                        </BotCard>
-                    );
-                }
-            },
             showSuggestionAdText: {
                 description: 'Show UI to select or input ad text for each image a campaign.',
                 parameters: z.object({
@@ -1041,8 +891,6 @@ export const AI = createAI<AIState, UIState>({
     actions: {
         submitUserMessage,
         confirmPurchase,
-        AdTextSelection,
-        confirmAdText,
         confirmUpdateStatus,
         confirmCreateAd
     },
@@ -1131,12 +979,6 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                 return (
                                     <BotCard key={tool.toolCallId}>
                                         <Events props={tool.result}/>
-                                    </BotCard>
-                                );
-                            case 'showAdTextSelection':
-                                return (
-                                    <BotCard key={tool.toolCallId}>
-                                        <AdTextSelection props={tool.result.suggestedTexts}/>
                                     </BotCard>
                                 );
                             case 'showSuggestionAdText':

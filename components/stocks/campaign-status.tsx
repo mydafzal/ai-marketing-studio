@@ -1,19 +1,11 @@
 'use client'
 
 import { useState, useMemo, useEffect } from 'react'
-import { nanoid } from 'nanoid'
-import { toast } from 'sonner'
-import Image from 'next/image'
-import { IconSpinner } from '@/components/ui/icons'
 import { AdTextSelectionSkeleton } from '@/components/stocks/ad-text-selection-skeleton'
-import { sleep } from '@/lib/utils'
-import { ImagePart } from 'ai'
-import { Message } from '@/lib/types'
 import { useActions, useAIState, useUIState } from 'ai/rsc'
 import type { AI } from '@/lib/chat/actions'
 import { Switch } from '@/components/ui/switch'
 import {
-  CampaignSummary,
   getCampaignSummary
 } from '@/lib/api/fasty-bot/get-campaign-summary'
 
@@ -29,8 +21,6 @@ export function CampaignStatus({ props }: { props: CampaignStatusProps }) {
   const [updateStatusUI, setUpdateStatusUI] = useState<null | React.ReactNode>(
     null
   )
-  const [campaignSummary, setCampaignSummary] =
-    useState<CampaignSummary | null>(null)
   const [aiState, setAIState] = useAIState<typeof AI>()
   const [, setMessages] = useUIState<typeof AI>()
   const { confirmUpdateStatus } = useActions()
@@ -59,7 +49,6 @@ export function CampaignStatus({ props }: { props: CampaignStatusProps }) {
     const fetchData = async () => {
       try {
         const summary = await getCampaignSummary()
-        setCampaignSummary(summary)
         setCurrentStatus(summary?.status)
         setIsLoading(false)
       } catch (error) {
