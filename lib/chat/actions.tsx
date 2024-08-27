@@ -157,6 +157,11 @@ async function confirmUpdateStatus(campaignName: string, status: string){
                     </p>
                 </div>
             );
+            systemMessage.done(
+                <SystemMessage>
+                    You have successfully set status for {campaignName}: {status}.
+                </SystemMessage>
+            );
         } else {
             updateStatus.done(
                 <div>
@@ -164,6 +169,11 @@ async function confirmUpdateStatus(campaignName: string, status: string){
                         Error: Failed to set the status for {campaignName}. Please try again later.
                     </p>
                 </div>
+            );
+            systemMessage.done(
+                <SystemMessage>
+                     Error: Failed to set the status for {campaignName}. Please try again later.
+                </SystemMessage>
             );
         }
 
@@ -221,6 +231,12 @@ async function confirmCreateAd(data: any){
                     }
                 ]
             });
+            systemMessage.done(
+                <SystemMessage>
+                   You have successfully create campaign ad ID: {updateSuccess?.params?.id}
+                </SystemMessage>
+            );
+         
 
         } else {
             createAd.done(
@@ -230,9 +246,12 @@ async function confirmCreateAd(data: any){
                     </p>
                 </div>
             );
+            systemMessage.done(
+                <SystemMessage>
+                    Error: Failed to create campaign ad. Please try again later.
+                </SystemMessage>
+            );
         }
-
-      
     });
     return {
         createAdUI: createAd.value,
