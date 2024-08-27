@@ -314,7 +314,8 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
     If the user says he wants to create a campaign, ask him if he wants to run a lead campaign or a campaign to recruit employees.
     If the user sent message contain images to the campaign please confirm that "Would you like to generate ad text examples for these images?" to the user, Please waiting for user confirm, then user response Yes. Please generate ad text examples about current campaign for each specific image and use \`showSuggestionAdText\` for show text examples and pass  image urls user has send to AI to \`showSuggestionAdText\` .
     If the user sent message contain status ALWAYS Use \`showUpdateStatusChampaign\` for show update status UI.
- 
+    If the user asks about ad videos mention that ad videos need to be sent via email to maxnols@reeply.net.  
+    
     Wait for the user’s response:
     After the user told you what he wants with his campaign follow these Survey Steps in order:
     
