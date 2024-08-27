@@ -198,7 +198,7 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
 async function confirmUpdateStatus(campaignName: string, status: string){
     'use server'
     const aiState = getMutableAIState<typeof AI>();
-    let campaignId = Number(getCampaignIdFromUrl()) || 0; // for now just say you are updating even if no campaign id in place
+    let campaignId = Number(await getCampaignIdFromUrl()) || 0; // for now just say you are updating even if no campaign id in place
     if (process.env.NEXT_PUBLIC_HARDCODED_MODE === '1') {
         campaignId = Number(process.env.NEXT_PUBLIC_HARDCODED_CAMPAIGN_ID)
     }
@@ -250,7 +250,7 @@ async function confirmUpdateStatus(campaignName: string, status: string){
 async function confirmCreateAd(data: any){
     'use server'
     const aiState = getMutableAIState<typeof AI>();
-    let campaignId = Number(getCampaignIdFromUrl()) || 0; // for now just say you are updating even if no campaign id in place
+    let campaignId = Number(await getCampaignIdFromUrl()) || 0; // for now just say you are updating even if no campaign id in place
     if (process.env.NEXT_PUBLIC_HARDCODED_MODE === '1') {
         campaignId = Number(process.env.NEXT_PUBLIC_HARDCODED_CAMPAIGN_ID)
     }
