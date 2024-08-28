@@ -1,5 +1,6 @@
 import { S3Client, S3ClientConfig, PutObjectCommand } from '@aws-sdk/client-s3'
 import { NextResponse } from 'next/server'
+import { sanitizeFileNameForUrl } from '@/lib/utils'
 
 const s3Config: S3ClientConfig = {
   region: process.env.AWS_DEFAULT_REGION,
@@ -22,7 +23,7 @@ export async function POST(req: Request) {
       const buffer = Buffer.from(await currentFile.arrayBuffer())
       const uploadParams = {
         Bucket: process.env.AWS_BUCKET as string,
-        Key: `public/${id}/${Date.now()}_${currentFile?.name || ''}`,
+        Key: `public/${id}/${Date.now()}_${sanitizeFileNameForUrl(currentFile?.name) || ''}`,
         Body: buffer,
         ContentType: currentFile.type as string
       }

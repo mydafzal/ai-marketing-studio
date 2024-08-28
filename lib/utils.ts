@@ -87,3 +87,30 @@ export const getMessageFromCode = (resultCode: string) => {
       return 'Logged in!'
   }
 }
+export const getMimeType = (url: string): string => {
+  const urlparts = url.split('.')
+  const extension = (urlparts.pop() || '').toLowerCase()
+
+  const mimeTypes: { [key: string]: string } = {
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    png: 'image/png',
+    gif: 'image/gif',
+    webp: 'image/webp',
+    bmp: 'image/bmp',
+    svg: 'image/svg+xml',
+  };
+
+  return  extension && mimeTypes[extension] ? mimeTypes[extension] : ''; 
+}
+
+
+export const sanitizeFileNameForUrl = (fileName: string) => {
+  let sanitizedFileName = fileName
+    .trim()
+    .replace(/[^a-zA-Z0-9.\-_]/g, '-')
+    .replace(/-+/g, '-')
+    .toLowerCase()
+
+  return encodeURIComponent(sanitizedFileName)
+}

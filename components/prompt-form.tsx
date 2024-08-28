@@ -20,6 +20,7 @@ import { nanoid } from 'nanoid'
 import { useParams } from 'next/navigation'
 import { useAIState } from 'ai/rsc'
 import { Message } from '@/lib/types'
+import { getMimeType } from '@/lib/utils'
 
 const containsTitleAndDescription = (text: string): boolean => {
   const hasTitle = text.toLowerCase().includes('title:')
@@ -97,7 +98,7 @@ export function PromptForm() {
             image: url,
             uploaded_date: uploadedDate,
             idx: imageIdx,
-            mimeType: 'image/png'
+            mimeType: getMimeType(url)
           }
           return objUrl
         })
