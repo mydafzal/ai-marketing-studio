@@ -144,6 +144,8 @@ export function PromptForm() {
     setUploading(false)
   }
   const handleButtonClick = () => {
+    toast.warning('You should forward ad images and videos to maxnols@reeply.net')
+    return
     fileInputRef.current?.click()
   }
   React.useEffect(() => {
@@ -233,7 +235,7 @@ export function PromptForm() {
               <span className="sr-only">Upload Images</span>
             </Button>
           </TooltipTrigger>
-          <TooltipContent>You can upload up to 10 images</TooltipContent>
+          <TooltipContent>You should forward ad images and videos to maxnols@reeply.net</TooltipContent>
         </Tooltip>
         <Textarea
           ref={inputRef}
