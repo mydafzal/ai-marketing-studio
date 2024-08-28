@@ -11,9 +11,7 @@ import { Message, Session } from '@/lib/types'
 import { usePathname, useRouter } from 'next/navigation'
 import { useScrollAnchor } from '@/lib/hooks/use-scroll-anchor'
 import { toast } from 'sonner'
-import {
-  getCampaignSummary
-} from '@/lib/api/fasty-bot/get-campaign-summary'
+import { getCampaignSummary } from '@/lib/api/fasty-bot/get-campaign-summary'
 
 export interface ChatProps extends React.ComponentProps<'div'> {
   initialMessages?: Message[]
@@ -27,44 +25,39 @@ export function Chat({ id, className, session, missingKeys }: ChatProps) {
   const path = usePathname()
   const [messages] = useUIState()
   const [aiState, setAIState] = useAIState()
-  const lastUpdatedRef = useRef<Date | null>(null);
+  const lastUpdatedRef = useRef<Date | null>(null)
 
   const [_, setNewChatId] = useLocalStorage('newChatId', id)
 
   useEffect(() => {
     if (session?.user) {
-      if (!path.includes('chat') && messages.length === 1) {
-        window.history.replaceState({}, '', `/chat/${id}`)
+      if (!path.includes('chat') && messages.length > 1) {
+        router.push(`/chat/${id}`)
       }
     }
-  }, [id, path, session?.user, messages])
-
-  useEffect(() => {
-    const messagesLength = aiState.messages?.length
-    if (messagesLength === 2) {
-      router.refresh()
-    }
-  }, [aiState.messages, router])
+  }, [id, path, session?.user, messages, router])
 
   const fetchSummaryData = useCallback(async () => {
     try {
       const summary = await getCampaignSummary()
-      setAIState((aiState: any) => ({
-        ...aiState,
-        messages: [
-          ...aiState.messages,
-          {
-            id: 'campaign-info-data',
-            role: 'system',
-            content: `Knowledge Base about current campaign infomations: ${JSON.stringify(summary)}`
-          }
-        ]
-      }))
-      lastUpdatedRef.current = new Date(); 
+      if (summary && summary?.campaign_id !== '0') {
+        setAIState((aiState: any) => ({
+          ...aiState,
+          messages: [
+            ...aiState.messages,
+            {
+              id: 'campaign-info-data',
+              role: 'system',
+              content: `Knowledge Base about current campaign infomations: ${JSON.stringify(summary)}`
+            }
+          ]
+        }))
+        lastUpdatedRef.current = new Date()
+      }
     } catch (error) {
       console.error('Error fetching campaign data:', error)
     }
-  }, []);
+  }, [])
 
   useEffect(() => {
     fetchSummaryData()
@@ -73,15 +66,16 @@ export function Chat({ id, className, session, missingKeys }: ChatProps) {
   useEffect(() => {
     const oneHour = 60 * 60 * 1000
     const fiveMins = 5 * 60 * 1000
-    const interval = setInterval(
-      () => {
-        if (lastUpdatedRef.current && (new Date().getTime() - lastUpdatedRef.current.getTime()) > oneHour) {
-          fetchSummaryData()
-        }
-      }, fiveMins
-    )
+    const interval = setInterval(() => {
+      if (
+        lastUpdatedRef.current &&
+        new Date().getTime() - lastUpdatedRef.current.getTime() > oneHour
+      ) {
+        fetchSummaryData()
+      }
+    }, fiveMins)
 
-    return () => clearInterval(interval);
+    return () => clearInterval(interval)
   }, [])
 
   useEffect(() => {

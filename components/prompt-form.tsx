@@ -1,6 +1,8 @@
 'use client'
 
 import * as React from 'react'
+import { useMemo } from 'react'
+
 import Textarea from 'react-textarea-autosize'
 import { UserContent, ImagePart } from 'ai'
 import { useActions, useUIState } from 'ai/rsc'
@@ -43,6 +45,13 @@ export function PromptForm() {
   )
   const [uploading, setUploading] = React.useState(false)
   const [urls, setUrls] = React.useState<string[]>([])
+
+  const isDisableUpload = useMemo(() => {
+    return !aiState.messages.some(
+      (message: { id: string }) => message.id === 'campaign-info-data'
+    )
+  }, [aiState]) // force disable upload
+
   const handleFileChange = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -109,17 +118,6 @@ export function PromptForm() {
           },
           ...imgMessages
         ]
-        setMessages(currentMessages => [
-          ...currentMessages,
-          {
-            id: nanoid(),
-            display: (
-              <UserMessage userContent={messageContent}>
-                {textPrompt}
-              </UserMessage>
-            )
-          }
-        ])
         const responseMessage = await submitUserMessage(
           textPrompt,
           messageContent
@@ -131,6 +129,14 @@ export function PromptForm() {
         }
         setMessages(currentMessages => [
           ...currentMessages,
+                    {
+            id: nanoid(),
+            display: (
+              <UserMessage userContent={messageContent}>
+                {textPrompt}
+              </UserMessage>
+            )
+          },
           responseMessage,
           imagesLinks
         ])
@@ -144,8 +150,10 @@ export function PromptForm() {
     setUploading(false)
   }
   const handleButtonClick = () => {
-    toast.warning('You should forward ad images and videos to maxnols@reeply.net')
-    return
+    if(isDisableUpload){
+      toast.warning('You should forward ad images and videos to maxnols@reeply.net')
+      return
+    }
     fileInputRef.current?.click()
   }
   React.useEffect(() => {
@@ -235,7 +243,11 @@ export function PromptForm() {
               <span className="sr-only">Upload Images</span>
             </Button>
           </TooltipTrigger>
-          <TooltipContent>You should forward ad images and videos to maxnols@reeply.net</TooltipContent>
+          <TooltipContent>
+            {isDisableUpload
+              ? `You should forward ad images and videos to maxnols@reeply.net`
+              : `You can upload up to 10 images`}
+          </TooltipContent>
         </Tooltip>
         <Textarea
           ref={inputRef}
@@ -249,7 +261,9 @@ export function PromptForm() {
           autoCorrect="off"
           name="message"
           rows={1}
-          onChange={(e) => {setIsDisabled(!e.target.value)}}
+          onChange={e => {
+            setIsDisabled(!e.target.value)
+          }}
         />
         <div className="absolute right-0 top-[13px] sm:right-4">
           <Tooltip>

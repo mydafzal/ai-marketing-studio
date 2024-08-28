@@ -2,7 +2,6 @@ import 'server-only'
 
 import {createAI, createStreamableUI, createStreamableValue, getAIState, getMutableAIState, streamUI} from 'ai/rsc'
 import {openai} from '@ai-sdk/openai'
-
 import {BotCard, BotMessage, Purchase, spinner, Stock, SystemMessage,} from '@/components/stocks'
 import {AdTextSelectionSkeleton} from '@/components/stocks/ad-text-selection-skeleton'
 import {z} from 'zod'
@@ -14,7 +13,7 @@ import {CampaignStatus} from '@/components/stocks/campaign-status'
 
 import {ChatImage} from '@/components/chat-images'
 
-import { TextPart, ImagePart  } from 'ai'
+import { UserContent, TextPart, ImagePart  } from 'ai'
 
 import {formatNumber, nanoid, runAsyncFnWithoutBlocking, sleep} from '@/lib/utils'
 import {fetchChatExtraDetails, saveChat} from '@/app/actions'
@@ -276,7 +275,8 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
             extraDetailsText = `\n\nSome important contextual information about this client can be seen here: ${extraDetailsResult.extraDetails}`;
         }
     }
-
+    const userContent =  contentImages as UserContent;
+    //UserContent
     aiState.update({
       ...aiState.get(),
       messages: [
