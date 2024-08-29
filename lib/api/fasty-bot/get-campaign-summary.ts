@@ -15,16 +15,19 @@ interface CampaignSummary {
     unique_clicks: number;
 }
 
-export async function getCampaignSummary(): Promise<CampaignSummary> {
+export async function getCampaignSummary(campaignId?: string): Promise<CampaignSummary> {
     let fetchedCampaignId: string | undefined;
-
-    try {
-        fetchedCampaignId = await getCampaignIdFromUrl();
-        console.log("Fetched Campaign ID:", fetchedCampaignId);
-    } catch (error) {
-        console.error("Error fetching campaign ID:", error);
+    if(!campaignId){
+        try {
+            fetchedCampaignId = await getCampaignIdFromUrl();
+            console.log("Fetched Campaign ID:", fetchedCampaignId);
+        } catch (error) {
+            console.error("Error fetching campaign ID:", error);
+        }
+    }else{
+        fetchedCampaignId = campaignId;
     }
-
+   
     if (!fetchedCampaignId) {
         console.warn("No campaign ID fetched, using default '0'");
         fetchedCampaignId = '0';
