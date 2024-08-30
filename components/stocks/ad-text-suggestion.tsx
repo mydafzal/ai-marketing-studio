@@ -129,8 +129,6 @@ export function AdTextSuggestion({ props }: { props: ImageSuggestionProps[] }) {
     item => item.uploaded_date === maxUploadedTime
   ) .sort((a, b) => (a.idx || 0) - (b.idx || 0))
 
-
-
   const acceptText = async (adText: AdText) => {
 
     const createData = {
