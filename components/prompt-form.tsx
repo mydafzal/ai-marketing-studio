@@ -23,6 +23,7 @@ import { useParams } from 'next/navigation'
 import { useAIState } from 'ai/rsc'
 import { Message } from '@/lib/types'
 import { getMimeType } from '@/lib/utils'
+import { updateChatFbCampaignId } from '@/app/actions'
 
 const containsTitleAndDescription = (text: string): boolean => {
   const hasTitle = text.toLowerCase().includes('title:')
@@ -30,27 +31,24 @@ const containsTitleAndDescription = (text: string): boolean => {
   return hasTitle && hasDescription
 }
 
-export function PromptForm() {
+export interface PromtFormProps {
+  createNewCampaign: () => Promise<string | false>,
+}
+
+export function PromptForm({
+  createNewCampaign
+}: PromtFormProps) {
   const { id } = useParams()
   const { formRef, onKeyDown } = useEnterSubmit()
   const inputRef = React.useRef<HTMLTextAreaElement>(null)
   const { submitUserMessage } = useActions()
-  const [_, setMessages] = useUIState<typeof AI>()
+  const [messages, setMessages] = useUIState<typeof AI>()
   const [aiState, setAIState] = useAIState()
-  const [isDisabled, setIsDisabled] = React.useState(true);
+  const [isDisabled, setIsDisabled] = React.useState(true)
 
   const fileInputRef = React.useRef<HTMLInputElement>(null)
-  const [selectedFiles, setSelectedFiles] = React.useState<FileList | null>(
-    null
-  )
-  const [uploading, setUploading] = React.useState(false)
-  const [urls, setUrls] = React.useState<string[]>([])
 
-  const isDisableUpload = useMemo(() => {
-    return !aiState.messages.some(
-      (message: { id: string }) => message.id === 'campaign-info-data'
-    )
-  }, [aiState]) // force disable upload
+  const [uploading, setUploading] = React.useState(false)
 
   const handleFileChange = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -76,7 +74,7 @@ export function PromptForm() {
     type ImagePartNew = Partial<ImagePart> & {
       uploaded_date?: number
     }
-    let imageIdx = -1;
+    let imageIdx = -1
     const images: ImagePartNew[] = []
     imageMes.map((msg: Message) => {
       if (Array.isArray(msg.content))
@@ -97,11 +95,16 @@ export function PromptForm() {
       const data = await response.json()
       if (response.ok) {
         toast.success('Images uploaded successfully!')
-        setUrls(data.urls)
+
+        let newCampaignId
+        if (!aiState.messages.length) {
+          newCampaignId = await createNewCampaign()
+        }
+
         const textPrompt = ''
-        const uploadedDate = new Date(new Date().toLocaleDateString()).getTime();
+        const uploadedDate = new Date(new Date().toLocaleDateString()).getTime()
         const imgMessages = data.urls.map((url: string) => {
-          imageIdx++;
+          imageIdx++
           let objUrl = {
             type: 'image',
             image: url,
@@ -127,9 +130,14 @@ export function PromptForm() {
           role: 'system',
           content: `Knowledge Base: urls of the uploaded images: ${JSON.stringify(imgMessages.map((img: { image: string }) => img.image))}, uploaded time is ${new Date()}"`
         }
+
+        if (newCampaignId) {
+          updateChatFbCampaignId(aiState.chatId, newCampaignId)
+        }
+
         setMessages(currentMessages => [
           ...currentMessages,
-                    {
+          {
             id: nanoid(),
             display: (
               <UserMessage userContent={messageContent}>
@@ -150,10 +158,6 @@ export function PromptForm() {
     setUploading(false)
   }
   const handleButtonClick = () => {
-    if(isDisableUpload){
-      toast.warning('You should forward ad images and videos to maxnols@reeply.net')
-      return
-    }
     fileInputRef.current?.click()
   }
   React.useEffect(() => {
@@ -163,16 +167,19 @@ export function PromptForm() {
   }, [])
   React.useEffect(() => {
     function eventListener(e: CustomEvent) {
-      const adText = e.detail;
+      const adText = e.detail
       if (inputRef.current) {
         inputRef.current.value = `Title:\n${adText.headline}\n\nDescription:\n${adText.text}`
       }
       setIsDisabled(false)
     }
-    window.addEventListener("adjust-adtext", eventListener as EventListener)
+    window.addEventListener('adjust-adtext', eventListener as EventListener)
 
     return () => {
-      window.removeEventListener("adjust-adtext", eventListener as EventListener)
+      window.removeEventListener(
+        'adjust-adtext',
+        eventListener as EventListener
+      )
     }
   }, [])
 
@@ -193,6 +200,12 @@ export function PromptForm() {
           setIsDisabled(true)
         }
         if (!value) return
+
+        let newCampaignId
+        if (!aiState.messages.length) {
+          newCampaignId = await createNewCampaign()
+        }
+
         if (containsTitleAndDescription(value)) {
           setAIState({
             ...aiState,
@@ -205,6 +218,9 @@ export function PromptForm() {
               }
             ]
           })
+        }
+        if (newCampaignId) {
+          updateChatFbCampaignId(aiState.chatId, newCampaignId)
         }
 
         // Optimistically add user message UI
@@ -243,11 +259,7 @@ export function PromptForm() {
               <span className="sr-only">Upload Images</span>
             </Button>
           </TooltipTrigger>
-          <TooltipContent>
-            {isDisableUpload
-              ? `You should forward ad images and videos to maxnols@reeply.net`
-              : `You can upload up to 10 images`}
-          </TooltipContent>
+          <TooltipContent>You can upload up to 10 images</TooltipContent>
         </Tooltip>
         <Textarea
           ref={inputRef}

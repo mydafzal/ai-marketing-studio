@@ -8,11 +8,11 @@ import { useLocalStorage } from '@/lib/hooks/use-local-storage'
 import { useEffect, useRef, useCallback, useState } from 'react'
 import { useUIState, useAIState } from 'ai/rsc'
 import { Message, Session } from '@/lib/types'
-import { usePathname, useRouter } from 'next/navigation'
 import { useScrollAnchor } from '@/lib/hooks/use-scroll-anchor'
 import { toast } from 'sonner'
 import { getCampaignSummary } from '@/lib/api/fasty-bot/get-campaign-summary'
 import { createCampaign } from '@/lib/api/fasty-bot/create-campaign'
+import { fetchChatFbCampaignId } from '@/app/actions'
 
 export interface ChatProps extends React.ComponentProps<'div'> {
   initialMessages?: Message[]
@@ -22,31 +22,15 @@ export interface ChatProps extends React.ComponentProps<'div'> {
 }
 
 export function Chat({ id, className, session, missingKeys }: ChatProps) {
-  const router = useRouter()
-  const path = usePathname()
   const [messages] = useUIState()
-  const [campaignLoaded, setCampaignLoaded] = useState(false);
   const [aiState, setAIState] = useAIState()
   const lastUpdatedRef = useRef<Date | null>(null)
   const [_, setNewChatId] = useLocalStorage('newChatId', id)
 
-  useEffect(() => {
-    if (session?.user) {
-      if (!path.includes('chat') && messages.length === 1) {
-        window.history.replaceState({}, '', `/chat/${id}`)
-      }
-    }
-  }, [id, path, session?.user, messages, router])
-  useEffect(() => {
-    const messagesLength = aiState.messages?.length
-    if (messagesLength === 2) {
-      router.refresh()
-    }
-  }, [aiState.messages, router])
   const fetchSummaryData = useCallback(async () => {
     try {
       const summary = await getCampaignSummary()
-      if (summary && summary?.campaign_id !== '0') {
+      if (summary && summary.campaign_id !== '0') {
         setAIState((aiState: any) => ({
           ...aiState,
           messages: [
@@ -59,43 +43,38 @@ export function Chat({ id, className, session, missingKeys }: ChatProps) {
           ]
         }))
         lastUpdatedRef.current = new Date()
-      } else {
-        const response = await createCampaign({
-          chatSlug: aiState.chatId,
-          name: 'My Campaign',
-          objective: 'OUTCOME_LEADS',
-          status: 'PAUSED',
-          special_ad_categories: ['NONE']
-        })
-        if (response && response?.success && response?.data?.id) {
-          const summary = await getCampaignSummary(response?.data?.id as string)
-          if (summary && summary?.campaign_id !== '0') {
-            setAIState((aiState: any) => ({
-              ...aiState,
-              messages: [
-                ...aiState.messages,
-                {
-                  id: 'campaign-info-data',
-                  role: 'system',
-                  content: `Knowledge Base about current campaign infomations: ${JSON.stringify(summary)}`
-                }
-              ]
-            }))
-            lastUpdatedRef.current = new Date()
-          }
-        }
       }
     } catch (error) {
       console.error('Error fetching campaign data:', error)
     }
-  }, [aiState, setAIState])
+  }, [])
 
-  useEffect(() => {
-    if (!lastUpdatedRef.current && !campaignLoaded && messages.length >= 1) {
-      setCampaignLoaded(true)
-      fetchSummaryData()
+  const createNewCampaign = async (): Promise<string | false> => {
+    const response = await createCampaign({
+      chatSlug: aiState.chatId,
+      name: 'My Campaign',
+      objective: 'OUTCOME_LEADS',
+      status: 'PAUSED',
+      special_ad_categories: ['NONE']
+    })
+    if (response.success && response.data.id) {
+      return response.data.id
     }
-  }, [messages, campaignLoaded, setCampaignLoaded, fetchSummaryData, lastUpdatedRef])
+    return false
+  }
+
+  const fetchCampaignId = useCallback(async (chatId: string) => {
+    if (!lastUpdatedRef.current){
+      const result = await fetchChatFbCampaignId(chatId);
+      if(result.success){
+        fetchSummaryData()
+      }
+    }
+  }, [lastUpdatedRef, fetchSummaryData])
+  
+  useEffect(() => {
+    fetchCampaignId(aiState.chatId);
+  },[aiState, fetchCampaignId, lastUpdatedRef])
 
   useEffect(() => {
     const oneHour = 60 * 60 * 1000
@@ -145,6 +124,7 @@ export function Chat({ id, className, session, missingKeys }: ChatProps) {
         id={id}
         isAtBottom={isAtBottom}
         scrollToBottom={scrollToBottom}
+        createNewCampaign={createNewCampaign}
       />
     </div>
   )

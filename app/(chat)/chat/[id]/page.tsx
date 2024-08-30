@@ -38,21 +38,26 @@ export default async function ChatPage({ params }: ChatPageProps) {
 
   const userId = session.user.id as string
   const chat = await getChat(params.id, userId)
+  const chatId = chat?.id ?? params.id
+  const messages = chat?.messages ?? []
 
-  if (!chat) {
-    redirect('/')
-  }
+  console.log('chat', chat)
+  console.log('messages', messages)
 
-  if (chat?.userId !== session?.user?.id) {
+  // if (!chat) {
+  //   redirect('/')
+  // }
+
+  if (chat && chat.userId !== session?.user?.id) {
     notFound()
   }
 
   return (
-    <AI initialAIState={{ chatId: chat.id, messages: chat.messages }}>
+    <AI initialAIState={{ chatId, messages }}>
       <Chat
-        id={chat.id}
+        id={chatId}
         session={session}
-        initialMessages={chat.messages}
+        initialMessages={messages}
         missingKeys={missingKeys}
       />
     </AI>

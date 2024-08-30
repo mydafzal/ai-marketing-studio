@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { fetchChatFbCampaignId, updateChatFbCampaignId } from '@/app/actions'
+import { fetchChatFbCampaignId } from '@/app/actions'
 
 export async function POST(request: Request) {
   try {
@@ -18,8 +18,8 @@ export async function POST(request: Request) {
       )
     }
     const { fbCampaignId } = await fetchChatFbCampaignId(chatSlug)
-    if(fbCampaignId){
-        return NextResponse.json({ success: false }, { status: 500 })
+    if (fbCampaignId) {
+      return NextResponse.json({ success: false }, { status: 500 })
     }
     const fastyEndpoint = process.env.FASTY_API_URL
     const apiUrl = `${fastyEndpoint}/facebook/exec/direct/campaign/create`
@@ -48,8 +48,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false }, { status: response.status })
     }
     const data = await response.json()
-    const result = await updateChatFbCampaignId(chatSlug, data.id)
-
     return NextResponse.json({ success: true, data: data })
   } catch (error) {
     console.error('Error create campaign:', error)

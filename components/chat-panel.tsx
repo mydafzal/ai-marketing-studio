@@ -11,21 +11,24 @@ import { useAIState, useActions, useUIState } from 'ai/rsc'
 import type { AI } from '@/lib/chat/actions'
 import { nanoid } from 'nanoid'
 import { UserMessage } from './stocks/message'
+import {  updateChatFbCampaignId } from '@/app/actions'
 
 export interface ChatPanelProps {
   id?: string
   title?: string
   isAtBottom: boolean
   scrollToBottom: () => void
+  createNewCampaign: () => Promise<string | false>
 }
 
 export function ChatPanel({
   id,
   title,
   isAtBottom,
-  scrollToBottom
+  scrollToBottom,
+  createNewCampaign
 }: ChatPanelProps) {
-  const [aiState] = useAIState()
+  const [aiState, setAIState] = useAIState()
   const [messages, setMessages] = useUIState<typeof AI>()
   const { submitUserMessage } = useActions()
   const [shareDialogOpen, setShareDialogOpen] = React.useState(false)
@@ -70,6 +73,12 @@ export function ChatPanel({
                   index > 1 && 'hidden md:block'
                 }`}
                 onClick={async () => {
+                  
+                  let newCampaignId;
+                  if(!aiState.messages.length) {
+                    newCampaignId = await createNewCampaign();
+                  }
+
                   setMessages(currentMessages => [
                     ...currentMessages,
                     {
@@ -82,10 +91,15 @@ export function ChatPanel({
                     example.message
                   )
 
+                  if(newCampaignId){
+                      await updateChatFbCampaignId(aiState.chatId, newCampaignId)
+                  }
+
                   setMessages(currentMessages => [
                     ...currentMessages,
                     responseMessage
                   ])
+
                 }}
               >
                 <div className="text-sm font-semibold">{example.heading}</div>
@@ -126,7 +140,7 @@ export function ChatPanel({
         ) : null}
 
         <div className="space-y-4 border-t bg-background px-4 py-2 shadow-lg sm:rounded-t-xl sm:border md:py-4">
-          <PromptForm />
+          <PromptForm createNewCampaign={createNewCampaign} />
           <FooterText className="hidden sm:block" />
         </div>
       </div>

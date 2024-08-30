@@ -38,15 +38,10 @@ export const metadata = {
 export default async function IndexPage() {
   const id = nanoid()
   const session = (await auth()) as Session
-  const missingKeys = await getMissingKeys()
 
   if (!session) {
     redirect('/login')
   }
 
-  return (
-    <AI initialAIState={{ chatId: id, messages: [] }}>
-      <Chat id={id} session={session} missingKeys={missingKeys} />
-    </AI>
-  )
+  redirect(`/chat/${id}`)
 }
