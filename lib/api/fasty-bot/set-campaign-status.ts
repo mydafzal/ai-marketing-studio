@@ -1,5 +1,5 @@
-async function setCampaignStatus(campaignId: number, status: string): Promise<boolean> {
-    if (campaignId === 0) { // TODO: Remove this once Fasty bot is live and campaign IDs are available
+async function setCampaignStatus(campaignId: string, status: string): Promise<boolean> {
+    if (campaignId == '0') { // TODO: Remove this once Fasty bot is live and campaign IDs are available
         console.log('Bypassing API call for campaign ID 0');
         return true;
     }

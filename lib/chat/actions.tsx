@@ -16,7 +16,7 @@ import {ChatImage} from '@/components/chat-images'
 import { UserContent, TextPart, ImagePart  } from 'ai'
 
 import {formatNumber, nanoid, runAsyncFnWithoutBlocking, sleep} from '@/lib/utils'
-import {fetchChatExtraDetails, saveChat} from '@/app/actions'
+import {fetchChatExtraDetails, saveChat, fetchChatCampaignBudget, updateChatCampaignBudget} from '@/app/actions'
 import {SpinnerMessage, UserMessage} from '@/components/stocks/message'
 import {Chat, Message, Campaign} from '@/lib/types';
 import {auth} from '@/auth'
@@ -38,10 +38,11 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
 
     const aiState = getMutableAIState<typeof AI>();
     const totalBudget = budget * days;
-    let campaignId = Number(await getCampaignIdFromUrl()) || 0; // for now just say you are updating even if no campaign id in place
+    let campaignId = await getCampaignIdFromUrl() || '0'; // for now just say you are updating even if no campaign id in place
     if (process.env.NEXT_PUBLIC_HARDCODED_MODE === '1') {
-        campaignId = Number(process.env.NEXT_PUBLIC_HARDCODED_CAMPAIGN_ID)
+        campaignId = process.env.NEXT_PUBLIC_HARDCODED_CAMPAIGN_ID || '0'
     }
+    const chatId = getChatIdFromUrl()?.toString() || '';
 
     const purchasing = createStreamableUI(
         <div className="inline-flex items-start gap-1 md:items-center">
@@ -69,6 +70,7 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
         const updateSuccess = await setDailyCampaignBudget(campaignId, budget);
 
         if (updateSuccess) {
+            await updateChatCampaignBudget(chatId, budget);
             purchasing.done(
                 <div>
                     <p className="mb-2">
@@ -127,9 +129,9 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
 async function confirmUpdateStatus(campaignName: string, status: string){
     'use server'
     const aiState = getMutableAIState<typeof AI>();
-    let campaignId = Number(await getCampaignIdFromUrl()) || 0; // for now just say you are updating even if no campaign id in place
+    let campaignId = await getCampaignIdFromUrl() || '0'; // for now just say you are updating even if no campaign id in place
     if (process.env.NEXT_PUBLIC_HARDCODED_MODE === '1') {
-        campaignId = Number(process.env.NEXT_PUBLIC_HARDCODED_CAMPAIGN_ID)
+        campaignId = process.env.NEXT_PUBLIC_HARDCODED_CAMPAIGN_ID || '0'
     }
 
     const updateStatus = createStreamableUI(
@@ -186,12 +188,19 @@ async function confirmUpdateStatus(campaignName: string, status: string){
         }
     }
 }
-async function confirmCreateAd(data: any){
+async function confirmCreateAd(data: any, adset: any){
     'use server'
     const aiState = getMutableAIState<typeof AI>();
-    let campaignId = Number(await getCampaignIdFromUrl()) || 0; // for now just say you are updating even if no campaign id in place
+    let campaignId = await getCampaignIdFromUrl() || '0' ; // for now just say you are updating even if no campaign id in place
     if (process.env.NEXT_PUBLIC_HARDCODED_MODE === '1') {
-        campaignId = Number(process.env.NEXT_PUBLIC_HARDCODED_CAMPAIGN_ID)
+        campaignId = process.env.NEXT_PUBLIC_HARDCODED_CAMPAIGN_ID || '0'
+    }
+    const chatId = getChatIdFromUrl()?.toString() || '';
+
+    const budget = await fetchChatCampaignBudget(chatId)
+    let adsetUpdate = { ...adset }
+    if (budget.error) {
+      adsetUpdate = { ...adsetUpdate, daily_budget: 100 }
     }
 
     const createAd = createStreamableUI(
@@ -208,7 +217,8 @@ async function confirmCreateAd(data: any){
 
         const updateSuccess = await createCampaignAd(
           campaignId,
-          data
+          data,
+          adsetUpdate
         );        
         if (updateSuccess) {
             
@@ -275,8 +285,6 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
             extraDetailsText = `\n\nSome important contextual information about this client can be seen here: ${extraDetailsResult.extraDetails}`;
         }
     }
-    const userContent =  contentImages as UserContent;
-    //UserContent
     aiState.update({
       ...aiState.get(),
       messages: [

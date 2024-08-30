@@ -41,8 +41,6 @@ export default async function ChatPage({ params }: ChatPageProps) {
   const chatId = chat?.id ?? params.id
   const messages = chat?.messages ?? []
 
-  console.log('chat', chat)
-  console.log('messages', messages)
 
   // if (!chat) {
   //   redirect('/')

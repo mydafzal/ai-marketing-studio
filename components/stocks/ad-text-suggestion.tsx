@@ -132,7 +132,8 @@ export function AdTextSuggestion({ props }: { props: ImageSuggestionProps[] }) {
 
 
   const acceptText = async (adText: AdText) => {
-    const response = await confirmCreateAd({
+
+    const createData = {
       name: 'New Link Ad Creative',
       object_story_spec: {
         page_id: 119021011189054,
@@ -149,7 +150,56 @@ export function AdTextSuggestion({ props }: { props: ImageSuggestionProps[] }) {
           image_url: adText.image
         }
       }
-    })
+    };
+    const adsetData = {
+      name: 'My Ad Set',
+      bid_amount: 2,
+      billing_event: 'IMPRESSIONS',
+      optimization_goal: 'REACH',
+      targeting: {
+        age_max: 65,
+        age_min: 18,
+        flexible_spec: [
+          {
+            interests: [
+              {
+                id: '6003214937861',
+                name: 'Self-employment'
+              },
+              {
+                id: '6003374632277',
+                name: 'Freelancer'
+              }
+            ]
+          }
+        ],
+        geo_locations: {
+          countries: ['NL', 'DE'],
+          location_types: ['home', 'recent']
+        },
+        publisher_platforms: ['facebook', 'instagram'],
+        facebook_positions: [
+          'feed',
+          'facebook_reels',
+          'video_feeds',
+          'marketplace',
+          'story'
+        ],
+        instagram_positions: [
+          'stream',
+          'story',
+          'explore',
+          'reels',
+          'explore_home'
+        ],
+        device_platforms: ['mobile', 'desktop']
+      },
+      promoted_object: {
+        page_id: 119021011189054
+      },
+      status: 'PAUSED'
+    }
+    const response = await confirmCreateAd(createData, adsetData)
     setCreateAdUI(response.createAdUI)
 
     setMessages(currentMessages => [...currentMessages, response.newMessage])
