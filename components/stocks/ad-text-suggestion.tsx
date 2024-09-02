@@ -102,9 +102,12 @@ export function AdTextSuggestion({ props }: { props: ImageSuggestionProps[] }) {
   const [, setMessages] = useUIState<typeof AI>()
 
   const imageMes = aiState.messages.filter(
-    (msg: Message) =>
-      Array.isArray(msg.content) &&
+    (msg: Message) => {
+      console.log('msg', msg);
+      return Array.isArray(msg.content) &&
       msg.content.some(item => item.type === 'image')
+    }
+      
   )
   type ImagePartNew = Partial<ImagePart> & {
     uploaded_date?: number
