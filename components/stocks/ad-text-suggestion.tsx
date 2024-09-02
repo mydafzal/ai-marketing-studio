@@ -93,8 +93,9 @@ export function AdTextSuggestion({ props }: { props: ImageSuggestionProps[] }) {
   console.log('props of AdTextSuggestion', props)
 
   const [adTexts, setAdTexts] = useState<AdText[]>(
-    props.map(items => ({ ...items.suggestedTexts[0] }))
+    props.reduce((result, items) => [...result,  ...items.suggestedTexts], [] as AdText[])
   )
+
   const [createAdUI, setCreateAdUI] = useState<null | React.ReactNode>(null)
   const { confirmCreateAd } = useActions()
 
