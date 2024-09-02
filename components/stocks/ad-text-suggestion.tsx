@@ -99,22 +99,22 @@ export function AdTextSuggestion({ props }: { props: ImageSuggestionProps[] }) {
           const segments = adText.text?.split('"')
           const adText1Headline = segments[0]?.split(':')?.[1]?.trim()
           const adText1Content = segments[1]
-          const adText2Headline = segments[2]?.split(':')?.[1]?.trim()
-          const adText2Content = segments[3]
-          const adText3Headline = segments[4]?.split(':')?.[1]?.trim()
-          const adText3Content = segments[5]
+          // const adText2Headline = segments[2]?.split(':')?.[1]?.trim()
+          // const adText2Content = segments[3]
+          // const adText3Headline = segments[4]?.split(':')?.[1]?.trim()
+          // const adText3Content = segments[5]
           return [...result, {
             ...adText,
             headline: adText1Headline,
             text: adText1Content
-          }, {
-            ...adText,
-            headline: adText2Headline,
-            text: adText2Content
-          }, {
-            ...adText,
-            headline: adText3Headline,
-            text: adText3Content
+          // }, {
+          //   ...adText,
+          //   headline: adText2Headline,
+          //   text: adText2Content
+          // }, {
+          //   ...adText,
+          //   headline: adText3Headline,
+          //   text: adText3Content
           }]
         }
         return [...result, adText]
