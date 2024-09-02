@@ -90,47 +90,16 @@ export function AdTextItem({
 }
 
 export function AdTextSuggestion({ props }: { props: ImageSuggestionProps[] }) {
+  console.log('props of AdTextSuggestion', props)
+
   const [adTexts, setAdTexts] = useState<AdText[]>(
-    props.map(items => {
-      return { ...items.suggestedTexts[0] }
-    })
+    props.map(items => ({ ...items.suggestedTexts[0] }))
   )
   const [createAdUI, setCreateAdUI] = useState<null | React.ReactNode>(null)
   const { confirmCreateAd } = useActions()
 
   const [aiState, setAIState] = useAIState()
   const [, setMessages] = useUIState<typeof AI>()
-
-  const imageMes = aiState.messages.filter(
-    (msg: Message) => {
-      console.log('msg', msg);
-      return Array.isArray(msg.content) &&
-      msg.content.some(item => item.type === 'image')
-    }
-      
-  )
-  type ImagePartNew = Partial<ImagePart> & {
-    uploaded_date?: number
-    idx?: number
-  }
-  const images: ImagePartNew[] = []
-  imageMes.map((msg: Message) => {
-    if (Array.isArray(msg.content))
-      msg.content.map(item => {
-        if (item.type === 'image') {
-          images.push(item)
-        }
-      })
-  })
-
-  let items = images
-    .filter(a => a?.uploaded_date)
-    .sort((a, b) => (b?.uploaded_date || 0) - (a?.uploaded_date || 0))
-  const maxUploadedTime = items[0]?.uploaded_date
-
-  const latestItems = items.filter(
-    item => item.uploaded_date === maxUploadedTime
-  ) .sort((a, b) => (a.idx || 0) - (b.idx || 0))
 
   const acceptText = async (adText: AdText) => {
 
@@ -255,7 +224,6 @@ export function AdTextSuggestion({ props }: { props: ImageSuggestionProps[] }) {
               index={index}
               adText={{
                 ...adText,
-                image: (latestItems[index]?.image as string) || ''
               }}
               acceptText={acceptText}
               updateText={updateText}

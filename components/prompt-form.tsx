@@ -101,14 +101,15 @@ export function PromptForm({
           newCampaignId = await createNewCampaign()
         }
 
-        const textPrompt = ''
-        const uploadedDate = new Date(new Date().toLocaleDateString()).getTime()
+        const textPrompt = `I upload images with these urls: ${JSON.stringify(data.urls)}, at this time: ${new Date().getTime()}`
+        const uploadedTime = new Date().getTime()
+        console.log('uploaded image urls', data.urls, uploadedTime)
         const imgMessages = data.urls.map((url: string) => {
           imageIdx++
           let objUrl = {
             type: 'image',
             image: url,
-            uploaded_date: uploadedDate,
+            uploaded_date: uploadedTime,
             idx: imageIdx,
             mimeType: getMimeType(url)
           }
@@ -125,11 +126,6 @@ export function PromptForm({
           textPrompt,
           messageContent
         )
-        const imagesLinks = {
-          id: nanoid(),
-          role: 'system',
-          content: `Knowledge Base: urls of the uploaded images: ${JSON.stringify(imgMessages.map((img: { image: string }) => img.image))}, uploaded time is ${new Date()}"`
-        }
 
         if (newCampaignId) {
           updateChatFbCampaignId(aiState.chatId, newCampaignId)
@@ -146,7 +142,6 @@ export function PromptForm({
             )
           },
           responseMessage,
-          imagesLinks
         ])
       } else {
         toast.error('Failed to upload the image. Please try again.')
