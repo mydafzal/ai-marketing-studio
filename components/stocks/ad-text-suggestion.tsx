@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { Separator } from '@/components/ui/separator'
+import { Fragment, useState, useEffect } from 'react'
 import { nanoid } from 'nanoid'
 import { toast } from 'sonner'
 import { IconSpinner } from '@/components/ui/icons'
@@ -241,19 +242,22 @@ export function AdTextSuggestion({ props }: { props: ImageSuggestionProps[] }) {
         <div className="mt-4 dark:text-zinc-200">{createAdUI}</div>
       ) : (
         adTexts.map((adText, index) => (
-          <div
-            key={index}
-            className={`flex shrink-0 flex-col gap-2 rounded-lg p-4 dark:bg-zinc-800 bg-light-800`}
-          >
-            <AdTextItem
-              index={index}
-              adText={{
-                ...adText,
-              }}
-              acceptText={acceptText}
-              updateText={updateText}
-            />
-          </div>
+          <Fragment key={`${adText.date}${index}`}>
+            {index !== 0 && <Separator className="my-4" />}
+            <div
+              key={index}
+              className={`flex shrink-0 flex-col gap-2 rounded-lg p-4 dark:bg-zinc-800 bg-light-800`}
+            >
+              <AdTextItem
+                index={index}
+                adText={{
+                  ...adText,
+                }}
+                acceptText={acceptText}
+                updateText={updateText}
+              />
+            </div>
+          </Fragment>
         ))
       )}
     </div>
