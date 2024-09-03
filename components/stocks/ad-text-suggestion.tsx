@@ -49,17 +49,16 @@ export function AdTextItem({
   }
 
   return (
-    <>
-      <div className="flex">
-        <div className="flex-none w-72 h-[200px] relative">
+      <div className="flex items-center">
+        <div className="flex-none w-72">
           <img
             src={adText.image as string}
             alt=""
-            className="absolute inset-0 w-full h-full object-cover "
+            className="inset-0 w-full object-cover "
             loading="lazy"
           />
         </div>
-        <div className="flex-auto p-6">
+        <div className=" p-6">
           <h6 className="block text-center font-sans text-lg mb-5 antialiased font-semibold leading-relaxed tracking-normal text-blue-gray-900">
             {adText.headline || `Suggested Ad Text ${index + 1}`}
           </h6>
@@ -85,7 +84,6 @@ export function AdTextItem({
           </div>
         </div>
       </div>
-    </>
   )
 }
 
