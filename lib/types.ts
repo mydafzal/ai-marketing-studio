@@ -48,9 +48,8 @@ export interface Campaign  extends Record<string, any> {
 }
 
 export interface AdText {
-  image?: string
-  id?: string
+  image: string
   date: string
   text: string
-  headline?: string // Make headline optional
+  headline: string
 }

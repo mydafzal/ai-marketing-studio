@@ -1,15 +1,14 @@
 'use client'
 
 import { Separator } from '@/components/ui/separator'
-import { Fragment, useState, useEffect } from 'react'
+import { Fragment, useState } from 'react'
 import { nanoid } from 'nanoid'
 import { toast } from 'sonner'
 import { IconSpinner } from '@/components/ui/icons'
 import { useActions, useAIState, useUIState } from 'ai/rsc'
 import { sleep } from '@/lib/utils'
-import { ImagePart } from 'ai'
 import type { AI } from '@/lib/chat/actions'
-import { AdText, Message } from '@/lib/types'
+import { AdText } from '@/lib/types'
 import { generateAdTemplate, generateAdsetTemplate } from '@/lib/data'
 
 export interface ImageSuggestionProps {
@@ -122,7 +121,14 @@ export function AdTextSuggestion({ props }: { props: ImageSuggestionProps[] }) {
   const [, setMessages] = useUIState<typeof AI>()
 
   const acceptText = async (adText: AdText) => {
-    const response = await confirmCreateAd(generateAdTemplate(adText), generateAdsetTemplate())
+    const response = await confirmCreateAd(
+      generateAdTemplate(
+        adText.headline,
+        adText.text,
+        adText.image
+      ),
+      generateAdsetTemplate()
+    )
     setCreateAdUI(response.createAdUI)
 
     setMessages(currentMessages => [...currentMessages, response.newMessage])

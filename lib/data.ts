@@ -1,20 +1,18 @@
-import { AdText } from '@/lib/types'
-
-export const generateAdTemplate = (adText: AdText) => ({
+export const generateAdTemplate = (headline: string, text: string, image: string) => ({
   name: 'New Link Ad Creative',
   object_story_spec: {
     page_id: 119021011189054,
     link_data: {
       link: 'https://www.example.com',
-      name: adText.headline,
-      message: adText.text,
+      name: headline,
+      message: text,
       call_to_action: {
         type: 'SIGN_UP',
         value: {
           lead_gen_form_id: 8902951086385726
         }
       },
-      image_url: adText.image
+      image_url: image
     }
   }
 })

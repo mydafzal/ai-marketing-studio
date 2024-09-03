@@ -1,7 +1,6 @@
 'use client'
 
 import * as React from 'react'
-import { useMemo } from 'react'
 
 import Textarea from 'react-textarea-autosize'
 import { UserContent, ImagePart } from 'ai'
@@ -21,14 +20,16 @@ import { useEnterSubmit } from '@/lib/hooks/use-enter-submit'
 import { nanoid } from 'nanoid'
 import { useParams } from 'next/navigation'
 import { useAIState } from 'ai/rsc'
-import { Message } from '@/lib/types'
+import { generateAdTemplate, generateAdsetTemplate } from '@/lib/data'
+import { AdText, Message } from '@/lib/types'
 import { getMimeType } from '@/lib/utils'
 import { updateChatFbCampaignId, updateChatTitle } from '@/app/actions'
 
-const containsTitleAndDescription = (text: string): boolean => {
+const containsAdSuggestion = (text: string): boolean => {
   const hasTitle = text.toLowerCase().includes('title:')
   const hasDescription = text.toLowerCase().includes('description:')
-  return hasTitle && hasDescription
+  const hasCreative = text.toLowerCase().includes('creative:')
+  return hasTitle && hasDescription && hasCreative
 }
 
 export interface PromtFormProps {
@@ -41,7 +42,7 @@ export function PromptForm({
   const { id } = useParams()
   const { formRef, onKeyDown } = useEnterSubmit()
   const inputRef = React.useRef<HTMLTextAreaElement>(null)
-  const { submitUserMessage } = useActions()
+  const { confirmCreateAd, submitUserMessage } = useActions()
   const [messages, setMessages] = useUIState<typeof AI>()
   const [aiState, setAIState] = useAIState()
   const [isDisabled, setIsDisabled] = React.useState(true)
@@ -165,9 +166,9 @@ export function PromptForm({
   }, [])
   React.useEffect(() => {
     function eventListener(e: CustomEvent) {
-      const adText = e.detail
+      const adText = e.detail as AdText
       if (inputRef.current) {
-        inputRef.current.value = `Title:\n${adText.headline}\n\nDescription:\n${adText.text}`
+        inputRef.current.value = `Title:\n${adText.headline}\n\nDescription:\n${adText.text}\n\nCreative:\n${adText.image}`
       }
       setIsDisabled(false)
     }
@@ -204,7 +205,7 @@ export function PromptForm({
           newCampaignId = await createNewCampaign(campaignName)
         }
 
-        if (containsTitleAndDescription(value)) {
+        if (containsAdSuggestion(value)) {
           setAIState({
             ...aiState,
             messages: [
@@ -216,26 +217,66 @@ export function PromptForm({
               }
             ]
           })
+
+          console.log('value', value);
+
+          const headline = value.split('Title:')?.[1]?.split('Description:')?.[0]?.trim()
+          console.log('headline', headline);
+
+          const text = value.split('Description:')?.[1]?.split('Creative:')?.[0]?.trim()
+          console.log('text', text);
+
+          const creative = value.split('Creative:')?.[1]?.trim()
+          console.log('creative', creative);
+
+          const response = await confirmCreateAd(
+            generateAdTemplate(
+              headline,
+              text,
+              creative
+            ),
+            generateAdsetTemplate()
+          )
+      
+          setMessages(currentMessages => [...currentMessages, response.newMessage])
+         
+          setAIState({
+            ...aiState,
+            messages: [
+              ...aiState.messages,
+              {
+                id: nanoid(),
+                role: 'system',
+                content: `The user has created an ad with ID: ${JSON.stringify({
+                  headline,
+                  text,
+                  creative
+                })}`
+              }
+            ]
+          })
         }
         if (newCampaignId) {
           await updateChatFbCampaignId(aiState.chatId, newCampaignId)
         }
 
-        // Optimistically add user message UI
-        setMessages(currentMessages => [
-          ...currentMessages,
-          {
-            id: nanoid(),
-            display: <UserMessage>{value}</UserMessage>
+        if (!containsAdSuggestion(value)) {
+          // Optimistically add user message UI
+          setMessages(currentMessages => [
+            ...currentMessages,
+            {
+              id: nanoid(),
+              display: <UserMessage>{value}</UserMessage>
+            }
+          ])
+  
+          // Submit and get response message
+          const responseMessage = await submitUserMessage(value)
+          setMessages(currentMessages => [...currentMessages, responseMessage])
+          if (newCampaignId) {
+            await updateChatTitle(aiState.chatId, campaignName)
           }
-        ])
-
-        // Submit and get response message
-        const responseMessage = await submitUserMessage(value)
-        setMessages(currentMessages => [...currentMessages, responseMessage])
-        if (newCampaignId) {
-          await updateChatTitle(aiState.chatId, campaignName)
-        }
+        }        
       }}
     >
       <div className="relative flex max-h-60 w-full grow flex-col overflow-hidden bg-background px-8 sm:rounded-md sm:border sm:px-12">

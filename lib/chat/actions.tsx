@@ -787,10 +787,10 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                     campaignName: z.string().describe('The name of the campaign'),
                     images: z.array(z.object({
                         suggestedTexts: z.array(z.object({
-                            image: z.string().optional().describe('The link of the image to display'),
+                            image: z.string().describe('The link of the image to display'),
                             date: z.string(),
                             text: z.string(),
-                            headline: z.string().optional()  // Make headline optional
+                            headline: z.string().describe('The headline of the ad to display'),
                         })).describe('List of suggested ad texts')})
                     ).describe('List of images to display')
                 }),
