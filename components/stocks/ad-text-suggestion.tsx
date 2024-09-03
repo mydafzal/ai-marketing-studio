@@ -9,15 +9,9 @@ import { useActions, useAIState, useUIState } from 'ai/rsc'
 import { sleep } from '@/lib/utils'
 import { ImagePart } from 'ai'
 import type { AI } from '@/lib/chat/actions'
-import { Message } from '@/lib/types'
+import { AdText, Message } from '@/lib/types'
+import { generateAdTemplate, generateAdsetTemplate } from '@/lib/data'
 
-export interface AdText {
-  image?: string
-  id?: string
-  date: string
-  text: string
-  headline?: string // Make headline optional
-}
 export interface ImageSuggestionProps {
   suggestedTexts: AdText[]
 }
@@ -128,74 +122,7 @@ export function AdTextSuggestion({ props }: { props: ImageSuggestionProps[] }) {
   const [, setMessages] = useUIState<typeof AI>()
 
   const acceptText = async (adText: AdText) => {
-
-    const createData = {
-      name: 'New Link Ad Creative',
-      object_story_spec: {
-        page_id: 119021011189054,
-        link_data: {
-          link: 'https://www.example.com',
-          name: adText.headline,
-          message: adText.text,
-          call_to_action: {
-            type: 'SIGN_UP',
-            value: {
-              lead_gen_form_id: 8902951086385726
-            }
-          },
-          image_url: adText.image
-        }
-      }
-    };
-    const adsetData = {
-      name: 'My Ad Set',
-      bid_amount: 2,
-      billing_event: 'IMPRESSIONS',
-      optimization_goal: 'REACH',
-      targeting: {
-        age_max: 65,
-        age_min: 18,
-        flexible_spec: [
-          {
-            interests: [
-              {
-                id: '6003214937861',
-                name: 'Self-employment'
-              },
-              {
-                id: '6003374632277',
-                name: 'Freelancer'
-              }
-            ]
-          }
-        ],
-        geo_locations: {
-          countries: ['NL', 'DE'],
-          location_types: ['home', 'recent']
-        },
-        publisher_platforms: ['facebook', 'instagram'],
-        facebook_positions: [
-          'feed',
-          'facebook_reels',
-          'video_feeds',
-          'marketplace',
-          'story'
-        ],
-        instagram_positions: [
-          'stream',
-          'story',
-          'explore',
-          'reels',
-          'explore_home'
-        ],
-        device_platforms: ['mobile', 'desktop']
-      },
-      promoted_object: {
-        page_id: 119021011189054
-      },
-      status: 'PAUSED'
-    }
-    const response = await confirmCreateAd(createData, adsetData)
+    const response = await confirmCreateAd(generateAdTemplate(adText), generateAdsetTemplate())
     setCreateAdUI(response.createAdUI)
 
     setMessages(currentMessages => [...currentMessages, response.newMessage])
