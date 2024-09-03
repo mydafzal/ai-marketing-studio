@@ -11,14 +11,14 @@ import { useAIState, useActions, useUIState } from 'ai/rsc'
 import type { AI } from '@/lib/chat/actions'
 import { nanoid } from 'nanoid'
 import { UserMessage } from './stocks/message'
-import {  updateChatFbCampaignId } from '@/app/actions'
+import {  updateChatFbCampaignId, updateChatTitle } from '@/app/actions'
 
 export interface ChatPanelProps {
   id?: string
   title?: string
   isAtBottom: boolean
   scrollToBottom: () => void
-  createNewCampaign: () => Promise<string | false>
+  createNewCampaign: (name: string) => Promise<string | false>
 }
 
 export function ChatPanel({
@@ -73,10 +73,11 @@ export function ChatPanel({
                   index > 1 && 'hidden md:block'
                 }`}
                 onClick={async () => {
-                  
+                  const campaignName = "My campaign"
+
                   let newCampaignId;
                   if(!aiState.messages.length) {
-                    newCampaignId = await createNewCampaign();
+                    newCampaignId = await createNewCampaign(campaignName);
                   }
 
                   setMessages(currentMessages => [
@@ -99,6 +100,10 @@ export function ChatPanel({
                     ...currentMessages,
                     responseMessage
                   ])
+
+                  if (newCampaignId) {
+                    await updateChatTitle(aiState.chatId, campaignName)
+                  }
 
                 }}
               >

@@ -12,7 +12,7 @@ import { useScrollAnchor } from '@/lib/hooks/use-scroll-anchor'
 import { toast } from 'sonner'
 import { getCampaignSummary } from '@/lib/api/fasty-bot/get-campaign-summary'
 import { createCampaign } from '@/lib/api/fasty-bot/create-campaign'
-import { fetchChatFbCampaignId } from '@/app/actions'
+import { fetchChatFbCampaignId, getChat, updateChatTitle } from '@/app/actions'
 
 export interface ChatProps extends React.ComponentProps<'div'> {
   initialMessages?: Message[]
@@ -31,6 +31,13 @@ export function Chat({ id, className, session, missingKeys }: ChatProps) {
     try {
       const summary = await getCampaignSummary()
       if (summary && summary.campaign_id !== '0') {
+        if(session){
+          const chat = await getChat(aiState.chatId, session.user.id);
+          if(chat?.title !== summary.campaign_name){
+              await updateChatTitle(aiState.chatId, summary.campaign_name);
+          }
+        }
+       
         setAIState((aiState: any) => ({
           ...aiState,
           messages: [
@@ -49,10 +56,10 @@ export function Chat({ id, className, session, missingKeys }: ChatProps) {
     }
   }, [])
 
-  const createNewCampaign = async (): Promise<string | false> => {
+  const createNewCampaign = async (defaultName: string): Promise<string | false> => {
     const response = await createCampaign({
       chatSlug: aiState.chatId,
-      name: 'My Campaign',
+      name: defaultName,
       objective: 'OUTCOME_LEADS',
       status: 'PAUSED',
       special_ad_categories: ['NONE']

@@ -78,7 +78,7 @@ export function SidebarItem({ index, chat, children }: SidebarItemProps) {
       >
         <div
           className="relative max-h-5 flex-1 select-none overflow-hidden text-ellipsis break-all"
-          title={chat.title}
+          title={chat.title || 'No Name'}
         >
           <span className="whitespace-nowrap">
             {shouldAnimate ? (
@@ -113,7 +113,7 @@ export function SidebarItem({ index, chat, children }: SidebarItemProps) {
                 </motion.span>
               ))
             ) : (
-              <span>{chat.title}</span>
+              <span>{chat.title || 'No Name'}</span>
             )}
           </span>
         </div>

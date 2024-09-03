@@ -23,7 +23,7 @@ import { useParams } from 'next/navigation'
 import { useAIState } from 'ai/rsc'
 import { Message } from '@/lib/types'
 import { getMimeType } from '@/lib/utils'
-import { updateChatFbCampaignId } from '@/app/actions'
+import { updateChatFbCampaignId, updateChatTitle } from '@/app/actions'
 
 const containsTitleAndDescription = (text: string): boolean => {
   const hasTitle = text.toLowerCase().includes('title:')
@@ -32,7 +32,7 @@ const containsTitleAndDescription = (text: string): boolean => {
 }
 
 export interface PromtFormProps {
-  createNewCampaign: () => Promise<string | false>,
+  createNewCampaign: (name: string) => Promise<string | false>,
 }
 
 export function PromptForm({
@@ -95,10 +95,10 @@ export function PromptForm({
       const data = await response.json()
       if (response.ok) {
         toast.success('Images uploaded successfully!')
-
+        const campaignName = "My campaign"
         let newCampaignId
         if (!aiState.messages.length) {
-          newCampaignId = await createNewCampaign()
+          newCampaignId = await createNewCampaign(campaignName)
         }
 
         const textPrompt = `I upload images with these urls: ${JSON.stringify(data.urls)}, at this time: ${new Date().getTime()}`
@@ -128,7 +128,7 @@ export function PromptForm({
         )
 
         if (newCampaignId) {
-          updateChatFbCampaignId(aiState.chatId, newCampaignId)
+          await updateChatFbCampaignId(aiState.chatId, newCampaignId)
         }
 
         setMessages(currentMessages => [
@@ -143,6 +143,9 @@ export function PromptForm({
           },
           responseMessage,
         ])
+        if (newCampaignId) {
+          await updateChatTitle(aiState.chatId, campaignName)
+        }
       } else {
         toast.error('Failed to upload the image. Please try again.')
       }
@@ -195,10 +198,10 @@ export function PromptForm({
           setIsDisabled(true)
         }
         if (!value) return
-
+        const campaignName = "My campaign"
         let newCampaignId
         if (!aiState.messages.length) {
-          newCampaignId = await createNewCampaign()
+          newCampaignId = await createNewCampaign(campaignName)
         }
 
         if (containsTitleAndDescription(value)) {
@@ -215,7 +218,7 @@ export function PromptForm({
           })
         }
         if (newCampaignId) {
-          updateChatFbCampaignId(aiState.chatId, newCampaignId)
+          await updateChatFbCampaignId(aiState.chatId, newCampaignId)
         }
 
         // Optimistically add user message UI
@@ -230,6 +233,9 @@ export function PromptForm({
         // Submit and get response message
         const responseMessage = await submitUserMessage(value)
         setMessages(currentMessages => [...currentMessages, responseMessage])
+        if (newCampaignId) {
+          await updateChatTitle(aiState.chatId, campaignName)
+        }
       }}
     >
       <div className="relative flex max-h-60 w-full grow flex-col overflow-hidden bg-background px-8 sm:rounded-md sm:border sm:px-12">
