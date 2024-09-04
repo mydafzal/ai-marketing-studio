@@ -15,6 +15,21 @@ export interface ImageSuggestionProps {
   suggestedTexts: AdText[]
 }
 
+export function AdTextPreview({
+  id,
+  adText
+}: {
+  id: string,
+  adText: AdText
+}) {
+  return (
+    <>
+      <span>You created an ad with ID: {id}.</span>
+      <AdTextItem index={0} adText={adText} />
+    </>
+  )
+}
+
 export function AdTextItem({
   index,
   adText,
@@ -23,14 +38,16 @@ export function AdTextItem({
 }: {
   index: number
   adText: AdText
-  acceptText: (adText: AdText) => Promise<void>
-  updateText: (idx: number, adText: AdText, newAdText: AdText) => void
+  acceptText?: (adText: AdText) => Promise<void>
+  updateText?: (idx: number, adText: AdText, newAdText: AdText) => void
 }) {
   const [isUpdating, setIsUpdating] = useState(false)
   const handleAccept = async () => {
     setIsUpdating(true)
     await sleep(1000)
-    await acceptText(adText)
+    if (acceptText) {
+      await acceptText(adText)
+    }
     setIsUpdating(false)
     toast.success('Ad text added to your campaign successfully!')
   }
@@ -61,19 +78,23 @@ export function AdTextItem({
           </p>
           <div className="flex mt-4 space-x-4 mb-5">
             <div className="text-center w-full space-x-4 pr-4">
-              <button
-                onClick={() => emitAdjustEvent()}
-                className="px-3 mr-2 py-2 text-xs font-medium text-center text-white bg-gray-700 rounded-lg hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
-              >
-                Adjust
-              </button>
-              <button
-                onClick={handleAccept}
-                className="px-3 py-2 text-xs inline-block align-middle font-medium text-center text-white bg-gray-700 rounded-lg hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
-              >
-                {isUpdating && <IconSpinner />}
-                {!isUpdating && 'Accept'}
-              </button>
+              {!!acceptText && (
+                <button
+                  onClick={() => emitAdjustEvent()}
+                  className="px-3 mr-2 py-2 text-xs font-medium text-center text-white bg-gray-700 rounded-lg hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
+                >
+                  Adjust
+                </button>
+              )}
+              {!!updateText && (
+                <button
+                  onClick={handleAccept}
+                  className="px-3 py-2 text-xs inline-block align-middle font-medium text-center text-white bg-gray-700 rounded-lg hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
+                >
+                  {isUpdating && <IconSpinner />}
+                  {!isUpdating && 'Accept'}
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -127,7 +148,8 @@ export function AdTextSuggestion({ props }: { props: ImageSuggestionProps[] }) {
         adText.text,
         adText.image
       ),
-      generateAdsetTemplate()
+      generateAdsetTemplate(),
+      adText
     )
     setCreateAdUI(response.createAdUI)
 

@@ -226,16 +226,22 @@ export function PromptForm({
           const text = value.split('Description:')?.[1]?.split('Creative:')?.[0]?.trim()
           console.log('text', text);
 
-          const creative = value.split('Creative:')?.[1]?.trim()
-          console.log('creative', creative);
+          const image = value.split('Creative:')?.[1]?.trim()
+          console.log('image', image);
 
           const response = await confirmCreateAd(
             generateAdTemplate(
               headline,
               text,
-              creative
+              image
             ),
-            generateAdsetTemplate()
+            generateAdsetTemplate(),
+            {
+              headline,
+              text,
+              image,
+              date: `{new Date().getTime()}`
+            }
           )
       
           setMessages(currentMessages => [...currentMessages, response.newMessage])
@@ -250,7 +256,7 @@ export function PromptForm({
                 content: `The user has created an ad with ID: ${JSON.stringify({
                   headline,
                   text,
-                  creative
+                  creative: image
                 })}`
               }
             ]

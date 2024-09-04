@@ -8,7 +8,7 @@ import {z} from 'zod'
 import {EventsSkeleton} from '@/components/stocks/events-skeleton'
 import {Events} from '@/components/stocks/events'
 import {StockSkeleton} from '@/components/stocks/stock-skeleton'
-import {AdTextSuggestion} from '@/components/stocks/ad-text-suggestion'
+import {AdTextPreview, AdTextSuggestion} from '@/components/stocks/ad-text-suggestion'
 import {CampaignStatus} from '@/components/stocks/campaign-status'
 
 import {ChatImage} from '@/components/chat-images'
@@ -18,13 +18,14 @@ import { UserContent, TextPart, ImagePart  } from 'ai'
 import {formatNumber, nanoid, runAsyncFnWithoutBlocking, sleep} from '@/lib/utils'
 import {fetchChatExtraDetails, saveChat, fetchChatCampaignBudget, updateChatCampaignBudget} from '@/app/actions'
 import {SpinnerMessage, UserMessage} from '@/components/stocks/message'
-import {Chat, Message, Campaign} from '@/lib/types';
+import {AdText, Chat, Message, Campaign} from '@/lib/types';
 import {auth} from '@/auth'
 import {setDailyCampaignBudget} from '@/lib/api/fasty-bot/set-daily-campaign-budget';
 import {setCampaignStatus} from '@/lib/api/fasty-bot/set-campaign-status';
 import {createCampaignAd} from '@/lib/api/fasty-bot/create-ad';
 import {getCampaignIdFromUrl} from "@/lib/api/fasty-bot/helpers/campaign-id-from-url-helper";
 import {getChatIdFromUrl} from "@/lib/api/fasty-bot/helpers/chat-id-from-url-helper";
+import { AuditContext } from 'aws-sdk/clients/lakeformation'
 
 interface ToolResult {
     toolName: string;
@@ -188,7 +189,7 @@ async function confirmUpdateStatus(campaignName: string, status: string){
         }
     }
 }
-async function confirmCreateAd(data: any, adset: any){
+async function confirmCreateAd(data: any, adset: any, adText: AdText){
     'use server'
     const aiState = getMutableAIState<typeof AI>();
     let campaignId = await getCampaignIdFromUrl() || '0' ; // for now just say you are updating even if no campaign id in place
@@ -225,24 +226,47 @@ async function confirmCreateAd(data: any, adset: any){
             createAd.done(
                 <div>
                     <p className="mb-2">
-                        You have successfully create campaign ad ID: {updateSuccess?.params?.id}
+                        You have successfully created campaign ad with ID: {updateSuccess?.params?.id}
                     </p>
                 </div>
             );
+
+            const toolCallId = nanoid()
+            const id = updateSuccess?.params?.id
+
             aiState.done({
                 ...aiState.get(),
                 messages: [
                     ...aiState.get().messages,
                     {
                         id: nanoid(),
-                        role: 'system',
-                        content: `This is the advertising ID that was generated: ${updateSuccess?.params?.id}`
+                        role: 'assistant',
+                        content: [
+                            {
+                                type: 'tool-call',
+                                toolName: 'showAdTextPreview',
+                                toolCallId,
+                                args: {id, adText}
+                            }
+                        ]
+                    },
+                    {
+                        id: toolCallId,
+                        role: 'tool',
+                        content: [
+                            {
+                                type: 'tool-result',
+                                toolName: 'showAdTextPreview',
+                                toolCallId,
+                                result: {id, adText}
+                            }
+                        ]
                     }
                 ]
             });
             systemMessage.done(
                 <SystemMessage>
-                   You have successfully create campaign ad ID: {updateSuccess?.params?.id}
+                    <AdTextPreview id={updateSuccess?.params?.id} adText={adText} />
                 </SystemMessage>
             );
          
@@ -394,11 +418,12 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
     - "[User has changed the daily budget to $150]" means that the user has adjusted the daily budget to $150 in the UI.
     
     If the user requests setting or changing the ad budget, always first make sure that he tells you the amount. If the message of the user does not yet contain the amount of budget ask the user first for how much he wants to change ad budget. Once he tells you the amount always call \`show_ad_budget_ui\` to show the budget UI.
-    if you want to show campaign results always call \`get_campaign_results\` this basically shows the chart with the campaign results. if they ask about certain metrics about the campaign dont show the chart instead discuss those metrics.
-    If you want to provide ad texts to the user Call \`showSuggestionAdText\` to show the ad text selection UI and let the user choose or input their ad text.
-    If you want to generate ad text examples to the user Call \`showSuggestionAdText\` to show the ad text selection UI and let the user choose or input their ad text.
-    If you want to change status of campaign Call  \'showUpdateStatusChampaign\' to show the update status UI and let the user choose status of the campaign
-    If the user wants to pause a campaign Call  \'showUpdateStatusChampaign\' to show the update status UI and let the user choose status of the campaign
+    if you want to show campaign results, always call \`get_campaign_results\` this basically shows the chart with the campaign results. if they ask about certain metrics about the campaign dont show the chart instead discuss those metrics.
+    If you want to provide ad texts to the user, call \`showSuggestionAdText\` to show the ad text selection UI and let the user choose or input their ad text.
+    If you want to generate ad text examples to the user, call \`showSuggestionAdText\` to show the ad text selection UI and let the user choose or input their ad text.
+    If you want to change status of campaign, call \'showUpdateStatusChampaign\' to show the update status UI and let the user choose status of the campaign.
+    If you want to show the created ad to user, call \'showAdTextPreview\' to show ad details to the user.
+    If the user wants to pause a campaign Call  \'showUpdateStatusChampaign\' to show the update status UI and let the user choose status of the campaign.
     If the user wants to complete another specific task, respond that you are a demo and cannot perform that action.
     Besides that, you can also chat with users and perform budget calculations if needed. ${extraDetailsText}`,
         messages: [
@@ -781,6 +806,66 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                     )
                 }
             },
+            showAdTextPreview: {
+                description: 'Show ad details to user',
+                parameters: z.object({
+                    id: z.string().describe('The id of created ad'),
+                    adText: z.object({
+                        image: z.string().describe('The link of the image of created ad'),
+                        date: z.string().describe('The date of the created ad'),
+                        text: z.string().describe('The text content of the created ad'),
+                        headline: z.string().describe('The headline of the created ad'),
+                    })
+                }),
+                generate: async function* ({id, adText}) {
+                    yield (
+                        <BotCard>
+                            <AdTextSelectionSkeleton/>
+                        </BotCard>
+                    );
+
+                    await sleep(1000);
+
+                    const toolCallId = nanoid();
+                   
+                    aiState.done({
+                        ...aiState.get(),
+                        messages: [
+                            ...aiState.get().messages,
+                            {
+                                id: nanoid(),
+                                role: 'assistant',
+                                content: [
+                                    {
+                                        type: 'tool-call',
+                                        toolName: 'showAdTextPreview',
+                                        toolCallId,
+                                        args: {id, adText}
+                                    }
+                                ]
+                            },
+                            {
+                                id: nanoid(),
+                                role: 'tool',
+                                content: [
+                                    {
+                                        type: 'tool-result',
+                                        toolName: 'showAdTextPreview',
+                                        toolCallId,
+                                        result: {id, adText}
+                                    }
+                                ]
+                            }
+                        ]
+                    });
+
+                    return (
+                        <BotCard>
+                            <AdTextPreview id={id} adText={adText} />
+                        </BotCard>
+                    );
+                }
+            },
             showSuggestionAdText: {
                 description: 'Show UI to select or input ad text for each image a campaign.',
                 parameters: z.object({
@@ -1008,6 +1093,12 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                 return (
                                     <BotCard key={tool.toolCallId}>
                                         <Events props={tool.result}/>
+                                    </BotCard>
+                                );
+                            case 'showAdTextPreview':
+                                return (
+                                    <BotCard key={tool.toolCallId}>
+                                        <AdTextPreview id={tool.result.id} adText={tool.result.adText} />
                                     </BotCard>
                                 );
                             case 'showSuggestionAdText':
