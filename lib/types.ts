@@ -48,6 +48,7 @@ export interface Campaign  extends Record<string, any> {
 }
 
 export interface AdText {
+  id: number
   image: string
   date: string
   text: string

@@ -10,6 +10,8 @@ import { sleep } from '@/lib/utils'
 import type { AI } from '@/lib/chat/actions'
 import { AdText } from '@/lib/types'
 import { generateAdTemplate, generateAdsetTemplate } from '@/lib/data'
+import { updateAdText } from '@/app/actions'
+import { useParams } from 'next/navigation'
 
 export interface ImageSuggestionProps {
   suggestedTexts: AdText[]
@@ -42,6 +44,9 @@ export function AdTextItem({
   updateText?: (idx: number, adText: AdText, newAdText: AdText) => void
 }) {
   const [isUpdating, setIsUpdating] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [textEdit, setTextEdit] = useState(adText.text)
+
   const handleAccept = async () => {
     setIsUpdating(true)
     await sleep(1000)
@@ -52,41 +57,87 @@ export function AdTextItem({
     toast.success('Ad text added to your campaign successfully!')
   }
 
+  const handleSave = async () => {
+    setIsUpdating(true)
+    await sleep(1000)
+    if (updateText) {
+      updateText(index, adText, { ...adText, text: textEdit })
+    }
+    setIsEditing(false)
+    setIsUpdating(false)
+    toast.success('Ad text added to your campaign successfully!')
+  }
+
   const emitAdjustEvent = () => {
     const event = new CustomEvent('adjust-adtext', {
-      detail: adText
+      detail: {
+        index,
+        adText
+      }
     })
     window.dispatchEvent(event)
   }
 
+  const showAdjustView = () => {
+    setIsEditing(true)
+  }
+
   return (
-      <div className="flex items-center">
-        <div className="flex-none w-72">
-          <img
-            src={adText.image as string}
-            alt=""
-            className="inset-0 w-full object-cover "
-            loading="lazy"
+    <div className="flex items-center">
+      <div className="flex-none w-72">
+        <img
+          src={adText.image as string}
+          alt=""
+          className="inset-0 w-full object-cover "
+          loading="lazy"
+        />
+      </div>
+      <div className="flex-1 p-6">
+        <h6 className="block text-center font-sans text-lg mb-5 antialiased font-semibold leading-relaxed tracking-normal text-blue-gray-900">
+          {adText.headline || `Suggested Ad Text ${index + 1}`}
+        </h6>
+        {isEditing ? (
+          <textarea
+            className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            rows={4}
+            value={textEdit}
+            onChange={e => setTextEdit(e.target.value)}
           />
-        </div>
-        <div className=" p-6">
-          <h6 className="block text-center font-sans text-lg mb-5 antialiased font-semibold leading-relaxed tracking-normal text-blue-gray-900">
-            {adText.headline || `Suggested Ad Text ${index + 1}`}
-          </h6>
+        ) : (
           <p className="block font-sans text-sm antialiased font-normal leading-normal text-gray-700 dark:text-gray-100">
             {adText.text}
           </p>
-          <div className="flex mt-4 space-x-4 mb-5">
-            <div className="text-center w-full space-x-4 pr-4">
-              {!!acceptText && (
+        )}
+        <div className="flex mt-4 space-x-4 mb-5">
+          <div className="text-center w-full space-x-4 pr-4">
+            {isEditing ? (
+              <>
                 <button
-                  onClick={() => emitAdjustEvent()}
+                  onClick={() => {
+                    setIsEditing(false)
+                    setTextEdit(adText.text)
+                  }}
+                  className="px-3 mr-5 py-2 text-xs font-medium text-center text-white bg-gray-700 rounded-lg hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSave}
+                  aria-disabled={isUpdating}
+                  className="px-3 py-2 text-xs inline-block align-middle font-medium text-center text-white bg-gray-700 rounded-lg hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
+                >
+                  {isUpdating && <IconSpinner />}
+                  {!isUpdating && "Save"}
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={showAdjustView}
                   className="px-3 mr-2 py-2 text-xs font-medium text-center text-white bg-gray-700 rounded-lg hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
                 >
                   Adjust
                 </button>
-              )}
-              {!!updateText && (
                 <button
                   onClick={handleAccept}
                   className="px-3 py-2 text-xs inline-block align-middle font-medium text-center text-white bg-gray-700 rounded-lg hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
@@ -94,16 +145,18 @@ export function AdTextItem({
                   {isUpdating && <IconSpinner />}
                   {!isUpdating && 'Accept'}
                 </button>
-              )}
-            </div>
+              </>
+            )}
           </div>
         </div>
       </div>
+    </div>
   )
 }
 
 export function AdTextSuggestion({ props }: { props: ImageSuggestionProps[] }) {
   console.log('props of AdTextSuggestion', props)
+  const { id: chatSlug } = useParams()
 
   const [adTexts, setAdTexts] = useState<AdText[]>(
     props.reduce((result, items) => [...result,  ...items.suggestedTexts], [] as AdText[])
@@ -167,29 +220,30 @@ export function AdTextSuggestion({ props }: { props: ImageSuggestionProps[] }) {
       ]
     })
   }
-  const updateText = (idx: number, adText: AdText, newAdText: AdText) => {
+  const updateText = async (idx: number, adText: AdText, newAdText: AdText) => {
     setAdTexts(
       adTexts.map((adText: AdText, index: number) => {
         if (index === idx) return newAdText
         return adText
       })
     )
-    setAIState({
-      ...aiState,
-      messages: [
-        ...aiState.messages,
-        {
-          id: nanoid(),
-          role: 'system',
-          content: `The user updated the ad text suggestion from: ${JSON.stringify(adText)} to : ${JSON.stringify(newAdText)}.`
-        },
-        {
-          id: nanoid(),
-          role: 'system',
-          content: `The user has accepted this text as campaign content: ${JSON.stringify(newAdText)}`
-        }
-      ]
-    })
+    await updateAdText(chatSlug as string, idx, adText.id, newAdText.text)
+    // setAIState({
+    //   ...aiState,
+    //   messages: [
+    //     ...aiState.messages,
+    //     {
+    //       id: nanoid(),
+    //       role: 'system',
+    //       content: `The user updated the ad text suggestion from: ${JSON.stringify(adText)} to : ${JSON.stringify(newAdText)}.`
+    //     },
+    //     {
+    //       id: nanoid(),
+    //       role: 'system',
+    //       content: `The user has accepted this text as campaign content: ${JSON.stringify(newAdText)}`
+    //     }
+    //   ]
+    // })
   }
   return (
     <div className="-mt-2 flex w-full flex-col gap-4 py-4">

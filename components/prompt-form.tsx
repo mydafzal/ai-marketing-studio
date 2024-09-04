@@ -24,6 +24,7 @@ import { generateAdTemplate, generateAdsetTemplate } from '@/lib/data'
 import { AdText, Message } from '@/lib/types'
 import { getMimeType } from '@/lib/utils'
 import { updateChatFbCampaignId, updateChatTitle } from '@/app/actions'
+import { getChat } from '@/app/actions'
 
 const containsAdSuggestion = (text: string): boolean => {
   const hasTitle = text.toLowerCase().includes('title:')
@@ -166,7 +167,7 @@ export function PromptForm({
   }, [])
   React.useEffect(() => {
     function eventListener(e: CustomEvent) {
-      const adText = e.detail as AdText
+      const adText = e.detail.adText as AdText
       if (inputRef.current) {
         inputRef.current.value = `Title:\n${adText.headline}\n\nDescription:\n${adText.text}\n\nCreative:\n${adText.image}`
       }
@@ -229,38 +230,38 @@ export function PromptForm({
           const image = value.split('Creative:')?.[1]?.trim()
           console.log('image', image);
 
-          const response = await confirmCreateAd(
-            generateAdTemplate(
-              headline,
-              text,
-              image
-            ),
-            generateAdsetTemplate(),
-            {
-              headline,
-              text,
-              image,
-              date: `{new Date().getTime()}`
-            }
-          )
+          // const response = await confirmCreateAd(
+          //   generateAdTemplate(
+          //     headline,
+          //     text,
+          //     image
+          //   ),
+          //   generateAdsetTemplate(),
+          //   {
+          //     headline,
+          //     text,
+          //     image,
+          //     date: `{new Date().getTime()}`
+          //   }
+          // )
       
-          setMessages(currentMessages => [...currentMessages, response.newMessage])
+          // setMessages(currentMessages => [...currentMessages, response.newMessage])
          
-          setAIState({
-            ...aiState,
-            messages: [
-              ...aiState.messages,
-              {
-                id: nanoid(),
-                role: 'system',
-                content: `The user has created an ad with ID: ${JSON.stringify({
-                  headline,
-                  text,
-                  creative: image
-                })}`
-              }
-            ]
-          })
+          // setAIState({
+          //   ...aiState,
+          //   messages: [
+          //     ...aiState.messages,
+          //     {
+          //       id: nanoid(),
+          //       role: 'system',
+          //       content: `The user has created an ad with ID: ${JSON.stringify({
+          //         headline,
+          //         text,
+          //         creative: image
+          //       })}`
+          //     }
+          //   ]
+          // })
         }
         if (newCampaignId) {
           await updateChatFbCampaignId(aiState.chatId, newCampaignId)

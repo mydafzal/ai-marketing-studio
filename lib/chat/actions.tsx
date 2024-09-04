@@ -811,6 +811,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                 parameters: z.object({
                     id: z.string().describe('The id of created ad'),
                     adText: z.object({
+                        id: z.number(),
                         image: z.string().describe('The link of the image of created ad'),
                         date: z.string().describe('The date of the created ad'),
                         text: z.string().describe('The text content of the created ad'),
@@ -872,6 +873,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                     campaignName: z.string().describe('The name of the campaign'),
                     images: z.array(z.object({
                         suggestedTexts: z.array(z.object({
+                            id: z.number().describe('This is timestamp of current time'),
                             image: z.string().describe('The link of the image to display'),
                             date: z.string(),
                             text: z.string(),

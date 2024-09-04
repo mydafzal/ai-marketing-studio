@@ -5,7 +5,7 @@ import {redirect} from 'next/navigation'
 import {kv} from '@vercel/kv'
 
 import {auth} from '@/auth'
-import {type Chat} from '@/lib/types'
+import {type Chat, AdText} from '@/lib/types'
 
 export async function getChats(userId?: string | null) {
     if (!userId) {
@@ -343,6 +343,7 @@ export async function updateChatCampaignBudget(chatSlug: string, budget: number)
         }
     }
 }
+
 export async function updateChatTitle(chatSlug: string, title: string) {
     const session = await auth()
 
@@ -416,6 +417,73 @@ export async function fetchChatCampaignBudget(chatSlug: string) {
         }
     } catch (error) {
         console.error(`Error fetching budget for chat ${chatSlug}:`, error)
+        return {
+            error: 'Something went wrong'
+        }
+    }
+}
+
+export async function updateAdText(chatSlug: string, idx: number, adTextId: number, newText: string) {
+    const session = await auth()
+
+    if (!session || !session.user) {
+        return {
+            error: 'User not authenticated'
+        }
+    }
+
+    try {
+        // Construct the chat key using the chatSlug
+        const chatKey = `chat:${chatSlug}`
+
+        // Check if the chat exists
+        const existingChat: Chat | null = await kv.hgetall(chatKey)
+
+        if (!existingChat) {
+            return {
+                error: 'Chat not found'
+            }
+        }
+
+        existingChat.messages.forEach(message => {
+            if (message.role === 'assistant') {
+                if (!Array.isArray(message.content)) return
+                message.content.forEach(tool => {
+                    if (tool.type !== "tool-call") return
+                    if (tool.toolName !== "showSuggestionAdText") return
+                    if (!Array.isArray((tool.args as any)?.images)) return
+                    (tool.args as any)?.images.forEach((image: any) => {
+                        if (!Array.isArray(image.suggestedTexts)) return
+                        image.suggestedTexts.forEach((suggestedText: AdText, index: number) => {
+                            suggestedText.id === adTextId && index === idx && (suggestedText.text = newText);
+                        })
+                    })
+                })
+            }
+            if (message.role === 'tool') {
+                if (!Array.isArray(message.content)) return
+                message.content.forEach(tool => {
+                    if (tool.type !== "tool-result") return
+                    if (tool.toolName !== "showSuggestionAdText") return
+                    if (!Array.isArray((tool.result as any)?.images)) return
+                    (tool.result as any).images.forEach((image: any) => {
+                        if (!Array.isArray(image.suggestedTexts)) return
+                        image.suggestedTexts.forEach((suggestedText: AdText, index: number) => {
+                            suggestedText.id === adTextId && index === idx && (suggestedText.text = newText);
+                        })
+                    })
+                })
+            }
+        })
+
+        await kv.hset(chatKey, existingChat)
+
+        return {
+            success: true,
+            message: 'Chat updated successfully'
+        }
+    } catch (error) {
+        console.error(`Error updating title for chat ${chatSlug}:`, error)
         return {
             error: 'Something went wrong'
         }
