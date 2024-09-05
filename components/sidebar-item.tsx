@@ -17,6 +17,7 @@ import {
 import { useLocalStorage } from '@/lib/hooks/use-local-storage'
 import { type Chat } from '@/lib/types'
 import { cn } from '@/lib/utils'
+import { getChat } from '@/app/actions'
 
 interface SidebarItemProps {
   index: number
@@ -30,6 +31,25 @@ export function SidebarItem({ index, chat, children }: SidebarItemProps) {
   const isActive = pathname === chat.path
   const [newChatId, setNewChatId] = useLocalStorage('newChatId', null)
   const shouldAnimate = index === 0 && isActive && newChatId
+  const [optimisticTitle, setOptimisticTitle] = React.useState<string | null>(null)
+
+  React.useEffect(() => {
+    const eventListener = async function() {
+      if (!isActive) return
+
+      const updatedChat = await getChat(chat.id, chat.userId)
+      if (updatedChat) {
+        setOptimisticTitle(updatedChat.title)
+      }
+
+      console.log('name', updatedChat)
+    }
+    window.addEventListener('update-chat-title', eventListener)
+
+    return () => {
+      window.removeEventListener('update-chat-title', eventListener)
+    }
+  }, [isActive])
 
   if (!chat?.id) return null
 
@@ -78,7 +98,7 @@ export function SidebarItem({ index, chat, children }: SidebarItemProps) {
       >
         <div
           className="relative max-h-5 flex-1 select-none overflow-hidden text-ellipsis break-all"
-          title={chat.title || 'No Name'}
+          title={optimisticTitle ?? (chat.title || 'No Name')}
         >
           <span className="whitespace-nowrap">
             {shouldAnimate ? (
@@ -113,7 +133,7 @@ export function SidebarItem({ index, chat, children }: SidebarItemProps) {
                 </motion.span>
               ))
             ) : (
-              <span>{chat.title || 'No Name'}</span>
+              <span>{optimisticTitle ?? (chat.title || 'No Name')}</span>
             )}
           </span>
         </div>

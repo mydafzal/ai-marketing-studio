@@ -9,6 +9,7 @@ import {EventsSkeleton} from '@/components/stocks/events-skeleton'
 import {Events} from '@/components/stocks/events'
 import {StockSkeleton} from '@/components/stocks/stock-skeleton'
 import {AdTextPreview, AdTextSuggestion} from '@/components/stocks/ad-text-suggestion'
+import {RefreshChatTitle} from '@/components/refresh-chat-title'
 import {CampaignStatus} from '@/components/stocks/campaign-status'
 import {updateChatTitle} from '@/app/actions'
 
@@ -950,7 +951,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                     if (process.env.NEXT_PUBLIC_HARDCODED_MODE === '1') {
                         campaignId = process.env.NEXT_PUBLIC_HARDCODED_CAMPAIGN_ID || '0'
                     }
-                    
+                    console.log('why is campaign name changed?')
                     await updateCampaign(campaignId, {name: campaignName})
                     await updateChatTitle(aiState.get().chatId,campaignName)
                     
@@ -985,7 +986,12 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                         }
                       ]
                     })
-                    return <BotMessage content={`Alright, I will update campaign name as "${campaignName}".`}/>
+                    return (
+                        <BotCard>
+                            {`Alright, I will update campaign name as "${campaignName}".`}
+                            <RefreshChatTitle />
+                        </BotCard>
+                    )
                 }
             }
         }

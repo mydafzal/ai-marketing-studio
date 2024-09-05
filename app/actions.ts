@@ -345,6 +345,7 @@ export async function updateChatCampaignBudget(chatSlug: string, budget: number)
 }
 
 export async function updateChatTitle(chatSlug: string, title: string) {
+    console.log('updateChatTitle', chatSlug, title)
     const session = await auth()
 
     if (!session || !session.user) {

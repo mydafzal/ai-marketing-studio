@@ -31,12 +31,13 @@ export function Chat({ id, className, session, missingKeys }: ChatProps) {
     try {
       const summary = await getCampaignSummary()
       if (summary && summary.campaign_id !== '0') {
-        if(session){
+        if (session){
           const chat = await getChat(aiState.chatId, session.user.id);
           console.log('chat', chat)
           console.log('summary', summary)
-          if(chat?.title !== summary.campaign_name){
-              await updateChatTitle(aiState.chatId, summary.campaign_name);
+          if (chat?.title !== summary.campaign_name) {
+              await updateChatTitle(aiState.chatId, summary.campaign_name)
+              window.dispatchEvent(new CustomEvent("update-chat-title"))
           }
         }
        
