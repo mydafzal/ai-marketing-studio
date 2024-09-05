@@ -94,12 +94,12 @@ export function AdTextItem({
           loading="lazy"
         />
       </div>
-      <div className="flex-1 p-6">
+      <div className="flex-1 px-6 py-2">
         {isEditing ? (
           <input
             value={headlineEdit}
             onChange={e => setHeadlineEdit(e.target.value)}
-            className="w-full mb-2 p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full text-center font-semibold mb-2 py-1 px-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         ) : (
           <h6 className="block text-center font-sans text-lg mb-5 antialiased font-semibold leading-relaxed tracking-normal text-blue-gray-900">
@@ -108,17 +108,16 @@ export function AdTextItem({
         )}
         {isEditing ? (
           <textarea
-            className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            rows={4}
+            className="w-full py-1 px-2 text-sm leading-6 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             value={textEdit}
             onChange={e => setTextEdit(e.target.value)}
           />
         ) : (
-          <p className="block font-sans text-sm antialiased font-normal leading-normal text-gray-700 dark:text-gray-100">
+          <p className="block font-sans mb-7 text-sm antialiased font-normal leading-normal text-gray-700 dark:text-gray-100">
             {adText.text}
           </p>
         )}
-        <div className="flex mt-4 space-x-4 mb-5">
+        <div className="flex mt-4 space-x-4">
           <div className="text-center w-full space-x-4 pr-4">
             {isEditing ? (
               <>
