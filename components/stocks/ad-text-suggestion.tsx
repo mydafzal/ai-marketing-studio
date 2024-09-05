@@ -238,22 +238,6 @@ export function AdTextSuggestion({ props }: { props: ImageSuggestionProps[] }) {
       })
     )
     await updateAdText(chatSlug as string, idx, adText.id, newAdText)
-    // setAIState({
-    //   ...aiState,
-    //   messages: [
-    //     ...aiState.messages,
-    //     {
-    //       id: nanoid(),
-    //       role: 'system',
-    //       content: `The user updated the ad text suggestion from: ${JSON.stringify(adText)} to : ${JSON.stringify(newAdText)}.`
-    //     },
-    //     {
-    //       id: nanoid(),
-    //       role: 'system',
-    //       content: `The user has accepted this text as campaign content: ${JSON.stringify(newAdText)}`
-    //     }
-    //   ]
-    // })
   }
   return (
     <div className="-mt-2 flex w-full flex-col gap-4 py-4">
