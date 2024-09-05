@@ -165,23 +165,6 @@ export function PromptForm({
       inputRef.current.focus()
     }
   }, [])
-  React.useEffect(() => {
-    function eventListener(e: CustomEvent) {
-      const adText = e.detail.adText as AdText
-      if (inputRef.current) {
-        inputRef.current.value = `Title:\n${adText.headline}\n\nDescription:\n${adText.text}\n\nCreative:\n${adText.image}`
-      }
-      setIsDisabled(false)
-    }
-    window.addEventListener('adjust-adtext', eventListener as EventListener)
-
-    return () => {
-      window.removeEventListener(
-        'adjust-adtext',
-        eventListener as EventListener
-      )
-    }
-  }, [])
 
   return (
     <form

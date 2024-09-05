@@ -70,16 +70,6 @@ export function AdTextItem({
     toast.success('Ad text added to your campaign successfully!')
   }
 
-  const emitAdjustEvent = () => {
-    const event = new CustomEvent('adjust-adtext', {
-      detail: {
-        index,
-        adText
-      }
-    })
-    window.dispatchEvent(event)
-  }
-
   const showAdjustView = () => {
     setIsEditing(true)
   }
