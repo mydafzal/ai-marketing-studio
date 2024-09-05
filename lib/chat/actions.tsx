@@ -10,6 +10,7 @@ import {Events} from '@/components/stocks/events'
 import {StockSkeleton} from '@/components/stocks/stock-skeleton'
 import {AdTextPreview, AdTextSuggestion} from '@/components/stocks/ad-text-suggestion'
 import {CampaignStatus} from '@/components/stocks/campaign-status'
+import {updateChatTitle} from '@/app/actions'
 
 import {ChatImage} from '@/components/chat-images'
 
@@ -23,6 +24,7 @@ import {auth} from '@/auth'
 import {setDailyCampaignBudget} from '@/lib/api/fasty-bot/set-daily-campaign-budget';
 import {setCampaignStatus} from '@/lib/api/fasty-bot/set-campaign-status';
 import {createCampaignAd} from '@/lib/api/fasty-bot/create-ad';
+import {updateCampaign} from '@/lib/api/fasty-bot/update-campaign';
 import {getCampaignIdFromUrl} from "@/lib/api/fasty-bot/helpers/campaign-id-from-url-helper";
 import {getChatIdFromUrl} from "@/lib/api/fasty-bot/helpers/chat-id-from-url-helper";
 import { AuditContext } from 'aws-sdk/clients/lakeformation'
@@ -356,7 +358,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
     
     Step 1: Do you want to give your campaign a name or should I choose one for you?
     Reasoning: Name the campaign.
-    Response: "Alright, I will create a campaign named [client's answer]."
+    Response: ALWAYS Call \`show_campaign_name\` to show the campaign name.
     
     Step 2: How much do you want to spend on your campaign daily? Ideally, spend at least €300 a month to maximize Facebook ads' potential.
     Reasoning: Set the ad budget, ensuring the user understands the impact of budget size.
@@ -984,6 +986,54 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                       </BotCard>
                     )
                 }
+            },
+            showCampaignNameMessage: {
+                description: 'Show campaign name message',
+                parameters: z.object({
+                    campaignName: z.string().describe('The name of the campaign'),
+                }),
+                generate: async function* ({campaignName}) {
+                    let campaignId = await getCampaignIdFromUrl() || '0'; // for now just say you are updating even if no campaign id in place
+                    if (process.env.NEXT_PUBLIC_HARDCODED_MODE === '1') {
+                        campaignId = process.env.NEXT_PUBLIC_HARDCODED_CAMPAIGN_ID || '0'
+                    }
+                    
+                    await updateCampaign(campaignId, {name: campaignName})
+                    await updateChatTitle(aiState.get().chatId,campaignName)
+                    
+                    const toolCallId = nanoid();
+                    aiState.done({
+                      ...aiState.get(),
+                      messages: [
+                        ...aiState.get().messages,
+                        {
+                          id: nanoid(),
+                          role: 'assistant',
+                          content: [
+                            {
+                              type: 'tool-call',
+                              toolName: 'showCampaignNameMessage',
+                              toolCallId,
+                              args: { campaignName }
+                            }
+                          ]
+                        },
+                        {
+                            id: toolCallId,
+                            role: 'tool',
+                            content: [
+                                {
+                                    type: 'tool-result',
+                                    toolName: 'showCampaignNameMessage',
+                                    toolCallId,
+                                    result: {campaignName}
+                                }
+                            ]
+                        }
+                      ]
+                    })
+                    return <BotMessage content={`Alright, I will create a campaign named ${campaignName}.`}/>
+                }
             }
         }
     });
@@ -995,6 +1045,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
 
 export type AIState = {
     chatId: string
+    title: string
     messages: Message[]
 }
 
@@ -1011,7 +1062,7 @@ export const AI = createAI<AIState, UIState>({
         confirmCreateAd
     },
     initialUIState: [],
-    initialAIState: {chatId: nanoid(), messages: []},
+    initialAIState: {chatId: nanoid(), title: '', messages: []},
     onGetUIState: async () => {
         'use server'
 
@@ -1033,7 +1084,7 @@ export const AI = createAI<AIState, UIState>({
         const session = await auth()
 
         if (session && session.user) {
-            const {chatId, messages} = state
+            const {chatId, title, messages} = state
 
             const createdAt = new Date()
             const userId = session.user.id as string
@@ -1041,11 +1092,11 @@ export const AI = createAI<AIState, UIState>({
 
             const firstMessageContent = (Array.isArray(messages[0].content) ? (messages[0].content[0] as TextPart).text  : messages[0].content) as string
 
-            const title = firstMessageContent.substring(0, 100)
+            const defaultTitle = firstMessageContent.substring(0, 100)
 
             const chat: Chat = {
                 id: chatId,
-                title,
+                title: title || defaultTitle,
                 userId,
                 createdAt,
                 messages,

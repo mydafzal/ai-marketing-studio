@@ -39,6 +39,7 @@ export default async function ChatPage({ params }: ChatPageProps) {
   const userId = session.user.id as string
   const chat = await getChat(params.id, userId)
   const chatId = chat?.id ?? params.id
+  const title = chat?.title ?? ""
   const messages = chat?.messages ?? []
 
 
@@ -51,7 +52,7 @@ export default async function ChatPage({ params }: ChatPageProps) {
   }
 
   return (
-    <AI initialAIState={{ chatId, messages }}>
+    <AI initialAIState={{ chatId, title, messages }}>
       <Chat
         id={chatId}
         session={session}
