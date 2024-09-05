@@ -206,81 +206,33 @@ async function confirmCreateAd(data: any, adset: any, adText: AdText){
       adsetUpdate = { ...adsetUpdate, daily_budget: 100 }
     }
 
-    const createAd = createStreamableUI(
-        <div className="inline-flex items-start gap-1 md:items-center">
-            {spinner}
-            <p className="mb-2">
-                Creating campaign ad...
-            </p>
-        </div>
-    );
-    const systemMessage = createStreamableUI(null);
+    const systemMessage = createStreamableUI(null)
+    const fbAdIdStream: undefined | ReturnType<typeof createStreamableValue<string>> = createStreamableValue()
+
     runAsyncFnWithoutBlocking(async () => {
         await sleep(1000);
 
-        const updateSuccess = await createCampaignAd(
+        const response = await createCampaignAd(
           campaignId,
           data,
           adsetUpdate
-        );        
-        if (updateSuccess) {
-            
-            createAd.done(
-                <div>
-                    <p className="mb-2">
-                        You have successfully created campaign ad with ID: {updateSuccess?.params?.id}
-                    </p>
-                </div>
-            );
+        );
 
-            const toolCallId = nanoid()
-            const id = updateSuccess?.params?.id
+        if (response) {
+            const id = response?.params?.id
+            fbAdIdStream?.done(`${id}`)
 
             aiState.done({
                 ...aiState.get(),
-                messages: [
-                    ...aiState.get().messages,
-                    {
-                        id: nanoid(),
-                        role: 'assistant',
-                        content: [
-                            {
-                                type: 'tool-call',
-                                toolName: 'showAdTextPreview',
-                                toolCallId,
-                                args: {id, adText}
-                            }
-                        ]
-                    },
-                    {
-                        id: toolCallId,
-                        role: 'tool',
-                        content: [
-                            {
-                                type: 'tool-result',
-                                toolName: 'showAdTextPreview',
-                                toolCallId,
-                                result: {id, adText}
-                            }
-                        ]
-                    }
-                ]
             });
             systemMessage.done(
                 <SystemMessage>
-                    <AdTextPreview id={updateSuccess?.params?.id} adText={adText} />
+                    You have successfully created campaign ad with ID: {response?.params?.id}
                 </SystemMessage>
             );
          
 
         } else {
-            createAd.done(
-                <div>
-                    <p className="mb-2 text-red-500">
-                        Error: Failed to create campaign ad. Please try again later.
-                    </p>
-                </div>
-            );
             systemMessage.done(
                 <SystemMessage>
                     Error: Failed to create campaign ad. Please try again later.
@@ -289,13 +241,14 @@ async function confirmCreateAd(data: any, adset: any, adText: AdText){
         }
     });
     return {
-        createAdUI: createAd.value,
         newMessage: {
             id: nanoid(),
             display: systemMessage.value
-        }
+        },
+        fbAdIdStream: fbAdIdStream.value
     }
 }
+
 async function submitUserMessage(content: string, contentImages?: Array<TextPart | ImagePart>) {
     'use server'
 

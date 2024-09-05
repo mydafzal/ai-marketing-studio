@@ -10,8 +10,9 @@ import { sleep } from '@/lib/utils'
 import type { AI } from '@/lib/chat/actions'
 import { AdText } from '@/lib/types'
 import { generateAdTemplate, generateAdsetTemplate } from '@/lib/data'
-import { updateAdText } from '@/app/actions'
+import { updateAdText, updateAdTextWithFbId } from '@/app/actions'
 import { useParams } from 'next/navigation'
+import { readStreamableValue } from 'ai/rsc'
 
 export interface ImageSuggestionProps {
   suggestedTexts: AdText[]
@@ -40,20 +41,20 @@ export function AdTextItem({
 }: {
   index: number
   adText: AdText
-  acceptText?: (adText: AdText) => Promise<void>
+  acceptText?: (idx: number, adText: AdText) => Promise<void>
   updateText?: (idx: number, adText: AdText, newAdText: AdText) => void
 }) {
   const [isUpdating, setIsUpdating] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [textEdit, setTextEdit] = useState(adText.text)
-
   const [headlineEdit, setHeadlineEdit] = useState(adText.headline)
+  const hasFbAd = !!adText.fbAdId
 
   const handleAccept = async () => {
     setIsUpdating(true)
     await sleep(1000)
     if (acceptText) {
-      await acceptText(adText)
+      await acceptText(index, adText)
     }
     setIsUpdating(false)
     toast.success('Ad text added to your campaign successfully!')
@@ -75,6 +76,8 @@ export function AdTextItem({
   }
 
   return (
+    <>
+    {hasFbAd && <span>You have already created an ad with this suggestion. Ad id is {adText.fbAdId}</span>}
     <div className="flex items-center">
       <div className="flex-none w-72">
         <img
@@ -85,7 +88,7 @@ export function AdTextItem({
         />
       </div>
       <div className="flex-1 px-6 py-2">
-        {isEditing ? (
+        {!hasFbAd && isEditing ? (
           <input
             value={headlineEdit}
             onChange={e => setHeadlineEdit(e.target.value)}
@@ -96,7 +99,7 @@ export function AdTextItem({
             {adText.headline || `Suggested Ad Text ${index + 1}`}
           </h6>
         )}
-        {isEditing ? (
+        {!hasFbAd && isEditing ? (
           <textarea
             className="w-full py-1 px-2 text-sm leading-6 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             value={textEdit}
@@ -107,50 +110,53 @@ export function AdTextItem({
             {adText.text}
           </p>
         )}
-        <div className="flex mt-4 space-x-4">
-          <div className="text-center w-full space-x-4 pr-4">
-            {isEditing ? (
-              <>
-                <button
-                  onClick={() => {
-                    setIsEditing(false)
-                    setTextEdit(adText.text)
-                    setHeadlineEdit(adText.headline)
-                  }}
-                  className="px-3 mr-5 py-2 text-xs font-medium text-center text-white bg-gray-700 rounded-lg hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSave}
-                  aria-disabled={isUpdating}
-                  className="px-3 py-2 text-xs inline-block align-middle font-medium text-center text-white bg-gray-700 rounded-lg hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
-                >
-                  {isUpdating && <IconSpinner />}
-                  {!isUpdating && 'Save'}
-                </button>
-              </>
-            ) : (
-              <>
-                <button
-                  onClick={showAdjustView}
-                  className="px-3 mr-2 py-2 text-xs font-medium text-center text-white bg-gray-700 rounded-lg hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
-                >
-                  Adjust
-                </button>
-                <button
-                  onClick={handleAccept}
-                  className="px-3 py-2 text-xs inline-block align-middle font-medium text-center text-white bg-gray-700 rounded-lg hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
-                >
-                  {isUpdating && <IconSpinner />}
-                  {!isUpdating && 'Accept'}
-                </button>
-              </>
-            )}
+        {!hasFbAd && (
+          <div className="flex mt-4 space-x-4">
+            <div className="text-center w-full space-x-4 pr-4">
+              {isEditing ? (
+                <>
+                  <button
+                    onClick={() => {
+                      setIsEditing(false)
+                      setTextEdit(adText.text)
+                      setHeadlineEdit(adText.headline)
+                    }}
+                    className="px-3 mr-5 py-2 text-xs font-medium text-center text-white bg-gray-700 rounded-lg hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSave}
+                    aria-disabled={isUpdating}
+                    className="px-3 py-2 text-xs inline-block align-middle font-medium text-center text-white bg-gray-700 rounded-lg hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
+                  >
+                    {isUpdating && <IconSpinner />}
+                    {!isUpdating && 'Save'}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={showAdjustView}
+                    className="px-3 mr-2 py-2 text-xs font-medium text-center text-white bg-gray-700 rounded-lg hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
+                  >
+                    Adjust
+                  </button>
+                  <button
+                    onClick={handleAccept}
+                    className="px-3 py-2 text-xs inline-block align-middle font-medium text-center text-white bg-gray-700 rounded-lg hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
+                  >
+                    {isUpdating && <IconSpinner />}
+                    {!isUpdating && 'Accept'}
+                  </button>
+                </>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
+    </>
   )
 }
 
@@ -186,15 +192,11 @@ export function AdTextSuggestion({ props }: { props: ImageSuggestionProps[] }) {
         return [...result, adText]
       }, [] as AdText[])
   )
-  console.log('adTexts', adTexts)
-
-  const [createAdUI, setCreateAdUI] = useState<null | React.ReactNode>(null)
   const { confirmCreateAd } = useActions()
 
-  const [aiState, setAIState] = useAIState()
   const [, setMessages] = useUIState<typeof AI>()
 
-  const acceptText = async (adText: AdText) => {
+  const acceptText = async (idx: number, adText: AdText) => {
     const response = await confirmCreateAd(
       generateAdTemplate(
         adText.headline,
@@ -204,22 +206,22 @@ export function AdTextSuggestion({ props }: { props: ImageSuggestionProps[] }) {
       generateAdsetTemplate(),
       adText
     )
-    setCreateAdUI(response.createAdUI)
-
     setMessages(currentMessages => [...currentMessages, response.newMessage])
-   
-    setAIState({
-      ...aiState,
-      messages: [
-        ...aiState.messages,
-        {
-          id: nanoid(),
-          role: 'system',
-          content: `The user has created an ad with ID: ${JSON.stringify(adText)}`
-        }
-      ]
-    })
+
+    for await (const fbAdId of readStreamableValue(response.fbAdIdStream)) {
+      await updateAdTextWithFbId(chatSlug as string, idx, adText.id, fbAdId as string)
+      setAdTexts(
+        adTexts.map((adText: AdText, index: number) => {
+          if (index === idx) return {
+            ...adText,
+            fbAdId: fbAdId as string
+          }
+          return adText
+        })
+      )
+    }
   }
+
   const updateText = async (idx: number, adText: AdText, newAdText: AdText) => {
     setAdTexts(
       adTexts.map((adText: AdText, index: number) => {
@@ -231,9 +233,7 @@ export function AdTextSuggestion({ props }: { props: ImageSuggestionProps[] }) {
   }
   return (
     <div className="-mt-2 flex w-full flex-col gap-4 py-4">
-      {createAdUI ? (
-        <div className="mt-4 dark:text-zinc-200">{createAdUI}</div>
-      ) : (
+      {
         adTexts.map((adText, index) => (
           <Fragment key={`${adText.date}${index}`}>
             {index !== 0 && <Separator className="my-4" />}
@@ -252,7 +252,7 @@ export function AdTextSuggestion({ props }: { props: ImageSuggestionProps[] }) {
             </div>
           </Fragment>
         ))
-      )}
+      }
     </div>
   )
 }

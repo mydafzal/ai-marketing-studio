@@ -53,4 +53,5 @@ export interface AdText {
   date: string
   text: string
   headline: string
+  fbAdId?: string
 }

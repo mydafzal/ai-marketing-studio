@@ -20,11 +20,9 @@ import { useEnterSubmit } from '@/lib/hooks/use-enter-submit'
 import { nanoid } from 'nanoid'
 import { useParams } from 'next/navigation'
 import { useAIState } from 'ai/rsc'
-import { generateAdTemplate, generateAdsetTemplate } from '@/lib/data'
-import { AdText, Message } from '@/lib/types'
+import { Message } from '@/lib/types'
 import { getMimeType } from '@/lib/utils'
 import { updateChatFbCampaignId, updateChatTitle } from '@/app/actions'
-import { getChat } from '@/app/actions'
 
 const containsAdSuggestion = (text: string): boolean => {
   const hasTitle = text.toLowerCase().includes('title:')

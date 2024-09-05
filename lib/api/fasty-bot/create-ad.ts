@@ -27,7 +27,7 @@ async function createCampaignAd(campaignId: string, data: any, adset: any): Prom
 
         // Handle the response
         if (!response.ok) {
-            console.error('Error create campaign:', {
+            console.error('Error in creating campaign ad:', {
                 status: response.status,
                 statusText: response.statusText,
                 body: JSON.stringify(responseData)
@@ -37,14 +37,14 @@ async function createCampaignAd(campaignId: string, data: any, adset: any): Prom
 
         // Check for success in the result
         if (responseData.result && responseData.result.success === true) {
-            console.log('Successfully create campaign:', responseData);
+            console.log('Successfully created campaign ad:', responseData);
             return responseData;
         } else {
             console.error('Unexpected response format:', responseData);
             return false;
         }
     } catch (error) {
-        console.error('Error create campaign:', JSON.stringify(error));
+        console.error('Error create campaign ad:', JSON.stringify(error));
         return false;
     }
 }
