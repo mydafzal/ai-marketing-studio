@@ -34,6 +34,7 @@ export function Chat({ id, className, session, missingKeys }: ChatProps) {
         if(session){
           const chat = await getChat(aiState.chatId, session.user.id);
           console.log('chat', chat)
+          console.log('summary', summary)
           if(chat?.title !== summary.campaign_name){
               await updateChatTitle(aiState.chatId, summary.campaign_name);
           }

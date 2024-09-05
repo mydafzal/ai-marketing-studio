@@ -1032,7 +1032,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                         }
                       ]
                     })
-                    return <BotMessage content={`Alright, I will create a campaign named ${campaignName}.`}/>
+                    return <BotMessage content={`Alright, I will update campaign name as "${campaignName}".`}/>
                 }
             }
         }
