@@ -47,6 +47,8 @@ export function AdTextItem({
   const [isEditing, setIsEditing] = useState(false)
   const [textEdit, setTextEdit] = useState(adText.text)
 
+  const [headlineEdit, setHeadlineEdit] = useState(adText.headline)
+
   const handleAccept = async () => {
     setIsUpdating(true)
     await sleep(1000)
@@ -61,7 +63,7 @@ export function AdTextItem({
     setIsUpdating(true)
     await sleep(1000)
     if (updateText) {
-      updateText(index, adText, { ...adText, text: textEdit })
+      updateText(index, adText, { ...adText, text: textEdit, headline: headlineEdit })
     }
     setIsEditing(false)
     setIsUpdating(false)
@@ -93,9 +95,17 @@ export function AdTextItem({
         />
       </div>
       <div className="flex-1 p-6">
-        <h6 className="block text-center font-sans text-lg mb-5 antialiased font-semibold leading-relaxed tracking-normal text-blue-gray-900">
-          {adText.headline || `Suggested Ad Text ${index + 1}`}
-        </h6>
+        {isEditing ? (
+          <input
+            value={headlineEdit}
+            onChange={e => setHeadlineEdit(e.target.value)}
+            className="w-full mb-2 p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+        ) : (
+          <h6 className="block text-center font-sans text-lg mb-5 antialiased font-semibold leading-relaxed tracking-normal text-blue-gray-900">
+            {adText.headline || `Suggested Ad Text ${index + 1}`}
+          </h6>
+        )}
         {isEditing ? (
           <textarea
             className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -116,6 +126,7 @@ export function AdTextItem({
                   onClick={() => {
                     setIsEditing(false)
                     setTextEdit(adText.text)
+                    setHeadlineEdit(adText.headline)
                   }}
                   className="px-3 mr-5 py-2 text-xs font-medium text-center text-white bg-gray-700 rounded-lg hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
                 >
@@ -127,7 +138,7 @@ export function AdTextItem({
                   className="px-3 py-2 text-xs inline-block align-middle font-medium text-center text-white bg-gray-700 rounded-lg hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
                 >
                   {isUpdating && <IconSpinner />}
-                  {!isUpdating && "Save"}
+                  {!isUpdating && 'Save'}
                 </button>
               </>
             ) : (
@@ -227,7 +238,7 @@ export function AdTextSuggestion({ props }: { props: ImageSuggestionProps[] }) {
         return adText
       })
     )
-    await updateAdText(chatSlug as string, idx, adText.id, newAdText.text)
+    await updateAdText(chatSlug as string, idx, adText.id, newAdText)
     // setAIState({
     //   ...aiState,
     //   messages: [

@@ -423,7 +423,7 @@ export async function fetchChatCampaignBudget(chatSlug: string) {
     }
 }
 
-export async function updateAdText(chatSlug: string, idx: number, adTextId: number, newText: string) {
+export async function updateAdText(chatSlug: string, idx: number, adTextId: number, newAdText: AdText) {
     const session = await auth()
 
     if (!session || !session.user) {
@@ -455,7 +455,7 @@ export async function updateAdText(chatSlug: string, idx: number, adTextId: numb
                     (tool.args as any)?.images.forEach((image: any) => {
                         if (!Array.isArray(image.suggestedTexts)) return
                         image.suggestedTexts.forEach((suggestedText: AdText, index: number) => {
-                            suggestedText.id === adTextId && index === idx && (suggestedText.text = newText);
+                            suggestedText.id === adTextId && index === idx && (suggestedText.text = newAdText.text) && (suggestedText.headline = newAdText.headline );
                         })
                     })
                 })
@@ -469,7 +469,7 @@ export async function updateAdText(chatSlug: string, idx: number, adTextId: numb
                     (tool.result as any).images.forEach((image: any) => {
                         if (!Array.isArray(image.suggestedTexts)) return
                         image.suggestedTexts.forEach((suggestedText: AdText, index: number) => {
-                            suggestedText.id === adTextId && index === idx && (suggestedText.text = newText);
+                            suggestedText.id === adTextId && index === idx && (suggestedText.text = newAdText.text) && (suggestedText.headline = newAdText.headline );
                         })
                     })
                 })
