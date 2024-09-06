@@ -24,13 +24,6 @@ import { Message } from '@/lib/types'
 import { getMimeType } from '@/lib/utils'
 import { updateChatFbCampaignId, updateChatTitle } from '@/app/actions'
 
-const containsAdSuggestion = (text: string): boolean => {
-  const hasTitle = text.toLowerCase().includes('title:')
-  const hasDescription = text.toLowerCase().includes('description:')
-  const hasCreative = text.toLowerCase().includes('creative:')
-  return hasTitle && hasDescription && hasCreative
-}
-
 export interface PromtFormProps {
   createNewCampaign: (name: string) => Promise<string | false>,
 }
@@ -41,7 +34,7 @@ export function PromptForm({
   const { id } = useParams()
   const { formRef, onKeyDown } = useEnterSubmit()
   const inputRef = React.useRef<HTMLTextAreaElement>(null)
-  const { confirmCreateAd, submitUserMessage } = useActions()
+  const { submitUserMessage } = useActions()
   const [messages, setMessages] = useUIState<typeof AI>()
   const [aiState, setAIState] = useAIState()
   const [isDisabled, setIsDisabled] = React.useState(true)
@@ -187,83 +180,25 @@ export function PromptForm({
           newCampaignId = await createNewCampaign(campaignName)
         }
 
-        if (containsAdSuggestion(value)) {
-          setAIState({
-            ...aiState,
-            messages: [
-              ...aiState.messages,
-              {
-                id: nanoid(),
-                role: 'system',
-                content: `The user has accepted this text as campaign title and campaign description: ${value}`
-              }
-            ]
-          })
-
-          console.log('value', value);
-
-          const headline = value.split('Title:')?.[1]?.split('Description:')?.[0]?.trim()
-          console.log('headline', headline);
-
-          const text = value.split('Description:')?.[1]?.split('Creative:')?.[0]?.trim()
-          console.log('text', text);
-
-          const image = value.split('Creative:')?.[1]?.trim()
-          console.log('image', image);
-
-          // const response = await confirmCreateAd(
-          //   generateAdTemplate(
-          //     headline,
-          //     text,
-          //     image
-          //   ),
-          //   generateAdsetTemplate(),
-          //   {
-          //     headline,
-          //     text,
-          //     image,
-          //     date: `{new Date().getTime()}`
-          //   }
-          // )
-      
-          // setMessages(currentMessages => [...currentMessages, response.newMessage])
-         
-          // setAIState({
-          //   ...aiState,
-          //   messages: [
-          //     ...aiState.messages,
-          //     {
-          //       id: nanoid(),
-          //       role: 'system',
-          //       content: `The user has created an ad with ID: ${JSON.stringify({
-          //         headline,
-          //         text,
-          //         creative: image
-          //       })}`
-          //     }
-          //   ]
-          // })
-        }
+        
         if (newCampaignId) {
           await updateChatFbCampaignId(aiState.chatId, newCampaignId)
         }
 
-        if (!containsAdSuggestion(value)) {
-          // Optimistically add user message UI
-          setMessages(currentMessages => [
-            ...currentMessages,
-            {
-              id: nanoid(),
-              display: <UserMessage>{value}</UserMessage>
-            }
-          ])
-  
-          // Submit and get response message
-          const responseMessage = await submitUserMessage(value)
-          setMessages(currentMessages => [...currentMessages, responseMessage])
-          if (newCampaignId) {
-            await updateChatTitle(aiState.chatId, campaignName)
+        // Optimistically add user message UI
+        setMessages(currentMessages => [
+          ...currentMessages,
+          {
+            id: nanoid(),
+            display: <UserMessage>{value}</UserMessage>
           }
+        ])
+
+        // Submit and get response message
+        const responseMessage = await submitUserMessage(value)
+        setMessages(currentMessages => [...currentMessages, responseMessage])
+        if (newCampaignId) {
+          await updateChatTitle(aiState.chatId, campaignName)
         }        
       }}
     >
