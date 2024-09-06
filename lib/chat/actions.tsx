@@ -1087,4 +1087,5 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                     <BotMessage content={message.content}/>
                 ) : null
         }))
+        .filter((message: {id: string, display: any}) => Boolean(message.display))
 }
