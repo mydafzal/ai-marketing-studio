@@ -42,11 +42,6 @@ export default async function ChatPage({ params }: ChatPageProps) {
   const title = chat?.title ?? ""
   const messages = chat?.messages ?? []
 
-
-  // if (!chat) {
-  //   redirect('/')
-  // }
-
   if (chat && chat.userId !== session?.user?.id) {
     notFound()
   }
@@ -55,6 +50,7 @@ export default async function ChatPage({ params }: ChatPageProps) {
     <AI initialAIState={{ chatId, title, messages }}>
       <Chat
         id={chatId}
+        chat={chat}
         session={session}
         initialMessages={messages}
         missingKeys={missingKeys}

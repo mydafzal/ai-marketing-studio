@@ -146,7 +146,6 @@ export function AdTextItem({
 }
 
 export function AdTextSuggestion({ props }: { props: ImageSuggestionProps[] }) {
-  console.log('props of AdTextSuggestion', props)
   const { id: chatSlug } = useParams()
 
   const [adTexts, setAdTexts] = useState<AdText[]>(

@@ -1,24 +1,24 @@
+import { useAIState, useActions, useUIState } from 'ai/rsc'
+import { nanoid } from 'nanoid'
 import * as React from 'react'
 
-import { shareChat } from '@/app/actions'
+import { shareChat, updateChatFbCampaignId, updateChatTitle } from '@/app/actions'
 import { Button } from '@/components/ui/button'
 import { PromptForm } from '@/components/prompt-form'
 import { ButtonScrollToBottom } from '@/components/button-scroll-to-bottom'
 import { IconShare } from '@/components/ui/icons'
 import { FooterText } from '@/components/footer'
 import { ChatShareDialog } from '@/components/chat-share-dialog'
-import { useAIState, useActions, useUIState } from 'ai/rsc'
+import { createCampaign } from '@/lib/api/fasty-bot/create-campaign'
 import type { AI } from '@/lib/chat/actions'
-import { nanoid } from 'nanoid'
 import { UserMessage } from './stocks/message'
-import {  updateChatFbCampaignId, updateChatTitle } from '@/app/actions'
 
 export interface ChatPanelProps {
   id?: string
   title?: string
   isAtBottom: boolean
   scrollToBottom: () => void
-  createNewCampaign: (name: string) => Promise<string | false>
+  onCampaignCreate: (campaignId: string) => Promise<void>
 }
 
 export function ChatPanel({
@@ -26,7 +26,7 @@ export function ChatPanel({
   title,
   isAtBottom,
   scrollToBottom,
-  createNewCampaign
+  onCampaignCreate
 }: ChatPanelProps) {
   const [aiState, setAIState] = useAIState()
   const [messages, setMessages] = useUIState<typeof AI>()
@@ -66,7 +66,7 @@ export function ChatPanel({
       <div className="mx-auto sm:max-w-2xl sm:px-4">
         <div className="mb-4 grid grid-cols-2 gap-2 px-4 sm:px-0">
           {messages.length === 0 &&
-            exampleMessages.map((example, index) => (
+            exampleMessages.map((example, index: number) => (
               <div
                 key={example.heading}
                 className={`cursor-pointer rounded-lg border bg-white p-4 hover:bg-zinc-50 dark:bg-zinc-950 dark:hover:bg-zinc-900 ${
@@ -74,10 +74,18 @@ export function ChatPanel({
                 }`}
                 onClick={async () => {
                   const campaignName = "My campaign"
-
                   let newCampaignId;
-                  if(!aiState.messages.length) {
-                    newCampaignId = await createNewCampaign(campaignName);
+                  if (!aiState.messages.length) {
+                    const response = await createCampaign({
+                      chatSlug: aiState.chatId,
+                      name: campaignName,
+                      objective: 'OUTCOME_LEADS',
+                      status: 'PAUSED',
+                      special_ad_categories: ['NONE']
+                    })
+                    if (response.success && response.data.id) {
+                      newCampaignId = response.data.id
+                    }
                   }
 
                   setMessages(currentMessages => [
@@ -92,8 +100,8 @@ export function ChatPanel({
                     example.message
                   )
 
-                  if(newCampaignId){
-                      await updateChatFbCampaignId(aiState.chatId, newCampaignId)
+                  if (newCampaignId) {
+                    await updateChatFbCampaignId(aiState.chatId, newCampaignId)
                   }
 
                   setMessages(currentMessages => [
@@ -102,9 +110,8 @@ export function ChatPanel({
                   ])
 
                   if (newCampaignId) {
-                    await updateChatTitle(aiState.chatId, campaignName)
+                    void onCampaignCreate(newCampaignId)
                   }
-
                 }}
               >
                 <div className="text-sm font-semibold">{example.heading}</div>
@@ -145,7 +152,7 @@ export function ChatPanel({
         ) : null}
 
         <div className="space-y-4 border-t bg-background px-4 py-2 shadow-lg sm:rounded-t-xl sm:border md:py-4">
-          <PromptForm createNewCampaign={createNewCampaign} />
+          <PromptForm onCampaignCreate={onCampaignCreate} />
           <FooterText className="hidden sm:block" />
         </div>
       </div>

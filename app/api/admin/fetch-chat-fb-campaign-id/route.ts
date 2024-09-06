@@ -12,6 +12,9 @@ export async function GET(req: NextRequest) {
 
         const result = await fetchChatFbCampaignId(chatSlug)
 
+        console.log('chatSlug', chatSlug)
+        console.log('result of fetchChatFbCampaignId', result)
+
         if (result.error) {
             return NextResponse.json({error: result.error}, {status: 400})
         }

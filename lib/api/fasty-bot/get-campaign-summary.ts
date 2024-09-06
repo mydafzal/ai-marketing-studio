@@ -1,6 +1,6 @@
 import {getCampaignIdFromUrl} from "@/lib/api/fasty-bot/helpers/campaign-id-from-url-helper";
 
-interface CampaignSummary {
+export interface CampaignSummary {
     campaign_id: string;
     campaign_name: string;
     total_leads: number;
@@ -17,14 +17,14 @@ interface CampaignSummary {
 
 export async function getCampaignSummary(campaignId?: string): Promise<CampaignSummary> {
     let fetchedCampaignId: string | undefined;
-    if(!campaignId){
+    if (!campaignId) {
         try {
             fetchedCampaignId = await getCampaignIdFromUrl();
             console.log("Fetched Campaign ID:", fetchedCampaignId);
         } catch (error) {
             console.error("Error fetching campaign ID:", error);
         }
-    }else{
+    } else {
         fetchedCampaignId = campaignId;
     }
    
@@ -74,7 +74,6 @@ export async function getCampaignSummary(campaignId?: string): Promise<CampaignS
         }
 
         const data: CampaignSummary = await response.json();
-        console.log('API Response:', data);
         return {...data, campaign_id: fetchedCampaignId};
     } catch (error) {
         console.error('Error fetching campaign summary:', error);
@@ -98,5 +97,3 @@ function getMockData(campaignId: string): CampaignSummary {
         unique_clicks: 800
     };
 }
-
-export type {CampaignSummary};

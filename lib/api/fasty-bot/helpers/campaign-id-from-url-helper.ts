@@ -12,6 +12,8 @@ async function fetchCampaignId(chatId: string, isServer: boolean): Promise<strin
         const {fetchChatFbCampaignId} = await import('@/app/actions');
         try {
             const result: CampaignIdResult = await fetchChatFbCampaignId(chatId);
+            console.log('chatId', chatId)
+            console.log('result', result)
             if (result.success && typeof result.fbCampaignId === 'string') {
                 return result.fbCampaignId;
             } else {
@@ -27,6 +29,8 @@ async function fetchCampaignId(chatId: string, isServer: boolean): Promise<strin
         try {
             const response = await fetch(`/api/admin/fetch-chat-fb-campaign-id?chatSlug=${chatId}`);
             const result: CampaignIdResult = await response.json();
+            console.log('chatId', chatId)
+            console.log('result', result)
             if (result.success && typeof result.fbCampaignId === 'string') {
                 return result.fbCampaignId;
             } else {

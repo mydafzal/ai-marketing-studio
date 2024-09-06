@@ -20,16 +20,17 @@ import { useEnterSubmit } from '@/lib/hooks/use-enter-submit'
 import { nanoid } from 'nanoid'
 import { useParams } from 'next/navigation'
 import { useAIState } from 'ai/rsc'
+import { createCampaign } from '@/lib/api/fasty-bot/create-campaign'
 import { Message } from '@/lib/types'
 import { getMimeType } from '@/lib/utils'
 import { updateChatFbCampaignId, updateChatTitle } from '@/app/actions'
 
 export interface PromtFormProps {
-  createNewCampaign: (name: string) => Promise<string | false>,
+  onCampaignCreate: (campaignId: string) => Promise<void>
 }
 
 export function PromptForm({
-  createNewCampaign
+  onCampaignCreate,
 }: PromtFormProps) {
   const { id } = useParams()
   const { formRef, onKeyDown } = useEnterSubmit()
@@ -94,7 +95,16 @@ export function PromptForm({
       const campaignName = "My campaign"
       let newCampaignId
       if (!aiState.messages.length) {
-        newCampaignId = await createNewCampaign(campaignName)
+        const response = await createCampaign({
+          chatSlug: aiState.chatId,
+          name: campaignName,
+          objective: 'OUTCOME_LEADS',
+          status: 'PAUSED',
+          special_ad_categories: ['NONE']
+        })
+        if (response.success && response.data.id) {
+          newCampaignId = response.data.id
+        }
       }
 
       const textPrompt = `I upload images with these urls: ${JSON.stringify(data.urls)}, at this time: ${new Date().getTime()}`
@@ -140,7 +150,7 @@ export function PromptForm({
         responseMessage,
       ])
       if (newCampaignId) {
-        await updateChatTitle(aiState.chatId, campaignName)
+        void onCampaignCreate(newCampaignId)
       }
     } catch (error) {
       toast.error('Failed to upload the image. Please try again.')
@@ -177,9 +187,17 @@ export function PromptForm({
         const campaignName = "My campaign"
         let newCampaignId
         if (!aiState.messages.length) {
-          newCampaignId = await createNewCampaign(campaignName)
+          const response = await createCampaign({
+            chatSlug: aiState.chatId,
+            name: campaignName,
+            objective: 'OUTCOME_LEADS',
+            status: 'PAUSED',
+            special_ad_categories: ['NONE']
+          })
+          if (response.success && response.data.id) {
+            newCampaignId = response.data.id
+          }
         }
-
         
         if (newCampaignId) {
           await updateChatFbCampaignId(aiState.chatId, newCampaignId)
@@ -198,7 +216,7 @@ export function PromptForm({
         const responseMessage = await submitUserMessage(value)
         setMessages(currentMessages => [...currentMessages, responseMessage])
         if (newCampaignId) {
-          await updateChatTitle(aiState.chatId, campaignName)
+          void onCampaignCreate(newCampaignId)
         }        
       }}
     >
