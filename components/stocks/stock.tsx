@@ -8,6 +8,7 @@ import { useAIState } from 'ai/rsc'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { getCampaignHistoricalLeadsResults } from "@/lib/api/fasty-bot/get-historical-leads";
 import {CampaignSummary, getCampaignSummary} from "@/lib/api/fasty-bot/get-campaign-summary";
+import { Message } from '@/lib/types'
 
 export function Stock() {
   const [aiState, setAIState] = useAIState();
@@ -36,7 +37,10 @@ export function Stock() {
         setDailyData(formattedData);
         setAIState({
           ...aiState,
-          messages: [...aiState.messages, { id: 'campaign-info-data', role: 'system', content: `Knowledge Base about current campaign infomations: ${JSON.stringify(summary)}` }]
+          messages: [
+            ...aiState.messages.filter((message: Message) => message.id !== 'campaign-info-data' || message.role !== 'system'),
+            { id: 'campaign-info-data', role: 'system', content: `Knowledge Base about current campaign infomations: ${JSON.stringify(summary)}` }
+          ]
         });
       } catch (error) {
         console.error('Error fetching campaign data:', error);
