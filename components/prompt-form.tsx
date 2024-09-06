@@ -86,61 +86,61 @@ export function PromptForm({
       })
 
       const data = await response.json()
-      if (response.ok) {
-        toast.success('Images uploaded successfully!')
-        const campaignName = "My campaign"
-        let newCampaignId
-        if (!aiState.messages.length) {
-          newCampaignId = await createNewCampaign(campaignName)
-        }
-
-        const textPrompt = `I upload images with these urls: ${JSON.stringify(data.urls)}, at this time: ${new Date().getTime()}`
-        const uploadedTime = new Date().getTime()
-        console.log('uploaded image urls', data.urls, uploadedTime)
-        const imgMessages = data.urls.map((url: string) => {
-          imageIdx++
-          let objUrl = {
-            type: 'image',
-            image: url,
-            uploaded_date: uploadedTime,
-            idx: imageIdx,
-            mimeType: getMimeType(url)
-          }
-          return objUrl
-        })
-        const messageContent: UserContent = [
-          {
-            type: 'text',
-            text: textPrompt
-          },
-          ...imgMessages
-        ]
-        const responseMessage = await submitUserMessage(
-          textPrompt,
-          messageContent
-        )
-
-        if (newCampaignId) {
-          await updateChatFbCampaignId(aiState.chatId, newCampaignId)
-        }
-
-        setMessages(currentMessages => [
-          ...currentMessages,
-          {
-            id: nanoid(),
-            display: (
-              <UserMessage userContent={messageContent}>
-                {textPrompt}
-              </UserMessage>
-            )
-          },
-          responseMessage,
-        ])
-        if (newCampaignId) {
-          await updateChatTitle(aiState.chatId, campaignName)
-        }
-      } else {
+      if (!response.ok) {
         toast.error('Failed to upload the image. Please try again.')
+        return
+      }
+      toast.success('Images uploaded successfully!')
+      const campaignName = "My campaign"
+      let newCampaignId
+      if (!aiState.messages.length) {
+        newCampaignId = await createNewCampaign(campaignName)
+      }
+
+      const textPrompt = `I upload images with these urls: ${JSON.stringify(data.urls)}, at this time: ${new Date().getTime()}`
+      const uploadedTime = new Date().getTime()
+      console.log('uploaded image urls', data.urls, uploadedTime)
+      const imgMessages = data.urls.map((url: string) => {
+        imageIdx++
+        let objUrl = {
+          type: 'image',
+          image: url,
+          uploaded_date: uploadedTime,
+          idx: imageIdx,
+          mimeType: getMimeType(url)
+        }
+        return objUrl
+      })
+      const messageContent: UserContent = [
+        {
+          type: 'text',
+          text: textPrompt
+        },
+        ...imgMessages
+      ]
+      const responseMessage = await submitUserMessage(
+        textPrompt,
+        messageContent
+      )
+
+      if (newCampaignId) {
+        await updateChatFbCampaignId(aiState.chatId, newCampaignId)
+      }
+
+      setMessages(currentMessages => [
+        ...currentMessages,
+        {
+          id: nanoid(),
+          display: (
+            <UserMessage userContent={messageContent}>
+              {textPrompt}
+            </UserMessage>
+          )
+        },
+        responseMessage,
+      ])
+      if (newCampaignId) {
+        await updateChatTitle(aiState.chatId, campaignName)
       }
     } catch (error) {
       toast.error('Failed to upload the image. Please try again.')
