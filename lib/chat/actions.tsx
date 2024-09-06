@@ -1057,19 +1057,25 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                         <ChatImage/>
                                     </BotCard>
                                 );
-                                case 'showUpdateStatusChampaign':
-                                    return (
-                                      <BotCard key={tool.toolCallId}>
-                                        <CampaignStatus
-                                          props={{
-                                            toolCallId: tool.toolCallId,
-                                            campaignName:
-                                                tool.result.campaignName,
-                                                status: tool.result.status
-                                          }}
-                                        />
-                                      </BotCard>
-                                    )
+                            case 'showCampaignNameMessage':
+                                return (
+                                    <BotCard key={tool.toolCallId}>
+                                        {`Alright, I will update campaign name as "${tool.result.campaignName}".`}
+                                    </BotCard>
+                                )
+                            case 'showUpdateStatusChampaign':
+                                return (
+                                    <BotCard key={tool.toolCallId}>
+                                    <CampaignStatus
+                                        props={{
+                                        toolCallId: tool.toolCallId,
+                                        campaignName:
+                                            tool.result.campaignName,
+                                            status: tool.result.status
+                                        }}
+                                    />
+                                    </BotCard>
+                                )
                             default:
                                 return null;
                         }
