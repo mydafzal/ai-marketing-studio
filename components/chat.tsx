@@ -49,6 +49,7 @@ export function Chat({ id, className, session, missingKeys }: ChatProps) {
   const fetchSummaryData = useCallback(async () => {
     try {
       const summary = await getCampaignSummary()
+      const currentTimestamp = new Date().toISOString()
       setAIState((aiState: any) => ({
         ...aiState,
         messages: [
@@ -56,7 +57,8 @@ export function Chat({ id, className, session, missingKeys }: ChatProps) {
           {
             id: 'campaign-info-data',
             role: 'system',
-            content: `Knowledge Base about current campaign infomations: ${JSON.stringify(summary)}`
+            content: `Knowledge Base about current campaign information: ${JSON.stringify(summary)}`,
+            timestamp: currentTimestamp 
           }
         ]
       }))

@@ -111,7 +111,8 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
                 {
                     id: nanoid(),
                     role: 'assistant',
-                    content: 'Would you like to review any other settings or start another campaign?'
+                    content: 'Would you like to review any other settings or start another campaign?',
+                    timestamp: new Date().toISOString() 
                 }
             ]
         });
@@ -187,12 +188,12 @@ async function confirmUpdateStatus(campaignName: string, status: string){
         }
     }
 }
-async function confirmCreateAd(data: any){
+async function confirmCreateAd(data: any) {
     'use server'
     const aiState = getMutableAIState<typeof AI>();
     let campaignId = Number(await getCampaignIdFromUrl()) || 0; // for now just say you are updating even if no campaign id in place
     if (process.env.NEXT_PUBLIC_HARDCODED_MODE === '1') {
-        campaignId = Number(process.env.NEXT_PUBLIC_HARDCODED_CAMPAIGN_ID)
+        campaignId = Number(process.env.NEXT_PUBLIC_HARDCODED_CAMPAIGN_ID);
     }
 
     const createAd = createStreamableUI(
@@ -203,23 +204,25 @@ async function confirmCreateAd(data: any){
             </p>
         </div>
     );
+    
     const systemMessage = createStreamableUI(null);
+    
     runAsyncFnWithoutBlocking(async () => {
         await sleep(1000);
 
         const updateSuccess = await createCampaignAd(
-          campaignId,
-          data
+            campaignId,
+            data
         );        
         if (updateSuccess) {
-            
             createAd.done(
                 <div>
                     <p className="mb-2">
-                        You have successfully create campaign ad ID: {updateSuccess?.params?.id}
+                        You have successfully created campaign ad ID: {updateSuccess?.params?.id}
                     </p>
                 </div>
             );
+
             aiState.done({
                 ...aiState.get(),
                 messages: [
@@ -227,16 +230,17 @@ async function confirmCreateAd(data: any){
                     {
                         id: nanoid(),
                         role: 'system',
-                        content: `This is the advertising ID that was generated: ${updateSuccess?.params?.id}`
+                        content: `This is the advertising ID that was generated: ${updateSuccess?.params?.id}`,
+                        timestamp: new Date().toISOString()
                     }
                 ]
             });
+
             systemMessage.done(
                 <SystemMessage>
-                   You have successfully create campaign ad ID: {updateSuccess?.params?.id}
+                   You have successfully created campaign ad ID: {updateSuccess?.params?.id}
                 </SystemMessage>
             );
-         
 
         } else {
             createAd.done(
@@ -246,6 +250,7 @@ async function confirmCreateAd(data: any){
                     </p>
                 </div>
             );
+
             systemMessage.done(
                 <SystemMessage>
                     Error: Failed to create campaign ad. Please try again later.
@@ -253,6 +258,7 @@ async function confirmCreateAd(data: any){
             );
         }
     });
+
     return {
         createAdUI: createAd.value,
         newMessage: {
@@ -278,16 +284,17 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
     }
 
     aiState.update({
-      ...aiState.get(),
-      messages: [
-        ...aiState.get().messages,
-        {
-          id: nanoid(),
-          role: 'user',
-          content: contentImages ? contentImages : content
-        }
-      ]
-    })
+        ...aiState.get(),
+        messages: [
+            ...aiState.get().messages,
+            {
+                id: nanoid(), 
+                role: 'user',  
+                content: contentImages ? contentImages : content,
+                timestamp: new Date().toISOString()
+            }
+        ]
+    });
 
     let textStream: undefined | ReturnType<typeof createStreamableValue<string>>
     let textNode: undefined | React.ReactNode
@@ -406,18 +413,25 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
             }
 
             if (done) {
-                textStream.done()
+                textStream.done();
                 aiState.done({
                     ...aiState.get(),
                     messages: [
-                        ...aiState.get().messages,
+                        ...aiState.get().messages.map((message: any) => ({
+                            id: message.id, 
+                            role: message.role,
+                            content: message.content,
+                            name: message.name,
+                            timestamp: message.timestamp 
+                        })),
                         {
                             id: nanoid(),
                             role: 'assistant',
-                            content
+                            content,
+                            timestamp: new Date().toISOString() 
                         }
                     ]
-                })
+                });
             } else {
                 textStream.update(delta)
             }
@@ -516,9 +530,10 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                         type: 'tool-call',
                                         toolName: 'getCampaignResults',
                                         toolCallId,
-                                        args: {symbol, price, delta}
+                                        args: { symbol, price, delta }
                                     }
-                                ]
+                                ],
+                                timestamp: new Date().toISOString() 
                             },
                             {
                                 id: nanoid(),
@@ -528,12 +543,14 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                         type: 'tool-result',
                                         toolName: 'getCampaignResults',
                                         toolCallId,
-                                        result: {symbol, price, delta}
+                                        result: { symbol, price, delta }
                                     }
-                                ]
+                                ],
+                                timestamp: new Date().toISOString() 
                             }
                         ]
-                    })
+                    });
+                    
 
                     return (
                         <BotCard>
@@ -572,7 +589,8 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                         toolCallId,
                                         args: {}
                                     }
-                                ]
+                                ],
+                                timestamp: new Date().toISOString() 
                             },
                             {
                                 id: nanoid(),
@@ -584,10 +602,12 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                         toolCallId,
                                         result: {}
                                     }
-                                ]
+                                ],
+                                timestamp: new Date().toISOString() 
                             }
                         ]
-                    })
+                    });
+                    
 
                     return (
                         <BotCard>
@@ -632,7 +652,8 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                             toolCallId,
                                             args: {symbol, price, numberOfShares: initialBudget}
                                         }
-                                    ]
+                                    ],
+                                    timestamp: new Date().toISOString() 
                                 },
                                 {
                                     id: nanoid(),
@@ -649,15 +670,18 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                                 status: 'expired'
                                             }
                                         }
-                                    ]
+                                    ],
+                                    timestamp: new Date().toISOString() 
                                 },
                                 {
                                     id: nanoid(),
                                     role: 'system',
-                                    content: `[User has selected an invalid amount]`
+                                    content: `[User has selected an invalid amount]`,
+                                    timestamp: new Date().toISOString() 
                                 }
                             ]
-                        })
+                        });
+                    
 
                         return <BotMessage content={'Invalid amount'}/>
                     } else {
@@ -675,7 +699,8 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                             toolCallId,
                                             args: {symbol, price, numberOfShares: initialBudget}
                                         }
-                                    ]
+                                    ],
+                                    timestamp: new Date().toISOString() 
                                 },
                                 {
                                     id: nanoid(),
@@ -691,10 +716,11 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                                 numberOfShares: initialBudget
                                             }
                                         }
-                                    ]
+                                    ],
+                                    timestamp: new Date().toISOString() 
                                 }
                             ]
-                        })
+                        });
 
                         return (
                             <BotCard>
@@ -746,9 +772,10 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                         type: 'tool-call',
                                         toolName: 'getEvents',
                                         toolCallId,
-                                        args: {events}
+                                        args: { events }
                                     }
-                                ]
+                                ],
+                                timestamp: new Date().toISOString() 
                             },
                             {
                                 id: nanoid(),
@@ -760,10 +787,12 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                         toolCallId,
                                         result: events
                                     }
-                                ]
+                                ],
+                                timestamp: new Date().toISOString() 
                             }
                         ]
-                    })
+                    });
+                    
 
                     return (
                         <BotCard>
@@ -808,9 +837,10 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                         type: 'tool-call',
                                         toolName: 'showSuggestionAdText',
                                         toolCallId,
-                                        args: {campaignName, images}
+                                        args: { campaignName, images }
                                     }
-                                ]
+                                ],
+                                timestamp: new Date().toISOString() 
                             },
                             {
                                 id: nanoid(),
@@ -820,12 +850,14 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                         type: 'tool-result',
                                         toolName: 'showSuggestionAdText',
                                         toolCallId,
-                                        result: {campaignName, images}
+                                        result: { campaignName, images }
                                     }
-                                ]
+                                ],
+                                timestamp: new Date().toISOString() 
                             }
                         ]
                     });
+                    
 
                     return (
                         <BotCard>
@@ -839,8 +871,16 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                 parameters: z.object({
                     campaignName: z.string().describe('The name of the campaign'),
                     status: z.string().describe('The current status of the campaign'),
+                    images: z.array(z.object({  
+                        suggestedTexts: z.array(z.object({
+                            image: z.string().optional().describe('The link of the image to display'),
+                            date: z.string(),
+                            text: z.string(),
+                            headline: z.string().optional()  
+                        })).describe('List of suggested ad texts')
+                    })).describe('List of images to display')
                 }),
-                generate: async function* ({campaignName, status}) {
+                generate: async function* ({campaignName, status, images}) {
                     yield (
                         <BotCard>
                             <AdTextSelectionSkeleton/>
@@ -861,26 +901,29 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                 content: [
                                     {
                                         type: 'tool-call',
-                                        toolName: 'showUpdateStatusChampaign',
+                                        toolName: 'showSuggestionAdText',
                                         toolCallId,
-                                        args: {campaignName, status}
+                                        args: { campaignName, images }
                                     }
-                                ]
+                                ],
+                                timestamp: new Date().toISOString() 
                             },
                             {
-                                id: toolCallId,
+                                id: nanoid(),
                                 role: 'tool',
                                 content: [
                                     {
                                         type: 'tool-result',
-                                        toolName: 'showUpdateStatusChampaign',
+                                        toolName: 'showSuggestionAdText',
                                         toolCallId,
-                                        result: {campaignName, status}
+                                        result: { campaignName, images }
                                     }
-                                ]
+                                ],
+                                timestamp: new Date().toISOString()
                             }
                         ]
                     });
+                    
 
                     return (
                       <BotCard>
