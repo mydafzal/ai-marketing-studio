@@ -927,7 +927,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                     return (
                         <BotCard>
                             {`Alright, I will update campaign name as "${campaignName}".`}
-                            <RefreshChatTitle />
+                            <RefreshChatTitle campaignName={campaignName} campaignId={campaignId} />
                         </BotCard>
                     )
                 }
