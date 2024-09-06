@@ -8,7 +8,7 @@ import {z} from 'zod'
 import {EventsSkeleton} from '@/components/stocks/events-skeleton'
 import {Events} from '@/components/stocks/events'
 import {StockSkeleton} from '@/components/stocks/stock-skeleton'
-import {AdTextPreview, AdTextSuggestion} from '@/components/stocks/ad-text-suggestion'
+import {AdTextSuggestion} from '@/components/stocks/ad-text-suggestion'
 import {RefreshChatTitle} from '@/components/refresh-chat-title'
 import {CampaignStatus} from '@/components/stocks/campaign-status'
 import {updateChatTitle} from '@/app/actions'
@@ -378,7 +378,6 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
     If you want to provide ad texts to the user, call \`showSuggestionAdText\` to show the ad text selection UI and let the user choose or input their ad text.
     If you want to generate ad text examples to the user, call \`showSuggestionAdText\` to show the ad text selection UI and let the user choose or input their ad text.
     If you want to change status of campaign, call \'showUpdateStatusChampaign\' to show the update status UI and let the user choose status of the campaign.
-    If you want to show the created ad to user, call \'showAdTextPreview\' to show ad details to the user.
     If the user wants to pause a campaign Call  \'showUpdateStatusChampaign\' to show the update status UI and let the user choose status of the campaign.
     If the user wants to complete another specific task, respond that you are a demo and cannot perform that action.
     Besides that, you can also chat with users and perform budget calculations if needed. ${extraDetailsText}`,
@@ -762,67 +761,6 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                     )
                 }
             },
-            showAdTextPreview: {
-                description: 'Show ad details to user',
-                parameters: z.object({
-                    id: z.string().describe('The id of created ad'),
-                    adText: z.object({
-                        id: z.number(),
-                        image: z.string().describe('The link of the image of created ad'),
-                        date: z.string().describe('The date of the created ad'),
-                        text: z.string().describe('The text content of the created ad'),
-                        headline: z.string().describe('The headline of the created ad'),
-                    })
-                }),
-                generate: async function* ({id, adText}) {
-                    yield (
-                        <BotCard>
-                            <AdTextSelectionSkeleton/>
-                        </BotCard>
-                    );
-
-                    await sleep(1000);
-
-                    const toolCallId = nanoid();
-                   
-                    aiState.done({
-                        ...aiState.get(),
-                        messages: [
-                            ...aiState.get().messages,
-                            {
-                                id: nanoid(),
-                                role: 'assistant',
-                                content: [
-                                    {
-                                        type: 'tool-call',
-                                        toolName: 'showAdTextPreview',
-                                        toolCallId,
-                                        args: {id, adText}
-                                    }
-                                ]
-                            },
-                            {
-                                id: nanoid(),
-                                role: 'tool',
-                                content: [
-                                    {
-                                        type: 'tool-result',
-                                        toolName: 'showAdTextPreview',
-                                        toolCallId,
-                                        result: {id, adText}
-                                    }
-                                ]
-                            }
-                        ]
-                    });
-
-                    return (
-                        <BotCard>
-                            <AdTextPreview id={id} adText={adText} />
-                        </BotCard>
-                    );
-                }
-            },
             showSuggestionAdText: {
                 description: 'Show UI to select or input ad text for each image a campaign.',
                 parameters: z.object({
@@ -1105,12 +1043,6 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                 return (
                                     <BotCard key={tool.toolCallId}>
                                         <Events props={tool.result}/>
-                                    </BotCard>
-                                );
-                            case 'showAdTextPreview':
-                                return (
-                                    <BotCard key={tool.toolCallId}>
-                                        <AdTextPreview id={tool.result.id} adText={tool.result.adText} />
                                     </BotCard>
                                 );
                             case 'showSuggestionAdText':

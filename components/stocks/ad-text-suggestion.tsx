@@ -18,21 +18,6 @@ export interface ImageSuggestionProps {
   suggestedTexts: AdText[]
 }
 
-export function AdTextPreview({
-  id,
-  adText
-}: {
-  id: string,
-  adText: AdText
-}) {
-  return (
-    <>
-      <span>You created an ad with ID: {id}.</span>
-      <AdTextItem index={0} adText={adText} />
-    </>
-  )
-}
-
 export function AdTextItem({
   index,
   adText,
