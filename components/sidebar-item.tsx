@@ -17,12 +17,18 @@ import {
 import { useLocalStorage } from '@/lib/hooks/use-local-storage'
 import { type Chat } from '@/lib/types'
 import { cn } from '@/lib/utils'
-import { getChat } from '@/app/actions'
 
 interface SidebarItemProps {
   index: number
   chat: Chat
   children: React.ReactNode
+}
+
+interface MyCustomEvent extends Event {
+  detail: {
+    campaignId: string,
+    campaignName: string
+  }
 }
 
 export function SidebarItem({ index, chat, children }: SidebarItemProps) {
@@ -35,7 +41,7 @@ export function SidebarItem({ index, chat, children }: SidebarItemProps) {
 
   React.useEffect(() => {
     const eventListener = async function(e: Event) {
-      const { campaignId, campaignName } = (e.detail ?? {}) as { campaignId: string, campaignName: string }
+      const { campaignId, campaignName } = ((e as MyCustomEvent).detail ?? {}) as { campaignId: string, campaignName: string }
 
       if (chat.fbCampaignId === campaignId) {
         setOptimisticTitle(campaignName)
