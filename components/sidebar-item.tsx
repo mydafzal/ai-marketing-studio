@@ -34,15 +34,12 @@ export function SidebarItem({ index, chat, children }: SidebarItemProps) {
   const [optimisticTitle, setOptimisticTitle] = React.useState<string | null>(null)
 
   React.useEffect(() => {
-    const eventListener = async function() {
-      if (!isActive) return
+    const eventListener = async function(e: Event) {
+      const { campaignId, campaignName } = (e.detail ?? {}) as { campaignId: string, campaignName: string }
 
-      const updatedChat = await getChat(chat.id, chat.userId)
-      if (updatedChat) {
-        setOptimisticTitle(updatedChat.title)
+      if (chat.fbCampaignId === campaignId) {
+        setOptimisticTitle(campaignName)
       }
-
-      console.log('name', updatedChat)
     }
     window.addEventListener('update-chat-title', eventListener)
 
