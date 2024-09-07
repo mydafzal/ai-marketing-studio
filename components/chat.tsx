@@ -121,9 +121,10 @@ export function Chat({ id, chat, className, session, missingKeys }: ChatProps) {
   const { messagesRef, scrollRef, visibilityRef, isAtBottom, scrollToBottom } =
     useScrollAnchor()
 
-  const handleCampaignCreate = useCallback((campaignId: string) => {
+  const handleCampaignCreate = useCallback(async (campaignId: string) => {
+    setCampaignId(campaignId)
     void fetchSummaryData(campaignId)
-    void updateChatFbCampaignId(id, campaignId)
+    await updateChatFbCampaignId(id, campaignId)
   }, [fetchSummaryData, id])
 
   return (
@@ -147,6 +148,7 @@ export function Chat({ id, chat, className, session, missingKeys }: ChatProps) {
         isAtBottom={isAtBottom}
         scrollToBottom={scrollToBottom}
         onCampaignCreate={handleCampaignCreate}
+        campaignId={campaignId}
       />
     </div>
   )

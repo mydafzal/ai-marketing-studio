@@ -3,11 +3,8 @@
 import * as React from 'react'
 
 import Textarea from 'react-textarea-autosize'
-import { UserContent, ImagePart } from 'ai'
-import { useActions, useUIState } from 'ai/rsc'
+import { ImagePart, TextPart, UserContent } from 'ai'
 import chatToCampaignMapping from '@/lib/api/fasty-bot/helpers/campaign-id-list'
-import { UserMessage } from './stocks/message'
-import { type AI } from '@/lib/chat/actions'
 import { Button } from '@/components/ui/button'
 import { IconArrowElbow, IconPlus, IconSpinner } from '@/components/ui/icons'
 import {
@@ -17,25 +14,21 @@ import {
 } from '@/components/ui/tooltip'
 import { toast } from 'sonner'
 import { useEnterSubmit } from '@/lib/hooks/use-enter-submit'
-import { nanoid } from 'nanoid'
 import { useParams } from 'next/navigation'
 import { useAIState } from 'ai/rsc'
-import { createCampaign } from '@/lib/api/fasty-bot/create-campaign'
 import { Message } from '@/lib/types'
 import { getMimeType } from '@/lib/utils'
 
 export interface PromtFormProps {
-  onCampaignCreate: (campaignId: string) => void
+  onSendMessage: (message: string, userContent?: Array<TextPart | ImagePart>) => Promise<void>
 }
 
 export function PromptForm({
-  onCampaignCreate,
+  onSendMessage
 }: PromtFormProps) {
   const { id } = useParams()
   const { formRef, onKeyDown } = useEnterSubmit()
   const inputRef = React.useRef<HTMLTextAreaElement>(null)
-  const { submitUserMessage } = useActions()
-  const setMessages = useUIState<typeof AI>()[1]
   const [aiState] = useAIState()
   const [isDisabled, setIsDisabled] = React.useState(true)
 
@@ -91,22 +84,7 @@ export function PromptForm({
         return
       }
       toast.success('Images uploaded successfully!')
-      const campaignName = "My campaign"
-      let newCampaignId
-      if (!aiState.messages.length) {
-        const response = await createCampaign({
-          chatSlug: aiState.chatId,
-          name: campaignName,
-          objective: 'OUTCOME_LEADS',
-          status: 'PAUSED',
-          special_ad_categories: ['NONE']
-        })
-        if (response.success && response.data.id) {
-          newCampaignId = response.data.id
-        }
-      }
 
-      const textPrompt = `I upload images with these urls: ${JSON.stringify(data.urls)}, at this time: ${new Date().getTime()}`
       const uploadedTime = new Date().getTime()
       console.log('uploaded image urls', data.urls, uploadedTime)
       const imgMessages = data.urls.map((url: string) => {
@@ -120,33 +98,17 @@ export function PromptForm({
         }
         return objUrl
       })
-      const messageContent: UserContent = [
+
+      const textPrompt = `I upload images with these urls: ${JSON.stringify(data.urls)}, at this time: ${new Date().getTime()}`
+      const userContent: UserContent = [
         {
           type: 'text',
           text: textPrompt
         },
         ...imgMessages
       ]
-      const responseMessage = await submitUserMessage(
-        textPrompt,
-        messageContent
-      )
 
-      setMessages(currentMessages => [
-        ...currentMessages,
-        {
-          id: nanoid(),
-          display: (
-            <UserMessage userContent={messageContent}>
-              {textPrompt}
-            </UserMessage>
-          )
-        },
-        responseMessage,
-      ])
-      if (newCampaignId) {
-        void onCampaignCreate(newCampaignId)
-      }
+      await onSendMessage(textPrompt, userContent)
     } catch (error) {
       toast.error('Failed to upload the image. Please try again.')
     }
@@ -179,36 +141,8 @@ export function PromptForm({
           setIsDisabled(true)
         }
         if (!value) return
-        const campaignName = "My campaign"
-        let newCampaignId
-        if (!aiState.messages.length) {
-          const response = await createCampaign({
-            chatSlug: aiState.chatId,
-            name: campaignName,
-            objective: 'OUTCOME_LEADS',
-            status: 'PAUSED',
-            special_ad_categories: ['NONE']
-          })
-          if (response.success && response.data.id) {
-            newCampaignId = response.data.id
-          }
-        }
 
-        // Optimistically add user message UI
-        setMessages(currentMessages => [
-          ...currentMessages,
-          {
-            id: nanoid(),
-            display: <UserMessage>{value}</UserMessage>
-          }
-        ])
-
-        // Submit and get response message
-        const responseMessage = await submitUserMessage(value)
-        setMessages(currentMessages => [...currentMessages, responseMessage])
-        if (newCampaignId) {
-          void onCampaignCreate(newCampaignId)
-        }        
+        await onSendMessage(value)
       }}
     >
       <div className="relative flex max-h-60 w-full grow flex-col overflow-hidden bg-background px-8 sm:rounded-md sm:border sm:px-12">

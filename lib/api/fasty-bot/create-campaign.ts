@@ -29,12 +29,12 @@ export async function createCampaign(
 ): Promise<any> {
   let fetchedCampaignId: string | undefined
 
-  try {
-    fetchedCampaignId = await getCampaignIdFromUrl()
-    console.log('Fetched Campaign ID:', fetchedCampaignId)
-  } catch (error) {
-    console.error('Error fetching campaign ID:', error)
-  }
+  // try {
+  //   fetchedCampaignId = await getCampaignIdFromUrl()
+  //   console.log('Fetched Campaign ID:', fetchedCampaignId)
+  // } catch (error) {
+  //   console.error('Error fetching campaign ID:', error)
+  // }
 
   if (!fetchedCampaignId) {
     console.warn("No campaign ID fetched, using default '0'")
