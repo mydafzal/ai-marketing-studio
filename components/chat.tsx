@@ -1,22 +1,22 @@
 'use client'
+import { useUIState, useAIState } from 'ai/rsc'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { toast } from 'sonner'
 
-import { fetchChatFbCampaignId, updateChatTitle } from '@/app/actions'
+import { fetchChatFbCampaignId, updateChatFbCampaignId, updateChatTitle } from '@/app/actions'
 import { ChatList } from '@/components/chat-list'
 import { ChatPanel } from '@/components/chat-panel'
 import { EmptyScreen } from '@/components/empty-screen'
-import { useLocalStorage } from '@/lib/hooks/use-local-storage'
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { useUIState, useAIState } from 'ai/rsc'
-import { Chat as ChatType, Message, Session } from '@/lib/types'
-import { useScrollAnchor } from '@/lib/hooks/use-scroll-anchor'
-import { toast } from 'sonner'
 import { CampaignSummary, getCampaignSummary } from '@/lib/api/fasty-bot/get-campaign-summary'
+import { useLocalStorage } from '@/lib/hooks/use-local-storage'
+import { useScrollAnchor } from '@/lib/hooks/use-scroll-anchor'
+import { Chat as ChatType, Message, Session } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
 export interface ChatProps extends React.ComponentProps<'div'> {
   initialMessages?: Message[]
   chat: ChatType | null
-  id?: string
+  id: string
   session?: Session
   missingKeys: string[]
 }
@@ -121,6 +121,11 @@ export function Chat({ id, chat, className, session, missingKeys }: ChatProps) {
   const { messagesRef, scrollRef, visibilityRef, isAtBottom, scrollToBottom } =
     useScrollAnchor()
 
+  const handleCampaignCreate = useCallback((campaignId: string) => {
+    void fetchSummaryData(campaignId)
+    void updateChatFbCampaignId(id, campaignId)
+  }, [fetchSummaryData, id])
+
   return (
     <div
       className="group w-full overflow-auto pl-0 peer-[[data-state=open]]:lg:pl-[250px] peer-[[data-state=open]]:xl:pl-[300px]"
@@ -141,7 +146,7 @@ export function Chat({ id, chat, className, session, missingKeys }: ChatProps) {
         id={id}
         isAtBottom={isAtBottom}
         scrollToBottom={scrollToBottom}
-        onCampaignCreate={fetchSummaryData}
+        onCampaignCreate={handleCampaignCreate}
       />
     </div>
   )

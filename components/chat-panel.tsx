@@ -2,7 +2,7 @@ import { useAIState, useActions, useUIState } from 'ai/rsc'
 import { nanoid } from 'nanoid'
 import * as React from 'react'
 
-import { shareChat, updateChatFbCampaignId, updateChatTitle } from '@/app/actions'
+import { shareChat } from '@/app/actions'
 import { Button } from '@/components/ui/button'
 import { PromptForm } from '@/components/prompt-form'
 import { ButtonScrollToBottom } from '@/components/button-scroll-to-bottom'
@@ -18,7 +18,7 @@ export interface ChatPanelProps {
   title?: string
   isAtBottom: boolean
   scrollToBottom: () => void
-  onCampaignCreate: (campaignId: string) => Promise<void>
+  onCampaignCreate: (campaignId: string) => void
 }
 
 export function ChatPanel({
@@ -99,10 +99,6 @@ export function ChatPanel({
                   const responseMessage = await submitUserMessage(
                     example.message
                   )
-
-                  if (newCampaignId) {
-                    await updateChatFbCampaignId(aiState.chatId, newCampaignId)
-                  }
 
                   setMessages(currentMessages => [
                     ...currentMessages,

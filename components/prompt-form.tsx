@@ -23,10 +23,9 @@ import { useAIState } from 'ai/rsc'
 import { createCampaign } from '@/lib/api/fasty-bot/create-campaign'
 import { Message } from '@/lib/types'
 import { getMimeType } from '@/lib/utils'
-import { updateChatFbCampaignId, updateChatTitle } from '@/app/actions'
 
 export interface PromtFormProps {
-  onCampaignCreate: (campaignId: string) => Promise<void>
+  onCampaignCreate: (campaignId: string) => void
 }
 
 export function PromptForm({
@@ -36,8 +35,8 @@ export function PromptForm({
   const { formRef, onKeyDown } = useEnterSubmit()
   const inputRef = React.useRef<HTMLTextAreaElement>(null)
   const { submitUserMessage } = useActions()
-  const [messages, setMessages] = useUIState<typeof AI>()
-  const [aiState, setAIState] = useAIState()
+  const setMessages = useUIState<typeof AI>()[1]
+  const [aiState] = useAIState()
   const [isDisabled, setIsDisabled] = React.useState(true)
 
   const fileInputRef = React.useRef<HTMLInputElement>(null)
@@ -133,10 +132,6 @@ export function PromptForm({
         messageContent
       )
 
-      if (newCampaignId) {
-        await updateChatFbCampaignId(aiState.chatId, newCampaignId)
-      }
-
       setMessages(currentMessages => [
         ...currentMessages,
         {
@@ -197,10 +192,6 @@ export function PromptForm({
           if (response.success && response.data.id) {
             newCampaignId = response.data.id
           }
-        }
-        
-        if (newCampaignId) {
-          await updateChatFbCampaignId(aiState.chatId, newCampaignId)
         }
 
         // Optimistically add user message UI
