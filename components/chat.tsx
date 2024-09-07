@@ -7,7 +7,7 @@ import { EmptyScreen } from '@/components/empty-screen'
 import { useLocalStorage } from '@/lib/hooks/use-local-storage'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useUIState, useAIState } from 'ai/rsc'
-import { Chat, Message, Session } from '@/lib/types'
+import { Chat as ChatType, Message, Session } from '@/lib/types'
 import { useScrollAnchor } from '@/lib/hooks/use-scroll-anchor'
 import { toast } from 'sonner'
 import { CampaignSummary, getCampaignSummary } from '@/lib/api/fasty-bot/get-campaign-summary'
@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils'
 
 export interface ChatProps extends React.ComponentProps<'div'> {
   initialMessages?: Message[]
-  chat: Chat | null
+  chat: ChatType | null
   id?: string
   session?: Session
   missingKeys: string[]
