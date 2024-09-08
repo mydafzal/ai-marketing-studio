@@ -13,6 +13,7 @@ const CustomerSearch: React.FC = () => {
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
     const fetchClients = async (email: string = '') => {
         setIsLoading(true);
@@ -135,10 +136,50 @@ const CustomerSearch: React.FC = () => {
         setSearchQuery(''); // New line
     };
 
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        // TODO: Implement account ID assignment logic
-        console.log('Assigning account ID:', fbAccountId);
+        setIsLoading(true);
+        setError(null);
+        setSuccessMessage(null);
+
+        if (!selectedCustomer) {
+            setError('Please select a customer first');
+            setIsLoading(false);
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/admin/update-fb-account-id', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({email: selectedCustomer.email, accountId: fbAccountId}),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to update Account ID');
+            }
+
+            setSuccessMessage('Account ID updated successfully');
+
+            // Update the selected customer and search results with the new account ID
+            setSelectedCustomer({...selectedCustomer, fbAccountId: fbAccountId});
+            setSearchResults(prevResults =>
+                prevResults.map(customer =>
+                    customer.email === selectedCustomer.email
+                        ? {...customer, fbAccountId: fbAccountId}
+                        : customer
+                )
+            );
+        } catch (err) {
+            console.error('Error updating Account ID:', err);
+            setError(err instanceof Error ? err.message : String(err));
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleCustomerSelect = (customer: Customer) => {

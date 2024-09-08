@@ -373,6 +373,7 @@ export async function updateChatFbCampaignId(chatSlug: string, fbCampaignId: str
     }
 }
 
+
 export async function fetchChatFbCampaignId(chatSlug: string) {
     const session = await auth()
 
@@ -415,3 +416,46 @@ export async function fetchChatFbCampaignId(chatSlug: string) {
     }
 }
 
+
+export async function updateFbAccountId(email: string, fbAccountId: string) {
+    const session = await auth()
+
+    if (!session || !session.user) {
+        return {
+            success: false,
+            error: 'User not authenticated'
+        }
+    }
+
+    try {
+        // Construct the user key using the email
+        const userKey = `user:${email}`
+
+        // Check if the user exists
+        const existingUser = await kv.hgetall(userKey)
+
+        if (!existingUser) {
+            return {
+                success: false,
+                error: 'User not found'
+            }
+        }
+
+        // Format the fbAccountId
+        const formattedFbAccountId = fbAccountId.startsWith('act_') ? fbAccountId : `act_${fbAccountId}`
+
+        // Update the accountId field
+        await kv.hset(userKey, {fbAccountId: formattedFbAccountId})
+
+        return {
+            success: true,
+            message: 'Facebook Account ID updated successfully'
+        }
+    } catch (error) {
+        console.error(`Error updating accountId for user ${email}:`, error)
+        return {
+            success: false,
+            error: 'Something went wrong'
+        }
+    }
+}
