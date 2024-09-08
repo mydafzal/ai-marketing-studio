@@ -1,7 +1,8 @@
 // app/admin/page.tsx
-import AdminForm from './AdminForm'
-import Link from 'next/link'
+import AdminForm from './AdminForm';
+import Link from 'next/link';
 import CustomerSearch from "@/app/admin/CustomerSearch";
+import CustomerInformer from "@/app/admin/CustomerInformer"; // Import the CustomerInformer component
 
 export default function AdminPage() {
     return (
@@ -54,6 +55,14 @@ export default function AdminPage() {
                     <CustomerSearch/>
                 </div>
             </div>
+
+            {/* New Section for Customer Informer */}
+            <div className="mt-12 bg-white shadow-md rounded-lg overflow-hidden">
+                <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
+                    <h2 className="text-xl font-semibold text-gray-800">Customer Informer</h2>
+                </div>
+                <CustomerInformer />
+            </div>
         </div>
-    )
+    );
 }

@@ -256,7 +256,7 @@ const CustomerSearch: React.FC = () => {
                     )}
                     <button
                         type="submit"
-                        className="w-full px-4 py-2 text-white rounded bg-emerald-600 hover:bg-emerald-700"
+                        className="w-full px-4 py-2 text-white rounded bg-teal-600 hover:bg-teal-700"
                     >
                         Assign Account ID
                     </button>
