@@ -1,6 +1,7 @@
 // app/admin/page.tsx
 import AdminForm from './AdminForm'
 import Link from 'next/link'
+import CustomerSearch from "@/app/admin/CustomerSearch";
 
 export default function AdminPage() {
     return (
@@ -12,7 +13,7 @@ export default function AdminPage() {
                     <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
                         <h2 className="text-xl font-semibold text-gray-800">Map Chat Slug to Campaign ID</h2>
                     </div>
-                    <AdminForm />
+                    <AdminForm/>
                 </div>
 
                 {/* Card for Assigning Extra Details to Chat Slug */}
@@ -20,7 +21,7 @@ export default function AdminPage() {
                     <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
                         <h2 className="text-xl font-semibold text-gray-800">Assign Extra Details to Chat</h2>
                     </div>
-                    <AdminForm extraDetails />
+                    <AdminForm extraDetails/>
                 </div>
 
                 {/* Card for Feature Toggles Link */}
@@ -30,8 +31,10 @@ export default function AdminPage() {
                     </div>
                     <div className="p-6">
                         <p className="text-gray-600 mb-4">
-                            Feature toggles are used to safely test changes in production and only go live when changes are
-                            fully implemented and tested. They are also utilized for enabling certain admin-only functionalities
+                            Feature toggles are used to safely test changes in production and only go live when changes
+                            are
+                            fully implemented and tested. They are also utilized for enabling certain admin-only
+                            functionalities
                             within the application, allowing for controlled access to specific features.
                         </p>
                         <Link
@@ -41,6 +44,14 @@ export default function AdminPage() {
                             View Feature Toggles
                         </Link>
                     </div>
+                </div>
+
+                {/* Card for Customer Search */}
+                <div className="bg-white shadow-md rounded-lg overflow-hidden">
+                    <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
+                        <h2 className="text-xl font-semibold text-gray-800">Customer Search</h2>
+                    </div>
+                    <CustomerSearch/>
                 </div>
             </div>
         </div>
