@@ -456,7 +456,11 @@ export async function updateAdText(chatSlug: string, idx: number, adTextId: numb
                     (tool.args as any)?.images.forEach((image: any) => {
                         if (!Array.isArray(image.suggestedTexts)) return
                         image.suggestedTexts.forEach((suggestedText: AdText, index: number) => {
-                            suggestedText.id === adTextId && index === idx && (suggestedText.text = newAdText.text) && (suggestedText.headline = newAdText.headline );
+                            if (suggestedText.id === adTextId && index === idx) {
+                                suggestedText.headline = newAdText.headline
+                                suggestedText.text = newAdText.text
+                                console.log('suggestedText', suggestedText)
+                            }
                         })
                     })
                 })
@@ -470,14 +474,19 @@ export async function updateAdText(chatSlug: string, idx: number, adTextId: numb
                     (tool.result as any).images.forEach((image: any) => {
                         if (!Array.isArray(image.suggestedTexts)) return
                         image.suggestedTexts.forEach((suggestedText: AdText, index: number) => {
-                            suggestedText.id === adTextId && index === idx && (suggestedText.text = newAdText.text) && (suggestedText.headline = newAdText.headline );
+                            if (suggestedText.id === adTextId && index === idx) {
+                                suggestedText.headline = newAdText.headline
+                                suggestedText.text = newAdText.text
+                                console.log('suggestedText', suggestedText)
+                            }
                         })
                     })
                 })
             }
         })
 
-        await kv.hset(chatKey, existingChat)
+        await kv.hset(chatKey, {messages: [...existingChat.messages]})
+        revalidatePath('/')
 
         return {
             success: true,
@@ -523,7 +532,10 @@ export async function updateAdTextWithFbId(chatSlug: string, idx: number, adText
                     (tool.args as any)?.images.forEach((image: any) => {
                         if (!Array.isArray(image.suggestedTexts)) return
                         image.suggestedTexts.forEach((suggestedText: AdText, index: number) => {
-                            suggestedText.id === adTextId && index === idx && (suggestedText.fbAdId = fbAdId)
+                            if (suggestedText.id === adTextId && index === idx) {
+                                suggestedText.fbAdId = fbAdId
+                                console.log('suggestedText', suggestedText)
+                            }
                         })
                     })
                 })
@@ -537,14 +549,18 @@ export async function updateAdTextWithFbId(chatSlug: string, idx: number, adText
                     (tool.result as any).images.forEach((image: any) => {
                         if (!Array.isArray(image.suggestedTexts)) return
                         image.suggestedTexts.forEach((suggestedText: AdText, index: number) => {
-                            suggestedText.id === adTextId && index === idx && (suggestedText.fbAdId = fbAdId)
+                            if (suggestedText.id === adTextId && index === idx) {
+                                suggestedText.fbAdId = fbAdId
+                                console.log('suggestedText', suggestedText)
+                            }
                         })
                     })
                 })
             }
         })
 
-        await kv.hset(chatKey, existingChat)
+        await kv.hset(chatKey, {messages: [...existingChat.messages]})
+        revalidatePath('/')
 
         return {
             success: true,
