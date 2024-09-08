@@ -230,7 +230,7 @@ export async function fetchChatExtraDetails(chatId: string) {
 
 interface User {
     email: string;
-    accountId: string | null;
+    fbAccountId: string | null;
 }
 
 
@@ -266,7 +266,7 @@ export async function searchUser(email: string) {
             success: true,
             data: {
                 email: user.email as string,
-                accountId: (user.accountId as string) || null
+                fbAccountId: (user.fbAccountId as string) || null
             }
         }
     } catch (error) {
@@ -304,7 +304,7 @@ export async function fetchAllUsers() {
                 if (user && typeof user === 'object' && 'email' in user) {
                     users.push({
                         email: user.email as string,
-                        accountId: (user.accountId as string) || null
+                        fbAccountId: (user.fbAccountId as string) || null
                     })
                 } else {
                     console.warn(`Invalid user data for key: ${key}`)

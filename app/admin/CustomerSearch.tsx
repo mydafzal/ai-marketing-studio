@@ -3,12 +3,12 @@ import React, {useState} from 'react';
 
 interface Customer {
     email: string;
-    accountId?: string | null;
+    fbAccountId?: string | null;
 }
 
 const CustomerSearch: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState<string>('');
-    const [accountId, setAccountId] = useState<string>('');
+    const [fbAccountId, setFbAccountId] = useState<string>('');
     const [searchResults, setSearchResults] = useState<Customer[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
@@ -43,7 +43,7 @@ const CustomerSearch: React.FC = () => {
                 if (Array.isArray(data.data)) {
                     customers = data.data.map((customer: any) => ({
                         email: customer.email,
-                        accountId: customer.accountId
+                        fbAccountId: customer.fbAccountId
                     }));
                 } else if (data.data && typeof data.data === 'object') {
                     customers = [data.data];
@@ -101,7 +101,7 @@ const CustomerSearch: React.FC = () => {
             if (data.success && Array.isArray(data.data)) {
                 const customers: Customer[] = data.data.map((client: any) => ({
                     email: client.email,
-                    accountId: client.accountId
+                    fbAccountId: client.fbAccountId
                 }));
                 setSearchResults(customers);
                 if (customers.length === 0) {
@@ -125,24 +125,26 @@ const CustomerSearch: React.FC = () => {
         e.preventDefault();
         await fetchClients(searchQuery);
         setSelectedCustomer(null);
-        setAccountId('');
+        setFbAccountId('');
     };
 
     const handleViewAll = async () => {
         await fetchAllUsers();
         setSelectedCustomer(null);
-        setAccountId('');
+        setFbAccountId('');
+        setSearchQuery(''); // New line
     };
 
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         // TODO: Implement account ID assignment logic
-        console.log('Assigning account ID:', accountId);
+        console.log('Assigning account ID:', fbAccountId);
     };
 
     const handleCustomerSelect = (customer: Customer) => {
         setSelectedCustomer(customer);
-        setAccountId(customer.accountId ?? '');
+        setFbAccountId(customer.fbAccountId ?? '');
+        setSearchQuery(customer.email); // New line
     };
 
     return (
@@ -178,28 +180,24 @@ const CustomerSearch: React.FC = () => {
                     <div className="mt-6">
                         <h3 className="text-lg font-semibold mb-2">Search Results</h3>
                         <ul className="space-y-2">
-                            {selectedCustomer ? (
+                            {searchResults.map((customer, index) => (
                                 <li
-                                    className="p-2 rounded cursor-pointer bg-emerald-500 text-white"
-                                    onClick={() => setSelectedCustomer(null)}
+                                    key={index}
+                                    className={`p-2 rounded cursor-pointer ${
+                                        selectedCustomer && selectedCustomer.email === customer.email
+                                            ? 'bg-emerald-500 text-white'
+                                            : 'bg-gray-100 hover:bg-gray-200'
+                                    }`}
+                                    onClick={() => handleCustomerSelect(customer)}
                                 >
-                                    <p className="text-sm">Email: {selectedCustomer.email}</p>
-                                    <p className="text-sm">Account
-                                        ID: {selectedCustomer.accountId ?? 'Not assigned'}</p>
+                                    <p className={`text-sm ${selectedCustomer && selectedCustomer.email === customer.email ? 'text-white' : 'text-gray-600'}`}>
+                                        Email: {customer.email}
+                                    </p>
+                                    <p className={`text-sm ${selectedCustomer && selectedCustomer.email === customer.email ? 'text-white' : 'text-gray-600'}`}>
+                                        Account ID: {customer.fbAccountId ?? 'Not assigned'}
+                                    </p>
                                 </li>
-                            ) : (
-                                searchResults.map((customer, index) => (
-                                    <li
-                                        key={index}
-                                        className="p-2 bg-gray-100 rounded cursor-pointer hover:bg-gray-200"
-                                        onClick={() => handleCustomerSelect(customer)}
-                                    >
-                                        <p className="text-sm text-gray-600">Email: {customer.email}</p>
-                                        <p className="text-sm text-gray-600">Account
-                                            ID: {customer.accountId ?? 'Not assigned'}</p>
-                                    </li>
-                                ))
-                            )}
+                            ))}
                         </ul>
                     </div>
                 )}
@@ -208,11 +206,11 @@ const CustomerSearch: React.FC = () => {
                     <input
                         type="text"
                         placeholder="Assign Account ID"
-                        value={accountId}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAccountId(e.target.value)}
+                        value={fbAccountId}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFbAccountId(e.target.value)}
                         className="w-full px-3 py-2 border rounded mb-2"
                     />
-                    {selectedCustomer && selectedCustomer.accountId === undefined && (
+                    {selectedCustomer && selectedCustomer.fbAccountId === undefined && (
                         <p className="text-red-500 text-sm mb-2">This user does not yet have a Facebook Account ID</p>
                     )}
                     <button
