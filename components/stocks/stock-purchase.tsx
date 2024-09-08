@@ -30,9 +30,17 @@ export function Purchase({
     setBudget(newBudget);
     setAIState({
       ...aiState,
-      messages: [...aiState.messages, { id: 'budget-change', role: 'system', content: `Budget updated to ${newBudget}. Total cost for 30 days: ${formatNumber(newBudget * days)}.` }]
+      messages: [
+        ...aiState.messages,
+        {
+          id: 'budget-change',
+          role: 'system',
+          content: `Budget updated to ${newBudget}. Total cost for 30 days: ${formatNumber(newBudget * days)}.`,
+          timestamp: new Date().toISOString(), 
+        }
+      ]
     });
-  }
+  }  
 
   return (
     <div className="p-4 text-green-400 border rounded-xl bg-zinc-950">
