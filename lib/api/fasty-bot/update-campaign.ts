@@ -35,7 +35,7 @@ async function updateCampaign(campaignId: string, data: any): Promise<boolean | 
       }
 
       // Check for success in the result
-      if (responseData.result && responseData.result.success === true) {
+      if (responseData && responseData.success === true) {
           console.log('Successfully update campaign:', responseData);
           return responseData;
       } else {
