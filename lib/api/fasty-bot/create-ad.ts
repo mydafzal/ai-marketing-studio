@@ -1,3 +1,5 @@
+import { getUserDetail } from '@/app/actions'
+
 async function createCampaignAd(campaignId: string, data: any, adset: any): Promise<boolean | any> {
     if (campaignId == '0') { // TODO: Remove this once Fasty bot is live and campaign IDs are available
         console.log('Bypassing API call for campaign ID 0');
@@ -7,6 +9,7 @@ async function createCampaignAd(campaignId: string, data: any, adset: any): Prom
     try {
         const fastyEndpoint = process.env.FASTY_API_URL;
         const apiUrl = `${fastyEndpoint}/facebook/exec/direct/ads/create`;
+        const userDetail = await getUserDetail();
 
         // Make the direct API call
         const response = await fetch(apiUrl, {
@@ -18,8 +21,9 @@ async function createCampaignAd(campaignId: string, data: any, adset: any): Prom
           body: JSON.stringify({
             campaign_id: campaignId,
             ...data,
-            adset: { ...adset, campaign_id: campaignId }
-          })
+            adset: { ...adset, campaign_id: campaignId },
+            fbAccountId: userDetail?.user?.fbAccountId || '0',
+        })
         })
 
         // Parse the response

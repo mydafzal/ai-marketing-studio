@@ -5,7 +5,7 @@ import {redirect} from 'next/navigation'
 import {kv} from '@vercel/kv'
 
 import {auth} from '@/auth'
-import {type Chat, AdText} from '@/lib/types'
+import {type Chat, User, AdText} from '@/lib/types'
 
 export async function getChats(userId?: string | null) {
     if (!userId) {
@@ -568,6 +568,38 @@ export async function updateAdTextWithFbId(chatSlug: string, idx: number, adText
         }
     } catch (error) {
         console.error(`Error updating title for chat ${chatSlug}:`, error)
+        return {
+            error: 'Something went wrong'
+        }
+    }
+}
+
+export async function getUserDetail() {
+    const session = await auth()
+
+    if (!session || !session.user) {
+        return {
+            error: 'User not authenticated'
+        }
+    }
+
+    try {
+        const userKey = `user:${session.user.email}`
+
+        // Check if the chat exists
+        const user: User | null = await kv.hgetall(userKey)
+
+        if (!user) {
+            return {
+                error: 'User not found'
+            }
+        }
+        return {
+            success: true,
+            user: user
+        }
+    } catch (error) {
+        console.error(`Error get current user detail:`, error)
         return {
             error: 'Something went wrong'
         }

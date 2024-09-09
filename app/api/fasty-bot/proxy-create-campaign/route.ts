@@ -8,6 +8,7 @@ export async function POST(request: Request) {
       name,
       status,
       objective,
+      fbAccountId,
       special_ad_categories = ['NONE']
     } = await request.json()
 
@@ -31,6 +32,7 @@ export async function POST(request: Request) {
         Authorization: `Bearer ${process.env.FASTY_API_TOKEN}`
       },
       body: JSON.stringify({
+        fbAccountId,
         name,
         status,
         objective,

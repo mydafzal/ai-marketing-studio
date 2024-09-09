@@ -38,6 +38,7 @@ export interface User extends Record<string, any> {
   email: string
   password: string
   salt: string
+  fbAccountId?: string
 }
 
 export interface Campaign  extends Record<string, any> {

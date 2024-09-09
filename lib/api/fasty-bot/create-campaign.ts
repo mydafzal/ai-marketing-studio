@@ -1,4 +1,5 @@
 import { getCampaignIdFromUrl } from '@/lib/api/fasty-bot/helpers/campaign-id-from-url-helper'
+import { getUserDetail } from '@/app/actions'
 
 interface CampaignSummary {
   campaign_id: string
@@ -55,13 +56,19 @@ export async function createCampaign(
 
   try {
     const apiCreateUrl = `/api/fasty-bot/proxy-create-campaign`
+    const userDetail = await getUserDetail();
+
+    const dataSubmit = {
+      ...data,
+      fbAccountId: userDetail?.user?.fbAccountId || '0',
+    }
     const response = await fetch(apiCreateUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${process.env.FASTY_API_TOKEN}`
       },
-      body: JSON.stringify(data)
+      body: JSON.stringify(dataSubmit)
     })
     // Handle the response
     if (!response.ok) {
