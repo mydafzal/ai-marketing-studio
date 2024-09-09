@@ -93,6 +93,9 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
                         You have successfully set your ad budget for {campaignName}. Daily budget:
                         {formatNumber(budget)}, Total for {days} days: {formatNumber(totalBudget)}.
                     </p>
+                    <p className="mb-2">
+                    In what geographical area do you want to advertise?
+                    </p>
                 </div>
             );
 
@@ -128,7 +131,7 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
                 {
                     id: nanoid(),
                     role: 'assistant',
-                    content: 'Would you like to review any other settings or start another campaign?'
+                    content: 'In what geographical area do you want to advertise?'
                 }
             ]
         });
@@ -327,8 +330,8 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
     
     Step 1: Do you want to give your campaign a name or should I choose one for you?
     Reasoning: Name the campaign.
-    Response: ALWAYS Call \`show_campaign_name\` to show the campaign name.
-    
+    Response: ALWAYS call \`show_campaign_name\`  to show the campaign name. After the name is shown, AUTOMATICALLY ask for the budget with step 2
+
     Step 2: How much do you want to spend on your campaign daily? Ideally, spend at least €300 a month to maximize Facebook ads' potential.
     Reasoning: Set the ad budget, ensuring the user understands the impact of budget size.
     Response: ALWAYS Call \`show_ad_budget_ui\` to show the budget UI when the user told you how much he wants to spend on the campaign!
@@ -941,7 +944,8 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                     })
                     return (
                         <BotCard>
-                            {`Alright, I will update campaign name as "${campaignName}".`}
+                            <p className="mb-2 last:mb-0">{`Alright, I will update campaign name as "${campaignName}". `}</p>
+                            <p className="mb-2 last:mb-0">{`How much do you want to spend on your campaign daily? Ideally, spend at least €300 a month to maximize Facebook ads' potential.`}</p>
                             <RefreshChatTitle campaignName={campaignName} campaignId={campaignId} />
                         </BotCard>
                     )
