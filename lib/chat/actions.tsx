@@ -12,7 +12,7 @@ import {AdTextSuggestion} from '@/components/stocks/ad-text-suggestion'
 import {RefreshChatTitle} from '@/components/refresh-chat-title'
 import {CampaignStatus} from '@/components/stocks/campaign-status'
 import {updateChatTitle} from '@/app/actions'
-
+import { differenceInHours } from 'date-fns';
 import {ChatImage} from '@/components/chat-images'
 
 import { UserContent, TextPart, ImagePart  } from 'ai'
@@ -28,6 +28,7 @@ import {createCampaignAd} from '@/lib/api/fasty-bot/create-ad';
 import {updateCampaign} from '@/lib/api/fasty-bot/update-campaign';
 import {getCampaignIdFromUrl} from "@/lib/api/fasty-bot/helpers/campaign-id-from-url-helper";
 import {getChatIdFromUrl} from "@/lib/api/fasty-bot/helpers/chat-id-from-url-helper";
+import {sendAdminNotification} from '@/lib/api/fasty-bot/send-admin-notification'
 import { AuditContext } from 'aws-sdk/clients/lakeformation'
 
 interface ToolResult {
@@ -36,7 +37,18 @@ interface ToolResult {
     result: any; // You might want to make this more specific based on your data
 }
 
-
+async function checkNewChat(chatId: string, messages: Message[]) {
+  const userMessages = messages.filter(message => message.role === 'user')
+  const now = new Date()
+  const hasNewMessage = userMessages.some(message => {
+    if (!message?.createdAt) return false
+    const hoursDiff = differenceInHours(now, message.createdAt)
+    return hoursDiff < 16
+  })
+  if (!hasNewMessage) {
+    await sendAdminNotification(chatId)
+  }
+}
 async function confirmPurchase(campaignName: string, budget: number, days: number = 30) {
     'use server'
 
@@ -265,6 +277,8 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
             extraDetailsText = `\n\nSome important contextual information about this client can be seen here: ${extraDetailsResult.extraDetails}`;
         }
     }
+    const createdAt = new Date()
+    await checkNewChat(chatId, aiState.get().messages);
     aiState.update({
       ...aiState.get(),
       messages: [
@@ -272,7 +286,8 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
         {
           id: nanoid(),
           role: 'user',
-          content: contentImages ? contentImages : content
+          content: contentImages ? contentImages : content,
+          createdAt
         }
       ]
     })
