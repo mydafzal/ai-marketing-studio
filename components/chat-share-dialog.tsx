@@ -14,13 +14,32 @@ import {
   DialogHeader,
   DialogTitle
 } from '@/components/ui/dialog'
-import { IconSpinner } from '@/components/ui/icons'
+import { IconSpinner, IconSun, IconUser } from '@/components/ui/icons'
 import { useCopyToClipboard } from '@/lib/hooks/use-copy-to-clipboard'
+import { formatTimestamp } from '@/lib/utils'
 
 interface ChatShareDialogProps extends DialogProps {
   chat: Pick<Chat, 'id' | 'title' | 'messages'>
   shareChat: (id: string) => ServerActionResult<Chat>
   onCopy: () => void
+}
+
+const ChatMessage: React.FC<{ message: any }> = ({ message }) => {
+  return (
+    <div className="flex items-start space-x-4">
+      <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${message.role === 'user' ? 'bg-blue-100' : 'bg-green-100'}`}>
+        {message.role === 'user' ? <IconUser /> : <IconSun />}
+      </div>
+      <div className="flex-grow">
+        <div className="text-sm">{message.content}</div>
+        {message.timestamp && (
+          <div className="text-xs text-gray-500 mt-1">
+            {formatTimestamp(message.timestamp)}
+          </div>
+        )}
+      </div>
+    </div>
+  )
 }
 
 export function ChatShareDialog({
@@ -61,6 +80,11 @@ export function ChatShareDialog({
           <div className="text-muted-foreground">
             {chat.messages.length} messages
           </div>
+        </div>
+        <div className="mt-4 space-y-4 max-h-[60vh] overflow-y-auto">
+          {chat.messages.map((message, index) => (
+            <ChatMessage key={index} message={message} />
+          ))}
         </div>
         <DialogFooter className="items-center">
           <Button

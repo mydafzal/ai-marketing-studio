@@ -70,21 +70,26 @@ export function ChatPanel({
                   index > 1 && 'hidden md:block'
                 }`}
                 onClick={async () => {
+                  const timestamp = new Date().toISOString()
                   setMessages(currentMessages => [
                     ...currentMessages,
                     {
                       id: nanoid(),
-                      display: <UserMessage>{example.message}</UserMessage>
+                      display: <UserMessage>{example.message}</UserMessage>,
+                      timestamp 
                     }
                   ])
-
+        
                   const responseMessage = await submitUserMessage(
                     example.message
                   )
 
                   setMessages(currentMessages => [
                     ...currentMessages,
-                    responseMessage
+                    {
+                      ...responseMessage,
+                      timestamp 
+                    }
                   ])
                 }}
               >

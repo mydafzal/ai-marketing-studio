@@ -42,6 +42,11 @@ export function formatDate(input: string | number | Date): string {
   })
 }
 
+export const formatTimestamp = (timestamp: string) => {
+  const date = new Date(timestamp)
+  return `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')} UTC`;
+}
+
 export const formatNumber = (value: number) =>
   new Intl.NumberFormat('en-US', {
     style: 'currency',

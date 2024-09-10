@@ -1,5 +1,3 @@
-'use client'
-
 import * as React from 'react'
 import Textarea from 'react-textarea-autosize'
 import { UserContent, ImagePart } from 'ai'
@@ -35,17 +33,12 @@ export function PromptForm() {
   const { submitUserMessage } = useActions()
   const [_, setMessages] = useUIState<typeof AI>()
   const [aiState, setAIState] = useAIState()
-  const [isDisabled, setIsDisabled] = React.useState(true);
-
+  const [isDisabled, setIsDisabled] = React.useState(true)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
-  const [selectedFiles, setSelectedFiles] = React.useState<FileList | null>(
-    null
-  )
   const [uploading, setUploading] = React.useState(false)
   const [urls, setUrls] = React.useState<string[]>([])
-  const handleFileChange = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files
     if (!files || files.length === 0) return
 
@@ -53,7 +46,6 @@ export function PromptForm() {
 
     const formData = new FormData()
     const campaignId = chatToCampaignMapping[id as string]
-
     formData.append('id', (campaignId || id) as string)
     Array.from(files).forEach(file => {
       formData.append('files', file)
@@ -64,20 +56,19 @@ export function PromptForm() {
         Array.isArray(msg.content) &&
         msg.content.some(item => item.type === 'image')
     )
-    type ImagePartNew = Partial<ImagePart> & {
-      uploaded_date?: number
-    }
-    let imageIdx = -1;
-    const images: ImagePartNew[] = []
-    imageMes.map((msg: Message) => {
-      if (Array.isArray(msg.content))
-        msg.content.map(item => {
+    let imageIdx = -1
+    const images: ImagePart[] = []
+    imageMes.forEach((msg: Message) => {
+      if (Array.isArray(msg.content)) {
+        msg.content.forEach(item => {
           if (item.type === 'image') {
-            images.push(item)
-            imageIdx++
+            images.push(item);
+            imageIdx++;
           }
-        })
-    })
+        });
+      }
+    });
+
     toast.info('Uploading your images, please wait...')
     try {
       const response = await fetch('/api/upload', {
@@ -87,21 +78,21 @@ export function PromptForm() {
 
       const data = await response.json()
       if (response.ok) {
-        toast.success('Images uploaded successfully!')
+        toast.success('Images uploaded successfully!');
         setUrls(data.urls)
         const textPrompt = ''
-        const uploadedDate = new Date(new Date().toLocaleDateString()).getTime();
+        const uploadedDate = new Date().getTime(); 
         const imgMessages = data.urls.map((url: string) => {
           imageIdx++;
-          let objUrl = {
+          return {
             type: 'image',
             image: url,
             uploaded_date: uploadedDate,
             idx: imageIdx,
             mimeType: getMimeType(url)
           }
-          return objUrl
         })
+
         const messageContent: UserContent = [
           {
             type: 'text',
@@ -109,80 +100,87 @@ export function PromptForm() {
           },
           ...imgMessages
         ]
+
         setMessages(currentMessages => [
           ...currentMessages,
           {
             id: nanoid(),
-            display: (
-              <UserMessage userContent={messageContent}>
-                {textPrompt}
-              </UserMessage>
-            )
+            display: <UserMessage userContent={messageContent}>{textPrompt}</UserMessage>,
+            timestamp: new Date().toISOString() 
           }
         ])
-        const responseMessage = await submitUserMessage(
-          textPrompt,
-          messageContent
-        )
+
+        const responseMessage = await submitUserMessage(textPrompt, messageContent);
+        
+        const completeResponseMessage = {
+          ...responseMessage,
+          timestamp: new Date().toISOString() 
+        };
+
         const imagesLinks = {
           id: nanoid(),
           role: 'system',
-          content: `Knowledge Base: urls of the uploaded images: ${JSON.stringify(imgMessages.map((img: { image: string }) => img.image))}, uploaded time is ${new Date()}"`
-        }
+          content: `Knowledge Base: urls of the uploaded images: ${JSON.stringify(imgMessages.map((img: { image: any; }) => img.image))}, uploaded time is ${new Date().toISOString()}`,
+          timestamp: new Date().toISOString() 
+        };
+
         setMessages(currentMessages => [
           ...currentMessages,
-          responseMessage,
-          imagesLinks
-        ])
+          completeResponseMessage, 
+          imagesLinks 
+        ]);
       } else {
-        toast.error('Failed to upload the image. Please try again.')
+        toast.error('Failed to upload the image. Please try again.');
       }
     } catch (error) {
-      toast.error('Failed to upload the image. Please try again.')
+      toast.error('Failed to upload the image. Please try again.');
     }
 
-    setUploading(false)
-  }
+    setUploading(false);
+  };
+
   const handleButtonClick = () => {
-    fileInputRef.current?.click()
-  }
+    fileInputRef.current?.click();
+  };
+
   React.useEffect(() => {
     if (inputRef.current) {
-      inputRef.current.focus()
+      inputRef.current.focus();
     }
-  }, [])
+  }, []);
+
   React.useEffect(() => {
     function eventListener(e: CustomEvent) {
       const adText = e.detail;
       if (inputRef.current) {
-        inputRef.current.value = `Title:\n${adText.headline}\n\nDescription:\n${adText.text}`
+        inputRef.current.value = `Title:\n${adText.headline}\n\nDescription:\n${adText.text}`;
       }
-      setIsDisabled(false)
+      setIsDisabled(false);
     }
-    window.addEventListener("adjust-adtext", eventListener as EventListener)
+    window.addEventListener("adjust-adtext", eventListener as EventListener);
 
     return () => {
-      window.removeEventListener("adjust-adtext", eventListener as EventListener)
-    }
-  }, [])
+      window.removeEventListener("adjust-adtext", eventListener as EventListener);
+    };
+  }, []);
 
   return (
     <form
       ref={formRef}
-      onSubmit={async (e: any) => {
-        e.preventDefault()
+      onSubmit={async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
 
-        // Blur focus on mobile
         if (window.innerWidth < 600) {
-          e.target['message']?.blur()
+          e.currentTarget['message']?.blur();
         }
 
-        const value = inputRef.current?.value.trim()
+        const value = inputRef.current?.value.trim();
         if (inputRef.current) {
-          inputRef.current.value = ''
-          setIsDisabled(true)
+          inputRef.current.value = '';
+          setIsDisabled(true);
         }
-        if (!value) return
+        if (!value) return;
+
         if (containsTitleAndDescription(value)) {
           setAIState({
             ...aiState,
@@ -194,21 +192,29 @@ export function PromptForm() {
                 content: `The user has accepted this text as campaign title and campaign description: ${value}`
               }
             ]
-          })
+          });
         }
 
-        // Optimistically add user message UI
         setMessages(currentMessages => [
           ...currentMessages,
           {
             id: nanoid(),
-            display: <UserMessage>{value}</UserMessage>
+            display: <UserMessage>{value}</UserMessage>,
+            timestamp: new Date().toISOString()
           }
-        ])
+        ]);
 
-        // Submit and get response message
-        const responseMessage = await submitUserMessage(value)
-        setMessages(currentMessages => [...currentMessages, responseMessage])
+        const responseMessage = await submitUserMessage(value);
+
+        const completeResponseMessage = {
+          ...responseMessage,
+          timestamp: new Date().toISOString() 
+        };
+
+        setMessages(currentMessages => [
+          ...currentMessages,
+          completeResponseMessage 
+        ]);
       }}
     >
       <div className="relative flex max-h-60 w-full grow flex-col overflow-hidden bg-background px-8 sm:rounded-md sm:border sm:px-12">
@@ -247,20 +253,10 @@ export function PromptForm() {
           autoCorrect="off"
           name="message"
           rows={1}
-          onChange={(e) => {setIsDisabled(!e.target.value)}}
+          onChange={(e) => { setIsDisabled(!e.target.value); }}
         />
-        <div className="absolute right-0 top-[13px] sm:right-4">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button type="submit" size="icon" disabled={isDisabled}>
-                <IconArrowElbow />
-                <span className="sr-only">Send message</span>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Send message</TooltipContent>
-          </Tooltip>
-        </div>
+        <div className="py-2" />
       </div>
     </form>
-  )
+  );
 }

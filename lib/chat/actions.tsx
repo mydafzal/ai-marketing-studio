@@ -946,6 +946,7 @@ export type AIState = {
 }
 
 export type UIState = {
+    timestamp: any
     id: string
     display: React.ReactNode
 }[]
@@ -1019,12 +1020,6 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                 message.role === 'tool' && isToolResultArray(message.content) ? (
                     message.content.map((tool: ToolResult) => {
                         switch (tool.toolName) {
-                            // case 'listAds':
-                            //     return (
-                            //         <BotCard key={tool.toolCallId}>
-                            //             <Stocks props={tool.result}/>
-                            //         </BotCard>
-                            //     );
                             case 'showStockPrice':
                             case 'getCampaignResults':
                                 return (
@@ -1056,28 +1051,29 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                         <ChatImage/>
                                     </BotCard>
                                 );
-                                case 'showUpdateStatusChampaign':
-                                    return (
-                                      <BotCard key={tool.toolCallId}>
+                            case 'showUpdateStatusChampaign':
+                                return (
+                                    <BotCard key={tool.toolCallId}>
                                         <CampaignStatus
-                                          props={{
-                                            toolCallId: tool.toolCallId,
-                                            campaignName:
-                                                tool.result.campaignName,
+                                            props={{
+                                                toolCallId: tool.toolCallId,
+                                                campaignName: tool.result.campaignName,
                                                 status: tool.result.status
-                                          }}
+                                            }}
                                         />
-                                      </BotCard>
-                                    )
+                                    </BotCard>
+                                );
                             default:
                                 return null;
                         }
                     })
                 ) : message.role === 'user' ? (
-                    <UserMessage userContent={message.content}>{(Array.isArray(message.content) ? (message.content[0] as TextPart).text  : message.content) as string}</UserMessage>
-                ) : message.role === 'assistant' &&
-                typeof message.content === 'string' ? (
+                    <UserMessage userContent={message.content}>
+                        {(Array.isArray(message.content) ? (message.content[0] as TextPart).text : message.content) as string}
+                    </UserMessage>
+                ) : message.role === 'assistant' && typeof message.content === 'string' ? (
                     <BotMessage content={message.content}/>
-                ) : null
-        }))
+                ) : null,
+            timestamp: message.timestamp 
+        }));
 }

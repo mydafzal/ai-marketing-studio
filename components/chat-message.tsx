@@ -73,11 +73,6 @@ export function ChatMessage({ message, ...props }: ChatMessageProps) {
                 >
                   {message.content}
                 </MemoizedReactMarkdown>
-              {/* {message.timestamp && (
-                  <p className="text-sm text-gray-500">
-                      {new Date(message.timestamp).toLocaleString()}
-                  </p>
-              )} */}
         <ChatMessageActions message={message} />
       </div>
     </div>

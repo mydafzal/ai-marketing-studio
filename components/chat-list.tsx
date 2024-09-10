@@ -3,14 +3,15 @@ import { UIState } from '@/lib/chat/actions'
 import { Session } from '@/lib/types'
 import Link from 'next/link'
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons'
+import { formatTimestamp } from '@/lib/utils'
 
-export interface ChatList {
+export interface ChatListProps {  
   messages: UIState
   session?: Session
   isShared: boolean
 }
 
-export function ChatList({ messages, session, isShared }: ChatList) {
+export function ChatList({ messages, session, isShared }: ChatListProps) {
   if (!messages.length) {
     return null
   }
@@ -42,11 +43,16 @@ export function ChatList({ messages, session, isShared }: ChatList) {
       ) : null}
 
       {messages.map((message, index) => (
-        <div key={message.id}>
-          {message.display}
+        <div key={message.id} className="space-y-1">
+          <div className="text-sm">{message.display}</div>
+          {isShared && message.timestamp && (
+            <div className="text-xs text-gray-500">
+              {formatTimestamp(message.timestamp)}
+            </div>
+          )}
           {index < messages.length - 1 && <Separator className="my-4" />}
         </div>
       ))}
     </div>
-  )
+  );
 }
