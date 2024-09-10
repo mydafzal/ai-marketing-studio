@@ -32,7 +32,8 @@ export function CampaignStatus({ props }: { props: CampaignStatusProps }) {
         {
           id: 'status-change',
           role: 'system',
-          content: `Campaign status updated to ${status}. `
+          content: `Campaign status updated to ${status}.`,
+          timestamp: new Date().toISOString(), 
         }
       ]
     })

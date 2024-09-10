@@ -228,6 +228,111 @@ export async function fetchChatExtraDetails(chatId: string) {
     }
 }
 
+export async function searchUser(email: string) {
+    const session = await auth()
+
+    if (!session || !session.user) {
+        return {
+            success: false,
+            error: 'User not authenticated'
+        }
+    }
+
+    if (email.trim() === '') {
+        return {
+            success: false,
+            error: 'Email cannot be empty'
+        }
+    }
+
+    try {
+        const userKey = `user:${email}`
+        const user = await kv.hgetall(userKey)
+
+        if (!user || typeof user !== 'object' || !('email' in user)) {
+            return {
+                success: false,
+                error: 'User not found'
+            }
+        }
+
+        return {
+            success: true,
+            data: {
+                email: user.email as string,
+                fbAccountId: (user.fbAccountId as string) || null
+            }
+        }
+    } catch (error) {
+        console.error('Error searching user:', error)
+        return {
+            success: false,
+            error: 'Something went wrong'
+        }
+    }
+}
+
+export async function fetchAllUsers() {
+    console.log('fetchAllUsers function called');
+    try {
+        const session = await auth()
+        console.log('Auth session:', session);
+
+        if (!session || !session.user) {
+            console.log('User not authenticated');
+            return {
+                success: false,
+                error: 'User not authenticated'
+            }
+        }
+
+        const keys = await kv.keys('user:*')
+        console.log('KV keys found:', keys);
+
+        const users: {
+            email: string,
+            fbAccountId: string | null
+        }[] = []
+
+        for (const key of keys) {
+            try {
+                const user = await kv.hgetall(key)
+                console.log(`User data for key ${key}:`, user);
+                if (user && typeof user === 'object' && 'email' in user) {
+                    users.push({
+                        email: user.email as string,
+                        fbAccountId: (user.fbAccountId as string) || null
+                    })
+                } else {
+                    console.warn(`Invalid user data for key: ${key}`)
+                }
+            } catch (userError) {
+                console.error(`Error fetching user data for key ${key}:`, userError);
+            }
+        }
+
+        console.log('Total users found:', users.length);
+
+        if (users.length === 0) {
+            return {
+                success: false,
+                error: 'No users found'
+            }
+        }
+
+        return {
+            success: true,
+            data: users
+        }
+    } catch (error) {
+        console.error('Detailed error in fetchAllUsers:', error);
+        return {
+            success: false,
+            error: 'Something went wrong'
+        }
+    }
+}
+
 export async function updateChatFbCampaignId(chatSlug: string, fbCampaignId: string) {
     const session = await auth()
 
@@ -264,6 +369,7 @@ export async function updateChatFbCampaignId(chatSlug: string, fbCampaignId: str
         }
     }
 }
+
 
 export async function fetchChatFbCampaignId(chatSlug: string) {
     const session = await auth()
@@ -345,7 +451,6 @@ export async function updateChatCampaignBudget(chatSlug: string, budget: number)
 }
 
 export async function updateChatTitle(chatSlug: string, title: string) {
-    console.log('updateChatTitle', chatSlug, title)
     const session = await auth()
 
     if (!session || !session.user) {
@@ -377,6 +482,49 @@ export async function updateChatTitle(chatSlug: string, title: string) {
     } catch (error) {
         console.error(`Error updating title for chat ${chatSlug}:`, error)
         return {
+            error: 'Something went wrong'
+        }
+    }
+}
+
+export async function updateFbAccountId(email: string, fbAccountId: string) {
+    const session = await auth()
+
+    if (!session || !session.user) {
+        return {
+            success: false,
+            error: 'User not authenticated'
+        }
+    }
+
+    try {
+        // Construct the user key using the email
+        const userKey = `user:${email}`
+
+        // Check if the user exists
+        const existingUser = await kv.hgetall(userKey)
+
+        if (!existingUser) {
+            return {
+                success: false,
+                error: 'User not found'
+            }
+        }
+
+        // Format the fbAccountId
+        const formattedFbAccountId = fbAccountId.startsWith('act_') ? fbAccountId : `act_${fbAccountId}`
+
+        // Update the accountId field
+        await kv.hset(userKey, {fbAccountId: formattedFbAccountId})
+
+        return {
+            success: true,
+            message: 'Facebook Account ID updated successfully'
+        }
+    } catch (error) {
+        console.error(`Error updating accountId for user ${email}:`, error)
+        return {
+            success: false,
             error: 'Something went wrong'
         }
     }
@@ -587,7 +735,7 @@ export async function getUserDetail() {
         const userKey = `user:${session.user.email}`
 
         // Check if the chat exists
-        const user: User | null = await kv.hgetall(userKey)
+        const user: User | null = (await kv.hgetall(userKey))
 
         if (!user) {
             return {

@@ -32,6 +32,7 @@ export function Chat({ id, chat, className, session, missingKeys }: ChatProps) {
 
   useEffect(() => {
     if (session && summary && summary.campaign_id !== '0') {
+      const currentTimestamp = new Date().toISOString()
       setAIState((aiState: any) => ({
         ...aiState,
         messages: [
@@ -39,7 +40,8 @@ export function Chat({ id, chat, className, session, missingKeys }: ChatProps) {
           {
             id: 'campaign-info-data',
             role: 'system',
-            content: `Knowledge Base about current campaign infomations: ${JSON.stringify(summary)}`
+            content: `Knowledge Base about current campaign information: ${JSON.stringify(summary)}`,
+            timestamp: currentTimestamp 
           }
         ]
       }))

@@ -41,8 +41,8 @@ async function checkNewChat(chatId: string, messages: Message[]) {
   const userMessages = messages.filter(message => message.role === 'user')
   const now = new Date()
   const hasNewMessage = userMessages.some(message => {
-    if (!message?.createdAt) return false
-    const hoursDiff = differenceInHours(now, message.createdAt)
+    if (!message?.timestamp) return false
+    const hoursDiff = differenceInHours(now, message.timestamp)
     return hoursDiff < 16
   })
   if (!hasNewMessage) {
@@ -131,7 +131,8 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
                 {
                     id: nanoid(),
                     role: 'assistant',
-                    content: 'In what geographical area do you want to advertise?'
+                    content: 'In what geographical area do you want to advertise?',
+                    timestamp: new Date().toISOString() 
                 }
             ]
         });
@@ -207,7 +208,7 @@ async function confirmUpdateStatus(campaignName: string, status: string){
         }
     }
 }
-async function confirmCreateAd(data: any, adset: any, adText: AdText){
+async function confirmCreateAd(data: any, adset: any, adText: AdText) {
     'use server'
     const aiState = getMutableAIState<typeof AI>();
     let campaignId = await getCampaignIdFromUrl() || '0' ; // for now just say you are updating even if no campaign id in place
@@ -241,12 +242,12 @@ async function confirmCreateAd(data: any, adset: any, adText: AdText){
             aiState.done({
                 ...aiState.get(),
             });
+
             systemMessage.done(
                 <SystemMessage>
-                    You have successfully created campaign ad with ID: {response?.params?.id}
+                    You have successfully created a campaign ad with ID: {response?.params?.id}
                 </SystemMessage>
             );
-         
 
         } else {
             systemMessage.done(
@@ -256,6 +257,7 @@ async function confirmCreateAd(data: any, adset: any, adText: AdText){
             );
         }
     });
+
     return {
         newMessage: {
             id: nanoid(),
@@ -280,7 +282,6 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
             extraDetailsText = `\n\nSome important contextual information about this client can be seen here: ${extraDetailsResult.extraDetails}`;
         }
     }
-    const createdAt = new Date()
     await checkNewChat(chatId, aiState.get().messages);
     aiState.update({
       ...aiState.get(),
@@ -290,7 +291,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
           id: nanoid(),
           role: 'user',
           content: contentImages ? contentImages : content,
-          createdAt
+          timestamp: new Date().toISOString(),
         }
       ]
     })
@@ -413,18 +414,25 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
             }
 
             if (done) {
-                textStream.done()
+                textStream.done();
                 aiState.done({
                     ...aiState.get(),
                     messages: [
-                        ...aiState.get().messages,
+                        ...aiState.get().messages.map((message: any) => ({
+                            id: message.id, 
+                            role: message.role,
+                            content: message.content,
+                            name: message.name,
+                            timestamp: message.timestamp 
+                        })),
                         {
                             id: nanoid(),
                             role: 'assistant',
-                            content
+                            content,
+                            timestamp: new Date().toISOString() 
                         }
                     ]
-                })
+                });
             } else {
                 textStream.update(delta)
             }
@@ -523,9 +531,10 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                         type: 'tool-call',
                                         toolName: 'getCampaignResults',
                                         toolCallId,
-                                        args: {symbol, price, delta}
+                                        args: { symbol, price, delta }
                                     }
-                                ]
+                                ],
+                                timestamp: new Date().toISOString() 
                             },
                             {
                                 id: nanoid(),
@@ -535,12 +544,14 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                         type: 'tool-result',
                                         toolName: 'getCampaignResults',
                                         toolCallId,
-                                        result: {symbol, price, delta}
+                                        result: { symbol, price, delta }
                                     }
-                                ]
+                                ],
+                                timestamp: new Date().toISOString() 
                             }
                         ]
-                    })
+                    });
+                    
 
                     return (
                         <BotCard>
@@ -579,7 +590,8 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                         toolCallId,
                                         args: {}
                                     }
-                                ]
+                                ],
+                                timestamp: new Date().toISOString() 
                             },
                             {
                                 id: nanoid(),
@@ -591,10 +603,12 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                         toolCallId,
                                         result: {}
                                     }
-                                ]
+                                ],
+                                timestamp: new Date().toISOString() 
                             }
                         ]
-                    })
+                    });
+                    
 
                     return (
                         <BotCard>
@@ -639,7 +653,8 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                             toolCallId,
                                             args: {symbol, price, numberOfShares: initialBudget}
                                         }
-                                    ]
+                                    ],
+                                    timestamp: new Date().toISOString() 
                                 },
                                 {
                                     id: nanoid(),
@@ -656,15 +671,18 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                                 status: 'expired'
                                             }
                                         }
-                                    ]
+                                    ],
+                                    timestamp: new Date().toISOString() 
                                 },
                                 {
                                     id: nanoid(),
                                     role: 'system',
-                                    content: `[User has selected an invalid amount]`
+                                    content: `[User has selected an invalid amount]`,
+                                    timestamp: new Date().toISOString() 
                                 }
                             ]
-                        })
+                        });
+                    
 
                         return <BotMessage content={'Invalid amount'}/>
                     } else {
@@ -682,7 +700,8 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                             toolCallId,
                                             args: {symbol, price, numberOfShares: initialBudget}
                                         }
-                                    ]
+                                    ],
+                                    timestamp: new Date().toISOString() 
                                 },
                                 {
                                     id: nanoid(),
@@ -698,10 +717,11 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                                 numberOfShares: initialBudget
                                             }
                                         }
-                                    ]
+                                    ],
+                                    timestamp: new Date().toISOString() 
                                 }
                             ]
-                        })
+                        });
 
                         return (
                             <BotCard>
@@ -753,9 +773,10 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                         type: 'tool-call',
                                         toolName: 'getEvents',
                                         toolCallId,
-                                        args: {events}
+                                        args: { events }
                                     }
-                                ]
+                                ],
+                                timestamp: new Date().toISOString() 
                             },
                             {
                                 id: nanoid(),
@@ -767,10 +788,12 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                         toolCallId,
                                         result: events
                                     }
-                                ]
+                                ],
+                                timestamp: new Date().toISOString() 
                             }
                         ]
-                    })
+                    });
+                    
 
                     return (
                         <BotCard>
@@ -816,9 +839,10 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                         type: 'tool-call',
                                         toolName: 'showSuggestionAdText',
                                         toolCallId,
-                                        args: {campaignName, images}
+                                        args: { campaignName, images }
                                     }
-                                ]
+                                ],
+                                timestamp: new Date().toISOString() 
                             },
                             {
                                 id: nanoid(),
@@ -828,12 +852,14 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                         type: 'tool-result',
                                         toolName: 'showSuggestionAdText',
                                         toolCallId,
-                                        result: {campaignName, images}
+                                        result: { campaignName, images }
                                     }
-                                ]
+                                ],
+                                timestamp: new Date().toISOString() 
                             }
                         ]
                     });
+                    
 
                     return (
                         <BotCard>
@@ -847,8 +873,16 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                 parameters: z.object({
                     campaignName: z.string().describe('The name of the campaign'),
                     status: z.string().describe('The current status of the campaign'),
+                    images: z.array(z.object({  
+                        suggestedTexts: z.array(z.object({
+                            image: z.string().optional().describe('The link of the image to display'),
+                            date: z.string(),
+                            text: z.string(),
+                            headline: z.string().optional()  
+                        })).describe('List of suggested ad texts')
+                    })).describe('List of images to display')
                 }),
-                generate: async function* ({campaignName, status}) {
+                generate: async function* ({campaignName, status, images}) {
                     yield (
                         <BotCard>
                             <AdTextSelectionSkeleton/>
@@ -869,26 +903,29 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                 content: [
                                     {
                                         type: 'tool-call',
-                                        toolName: 'showUpdateStatusChampaign',
+                                        toolName: 'showSuggestionAdText',
                                         toolCallId,
-                                        args: {campaignName, status}
+                                        args: { campaignName, images }
                                     }
-                                ]
+                                ],
+                                timestamp: new Date().toISOString() 
                             },
                             {
-                                id: toolCallId,
+                                id: nanoid(),
                                 role: 'tool',
                                 content: [
                                     {
                                         type: 'tool-result',
-                                        toolName: 'showUpdateStatusChampaign',
+                                        toolName: 'showSuggestionAdText',
                                         toolCallId,
-                                        result: {campaignName, status}
+                                        result: { campaignName, images }
                                     }
-                                ]
+                                ],
+                                timestamp: new Date().toISOString()
                             }
                         ]
                     });
+                    
 
                     return (
                       <BotCard>
@@ -910,7 +947,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                     console.log('why is campaign name changed?')
                     await updateCampaign(campaignId, {name: campaignName})
                     await updateChatTitle(aiState.get().chatId,campaignName)
-                    
+                    const timestamp: string = new Date().toISOString();
                     const toolCallId = nanoid();
                     aiState.done({
                       ...aiState.get(),
@@ -926,7 +963,8 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                               toolCallId,
                               args: { campaignName }
                             }
-                          ]
+                          ],
+                          timestamp
                         },
                         {
                             id: toolCallId,
@@ -938,7 +976,8 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                     toolCallId,
                                     result: {campaignName}
                                 }
-                            ]
+                            ],
+                            timestamp
                         }
                       ]
                     })
