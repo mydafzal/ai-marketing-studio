@@ -30,6 +30,7 @@ import {getCampaignIdFromUrl} from "@/lib/api/fasty-bot/helpers/campaign-id-from
 import {getChatIdFromUrl} from "@/lib/api/fasty-bot/helpers/chat-id-from-url-helper";
 import {sendAdminNotification} from '@/lib/api/fasty-bot/send-admin-notification'
 import { AuditContext } from 'aws-sdk/clients/lakeformation'
+import { Session } from '@/lib/types'
 
 interface ToolResult {
     toolName: string;
@@ -37,7 +38,18 @@ interface ToolResult {
     result: any; // You might want to make this more specific based on your data
 }
 
-async function checkNewChat(chatId: string, messages: Message[]) {
+async function checkNewChat(chatId: string, messages: Message[], session: Session | null) {
+  if (!session?.user) return false;
+
+  const disabledEmails = [
+    'teo.kostelac@outlook.com',
+    'contact@reeply.net',
+    'themadnoise@gmail.com',
+    'maxnols@reeply.net',
+  ];
+
+  if (disabledEmails.includes(session.user.email)) return false;
+
   const userMessages = messages.filter(message => message.role === 'user')
   const now = new Date()
   const hasNewMessage = userMessages.some(message => {
@@ -282,7 +294,8 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
             extraDetailsText = `\n\nSome important contextual information about this client can be seen here: ${extraDetailsResult.extraDetails}`;
         }
     }
-    await checkNewChat(chatId, aiState.get().messages);
+    const session = await auth()
+    await checkNewChat(chatId, aiState.get().messages, session);
     aiState.update({
       ...aiState.get(),
       messages: [
