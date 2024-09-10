@@ -294,7 +294,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
             extraDetailsText = `\n\nSome important contextual information about this client can be seen here: ${extraDetailsResult.extraDetails}`;
         }
     }
-    const session = await auth()
+    const session = (await auth()) as Session
     await checkNewChat(chatId, aiState.get().messages, session);
     aiState.update({
       ...aiState.get(),
