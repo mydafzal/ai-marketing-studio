@@ -17,6 +17,10 @@ export const featureToggles: FeatureToggle[] = [
     {
         name: "adminFeatures",
         description: "For enabling admin features such as creating new chats, deleting chats etc.x"
+    },
+    {
+        name: "farzamZapier",
+        description: "Only call the test versions of the zapier hooks (Farzam as the main receiver)"
     }
     // Add more feature toggles as needed
 ];

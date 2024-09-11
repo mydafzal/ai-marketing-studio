@@ -1,5 +1,5 @@
 import {auth} from '@/auth'
-import {shareChat} from "@/app/actions";
+import {isFeatureToggleEnabled} from "@/lib/helpers/feature-toggle/feature-toggle-manager";
 
 export async function sendAdminNotification(chatId?: string): Promise<any> {
     const session = await auth()
@@ -14,10 +14,13 @@ export async function sendAdminNotification(chatId?: string): Promise<any> {
             error: 'User not authenticated'
         }
     }
-    const apiUrl = `https://hooks.zapier.com/hooks/catch/14599124/2ho17b8/`
+
+    let apiUrl = `https://hooks.zapier.com/hooks/catch/14599124/2ho17b8/`
+
+    if (isFeatureToggleEnabled('farzamZapier')) {
+        apiUrl = `https://hooks.zapier.com/hooks/catch/14599124/2h1xgdr/`
+    }
     try {
-        // Share chat so it is viewable by the admin.
-        await shareChat(chatId); //todo: move it to its own ts file
         // Make the direct API call
         const response = await fetch(apiUrl, {
             method: 'POST',

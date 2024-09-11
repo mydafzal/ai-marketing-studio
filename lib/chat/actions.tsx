@@ -11,16 +11,22 @@ import {StockSkeleton} from '@/components/stocks/stock-skeleton'
 import {AdTextSuggestion} from '@/components/stocks/ad-text-suggestion'
 import {RefreshChatTitle} from '@/components/refresh-chat-title'
 import {CampaignStatus} from '@/components/stocks/campaign-status'
-import {updateChatTitle} from '@/app/actions'
-import { differenceInHours } from 'date-fns';
+import {
+    fetchChatCampaignBudget,
+    fetchChatExtraDetails,
+    saveChat,
+    shareChat,
+    updateChatCampaignBudget,
+    updateChatTitle
+} from '@/app/actions'
+import {differenceInHours} from 'date-fns';
 import {ChatImage} from '@/components/chat-images'
 
-import { UserContent, TextPart, ImagePart  } from 'ai'
+import {ImagePart, TextPart} from 'ai'
 
 import {formatNumber, nanoid, runAsyncFnWithoutBlocking, sleep} from '@/lib/utils'
-import {fetchChatExtraDetails, saveChat, fetchChatCampaignBudget, updateChatCampaignBudget} from '@/app/actions'
 import {SpinnerMessage, UserMessage} from '@/components/stocks/message'
-import {AdText, Chat, Message, Campaign} from '@/lib/types';
+import {AdText, Chat, Message, Session} from '@/lib/types';
 import {auth} from '@/auth'
 import {setDailyCampaignBudget} from '@/lib/api/fasty-bot/set-daily-campaign-budget';
 import {setCampaignStatus} from '@/lib/api/fasty-bot/set-campaign-status';
@@ -29,8 +35,6 @@ import {updateCampaign} from '@/lib/api/fasty-bot/update-campaign';
 import {getCampaignIdFromUrl} from "@/lib/api/fasty-bot/helpers/campaign-id-from-url-helper";
 import {getChatIdFromUrl} from "@/lib/api/fasty-bot/helpers/chat-id-from-url-helper";
 import {sendAdminNotification} from '@/lib/api/fasty-bot/send-admin-notification'
-import { AuditContext } from 'aws-sdk/clients/lakeformation'
-import { Session } from '@/lib/types'
 
 interface ToolResult {
     toolName: string;
@@ -39,28 +43,30 @@ interface ToolResult {
 }
 
 async function checkNewChat(chatId: string, messages: Message[], session: Session | null) {
-  if (!session?.user) return false;
+    if (!session?.user) return false;
 
-  const disabledEmails = [
-    'teo.kostelac@outlook.com',
-    'contact@reeply.net',
-    'themadnoise@gmail.com',
-    'maxnols@reeply.net',
-  ];
+    const disabledEmails = [
+        'teo.kostelac@outlook.com',
+        'contact@reeply.net',
+        'themadnoise@gmail.com',
+        'maxnols@reeply.net',
+    ];
 
-  if (disabledEmails.includes(session.user.email)) return false;
+    if (disabledEmails.includes(session.user.email)) return false;
 
-  const userMessages = messages.filter(message => message.role === 'user')
-  const now = new Date()
-  const hasNewMessage = userMessages.some(message => {
-    if (!message?.timestamp) return false
-    const hoursDiff = differenceInHours(now, message.timestamp)
-    return hoursDiff < 16
-  })
-  if (!hasNewMessage) {
-    await sendAdminNotification(chatId)
-  }
+    const userMessages = messages.filter(message => message.role === 'user')
+    const now = new Date()
+    const hasNewMessage = userMessages.some(message => {
+        if (!message?.timestamp) return false
+        const hoursDiff = differenceInHours(now, message.timestamp)
+        return hoursDiff < 16
+    })
+    if (!hasNewMessage) {
+        await shareChat(chatId)
+        await sendAdminNotification(chatId)
+    }
 }
+
 async function confirmPurchase(campaignName: string, budget: number, days: number = 30) {
     'use server'
 
@@ -106,7 +112,7 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
                         {formatNumber(budget)}, Total for {days} days: {formatNumber(totalBudget)}.
                     </p>
                     <p className="mb-2">
-                    In what geographical area do you want to advertise?
+                        In what geographical area do you want to advertise?
                     </p>
                 </div>
             );
@@ -144,7 +150,7 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
                     id: nanoid(),
                     role: 'assistant',
                     content: 'In what geographical area do you want to advertise?',
-                    timestamp: new Date().toISOString() 
+                    timestamp: new Date().toISOString()
                 }
             ]
         });
@@ -158,7 +164,8 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
         }
     }
 }
-async function confirmUpdateStatus(campaignName: string, status: string){
+
+async function confirmUpdateStatus(campaignName: string, status: string) {
     'use server'
     const aiState = getMutableAIState<typeof AI>();
     let campaignId = await getCampaignIdFromUrl() || '0'; // for now just say you are updating even if no campaign id in place
@@ -179,8 +186,8 @@ async function confirmUpdateStatus(campaignName: string, status: string){
         await sleep(1000);
 
         const updateSuccess = await setCampaignStatus(
-          campaignId,
-          status
+            campaignId,
+            status
         )
         if (updateSuccess) {
             updateStatus.done(
@@ -205,12 +212,12 @@ async function confirmUpdateStatus(campaignName: string, status: string){
             );
             systemMessage.done(
                 <SystemMessage>
-                     Error: Failed to set the status for {campaignName}. Please try again later.
+                    Error: Failed to set the status for {campaignName}. Please try again later.
                 </SystemMessage>
             );
         }
 
-      
+
     });
     return {
         updateStatusUI: updateStatus.value,
@@ -220,19 +227,20 @@ async function confirmUpdateStatus(campaignName: string, status: string){
         }
     }
 }
+
 async function confirmCreateAd(data: any, adset: any, adText: AdText) {
     'use server'
     const aiState = getMutableAIState<typeof AI>();
-    let campaignId = await getCampaignIdFromUrl() || '0' ; // for now just say you are updating even if no campaign id in place
+    let campaignId = await getCampaignIdFromUrl() || '0'; // for now just say you are updating even if no campaign id in place
     if (process.env.NEXT_PUBLIC_HARDCODED_MODE === '1') {
         campaignId = process.env.NEXT_PUBLIC_HARDCODED_CAMPAIGN_ID || '0'
     }
     const chatId = getChatIdFromUrl()?.toString() || '';
 
     const budget = await fetchChatCampaignBudget(chatId)
-    let adsetUpdate = { ...adset }
+    let adsetUpdate = {...adset}
     if (budget.error) {
-      adsetUpdate = { ...adsetUpdate, daily_budget: 100 }
+        adsetUpdate = {...adsetUpdate, daily_budget: 100}
     }
 
     const systemMessage = createStreamableUI(null)
@@ -242,9 +250,9 @@ async function confirmCreateAd(data: any, adset: any, adText: AdText) {
         await sleep(1000);
 
         const response = await createCampaignAd(
-          campaignId,
-          data,
-          adsetUpdate
+            campaignId,
+            data,
+            adsetUpdate
         );
 
         if (response) {
@@ -297,16 +305,16 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
     const session = (await auth()) as Session
     await checkNewChat(chatId, aiState.get().messages, session);
     aiState.update({
-      ...aiState.get(),
-      messages: [
-        ...aiState.get().messages,
-        {
-          id: nanoid(),
-          role: 'user',
-          content: contentImages ? contentImages : content,
-          timestamp: new Date().toISOString(),
-        }
-      ]
+        ...aiState.get(),
+        messages: [
+            ...aiState.get().messages,
+            {
+                id: nanoid(),
+                role: 'user',
+                content: contentImages ? contentImages : content,
+                timestamp: new Date().toISOString(),
+            }
+        ]
     })
 
     let textStream: undefined | ReturnType<typeof createStreamableValue<string>>
@@ -432,17 +440,17 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                     ...aiState.get(),
                     messages: [
                         ...aiState.get().messages.map((message: any) => ({
-                            id: message.id, 
+                            id: message.id,
                             role: message.role,
                             content: message.content,
                             name: message.name,
-                            timestamp: message.timestamp 
+                            timestamp: message.timestamp
                         })),
                         {
                             id: nanoid(),
                             role: 'assistant',
                             content,
-                            timestamp: new Date().toISOString() 
+                            timestamp: new Date().toISOString()
                         }
                     ]
                 });
@@ -544,10 +552,10 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                         type: 'tool-call',
                                         toolName: 'getCampaignResults',
                                         toolCallId,
-                                        args: { symbol, price, delta }
+                                        args: {symbol, price, delta}
                                     }
                                 ],
-                                timestamp: new Date().toISOString() 
+                                timestamp: new Date().toISOString()
                             },
                             {
                                 id: nanoid(),
@@ -557,14 +565,14 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                         type: 'tool-result',
                                         toolName: 'getCampaignResults',
                                         toolCallId,
-                                        result: { symbol, price, delta }
+                                        result: {symbol, price, delta}
                                     }
                                 ],
-                                timestamp: new Date().toISOString() 
+                                timestamp: new Date().toISOString()
                             }
                         ]
                     });
-                    
+
 
                     return (
                         <BotCard>
@@ -576,8 +584,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
             getCampaignImages: {
                 description:
                     'Get the current images of campaign of a given digital marketing campaign from this user. Use this to show the campaign images to the user.',
-                parameters: z.object({
-                }),
+                parameters: z.object({}),
                 generate: async function* ({}) {
                     yield (
                         <BotCard>
@@ -604,7 +611,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                         args: {}
                                     }
                                 ],
-                                timestamp: new Date().toISOString() 
+                                timestamp: new Date().toISOString()
                             },
                             {
                                 id: nanoid(),
@@ -617,11 +624,11 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                         result: {}
                                     }
                                 ],
-                                timestamp: new Date().toISOString() 
+                                timestamp: new Date().toISOString()
                             }
                         ]
                     });
-                    
+
 
                     return (
                         <BotCard>
@@ -667,7 +674,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                             args: {symbol, price, numberOfShares: initialBudget}
                                         }
                                     ],
-                                    timestamp: new Date().toISOString() 
+                                    timestamp: new Date().toISOString()
                                 },
                                 {
                                     id: nanoid(),
@@ -685,17 +692,17 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                             }
                                         }
                                     ],
-                                    timestamp: new Date().toISOString() 
+                                    timestamp: new Date().toISOString()
                                 },
                                 {
                                     id: nanoid(),
                                     role: 'system',
                                     content: `[User has selected an invalid amount]`,
-                                    timestamp: new Date().toISOString() 
+                                    timestamp: new Date().toISOString()
                                 }
                             ]
                         });
-                    
+
 
                         return <BotMessage content={'Invalid amount'}/>
                     } else {
@@ -714,7 +721,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                             args: {symbol, price, numberOfShares: initialBudget}
                                         }
                                     ],
-                                    timestamp: new Date().toISOString() 
+                                    timestamp: new Date().toISOString()
                                 },
                                 {
                                     id: nanoid(),
@@ -731,7 +738,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                             }
                                         }
                                     ],
-                                    timestamp: new Date().toISOString() 
+                                    timestamp: new Date().toISOString()
                                 }
                             ]
                         });
@@ -786,10 +793,10 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                         type: 'tool-call',
                                         toolName: 'getEvents',
                                         toolCallId,
-                                        args: { events }
+                                        args: {events}
                                     }
                                 ],
-                                timestamp: new Date().toISOString() 
+                                timestamp: new Date().toISOString()
                             },
                             {
                                 id: nanoid(),
@@ -802,11 +809,11 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                         result: events
                                     }
                                 ],
-                                timestamp: new Date().toISOString() 
+                                timestamp: new Date().toISOString()
                             }
                         ]
                     });
-                    
+
 
                     return (
                         <BotCard>
@@ -820,13 +827,14 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                 parameters: z.object({
                     campaignName: z.string().describe('The name of the campaign'),
                     images: z.array(z.object({
-                        suggestedTexts: z.array(z.object({
-                            id: z.number().describe('This is timestamp of current time'),
-                            image: z.string().describe('The link of the image to display'),
-                            date: z.string(),
-                            text: z.string(),
-                            headline: z.string().describe('The headline of the ad to display'),
-                        })).describe('List of suggested ad texts')})
+                            suggestedTexts: z.array(z.object({
+                                id: z.number().describe('This is timestamp of current time'),
+                                image: z.string().describe('The link of the image to display'),
+                                date: z.string(),
+                                text: z.string(),
+                                headline: z.string().describe('The headline of the ad to display'),
+                            })).describe('List of suggested ad texts')
+                        })
                     ).describe('List of images to display')
                 }),
                 generate: async function* ({campaignName, images = []}) {
@@ -839,7 +847,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                     await sleep(1000);
 
                     const toolCallId = nanoid();
-                   
+
                     aiState.done({
                         ...aiState.get(),
                         messages: [
@@ -852,10 +860,10 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                         type: 'tool-call',
                                         toolName: 'showSuggestionAdText',
                                         toolCallId,
-                                        args: { campaignName, images }
+                                        args: {campaignName, images}
                                     }
                                 ],
-                                timestamp: new Date().toISOString() 
+                                timestamp: new Date().toISOString()
                             },
                             {
                                 id: nanoid(),
@@ -865,14 +873,14 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                         type: 'tool-result',
                                         toolName: 'showSuggestionAdText',
                                         toolCallId,
-                                        result: { campaignName, images }
+                                        result: {campaignName, images}
                                     }
                                 ],
-                                timestamp: new Date().toISOString() 
+                                timestamp: new Date().toISOString()
                             }
                         ]
                     });
-                    
+
 
                     return (
                         <BotCard>
@@ -881,17 +889,17 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                     );
                 }
             },
-            showUpdateStatusChampaign:{
+            showUpdateStatusChampaign: {
                 description: 'Show UI  to update status of the campaign.',
                 parameters: z.object({
                     campaignName: z.string().describe('The name of the campaign'),
                     status: z.string().describe('The current status of the campaign'),
-                    images: z.array(z.object({  
+                    images: z.array(z.object({
                         suggestedTexts: z.array(z.object({
                             image: z.string().optional().describe('The link of the image to display'),
                             date: z.string(),
                             text: z.string(),
-                            headline: z.string().optional()  
+                            headline: z.string().optional()
                         })).describe('List of suggested ad texts')
                     })).describe('List of images to display')
                 }),
@@ -905,7 +913,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                     await sleep(1000);
 
                     const toolCallId = nanoid();
-                   
+
                     aiState.done({
                         ...aiState.get(),
                         messages: [
@@ -918,10 +926,10 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                         type: 'tool-call',
                                         toolName: 'showSuggestionAdText',
                                         toolCallId,
-                                        args: { campaignName, images }
+                                        args: {campaignName, images}
                                     }
                                 ],
-                                timestamp: new Date().toISOString() 
+                                timestamp: new Date().toISOString()
                             },
                             {
                                 id: nanoid(),
@@ -931,19 +939,19 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                         type: 'tool-result',
                                         toolName: 'showSuggestionAdText',
                                         toolCallId,
-                                        result: { campaignName, images }
+                                        result: {campaignName, images}
                                     }
                                 ],
                                 timestamp: new Date().toISOString()
                             }
                         ]
                     });
-                    
+
 
                     return (
-                      <BotCard>
-                        <CampaignStatus props={{toolCallId, campaignName, status }} />
-                      </BotCard>
+                        <BotCard>
+                            <CampaignStatus props={{toolCallId, campaignName, status}}/>
+                        </BotCard>
                     )
                 }
             },
@@ -959,46 +967,46 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                     }
                     console.log('why is campaign name changed?')
                     await updateCampaign(campaignId, {name: campaignName})
-                    await updateChatTitle(aiState.get().chatId,campaignName)
+                    await updateChatTitle(aiState.get().chatId, campaignName)
                     const timestamp: string = new Date().toISOString();
                     const toolCallId = nanoid();
                     aiState.done({
-                      ...aiState.get(),
-                      messages: [
-                        ...aiState.get().messages,
-                        {
-                          id: nanoid(),
-                          role: 'assistant',
-                          content: [
+                        ...aiState.get(),
+                        messages: [
+                            ...aiState.get().messages,
                             {
-                              type: 'tool-call',
-                              toolName: 'showCampaignNameMessage',
-                              toolCallId,
-                              args: { campaignName }
+                                id: nanoid(),
+                                role: 'assistant',
+                                content: [
+                                    {
+                                        type: 'tool-call',
+                                        toolName: 'showCampaignNameMessage',
+                                        toolCallId,
+                                        args: {campaignName}
+                                    }
+                                ],
+                                timestamp
+                            },
+                            {
+                                id: toolCallId,
+                                role: 'tool',
+                                content: [
+                                    {
+                                        type: 'tool-result',
+                                        toolName: 'showCampaignNameMessage',
+                                        toolCallId,
+                                        result: {campaignName}
+                                    }
+                                ],
+                                timestamp
                             }
-                          ],
-                          timestamp
-                        },
-                        {
-                            id: toolCallId,
-                            role: 'tool',
-                            content: [
-                                {
-                                    type: 'tool-result',
-                                    toolName: 'showCampaignNameMessage',
-                                    toolCallId,
-                                    result: {campaignName}
-                                }
-                            ],
-                            timestamp
-                        }
-                      ]
+                        ]
                     })
                     return (
                         <BotCard>
                             <p className="mb-2 last:mb-0">{`Alright, I will update campaign name as "${campaignName}". `}</p>
                             <p className="mb-2 last:mb-0">{`How much do you want to spend on your campaign daily? Ideally, spend at least €300 a month to maximize Facebook ads' potential.`}</p>
-                            <RefreshChatTitle campaignName={campaignName} campaignId={campaignId} />
+                            <RefreshChatTitle campaignName={campaignName} campaignId={campaignId}/>
                         </BotCard>
                     )
                 }
@@ -1058,7 +1066,7 @@ export const AI = createAI<AIState, UIState>({
             const userId = session.user.id as string
             const path = `/chat/${chatId}`
 
-            const firstMessageContent = (Array.isArray(messages[0].content) ? (messages[0].content[0] as TextPart).text  : messages[0].content) as string
+            const firstMessageContent = (Array.isArray(messages[0].content) ? (messages[0].content[0] as TextPart).text : messages[0].content) as string
 
             const defaultTitle = firstMessageContent.substring(0, 100)
 
@@ -1137,14 +1145,14 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                             case 'showUpdateStatusChampaign':
                                 return (
                                     <BotCard key={tool.toolCallId}>
-                                    <CampaignStatus
-                                        props={{
-                                        toolCallId: tool.toolCallId,
-                                        campaignName:
-                                            tool.result.campaignName,
-                                            status: tool.result.status
-                                        }}
-                                    />
+                                        <CampaignStatus
+                                            props={{
+                                                toolCallId: tool.toolCallId,
+                                                campaignName:
+                                                tool.result.campaignName,
+                                                status: tool.result.status
+                                            }}
+                                        />
                                     </BotCard>
                                 )
                             default:
@@ -1152,11 +1160,12 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                         }
                     })
                 ) : message.role === 'user' ? (
-                    <UserMessage userContent={message.content}>{(Array.isArray(message.content) ? (message.content[0] as TextPart).text  : message.content) as string}</UserMessage>
+                    <UserMessage
+                        userContent={message.content}>{(Array.isArray(message.content) ? (message.content[0] as TextPart).text : message.content) as string}</UserMessage>
                 ) : message.role === 'assistant' &&
                 typeof message.content === 'string' ? (
                     <BotMessage content={message.content}/>
                 ) : null
         }))
-        .filter((message: {id: string, display: any}) => Boolean(message.display))
+        .filter((message: { id: string, display: any }) => Boolean(message.display))
 }
