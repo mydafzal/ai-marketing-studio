@@ -105,9 +105,6 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
                         You have successfully set your ad budget for {campaignName}. Daily budget:
                         {formatNumber(budget)}, Total for {days} days: {formatNumber(totalBudget)}.
                     </p>
-                    <p className="mb-2">
-                    In what geographical area do you want to advertise?
-                    </p>
                 </div>
             );
 
@@ -143,8 +140,8 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
                 {
                     id: nanoid(),
                     role: 'assistant',
-                    content: 'In what geographical area do you want to advertise?',
-                    timestamp: new Date().toISOString() 
+                    content: 'Would you like to review any other settings or start another campaign?',
+                    timestamp: new Date().toISOString()
                 }
             ]
         });
@@ -343,14 +340,14 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
     Survey Steps:
     
     Step 1: Do you want to give your campaign a name or should I choose one for you?
-    Reasoning: Name the campaign.
-    Response: ALWAYS call \`show_campaign_name\`  to show the campaign name. After the name is shown, AUTOMATICALLY ask for the budget with step 2
+    Reasoning: Change the campaign name.
+    Response: Call \`show_campaign_name_update_ui\` with [client's answer] as campaign name and question for budget with step 2 as questionForBudget.
 
     Step 2: How much do you want to spend on your campaign daily? Ideally, spend at least €300 a month to maximize Facebook ads' potential.
     Reasoning: Set the ad budget, ensuring the user understands the impact of budget size.
-    Response: ALWAYS Call \`show_ad_budget_ui\` to show the budget UI when the user told you how much he wants to spend on the campaign!
+    Response: Call \`show_ad_budget_ui\` to show the budget UI when the user told you how much he wants to spend on the campaign. The guide for user about \`show_ad_budget_ui\` is 'You can set ad budget using this component'.
     
-    second action to always do after setting budget when creating a campaign!: "In what geographical area do you want to advertise?"
+    Next action to always do after setting budget when creating a campaign!: "In what geographical area do you want to advertise?"
     Reasoning: Determine the ad group targeting size.
     Response: Acknowledge the area and mention that it will be reviewed by the team.
     
@@ -379,7 +376,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
     
     Step 5: "Do you have an ad text, or should I suggest one?"
     After the user says whether he has an ad text or not:
-    ALWAYS Call \`showSuggestionAdText\` to show the ad text selection UI and let the user choose or input their ad text.
+    ALWAYS Call \`show_suggestion_ad_text\` to show the ad text selection UI and let the user choose or input their ad text. The guide for user about \`show_suggestion_ad_text\` is 'You can adjust my ad text suggestions or approve them. After approving, the image as well as the ad text will be added to your campaign so make sure that you are all set with ad image and ad text!'.
     Confirm final text before proceeding.
     When generating ad texts, please follow these guidelines:
 1. Create three distinct versions with different tones: Professional, Emoji-rich, and Conversational.
@@ -407,8 +404,8 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
     
     If the user requests setting or changing the ad budget, always first make sure that he tells you the amount. If the message of the user does not yet contain the amount of budget ask the user first for how much he wants to change ad budget. Once he tells you the amount always call \`show_ad_budget_ui\` to show the budget UI.
     if you want to show campaign results, always call \`get_campaign_results\` this basically shows the chart with the campaign results. if they ask about certain metrics about the campaign dont show the chart instead discuss those metrics.
-    If you want to provide ad texts to the user, call \`showSuggestionAdText\` to show the ad text selection UI and let the user choose or input their ad text.
-    If you want to generate ad text examples to the user, call \`showSuggestionAdText\` to show the ad text selection UI and let the user choose or input their ad text.
+    If you want to provide ad texts to the user, call \`show_suggestion_ad_text\` to show the ad text selection UI and let the user choose or input their ad text.
+    If you want to generate ad text examples to the user, call \`show_suggestion_ad_text\` to show the ad text selection UI and let the user choose or input their ad text.
     If you want to change status of campaign, call \'showUpdateStatusChampaign\' to show the update status UI and let the user choose status of the campaign.
     If the user wants to pause a campaign Call  \'showUpdateStatusChampaign\' to show the update status UI and let the user choose status of the campaign.
     If the user wants to complete another specific task, respond that you are a demo and cannot perform that action.
@@ -645,9 +642,10 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                         .optional()
                         .describe(
                             'The **daily ad spend** for a campaign that a user wants to invest. Can be optional if the user did not specify it.'
-                        )
+                        ),
+                    guideForUser: z.string().describe('This is the guide for user about this component, this is optional'),
                 }),
-                generate: async function* ({symbol, price, numberOfShares}) {
+                generate: async function* ({symbol, price, numberOfShares, guideForUser}) {
                     const toolCallId = nanoid()
                     const initialBudget = numberOfShares || price
 
@@ -664,7 +662,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                             type: 'tool-call',
                                             toolName: 'showAdBudgetUI',
                                             toolCallId,
-                                            args: {symbol, price, numberOfShares: initialBudget}
+                                            args: {symbol, price, numberOfShares: initialBudget, guideForUser}
                                         }
                                     ],
                                     timestamp: new Date().toISOString() 
@@ -681,7 +679,8 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                                 symbol,
                                                 price,
                                                 numberOfShares: initialBudget,
-                                                status: 'expired'
+                                                status: 'expired',
+                                                guideForUser
                                             }
                                         }
                                     ],
@@ -711,7 +710,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                             type: 'tool-call',
                                             toolName: 'showAdBudgetUI',
                                             toolCallId,
-                                            args: {symbol, price, numberOfShares: initialBudget}
+                                            args: {symbol, price, numberOfShares: initialBudget, guideForUser}
                                         }
                                     ],
                                     timestamp: new Date().toISOString() 
@@ -727,7 +726,8 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                             result: {
                                                 symbol,
                                                 price,
-                                                numberOfShares: initialBudget
+                                                numberOfShares: initialBudget,
+                                                guideForUser
                                             }
                                         }
                                     ],
@@ -737,16 +737,19 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                         });
 
                         return (
-                            <BotCard>
-                                <Purchase
-                                    props={{
-                                        symbol,
-                                        price: +price,
-                                        initialBudget: initialBudget,
-                                        status: 'requires_action'
-                                    }}
-                                />
-                            </BotCard>
+                            <>
+                                <BotCard>
+                                    <Purchase
+                                        props={{
+                                            symbol,
+                                            price: +price,
+                                            initialBudget: initialBudget,
+                                            status: 'requires_action'
+                                        }}
+                                    />
+                                </BotCard>
+                                {guideForUser ?? ''}
+                            </>
                         )
                     }
                 }
@@ -827,9 +830,10 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                             text: z.string(),
                             headline: z.string().describe('The headline of the ad to display'),
                         })).describe('List of suggested ad texts')})
-                    ).describe('List of images to display')
+                    ).describe('List of images to display'),
+                    guideForUser: z.string().describe('This is the guide for user about this component, this is optional')
                 }),
-                generate: async function* ({campaignName, images = []}) {
+                generate: async function* ({campaignName, images = [], guideForUser}) {
                     yield (
                         <BotCard>
                             <AdTextSelectionSkeleton/>
@@ -852,7 +856,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                         type: 'tool-call',
                                         toolName: 'showSuggestionAdText',
                                         toolCallId,
-                                        args: { campaignName, images }
+                                        args: { campaignName, images, guideForUser }
                                     }
                                 ],
                                 timestamp: new Date().toISOString() 
@@ -865,7 +869,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                         type: 'tool-result',
                                         toolName: 'showSuggestionAdText',
                                         toolCallId,
-                                        result: { campaignName, images }
+                                        result: { campaignName, images, guideForUser }
                                     }
                                 ],
                                 timestamp: new Date().toISOString() 
@@ -875,9 +879,12 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                     
 
                     return (
-                        <BotCard>
-                            <AdTextSuggestion props={images}/>
-                        </BotCard>
+                        <>
+                            <BotCard>
+                                <AdTextSuggestion props={images}/>
+                            </BotCard>
+                            {guideForUser ?? ''}
+                        </>
                     );
                 }
             },
@@ -947,12 +954,13 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                     )
                 }
             },
-            showCampaignNameMessage: {
-                description: 'Show campaign name message',
+            showCampaignNameUpdateUI: {
+                description: 'Show a notification that the name of Facebook Ad Campaign is updated. Use this when the user wants to change campaign name. The parameter questionForBudget is optional. It is used only in step 1.',
                 parameters: z.object({
                     campaignName: z.string().describe('The name of the campaign'),
+                    questionForBudget: z.string().describe('The question for the budget with step 2, this is optional'),
                 }),
-                generate: async function* ({campaignName}) {
+                generate: async function* ({campaignName, questionForBudget}) {
                     let campaignId = await getCampaignIdFromUrl() || '0'; // for now just say you are updating even if no campaign id in place
                     if (process.env.NEXT_PUBLIC_HARDCODED_MODE === '1') {
                         campaignId = process.env.NEXT_PUBLIC_HARDCODED_CAMPAIGN_ID || '0'
@@ -962,6 +970,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                     await updateChatTitle(aiState.get().chatId,campaignName)
                     const timestamp: string = new Date().toISOString();
                     const toolCallId = nanoid();
+                    console.log('messages', aiState.get().messages)
                     aiState.done({
                       ...aiState.get(),
                       messages: [
@@ -972,9 +981,9 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                           content: [
                             {
                               type: 'tool-call',
-                              toolName: 'showCampaignNameMessage',
+                              toolName: 'showCampaignNameUpdateUI',
                               toolCallId,
-                              args: { campaignName }
+                              args: { campaignName, campaignId, questionForBudget }
                             }
                           ],
                           timestamp
@@ -985,9 +994,9 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                             content: [
                                 {
                                     type: 'tool-result',
-                                    toolName: 'showCampaignNameMessage',
+                                    toolName: 'showCampaignNameUpdateUI',
                                     toolCallId,
-                                    result: {campaignName}
+                                    result: { campaignName, campaignId, questionForBudget }
                                 }
                             ],
                             timestamp
@@ -996,8 +1005,8 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                     })
                     return (
                         <BotCard>
-                            <p className="mb-2 last:mb-0">{`Alright, I will update campaign name as "${campaignName}". `}</p>
-                            <p className="mb-2 last:mb-0">{`How much do you want to spend on your campaign daily? Ideally, spend at least €300 a month to maximize Facebook ads' potential.`}</p>
+                            <p className="mb-2 last:mb-0">{`Alright, I will update campaign name as "${campaignName}".`}</p>
+                            {!!questionForBudget && <p className="mb-2 last:mb-0">{questionForBudget}</p>}                            
                             <RefreshChatTitle campaignName={campaignName} campaignId={campaignId} />
                         </BotCard>
                     )
@@ -1106,9 +1115,13 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                 );
                             case 'showAdBudgetUI':
                                 return (
-                                    <BotCard key={tool.toolCallId}>
-                                        <Purchase props={tool.result}/>
-                                    </BotCard>
+                                    <>
+                                        <BotCard key={tool.toolCallId}>
+                                            <Purchase
+                                                props={tool.result}/>
+                                        </BotCard>
+                                        {tool.result.guideForUser ?? ''}
+                                    </>
                                 );
                             case 'getEvents':
                                 return (
@@ -1118,9 +1131,12 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                 );
                             case 'showSuggestionAdText':
                                 return (
-                                    <BotCard key={tool.toolCallId}>
-                                        <AdTextSuggestion props={tool.result.images}/>
-                                    </BotCard>
+                                    <>
+                                        <BotCard key={tool.toolCallId}>
+                                            <AdTextSuggestion props={tool.result.images}/>
+                                        </BotCard>
+                                        {tool.result.guideForUser ?? ''}
+                                    </>
                                 );
                             case 'getCampaignImages':
                                 return (
@@ -1128,10 +1144,12 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                         <ChatImage/>
                                     </BotCard>
                                 );
-                            case 'showCampaignNameMessage':
+                            case 'showCampaignNameUpdateUI':
                                 return (
                                     <BotCard key={tool.toolCallId}>
-                                        {`Alright, I will update campaign name as "${tool.result.campaignName}".`}
+                                        <p className="mb-2 last:mb-0">{`Alright, I will update campaign name as "${tool.result.campaignName}".`}</p>
+                                        {!!tool.result.questionForBudget && <p className="mb-2 last:mb-0">{tool.result.questionForBudget}</p>}                            
+                                        <RefreshChatTitle campaignName={tool.result.campaignName} campaignId={tool.result.campaignId} />
                                     </BotCard>
                                 )
                             case 'showUpdateStatusChampaign':
