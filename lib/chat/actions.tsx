@@ -893,16 +893,8 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                 parameters: z.object({
                     campaignName: z.string().describe('The name of the campaign'),
                     status: z.string().describe('The current status of the campaign'),
-                    images: z.array(z.object({  
-                        suggestedTexts: z.array(z.object({
-                            image: z.string().optional().describe('The link of the image to display'),
-                            date: z.string(),
-                            text: z.string(),
-                            headline: z.string().optional()  
-                        })).describe('List of suggested ad texts')
-                    })).describe('List of images to display')
                 }),
-                generate: async function* ({campaignName, status, images}) {
+                generate: async function* ({campaignName, status}) {
                     yield (
                         <BotCard>
                             <AdTextSelectionSkeleton/>
@@ -923,9 +915,9 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                 content: [
                                     {
                                         type: 'tool-call',
-                                        toolName: 'showSuggestionAdText',
+                                        toolName: 'showUpdateStatusChampaign    ',
                                         toolCallId,
-                                        args: { campaignName, images }
+                                        args: { campaignName, status }
                                     }
                                 ],
                                 timestamp: new Date().toISOString() 
@@ -936,9 +928,9 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                 content: [
                                     {
                                         type: 'tool-result',
-                                        toolName: 'showSuggestionAdText',
+                                        toolName: 'showUpdateStatusChampaign',
                                         toolCallId,
-                                        result: { campaignName, images }
+                                        result: { campaignName, status }
                                     }
                                 ],
                                 timestamp: new Date().toISOString()
@@ -1155,14 +1147,14 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                             case 'showUpdateStatusChampaign':
                                 return (
                                     <BotCard key={tool.toolCallId}>
-                                    <CampaignStatus
-                                        props={{
-                                        toolCallId: tool.toolCallId,
-                                        campaignName:
-                                            tool.result.campaignName,
-                                            status: tool.result.status
-                                        }}
-                                    />
+                                        <CampaignStatus
+                                            props={{
+                                            toolCallId: tool.toolCallId,
+                                            campaignName:
+                                                tool.result.campaignName,
+                                                status: tool.result.status
+                                            }}
+                                        />
                                     </BotCard>
                                 )
                             default:
