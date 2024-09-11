@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useActions, useAIState, useUIState } from 'ai/rsc';
-import { formatNumber } from '@/lib/utils';
+import { formatNumber, nanoid } from '@/lib/utils';
 
 import type { AI } from '@/lib/chat/actions';
 
@@ -69,15 +69,25 @@ export function Purchase({
           <div className="mt-6">
             <p>Total cost</p>
             <div className="text-xl font-bold">
-              {days} Days × {formatNumber(budget)} per day = {formatNumber(days * budget)}
+              {days} Days × {formatNumber(budget)} per day ={' '}
+              {formatNumber(days * budget)}
             </div>
           </div>
           <button
             className="w-full px-4 py-2 mt-6 font-bold text-zinc-900 bg-green-400 rounded-lg hover:bg-green-500"
             onClick={async () => {
-              const response = await confirmPurchase(symbol, budget, days);
-              setPurchasingUI(response.purchasingUI);
-              setMessages((currentMessages) => [...currentMessages, response.newMessage]);
+              const response = await confirmPurchase(symbol, budget, days)
+              setPurchasingUI(response.purchasingUI)
+              setMessages(currentMessages => [
+                ...currentMessages,
+                response.newMessage,
+                {
+                  id: nanoid(),
+                  role: 'assistant',
+                  display: response.nextMessage,
+                  timestamp: new Date().toISOString()
+                }
+              ])
             }}
           >
             Set Ad Budget
@@ -85,5 +95,5 @@ export function Purchase({
         </>
       )}
     </div>
-  );
+  )
 }

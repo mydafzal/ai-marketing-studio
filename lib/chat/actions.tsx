@@ -82,10 +82,10 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
     );
 
     const systemMessage = createStreamableUI(null);
+    const nextMessage = createStreamableUI(null);
 
     runAsyncFnWithoutBlocking(async () => {
         await sleep(1000);
-
         purchasing.update(
             <div className="inline-flex items-start gap-1 md:items-center">
                 {spinner}
@@ -105,12 +105,11 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
                         You have successfully set your ad budget for {campaignName}. Daily budget:
                         {formatNumber(budget)}, Total for {days} days: {formatNumber(totalBudget)}.
                     </p>
-                    <p className="mb-2">
-                    In what geographical area do you want to advertise?
-                    </p>
+                    
                 </div>
             );
-
+            
+            nextMessage.done(<BotMessage content={'In what geographical area do you want to advertise?'}/>);
             systemMessage.done(
                 <SystemMessage>
                     Your ad campaign &apos;{campaignName}&apos; is now set to run for {days} days with a daily budget of
@@ -126,7 +125,7 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
                     </p>
                 </div>
             );
-
+            nextMessage.done('');
             systemMessage.done(
                 <SystemMessage>
                     There was an error updating the budget for campaign &apos;{campaignName}&apos; on Facebook. Please
@@ -152,6 +151,7 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
 
     return {
         purchasingUI: purchasing.value,
+        nextMessage: nextMessage.value,
         newMessage: {
             id: nanoid(),
             display: systemMessage.value
