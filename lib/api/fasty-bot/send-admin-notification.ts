@@ -1,8 +1,14 @@
 import {auth} from '@/auth'
+import {shareChat} from "@/app/actions";
 
 export async function sendAdminNotification(chatId?: string): Promise<any> {
     const session = await auth()
 
+    if (!chatId) {
+        return {
+            error: 'Chat ID is required'
+        }
+    }
     if (!session || !session.user) {
         return {
             error: 'User not authenticated'
@@ -10,6 +16,8 @@ export async function sendAdminNotification(chatId?: string): Promise<any> {
     }
     const apiUrl = `https://hooks.zapier.com/hooks/catch/14599124/2ho17b8/`
     try {
+        // Share chat so it is viewable by the admin.
+        await shareChat(chatId); //todo: move it to its own ts file
         // Make the direct API call
         const response = await fetch(apiUrl, {
             method: 'POST',
