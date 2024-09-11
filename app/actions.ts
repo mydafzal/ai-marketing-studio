@@ -5,7 +5,7 @@ import {redirect} from 'next/navigation'
 import {kv} from '@vercel/kv'
 
 import {auth} from '@/auth'
-import {type Chat} from '@/lib/types'
+import {type Chat, User, AdText} from '@/lib/types'
 
 export async function getChats(userId?: string | null) {
     if (!userId) {
@@ -228,12 +228,6 @@ export async function fetchChatExtraDetails(chatId: string) {
     }
 }
 
-interface User {
-    email: string;
-    fbAccountId: string | null;
-}
-
-
 export async function searchUser(email: string) {
     const session = await auth()
 
@@ -295,7 +289,10 @@ export async function fetchAllUsers() {
         const keys = await kv.keys('user:*')
         console.log('KV keys found:', keys);
 
-        const users: User[] = []
+        const users: {
+            email: string,
+            fbAccountId: string | null
+        }[] = []
 
         for (const key of keys) {
             try {
@@ -416,6 +413,79 @@ export async function fetchChatFbCampaignId(chatSlug: string) {
     }
 }
 
+export async function updateChatCampaignBudget(chatSlug: string, budget: number) {
+    const session = await auth()
+
+    if (!session || !session.user) {
+        return {
+            error: 'User not authenticated'
+        }
+    }
+
+    try {
+        // Construct the chat key using the chatSlug
+        const chatKey = `chat:${chatSlug}`
+
+        // Check if the chat exists
+        const existingChat = await kv.hgetall(chatKey)
+
+        if (!existingChat) {
+            return {
+                error: 'Chat not found'
+            }
+        }
+
+        // Update or insert the fbCampaignId field
+        await kv.hset(chatKey, {budget})
+
+        return {
+            success: true,
+            message: 'Facebook Campaign budget updated successfully'
+        }
+    } catch (error) {
+        console.error(`Error updating budget for chat ${chatSlug}:`, error)
+        return {
+            error: 'Something went wrong'
+        }
+    }
+}
+
+export async function updateChatTitle(chatSlug: string, title: string) {
+    const session = await auth()
+
+    if (!session || !session.user) {
+        return {
+            error: 'User not authenticated'
+        }
+    }
+
+    try {
+        // Construct the chat key using the chatSlug
+        const chatKey = `chat:${chatSlug}`
+
+        // Check if the chat exists
+        const existingChat = await kv.hgetall(chatKey)
+
+        if (!existingChat) {
+            return {
+                error: 'Chat not found'
+            }
+        }
+
+        // Update or insert the fbCampaignId field
+        await kv.hset(chatKey, {title})
+
+        return {
+            success: true,
+            message: 'Chat title updated successfully'
+        }
+    } catch (error) {
+        console.error(`Error updating title for chat ${chatSlug}:`, error)
+        return {
+            error: 'Something went wrong'
+        }
+    }
+}
 
 export async function updateFbAccountId(email: string, fbAccountId: string) {
     const session = await auth()
@@ -455,6 +525,230 @@ export async function updateFbAccountId(email: string, fbAccountId: string) {
         console.error(`Error updating accountId for user ${email}:`, error)
         return {
             success: false,
+            error: 'Something went wrong'
+        }
+    }
+}
+
+export async function fetchChatCampaignBudget(chatSlug: string) {
+    const session = await auth()
+
+    if (!session || !session.user) {
+        return {
+            error: 'User not authenticated'
+        }
+    }
+
+    try {
+        // Construct the chat key using the chatSlug
+        const chatKey = `chat:${chatSlug}`
+
+        // Fetch the chat data
+        const chatData = await kv.hgetall(chatKey)
+
+        if (!chatData) {
+            return {
+                error: 'Chat not found'
+            }
+        }
+
+        const budget = chatData.budget
+
+        if (!budget) {
+            return {
+                error: 'Facebook Campaign budget not found for this chat'
+            }
+        }
+
+        return {
+            success: true,
+            budget
+        }
+    } catch (error) {
+        console.error(`Error fetching budget for chat ${chatSlug}:`, error)
+        return {
+            error: 'Something went wrong'
+        }
+    }
+}
+
+export async function updateAdText(chatSlug: string, idx: number, adTextId: number, newAdText: AdText) {
+    const session = await auth()
+
+    if (!session || !session.user) {
+        return {
+            error: 'User not authenticated'
+        }
+    }
+
+    try {
+        // Construct the chat key using the chatSlug
+        const chatKey = `chat:${chatSlug}`
+
+        // Check if the chat exists
+        const existingChat: Chat | null = await kv.hgetall(chatKey)
+
+        if (!existingChat) {
+            return {
+                error: 'Chat not found'
+            }
+        }
+
+        existingChat.messages.forEach(message => {
+            if (message.role === 'assistant') {
+                if (!Array.isArray(message.content)) return
+                message.content.forEach(tool => {
+                    if (tool.type !== "tool-call") return
+                    if (tool.toolName !== "showSuggestionAdText") return
+                    if (!Array.isArray((tool.args as any)?.images)) return
+                    (tool.args as any)?.images.forEach((image: any) => {
+                        if (!Array.isArray(image.suggestedTexts)) return
+                        image.suggestedTexts.forEach((suggestedText: AdText, index: number) => {
+                            if (suggestedText.id === adTextId && index === idx) {
+                                suggestedText.headline = newAdText.headline
+                                suggestedText.text = newAdText.text
+                                console.log('suggestedText', suggestedText)
+                            }
+                        })
+                    })
+                })
+            }
+            if (message.role === 'tool') {
+                if (!Array.isArray(message.content)) return
+                message.content.forEach(tool => {
+                    if (tool.type !== "tool-result") return
+                    if (tool.toolName !== "showSuggestionAdText") return
+                    if (!Array.isArray((tool.result as any)?.images)) return
+                    (tool.result as any).images.forEach((image: any) => {
+                        if (!Array.isArray(image.suggestedTexts)) return
+                        image.suggestedTexts.forEach((suggestedText: AdText, index: number) => {
+                            if (suggestedText.id === adTextId && index === idx) {
+                                suggestedText.headline = newAdText.headline
+                                suggestedText.text = newAdText.text
+                                console.log('suggestedText', suggestedText)
+                            }
+                        })
+                    })
+                })
+            }
+        })
+
+        await kv.hset(chatKey, {messages: [...existingChat.messages]})
+        revalidatePath('/')
+
+        return {
+            success: true,
+            message: 'Chat updated successfully'
+        }
+    } catch (error) {
+        console.error(`Error updating title for chat ${chatSlug}:`, error)
+        return {
+            error: 'Something went wrong'
+        }
+    }
+}
+
+export async function updateAdTextWithFbId(chatSlug: string, idx: number, adTextId: number, fbAdId: string) {
+    const session = await auth()
+
+    if (!session || !session.user) {
+        return {
+            error: 'User not authenticated'
+        }
+    }
+
+    try {
+        // Construct the chat key using the chatSlug
+        const chatKey = `chat:${chatSlug}`
+
+        // Check if the chat exists
+        const existingChat: Chat | null = await kv.hgetall(chatKey)
+
+        if (!existingChat) {
+            return {
+                error: 'Chat not found'
+            }
+        }
+
+        existingChat.messages.forEach(message => {
+            if (message.role === 'assistant') {
+                if (!Array.isArray(message.content)) return
+                message.content.forEach(tool => {
+                    if (tool.type !== "tool-call") return
+                    if (tool.toolName !== "showSuggestionAdText") return
+                    if (!Array.isArray((tool.args as any)?.images)) return
+                    (tool.args as any)?.images.forEach((image: any) => {
+                        if (!Array.isArray(image.suggestedTexts)) return
+                        image.suggestedTexts.forEach((suggestedText: AdText, index: number) => {
+                            if (suggestedText.id === adTextId && index === idx) {
+                                suggestedText.fbAdId = fbAdId
+                                console.log('suggestedText', suggestedText)
+                            }
+                        })
+                    })
+                })
+            }
+            if (message.role === 'tool') {
+                if (!Array.isArray(message.content)) return
+                message.content.forEach(tool => {
+                    if (tool.type !== "tool-result") return
+                    if (tool.toolName !== "showSuggestionAdText") return
+                    if (!Array.isArray((tool.result as any)?.images)) return
+                    (tool.result as any).images.forEach((image: any) => {
+                        if (!Array.isArray(image.suggestedTexts)) return
+                        image.suggestedTexts.forEach((suggestedText: AdText, index: number) => {
+                            if (suggestedText.id === adTextId && index === idx) {
+                                suggestedText.fbAdId = fbAdId
+                                console.log('suggestedText', suggestedText)
+                            }
+                        })
+                    })
+                })
+            }
+        })
+
+        await kv.hset(chatKey, {messages: [...existingChat.messages]})
+        revalidatePath('/')
+
+        return {
+            success: true,
+            message: 'Chat updated successfully'
+        }
+    } catch (error) {
+        console.error(`Error updating title for chat ${chatSlug}:`, error)
+        return {
+            error: 'Something went wrong'
+        }
+    }
+}
+
+export async function getUserDetail() {
+    const session = await auth()
+
+    if (!session || !session.user) {
+        return {
+            error: 'User not authenticated'
+        }
+    }
+
+    try {
+        const userKey = `user:${session.user.email}`
+
+        // Check if the chat exists
+        const user: User | null = (await kv.hgetall(userKey))
+
+        if (!user) {
+            return {
+                error: 'User not found'
+            }
+        }
+        return {
+            success: true,
+            user: user
+        }
+    } catch (error) {
+        console.error(`Error get current user detail:`, error)
+        return {
             error: 'Something went wrong'
         }
     }

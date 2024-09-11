@@ -2,7 +2,6 @@ import 'server-only'
 
 import {createAI, createStreamableUI, createStreamableValue, getAIState, getMutableAIState, streamUI} from 'ai/rsc'
 import {openai} from '@ai-sdk/openai'
-
 import {BotCard, BotMessage, Purchase, spinner, Stock, SystemMessage,} from '@/components/stocks'
 import {AdTextSelectionSkeleton} from '@/components/stocks/ad-text-selection-skeleton'
 import {z} from 'zod'
@@ -10,22 +9,28 @@ import {EventsSkeleton} from '@/components/stocks/events-skeleton'
 import {Events} from '@/components/stocks/events'
 import {StockSkeleton} from '@/components/stocks/stock-skeleton'
 import {AdTextSuggestion} from '@/components/stocks/ad-text-suggestion'
+import {RefreshChatTitle} from '@/components/refresh-chat-title'
 import {CampaignStatus} from '@/components/stocks/campaign-status'
-
+import {updateChatTitle} from '@/app/actions'
+import { differenceInHours } from 'date-fns';
 import {ChatImage} from '@/components/chat-images'
 
-import { TextPart, ImagePart  } from 'ai'
+import { UserContent, TextPart, ImagePart  } from 'ai'
 
 import {formatNumber, nanoid, runAsyncFnWithoutBlocking, sleep} from '@/lib/utils'
-import {fetchChatExtraDetails, saveChat} from '@/app/actions'
+import {fetchChatExtraDetails, saveChat, fetchChatCampaignBudget, updateChatCampaignBudget} from '@/app/actions'
 import {SpinnerMessage, UserMessage} from '@/components/stocks/message'
-import {Chat, Message, Campaign} from '@/lib/types';
+import {AdText, Chat, Message, Campaign} from '@/lib/types';
 import {auth} from '@/auth'
 import {setDailyCampaignBudget} from '@/lib/api/fasty-bot/set-daily-campaign-budget';
 import {setCampaignStatus} from '@/lib/api/fasty-bot/set-campaign-status';
 import {createCampaignAd} from '@/lib/api/fasty-bot/create-ad';
+import {updateCampaign} from '@/lib/api/fasty-bot/update-campaign';
 import {getCampaignIdFromUrl} from "@/lib/api/fasty-bot/helpers/campaign-id-from-url-helper";
 import {getChatIdFromUrl} from "@/lib/api/fasty-bot/helpers/chat-id-from-url-helper";
+import {sendAdminNotification} from '@/lib/api/fasty-bot/send-admin-notification'
+import { AuditContext } from 'aws-sdk/clients/lakeformation'
+import { Session } from '@/lib/types'
 
 interface ToolResult {
     toolName: string;
@@ -33,16 +38,39 @@ interface ToolResult {
     result: any; // You might want to make this more specific based on your data
 }
 
+async function checkNewChat(chatId: string, messages: Message[], session: Session | null) {
+  if (!session?.user) return false;
 
+  const disabledEmails = [
+    'teo.kostelac@outlook.com',
+    'contact@reeply.net',
+    'themadnoise@gmail.com',
+    'maxnols@reeply.net',
+  ];
+
+  if (disabledEmails.includes(session.user.email)) return false;
+
+  const userMessages = messages.filter(message => message.role === 'user')
+  const now = new Date()
+  const hasNewMessage = userMessages.some(message => {
+    if (!message?.timestamp) return false
+    const hoursDiff = differenceInHours(now, message.timestamp)
+    return hoursDiff < 16
+  })
+  if (!hasNewMessage) {
+    await sendAdminNotification(chatId)
+  }
+}
 async function confirmPurchase(campaignName: string, budget: number, days: number = 30) {
     'use server'
 
     const aiState = getMutableAIState<typeof AI>();
     const totalBudget = budget * days;
-    let campaignId = Number(await getCampaignIdFromUrl()) || 0; // for now just say you are updating even if no campaign id in place
+    let campaignId = await getCampaignIdFromUrl() || '0'; // for now just say you are updating even if no campaign id in place
     if (process.env.NEXT_PUBLIC_HARDCODED_MODE === '1') {
-        campaignId = Number(process.env.NEXT_PUBLIC_HARDCODED_CAMPAIGN_ID)
+        campaignId = process.env.NEXT_PUBLIC_HARDCODED_CAMPAIGN_ID || '0'
     }
+    const chatId = getChatIdFromUrl()?.toString() || '';
 
     const purchasing = createStreamableUI(
         <div className="inline-flex items-start gap-1 md:items-center">
@@ -70,11 +98,15 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
         const updateSuccess = await setDailyCampaignBudget(campaignId, budget);
 
         if (updateSuccess) {
+            await updateChatCampaignBudget(chatId, budget);
             purchasing.done(
                 <div>
                     <p className="mb-2">
                         You have successfully set your ad budget for {campaignName}. Daily budget:
                         {formatNumber(budget)}, Total for {days} days: {formatNumber(totalBudget)}.
+                    </p>
+                    <p className="mb-2">
+                    In what geographical area do you want to advertise?
                     </p>
                 </div>
             );
@@ -111,7 +143,7 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
                 {
                     id: nanoid(),
                     role: 'assistant',
-                    content: 'Would you like to review any other settings or start another campaign?',
+                    content: 'In what geographical area do you want to advertise?',
                     timestamp: new Date().toISOString() 
                 }
             ]
@@ -129,9 +161,9 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
 async function confirmUpdateStatus(campaignName: string, status: string){
     'use server'
     const aiState = getMutableAIState<typeof AI>();
-    let campaignId = Number(await getCampaignIdFromUrl()) || 0; // for now just say you are updating even if no campaign id in place
+    let campaignId = await getCampaignIdFromUrl() || '0'; // for now just say you are updating even if no campaign id in place
     if (process.env.NEXT_PUBLIC_HARDCODED_MODE === '1') {
-        campaignId = Number(process.env.NEXT_PUBLIC_HARDCODED_CAMPAIGN_ID)
+        campaignId = process.env.NEXT_PUBLIC_HARDCODED_CAMPAIGN_ID || '0'
     }
 
     const updateStatus = createStreamableUI(
@@ -188,69 +220,48 @@ async function confirmUpdateStatus(campaignName: string, status: string){
         }
     }
 }
-async function confirmCreateAd(data: any) {
+async function confirmCreateAd(data: any, adset: any, adText: AdText) {
     'use server'
     const aiState = getMutableAIState<typeof AI>();
-    let campaignId = Number(await getCampaignIdFromUrl()) || 0; // for now just say you are updating even if no campaign id in place
+    let campaignId = await getCampaignIdFromUrl() || '0' ; // for now just say you are updating even if no campaign id in place
     if (process.env.NEXT_PUBLIC_HARDCODED_MODE === '1') {
-        campaignId = Number(process.env.NEXT_PUBLIC_HARDCODED_CAMPAIGN_ID);
+        campaignId = process.env.NEXT_PUBLIC_HARDCODED_CAMPAIGN_ID || '0'
+    }
+    const chatId = getChatIdFromUrl()?.toString() || '';
+
+    const budget = await fetchChatCampaignBudget(chatId)
+    let adsetUpdate = { ...adset }
+    if (budget.error) {
+      adsetUpdate = { ...adsetUpdate, daily_budget: 100 }
     }
 
-    const createAd = createStreamableUI(
-        <div className="inline-flex items-start gap-1 md:items-center">
-            {spinner}
-            <p className="mb-2">
-                Creating campaign ad...
-            </p>
-        </div>
-    );
-    
-    const systemMessage = createStreamableUI(null);
-    
+    const systemMessage = createStreamableUI(null)
+    const fbAdIdStream: undefined | ReturnType<typeof createStreamableValue<string>> = createStreamableValue()
+
     runAsyncFnWithoutBlocking(async () => {
         await sleep(1000);
 
-        const updateSuccess = await createCampaignAd(
-            campaignId,
-            data
-        );        
-        if (updateSuccess) {
-            createAd.done(
-                <div>
-                    <p className="mb-2">
-                        You have successfully created campaign ad ID: {updateSuccess?.params?.id}
-                    </p>
-                </div>
-            );
+        const response = await createCampaignAd(
+          campaignId,
+          data,
+          adsetUpdate
+        );
+
+        if (response) {
+            const id = response?.params?.id
+            fbAdIdStream?.done(`${id}`)
 
             aiState.done({
                 ...aiState.get(),
-                messages: [
-                    ...aiState.get().messages,
-                    {
-                        id: nanoid(),
-                        role: 'system',
-                        content: `This is the advertising ID that was generated: ${updateSuccess?.params?.id}`,
-                        timestamp: new Date().toISOString()
-                    }
-                ]
             });
 
             systemMessage.done(
                 <SystemMessage>
-                   You have successfully created campaign ad ID: {updateSuccess?.params?.id}
+                    You have successfully created a campaign ad with ID: {response?.params?.id}
                 </SystemMessage>
             );
 
         } else {
-            createAd.done(
-                <div>
-                    <p className="mb-2 text-red-500">
-                        Error: Failed to create campaign ad. Please try again later.
-                    </p>
-                </div>
-            );
-
             systemMessage.done(
                 <SystemMessage>
                     Error: Failed to create campaign ad. Please try again later.
@@ -260,13 +271,14 @@ async function confirmCreateAd(data: any) {
     });
 
     return {
-        createAdUI: createAd.value,
         newMessage: {
             id: nanoid(),
             display: systemMessage.value
-        }
+        },
+        fbAdIdStream: fbAdIdStream.value
     }
 }
+
 async function submitUserMessage(content: string, contentImages?: Array<TextPart | ImagePart>) {
     'use server'
 
@@ -282,19 +294,20 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
             extraDetailsText = `\n\nSome important contextual information about this client can be seen here: ${extraDetailsResult.extraDetails}`;
         }
     }
-
+    const session = (await auth()) as Session
+    await checkNewChat(chatId, aiState.get().messages, session);
     aiState.update({
-        ...aiState.get(),
-        messages: [
-            ...aiState.get().messages,
-            {
-                id: nanoid(), 
-                role: 'user',  
-                content: contentImages ? contentImages : content,
-                timestamp: new Date().toISOString()
-            }
-        ]
-    });
+      ...aiState.get(),
+      messages: [
+        ...aiState.get().messages,
+        {
+          id: nanoid(),
+          role: 'user',
+          content: contentImages ? contentImages : content,
+          timestamp: new Date().toISOString(),
+        }
+      ]
+    })
 
     let textStream: undefined | ReturnType<typeof createStreamableValue<string>>
     let textNode: undefined | React.ReactNode
@@ -319,7 +332,8 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
     Open the conversation:
     
     If the user says he wants to create a campaign, ask him if he wants to run a lead campaign or a campaign to recruit employees.
-    If the user sent message contain images to the campaign please confirm that "Would you like to generate ad text examples for these images?" to the user, Please waiting for user confirm, then user response Yes. Please generate ad text examples about current campaign for each specific image and use \`showSuggestionAdText\` for show text examples and pass  image urls user has send to AI to \`showSuggestionAdText\` .
+    Every time the user sends a message which contain images, please confirm that "Would you like to generate ad text examples for these images?" to the user.
+    Please wait for user confirm. Then if the user respond with "Yes", then please generate ad text examples about current campaign for the uploaded images, and use \`showSuggestionAdText\` to show text examples and pass corresponding image urls to user.
     If the user sent message contain status ALWAYS Use \`showUpdateStatusChampaign\` for show update status UI.
     If the user asks about ad videos mention that ad videos need to be sent via email to maxnols@reeply.net.  
     
@@ -330,8 +344,8 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
     
     Step 1: Do you want to give your campaign a name or should I choose one for you?
     Reasoning: Name the campaign.
-    Response: "Alright, I will create a campaign named [client's answer]."
-    
+    Response: ALWAYS call \`show_campaign_name\`  to show the campaign name. After the name is shown, AUTOMATICALLY ask for the budget with step 2
+
     Step 2: How much do you want to spend on your campaign daily? Ideally, spend at least €300 a month to maximize Facebook ads' potential.
     Reasoning: Set the ad budget, ensuring the user understands the impact of budget size.
     Response: ALWAYS Call \`show_ad_budget_ui\` to show the budget UI when the user told you how much he wants to spend on the campaign!
@@ -392,11 +406,11 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
     - "[User has changed the daily budget to $150]" means that the user has adjusted the daily budget to $150 in the UI.
     
     If the user requests setting or changing the ad budget, always first make sure that he tells you the amount. If the message of the user does not yet contain the amount of budget ask the user first for how much he wants to change ad budget. Once he tells you the amount always call \`show_ad_budget_ui\` to show the budget UI.
-    if you want to show campaign results always call \`get_campaign_results\` this basically shows the chart with the campaign results. if they ask about certain metrics about the campaign dont show the chart instead discuss those metrics.
-    If you want to provide ad texts to the user Call \`showSuggestionAdText\` to show the ad text selection UI and let the user choose or input their ad text.
-    If you want to generate ad text examples to the user Call \`showSuggestionAdText\` to show the ad text selection UI and let the user choose or input their ad text.
-    If you want to change status of campaign Call  \'showUpdateStatusChampaign\' to show the update status UI and let the user choose status of the campaign
-    If the user wants to pause a campaign Call  \'showUpdateStatusChampaign\' to show the update status UI and let the user choose status of the campaign
+    if you want to show campaign results, always call \`get_campaign_results\` this basically shows the chart with the campaign results. if they ask about certain metrics about the campaign dont show the chart instead discuss those metrics.
+    If you want to provide ad texts to the user, call \`showSuggestionAdText\` to show the ad text selection UI and let the user choose or input their ad text.
+    If you want to generate ad text examples to the user, call \`showSuggestionAdText\` to show the ad text selection UI and let the user choose or input their ad text.
+    If you want to change status of campaign, call \'showUpdateStatusChampaign\' to show the update status UI and let the user choose status of the campaign.
+    If the user wants to pause a campaign Call  \'showUpdateStatusChampaign\' to show the update status UI and let the user choose status of the campaign.
     If the user wants to complete another specific task, respond that you are a demo and cannot perform that action.
     Besides that, you can also chat with users and perform budget calculations if needed. ${extraDetailsText}`,
         messages: [
@@ -807,10 +821,11 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                     campaignName: z.string().describe('The name of the campaign'),
                     images: z.array(z.object({
                         suggestedTexts: z.array(z.object({
-                            image: z.string().optional().describe('The link of the image to display'),
+                            id: z.number().describe('This is timestamp of current time'),
+                            image: z.string().describe('The link of the image to display'),
                             date: z.string(),
                             text: z.string(),
-                            headline: z.string().optional()  // Make headline optional
+                            headline: z.string().describe('The headline of the ad to display'),
                         })).describe('List of suggested ad texts')})
                     ).describe('List of images to display')
                 }),
@@ -931,6 +946,62 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                       </BotCard>
                     )
                 }
+            },
+            showCampaignNameMessage: {
+                description: 'Show campaign name message',
+                parameters: z.object({
+                    campaignName: z.string().describe('The name of the campaign'),
+                }),
+                generate: async function* ({campaignName}) {
+                    let campaignId = await getCampaignIdFromUrl() || '0'; // for now just say you are updating even if no campaign id in place
+                    if (process.env.NEXT_PUBLIC_HARDCODED_MODE === '1') {
+                        campaignId = process.env.NEXT_PUBLIC_HARDCODED_CAMPAIGN_ID || '0'
+                    }
+                    console.log('why is campaign name changed?')
+                    await updateCampaign(campaignId, {name: campaignName})
+                    await updateChatTitle(aiState.get().chatId,campaignName)
+                    const timestamp: string = new Date().toISOString();
+                    const toolCallId = nanoid();
+                    aiState.done({
+                      ...aiState.get(),
+                      messages: [
+                        ...aiState.get().messages,
+                        {
+                          id: nanoid(),
+                          role: 'assistant',
+                          content: [
+                            {
+                              type: 'tool-call',
+                              toolName: 'showCampaignNameMessage',
+                              toolCallId,
+                              args: { campaignName }
+                            }
+                          ],
+                          timestamp
+                        },
+                        {
+                            id: toolCallId,
+                            role: 'tool',
+                            content: [
+                                {
+                                    type: 'tool-result',
+                                    toolName: 'showCampaignNameMessage',
+                                    toolCallId,
+                                    result: {campaignName}
+                                }
+                            ],
+                            timestamp
+                        }
+                      ]
+                    })
+                    return (
+                        <BotCard>
+                            <p className="mb-2 last:mb-0">{`Alright, I will update campaign name as "${campaignName}". `}</p>
+                            <p className="mb-2 last:mb-0">{`How much do you want to spend on your campaign daily? Ideally, spend at least €300 a month to maximize Facebook ads' potential.`}</p>
+                            <RefreshChatTitle campaignName={campaignName} campaignId={campaignId} />
+                        </BotCard>
+                    )
+                }
             }
         }
     });
@@ -942,6 +1013,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
 
 export type AIState = {
     chatId: string
+    title: string
     messages: Message[]
 }
 
@@ -958,7 +1030,7 @@ export const AI = createAI<AIState, UIState>({
         confirmCreateAd
     },
     initialUIState: [],
-    initialAIState: {chatId: nanoid(), messages: []},
+    initialAIState: {chatId: nanoid(), title: '', messages: []},
     onGetUIState: async () => {
         'use server'
 
@@ -980,7 +1052,7 @@ export const AI = createAI<AIState, UIState>({
         const session = await auth()
 
         if (session && session.user) {
-            const {chatId, messages} = state
+            const {chatId, title, messages} = state
 
             const createdAt = new Date()
             const userId = session.user.id as string
@@ -988,11 +1060,11 @@ export const AI = createAI<AIState, UIState>({
 
             const firstMessageContent = (Array.isArray(messages[0].content) ? (messages[0].content[0] as TextPart).text  : messages[0].content) as string
 
-            const title = firstMessageContent.substring(0, 100)
+            const defaultTitle = firstMessageContent.substring(0, 100)
 
             const chat: Chat = {
                 id: chatId,
-                title,
+                title: title || defaultTitle,
                 userId,
                 createdAt,
                 messages,
@@ -1056,19 +1128,25 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                         <ChatImage/>
                                     </BotCard>
                                 );
-                                case 'showUpdateStatusChampaign':
-                                    return (
-                                      <BotCard key={tool.toolCallId}>
-                                        <CampaignStatus
-                                          props={{
-                                            toolCallId: tool.toolCallId,
-                                            campaignName:
-                                                tool.result.campaignName,
-                                                status: tool.result.status
-                                          }}
-                                        />
-                                      </BotCard>
-                                    )
+                            case 'showCampaignNameMessage':
+                                return (
+                                    <BotCard key={tool.toolCallId}>
+                                        {`Alright, I will update campaign name as "${tool.result.campaignName}".`}
+                                    </BotCard>
+                                )
+                            case 'showUpdateStatusChampaign':
+                                return (
+                                    <BotCard key={tool.toolCallId}>
+                                    <CampaignStatus
+                                        props={{
+                                        toolCallId: tool.toolCallId,
+                                        campaignName:
+                                            tool.result.campaignName,
+                                            status: tool.result.status
+                                        }}
+                                    />
+                                    </BotCard>
+                                )
                             default:
                                 return null;
                         }
@@ -1080,4 +1158,5 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                     <BotMessage content={message.content}/>
                 ) : null
         }))
+        .filter((message: {id: string, display: any}) => Boolean(message.display))
 }

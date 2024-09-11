@@ -1,59 +1,42 @@
 'use client'
+import { useUIState, useAIState } from 'ai/rsc'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { toast } from 'sonner'
 
-import { cn } from '@/lib/utils'
+import { fetchChatFbCampaignId, updateChatFbCampaignId, updateChatTitle } from '@/app/actions'
 import { ChatList } from '@/components/chat-list'
 import { ChatPanel } from '@/components/chat-panel'
 import { EmptyScreen } from '@/components/empty-screen'
+import { CampaignSummary, getCampaignSummary } from '@/lib/api/fasty-bot/get-campaign-summary'
 import { useLocalStorage } from '@/lib/hooks/use-local-storage'
-import { useEffect, useRef, useCallback, useState } from 'react'
-import { useUIState, useAIState } from 'ai/rsc'
-import { Message, Session } from '@/lib/types'
-import { usePathname, useRouter } from 'next/navigation'
 import { useScrollAnchor } from '@/lib/hooks/use-scroll-anchor'
-import { toast } from 'sonner'
-import {
-  getCampaignSummary
-} from '@/lib/api/fasty-bot/get-campaign-summary'
+import { Chat as ChatType, Message, Session } from '@/lib/types'
+import { cn } from '@/lib/utils'
 
 export interface ChatProps extends React.ComponentProps<'div'> {
   initialMessages?: Message[]
-  id?: string
+  chat: ChatType | null
+  id: string
   session?: Session
   missingKeys: string[]
 }
 
-export function Chat({ id, className, session, missingKeys }: ChatProps) {
-  const router = useRouter()
-  const path = usePathname()
+export function Chat({ id, chat, className, session, missingKeys }: ChatProps) {
   const [messages] = useUIState()
   const [aiState, setAIState] = useAIState()
-  const lastUpdatedRef = useRef<Date | null>(null);
-
+  const lastUpdatedRef = useRef<Date | null>(null)
   const [_, setNewChatId] = useLocalStorage('newChatId', id)
 
-  useEffect(() => {
-    if (session?.user) {
-      if (!path.includes('chat') && messages.length === 1) {
-        window.history.replaceState({}, '', `/chat/${id}`)
-      }
-    }
-  }, [id, path, session?.user, messages])
+  const [summary, setSummary] = useState<CampaignSummary | null>(null)
+  const [campaignId, setCampaignId] = useState<string | null>(null)
 
   useEffect(() => {
-    const messagesLength = aiState.messages?.length
-    if (messagesLength === 2) {
-      router.refresh()
-    }
-  }, [aiState.messages, router])
-
-  const fetchSummaryData = useCallback(async () => {
-    try {
-      const summary = await getCampaignSummary()
+    if (session && summary && summary.campaign_id !== '0') {
       const currentTimestamp = new Date().toISOString()
       setAIState((aiState: any) => ({
         ...aiState,
         messages: [
-          ...aiState.messages,
+          ...aiState.messages.filter((message: Message) => message.id !== 'campaign-info-data' || message.role !== 'system'),
           {
             id: 'campaign-info-data',
             role: 'system',
@@ -62,29 +45,70 @@ export function Chat({ id, className, session, missingKeys }: ChatProps) {
           }
         ]
       }))
-      lastUpdatedRef.current = new Date(); 
+      lastUpdatedRef.current = new Date()
+
+      const updateTitle = async () => {
+        await updateChatTitle(aiState.chatId, summary.campaign_name)
+        window.dispatchEvent(new CustomEvent("update-chat-title", {
+          detail: {
+            campaignId: summary.campaign_id,
+            campaignName: summary.campaign_name
+          }
+        }))
+      }
+
+      if (chat?.title !== summary.campaign_name) {
+        void updateTitle()
+      }
+    }
+  }, [session, summary])
+
+  const fetchSummaryData = useCallback(async (campaignId: string) => {
+    console.log('fetchSummaryData with campaignId', campaignId)
+    try {
+      const result = await getCampaignSummary(campaignId)
+      console.log('campaign summary', result)
+      setSummary(result)
     } catch (error) {
       console.error('Error fetching campaign data:', error)
     }
-  }, []);
+  }, [])
 
   useEffect(() => {
-    fetchSummaryData()
-  }, [])
+    if (!campaignId && id) {
+      const fetch = async () => {
+        const result = await fetchChatFbCampaignId(id)
+        console.log('campaignId', result.fbCampaignId)
+  
+        if (result.success) {
+          setCampaignId(result.fbCampaignId as string)
+        }
+      }
+      void fetch()
+    }
+  },[campaignId, id])
 
   useEffect(() => {
     const oneHour = 60 * 60 * 1000
     const fiveMins = 5 * 60 * 1000
-    const interval = setInterval(
-      () => {
-        if (lastUpdatedRef.current && (new Date().getTime() - lastUpdatedRef.current.getTime()) > oneHour) {
-          fetchSummaryData()
-        }
-      }, fiveMins
-    )
+    console.log('fiveMins', fiveMins)
 
-    return () => clearInterval(interval);
-  }, [])
+    if (campaignId) {
+      fetchSummaryData(campaignId)
+    }
+    const interval = setInterval(() => {
+      console.log('interval', campaignId)
+      if (
+        campaignId &&
+        lastUpdatedRef.current &&
+        new Date().getTime() - lastUpdatedRef.current.getTime() > oneHour
+      ) {
+        fetchSummaryData(campaignId)
+      }
+    }, fiveMins)
+
+    return () => clearInterval(interval)
+  }, [campaignId, fetchSummaryData])
 
   useEffect(() => {
     setNewChatId(id)
@@ -98,6 +122,12 @@ export function Chat({ id, className, session, missingKeys }: ChatProps) {
 
   const { messagesRef, scrollRef, visibilityRef, isAtBottom, scrollToBottom } =
     useScrollAnchor()
+
+  const handleCampaignCreate = useCallback(async (campaignId: string) => {
+    setCampaignId(campaignId)
+    void fetchSummaryData(campaignId)
+    await updateChatFbCampaignId(id, campaignId)
+  }, [fetchSummaryData, id])
 
   return (
     <div
@@ -119,6 +149,8 @@ export function Chat({ id, className, session, missingKeys }: ChatProps) {
         id={id}
         isAtBottom={isAtBottom}
         scrollToBottom={scrollToBottom}
+        onCampaignCreate={handleCampaignCreate}
+        campaignId={campaignId}
       />
     </div>
   )

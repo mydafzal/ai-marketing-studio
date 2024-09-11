@@ -24,12 +24,35 @@ interface SidebarItemProps {
   children: React.ReactNode
 }
 
+interface MyCustomEvent extends Event {
+  detail: {
+    campaignId: string,
+    campaignName: string
+  }
+}
+
 export function SidebarItem({ index, chat, children }: SidebarItemProps) {
   const pathname = usePathname()
 
   const isActive = pathname === chat.path
   const [newChatId, setNewChatId] = useLocalStorage('newChatId', null)
   const shouldAnimate = index === 0 && isActive && newChatId
+  const [optimisticTitle, setOptimisticTitle] = React.useState<string | null>(null)
+
+  React.useEffect(() => {
+    const eventListener = async function(e: Event) {
+      const { campaignId, campaignName } = ((e as MyCustomEvent).detail ?? {}) as { campaignId: string, campaignName: string }
+
+      if (chat.fbCampaignId === campaignId) {
+        setOptimisticTitle(campaignName)
+      }
+    }
+    window.addEventListener('update-chat-title', eventListener)
+
+    return () => {
+      window.removeEventListener('update-chat-title', eventListener)
+    }
+  }, [isActive])
 
   if (!chat?.id) return null
 
@@ -78,7 +101,7 @@ export function SidebarItem({ index, chat, children }: SidebarItemProps) {
       >
         <div
           className="relative max-h-5 flex-1 select-none overflow-hidden text-ellipsis break-all"
-          title={chat.title}
+          title={optimisticTitle ?? (chat.title || 'No Name')}
         >
           <span className="whitespace-nowrap">
             {shouldAnimate ? (
@@ -113,7 +136,7 @@ export function SidebarItem({ index, chat, children }: SidebarItemProps) {
                 </motion.span>
               ))
             ) : (
-              <span>{chat.title}</span>
+              <span>{optimisticTitle ?? (chat.title || 'No Name')}</span>
             )}
           </span>
         </div>

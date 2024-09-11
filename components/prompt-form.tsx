@@ -1,12 +1,10 @@
 'use client'
 
 import * as React from 'react'
+
 import Textarea from 'react-textarea-autosize'
-import { UserContent, ImagePart } from 'ai'
-import { useActions, useUIState } from 'ai/rsc'
+import { ImagePart, TextPart, UserContent } from 'ai'
 import chatToCampaignMapping from '@/lib/api/fasty-bot/helpers/campaign-id-list'
-import { UserMessage } from './stocks/message'
-import { type AI } from '@/lib/chat/actions'
 import { Button } from '@/components/ui/button'
 import { IconArrowElbow, IconPlus, IconSpinner } from '@/components/ui/icons'
 import {
@@ -16,33 +14,28 @@ import {
 } from '@/components/ui/tooltip'
 import { toast } from 'sonner'
 import { useEnterSubmit } from '@/lib/hooks/use-enter-submit'
-import { nanoid } from 'nanoid'
 import { useParams } from 'next/navigation'
 import { useAIState } from 'ai/rsc'
 import { Message } from '@/lib/types'
 import { getMimeType } from '@/lib/utils'
 
-const containsTitleAndDescription = (text: string): boolean => {
-  const hasTitle = text.toLowerCase().includes('title:')
-  const hasDescription = text.toLowerCase().includes('description:')
-  return hasTitle && hasDescription
+export interface PromtFormProps {
+  onSendMessage: (message: string, userContent?: Array<TextPart | ImagePart>) => Promise<void>
 }
 
-export function PromptForm() {
+export function PromptForm({
+  onSendMessage
+}: PromtFormProps) {
   const { id } = useParams()
   const { formRef, onKeyDown } = useEnterSubmit()
   const inputRef = React.useRef<HTMLTextAreaElement>(null)
-  const { submitUserMessage } = useActions()
-  const [_, setMessages] = useUIState<typeof AI>()
-  const [aiState, setAIState] = useAIState()
-  const [isDisabled, setIsDisabled] = React.useState(true);
+  const [aiState] = useAIState()
+  const [isDisabled, setIsDisabled] = React.useState(true)
 
   const fileInputRef = React.useRef<HTMLInputElement>(null)
-  const [selectedFiles, setSelectedFiles] = React.useState<FileList | null>(
-    null
-  )
+
   const [uploading, setUploading] = React.useState(false)
-  const [urls, setUrls] = React.useState<string[]>([])
+
   const handleFileChange = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -67,7 +60,7 @@ export function PromptForm() {
     type ImagePartNew = Partial<ImagePart> & {
       uploaded_date?: number
     }
-    let imageIdx = -1;
+    let imageIdx = -1
     const images: ImagePartNew[] = []
     imageMes.map((msg: Message) => {
       if (Array.isArray(msg.content))
@@ -86,57 +79,36 @@ export function PromptForm() {
       })
 
       const data = await response.json()
-      if (response.ok) {
-        toast.success('Images uploaded successfully!')
-        setUrls(data.urls)
-        const textPrompt = ''
-        const uploadedDate = new Date(new Date().toLocaleDateString()).getTime();
-        const imgMessages = data.urls.map((url: string) => {
-          imageIdx++;
-          let objUrl = {
-            type: 'image',
-            image: url,
-            uploaded_date: uploadedDate,
-            idx: imageIdx,
-            mimeType: getMimeType(url)
-          }
-          return objUrl
-        })
-        const messageContent: UserContent = [
-          {
-            type: 'text',
-            text: textPrompt
-          },
-          ...imgMessages
-        ]
-        setMessages(currentMessages => [
-          ...currentMessages,
-          {
-            id: nanoid(),
-            display: (
-              <UserMessage userContent={messageContent}>
-                {textPrompt}
-              </UserMessage>
-            )
-          }
-        ])
-        const responseMessage = await submitUserMessage(
-          textPrompt,
-          messageContent
-        )
-        const imagesLinks = {
-          id: nanoid(),
-          role: 'system',
-          content: `Knowledge Base: urls of the uploaded images: ${JSON.stringify(imgMessages.map((img: { image: string }) => img.image))}, uploaded time is ${new Date()}"`
-        }
-        setMessages(currentMessages => [
-          ...currentMessages,
-          responseMessage,
-          imagesLinks
-        ])
-      } else {
+      if (!response.ok) {
         toast.error('Failed to upload the image. Please try again.')
+        return
       }
+      toast.success('Images uploaded successfully!')
+
+      const uploadedTime = new Date().getTime()
+      console.log('uploaded image urls', data.urls, uploadedTime)
+      const imgMessages = data.urls.map((url: string) => {
+        imageIdx++
+        let objUrl = {
+          type: 'image',
+          image: url,
+          uploaded_date: uploadedTime,
+          idx: imageIdx,
+          mimeType: getMimeType(url)
+        }
+        return objUrl
+      })
+
+      const textPrompt = `I upload images with these urls: ${JSON.stringify(data.urls)}, at this time: ${new Date().getTime()}`
+      const userContent: UserContent = [
+        {
+          type: 'text',
+          text: textPrompt
+        },
+        ...imgMessages
+      ]
+
+      await onSendMessage(textPrompt, userContent)
     } catch (error) {
       toast.error('Failed to upload the image. Please try again.')
     }
@@ -149,20 +121,6 @@ export function PromptForm() {
   React.useEffect(() => {
     if (inputRef.current) {
       inputRef.current.focus()
-    }
-  }, [])
-  React.useEffect(() => {
-    function eventListener(e: CustomEvent) {
-      const adText = e.detail;
-      if (inputRef.current) {
-        inputRef.current.value = `Title:\n${adText.headline}\n\nDescription:\n${adText.text}`
-      }
-      setIsDisabled(false)
-    }
-    window.addEventListener("adjust-adtext", eventListener as EventListener)
-
-    return () => {
-      window.removeEventListener("adjust-adtext", eventListener as EventListener)
     }
   }, [])
 
@@ -183,32 +141,8 @@ export function PromptForm() {
           setIsDisabled(true)
         }
         if (!value) return
-        if (containsTitleAndDescription(value)) {
-          setAIState({
-            ...aiState,
-            messages: [
-              ...aiState.messages,
-              {
-                id: nanoid(),
-                role: 'system',
-                content: `The user has accepted this text as campaign title and campaign description: ${value}`
-              }
-            ]
-          })
-        }
 
-        // Optimistically add user message UI
-        setMessages(currentMessages => [
-          ...currentMessages,
-          {
-            id: nanoid(),
-            display: <UserMessage>{value}</UserMessage>
-          }
-        ])
-
-        // Submit and get response message
-        const responseMessage = await submitUserMessage(value)
-        setMessages(currentMessages => [...currentMessages, responseMessage])
+        await onSendMessage(value)
       }}
     >
       <div className="relative flex max-h-60 w-full grow flex-col overflow-hidden bg-background px-8 sm:rounded-md sm:border sm:px-12">
@@ -247,7 +181,9 @@ export function PromptForm() {
           autoCorrect="off"
           name="message"
           rows={1}
-          onChange={(e) => {setIsDisabled(!e.target.value)}}
+          onChange={e => {
+            setIsDisabled(!e.target.value)
+          }}
         />
         <div className="absolute right-0 top-[13px] sm:right-4">
           <Tooltip>

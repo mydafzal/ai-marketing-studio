@@ -1,7 +1,7 @@
 import { CoreMessage  } from 'ai'
 
 export type Message = CoreMessage & {
-  id: string
+  id: string,
   timestamp: string
 }
 
@@ -39,6 +39,7 @@ export interface User extends Record<string, any> {
   email: string
   password: string
   salt: string
+  fbAccountId?: string
 }
 
 export interface Campaign  extends Record<string, any> {
@@ -46,4 +47,13 @@ export interface Campaign  extends Record<string, any> {
   title: string
   userId: string
   content: string
+}
+
+export interface AdText {
+  id: number
+  image: string
+  date: string
+  text: string
+  headline: string
+  fbAdId?: string
 }
