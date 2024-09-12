@@ -357,6 +357,7 @@ export async function updateChatFbCampaignId(chatSlug: string, fbCampaignId: str
 
         // Update or insert the fbCampaignId field
         await kv.hset(chatKey, {fbCampaignId})
+        revalidatePath('/')
 
         return {
             success: true,
@@ -472,8 +473,9 @@ export async function updateChatTitle(chatSlug: string, title: string) {
             }
         }
 
-        // Update or insert the fbCampaignId field
-        await kv.hset(chatKey, {title})
+        // Update or insert the title field
+        await kv.hset(chatKey, { title })
+        revalidatePath('/')
 
         return {
             success: true,

@@ -10,6 +10,7 @@ import {Events} from '@/components/stocks/events'
 import {StockSkeleton} from '@/components/stocks/stock-skeleton'
 import {AdTextSuggestion} from '@/components/stocks/ad-text-suggestion'
 import {RefreshChatTitle} from '@/components/refresh-chat-title'
+import {RefreshSideBar} from '@/components/refresh-sidebar'
 import {CampaignStatus} from '@/components/stocks/campaign-status'
 import {updateChatTitle} from '@/app/actions'
 import { differenceInHours } from 'date-fns';
@@ -341,7 +342,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
     
     Step 1: Do you want to give your campaign a name or should I choose one for you?
     Reasoning: Change the campaign name.
-    Response: Call \`show_campaign_name_update_ui\` with [client's answer] as campaign name and question for budget with step 2 as questionForBudget.
+    Response: Call \`show_campaign_name_update_ui\` with [client's answer] or with [your suggestion] as campaign name and question for budget with step 2 as questionForBudget.
 
     Step 2: How much do you want to spend on your campaign daily? Ideally, spend at least €300 a month to maximize Facebook ads' potential.
     Reasoning: Set the ad budget, ensuring the user understands the impact of budget size.
@@ -957,12 +958,11 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                     if (process.env.NEXT_PUBLIC_HARDCODED_MODE === '1') {
                         campaignId = process.env.NEXT_PUBLIC_HARDCODED_CAMPAIGN_ID || '0'
                     }
-                    console.log('why is campaign name changed?')
+                    console.log('why is campaign name changed?', campaignName)
                     await updateCampaign(campaignId, {name: campaignName})
-                    await updateChatTitle(aiState.get().chatId,campaignName)
+                    await updateChatTitle(aiState.get().chatId, campaignName)
                     const timestamp: string = new Date().toISOString();
                     const toolCallId = nanoid();
-                    console.log('messages', aiState.get().messages)
                     aiState.done({
                       ...aiState.get(),
                       messages: [
@@ -998,7 +998,8 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                     return (
                         <BotCard>
                             <p className="mb-2 last:mb-0">{`Alright, I will update campaign name as "${campaignName}".`}</p>
-                            {!!questionForBudget && <p className="mb-2 last:mb-0">{questionForBudget}</p>}                            
+                            {!!questionForBudget && <p className="mb-2 last:mb-0">{questionForBudget}</p>}
+                            <RefreshSideBar />
                             <RefreshChatTitle campaignName={campaignName} campaignId={campaignId} />
                         </BotCard>
                     )
@@ -1141,7 +1142,6 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                     <BotCard key={tool.toolCallId}>
                                         <p className="mb-2 last:mb-0">{`Alright, I will update campaign name as "${tool.result.campaignName}".`}</p>
                                         {!!tool.result.questionForBudget && <p className="mb-2 last:mb-0">{tool.result.questionForBudget}</p>}                            
-                                        <RefreshChatTitle campaignName={tool.result.campaignName} campaignId={tool.result.campaignId} />
                                     </BotCard>
                                 )
                             case 'showUpdateStatusChampaign':
