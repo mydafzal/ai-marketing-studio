@@ -21,6 +21,9 @@ export interface ChatProps extends React.ComponentProps<'div'> {
   missingKeys: string[]
 }
 
+const oneHour = 60 * 60 * 1000
+const fiveMins = 5 * 60 * 1000
+
 export function Chat({ id, chat, className, session, missingKeys }: ChatProps) {
   const [messages] = useUIState()
   const [aiState, setAIState] = useAIState()
@@ -89,10 +92,6 @@ export function Chat({ id, chat, className, session, missingKeys }: ChatProps) {
   },[campaignId, id])
 
   useEffect(() => {
-    const oneHour = 60 * 60 * 1000
-    const fiveMins = 5 * 60 * 1000
-    console.log('fiveMins', fiveMins)
-
     if (campaignId) {
       fetchSummaryData(campaignId)
     }
@@ -125,9 +124,8 @@ export function Chat({ id, chat, className, session, missingKeys }: ChatProps) {
 
   const handleCampaignCreate = useCallback(async (campaignId: string) => {
     setCampaignId(campaignId)
-    void fetchSummaryData(campaignId)
     await updateChatFbCampaignId(id, campaignId)
-  }, [fetchSummaryData, id])
+  }, [id])
 
   return (
     <div
