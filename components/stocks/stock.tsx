@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect, useId } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { scaleLinear } from 'd3-scale'
 import { format, subDays } from 'date-fns'
 import { useResizeObserver } from 'usehooks-ts'
@@ -12,7 +12,6 @@ import { Message } from '@/lib/types'
 
 export function Stock() {
   const [aiState, setAIState] = useAIState();
-  const id = useId();
   const [view, setView] = useState<'daily' | 'historical'>('daily');
   const [dailyData, setDailyData] = useState<Array<{ date: string; leads: number }>>([]);
   const [campaignSummary, setCampaignSummary] = useState<CampaignSummary | null>(null);
