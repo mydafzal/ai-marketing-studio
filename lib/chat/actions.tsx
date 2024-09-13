@@ -404,7 +404,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
     - "[User has changed the daily budget to $150]" means that the user has adjusted the daily budget to $150 in the UI.
     
     If the user requests setting or changing the ad budget, always first make sure that he tells you the amount. If the message of the user does not yet contain the amount of budget ask the user first for how much he wants to change ad budget. Once he tells you the amount always call \`show_ad_budget_ui\` to show the budget UI.
-    if you want to show campaign results, always call \`get_campaign_results\` this basically shows the chart with the campaign results. if they ask about certain metrics about the campaign dont show the chart instead discuss those metrics.
+    if you want to show campaign results, always call \`get_campaign_results\` with guide for the user - 'Do you want me to analyse this for you or discuss any of the results?'. This basically shows the chart with the campaign results. if they ask about certain metrics about the campaign dont show the chart instead discuss those metrics.
     If you want to provide ad texts to the user, call \`show_suggestion_ad_text\` to show the ad text selection UI and let the user choose or input their ad text.
     If you want to generate ad text examples to the user, call \`show_suggestion_ad_text\` to show the ad text selection UI and let the user choose or input their ad text.
     If you want to change status of campaign, call \'showUpdateStatusChampaign\' to show the update status UI and let the user choose status of the campaign.
@@ -516,8 +516,9 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                     'Get the current campaign results of a given digital marketing campaign from this user. Use this to show the current daily ad spent to the user.',
                 parameters: z.object({
                     campaignId: z.string().describe('The id of the campaign.'),
+                    guideForUser: z.string().describe('This is the guide for user about this component, this is optional'),
                 }),
-                generate: async function* ({campaignId}) {
+                generate: async function* ({campaignId, guideForUser}) {
                     yield (
                         <BotCard>
                             <StockSkeleton/>
@@ -540,7 +541,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                         type: 'tool-call',
                                         toolName: 'getCampaignResults',
                                         toolCallId,
-                                        args: { campaignId }
+                                        args: { campaignId, guideForUser }
                                     }
                                 ],
                                 timestamp: new Date().toISOString() 
@@ -553,19 +554,23 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                         type: 'tool-result',
                                         toolName: 'getCampaignResults',
                                         toolCallId,
-                                        result: { campaignId }
+                                        result: { campaignId, guideForUser }
                                     }
                                 ],
                                 timestamp: new Date().toISOString() 
                             }
                         ]
                     });
-                    
 
                     return (
-                        <BotCard>
-                            <Stock campaignId={campaignId} isActive />
-                        </BotCard>
+                        <>
+                            <BotCard>
+                                <Stock campaignId={campaignId} isActive />
+                            </BotCard>
+                            <div className="my-4">
+                                {guideForUser ?? ''}
+                            </div>
+                        </>
                     )
                 }
             },
@@ -747,7 +752,9 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                         }}
                                     />
                                 </BotCard>
-                                {guideForUser ?? ''}
+                                <div className="my-4">
+                                    {guideForUser ?? ''}
+                                </div>
                             </>
                         )
                     }
@@ -882,7 +889,9 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                             <BotCard>
                                 <AdTextSuggestion props={images}/>
                             </BotCard>
-                            {guideForUser ?? ''}
+                            <div className="my-4">
+                                {guideForUser ?? ''}
+                            </div>
                         </>
                     );
                 }
@@ -1100,9 +1109,14 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                             case 'showStockPrice':
                             case 'getCampaignResults':
                                 return (
-                                    <BotCard key={tool.toolCallId}>
-                                        <Stock campaignId={tool.result.campaignId} />
-                                    </BotCard>
+                                    <>
+                                        <BotCard key={tool.toolCallId}>
+                                            <Stock campaignId={tool.result.campaignId} />
+                                        </BotCard>
+                                        <div className="my-4">
+                                            {tool.result.guideForUser ?? ''}
+                                        </div>
+                                    </>
                                 );
                             case 'showAdBudgetUI':
                                 return (
@@ -1111,7 +1125,9 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                             <Purchase
                                                 props={tool.result}/>
                                         </BotCard>
-                                        {tool.result.guideForUser ?? ''}
+                                        <div className="my-4">
+                                            {tool.result.guideForUser ?? ''}
+                                        </div>
                                     </>
                                 );
                             case 'getEvents':
@@ -1126,7 +1142,9 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                         <BotCard key={tool.toolCallId}>
                                             <AdTextSuggestion props={tool.result.images}/>
                                         </BotCard>
-                                        {tool.result.guideForUser ?? ''}
+                                        <div className="my-4">
+                                            {tool.result.guideForUser ?? ''}
+                                        </div>
                                     </>
                                 );
                             case 'getCampaignImages':
