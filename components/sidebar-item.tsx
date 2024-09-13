@@ -44,12 +44,7 @@ export function SidebarItem({ index, chat, children }: SidebarItemProps) {
       const { campaignId, campaignName } = ((e as MyCustomEvent).detail ?? {}) as { campaignId: string, campaignName: string }
 
       if (chat.fbCampaignId === campaignId) {
-        console.log('setOptimisticTitle', campaignName)
-        // I use setTimeout because there can be several <RefreshChatTitle /> component in the chat history,
-        // and event listener might be called several times to flicker sidebar item title
-        setTimeout(() => {
-          setOptimisticTitle(campaignName)
-        }, 0)
+        setOptimisticTitle(campaignName)
       }
     }
     window.addEventListener('update-chat-title', eventListener)

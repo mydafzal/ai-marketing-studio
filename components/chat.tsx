@@ -1,9 +1,11 @@
 'use client'
+
 import { useUIState, useAIState } from 'ai/rsc'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useContext, useCallback, useEffect } from 'react'
 import { toast } from 'sonner'
 
 import { fetchChatFbCampaignId, updateChatFbCampaignId, updateChatTitle } from '@/app/actions'
+import { CampaignContext, CampaignContextProvider } from '@/components/contexts/campaign-context'
 import { ChatList } from '@/components/chat-list'
 import { ChatPanel } from '@/components/chat-panel'
 import { EmptyScreen } from '@/components/empty-screen'
@@ -21,68 +23,35 @@ export interface ChatProps extends React.ComponentProps<'div'> {
   missingKeys: string[]
 }
 
-const oneHour = 60 * 60 * 1000
-const fiveMins = 5 * 60 * 1000
-
-export function Chat({ id, chat, className, session, missingKeys }: ChatProps) {
+function ChatCore({ id, chat, className, session, missingKeys }: ChatProps) {
   const [messages] = useUIState()
-  const [aiState, setAIState] = useAIState()
-  const lastUpdatedRef = useRef<Date | null>(null)
+  const [aiState] = useAIState()
   const [_, setNewChatId] = useLocalStorage('newChatId', id)
-
-  const [summary, setSummary] = useState<CampaignSummary | null>(null)
-  const [campaignId, setCampaignId] = useState<string | null>(null)
+  const { id: campaignId, setId: setCampaignId, summary: campaignSummary } = useContext(CampaignContext)
 
   useEffect(() => {
-    if (session && summary && summary.campaign_id !== '0') {
-      const currentTimestamp = new Date().toISOString()
-      setAIState((aiState: any) => ({
-        ...aiState,
-        messages: [
-          ...aiState.messages.filter((message: Message) => message.id !== 'campaign-info-data' || message.role !== 'system'),
-          {
-            id: 'campaign-info-data',
-            role: 'system',
-            content: `Knowledge Base about current campaign information: ${JSON.stringify(summary)}`,
-            timestamp: currentTimestamp 
-          }
-        ]
-      }))
-      lastUpdatedRef.current = new Date()
-
+    if (campaignSummary && campaignSummary.campaign_id !== '0') {
       const updateTitle = async () => {
-        await updateChatTitle(aiState.chatId, summary.campaign_name)
+        await updateChatTitle(aiState.chatId, campaignSummary.campaign_name)
+        // dispatch is for only optimistic update
         window.dispatchEvent(new CustomEvent("update-chat-title", {
           detail: {
-            campaignId: summary.campaign_id,
-            campaignName: summary.campaign_name
+            campaignId: campaignSummary.campaign_id,
+            campaignName: campaignSummary.campaign_name
           }
         }))
       }
 
-      if (chat?.title !== summary.campaign_name) {
+      if (chat?.title && chat.title !== campaignSummary.campaign_name) {
         void updateTitle()
       }
     }
-  }, [session, summary])
-
-  const fetchSummaryData = useCallback(async (campaignId: string) => {
-    console.log('fetchSummaryData with campaignId', campaignId)
-    try {
-      const result = await getCampaignSummary(campaignId)
-      console.log('campaign summary', result)
-      setSummary(result)
-    } catch (error) {
-      console.error('Error fetching campaign data:', error)
-    }
-  }, [])
+  }, [campaignSummary, chat])
 
   useEffect(() => {
     if (!campaignId && id) {
       const fetch = async () => {
         const result = await fetchChatFbCampaignId(id)
-        console.log('campaignId', result.fbCampaignId)
-  
         if (result.success) {
           setCampaignId(result.fbCampaignId as string)
         }
@@ -90,24 +59,6 @@ export function Chat({ id, chat, className, session, missingKeys }: ChatProps) {
       void fetch()
     }
   },[campaignId, id])
-
-  useEffect(() => {
-    if (campaignId) {
-      fetchSummaryData(campaignId)
-    }
-    const interval = setInterval(() => {
-      console.log('interval', campaignId)
-      if (
-        campaignId &&
-        lastUpdatedRef.current &&
-        new Date().getTime() - lastUpdatedRef.current.getTime() > oneHour
-      ) {
-        fetchSummaryData(campaignId)
-      }
-    }, fiveMins)
-
-    return () => clearInterval(interval)
-  }, [campaignId, fetchSummaryData])
 
   useEffect(() => {
     setNewChatId(id)
@@ -153,3 +104,9 @@ export function Chat({ id, chat, className, session, missingKeys }: ChatProps) {
     </div>
   )
 }
+
+export const Chat = ({ ...chatProps }: ChatProps) => (
+  <CampaignContextProvider>
+    <ChatCore {...chatProps} />
+  </CampaignContextProvider>
+)
