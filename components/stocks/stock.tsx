@@ -1,61 +1,71 @@
 'use client'
 
-import { useCallback, useContext, useState, useRef, useEffect } from 'react'
-import { scaleLinear } from 'd3-scale'
-import { format, subDays } from 'date-fns'
+import { useCallback, useState, useRef, useEffect } from 'react'
+import { format } from 'date-fns'
 import { useResizeObserver } from 'usehooks-ts'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import { CampaignContext } from '@/components/contexts/campaign-context'
-import { CampaignSummary } from '@/lib/api/fasty-bot/get-campaign-summary'
+import { CampaignSummary, getCampaignSummary } from '@/lib/api/fasty-bot/get-campaign-summary'
 import { getCampaignHistoricalLeadsResults } from "@/lib/api/fasty-bot/get-historical-leads";
 import { cn } from '@/lib/utils'
+import { IconSpinner } from '@/components/ui/icons'
 
 interface IStockProps {
+  campaignId: string;
   isActive?: boolean;
 }
 
-export function Stock({ isActive }: IStockProps) {
-  const { summary: campaignSummary } = useContext(CampaignContext)
-
+export function Stock({ campaignId, isActive }: IStockProps) {
+  console.log('isActive', isActive)
   const [isActivated, activate] = useState(!!isActive)
-  const [view, setView] = useState<'daily' | 'historical'>('daily');
-  const [isFetched, updateFetchState] = useState(false)
-  const [dailyData, setDailyData] = useState<{ date: string; leads: number }[]>([]);
 
-  const chartRef = useRef<HTMLDivElement>(null);
-  const { width = 0 } = useResizeObserver({
-    ref: chartRef,
-    box: 'border-box'
-  });
-
+  const [campaignSummary, setSummary] = useState<CampaignSummary | null>(null);
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        if (!isActivated || !campaignSummary) return;
-        const results = await getCampaignHistoricalLeadsResults(campaignSummary.campaign_id, 'last_month');
-        updateFetchState(true)
-        const formattedData = results.lead_results.map(item => ({
-          date: format(new Date(item.date), 'MMM d'),
-          leads: item.leads
-        }));
-        setDailyData(formattedData);
-      } catch (error) {
-        console.error('Error fetching campaign data:', error);
+    if (campaignId && isActivated) {
+      const fetch = async () => {
+        try {
+          const result = await getCampaignSummary(campaignId);
+          console.log('campaign summary in stock', result);
+          setSummary(result);
+        } catch (error) {
+          console.error('Error fetching campaign summary:', error);
+        }
       }
-    };
-    fetchData();
+      void fetch();
+    }
+  }, [campaignId, isActivated]);
+
+  const [dailyData, setDailyData] = useState<{ date: string; leads: number }[]>([]);
+  useEffect(() => {
+    if (campaignSummary && isActivated) {
+      const fetch = async () => {
+        try {
+          const results = await getCampaignHistoricalLeadsResults(campaignSummary.campaign_id, 'last_month');
+          const formattedData = results.lead_results.map(item => ({
+            date: format(new Date(item.date), 'MMM d'),
+            leads: item.leads
+          }));
+          setDailyData(formattedData);
+        } catch (error) {
+          console.error('Error fetching campaign data:', error);
+        }
+      }
+      void fetch();
+    }
   }, [campaignSummary, isActivated]);
 
   const refresh = useCallback(() => {
     activate(true)
   }, []);
 
-  if (!campaignSummary) {
-    return <div>Loading...</div>;
-  }
+  const [view, setView] = useState<'daily' | 'historical'>('daily');
+  const chartRef = useRef<HTMLDivElement>(null);
+  const { width = 0 } = useResizeObserver({
+    ref: chartRef,
+    box: 'border-box'
+  });
 
   return (
-    <StockTemplate campaignSummary={isActivated && isFetched ? campaignSummary : null} refresh={refresh}>
+    <StockTemplate isActivated={isActivated} campaignSummary={campaignSummary} refresh={refresh}>
       <div className="mt-4 flex justify-between">
         <button
             className={`px-4 py-2 rounded-lg ${view === 'daily' ? 'bg-zinc-700' : 'bg-zinc-600'}`}
@@ -87,12 +97,13 @@ export function Stock({ isActive }: IStockProps) {
 }
 
 interface IStockTemplateProps {
+  isActivated: boolean;
   campaignSummary: CampaignSummary | null;
   children: React.ReactNode;
   refresh: () => void;
 }
 
-function StockTemplate({ campaignSummary, children, refresh }: IStockTemplateProps) {
+function StockTemplate({ campaignSummary, children, isActivated, refresh }: IStockTemplateProps) {
   return (
     <div className="relative">
       <div className={cn(
@@ -134,17 +145,23 @@ function StockTemplate({ campaignSummary, children, refresh }: IStockTemplatePro
       </div>
       <div className={cn(
         'absolute text-center top-[50%] w-full',
-        !campaignSummary ? '' : 'hidden',
+        isActivated && campaignSummary ? 'hidden' : '',
       )}>
-        <div className="mb-3">
-          This analytics is old. If you want to refresh, click the button below.
-        </div>
-        <button
-          className="px-4 py-2 rounded-lg bg-green-600"
-          onClick={refresh}
-        >
-          Refresh
-        </button>
+        {isActivated ? (
+          <IconSpinner className="m-auto animate-spin" />
+        ) : (
+          <>
+            <div className="mb-3">
+              This analytics is old. If you want to refresh, click the button below.
+            </div>
+            <button
+              className="px-4 py-2 rounded-lg bg-green-600"
+              onClick={refresh}
+            >
+              Refresh
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

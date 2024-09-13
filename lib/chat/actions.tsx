@@ -515,11 +515,9 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                 description:
                     'Get the current campaign results of a given digital marketing campaign from this user. Use this to show the current daily ad spent to the user.',
                 parameters: z.object({
-                    symbol: z.string().describe('The name of the campaign. e.g. Lead Campaign Frankfurt.'),
-                    price: z.string().describe('The daily amount of ad spent.'),
-                    delta: z.string().describe('The change in amount of ad spent')
+                    campaignId: z.string().describe('The id of the campaign.'),
                 }),
-                generate: async function* ({symbol, price, delta}) {
+                generate: async function* ({campaignId}) {
                     yield (
                         <BotCard>
                             <StockSkeleton/>
@@ -542,7 +540,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                         type: 'tool-call',
                                         toolName: 'getCampaignResults',
                                         toolCallId,
-                                        args: { symbol, price, delta }
+                                        args: { campaignId }
                                     }
                                 ],
                                 timestamp: new Date().toISOString() 
@@ -555,7 +553,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                         type: 'tool-result',
                                         toolName: 'getCampaignResults',
                                         toolCallId,
-                                        result: { symbol, price, delta }
+                                        result: { campaignId }
                                     }
                                 ],
                                 timestamp: new Date().toISOString() 
@@ -566,7 +564,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
 
                     return (
                         <BotCard>
-                            <Stock/>
+                            <Stock campaignId={campaignId} isActive />
                         </BotCard>
                     )
                 }
@@ -1103,7 +1101,7 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                             case 'getCampaignResults':
                                 return (
                                     <BotCard key={tool.toolCallId}>
-                                        <Stock/>
+                                        <Stock campaignId={tool.result.campaignId} />
                                     </BotCard>
                                 );
                             case 'showAdBudgetUI':
