@@ -33,13 +33,6 @@ export function Stock() {
           leads: item.leads
         }));
         setDailyData(formattedData);
-        setAIState({
-          ...aiState,
-          messages: [
-            ...aiState.messages.filter((message: Message) => message.id !== 'campaign-info-data' || message.role !== 'system'),
-            { id: 'campaign-info-data', role: 'system', content: `Knowledge Base about current campaign infomations: ${JSON.stringify(campaignSummary)}` }
-          ]
-        });
       } catch (error) {
         console.error('Error fetching campaign data:', error);
       }
