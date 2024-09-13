@@ -1,20 +1,21 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useAIState } from 'ai/rsc'
+import { useContext, useState, useRef, useEffect } from 'react'
 import { scaleLinear } from 'd3-scale'
 import { format, subDays } from 'date-fns'
 import { useResizeObserver } from 'usehooks-ts'
-import { useAIState } from 'ai/rsc'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import { CampaignContext } from '@/components/contexts/campaign-context'
 import { getCampaignHistoricalLeadsResults } from "@/lib/api/fasty-bot/get-historical-leads";
-import {CampaignSummary, getCampaignSummary} from "@/lib/api/fasty-bot/get-campaign-summary";
 import { Message } from '@/lib/types'
 
 export function Stock() {
   const [aiState, setAIState] = useAIState();
+  const { summary: campaignSummary } = useContext(CampaignContext)
+
   const [view, setView] = useState<'daily' | 'historical'>('daily');
   const [dailyData, setDailyData] = useState<Array<{ date: string; leads: number }>>([]);
-  const [campaignSummary, setCampaignSummary] = useState<CampaignSummary | null>(null);
 
   const chartRef = useRef<HTMLDivElement>(null);
   const { width = 0 } = useResizeObserver({
@@ -25,10 +26,8 @@ export function Stock() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const summary = await getCampaignSummary();
-        setCampaignSummary(summary);
-
-        const results = await getCampaignHistoricalLeadsResults(summary.campaign_id, 'last_month');
+        if (!campaignSummary) return;
+        const results = await getCampaignHistoricalLeadsResults(campaignSummary.campaign_id, 'last_month');
         const formattedData = results.lead_results.map(item => ({
           date: format(new Date(item.date), 'MMM d'),
           leads: item.leads
@@ -38,7 +37,7 @@ export function Stock() {
           ...aiState,
           messages: [
             ...aiState.messages.filter((message: Message) => message.id !== 'campaign-info-data' || message.role !== 'system'),
-            { id: 'campaign-info-data', role: 'system', content: `Knowledge Base about current campaign infomations: ${JSON.stringify(summary)}` }
+            { id: 'campaign-info-data', role: 'system', content: `Knowledge Base about current campaign infomations: ${JSON.stringify(campaignSummary)}` }
           ]
         });
       } catch (error) {
@@ -46,7 +45,7 @@ export function Stock() {
       }
     };
     fetchData();
-  }, []);
+  }, [campaignSummary]);
 
   if (!campaignSummary) {
     return <div>Loading...</div>;
