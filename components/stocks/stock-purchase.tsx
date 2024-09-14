@@ -77,6 +77,7 @@ export function Purchase({
             onClick={async () => {
               const response = await confirmPurchase(symbol, budget, days);
               setPurchasingUI(response.purchasingUI);
+              // optimistic update
               setMessages((currentMessages) => [...currentMessages, response.newMessage]);
             }}
           >

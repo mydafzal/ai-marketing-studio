@@ -30,7 +30,6 @@ import {updateCampaign} from '@/lib/api/fasty-bot/update-campaign';
 import {getCampaignIdFromUrl} from "@/lib/api/fasty-bot/helpers/campaign-id-from-url-helper";
 import {getChatIdFromUrl} from "@/lib/api/fasty-bot/helpers/chat-id-from-url-helper";
 import {sendAdminNotification} from '@/lib/api/fasty-bot/send-admin-notification'
-import { AuditContext } from 'aws-sdk/clients/lakeformation'
 import { Session } from '@/lib/types'
 
 interface ToolResult {
@@ -83,6 +82,7 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
     );
 
     const systemMessage = createStreamableUI(null);
+    const newMessageStream = createStreamableUI(null);
 
     runAsyncFnWithoutBlocking(async () => {
         await sleep(1000);
@@ -133,6 +133,14 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
             );
         }
 
+        const newMessage = 'Would you like to review any other settings or start another campaign?';
+        // optimistic update
+        newMessageStream.done(
+            <div>
+                {newMessage}
+            </div>
+        );
+
         // Prompting AI to ask a follow-up question or make a suggestion
         aiState.done({
             ...aiState.get(),
@@ -141,7 +149,7 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
                 {
                     id: nanoid(),
                     role: 'assistant',
-                    content: 'Would you like to review any other settings or start another campaign?',
+                    content: newMessage,
                     timestamp: new Date().toISOString()
                 }
             ]
@@ -152,7 +160,7 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
         purchasingUI: purchasing.value,
         newMessage: {
             id: nanoid(),
-            display: systemMessage.value
+            display: newMessageStream.value,
         }
     }
 }
@@ -346,7 +354,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
 
     Step 2: How much do you want to spend on your campaign daily? Ideally, spend at least €300 a month to maximize Facebook ads' potential.
     Reasoning: Set the ad budget, ensuring the user understands the impact of budget size.
-    Response: Call \`show_ad_budget_ui\` to show the budget UI when the user told you how much he wants to spend on the campaign. The guide for user about \`show_ad_budget_ui\` is 'You can set ad budget using this component'.
+    Response: Call \`show_ad_budget_ui\` to show the budget UI when the user told you how much he wants to spend on the campaign. The guide for user about \`show_ad_budget_ui\` is 'Confirm the ad budget for your campaign by clicking "Set Ad Budget". You can change this at any given point to adjust your campaign.'.
     
     Next action to always do after setting budget when creating a campaign!: "In what geographical area do you want to advertise?"
     Reasoning: Determine the ad group targeting size.
