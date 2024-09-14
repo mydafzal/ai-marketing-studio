@@ -31,7 +31,7 @@ export function Purchase({
     setAIState({
       ...aiState,
       messages: [
-        ...aiState.messages,
+        ...aiState.messages.filter(message => message.id !== 'budget-change'),
         {
           id: 'budget-change',
           role: 'system',
