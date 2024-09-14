@@ -152,7 +152,7 @@ function StockTemplate({ campaignSummary, children, isActivated, refresh }: ISto
         ) : (
           <>
             <div className="mb-3">
-              This analytics is old. If you want to refresh, click the button below.
+              To view the results again. Click the button below.
             </div>
             <button
               className="px-4 py-2 rounded-lg bg-green-600"
