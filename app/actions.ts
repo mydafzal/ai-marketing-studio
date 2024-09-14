@@ -5,7 +5,7 @@ import {redirect} from 'next/navigation'
 import {kv} from '@vercel/kv'
 
 import {auth} from '@/auth'
-import {type Chat, User, AdText} from '@/lib/types'
+import {type Chat, User, AdText, ServerActionResult} from '@/lib/types'
 
 export async function getChats(userId?: string | null) {
     if (!userId) {
@@ -38,6 +38,139 @@ export async function getChat(id: string, userId: string) {
     }
 
     return chat
+}
+
+export async function getAllChats(): Promise<Chat[]> {
+    const allChats: Chat[] = [];
+    let cursor = '0';
+    const pattern = 'chat:*';
+    const count = 100; 
+
+    try {
+        do {
+            const [newCursor, chatKeys] = await kv.scan(cursor, { match: pattern, count });
+            cursor = newCursor; 
+
+            if (chatKeys.length > 0) {
+                const pipeline = kv.pipeline();
+                for (const key of chatKeys) {
+                    pipeline.hgetall(key); 
+                }
+                const chatData = await pipeline.exec();
+
+                chatData.forEach(chat => {
+                    if (chat && Object.keys(chat).length > 0) {
+                        allChats.push(chat as Chat);
+                    }
+                });
+            }
+
+        } while (cursor !== '0');
+
+    } catch (error) {
+        console.error('Error fetching all chats:', error);
+    }
+
+    return allChats;
+}
+
+export async function getTotalMessagesCount(): Promise<number> {
+    const allChats = await getAllChats(); 
+    let totalMessagesCount = 0; 
+
+    allChats.forEach(chat => {
+        if (chat.messages && Array.isArray(chat.messages)) {
+            totalMessagesCount += chat.messages.length; 
+        }
+    });
+
+    return totalMessagesCount; 
+}
+
+async function getUserMessageCount(userId: string): Promise<number> {
+    const messagesKey = `user:${userId}:messages`; 
+    const messages = await kv.lrange(messagesKey, 0, -1); 
+    return messages.length;
+}
+
+export async function getUsersAboveAverageMessages(): Promise<string[]> {
+    const stats = await fetchOverallStats();
+    
+    if ('error' in stats) {
+        console.error('Error fetching overall stats:', stats.error);
+        return [];
+    }
+
+    const { messageToCustomerRatio, uniqueUserCount } = stats;
+
+    if (messageToCustomerRatio === null) {
+        console.warn('Message-to-Customer Ratio is not available');
+        return [];
+    }
+
+    const usersResponse = await fetchAllUsers();
+
+    if (!usersResponse.success || !Array.isArray(usersResponse.data)) {
+        console.error('Error fetching users:', usersResponse.error);
+        return [];
+    }
+
+    const aboveAverageUserIds: string[] = [];
+
+    for (const user of usersResponse.data) {
+        if (user.email) {
+            const userMessageCount = await getUserMessageCount(user.email); 
+
+            if (userMessageCount > messageToCustomerRatio) {
+                aboveAverageUserIds.push(user.email); 
+            }
+        }
+    }
+
+    return aboveAverageUserIds;
+}
+
+async function getUserChatCount(userId: string): Promise<number> {
+    const chatsKey = `user:${userId}:chats`; 
+    const chats = await kv.lrange(chatsKey, 0, -1); 
+    return chats.length;
+}
+
+export async function getUsersAboveAverageChats(): Promise<string[]> {
+    const stats = await fetchOverallStats();
+
+    if ('error' in stats) {
+        console.error('Error fetching overall stats:', stats.error);
+        return [];
+    }
+
+    const { chatToCustomerRatio, uniqueUserCount } = stats;
+
+    if (chatToCustomerRatio === null) {
+        console.warn('Chat-to-Customer Ratio is not available');
+        return [];
+    }
+
+    const usersResponse = await fetchAllUsers();
+
+    if (!usersResponse.success || !Array.isArray(usersResponse.data)) {
+        console.error('Error fetching users:', usersResponse.error);
+        return [];
+    }
+
+    const aboveAverageUserIds: string[] = [];
+
+    for (const user of usersResponse.data) {
+        if (user.email) {
+            const userChatCount = await getUserChatCount(user.email); 
+
+            if (userChatCount > chatToCustomerRatio) {
+                aboveAverageUserIds.push(user.email); 
+            }
+        }
+    }
+
+    return aboveAverageUserIds;
 }
 
 export async function removeChat({id, path}: { id: string; path: string }) {
@@ -734,7 +867,6 @@ export async function getUserDetail() {
     try {
         const userKey = `user:${session.user.email}`
 
-        // Check if the chat exists
         const user: User | null = (await kv.hgetall(userKey))
 
         if (!user) {
@@ -751,5 +883,180 @@ export async function getUserDetail() {
         return {
             error: 'Something went wrong'
         }
+    }
+}
+
+export async function incrementMessageCount(chatId: string): Promise<ServerActionResult<{ success: boolean }>> {
+    const session = await auth();
+
+    if (!session || !session.user) {
+        return {
+            success: false,
+            error: 'User not authenticated'
+        };
+    }
+
+    try {
+        const chatKey = `chat:${chatId}`;
+        const chatData = await kv.hgetall<Chat>(chatKey);
+
+        if (!chatData) {
+            return {
+                success: false,
+                error: 'Chat not found'
+            };
+        }
+
+        const messagesCount = (chatData.messagesCount ?? 0) + 1;
+        chatData.messagesCount = messagesCount;
+        await kv.hmset(chatKey, { messagesCount });
+
+        const userKey = `user:${session.user.email}`;
+        await kv.hincrby(userKey, 'messagesCount', 1);
+
+        return {
+            success: true,
+        };
+    } catch (error) {
+        console.error('Error incrementing message count:', error);
+        return {
+            success: false,
+            error: 'Something went wrong'
+        };
+    }
+}
+
+export async function updateTimeSpent(chatId: string, timeSpent: number): Promise<ServerActionResult<{ success: boolean }>> {
+    const session = await auth();
+
+    if (!session || !session.user) {
+        return {
+            success: false,
+            error: 'User not authenticated'
+        };
+    }
+
+    try {
+        const chatKey = `chat:${chatId}`;
+        const chatData = await kv.hgetall<Chat>(chatKey);
+
+        if (!chatData) {
+            return {
+                success: false,
+                error: 'Chat not found'
+            };
+        }
+
+        const totalSpent = (chatData.timeSpent ?? 0) + timeSpent;
+        chatData.timeSpent = totalSpent;
+        await kv.hmset(chatKey, { timeSpent });
+
+        return {
+            success: true,
+        };
+    } catch (error) {
+        console.error('Error updating time spent:', error);
+        return {
+            success: false,
+            error: 'Something went wrong'
+        };
+    }
+}
+
+type OverallStatsResponse = 
+    | { 
+        totalChats: number; 
+        uniqueUserCount: number; 
+        chatToCustomerRatio: number | null; 
+        messageToCustomerRatio: number | null; 
+        error?: undefined; 
+    }
+    | { 
+        error: string; 
+        totalChats?: undefined; 
+        uniqueUserCount?: undefined; 
+        chatToCustomerRatio?: undefined; 
+        messageToCustomerRatio?: undefined; 
+    };
+
+export async function fetchOverallStats(): Promise<OverallStatsResponse> {
+    const allChats = await getAllChats(); 
+    const totalChats = allChats.length; 
+    
+    const usersResponse = await fetchAllUsers(); 
+    
+    let uniqueUserCount = 0;
+    let chatToCustomerRatio = null; 
+    let messageToCustomerRatio = null; 
+    
+    const totalMessages = await getTotalMessagesCount(); 
+
+    if (usersResponse.success) {
+        if (usersResponse.data && Array.isArray(usersResponse.data)) {
+            const uniqueUserIds = new Set<string>();
+
+            usersResponse.data.forEach(user => {
+                if (user.email) {
+                    uniqueUserIds.add(user.email); 
+                }
+            });
+
+            uniqueUserCount = uniqueUserIds.size;
+        } else {
+            console.warn('No user data found or data is not an array');
+        }
+    } else {
+        console.error('Error fetching users:', usersResponse.error);
+        return { error: usersResponse.error || 'An unknown error occurred' }; 
+    }
+
+    if (uniqueUserCount > 0) {
+        if (totalChats > 0) {
+            chatToCustomerRatio = totalChats / uniqueUserCount;
+        }
+        
+        messageToCustomerRatio = totalMessages / uniqueUserCount; 
+    }
+
+    return { 
+        totalChats, 
+        uniqueUserCount, 
+        chatToCustomerRatio, 
+        messageToCustomerRatio 
+    }; 
+}
+    
+export async function fetchUserStatistics(userId: string) {
+    try {
+        const chatsRecord: Record<string, unknown> | null = await kv.hgetall('chats');
+        const allChats: Chat[] = chatsRecord ? Object.values(chatsRecord) as Chat[] : [];
+        const userChats = allChats.filter(chat => chat.userId === userId);
+        
+        const messagesPerChat: Record<string, number> = {};
+        const timeSpentPerSession: number[] = [];
+
+        userChats.forEach(chat => {
+            messagesPerChat[chat.id] = chat.messages.length;
+
+            if (chat.messages.length > 0) {
+                const timestamps = chat.messages.map(msg => msg.timestamp).filter(Boolean) as string[];
+                const startTime = new Date(Math.min(...timestamps.map(ts => new Date(ts).getTime())));
+                const endTime = new Date(Math.max(...timestamps.map(ts => new Date(ts).getTime())));
+                const timeSpent = (endTime.getTime() - startTime.getTime()) / 1000; // in seconds
+                timeSpentPerSession.push(timeSpent);
+            }
+        });
+
+        const totalChats = userChats.length;
+
+        return {
+            email: userId,
+            chats: totalChats,
+            messagesPerChat,
+            timeSpentPerSession
+        };
+    } catch (error) {
+        console.error('Error fetching user statistics:', error);
+        return { error: 'Failed to fetch user statistics' };
     }
 }

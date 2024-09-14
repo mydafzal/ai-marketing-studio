@@ -1,13 +1,13 @@
 // app/admin/page.tsx
-import AdminForm from './AdminForm';
 import Link from 'next/link';
+import AdminForm from './AdminForm';
 import CustomerSearch from "@/app/admin/CustomerSearch";
 import CustomerInformer from "@/app/admin/CustomerInformer"; // Import the CustomerInformer component
 
 export default function AdminPage() {
     return (
         <div className="container mx-auto py-10 px-4">
-            <h1 className="text-2xl font-bold text-gray-800 mb-6">Admin Dashboard</h1>
+            <h1 className="text-2xl font-bold text-gray-500 mb-6">Admin Dashboard</h1>
             <div className="grid md:grid-cols-2 gap-6">
                 {/* Card for Mapping Chat Slug to Campaign ID */}
                 <div className="bg-white shadow-md rounded-lg overflow-hidden">

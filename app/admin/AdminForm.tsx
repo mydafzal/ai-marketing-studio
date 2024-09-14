@@ -142,43 +142,32 @@ export default function AdminForm({extraDetails = false}) {
         return (
             <form onSubmit={handleExtraDetailsSubmit} className="p-6">
                 <div className="space-y-4">
-                    <div className="flex items-center space-x-2">
-                        <div className="flex-grow">
-                            <label htmlFor="extraDetailsChatSlug"
-                                   className="block text-sm font-medium text-gray-700 mb-1">
-                                Chat Slug
-                            </label>
-                            <input
-                                type="text"
-                                id="extraDetailsChatSlug"
-                                value={extraDetailsChatSlug}
-                                onChange={(e) => setExtraDetailsChatSlug(e.target.value)}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-300 focus:ring focus:ring-teal-200 focus:ring-opacity-50"
-                                placeholder="Enter chat slug"
-                            />
-                        </div>
+                    <div className="flex mb-2">
+                        <input
+                            type="text"
+                            id="extraDetailsChatSlug"
+                            value={extraDetailsChatSlug}
+                            onChange={(e) => setExtraDetailsChatSlug(e.target.value)}
+                            className="flex-grow px-3 py-2 border rounded-l"
+                            placeholder="Enter chat slug"
+                        />
                         <button
                             type="button"
                             onClick={fetchExtraDetails}
                             disabled={isFetching}
-                            className="mt-6 px-5 py-2 bg-black text-white text-sm font-medium rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50 transition duration-150 ease-in-out disabled:bg-gray-400"
+                            className="px-4 py-2 bg-black text-white rounded-r"
                         >
                             {isFetching ? '⏳' : '🔍'} {isFetching ? 'Fetching...' : 'Fetch'}
                         </button>
                     </div>
-                    <div>
-                        <label htmlFor="extraDetailsContent" className="block text-sm font-medium text-gray-700 mb-1">
-                            Extra Details
-                        </label>
-                        <textarea
-                            id="extraDetailsContent"
-                            value={extraDetailsContent}
-                            onChange={(e) => setExtraDetailsContent(e.target.value)}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-300 focus:ring focus:ring-teal-200 focus:ring-opacity-50"
-                            placeholder="Enter extra details"
-                            rows={4}
-                        />
-                    </div>
+                    <textarea
+                        id="extraDetailsContent"
+                        value={extraDetailsContent}
+                        onChange={(e) => setExtraDetailsContent(e.target.value)}
+                        className="flex-grow px-3 py-2 border rounded w-full"
+                        placeholder="Enter extra details"
+                        rows={4}
+                    />
                 </div>
                 <div className="mt-6">
                     <button
@@ -200,46 +189,38 @@ export default function AdminForm({extraDetails = false}) {
     }
 
     return (
-        <form onSubmit={handleSubmit} className="p-6">
-            <div className="space-y-4">
-                <div className="flex items-center space-x-2">
-                    <div className="flex-grow">
-                        <label htmlFor="chatSlug" className="block text-sm font-medium text-gray-700 mb-1">
-                            Chat Slug
-                        </label>
-                        <input
-                            type="text"
-                            id="chatSlug"
-                            value={chatSlug}
-                            onChange={(e) => setChatSlug(e.target.value)}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-300 focus:ring focus:ring-teal-200 focus:ring-opacity-50"
-                            placeholder="Enter chat slug"
-                        />
-                    </div>
+        <form onSubmit={handleSubmit} className="m-6">
+            <div className="space-y-6">
+                <div className="flex mb-2">
+                    <input
+                        type="text"
+                        id="chatSlug"
+                        value={chatSlug}
+                        onChange={(e) => setChatSlug(e.target.value)}
+                        className="flex-grow px-3 py-2 border rounded-l"
+                        placeholder="Enter chat slug"
+                    />
                     <button
                         type="button"
                         onClick={handleFetchCampaignId}
                         disabled={isFetching}
-                        className="mt-6 px-5 py-2 bg-black text-white text-sm font-medium rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50 transition duration-150 ease-in-out disabled:bg-gray-400"
+                        className="px-4 py-2 bg-black text-white rounded-r"
                     >
                         {isFetching ? '⏳' : '🔍'} {isFetching ? 'Fetching...' : 'Fetch'}
                     </button>
                 </div>
                 <div>
-                    <label htmlFor="campaignId" className="block text-sm font-medium text-gray-700 mb-1">
-                        Campaign ID
-                    </label>
                     <input
                         type="text"
                         id="campaignId"
                         value={campaignId}
                         onChange={(e) => setCampaignId(e.target.value)}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-300 focus:ring focus:ring-teal-200 focus:ring-opacity-50"
+                        className="flex-grow px-3 py-2 border rounded w-full"
                         placeholder="Enter campaign ID"
                     />
                 </div>
             </div>
-            <div className="mt-6">
+            <div className="mt-24">
                 <button
                     type="submit"
                     disabled={isSubmitting}

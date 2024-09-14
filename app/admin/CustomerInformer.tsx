@@ -50,10 +50,8 @@ const CustomerInformer: React.FC = () => {
 
     return (
         <div className="bg-white shadow-md rounded-lg overflow-hidden p-6">
-            <h2 className="text-2xl font-bold mb-4">Customer Informer</h2>
             <form onSubmit={handleInform}>
                 <div className="mb-4">
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700">Customer Email</label>
                     <input
                         id="email"
                         type="email"
@@ -66,10 +64,9 @@ const CustomerInformer: React.FC = () => {
                 </div>
 
                 <div className="mb-4">
-                    <label htmlFor="message" className="block text-sm font-medium text-gray-700">What updates do you have for the client</label>
                     <textarea
                         id="message"
-                        placeholder="Enter updates"
+                        placeholder="Enter updates for the client"
                         value={message}
                         onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setMessage(e.target.value)}
                         className="w-full px-3 py-2 border rounded mt-1"
@@ -79,10 +76,9 @@ const CustomerInformer: React.FC = () => {
                 </div>
 
                 <div className="mb-4">
-                    <label htmlFor="suggestions" className="block text-sm font-medium text-gray-700">What are the suggestions for next week (optional)</label>
                     <textarea
                         id="suggestions"
-                        placeholder="Enter suggestions"
+                        placeholder="Enter suggestions for next week (optional)"
                         value={suggestions}
                         onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setSuggestions(e.target.value)}
                         className="w-full px-3 py-2 border rounded mt-1"
