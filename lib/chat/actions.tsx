@@ -7,6 +7,7 @@ import {AdTextSelectionSkeleton} from '@/components/stocks/ad-text-selection-ske
 import {z} from 'zod'
 import {EventsSkeleton} from '@/components/stocks/events-skeleton'
 import {Events} from '@/components/stocks/events'
+import {PurchasingUi} from '@/components/stocks/purchasing-ui'
 import {StockSkeleton} from '@/components/stocks/stock-skeleton'
 import {AdTextSuggestion} from '@/components/stocks/ad-text-suggestion'
 import {RefreshChatTitle} from '@/components/refresh-chat-title'
@@ -100,14 +101,6 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
 
         if (updateSuccess) {
             await updateChatCampaignBudget(chatId, budget);
-            purchasing.done(
-                <div>
-                    <p className="mb-2">
-                        You have successfully set your ad budget for {campaignName}. Daily budget:
-                        {formatNumber(budget)}, Total for {days} days: {formatNumber(totalBudget)}.
-                    </p>
-                </div>
-            );
 
             systemMessage.done(
                 <SystemMessage>
@@ -117,14 +110,6 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
                 </SystemMessage>
             );
         } else {
-            purchasing.done(
-                <div>
-                    <p className="mb-2 text-red-500">
-                        Error: Failed to set the ad budget for {campaignName}. Please try again later.
-                    </p>
-                </div>
-            );
-
             systemMessage.done(
                 <SystemMessage>
                     There was an error updating the budget for campaign &apos;{campaignName}&apos; on Facebook. Please
@@ -132,6 +117,16 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
                 </SystemMessage>
             );
         }
+
+        purchasing.done(
+            <PurchasingUi
+                success={updateSuccess}
+                budget={budget}
+                campaignName={campaignName}
+                days={days}
+                totalBudget={totalBudget}
+            />
+        );
 
         const newMessage = 'Would you like to review any other settings or start another campaign?';
         // optimistic update
@@ -145,7 +140,24 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
         aiState.done({
             ...aiState.get(),
             messages: [
-                ...aiState.get().messages,
+                ...aiState.get().messages.map(message => {
+                    if (message.role === 'tool') {
+                        const content = message.content[0];
+                        if (content.type === 'tool-result' && content.toolName === 'showAdBudgetUI') {
+                            content.result = {
+                                ...(content.result as Object),
+                                purchasingUiProps: (content.result as { purchasingUiProps: string }).purchasingUiProps ?? {
+                                    success: updateSuccess,
+                                    budget,
+                                    campaignName,
+                                    days,
+                                    totalBudget,
+                                }
+                            };
+                        }
+                    }
+                    return message;
+                }),
                 {
                     id: nanoid(),
                     role: 'assistant',
@@ -1130,8 +1142,7 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                 return (
                                     <>
                                         <BotCard key={tool.toolCallId}>
-                                            <Purchase
-                                                props={tool.result}/>
+                                            <Purchase props={tool.result} />
                                         </BotCard>
                                         <div className="my-4">
                                             {tool.result.guideForUser ?? ''}
