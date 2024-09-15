@@ -9,7 +9,6 @@ import { CampaignContext, CampaignContextProvider } from '@/components/contexts/
 import { ChatList } from '@/components/chat-list'
 import { ChatPanel } from '@/components/chat-panel'
 import { EmptyScreen } from '@/components/empty-screen'
-import { CampaignSummary, getCampaignSummary } from '@/lib/api/fasty-bot/get-campaign-summary'
 import { useLocalStorage } from '@/lib/hooks/use-local-storage'
 import { useScrollAnchor } from '@/lib/hooks/use-scroll-anchor'
 import { Chat as ChatType, Message, Session } from '@/lib/types'

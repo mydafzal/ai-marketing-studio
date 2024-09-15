@@ -59,7 +59,6 @@ export function ChatPanel({
   const { submitUserMessage } = useActions()
   const [shareDialogOpen, setShareDialogOpen] = React.useState(false)
 
-  console.log('campaignId in chat panel', campaignId)
   const sendMessage = React.useCallback(async (message: string, userContent?: Array<TextPart | ImagePart>) => {
     // Optimistically add user message UI
     setMessages(currentMessages => [

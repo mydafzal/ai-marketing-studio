@@ -7,6 +7,7 @@ import {AdTextSelectionSkeleton} from '@/components/stocks/ad-text-selection-ske
 import {z} from 'zod'
 import {EventsSkeleton} from '@/components/stocks/events-skeleton'
 import {Events} from '@/components/stocks/events'
+import {PurchasingUi} from '@/components/stocks/purchasing-ui'
 import {StockSkeleton} from '@/components/stocks/stock-skeleton'
 import {AdTextSuggestion} from '@/components/stocks/ad-text-suggestion'
 import {RefreshChatTitle} from '@/components/refresh-chat-title'
@@ -30,7 +31,6 @@ import {updateCampaign} from '@/lib/api/fasty-bot/update-campaign';
 import {getCampaignIdFromUrl} from "@/lib/api/fasty-bot/helpers/campaign-id-from-url-helper";
 import {getChatIdFromUrl} from "@/lib/api/fasty-bot/helpers/chat-id-from-url-helper";
 import {sendAdminNotification} from '@/lib/api/fasty-bot/send-admin-notification'
-import { AuditContext } from 'aws-sdk/clients/lakeformation'
 import { Session } from '@/lib/types'
 
 interface ToolResult {
@@ -83,6 +83,7 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
     );
 
     const systemMessage = createStreamableUI(null);
+    const newMessageStream = createStreamableUI(null);
 
     runAsyncFnWithoutBlocking(async () => {
         await sleep(1000);
@@ -100,14 +101,6 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
 
         if (updateSuccess) {
             await updateChatCampaignBudget(chatId, budget);
-            purchasing.done(
-                <div>
-                    <p className="mb-2">
-                        You have successfully set your ad budget for {campaignName}. Daily budget:
-                        {formatNumber(budget)}, Total for {days} days: {formatNumber(totalBudget)}.
-                    </p>
-                </div>
-            );
 
             systemMessage.done(
                 <SystemMessage>
@@ -117,14 +110,6 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
                 </SystemMessage>
             );
         } else {
-            purchasing.done(
-                <div>
-                    <p className="mb-2 text-red-500">
-                        Error: Failed to set the ad budget for {campaignName}. Please try again later.
-                    </p>
-                </div>
-            );
-
             systemMessage.done(
                 <SystemMessage>
                     There was an error updating the budget for campaign &apos;{campaignName}&apos; on Facebook. Please
@@ -133,15 +118,50 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
             );
         }
 
+        purchasing.done(
+            <PurchasingUi
+                success={updateSuccess}
+                budget={budget}
+                campaignName={campaignName}
+                days={days}
+                totalBudget={totalBudget}
+            />
+        );
+
+        const newMessage = 'Would you like to review any other settings or start another campaign?';
+        // optimistic update
+        newMessageStream.done(
+            <div>
+                {newMessage}
+            </div>
+        );
+
         // Prompting AI to ask a follow-up question or make a suggestion
         aiState.done({
             ...aiState.get(),
             messages: [
-                ...aiState.get().messages,
+                ...aiState.get().messages.map(message => {
+                    if (message.role === 'tool') {
+                        const content = message.content[0];
+                        if (content.type === 'tool-result' && content.toolName === 'showAdBudgetUI') {
+                            content.result = {
+                                ...(content.result as Object),
+                                purchasingUiProps: (content.result as { purchasingUiProps: string }).purchasingUiProps ?? {
+                                    success: updateSuccess,
+                                    budget,
+                                    campaignName,
+                                    days,
+                                    totalBudget,
+                                }
+                            };
+                        }
+                    }
+                    return message;
+                }),
                 {
                     id: nanoid(),
                     role: 'assistant',
-                    content: 'Would you like to review any other settings or start another campaign?',
+                    content: newMessage,
                     timestamp: new Date().toISOString()
                 }
             ]
@@ -152,7 +172,7 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
         purchasingUI: purchasing.value,
         newMessage: {
             id: nanoid(),
-            display: systemMessage.value
+            display: newMessageStream.value,
         }
     }
 }
@@ -346,7 +366,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
 
     Step 2: How much do you want to spend on your campaign daily? Ideally, spend at least €300 a month to maximize Facebook ads' potential.
     Reasoning: Set the ad budget, ensuring the user understands the impact of budget size.
-    Response: Call \`show_ad_budget_ui\` to show the budget UI when the user told you how much he wants to spend on the campaign. The guide for user about \`show_ad_budget_ui\` is 'You can set ad budget using this component'.
+    Response: Call \`show_ad_budget_ui\` to show the budget UI when the user told you how much he wants to spend on the campaign. The guide for user about \`show_ad_budget_ui\` is 'Confirm the ad budget for your campaign by clicking "Set Ad Budget". You can change this at any given point to adjust your campaign.'.
     
     Next action to always do after setting budget when creating a campaign!: "In what geographical area do you want to advertise?"
     Reasoning: Determine the ad group targeting size.
@@ -404,7 +424,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
     - "[User has changed the daily budget to $150]" means that the user has adjusted the daily budget to $150 in the UI.
     
     If the user requests setting or changing the ad budget, always first make sure that he tells you the amount. If the message of the user does not yet contain the amount of budget ask the user first for how much he wants to change ad budget. Once he tells you the amount always call \`show_ad_budget_ui\` to show the budget UI.
-    if you want to show campaign results, always call \`get_campaign_results\` this basically shows the chart with the campaign results. if they ask about certain metrics about the campaign dont show the chart instead discuss those metrics.
+    if you want to show campaign results, always call \`get_campaign_results\` with guide for the user - 'Do you want me to analyse this for you or discuss any of the results?'. This basically shows the chart with the campaign results. if they ask about certain metrics about the campaign dont show the chart instead discuss those metrics.
     If you want to provide ad texts to the user, call \`show_suggestion_ad_text\` to show the ad text selection UI and let the user choose or input their ad text.
     If you want to generate ad text examples to the user, call \`show_suggestion_ad_text\` to show the ad text selection UI and let the user choose or input their ad text.
     If you want to change status of campaign, call \'showUpdateStatusChampaign\' to show the update status UI and let the user choose status of the campaign.
@@ -515,11 +535,10 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                 description:
                     'Get the current campaign results of a given digital marketing campaign from this user. Use this to show the current daily ad spent to the user.',
                 parameters: z.object({
-                    symbol: z.string().describe('The name of the campaign. e.g. Lead Campaign Frankfurt.'),
-                    price: z.string().describe('The daily amount of ad spent.'),
-                    delta: z.string().describe('The change in amount of ad spent')
+                    campaignId: z.string().describe('The id of the campaign.'),
+                    guideForUser: z.string().describe('This is the guide for user about this component, this is optional'),
                 }),
-                generate: async function* ({symbol, price, delta}) {
+                generate: async function* ({campaignId, guideForUser}) {
                     yield (
                         <BotCard>
                             <StockSkeleton/>
@@ -542,7 +561,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                         type: 'tool-call',
                                         toolName: 'getCampaignResults',
                                         toolCallId,
-                                        args: { symbol, price, delta }
+                                        args: { campaignId, guideForUser }
                                     }
                                 ],
                                 timestamp: new Date().toISOString() 
@@ -555,19 +574,23 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                         type: 'tool-result',
                                         toolName: 'getCampaignResults',
                                         toolCallId,
-                                        result: { symbol, price, delta }
+                                        result: { campaignId, guideForUser }
                                     }
                                 ],
                                 timestamp: new Date().toISOString() 
                             }
                         ]
                     });
-                    
 
                     return (
-                        <BotCard>
-                            <Stock/>
-                        </BotCard>
+                        <>
+                            <BotCard>
+                                <Stock campaignId={campaignId} isActive />
+                            </BotCard>
+                            <div className="my-4">
+                                {guideForUser ?? ''}
+                            </div>
+                        </>
                     )
                 }
             },
@@ -749,7 +772,9 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                         }}
                                     />
                                 </BotCard>
-                                {guideForUser ?? ''}
+                                <div className="my-4">
+                                    {guideForUser ?? ''}
+                                </div>
                             </>
                         )
                     }
@@ -884,7 +909,9 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                             <BotCard>
                                 <AdTextSuggestion props={images}/>
                             </BotCard>
-                            {guideForUser ?? ''}
+                            <div className="my-4">
+                                {guideForUser ?? ''}
+                            </div>
                         </>
                     );
                 }
@@ -1102,18 +1129,24 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                             case 'showStockPrice':
                             case 'getCampaignResults':
                                 return (
-                                    <BotCard key={tool.toolCallId}>
-                                        <Stock/>
-                                    </BotCard>
+                                    <>
+                                        <BotCard key={tool.toolCallId}>
+                                            <Stock campaignId={tool.result.campaignId} />
+                                        </BotCard>
+                                        <div className="my-4">
+                                            {tool.result.guideForUser ?? ''}
+                                        </div>
+                                    </>
                                 );
                             case 'showAdBudgetUI':
                                 return (
                                     <>
                                         <BotCard key={tool.toolCallId}>
-                                            <Purchase
-                                                props={tool.result}/>
+                                            <Purchase props={tool.result} />
                                         </BotCard>
-                                        {tool.result.guideForUser ?? ''}
+                                        <div className="my-4">
+                                            {tool.result.guideForUser ?? ''}
+                                        </div>
                                     </>
                                 );
                             case 'getEvents':
@@ -1128,7 +1161,9 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                         <BotCard key={tool.toolCallId}>
                                             <AdTextSuggestion props={tool.result.images}/>
                                         </BotCard>
-                                        {tool.result.guideForUser ?? ''}
+                                        <div className="my-4">
+                                            {tool.result.guideForUser ?? ''}
+                                        </div>
                                     </>
                                 );
                             case 'getCampaignImages':

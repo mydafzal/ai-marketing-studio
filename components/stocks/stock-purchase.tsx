@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useActions, useAIState, useUIState } from 'ai/rsc';
+import { PurchasingUi, type IPurchasingUiProp } from '@/components/stocks/purchasing-ui';
 import { formatNumber } from '@/lib/utils';
 
 import type { AI } from '@/lib/chat/actions';
@@ -11,19 +12,25 @@ interface Purchase {
   price: number;
   initialBudget?: number;
   status: 'requires_action' | 'completed' | 'expired';
+  purchasingUiProps?: IPurchasingUiProp;
 }
 
 export function Purchase({
-  props: { symbol, price, initialBudget = 10, status = 'expired' }
+  props: { symbol, price, initialBudget = 10, status = 'expired', purchasingUiProps }
 }: {
   props: Purchase
 }) {
   const days = 30; // Fixed days for the budget period
   const [budget, setBudget] = useState(initialBudget);
-  const [purchasingUI, setPurchasingUI] = useState<null | React.ReactNode>(null);
+  const [purchasingUI, setPurchasingUI] = useState<null | React.ReactNode>(
+    purchasingUiProps ? (
+      <PurchasingUi {...purchasingUiProps} />
+    ) : null
+  );
   const [aiState, setAIState] = useAIState<typeof AI>();
   const [, setMessages] = useUIState<typeof AI>();
   const { confirmPurchase } = useActions();
+  console.log('aiState.messages', aiState.messages)
 
   function onBudgetChange(e: React.ChangeEvent<HTMLInputElement>) {
     const newBudget = Number(e.target.value);
@@ -31,7 +38,7 @@ export function Purchase({
     setAIState({
       ...aiState,
       messages: [
-        ...aiState.messages,
+        ...aiState.messages.filter(message => message.id !== 'budget-change'),
         {
           id: 'budget-change',
           role: 'system',
@@ -77,6 +84,7 @@ export function Purchase({
             onClick={async () => {
               const response = await confirmPurchase(symbol, budget, days);
               setPurchasingUI(response.purchasingUI);
+              // optimistic update
               setMessages((currentMessages) => [...currentMessages, response.newMessage]);
             }}
           >
