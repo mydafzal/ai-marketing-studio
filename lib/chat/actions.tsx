@@ -536,7 +536,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                     'Get the current campaign results of a given digital marketing campaign from this user. Use this to show the current daily ad spent to the user.',
                 parameters: z.object({
                     campaignId: z.string().describe('The id of the campaign.'),
-                    guideForUser: z.string().describe('This is the guide for user about this component, this is optional'),
+                    guideForUser: z.string().optional().describe('This is the guide for user about this component, this is optional'),
                 }),
                 generate: async function* ({campaignId, guideForUser}) {
                     yield (
@@ -667,7 +667,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                         .describe(
                             'The **daily ad spend** for a campaign that a user wants to invest. Can be optional if the user did not specify it.'
                         ),
-                    guideForUser: z.string().describe('This is the guide for user about this component, this is optional'),
+                    guideForUser: z.string().optional().describe('This is the guide for user about this component, this is optional'),
                 }),
                 generate: async function* ({symbol, price, numberOfShares, guideForUser}) {
                     const toolCallId = nanoid()
@@ -857,7 +857,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                             headline: z.string().describe('The headline of the ad to display'),
                         })).describe('List of suggested ad texts')})
                     ).describe('List of images to display'),
-                    guideForUser: z.string().describe('This is the guide for user about this component, this is optional')
+                    guideForUser: z.string().optional().describe('This is the guide for user about this component, this is optional')
                 }),
                 generate: async function* ({campaignName, images = [], guideForUser}) {
                     yield (
