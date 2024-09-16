@@ -151,7 +151,7 @@ function StockTemplate({ campaignSummary, children, isActivated, refresh }: ISto
           <IconSpinner className="m-auto animate-spin" />
         ) : (
           <>
-            <div className="mb-3">
+            <div className="text-white mb-3">
               To view the results again. Click the button below.
             </div>
             <button
