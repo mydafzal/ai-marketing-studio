@@ -16,7 +16,8 @@ import {CampaignStatus} from '@/components/stocks/campaign-status'
 import {updateChatTitle} from '@/app/actions'
 import { differenceInHours } from 'date-fns';
 import {ChatImage} from '@/components/chat-images'
-
+import { updateChatFbCampaignId } from '@/app/actions'
+import { ConnectCampaignResult } from '@/components/connect-campaign-result';
 import { UserContent, TextPart, ImagePart  } from 'ai'
 
 import {formatNumber, nanoid, runAsyncFnWithoutBlocking, sleep} from '@/lib/utils'
@@ -32,6 +33,7 @@ import {getCampaignIdFromUrl} from "@/lib/api/fasty-bot/helpers/campaign-id-from
 import {getChatIdFromUrl} from "@/lib/api/fasty-bot/helpers/chat-id-from-url-helper";
 import {sendAdminNotification} from '@/lib/api/fasty-bot/send-admin-notification'
 import { Session } from '@/lib/types'
+import { ConnectCampaign } from '@/components/connect-campaign'
 
 interface ToolResult {
     toolName: string;
@@ -174,6 +176,90 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
             id: nanoid(),
             display: newMessageStream.value,
         }
+    }
+}
+
+async function selectCampaign(campaignId: string, campaignName: string) {
+    'use server'
+
+    const aiState = getMutableAIState<typeof AI>();
+
+    const chatId = getChatIdFromUrl()?.toString() || '';
+
+    const connecting = createStreamableUI(
+        <div className="inline-flex items-start gap-1 md:items-center">
+            {spinner}
+            <p className="mb-2">
+                Connecting to {campaignName}...
+            </p>
+        </div>
+    );
+
+    const systemMessage = createStreamableUI(null);
+
+    runAsyncFnWithoutBlocking(async () => {
+        await sleep(1000);
+
+        connecting.update(
+            <div className="inline-flex items-start gap-1 md:items-center">
+                {spinner}
+                <p className="mb-2">
+                    Almost there, configuring for {campaignName}...
+                </p>
+            </div>
+        );
+
+        const updateSuccess = await updateChatFbCampaignId(chatId, campaignId)
+
+        if (updateSuccess?.success) {
+            systemMessage.done(
+                <SystemMessage>
+                    Your chat is Connected
+                </SystemMessage>
+            );
+        } else {
+            systemMessage.done(
+                <SystemMessage>
+                     Please check your connection and try again.
+                </SystemMessage>
+            );
+        }
+
+        connecting.done(
+          <ConnectCampaignResult
+            success={!!updateSuccess?.success}
+            campaignName={campaignName}
+          />
+        )
+
+        // Prompting AI to ask a follow-up question or make a suggestion
+        aiState.done({
+            ...aiState.get(),
+            messages: [
+                ...aiState.get().messages.map(message => {
+                    if (message.role === 'tool') {
+                        const content = message.content[0];
+                        if (
+                          content.type === 'tool-result' &&
+                          content.toolName === 'showConnectCampaignUI'
+                        ) {
+                          content.result = {
+                            ...(content.result as Object),
+                            connectingUiProps: (content.result as { connectingUiProps: string }).connectingUiProps ?? {
+                                success: updateSuccess,
+                                campaignName
+                            }
+                          }
+                        }
+                    }
+                    return message;
+                })
+            ]
+        });
+    });
+
+    return {
+        connectingUI: connecting.value,
     }
 }
 async function confirmUpdateStatus(campaignName: string, status: string){
@@ -430,6 +516,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
     If you want to change status of campaign, call \'showUpdateStatusChampaign\' to show the update status UI and let the user choose status of the campaign.
     If the user wants to pause a campaign Call  \'showUpdateStatusChampaign\' to show the update status UI and let the user choose status of the campaign.
     If the user wants to complete another specific task, respond that you are a demo and cannot perform that action.
+    If the user sent message contain "campaign" or "create ad" or "status" but the current chat does not have campaign name or campaign ID, ALWASY Call \'showConnectCampaignUI\' for connect to facebook campaign first.
     Besides that, you can also chat with users and perform budget calculations if needed. ${extraDetailsText}`,
         messages: [
             ...aiState.get().messages.map((message: any) => ({
@@ -1031,6 +1118,52 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                         </BotCard>
                     )
                 }
+            },
+            showConnectCampaignUI: {
+                description: 'Show a connect campaign UI, It is used only when campaign id is empty or 0.',
+                parameters: z.object({}),
+                generate: async function* ({}) {
+                    const timestamp: string = new Date().toISOString();
+
+                    const toolCallId = nanoid();
+                    aiState.done({
+                        ...aiState.get(),
+                        messages: [
+                            ...aiState.get().messages,
+                            {
+                                id: nanoid(),
+                                role: 'assistant',
+                                content: [
+                                    {
+                                        type: 'tool-call',
+                                        toolName: 'showConnectCampaignUI',
+                                        toolCallId,
+                                        args: {}
+                                    }
+                                ],
+                                timestamp
+                            },
+                            {
+                                id: toolCallId,
+                                role: 'tool',
+                                content: [
+                                    {
+                                        type: 'tool-result',
+                                        toolName: 'showConnectCampaignUI',
+                                        toolCallId,
+                                        result: {}
+                                    }
+                                ],
+                                timestamp
+                            }
+                        ]
+                    })
+                    return (
+                      <BotCard>
+                        <ConnectCampaign />
+                      </BotCard>
+                    )
+                }
             }
         }
     });
@@ -1055,6 +1188,7 @@ export const AI = createAI<AIState, UIState>({
     actions: {
         submitUserMessage,
         confirmPurchase,
+        selectCampaign,
         confirmUpdateStatus,
         confirmCreateAd
     },
@@ -1190,6 +1324,12 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                                 status: tool.result.status
                                             }}
                                         />
+                                    </BotCard>
+                                )
+                            case 'showConnectCampaignUI':
+                                return (
+                                    <BotCard key={tool.toolCallId}>
+                                        <ConnectCampaign {...tool.result} />
                                     </BotCard>
                                 )
                             default:
