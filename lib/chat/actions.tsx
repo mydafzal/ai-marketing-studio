@@ -179,94 +179,6 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
     }
 }
 
-async function selectCampaign(campaign: Campaign) {
-    'use server'
-
-    const aiState = getMutableAIState<typeof AI>();
-    const chatId = getChatIdFromUrl()?.toString() || '';
-
-    const connecting = createStreamableUI(
-        <div className="inline-flex items-start gap-1 md:items-center">
-            {spinner}
-            <p className="mb-2">
-                Connecting to {campaign.title}...
-            </p>
-        </div>
-    );
-
-    const systemMessage = createStreamableUI(null);
-    const successStream = createStreamableValue(false);
-
-    runAsyncFnWithoutBlocking(async () => {
-        await sleep(1000);
-
-        connecting.update(
-            <div className="inline-flex items-start gap-1 md:items-center">
-                {spinner}
-                <p className="mb-2">
-                    Almost there, configuring for {campaign.title}...
-                </p>
-            </div>
-        );
-
-        const updateSuccess = await updateChatFbCampaignId(chatId, campaign.id)
-
-        if (updateSuccess?.success) {
-            systemMessage.done(
-                <SystemMessage>
-                    Your chat is Connected
-                </SystemMessage>
-            );
-        } else {
-            systemMessage.done(
-                <SystemMessage>
-                    Please check your connection and try again.
-                </SystemMessage>
-            );
-        }
-
-        connecting.done(
-            <ConnectCampaignResult
-                success={!!updateSuccess?.success}
-                campaignName={campaign.name}
-            />
-        )
-        successStream.done(!!updateSuccess?.success)
-        aiState.done({
-            ...aiState.get(),
-            messages: [
-                ...aiState.get().messages.map(message => {
-                    if (message.role === 'tool') {
-                        const content = message.content[0];
-                        if (
-                            content.type === 'tool-result' &&
-                            content.toolName === 'showConnectCampaignUI'
-                        ) {
-                            content.result = {
-                                ...(content.result as Object),
-                                connectingUiProps: (content.result as { connectingUiProps: object }).connectingUiProps ?? {
-                                    success: !!updateSuccess?.success,
-                                    campaignName: campaign.name
-                                }
-                            }
-                        }
-                    }
-                    return message;
-                }),
-                // ...messages
-            ]
-        });
-    });
-
-    return {
-        success: successStream.value,
-        connectingUI: connecting.value,
-        // newMessage: {
-        //     id: nanoid(),
-        //     display: newMessageStream.value,
-        // }
-    }
-}
 async function confirmUpdateStatus(campaignName: string, status: string){
     'use server'
     const aiState = getMutableAIState<typeof AI>();
@@ -1194,7 +1106,6 @@ export const AI = createAI<AIState, UIState>({
     actions: {
         submitUserMessage,
         confirmPurchase,
-        selectCampaign,
         confirmUpdateStatus,
         confirmCreateAd
     },
