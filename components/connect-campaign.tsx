@@ -60,7 +60,7 @@ export function ConnectCampaignForm({
   return (
     <>
       <div className="text-lg font-medium text-gray-900 dark:text-zinc-300 mb-2">
-        Let's connect this chat to a campaign:
+        Let&apos;s connect this chat to a campaign:
       </div>
       {campaigns.length > 0 && (
         <Select
