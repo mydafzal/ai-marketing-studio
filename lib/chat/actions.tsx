@@ -434,8 +434,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
     If you want to change status of campaign, call \'show_update_status_campaign\' to show the update status UI and let the user choose status of the campaign.
     If the user wants to pause a campaign, call  \'show_update_status_campaign\' to show the update status UI and let the user choose status of the campaign. 
     If the user wants to complete another specific task, respond that you are a demo and cannot perform that action.
-    If the user sent message contain "campaign result" or "campaign status" but the current chat does not have campaign ID, call \'show_connect_campaign_ui\' with Tool name is related to the message, it is required if user ask about campaign results should be use: \"getCampaignResults\", it is required if user ask about campaign status should be use: \"show_update_status_campaign\" for connect to facebook campaign first.
-    If new campaign is connected to the chat, show details of the campaign to the user.
+    If the user asks for "campaign result" or "campaign status" but the current chat does not have campaign ID, show a UI to connect a campaign to the chat.
     Besides that, you can also chat with users and perform budget calculations if needed. ${extraDetailsText}`,
         messages: [
             ...aiState.get().messages.map((message: any) => ({
@@ -450,6 +449,8 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                 textNode = <BotMessage content={textStream.value}/>
             }
 
+            console.log('done', done)
+            console.log('delta', delta)
             if (done) {
                 textStream.done();
                 aiState.done({
@@ -1038,10 +1039,11 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                     )
                 }
             },
-            showConnectCampaignUI: {
-                description: 'Show a connect campaign UI, It is used only when campaign id is empty or 0.',
+            showCampaignConnectionUI: {
+                description: 'Show a UI to connect a campaign to the chat.',
                 parameters: z.object({}),
                 generate: async function* ({}) {
+                    console.log('tool call showCampaignConnectionUI')
                     const timestamp: string = new Date().toISOString();
                     const toolCallId = nanoid();
                     aiState.done({
@@ -1054,7 +1056,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                 content: [
                                     {
                                         type: 'tool-call',
-                                        toolName: 'showConnectCampaignUI',
+                                        toolName: 'showCampaignConnectionUI',
                                         toolCallId,
                                         args: {}
                                     }
@@ -1067,7 +1069,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                 content: [
                                     {
                                         type: 'tool-result',
-                                        toolName: 'showConnectCampaignUI',
+                                        toolName: 'showCampaignConnectionUI',
                                         toolCallId,
                                         result: {}
                                     }
@@ -1243,7 +1245,7 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                         />
                                     </BotCard>
                                 )
-                            case 'showConnectCampaignUI':
+                            case 'showCampaignConnectionUI':
                                 return (
                                     <BotCard key={tool.toolCallId}>
                                         <ConnectCampaign {...tool.result} />
