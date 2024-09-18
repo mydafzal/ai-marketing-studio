@@ -76,18 +76,18 @@ export const CampaignContextProvider = ({ children }: { children: React.ReactNod
         if (summary && summary.campaign_id !== '0') {
             const currentTimestamp = new Date().toISOString()
             setAIState((aiState: any) => ({
-            ...aiState,
-            messages: [
-                ...aiState.messages.filter((message: Message) => message.id !== 'campaign-info-data' || message.role !== 'system'),
-                {
-                id: 'campaign-info-data',
-                role: 'system',
-                content: `Knowledge Base about current campaign information: ${JSON.stringify(summary)}`,
-                timestamp: currentTimestamp 
-                }
-            ]
+                ...aiState,
+                messages: [
+                    ...aiState.messages.filter((message: Message) => message.id !== 'campaign-info-data' || message.role !== 'system'),
+                    {
+                        id: 'campaign-info-data',
+                        role: 'system',
+                        content: `Knowledge Base about current campaign information: ${JSON.stringify(summary)}`,
+                        timestamp: currentTimestamp 
+                    }
+                ]
             }))
-            lastUpdatedRef.current = new Date()
+            lastUpdatedRef.current = new Date();
         }
     }, [summary])
 

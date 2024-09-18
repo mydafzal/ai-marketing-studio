@@ -12,7 +12,7 @@ export function ConnectCampaignResult({
   success
 }: ConnectCampaignProps) {
   return (
-    <div className="mt-4 p-6  border rounded-x">
+    <div className="p-6  border rounded-x">
       {success ? `Connected to campaign: ${campaignName}` : `Failure connect to campaign: ${campaignName}`}
     </div>
   )

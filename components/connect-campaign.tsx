@@ -1,6 +1,9 @@
 'use client'
 
-import * as React from 'react'
+import { readStreamableValue, useActions, useAIState, useUIState } from 'ai/rsc'
+import { format } from 'date-fns'
+import { useCallback, useContext, useEffect, useState } from 'react'
+
 import {
   Select,
   SelectTrigger,
@@ -8,16 +11,14 @@ import {
   SelectContent,
   SelectItem
 } from '@/components/ui/select'
-import { format } from 'date-fns'
-import { useActions, useAIState } from 'ai/rsc'
-import { useCallback, useContext } from 'react'
 
-import { createCampaign } from '@/lib/api/fasty-bot/create-campaign'
-import { FbCampaign } from '@/lib/types'
 import { updateChatFbCampaignId } from '@/app/actions'
 import { ConnectCampaignResult } from '@/components/connect-campaign-result'
 import { CampaignContext } from '@/components/contexts/campaign-context'
 import { IconSpinner } from '@/components/ui/icons'
+import { createCampaign } from '@/lib/api/fasty-bot/create-campaign'
+import { FbCampaign } from '@/lib/types'
+import { type AI } from '@/lib/chat/actions'
 
 interface ConnectCampaignFormProps {
   handleSelectCampaign: (campaign: FbCampaign) => void
@@ -26,9 +27,9 @@ interface ConnectCampaignFormProps {
 export function ConnectCampaignForm({
   handleSelectCampaign
 }: ConnectCampaignFormProps) {
-  const [selectedCampaign, setSelectedCampaign] = React.useState<FbCampaign>()
-  const [isSubmitting, setSubmitting] = React.useState<boolean>(false)
-  const [isCreating, setCreating] = React.useState<boolean>(false)
+  const [selectedCampaign, setSelectedCampaign] = useState<FbCampaign>()
+  const [isSubmitting, setSubmitting] = useState<boolean>(false)
+  const [isCreating, setCreating] = useState<boolean>(false)
   const [aiState] = useAIState()
   const { campaigns, getCampaignList } = useContext(CampaignContext)
 
@@ -130,23 +131,48 @@ interface ConnectCampaignProps {
 }
 
 export function ConnectCampaign({ connectingUiProps }: ConnectCampaignProps) {
-  const { selectCampaign } = useActions()
+  const [aiState] = useAIState()
+  const { selectCampaign, submitUserMessage } = useActions()
   const [connectingUI, setConnectingUI] =
-    React.useState<null | React.ReactNode>(
+    useState<null | React.ReactNode>(
       connectingUiProps ? (
         <ConnectCampaignResult {...connectingUiProps} />
       ) : null
-    )
+    );
+  const [messages, setMessages] = useUIState<typeof AI>()
+  const { setId: setCampaignId, summary: campaignSummary } = useContext(CampaignContext)
+
+  const aiMessages = aiState.messages;
+
+  useEffect(() => {
+    async function refresh() {
+      const responseMessage = await submitUserMessage('please check my previous message', [], true);
+      setMessages(currentMessages => [...currentMessages, responseMessage]);
+    }
+    if (aiMessages.length) {
+      const { id, role } = aiMessages[aiMessages.length - 1]
+      if (role === 'system' && id === 'campaign-info-data') {
+        // this is a workaround, campaign info data is replaced if I do not use setTimeout
+        setTimeout(refresh, 0);
+      }
+    }
+  }, [aiMessages])
+
   return (
     <>
       {connectingUI ? (
         connectingUI
       ) : (
-        <div className="mt-4 p-6  border rounded-x">
+        <div className="p-6  border rounded-x">
           <ConnectCampaignForm
             handleSelectCampaign={async (campaign: FbCampaign) => {
-              const response = await selectCampaign(campaign.id, campaign.name)
-              setConnectingUI(response.connectingUI)
+              const response = await selectCampaign(campaign);
+              setConnectingUI(response.connectingUI);
+              for await (const success of readStreamableValue(response.success)) {
+                if (success) {
+                  setCampaignId(campaign.id);
+                }
+              }
             }}
           />
         </div>

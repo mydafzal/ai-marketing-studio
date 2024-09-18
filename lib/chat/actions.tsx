@@ -179,23 +179,23 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
     }
 }
 
-async function selectCampaign(campaignId: string, campaignName: string) {
+async function selectCampaign(campaign: Campaign) {
     'use server'
 
     const aiState = getMutableAIState<typeof AI>();
-
     const chatId = getChatIdFromUrl()?.toString() || '';
 
     const connecting = createStreamableUI(
         <div className="inline-flex items-start gap-1 md:items-center">
             {spinner}
             <p className="mb-2">
-                Connecting to {campaignName}...
+                Connecting to {campaign.title}...
             </p>
         </div>
     );
 
     const systemMessage = createStreamableUI(null);
+    const successStream = createStreamableValue(false);
 
     runAsyncFnWithoutBlocking(async () => {
         await sleep(1000);
@@ -204,12 +204,12 @@ async function selectCampaign(campaignId: string, campaignName: string) {
             <div className="inline-flex items-start gap-1 md:items-center">
                 {spinner}
                 <p className="mb-2">
-                    Almost there, configuring for {campaignName}...
+                    Almost there, configuring for {campaign.title}...
                 </p>
             </div>
         );
 
-        const updateSuccess = await updateChatFbCampaignId(chatId, campaignId)
+        const updateSuccess = await updateChatFbCampaignId(chatId, campaign.id)
 
         if (updateSuccess?.success) {
             systemMessage.done(
@@ -220,19 +220,18 @@ async function selectCampaign(campaignId: string, campaignName: string) {
         } else {
             systemMessage.done(
                 <SystemMessage>
-                     Please check your connection and try again.
+                    Please check your connection and try again.
                 </SystemMessage>
             );
         }
 
         connecting.done(
-          <ConnectCampaignResult
-            success={!!updateSuccess?.success}
-            campaignName={campaignName}
-          />
+            <ConnectCampaignResult
+                success={!!updateSuccess?.success}
+                campaignName={campaign.name}
+            />
         )
-
-        // Prompting AI to ask a follow-up question or make a suggestion
+        successStream.done(!!updateSuccess?.success)
         aiState.done({
             ...aiState.get(),
             messages: [
@@ -240,26 +239,32 @@ async function selectCampaign(campaignId: string, campaignName: string) {
                     if (message.role === 'tool') {
                         const content = message.content[0];
                         if (
-                          content.type === 'tool-result' &&
-                          content.toolName === 'showConnectCampaignUI'
+                            content.type === 'tool-result' &&
+                            content.toolName === 'showConnectCampaignUI'
                         ) {
-                          content.result = {
-                            ...(content.result as Object),
-                            connectingUiProps: (content.result as { connectingUiProps: string }).connectingUiProps ?? {
-                                success: updateSuccess,
-                                campaignName
+                            content.result = {
+                                ...(content.result as Object),
+                                connectingUiProps: (content.result as { connectingUiProps: object }).connectingUiProps ?? {
+                                    success: !!updateSuccess?.success,
+                                    campaignName: campaign.name
+                                }
                             }
-                          }
                         }
                     }
                     return message;
-                })
+                }),
+                // ...messages
             ]
         });
     });
 
     return {
+        success: successStream.value,
         connectingUI: connecting.value,
+        // newMessage: {
+        //     id: nanoid(),
+        //     display: newMessageStream.value,
+        // }
     }
 }
 async function confirmUpdateStatus(campaignName: string, status: string){
@@ -383,11 +388,11 @@ async function confirmCreateAd(data: any, adset: any, adText: AdText) {
     }
 }
 
-async function submitUserMessage(content: string, contentImages?: Array<TextPart | ImagePart>) {
+async function submitUserMessage(content: string, contentImages?: Array<TextPart | ImagePart>, isSilent?: boolean) {
     'use server'
 
     const aiState = getMutableAIState<typeof AI>()
-
+    // get ai state
     const chatId = getChatIdFromUrl()?.toString() || '';
 
     // Fetch extra details
@@ -400,18 +405,20 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
     }
     const session = (await auth()) as Session
     await checkNewChat(chatId, aiState.get().messages, session);
-    aiState.update({
-      ...aiState.get(),
-      messages: [
-        ...aiState.get().messages,
-        {
-          id: nanoid(),
-          role: 'user',
-          content: contentImages ? contentImages : content,
-          timestamp: new Date().toISOString(),
-        }
-      ]
-    })
+    if (!isSilent) {
+        aiState.update({
+            ...aiState.get(),
+            messages: [
+                ...aiState.get().messages,
+                {
+                    id: nanoid(),
+                    role: 'user',
+                    content: contentImages?.length ? contentImages : content,
+                    timestamp: new Date().toISOString(),
+                }
+            ]
+        })
+    }
 
     let textStream: undefined | ReturnType<typeof createStreamableValue<string>>
     let textNode: undefined | React.ReactNode
@@ -438,7 +445,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
     If the user says he wants to create a campaign, ask him if he wants to run a lead campaign or a campaign to recruit employees.
     Every time the user sends a message which contain images, please confirm that "Would you like to generate ad text examples for these images?" to the user.
     Please wait for user confirm. Then if the user respond with "Yes", then please generate ad text examples about current campaign for the uploaded images, and use \`showSuggestionAdText\` to show text examples and pass corresponding image urls to user.
-    If the user sent message contain status ALWAYS Use \`showUpdateStatusChampaign\` for show update status UI.
+    If the user sent message contain status ALWAYS Use \`show_update_status_campaign\` for show update status UI.
     If the user asks about ad videos mention that ad videos need to be sent via email to maxnols@reeply.net.  
     
     Wait for the user’s response:
@@ -483,7 +490,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
     
     Step 5: "Do you have an ad text, or should I suggest one?"
     After the user says whether he has an ad text or not:
-    ALWAYS Call \`show_suggestion_ad_text\` to show the ad text selection UI and let the user choose or input their ad text. The guide for user about \`show_suggestion_ad_text\` is 'You can adjust my ad text suggestions or approve them. After approving, the image as well as the ad text will be added to your campaign so make sure that you are all set with ad image and ad text!'.
+    Always call \`show_suggestion_ad_text\` to show the ad text selection UI and let the user choose or input their ad text. The guide for user about \`show_suggestion_ad_text\` is 'You can adjust my ad text suggestions or approve them. After approving, the image as well as the ad text will be added to your campaign so make sure that you are all set with ad image and ad text!'.
     Confirm final text before proceeding.
     When generating ad texts, please follow these guidelines:
 1. Create three distinct versions with different tones: Professional, Emoji-rich, and Conversational.
@@ -492,8 +499,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
 4. Vary the length and style slightly between versions to offer diverse options.
 5. Label each version as "Version 1: Professional", "Version 2: Emoji-rich", and "Version 3: Conversational".
 
-    ALWAYS Call \`showUpdateStatusChampaign\` to show the update status UI and let the user choose status of the campaign.
-
+    Always call \`show_update_status_campaign\` to show the update status UI and let the user choose status of the campaign.
 
     Step 6: Lead Questionnaire: Determine the required information from leads.
     Question: "Do you want to ask for contact details only, or also pre-qualify leads with additional questions such as [examples]? I can help with the creation, or you can provide your ideas."
@@ -513,10 +519,11 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
     if you want to show campaign results, always call \`get_campaign_results\` with guide for the user - 'Do you want me to analyse this for you or discuss any of the results?'. This basically shows the chart with the campaign results. if they ask about certain metrics about the campaign dont show the chart instead discuss those metrics.
     If you want to provide ad texts to the user, call \`show_suggestion_ad_text\` to show the ad text selection UI and let the user choose or input their ad text.
     If you want to generate ad text examples to the user, call \`show_suggestion_ad_text\` to show the ad text selection UI and let the user choose or input their ad text.
-    If you want to change status of campaign, call \'showUpdateStatusChampaign\' to show the update status UI and let the user choose status of the campaign.
-    If the user wants to pause a campaign Call  \'showUpdateStatusChampaign\' to show the update status UI and let the user choose status of the campaign.
+    If you want to change status of campaign, call \'show_update_status_campaign\' to show the update status UI and let the user choose status of the campaign.
+    If the user wants to pause a campaign, call  \'show_update_status_campaign\' to show the update status UI and let the user choose status of the campaign. 
     If the user wants to complete another specific task, respond that you are a demo and cannot perform that action.
-    If the user sent message contain "campaign" or "create ad" or "status" but the current chat does not have campaign name or campaign ID, ALWASY Call \'showConnectCampaignUI\' for connect to facebook campaign first.
+    If the user sent message contain "campaign result" or "campaign status" but the current chat does not have campaign ID, call \'show_connect_campaign_ui\' with Tool name is related to the message, it is required if user ask about campaign results should be use: \"getCampaignResults\", it is required if user ask about campaign status should be use: \"show_update_status_campaign\" for connect to facebook campaign first.
+    If new campaign is connected to the chat, show details of the campaign to the user.
     Besides that, you can also chat with users and perform budget calculations if needed. ${extraDetailsText}`,
         messages: [
             ...aiState.get().messages.map((message: any) => ({
@@ -1003,7 +1010,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                     );
                 }
             },
-            showUpdateStatusChampaign:{
+            showUpdateStatusCampaign:{
                 description: 'Show UI  to update status of the campaign.',
                 parameters: z.object({
                     campaignName: z.string().describe('The name of the campaign'),
@@ -1030,7 +1037,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                 content: [
                                     {
                                         type: 'tool-call',
-                                        toolName: 'showUpdateStatusChampaign    ',
+                                        toolName: 'showUpdateStatusCampaign',
                                         toolCallId,
                                         args: { campaignName, status }
                                     }
@@ -1043,7 +1050,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                                 content: [
                                     {
                                         type: 'tool-result',
-                                        toolName: 'showUpdateStatusChampaign',
+                                        toolName: 'showUpdateStatusCampaign',
                                         toolCallId,
                                         result: { campaignName, status }
                                     }
@@ -1124,7 +1131,6 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                 parameters: z.object({}),
                 generate: async function* ({}) {
                     const timestamp: string = new Date().toISOString();
-
                     const toolCallId = nanoid();
                     aiState.done({
                         ...aiState.get(),
@@ -1159,9 +1165,9 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                         ]
                     })
                     return (
-                      <BotCard>
-                        <ConnectCampaign />
-                      </BotCard>
+                        <BotCard>
+                            <ConnectCampaign />
+                        </BotCard>
                     )
                 }
             }
@@ -1313,7 +1319,7 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                         {!!tool.result.questionForBudget && <p className="mb-2 last:mb-0">{tool.result.questionForBudget}</p>}                            
                                     </BotCard>
                                 )
-                            case 'showUpdateStatusChampaign':
+                            case 'showUpdateStatusCampaign':
                                 return (
                                     <BotCard key={tool.toolCallId}>
                                         <CampaignStatus

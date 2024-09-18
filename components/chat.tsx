@@ -28,6 +28,7 @@ function ChatCore({ id, chat, className, session, missingKeys }: ChatProps) {
   const [aiState] = useAIState()
   const [_, setNewChatId] = useLocalStorage('newChatId', id)
   const { id: campaignId, setId: setCampaignId, summary: campaignSummary } = useContext(CampaignContext)
+  console.log('aiState.messages', aiState.messages)
   useEffect(() => {
     if (campaignSummary && campaignSummary.campaign_id !== '0') {
       const updateTitle = async () => {

@@ -42,7 +42,7 @@ export interface User extends Record<string, any> {
   fbAccountId?: string
 }
 
-export interface Campaign  extends Record<string, any> {
+export interface Campaign extends Record<string, any> {
   id: string
   title: string
   userId: string
