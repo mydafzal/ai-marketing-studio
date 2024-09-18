@@ -1787,7 +1787,7 @@ Engaged Shoppers]
     
     - If the user wants to complete another specific task, respond that you are a demo and cannot perform that action.
 
-    - If the user asks for "campaign result" or "campaign status" but the current chat is not connected to a campaign, show a UI to connect a campaign to the chat.
+    - If the user asks for "campaign result" or "campaign status" but the current chat is not connected to a campaign, always call \`show_campaign_connection_ui\`.
     
     - Besides that, you can also chat with users and perform budget calculations if needed.
     
@@ -1809,9 +1809,6 @@ Engaged Shoppers]
                 textStream = createStreamableValue('')
                 textNode = <BotMessage content={textStream.value}/>
             }
-
-            console.log('done', done)
-            console.log('delta', delta)
             if (done) {
                 textStream.done();
                 aiState.done({

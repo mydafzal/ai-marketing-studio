@@ -188,7 +188,7 @@ export function ConnectCampaign({ connectingUiProps }: ConnectCampaignProps) {
                 const content = message.content[0]
                 if (
                   content.type === 'tool-result' &&
-                  content.toolName === 'showConnectCampaignUI'
+                  content.toolName === 'showCampaignConnectionUI'
                 ) {
                   content.result = {
                     ...(content.result as Object),
