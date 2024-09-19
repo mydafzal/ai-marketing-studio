@@ -208,13 +208,24 @@ export async function fetchChatExtraDetails(chatId: string) {
             }
         }
 
-        const extraDetails = chatData.extraDetails
+        let extraDetails = chatData.extraDetails
+        const fbCampaignId = chatData.fbCampaignId
 
         if (!extraDetails) {
             return {
                 error: 'Extra details not found for this chat'
             }
         }
+
+        let campaignMessage = ""
+        if (fbCampaignId) {
+            campaignMessage = `There is a campaign id attached to this chat: ${fbCampaignId}\n\n`
+        } else {
+            campaignMessage = "There is no campaign id attached to this chat. This chat is not connected to a campaign yet.\n\n"
+        }
+
+        // Concatenate the campaign message with the existing extra details
+        extraDetails = campaignMessage + extraDetails
 
         return {
             success: true,
@@ -227,7 +238,6 @@ export async function fetchChatExtraDetails(chatId: string) {
         }
     }
 }
-
 export async function searchUser(email: string) {
     const session = await auth()
 
