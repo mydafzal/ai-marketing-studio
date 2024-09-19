@@ -39,7 +39,7 @@ function ChatCore({ id, chat, className, session, missingKeys }: ChatProps) {
             {
                 id: 'campaign-info-data',
                 role: 'system',
-                content: 'No campaign is connected to this chat. You should show UI to connect a campaign to the chat when user asks about one of "campaign budget", "campaign result" and "campaign status".',
+                content: 'No campaign is connected to this chat. You should always show UI to connect a campaign to the chat when user asks about one of "setting campaign budget", "changing campaign budget" "campaign result" and "campaign status".',
                 timestamp: new Date().toISOString() 
             }
         ]
