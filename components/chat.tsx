@@ -35,13 +35,13 @@ function ChatCore({ id, chat, className, session, missingKeys }: ChatProps) {
       setAIState((aiState: any) => ({
         ...aiState,
         messages: [
-            ...aiState.messages.filter((message: Message) => message.id !== 'campaign-info-data' || message.role !== 'system'),
-            {
-                id: 'campaign-info-data',
-                role: 'system',
-                content: 'No campaign is connected to this chat. You should always show UI to connect a campaign to the chat when user asks about one of "setting campaign budget", "changing campaign budget" "campaign result" and "campaign status".',
-                timestamp: new Date().toISOString() 
-            }
+          ...aiState.messages.filter((message: Message) => message.id !== 'campaign-info-data' || message.role !== 'system'),
+          {
+            id: 'campaign-info-data',
+            role: 'system',
+            content: 'No campaign is connected to this chat. You should always show UI to connect a campaign to the chat when user asks about one of "setting campaign budget", "changing campaign budget" "campaign result" and "campaign status".',
+            timestamp: new Date().toISOString(),
+          }
         ]
     }))
     }
@@ -116,8 +116,6 @@ function ChatCore({ id, chat, className, session, missingKeys }: ChatProps) {
         id={id}
         isAtBottom={isAtBottom}
         scrollToBottom={scrollToBottom}
-        onCampaignCreate={handleCampaignCreated}
-        campaignId={campaignId}
       />
     </div>
   )

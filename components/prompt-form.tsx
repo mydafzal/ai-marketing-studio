@@ -36,14 +36,7 @@ export function PromptForm({
 
   const [uploading, setUploading] = React.useState(false)
 
-  const handleFileChange = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const files = event.target.files
-    if (!files || files.length === 0) return
-
-    setUploading(true)
-
+  const uploadFiles = async (files: FileList): Promise<({ urls: string[] })> => {
     const formData = new FormData()
     const campaignId = chatToCampaignMapping[id as string]
 
@@ -51,6 +44,26 @@ export function PromptForm({
     Array.from(files).forEach(file => {
       formData.append('files', file)
     })
+
+    const response = await fetch('/api/upload', {
+      method: 'POST',
+      body: formData
+    })
+
+    const data = (await response.json()) as { urls: string[] }
+    if (!response.ok) {
+      toast.error('Failed to upload the image. Please try again.');
+      throw new Error('Failed to upload the image.');
+    }
+
+    return data;
+  }
+
+  const handleFileChange = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const files = event.target.files
+    if (!files || files.length === 0) return
 
     const imageMes = aiState.messages.filter(
       (msg: Message) =>
@@ -71,47 +84,53 @@ export function PromptForm({
           }
         })
     })
+
     toast.info('Uploading your images, please wait...')
-    try {
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData
-      })
+    setUploading(true)
 
-      const data = await response.json()
-      if (!response.ok) {
-        toast.error('Failed to upload the image. Please try again.')
-        return
+    const maxTrial = 2;
+    let iteration = 0;
+    let uploadResult;
+
+    while (iteration < maxTrial) {
+      try {
+        uploadResult = await uploadFiles(files);
+        break;
+      } catch(error) {
+        toast.info('Failed to upload your images, let me try again...');
+        iteration++;
       }
-      toast.success('Images uploaded successfully!')
-
-      const uploadedTime = new Date().getTime()
-      console.log('uploaded image urls', data.urls, uploadedTime)
-      const imgMessages = data.urls.map((url: string) => {
-        imageIdx++
-        let objUrl = {
-          type: 'image',
-          image: url,
-          uploaded_date: uploadedTime,
-          idx: imageIdx,
-          mimeType: getMimeType(url)
-        }
-        return objUrl
-      })
-
-      const textPrompt = `I upload images with these urls: ${JSON.stringify(data.urls)}, at this time: ${new Date().getTime()}`
-      const userContent: UserContent = [
-        {
-          type: 'text',
-          text: textPrompt
-        },
-        ...imgMessages
-      ]
-
-      await onSendMessage(textPrompt, userContent)
-    } catch (error) {
-      toast.error('Failed to upload the image. Please try again.')
     }
+
+    if (!uploadResult) return;
+  
+    const { urls } = uploadResult;
+    toast.success('Images uploaded successfully!')
+
+    const uploadedTime = new Date().getTime()
+    console.log('uploaded image urls', urls, uploadedTime)
+    const imgMessages = urls.map((url: string) => {
+      imageIdx++
+      let objUrl = {
+        type: 'image',
+        image: url,
+        uploaded_date: uploadedTime,
+        idx: imageIdx,
+        mimeType: getMimeType(url)
+      } as ImagePart
+      return objUrl
+    })
+
+    const textPrompt = `I upload images with these urls: ${JSON.stringify(urls)}, at this time: ${new Date().getTime()}`
+    const userContent: (TextPart | ImagePart)[] = [
+      {
+        type: 'text',
+        text: textPrompt
+      },
+      ...imgMessages
+    ]
+
+    await onSendMessage(textPrompt, userContent)
 
     setUploading(false)
   }

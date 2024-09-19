@@ -42,8 +42,6 @@ export interface ChatPanelProps {
   title?: string
   isAtBottom: boolean
   scrollToBottom: () => void
-  onCampaignCreate: (campaignId: string) => Promise<void>
-  campaignId: string | null
 }
 
 export function ChatPanel({
@@ -51,8 +49,6 @@ export function ChatPanel({
   title,
   isAtBottom,
   scrollToBottom,
-  onCampaignCreate,
-  campaignId,
 }: ChatPanelProps) {
   const [aiState] = useAIState()
   const [messages, setMessages] = useUIState<typeof AI>()
