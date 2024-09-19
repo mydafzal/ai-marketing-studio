@@ -30,7 +30,6 @@ export function Purchase({
   const [aiState, setAIState] = useAIState<typeof AI>();
   const [, setMessages] = useUIState<typeof AI>();
   const { confirmPurchase } = useActions();
-  console.log('aiState.messages', aiState.messages)
 
   function onBudgetChange(e: React.ChangeEvent<HTMLInputElement>) {
     const newBudget = Number(e.target.value);

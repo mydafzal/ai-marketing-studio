@@ -1,17 +1,22 @@
 import { useAIState } from 'ai/rsc'
 import { createContext, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CampaignSummary, getCampaignSummary } from '@/lib/api/fasty-bot/get-campaign-summary'
-import { Message } from '@/lib/types'
+import { getCampaigns } from '@/lib/api/fasty-bot/get-campaigns'
+import { FbCampaign, Message } from '@/lib/types'
 
 interface ICampaignContext {
-    id: string | null,
-    setId: (id: string) => void,
-    summary: CampaignSummary | null,
-    fetchSummary: (id: string) => Promise<void>
+    id: string | null;
+    campaigns: FbCampaign[];
+    getCampaignList: () => Promise<void>;
+    setId: (id: string) => void;
+    summary: CampaignSummary | null;
+    fetchSummary: (id: string) => Promise<void>;
 }
 
 export const CampaignContext = createContext<ICampaignContext>({
     id: null,
+    campaigns: [],
+    getCampaignList: async () => {},
     setId: () => {},
     summary: null,
     fetchSummary: async () => {}
@@ -25,6 +30,16 @@ export const CampaignContextProvider = ({ children }: { children: React.ReactNod
 
     const [id, setId] = useState<string | null>(null)
     const [summary, setSummary] = useState<CampaignSummary | null>(null)
+    const [campaigns, setCampaigns] = useState<FbCampaign[]>([])
+
+    const getCampaignList = useCallback(async () => {
+        const data = await getCampaigns()
+        setCampaigns(data || [])
+    }, [])
+
+    useEffect(() => {
+        void getCampaignList()
+    }, [getCampaignList])
 
     const lastUpdatedRef = useRef<Date | null>(null)
 
@@ -59,29 +74,30 @@ export const CampaignContextProvider = ({ children }: { children: React.ReactNod
 
     useEffect(() => {
         if (summary && summary.campaign_id !== '0') {
-            const currentTimestamp = new Date().toISOString()
             setAIState((aiState: any) => ({
-            ...aiState,
-            messages: [
-                ...aiState.messages.filter((message: Message) => message.id !== 'campaign-info-data' || message.role !== 'system'),
-                {
-                id: 'campaign-info-data',
-                role: 'system',
-                content: `Knowledge Base about current campaign information: ${JSON.stringify(summary)}`,
-                timestamp: currentTimestamp 
-                }
-            ]
+                ...aiState,
+                messages: [
+                    ...aiState.messages.filter((message: Message) => message.id !== 'campaign-info-data' || message.role !== 'system'),
+                    {
+                        id: 'campaign-info-data',
+                        role: 'system',
+                        content: `Campaign is now connected, the knowledge base about current campaign information: ${JSON.stringify(summary)}`,
+                        timestamp: new Date().toISOString() 
+                    }
+                ]
             }))
-            lastUpdatedRef.current = new Date()
+            lastUpdatedRef.current = new Date();
         }
     }, [summary])
 
     const value = useMemo(() => ({
         id,
+        campaigns,
+        getCampaignList,
         setId,
         summary,
         fetchSummary
-    }), [id, setId, summary, fetchSummary])
+    }), [id, setId, campaigns, summary, fetchSummary])
 
     return (
         <CampaignContext.Provider value={value}>

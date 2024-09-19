@@ -609,7 +609,6 @@ export async function updateAdText(chatSlug: string, idx: number, adTextId: numb
                             if (suggestedText.id === adTextId && index === idx) {
                                 suggestedText.headline = newAdText.headline
                                 suggestedText.text = newAdText.text
-                                console.log('suggestedText', suggestedText)
                             }
                         })
                     })
@@ -627,7 +626,6 @@ export async function updateAdText(chatSlug: string, idx: number, adTextId: numb
                             if (suggestedText.id === adTextId && index === idx) {
                                 suggestedText.headline = newAdText.headline
                                 suggestedText.text = newAdText.text
-                                console.log('suggestedText', suggestedText)
                             }
                         })
                     })
@@ -684,7 +682,6 @@ export async function updateAdTextWithFbId(chatSlug: string, idx: number, adText
                         image.suggestedTexts.forEach((suggestedText: AdText, index: number) => {
                             if (suggestedText.id === adTextId && index === idx) {
                                 suggestedText.fbAdId = fbAdId
-                                console.log('suggestedText', suggestedText)
                             }
                         })
                     })
@@ -701,7 +698,6 @@ export async function updateAdTextWithFbId(chatSlug: string, idx: number, adText
                         image.suggestedTexts.forEach((suggestedText: AdText, index: number) => {
                             if (suggestedText.id === adTextId && index === idx) {
                                 suggestedText.fbAdId = fbAdId
-                                console.log('suggestedText', suggestedText)
                             }
                         })
                     })

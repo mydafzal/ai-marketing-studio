@@ -13,6 +13,7 @@ import { useLocalStorage } from '@/lib/hooks/use-local-storage'
 import { useScrollAnchor } from '@/lib/hooks/use-scroll-anchor'
 import { Chat as ChatType, Message, Session } from '@/lib/types'
 import { cn } from '@/lib/utils'
+import { createCampaign } from '@/lib/api/fasty-bot/create-campaign'
 
 export interface ChatProps extends React.ComponentProps<'div'> {
   initialMessages?: Message[]
@@ -24,10 +25,27 @@ export interface ChatProps extends React.ComponentProps<'div'> {
 
 function ChatCore({ id, chat, className, session, missingKeys }: ChatProps) {
   const [messages] = useUIState()
-  const [aiState] = useAIState()
+  const [aiState, setAIState] = useAIState()
   const [_, setNewChatId] = useLocalStorage('newChatId', id)
   const { id: campaignId, setId: setCampaignId, summary: campaignSummary } = useContext(CampaignContext)
   console.log('aiState.messages', aiState.messages)
+
+  useEffect(() => {
+    if (!aiState.messages.length) {
+      setAIState((aiState: any) => ({
+        ...aiState,
+        messages: [
+            ...aiState.messages.filter((message: Message) => message.id !== 'campaign-info-data' || message.role !== 'system'),
+            {
+                id: 'campaign-info-data',
+                role: 'system',
+                content: 'No campaign is connected to this chat. You should always show UI to connect a campaign to the chat when user asks about one of "setting campaign budget", "changing campaign budget" "campaign result" and "campaign status".',
+                timestamp: new Date().toISOString() 
+            }
+        ]
+    }))
+    }
+  }, []);
 
   useEffect(() => {
     if (campaignSummary && campaignSummary.campaign_id !== '0') {
@@ -73,7 +91,7 @@ function ChatCore({ id, chat, className, session, missingKeys }: ChatProps) {
   const { messagesRef, scrollRef, visibilityRef, isAtBottom, scrollToBottom } =
     useScrollAnchor()
 
-  const handleCampaignCreate = useCallback(async (campaignId: string) => {
+  const handleCampaignCreated = useCallback(async (campaignId: string) => {
     setCampaignId(campaignId)
     await updateChatFbCampaignId(id, campaignId)
   }, [id])
@@ -86,9 +104,9 @@ function ChatCore({ id, chat, className, session, missingKeys }: ChatProps) {
       <div
         className={cn('pb-[200px] pt-4 md:pt-10', className)}
         ref={messagesRef}
-      >
+      >   
         {messages.length ? (
-          <ChatList messages={messages} isShared={false} session={session} />
+          <ChatList messages={messages} isShared={false} session={session}/>
         ) : (
           <EmptyScreen />
         )}
@@ -98,7 +116,7 @@ function ChatCore({ id, chat, className, session, missingKeys }: ChatProps) {
         id={id}
         isAtBottom={isAtBottom}
         scrollToBottom={scrollToBottom}
-        onCampaignCreate={handleCampaignCreate}
+        onCampaignCreate={handleCampaignCreated}
         campaignId={campaignId}
       />
     </div>

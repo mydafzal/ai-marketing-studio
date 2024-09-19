@@ -16,7 +16,8 @@ import {CampaignStatus} from '@/components/stocks/campaign-status'
 import {updateChatTitle} from '@/app/actions'
 import { differenceInHours } from 'date-fns';
 import {ChatImage} from '@/components/chat-images'
-
+import { updateChatFbCampaignId } from '@/app/actions'
+import { ConnectCampaignResult } from '@/components/connect-campaign-result';
 import { UserContent, TextPart, ImagePart  } from 'ai'
 
 import {formatNumber, nanoid, runAsyncFnWithoutBlocking, sleep} from '@/lib/utils'
@@ -32,6 +33,7 @@ import {getCampaignIdFromUrl} from "@/lib/api/fasty-bot/helpers/campaign-id-from
 import {getChatIdFromUrl} from "@/lib/api/fasty-bot/helpers/chat-id-from-url-helper";
 import {sendAdminNotification} from '@/lib/api/fasty-bot/send-admin-notification'
 import { Session } from '@/lib/types'
+import { ConnectCampaign } from '@/components/connect-campaign'
 
 interface ToolResult {
     toolName: string;
@@ -176,6 +178,7 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
         }
     }
 }
+
 async function confirmUpdateStatus(campaignName: string, status: string){
     'use server'
     const aiState = getMutableAIState<typeof AI>();
@@ -297,11 +300,11 @@ async function confirmCreateAd(data: any, adset: any, adText: AdText) {
     }
 }
 
-async function submitUserMessage(content: string, contentImages?: Array<TextPart | ImagePart>) {
+async function submitUserMessage(content: string, contentImages?: Array<TextPart | ImagePart>, isSilent?: boolean) {
     'use server'
 
     const aiState = getMutableAIState<typeof AI>()
-
+    // get ai state
     const chatId = getChatIdFromUrl()?.toString() || '';
 
     // Fetch extra details
@@ -314,18 +317,20 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
     }
     const session = (await auth()) as Session
     await checkNewChat(chatId, aiState.get().messages, session);
-    aiState.update({
-      ...aiState.get(),
-      messages: [
-        ...aiState.get().messages,
-        {
-          id: nanoid(),
-          role: 'user',
-          content: contentImages ? contentImages : content,
-          timestamp: new Date().toISOString(),
-        }
-      ]
-    })
+    if (!isSilent) {
+        aiState.update({
+            ...aiState.get(),
+            messages: [
+                ...aiState.get().messages,
+                {
+                    id: nanoid(),
+                    role: 'user',
+                    content: contentImages?.length ? contentImages : content,
+                    timestamp: new Date().toISOString(),
+                }
+            ]
+        })
+    }
 
     let textStream: undefined | ReturnType<typeof createStreamableValue<string>>
     let textNode: undefined | React.ReactNode
@@ -1768,7 +1773,9 @@ Engaged Shoppers]
     
       - "[User has changed the daily budget to $150]" means that the user has adjusted the daily budget to $150 in the UI.
     
-    - If the user requests setting or changing the ad budget, always first make sure that they tell you the amount. If the user's message does not yet contain the amount of budget, ask the user how much they want to change the ad budget. Once they tell you the amount, always call \`show_ad_budget_ui\` to show the budget UI.
+    - If the user asks for "campaign result" or "campaign status" or "campaign budget" but the current chat is not connected to a campaign, always call \`show_campaign_connection_ui\` to show a UI to connect a campaign to the chat.
+
+    - If a campaign was connected to the chat and the user requests setting or changing the ad budget, always first make sure that they tell you the amount. If the user's message does not yet contain the amount of budget, ask the user how much they want to change the ad budget. Once they tell you the amount, always call \`show_ad_budget_ui\` to show the budget UI.
     
     - If you want to show campaign results, always call \`get_campaign_results\` with a guide for the user—'Do you want me to analyze this for you or discuss any of the results?'. This shows the chart with the campaign results. If they ask about certain metrics about the campaign, don't show the chart; instead, discuss those metrics.
     
@@ -1802,7 +1809,6 @@ Engaged Shoppers]
                 textStream = createStreamableValue('')
                 textNode = <BotMessage content={textStream.value}/>
             }
-
             if (done) {
                 textStream.done();
                 aiState.done({
@@ -2275,7 +2281,7 @@ Engaged Shoppers]
                     );
                 }
             },
-            showUpdateStatusChampaign:{
+            showUpdateStatusCampaign:{
                 description: 'Show UI  to update status of the campaign.',
                 parameters: z.object({
                     campaignName: z.string().describe('The name of the campaign'),
@@ -2302,7 +2308,7 @@ Engaged Shoppers]
                                 content: [
                                     {
                                         type: 'tool-call',
-                                        toolName: 'showUpdateStatusChampaign    ',
+                                        toolName: 'showUpdateStatusCampaign',
                                         toolCallId,
                                         args: { campaignName, status }
                                     }
@@ -2315,7 +2321,7 @@ Engaged Shoppers]
                                 content: [
                                     {
                                         type: 'tool-result',
-                                        toolName: 'showUpdateStatusChampaign',
+                                        toolName: 'showUpdateStatusCampaign',
                                         toolCallId,
                                         result: { campaignName, status }
                                     }
@@ -2387,6 +2393,52 @@ Engaged Shoppers]
                             {!!questionForBudget && <p className="mb-2 last:mb-0">{questionForBudget}</p>}
                             <RefreshSideBar />
                             <RefreshChatTitle campaignName={campaignName} campaignId={campaignId} />
+                        </BotCard>
+                    )
+                }
+            },
+            showCampaignConnectionUI: {
+                description: 'Show a UI to connect a campaign to the chat.',
+                parameters: z.object({}),
+                generate: async function* ({}) {
+                    console.log('tool call showCampaignConnectionUI')
+                    const timestamp: string = new Date().toISOString();
+                    const toolCallId = nanoid();
+                    aiState.done({
+                        ...aiState.get(),
+                        messages: [
+                            ...aiState.get().messages,
+                            {
+                                id: nanoid(),
+                                role: 'assistant',
+                                content: [
+                                    {
+                                        type: 'tool-call',
+                                        toolName: 'showCampaignConnectionUI',
+                                        toolCallId,
+                                        args: {}
+                                    }
+                                ],
+                                timestamp
+                            },
+                            {
+                                id: toolCallId,
+                                role: 'tool',
+                                content: [
+                                    {
+                                        type: 'tool-result',
+                                        toolName: 'showCampaignConnectionUI',
+                                        toolCallId,
+                                        result: {}
+                                    }
+                                ],
+                                timestamp
+                            }
+                        ]
+                    })
+                    return (
+                        <BotCard>
+                            <ConnectCampaign />
                         </BotCard>
                     )
                 }
@@ -2538,7 +2590,7 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                         {!!tool.result.questionForBudget && <p className="mb-2 last:mb-0">{tool.result.questionForBudget}</p>}                            
                                     </BotCard>
                                 )
-                            case 'showUpdateStatusChampaign':
+                            case 'showUpdateStatusCampaign':
                                 return (
                                     <BotCard key={tool.toolCallId}>
                                         <CampaignStatus
@@ -2549,6 +2601,12 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                                 status: tool.result.status
                                             }}
                                         />
+                                    </BotCard>
+                                )
+                            case 'showCampaignConnectionUI':
+                                return (
+                                    <BotCard key={tool.toolCallId}>
+                                        <ConnectCampaign {...tool.result} />
                                     </BotCard>
                                 )
                             default:
