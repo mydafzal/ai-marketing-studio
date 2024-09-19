@@ -18,10 +18,6 @@ export async function POST(request: Request) {
         { status: 400 }
       )
     }
-    const { fbCampaignId } = await fetchChatFbCampaignId(chatSlug)
-    if (fbCampaignId) {
-      return NextResponse.json({ success: false }, { status: 500 })
-    }
     const fastyEndpoint = process.env.FASTY_API_URL
     const apiUrl = `${fastyEndpoint}/facebook/exec/direct/campaign/create`
 
