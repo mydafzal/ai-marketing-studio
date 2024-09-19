@@ -1,8 +1,8 @@
 'use client'
 
-import { readStreamableValue, useActions, useAIState, useUIState } from 'ai/rsc'
+import { useActions, useAIState, useUIState } from 'ai/rsc'
 import { format } from 'date-fns'
-import { useCallback, useContext, useEffect, useState } from 'react'
+import { useContext, useEffect, useRef, useState } from 'react'
 import { spinner, SystemMessage } from '@/components/stocks'
 
 import {
@@ -137,11 +137,12 @@ export function ConnectCampaign({ connectingUiProps }: ConnectCampaignProps) {
   const [connectingUI, setConnectingUI] = useState<null | React.ReactNode>(
     connectingUiProps ? <ConnectCampaignResult {...connectingUiProps} /> : null
   )
-  const [messages, setMessages] = useUIState<typeof AI>()
-  const { setId: setCampaignId, summary: campaignSummary } =
+  const [_, setMessages] = useUIState<typeof AI>()
+  const { setId: setCampaignId } =
     useContext(CampaignContext)
 
-  const aiMessages = aiState.messages
+  const aiMessages = aiState.messages;
+  const shouldSendSilentMessage = useRef(false);
 
   useEffect(() => {
     async function refresh() {
@@ -155,11 +156,15 @@ export function ConnectCampaign({ connectingUiProps }: ConnectCampaignProps) {
     if (aiMessages.length) {
       const { id, role } = aiMessages[aiMessages.length - 1]
       if (role === 'system' && id === 'campaign-info-data') {
-        // this is a workaround, campaign info data is replaced if I do not use setTimeout
-        setTimeout(refresh, 0)
+        if (shouldSendSilentMessage.current) {
+          // this is a workaround, campaign info data is replaced if I do not use setTimeout
+          setTimeout(refresh, 0);
+          shouldSendSilentMessage.current = false;
+        }
       }
     }
-  }, [aiMessages])
+  }, [aiMessages]);
+
   async function handleCampaignSelection(campaign: FbCampaign) {
     setConnectingUI(
       <div className="inline-flex items-start gap-1 md:items-center">
@@ -173,6 +178,7 @@ export function ConnectCampaign({ connectingUiProps }: ConnectCampaignProps) {
         campaign.id
       )
       if (updateSuccess?.success) {
+        shouldSendSilentMessage.current = true;
         setCampaignId(campaign.id)
         setConnectingUI(
           <ConnectCampaignResult
