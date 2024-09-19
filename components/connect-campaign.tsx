@@ -22,7 +22,7 @@ import { FbCampaign, Message } from '@/lib/types'
 import { type AI } from '@/lib/chat/actions'
 
 interface ConnectCampaignFormProps {
-  handleSelectCampaign: (campaign: FbCampaign) => void
+  handleSelectCampaign: (campaign: FbCampaign) => Promise<void>;
 }
 
 export function ConnectCampaignForm({
@@ -34,25 +34,25 @@ export function ConnectCampaignForm({
   const [aiState] = useAIState()
   const { campaigns, getCampaignList } = useContext(CampaignContext)
 
-  const handleCampaignCreated = useCallback(
-    async (campaign: FbCampaign) => {
-      setSelectedCampaign(campaign)
-      await updateChatFbCampaignId(aiState.chatId, campaign.id)
-    },
-    [aiState]
-  )
   const handleCreateCampaign = async () => {
     console.log('create campaign')
+    const createData = {
+      name: 'My campaign',
+      status: 'PAUSED',
+    }
     const response = await createCampaign({
       chatSlug: aiState.chatId,
-      name: 'My campaign',
       objective: 'OUTCOME_LEADS',
-      status: 'PAUSED',
-      special_ad_categories: ['NONE']
+      special_ad_categories: ['NONE'],
+      ...createData,
     })
     if (response.success && response.data.id) {
       console.log('created campaign id is', response.data.id)
-      await handleCampaignCreated(response.data)
+      await handleSelectCampaign({
+        ...response.data,
+        ...createData,
+        created_time: Date.toString(),
+      })
       await getCampaignList()
     }
   }
@@ -95,10 +95,10 @@ export function ConnectCampaignForm({
         {campaigns.length > 0 && (
           <button
             aria-disabled={!selectedCampaign || isSubmitting}
-            onClick={() => {
+            onClick={async () => {
               if (selectedCampaign) {
                 setSubmitting(true)
-                handleSelectCampaign(selectedCampaign)
+                await handleSelectCampaign(selectedCampaign)
               }
             }}
             className="flex-1 px-3 mr-5 py-2 text-xs font-medium text-center text-white bg-gray-700 rounded-lg hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
@@ -110,9 +110,9 @@ export function ConnectCampaignForm({
 
         <button
           aria-disabled={isCreating}
-          onClick={() => {
+          onClick={async () => {
             setCreating(true)
-            handleCreateCampaign()
+            await handleCreateCampaign()
           }}
           className="flex-1 px-3 py-2 text-xs inline-block align-middle font-medium text-center text-white bg-blue-700 rounded-lg hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-gray-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
         >
