@@ -74,7 +74,6 @@ export const CampaignContextProvider = ({ children }: { children: React.ReactNod
 
     useEffect(() => {
         if (summary && summary.campaign_id !== '0') {
-            const currentTimestamp = new Date().toISOString()
             setAIState((aiState: any) => ({
                 ...aiState,
                 messages: [
@@ -82,8 +81,8 @@ export const CampaignContextProvider = ({ children }: { children: React.ReactNod
                     {
                         id: 'campaign-info-data',
                         role: 'system',
-                        content: `Knowledge Base about current campaign information: ${JSON.stringify(summary)}`,
-                        timestamp: currentTimestamp 
+                        content: `Campaign is now connected, the knowledge base about current campaign information: ${JSON.stringify(summary)}`,
+                        timestamp: new Date().toISOString() 
                     }
                 ]
             }))

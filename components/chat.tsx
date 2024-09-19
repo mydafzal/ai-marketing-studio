@@ -25,10 +25,27 @@ export interface ChatProps extends React.ComponentProps<'div'> {
 
 function ChatCore({ id, chat, className, session, missingKeys }: ChatProps) {
   const [messages] = useUIState()
-  const [aiState] = useAIState()
+  const [aiState, setAIState] = useAIState()
   const [_, setNewChatId] = useLocalStorage('newChatId', id)
   const { id: campaignId, setId: setCampaignId, summary: campaignSummary } = useContext(CampaignContext)
   console.log('aiState.messages', aiState.messages)
+
+  useEffect(() => {
+    if (!aiState.messages.length) {
+      setAIState((aiState: any) => ({
+        ...aiState,
+        messages: [
+            ...aiState.messages.filter((message: Message) => message.id !== 'campaign-info-data' || message.role !== 'system'),
+            {
+                id: 'campaign-info-data',
+                role: 'system',
+                content: 'No campaign is connected to this chat. You should show UI to connect a campaign to the chat if user asks about campaign.',
+                timestamp: new Date().toISOString() 
+            }
+        ]
+    }))
+    }
+  }, []);
 
   useEffect(() => {
     if (campaignSummary && campaignSummary.campaign_id !== '0') {
