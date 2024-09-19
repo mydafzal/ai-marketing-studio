@@ -101,7 +101,7 @@ export function ConnectCampaignForm({
                 await handleSelectCampaign(selectedCampaign)
               }
             }}
-            className="flex-1 px-3 mr-5 py-2 text-xs font-medium text-center text-white bg-gray-700 rounded-lg hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
+            className="flex justify-center items-center flex-1 px-3 mr-5 py-2 text-xs  font-medium text-center text-white bg-gray-700 rounded-lg hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
           >
             {isSubmitting && <IconSpinner />}
             {!isSubmitting && 'Connect existing campaign'}
@@ -114,7 +114,7 @@ export function ConnectCampaignForm({
             setCreating(true)
             await handleCreateCampaign()
           }}
-          className="flex-1 px-3 py-2 text-xs inline-block align-middle font-medium text-center text-white bg-blue-700 rounded-lg hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-gray-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+          className="flex justify-center items-center flex-1 px-3 py-2 text-xs align-middle font-medium text-center text-white bg-blue-700 rounded-lg hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-gray-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
         >
           {isCreating && <IconSpinner />}
           {!isCreating && 'Create a new campaign instead'}
@@ -164,7 +164,7 @@ export function ConnectCampaign({ connectingUiProps }: ConnectCampaignProps) {
     setConnectingUI(
       <div className="inline-flex items-start gap-1 md:items-center">
         {spinner}
-        <p className="mb-2">Connecting to {campaign.name}...</p>
+        <p>Connecting to {campaign.name}...</p>
       </div>
     )
     try {
