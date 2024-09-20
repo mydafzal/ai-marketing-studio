@@ -111,8 +111,7 @@ const CustomerSearch: React.FC = () => {
                     setError(null);
                 }
             } else {
-                setSearchResults([]);
-                setError(data.error || 'Failed to fetch clients');
+                throw new Error(data.error || 'Failed to fetch clients: Unexpected data format');
             }
         } catch (err) {
             console.error('Fetch all clients error:', err);
