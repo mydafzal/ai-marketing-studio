@@ -192,6 +192,36 @@ export async function updateFbCampaignExtraDetails(fbCampaignId: string, extraDe
 }
 
 
+export async function fetchFbCampaignExtraDetails(fbCampaignId: string) {
+    const session = await auth();
+
+    if (!session || !session.user) {
+        return {
+            error: 'User not authenticated'
+        };
+    }
+
+    try {
+        const fbCampaignKey = `fbCampaign:${fbCampaignId}`;
+        const fbCampaign = await kv.hgetall(fbCampaignKey);
+
+        if (!fbCampaign) {
+            return {
+                error: 'fbCampaign not found'
+            };
+        }
+
+        return {
+            extraDetails: fbCampaign.extraDetails || null
+        };
+    } catch (error) {
+        console.error(`Error fetching extraDetails for fbCampaign ${fbCampaignId}:`, error);
+        return {
+            error: 'Something went wrong'
+        };
+    }
+}
+
 export async function fetchChatExtraDetails(chatId: string) {
     const session = await auth()
 
