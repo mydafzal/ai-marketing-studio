@@ -88,7 +88,7 @@ export function PromptForm({
     toast.info('Uploading your images, please wait...')
     setUploading(true)
 
-    const maxTrial = 2;
+    const maxTrial = 3;
     let iteration = 0;
     let uploadResult;
 
@@ -102,12 +102,15 @@ export function PromptForm({
       }
     }
 
-    if (!uploadResult) return;
+    if (!uploadResult) {
+      toast.info('Unfortunately I have some troubles working on this image right now. Please try it later again or try to upload another image, and I will see if I can work with that.');
+      return;
+    };
   
     const { urls } = uploadResult;
-    toast.success('Images uploaded successfully!')
+    toast.success('Images uploaded successfully!');
 
-    const uploadedTime = new Date().getTime()
+    const uploadedTime = new Date().getTime();
     console.log('uploaded image urls', urls, uploadedTime)
     const imgMessages = urls.map((url: string) => {
       imageIdx++
