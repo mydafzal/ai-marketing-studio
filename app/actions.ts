@@ -269,6 +269,59 @@ export async function fetchFbCampaignExtraDetailsForChat(campaignId: string): Pr
     }
 }
 
+
+export async function fetchUserDefaultExtraDetailsForAdmin(userEmail: string) {
+    const session = await auth()
+
+    if (!session || !session.user) {
+        return {
+            error: 'User not authenticated'
+        }
+    }
+
+    if (!userEmail) {
+        return {
+            error: 'Missing user email'
+        }
+    }
+
+    try {
+        const userKey = `user:${userEmail}`
+        const defaultExtraDetails = await kv.hget(userKey, 'defaultExtraDetails')
+
+        return defaultExtraDetails || ''
+
+    } catch (error) {
+        console.error(`Error fetching defaultExtraDetails for user: ${userEmail}`, error)
+        return ''
+    }
+}
+
+export async function updateUserDefaultExtraDetailsForAdmin(userEmail: string, promptString: string) {
+    const session = await auth()
+    if (!session || !session.user) {
+        return { error: 'User not authenticated' }
+    }
+
+    if (!userEmail) {
+        return { error: 'Missing user email' }
+    }
+
+    if (!promptString) {
+        return { error: 'Missing prompt string' }
+    }
+
+    try {
+        const userKey = `user:${userEmail}`
+        await kv.hset(userKey, { defaultExtraDetails: promptString })
+        return { success: true, message: 'Default extra details updated successfully' }
+    } catch (error) {
+        console.error(`Error updating defaultExtraDetails for user: ${userEmail}`, error)
+        return { error: 'Failed to update default extra details' }
+    }
+}
+
+
 export async function fetchUserDefaultExtraDetails() {
     const session = await auth()
 
