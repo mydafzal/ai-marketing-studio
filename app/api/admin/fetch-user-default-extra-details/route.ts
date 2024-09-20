@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { fetchFbCampaignExtraDetails } from '@/app/actions';
+import { fetchUserDefaultExtraDetailsForAdmin } from '@/app/actions';
 
 export async function GET(request: NextRequest) {
     const email = request.nextUrl.searchParams.get('email');
@@ -9,15 +9,16 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-        const result = await fetchFbCampaignExtraDetails(email);
+        const result = await fetchUserDefaultExtraDetailsForAdmin(email);
 
-        if (result.error) {
-            return NextResponse.json({ error: result.error }, { status: 400 });
+        if (result === '') {
+            return NextResponse.json({ error: 'No results found' }, { status: 400 });
         }
 
-        return NextResponse.json(result);
+        // Return the result within an object
+        return NextResponse.json({ defaultExtraDetails: result });
     } catch (error) {
-        console.error('Error in fetch fbCampaign extra details route:', error);
+        console.error('Error in fetch default extra details route:', error);
         return NextResponse.json({ error: 'An unexpected error occurred' }, { status: 500 });
     }
 }

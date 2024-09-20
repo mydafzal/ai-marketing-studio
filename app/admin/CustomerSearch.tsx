@@ -191,17 +191,57 @@ const CustomerSearch: React.FC = () => {
         setIsModalOpen(true);
     };
 
-    const handleUpdatePrompt = () => {
-        // TODO: Implement the API call to update the prompt
-        console.log(`Updating prompt for ${selectedEmail}:`, defaultPrompt);
-        setIsModalOpen(false);
+
+    const handleUpdatePrompt = async () => {
+        try {
+            setIsLoading(true);
+            const response = await fetch('/api/admin/update-user-default-extra-details', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email: selectedEmail, defaultExtraDetails: defaultPrompt }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to update default prompt');
+            }
+
+            setSuccessMessage(data.message || 'Default prompt updated successfully');
+            setIsModalOpen(false);
+        } catch (error) {
+            console.error('Error updating default prompt:', error);
+            setError(error instanceof Error ? error.message : 'An unexpected error occurred');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
-    const handleFetchPrompt = () => {
-        // TODO: Implement the API call to fetch the prompt
-        console.log(`Fetching prompt for ${selectedEmail}`);
-        // For now, let's just set a dummy prompt
-        setDefaultPrompt('This is a fetched default prompt for ' + selectedEmail);
+    const handleFetchPrompt = async () => {
+        try {
+            setIsLoading(true);
+            setError(null);
+
+            const response = await fetch(
+                `/api/admin/fetch-user-default-extra-details?email=${encodeURIComponent(selectedEmail)}`
+            );
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to fetch default prompt');
+            }
+
+            console.log('Fetched data:', data);
+
+            setDefaultPrompt(data.defaultExtraDetails || '');
+        } catch (error) {
+            console.error('Error fetching default prompt:', error);
+            setError(error instanceof Error ? error.message : 'An unexpected error occurred');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleCustomerSelect = (customer: Customer) => {
@@ -307,8 +347,8 @@ const CustomerSearch: React.FC = () => {
                             <input
                                 type="text"
                                 value={selectedEmail}
-                                readOnly
-                                className="mt-1 block w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md shadow-sm"
+                                onChange={(e) => setSelectedEmail(e.target.value)}
+                                className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm"
                             />
                         </div>
                         <div className="mb-4">
@@ -323,16 +363,20 @@ const CustomerSearch: React.FC = () => {
                                 className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
                             />
                         </div>
+                        {error && <p className="text-red-500 mb-2">{error}</p>}
+                        {isLoading && <p className="text-blue-500 mb-2">Loading...</p>}
                         <div className="flex justify-end space-x-2">
                             <button
                                 onClick={handleFetchPrompt}
                                 className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
+                                disabled={isLoading}
                             >
                                 Fetch
                             </button>
                             <button
                                 onClick={handleUpdatePrompt}
                                 className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                                disabled={isLoading}
                             >
                                 Update
                             </button>
