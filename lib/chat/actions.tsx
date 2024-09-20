@@ -16,6 +16,7 @@ import {CampaignStatus} from '@/components/stocks/campaign-status'
 import {
     fetchChatCampaignBudget,
     fetchFbCampaignExtraDetailsForChat,
+    fetchUserDefaultExtraDetails,
     saveChat,
     updateChatCampaignBudget,
     updateChatTitle
@@ -319,16 +320,29 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
         // Error handling if necessary
     }
 
-    let extraDetailsText = '';
-    if (campaignId) {
-        try {
-            const extraDetailsResult = await fetchFbCampaignExtraDetailsForChat(campaignId);
-            if (extraDetailsResult.success && extraDetailsResult.extraDetails) {
-                extraDetailsText = `\n\nSome important contextual information about this specific campaign can be seen here: ${extraDetailsResult.extraDetails}`;
+    let extraDetailsFinalText = '';
+
+    try {
+        if (chatId) {
+            const defaultExtraDetailsResult = await fetchUserDefaultExtraDetails();
+
+            if (defaultExtraDetailsResult) {
+                extraDetailsFinalText += `Some important contextual information about this specific user can be seen here: ${defaultExtraDetailsResult}`;
             }
-        } catch (error) {
-            // Error handling if necessary
         }
+
+        if (campaignId) {
+            const extraDetailsResult = await fetchFbCampaignExtraDetailsForChat(campaignId);
+
+            if (extraDetailsResult.success && extraDetailsResult.extraDetails) {
+                if (extraDetailsFinalText) {
+                    extraDetailsFinalText += '\n\n';
+                }
+                extraDetailsFinalText += `Some important contextual information about this specific campaign can be seen here: ${extraDetailsResult.extraDetails}`;
+            }
+        }
+    } catch (error) {
+        console.error('Error fetching extra details:', error);
     }
     const session = (await auth()) as Session
     await checkNewChat(chatId, aiState.get().messages, session);
@@ -1810,7 +1824,7 @@ Engaged Shoppers]
     
     Always respond in the language the user is using. If the user is speaking in German, use "Du" instead of "Sie", and avoid being too formal.
     
-    ${extraDetailsText}`,
+    ${extraDetailsFinalText}`,
 
         messages: [
             ...aiState.get().messages.map((message: any) => ({

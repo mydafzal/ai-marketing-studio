@@ -268,6 +268,27 @@ export async function fetchFbCampaignExtraDetailsForChat(campaignId: string): Pr
         };
     }
 }
+
+export async function fetchUserDefaultExtraDetails() {
+    const session = await auth()
+
+    if (!session?.user?.email) {
+        console.error('User not authenticated or email not available')
+        return ''
+    }
+
+    try {
+        const userKey = `user:${session.user.email}`
+        const defaultExtraDetails = await kv.hget(userKey, 'defaultExtraDetails')
+
+        return defaultExtraDetails || ''
+
+    } catch (error) {
+        console.error(`Error fetching defaultExtraDetails for user: ${session.user.email}`, error)
+        return ''
+    }
+}
+
 export async function fetchChatExtraDetails(chatId: string) {
     const session = await auth()
 
