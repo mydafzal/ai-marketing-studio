@@ -4,7 +4,7 @@ import {useRouter} from 'next/navigation'
 import * as React from 'react'
 import {toast} from 'sonner'
 
-import {ServerActionResult, type Chat} from '@/lib/types'
+import {type Chat, ServerActionResult} from '@/lib/types'
 import {
     AlertDialog,
     AlertDialogAction,
@@ -18,12 +18,7 @@ import {
 import {Button} from '@/components/ui/button'
 import {IconShare, IconSpinner, IconTrash} from '@/components/ui/icons'
 import {ChatShareDialog} from '@/components/chat-share-dialog'
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipTrigger
-} from '@/components/ui/tooltip'
-import {isFeatureToggleEnabled} from "@/lib/helpers/feature-toggle/feature-toggle-manager";
+import {Tooltip, TooltipContent, TooltipTrigger} from '@/components/ui/tooltip'
 
 interface SidebarActionsProps {
     chat: Chat
@@ -57,22 +52,20 @@ export function SidebarActions({
                     </TooltipTrigger>
                     <TooltipContent>Share chat</TooltipContent>
                 </Tooltip>
-                {isFeatureToggleEnabled('adminFeatures') && (
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button
-                                variant="ghost"
-                                className="size-7 p-0 hover:bg-background"
-                                disabled={isRemovePending}
-                                onClick={() => setDeleteDialogOpen(true)}
-                            >
-                                <IconTrash/>
-                                <span className="sr-only">Delete</span>
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Delete chat</TooltipContent>
-                    </Tooltip>
-                )}
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button
+                            variant="ghost"
+                            className="size-7 p-0 hover:bg-background"
+                            disabled={isRemovePending}
+                            onClick={() => setDeleteDialogOpen(true)}
+                        >
+                            <IconTrash/>
+                            <span className="sr-only">Delete</span>
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Delete chat</TooltipContent>
+                </Tooltip>
             </div>
             <ChatShareDialog
                 chat={chat}
