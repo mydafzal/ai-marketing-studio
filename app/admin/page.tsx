@@ -13,7 +13,7 @@ export default function AdminPage() {
                 {/* Card for Assigning Extra Details to Chat Slug */}
                 <div className="bg-white shadow-md rounded-lg overflow-hidden">
                     <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
-                        <h2 className="text-xl font-semibold text-gray-800">Assign Extra Details to Chat</h2>
+                        <h2 className="text-xl font-semibold text-gray-800">Assign Extra Details to Campaign</h2>
                     </div>
                     <AdminForm extraDetails/>
                 </div>
