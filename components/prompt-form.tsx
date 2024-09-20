@@ -1,10 +1,11 @@
 'use client'
 
-import * as React from 'react'
-
-import Textarea from 'react-textarea-autosize'
 import { ImagePart, TextPart, UserContent } from 'ai'
-import chatToCampaignMapping from '@/lib/api/fasty-bot/helpers/campaign-id-list'
+import * as React from 'react'
+import Textarea from 'react-textarea-autosize'
+import { toast } from 'sonner'
+
+import { CampaignContext } from '@/components/contexts/campaign-context'
 import { Button } from '@/components/ui/button'
 import { IconArrowElbow, IconPlus, IconSpinner } from '@/components/ui/icons'
 import {
@@ -12,7 +13,6 @@ import {
   TooltipContent,
   TooltipTrigger
 } from '@/components/ui/tooltip'
-import { toast } from 'sonner'
 import { useEnterSubmit } from '@/lib/hooks/use-enter-submit'
 import { useParams } from 'next/navigation'
 import { useAIState } from 'ai/rsc'
@@ -27,6 +27,7 @@ export function PromptForm({
   onSendMessage
 }: PromtFormProps) {
   const { id } = useParams()
+  const { id: campaignId } = React.useContext(CampaignContext);
   const { formRef, onKeyDown } = useEnterSubmit()
   const inputRef = React.useRef<HTMLTextAreaElement>(null)
   const [aiState] = useAIState()
@@ -45,8 +46,6 @@ export function PromptForm({
     setUploading(true)
 
     const formData = new FormData()
-    const campaignId = chatToCampaignMapping[id as string]
-
     formData.append('id', (campaignId || id) as string)
     Array.from(files).forEach(file => {
       formData.append('files', file)
