@@ -9,13 +9,6 @@ export default function AdminPage() {
         <div className="container mx-auto py-10 px-4">
             <h1 className="text-2xl font-bold text-gray-800 mb-6">Admin Dashboard</h1>
             <div className="grid md:grid-cols-2 gap-6">
-                {/* Card for Mapping Chat Slug to Campaign ID */}
-                <div className="bg-white shadow-md rounded-lg overflow-hidden">
-                    <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
-                        <h2 className="text-xl font-semibold text-gray-800">Map Chat Slug to Campaign ID</h2>
-                    </div>
-                    <AdminForm/>
-                </div>
 
                 {/* Card for Assigning Extra Details to Chat Slug */}
                 <div className="bg-white shadow-md rounded-lg overflow-hidden">
