@@ -195,20 +195,42 @@ const CustomerSearch: React.FC = () => {
     const handleUpdatePrompt = async () => {
         try {
             setIsLoading(true);
+            setError(null); // Clear any previous errors
+
+            // Optional: Validate email
+            if (!selectedEmail || !/\S+@\S+\.\S+/.test(selectedEmail)) {
+                setError('Please enter a valid email address.');
+                setIsLoading(false);
+                return;
+            }
+
+            // Optional: Validate defaultPrompt
+            if (!defaultPrompt) {
+                setError('Default prompt cannot be empty.');
+                setIsLoading(false);
+                return;
+            }
+
             const response = await fetch('/api/admin/update-user-default-extra-details', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ email: selectedEmail, defaultExtraDetails: defaultPrompt }),
+                body: JSON.stringify({email: selectedEmail, defaultExtraDetails: defaultPrompt}),
             });
 
             const data = await response.json();
 
-            if (!response.ok) {
+            if (!response.ok || !data.success) {
                 throw new Error(data.error || 'Failed to update default prompt');
             }
 
+            // Display a success message to the user
+            alert(data.message || 'Default prompt updated successfully');
+
+            // Reset states
+            setDefaultPrompt('');
+            setSelectedEmail('');
             setSuccessMessage(data.message || 'Default prompt updated successfully');
             setIsModalOpen(false);
         } catch (error) {
