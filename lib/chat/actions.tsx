@@ -13,17 +13,20 @@ import {AdTextSuggestion} from '@/components/stocks/ad-text-suggestion'
 import {RefreshChatTitle} from '@/components/refresh-chat-title'
 import {RefreshSideBar} from '@/components/refresh-sidebar'
 import {CampaignStatus} from '@/components/stocks/campaign-status'
-import {updateChatTitle} from '@/app/actions'
-import { differenceInHours } from 'date-fns';
+import {
+    fetchChatCampaignBudget,
+    fetchFbCampaignExtraDetailsForChat,
+    saveChat,
+    updateChatCampaignBudget,
+    updateChatTitle
+} from '@/app/actions'
+import {differenceInHours} from 'date-fns';
 import {ChatImage} from '@/components/chat-images'
-import { updateChatFbCampaignId } from '@/app/actions'
-import { ConnectCampaignResult } from '@/components/connect-campaign-result';
-import { UserContent, TextPart, ImagePart  } from 'ai'
+import {ImagePart, TextPart} from 'ai'
 
 import {formatNumber, nanoid, runAsyncFnWithoutBlocking, sleep} from '@/lib/utils'
-import {fetchChatExtraDetails, saveChat, fetchChatCampaignBudget, updateChatCampaignBudget} from '@/app/actions'
 import {SpinnerMessage, UserMessage} from '@/components/stocks/message'
-import {AdText, Chat, Message, Campaign} from '@/lib/types';
+import {AdText, Chat, Message, Session} from '@/lib/types';
 import {auth} from '@/auth'
 import {setDailyCampaignBudget} from '@/lib/api/fasty-bot/set-daily-campaign-budget';
 import {setCampaignStatus} from '@/lib/api/fasty-bot/set-campaign-status';
@@ -32,8 +35,7 @@ import {updateCampaign} from '@/lib/api/fasty-bot/update-campaign';
 import {getCampaignIdFromUrl} from "@/lib/api/fasty-bot/helpers/campaign-id-from-url-helper";
 import {getChatIdFromUrl} from "@/lib/api/fasty-bot/helpers/chat-id-from-url-helper";
 import {sendAdminNotification} from '@/lib/api/fasty-bot/send-admin-notification'
-import { Session } from '@/lib/types'
-import { ConnectCampaign } from '@/components/connect-campaign'
+import {ConnectCampaign} from '@/components/connect-campaign'
 
 interface ToolResult {
     toolName: string;
@@ -42,28 +44,29 @@ interface ToolResult {
 }
 
 async function checkNewChat(chatId: string, messages: Message[], session: Session | null) {
-  if (!session?.user) return false;
+    if (!session?.user) return false;
 
-  const disabledEmails = [
-    'teo.kostelac@outlook.com',
-    'contact@reeply.net',
-    'themadnoise@gmail.com',
-    'maxnols@reeply.net',
-  ];
+    const disabledEmails = [
+        'teo.kostelac@outlook.com',
+        'contact@reeply.net',
+        'themadnoise@gmail.com',
+        'maxnols@reeply.net',
+    ];
 
-  if (disabledEmails.includes(session.user.email)) return false;
+    if (disabledEmails.includes(session.user.email)) return false;
 
-  const userMessages = messages.filter(message => message.role === 'user')
-  const now = new Date()
-  const hasNewMessage = userMessages.some(message => {
-    if (!message?.timestamp) return false
-    const hoursDiff = differenceInHours(now, message.timestamp)
-    return hoursDiff < 16
-  })
-  if (!hasNewMessage) {
-    await sendAdminNotification(chatId)
-  }
+    const userMessages = messages.filter(message => message.role === 'user')
+    const now = new Date()
+    const hasNewMessage = userMessages.some(message => {
+        if (!message?.timestamp) return false
+        const hoursDiff = differenceInHours(now, message.timestamp)
+        return hoursDiff < 16
+    })
+    if (!hasNewMessage) {
+        await sendAdminNotification(chatId)
+    }
 }
+
 async function confirmPurchase(campaignName: string, budget: number, days: number = 30) {
     'use server'
 
@@ -148,7 +151,9 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
                         if (content.type === 'tool-result' && content.toolName === 'showAdBudgetUI') {
                             content.result = {
                                 ...(content.result as Object),
-                                purchasingUiProps: (content.result as { purchasingUiProps: string }).purchasingUiProps ?? {
+                                purchasingUiProps: (content.result as {
+                                    purchasingUiProps: string
+                                }).purchasingUiProps ?? {
                                     success: updateSuccess,
                                     budget,
                                     campaignName,
@@ -179,7 +184,7 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
     }
 }
 
-async function confirmUpdateStatus(campaignName: string, status: string){
+async function confirmUpdateStatus(campaignName: string, status: string) {
     'use server'
     const aiState = getMutableAIState<typeof AI>();
     let campaignId = await getCampaignIdFromUrl() || '0'; // for now just say you are updating even if no campaign id in place
@@ -200,8 +205,8 @@ async function confirmUpdateStatus(campaignName: string, status: string){
         await sleep(1000);
 
         const updateSuccess = await setCampaignStatus(
-          campaignId,
-          status
+            campaignId,
+            status
         )
         if (updateSuccess) {
             updateStatus.done(
@@ -226,12 +231,12 @@ async function confirmUpdateStatus(campaignName: string, status: string){
             );
             systemMessage.done(
                 <SystemMessage>
-                     Error: Failed to set the status for {campaignName}. Please try again later.
+                    Error: Failed to set the status for {campaignName}. Please try again later.
                 </SystemMessage>
             );
         }
 
-      
+
     });
     return {
         updateStatusUI: updateStatus.value,
@@ -241,19 +246,20 @@ async function confirmUpdateStatus(campaignName: string, status: string){
         }
     }
 }
+
 async function confirmCreateAd(data: any, adset: any, adText: AdText) {
     'use server'
     const aiState = getMutableAIState<typeof AI>();
-    let campaignId = await getCampaignIdFromUrl() || '0' ; // for now just say you are updating even if no campaign id in place
+    let campaignId = await getCampaignIdFromUrl() || '0'; // for now just say you are updating even if no campaign id in place
     if (process.env.NEXT_PUBLIC_HARDCODED_MODE === '1') {
         campaignId = process.env.NEXT_PUBLIC_HARDCODED_CAMPAIGN_ID || '0'
     }
     const chatId = getChatIdFromUrl()?.toString() || '';
 
     const budget = await fetchChatCampaignBudget(chatId)
-    let adsetUpdate = { ...adset }
+    let adsetUpdate = {...adset}
     if (budget.error) {
-      adsetUpdate = { ...adsetUpdate, daily_budget: 100 }
+        adsetUpdate = {...adsetUpdate, daily_budget: 100}
     }
 
     const systemMessage = createStreamableUI(null)
@@ -263,9 +269,9 @@ async function confirmCreateAd(data: any, adset: any, adText: AdText) {
         await sleep(1000);
 
         const response = await createCampaignAd(
-          campaignId,
-          data,
-          adsetUpdate
+            campaignId,
+            data,
+            adsetUpdate
         );
 
         if (response) {
@@ -303,16 +309,25 @@ async function confirmCreateAd(data: any, adset: any, adText: AdText) {
 async function submitUserMessage(content: string, contentImages?: Array<TextPart | ImagePart>, isSilent?: boolean) {
     'use server'
 
-    const aiState = getMutableAIState<typeof AI>()
-    // get ai state
+    const aiState = getMutableAIState<typeof AI>();
     const chatId = getChatIdFromUrl()?.toString() || '';
 
-    // Fetch extra details
+    let campaignId = '';
+    try {
+        campaignId = (await getCampaignIdFromUrl())?.toString() || '';
+    } catch (error) {
+        // Error handling if necessary
+    }
+
     let extraDetailsText = '';
-    if (chatId) {
-        const extraDetailsResult = await fetchChatExtraDetails(chatId);
-        if (extraDetailsResult.success && extraDetailsResult.extraDetails) {
-            extraDetailsText = `\n\nSome important contextual information about this client can be seen here: ${extraDetailsResult.extraDetails}`;
+    if (campaignId) {
+        try {
+            const extraDetailsResult = await fetchFbCampaignExtraDetailsForChat(campaignId);
+            if (extraDetailsResult.success && extraDetailsResult.extraDetails) {
+                extraDetailsText = `\n\nSome important contextual information about this specific campaign can be seen here: ${extraDetailsResult.extraDetails}`;
+            }
+        } catch (error) {
+            // Error handling if necessary
         }
     }
     const session = (await auth()) as Session
@@ -1796,7 +1811,7 @@ Engaged Shoppers]
     Always respond in the language the user is using. If the user is speaking in German, use "Du" instead of "Sie", and avoid being too formal.
     
     ${extraDetailsText}`,
-    
+
         messages: [
             ...aiState.get().messages.map((message: any) => ({
                 role: message.role,
@@ -1815,17 +1830,17 @@ Engaged Shoppers]
                     ...aiState.get(),
                     messages: [
                         ...aiState.get().messages.map((message: any) => ({
-                            id: message.id, 
+                            id: message.id,
                             role: message.role,
                             content: message.content,
                             name: message.name,
-                            timestamp: message.timestamp 
+                            timestamp: message.timestamp
                         })),
                         {
                             id: nanoid(),
                             role: 'assistant',
                             content,
-                            timestamp: new Date().toISOString() 
+                            timestamp: new Date().toISOString()
                         }
                     ]
                 });
@@ -1926,10 +1941,10 @@ Engaged Shoppers]
                                         type: 'tool-call',
                                         toolName: 'getCampaignResults',
                                         toolCallId,
-                                        args: { campaignId, guideForUser }
+                                        args: {campaignId, guideForUser}
                                     }
                                 ],
-                                timestamp: new Date().toISOString() 
+                                timestamp: new Date().toISOString()
                             },
                             {
                                 id: nanoid(),
@@ -1939,10 +1954,10 @@ Engaged Shoppers]
                                         type: 'tool-result',
                                         toolName: 'getCampaignResults',
                                         toolCallId,
-                                        result: { campaignId, guideForUser }
+                                        result: {campaignId, guideForUser}
                                     }
                                 ],
-                                timestamp: new Date().toISOString() 
+                                timestamp: new Date().toISOString()
                             }
                         ]
                     });
@@ -1950,7 +1965,7 @@ Engaged Shoppers]
                     return (
                         <>
                             <BotCard>
-                                <Stock campaignId={campaignId} isActive />
+                                <Stock campaignId={campaignId} isActive/>
                             </BotCard>
                             <div className="my-4">
                                 {guideForUser ?? ''}
@@ -1962,8 +1977,7 @@ Engaged Shoppers]
             getCampaignImages: {
                 description:
                     'Get the current images of campaign of a given digital marketing campaign from this user. Use this to show the campaign images to the user.',
-                parameters: z.object({
-                }),
+                parameters: z.object({}),
                 generate: async function* ({}) {
                     yield (
                         <BotCard>
@@ -1990,7 +2004,7 @@ Engaged Shoppers]
                                         args: {}
                                     }
                                 ],
-                                timestamp: new Date().toISOString() 
+                                timestamp: new Date().toISOString()
                             },
                             {
                                 id: nanoid(),
@@ -2003,11 +2017,11 @@ Engaged Shoppers]
                                         result: {}
                                     }
                                 ],
-                                timestamp: new Date().toISOString() 
+                                timestamp: new Date().toISOString()
                             }
                         ]
                     });
-                    
+
 
                     return (
                         <BotCard>
@@ -2054,7 +2068,7 @@ Engaged Shoppers]
                                             args: {symbol, price, numberOfShares: initialBudget, guideForUser}
                                         }
                                     ],
-                                    timestamp: new Date().toISOString() 
+                                    timestamp: new Date().toISOString()
                                 },
                                 {
                                     id: nanoid(),
@@ -2073,17 +2087,17 @@ Engaged Shoppers]
                                             }
                                         }
                                     ],
-                                    timestamp: new Date().toISOString() 
+                                    timestamp: new Date().toISOString()
                                 },
                                 {
                                     id: nanoid(),
                                     role: 'system',
                                     content: `[User has selected an invalid amount]`,
-                                    timestamp: new Date().toISOString() 
+                                    timestamp: new Date().toISOString()
                                 }
                             ]
                         });
-                    
+
 
                         return <BotMessage content={'Invalid amount'}/>
                     } else {
@@ -2102,7 +2116,7 @@ Engaged Shoppers]
                                             args: {symbol, price, numberOfShares: initialBudget, guideForUser}
                                         }
                                     ],
-                                    timestamp: new Date().toISOString() 
+                                    timestamp: new Date().toISOString()
                                 },
                                 {
                                     id: nanoid(),
@@ -2120,7 +2134,7 @@ Engaged Shoppers]
                                             }
                                         }
                                     ],
-                                    timestamp: new Date().toISOString() 
+                                    timestamp: new Date().toISOString()
                                 }
                             ]
                         });
@@ -2180,10 +2194,10 @@ Engaged Shoppers]
                                         type: 'tool-call',
                                         toolName: 'getEvents',
                                         toolCallId,
-                                        args: { events }
+                                        args: {events}
                                     }
                                 ],
-                                timestamp: new Date().toISOString() 
+                                timestamp: new Date().toISOString()
                             },
                             {
                                 id: nanoid(),
@@ -2196,11 +2210,11 @@ Engaged Shoppers]
                                         result: events
                                     }
                                 ],
-                                timestamp: new Date().toISOString() 
+                                timestamp: new Date().toISOString()
                             }
                         ]
                     });
-                    
+
 
                     return (
                         <BotCard>
@@ -2214,13 +2228,14 @@ Engaged Shoppers]
                 parameters: z.object({
                     campaignName: z.string().describe('The name of the campaign'),
                     images: z.array(z.object({
-                        suggestedTexts: z.array(z.object({
-                            id: z.number().describe('This is timestamp of current time'),
-                            image: z.string().describe('The link of the image to display'),
-                            date: z.string(),
-                            text: z.string(),
-                            headline: z.string().describe('The headline of the ad to display'),
-                        })).describe('List of suggested ad texts')})
+                            suggestedTexts: z.array(z.object({
+                                id: z.number().describe('This is timestamp of current time'),
+                                image: z.string().describe('The link of the image to display'),
+                                date: z.string(),
+                                text: z.string(),
+                                headline: z.string().describe('The headline of the ad to display'),
+                            })).describe('List of suggested ad texts')
+                        })
                     ).describe('List of images to display'),
                     guideForUser: z.string().optional().describe('This is the guide for user about this component, this is optional')
                 }),
@@ -2234,7 +2249,7 @@ Engaged Shoppers]
                     await sleep(1000);
 
                     const toolCallId = nanoid();
-                   
+
                     aiState.done({
                         ...aiState.get(),
                         messages: [
@@ -2247,10 +2262,10 @@ Engaged Shoppers]
                                         type: 'tool-call',
                                         toolName: 'showSuggestionAdText',
                                         toolCallId,
-                                        args: { campaignName, images, guideForUser }
+                                        args: {campaignName, images, guideForUser}
                                     }
                                 ],
-                                timestamp: new Date().toISOString() 
+                                timestamp: new Date().toISOString()
                             },
                             {
                                 id: nanoid(),
@@ -2260,14 +2275,14 @@ Engaged Shoppers]
                                         type: 'tool-result',
                                         toolName: 'showSuggestionAdText',
                                         toolCallId,
-                                        result: { campaignName, images, guideForUser }
+                                        result: {campaignName, images, guideForUser}
                                     }
                                 ],
-                                timestamp: new Date().toISOString() 
+                                timestamp: new Date().toISOString()
                             }
                         ]
                     });
-                    
+
 
                     return (
                         <>
@@ -2281,7 +2296,7 @@ Engaged Shoppers]
                     );
                 }
             },
-            showUpdateStatusCampaign:{
+            showUpdateStatusCampaign: {
                 description: 'Show UI  to update status of the campaign.',
                 parameters: z.object({
                     campaignName: z.string().describe('The name of the campaign'),
@@ -2297,7 +2312,7 @@ Engaged Shoppers]
                     await sleep(1000);
 
                     const toolCallId = nanoid();
-                   
+
                     aiState.done({
                         ...aiState.get(),
                         messages: [
@@ -2310,10 +2325,10 @@ Engaged Shoppers]
                                         type: 'tool-call',
                                         toolName: 'showUpdateStatusCampaign',
                                         toolCallId,
-                                        args: { campaignName, status }
+                                        args: {campaignName, status}
                                     }
                                 ],
-                                timestamp: new Date().toISOString() 
+                                timestamp: new Date().toISOString()
                             },
                             {
                                 id: nanoid(),
@@ -2323,19 +2338,19 @@ Engaged Shoppers]
                                         type: 'tool-result',
                                         toolName: 'showUpdateStatusCampaign',
                                         toolCallId,
-                                        result: { campaignName, status }
+                                        result: {campaignName, status}
                                     }
                                 ],
                                 timestamp: new Date().toISOString()
                             }
                         ]
                     });
-                    
+
 
                     return (
-                      <BotCard>
-                        <CampaignStatus props={{toolCallId, campaignName, status }} />
-                      </BotCard>
+                        <BotCard>
+                            <CampaignStatus props={{toolCallId, campaignName, status}}/>
+                        </BotCard>
                     )
                 }
             },
@@ -2356,43 +2371,43 @@ Engaged Shoppers]
                     const timestamp: string = new Date().toISOString();
                     const toolCallId = nanoid();
                     aiState.done({
-                      ...aiState.get(),
-                      messages: [
-                        ...aiState.get().messages,
-                        {
-                          id: nanoid(),
-                          role: 'assistant',
-                          content: [
+                        ...aiState.get(),
+                        messages: [
+                            ...aiState.get().messages,
                             {
-                              type: 'tool-call',
-                              toolName: 'showCampaignNameUpdateUI',
-                              toolCallId,
-                              args: { campaignName, campaignId, questionForBudget }
+                                id: nanoid(),
+                                role: 'assistant',
+                                content: [
+                                    {
+                                        type: 'tool-call',
+                                        toolName: 'showCampaignNameUpdateUI',
+                                        toolCallId,
+                                        args: {campaignName, campaignId, questionForBudget}
+                                    }
+                                ],
+                                timestamp
+                            },
+                            {
+                                id: toolCallId,
+                                role: 'tool',
+                                content: [
+                                    {
+                                        type: 'tool-result',
+                                        toolName: 'showCampaignNameUpdateUI',
+                                        toolCallId,
+                                        result: {campaignName, campaignId, questionForBudget}
+                                    }
+                                ],
+                                timestamp
                             }
-                          ],
-                          timestamp
-                        },
-                        {
-                            id: toolCallId,
-                            role: 'tool',
-                            content: [
-                                {
-                                    type: 'tool-result',
-                                    toolName: 'showCampaignNameUpdateUI',
-                                    toolCallId,
-                                    result: { campaignName, campaignId, questionForBudget }
-                                }
-                            ],
-                            timestamp
-                        }
-                      ]
+                        ]
                     })
                     return (
                         <BotCard>
                             <p className="mb-2 last:mb-0">{`Alright, I will update campaign name as "${campaignName}".`}</p>
                             {!!questionForBudget && <p className="mb-2 last:mb-0">{questionForBudget}</p>}
-                            <RefreshSideBar />
-                            <RefreshChatTitle campaignName={campaignName} campaignId={campaignId} />
+                            <RefreshSideBar/>
+                            <RefreshChatTitle campaignName={campaignName} campaignId={campaignId}/>
                         </BotCard>
                     )
                 }
@@ -2438,7 +2453,7 @@ Engaged Shoppers]
                     })
                     return (
                         <BotCard>
-                            <ConnectCampaign />
+                            <ConnectCampaign/>
                         </BotCard>
                     )
                 }
@@ -2498,7 +2513,7 @@ export const AI = createAI<AIState, UIState>({
             const userId = session.user.id as string
             const path = `/chat/${chatId}`
 
-            const firstMessageContent = (Array.isArray(messages[0].content) ? (messages[0].content[0] as TextPart).text  : messages[0].content) as string
+            const firstMessageContent = (Array.isArray(messages[0].content) ? (messages[0].content[0] as TextPart).text : messages[0].content) as string
 
             const defaultTitle = firstMessageContent.substring(0, 100)
 
@@ -2542,7 +2557,7 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                 return (
                                     <>
                                         <BotCard key={tool.toolCallId}>
-                                            <Stock campaignId={tool.result.campaignId} />
+                                            <Stock campaignId={tool.result.campaignId}/>
                                         </BotCard>
                                         <div className="my-4">
                                             {tool.result.guideForUser ?? ''}
@@ -2553,7 +2568,7 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                 return (
                                     <>
                                         <BotCard key={tool.toolCallId}>
-                                            <Purchase props={tool.result} />
+                                            <Purchase props={tool.result}/>
                                         </BotCard>
                                         <div className="my-4">
                                             {tool.result.guideForUser ?? ''}
@@ -2587,7 +2602,8 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                 return (
                                     <BotCard key={tool.toolCallId}>
                                         <p className="mb-2 last:mb-0">{`Alright, I will update campaign name as "${tool.result.campaignName}".`}</p>
-                                        {!!tool.result.questionForBudget && <p className="mb-2 last:mb-0">{tool.result.questionForBudget}</p>}                            
+                                        {!!tool.result.questionForBudget &&
+                                            <p className="mb-2 last:mb-0">{tool.result.questionForBudget}</p>}
                                     </BotCard>
                                 )
                             case 'showUpdateStatusCampaign':
@@ -2595,8 +2611,8 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                     <BotCard key={tool.toolCallId}>
                                         <CampaignStatus
                                             props={{
-                                            toolCallId: tool.toolCallId,
-                                            campaignName:
+                                                toolCallId: tool.toolCallId,
+                                                campaignName:
                                                 tool.result.campaignName,
                                                 status: tool.result.status
                                             }}
@@ -2614,11 +2630,12 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                         }
                     })
                 ) : message.role === 'user' ? (
-                    <UserMessage userContent={message.content}>{(Array.isArray(message.content) ? (message.content[0] as TextPart).text  : message.content) as string}</UserMessage>
+                    <UserMessage
+                        userContent={message.content}>{(Array.isArray(message.content) ? (message.content[0] as TextPart).text : message.content) as string}</UserMessage>
                 ) : message.role === 'assistant' &&
                 typeof message.content === 'string' ? (
                     <BotMessage content={message.content}/>
                 ) : null
         }))
-        .filter((message: {id: string, display: any}) => Boolean(message.display))
+        .filter((message: { id: string, display: any }) => Boolean(message.display))
 }

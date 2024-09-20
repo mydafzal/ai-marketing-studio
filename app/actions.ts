@@ -5,7 +5,7 @@ import {redirect} from 'next/navigation'
 import {kv} from '@vercel/kv'
 
 import {auth} from '@/auth'
-import {type Chat, User, AdText} from '@/lib/types'
+import {AdText, type Chat, User} from '@/lib/types'
 
 export async function getChats(userId?: string | null) {
     if (!userId) {
@@ -173,12 +173,12 @@ export async function updateFbCampaignExtraDetails(fbCampaignId: string, extraDe
 
         if (!existingFbCampaign) {
             // If it doesn't exist, create it with fbCampaignId
-            existingFbCampaign = { fbCampaignId };
+            existingFbCampaign = {fbCampaignId};
             await kv.hset(fbCampaignKey, existingFbCampaign);
         }
 
         // Update or add the extraDetails field
-        await kv.hset(fbCampaignKey, { extraDetails });
+        await kv.hset(fbCampaignKey, {extraDetails});
 
         return {
             success: true
@@ -222,6 +222,52 @@ export async function fetchFbCampaignExtraDetails(fbCampaignId: string) {
     }
 }
 
+type FetchExtraDetailsResult =
+    | { success: true; extraDetails: string }
+    | { success: false; error: string };
+
+export async function fetchFbCampaignExtraDetailsForChat(campaignId: string): Promise<FetchExtraDetailsResult> {
+    const session = await auth();
+
+    if (!session || !session.user) {
+        return {
+            success: false,
+            error: 'User not authenticated'
+        };
+    }
+
+    try {
+        const fbCampaignKey = `fbCampaign:${campaignId}`;
+        const fbCampaignData = await kv.hgetall(fbCampaignKey);
+
+        if (!fbCampaignData) {
+            return {
+                success: false,
+                error: 'FB Campaign not found'
+            };
+        }
+
+        const extraDetails = fbCampaignData.extraDetails;
+
+        if (!extraDetails) {
+            return {
+                success: false,
+                error: 'Extra details not found for this FB Campaign'
+            };
+        }
+
+        return {
+            success: true,
+            extraDetails: extraDetails as string
+        };
+    } catch (error) {
+        console.error(`Error fetching extraDetails for FB Campaign ${campaignId}:`, error);
+        return {
+            success: false,
+            error: 'Something went wrong'
+        };
+    }
+}
 export async function fetchChatExtraDetails(chatId: string) {
     const session = await auth()
 
@@ -507,7 +553,7 @@ export async function updateChatTitle(chatSlug: string, title: string) {
         }
 
         // Update or insert the title field
-        await kv.hset(chatKey, { title })
+        await kv.hset(chatKey, {title})
         revalidatePath('/')
 
         return {
