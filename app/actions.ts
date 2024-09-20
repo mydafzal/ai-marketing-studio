@@ -155,39 +155,42 @@ export async function getMissingKeys() {
         .filter(key => key !== '')
 }
 
-export async function updateChatExtraDetails(chatId: string, extraDetails: string) {
-    const session = await auth()
+export async function updateFbCampaignExtraDetails(fbCampaignId: string, extraDetails: string) {
+    const session = await auth();
 
     if (!session || !session.user) {
         return {
             error: 'User not authenticated'
-        }
+        };
     }
 
     try {
-        // Get the existing chat data
-        const chatKey = `chat:${chatId}`
-        const existingChat = await kv.hgetall(chatKey)
+        // Define the fbCampaign key
+        const fbCampaignKey = `fbCampaign:${fbCampaignId}`;
 
-        if (!existingChat) {
-            return {
-                error: 'Chat not found'
-            }
+        // Get the existing fbCampaign data
+        let existingFbCampaign = await kv.hgetall(fbCampaignKey);
+
+        if (!existingFbCampaign) {
+            // If it doesn't exist, create it with fbCampaignId
+            existingFbCampaign = { fbCampaignId };
+            await kv.hset(fbCampaignKey, existingFbCampaign);
         }
 
-        // Add the extraDetails field to the existing chat data
-        await kv.hset(chatKey, {extraDetails})
+        // Update or add the extraDetails field
+        await kv.hset(fbCampaignKey, { extraDetails });
 
         return {
             success: true
-        }
+        };
     } catch (error) {
-        console.error(`Error updating extraDetails for chat ${chatId}:`, error)
+        console.error(`Error updating extraDetails for fbCampaign ${fbCampaignId}:`, error);
         return {
             error: 'Something went wrong'
-        }
+        };
     }
 }
+
 
 export async function fetchChatExtraDetails(chatId: string) {
     const session = await auth()
