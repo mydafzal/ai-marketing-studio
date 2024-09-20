@@ -122,7 +122,7 @@ export default function AdminForm({extraDetails = false}) {
         setSubmitResult(null)
 
         try {
-            const response = await fetch(`/api/admin/fetch-chat-extra-details?chatId=${extraDetailsChatSlug}`)
+            const response = await fetch(`/api/admin/fetch-chat-extra-details?fbCampaignId=${extraDetailsChatSlug}`)
             const result = await response.json()
 
             if (result.error) {
