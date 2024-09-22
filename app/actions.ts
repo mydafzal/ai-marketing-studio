@@ -5,7 +5,7 @@ import {redirect} from 'next/navigation'
 import {kv} from '@vercel/kv'
 
 import {auth} from '@/auth'
-import {type Chat, User, AdText} from '@/lib/types'
+import {AdText, type Chat, User} from '@/lib/types'
 
 export async function getChats(userId?: string | null) {
     if (!userId) {
@@ -155,7 +155,122 @@ export async function getMissingKeys() {
         .filter(key => key !== '')
 }
 
-export async function updateChatExtraDetails(chatId: string, extraDetails: string) {
+export async function updateFbCampaignExtraDetails(fbCampaignId: string, extraDetails: string) {
+    const session = await auth();
+
+    if (!session || !session.user) {
+        return {
+            error: 'User not authenticated'
+        };
+    }
+
+    try {
+        // Define the fbCampaign key
+        const fbCampaignKey = `fbCampaign:${fbCampaignId}`;
+
+        // Get the existing fbCampaign data
+        let existingFbCampaign = await kv.hgetall(fbCampaignKey);
+
+        if (!existingFbCampaign) {
+            // If it doesn't exist, create it with fbCampaignId
+            existingFbCampaign = {fbCampaignId};
+            await kv.hset(fbCampaignKey, existingFbCampaign);
+        }
+
+        // Update or add the extraDetails field
+        await kv.hset(fbCampaignKey, {extraDetails});
+
+        return {
+            success: true
+        };
+    } catch (error) {
+        console.error(`Error updating extraDetails for fbCampaign ${fbCampaignId}:`, error);
+        return {
+            error: 'Something went wrong'
+        };
+    }
+}
+
+
+export async function fetchFbCampaignExtraDetails(fbCampaignId: string) {
+    const session = await auth();
+
+    if (!session || !session.user) {
+        return {
+            error: 'User not authenticated'
+        };
+    }
+
+    try {
+        const fbCampaignKey = `fbCampaign:${fbCampaignId}`;
+        const fbCampaign = await kv.hgetall(fbCampaignKey);
+
+        if (!fbCampaign) {
+            return {
+                error: 'fbCampaign not found'
+            };
+        }
+
+        return {
+            extraDetails: fbCampaign.extraDetails || null
+        };
+    } catch (error) {
+        console.error(`Error fetching extraDetails for fbCampaign ${fbCampaignId}:`, error);
+        return {
+            error: 'Something went wrong'
+        };
+    }
+}
+
+type FetchExtraDetailsResult =
+    | { success: true; extraDetails: string }
+    | { success: false; error: string };
+
+export async function fetchFbCampaignExtraDetailsForChat(campaignId: string): Promise<FetchExtraDetailsResult> {
+    const session = await auth();
+
+    if (!session || !session.user) {
+        return {
+            success: false,
+            error: 'User not authenticated'
+        };
+    }
+
+    try {
+        const fbCampaignKey = `fbCampaign:${campaignId}`;
+        const fbCampaignData = await kv.hgetall(fbCampaignKey);
+
+        if (!fbCampaignData) {
+            return {
+                success: false,
+                error: 'FB Campaign not found'
+            };
+        }
+
+        const extraDetails = fbCampaignData.extraDetails;
+
+        if (!extraDetails) {
+            return {
+                success: false,
+                error: 'Extra details not found for this FB Campaign'
+            };
+        }
+
+        return {
+            success: true,
+            extraDetails: extraDetails as string
+        };
+    } catch (error) {
+        console.error(`Error fetching extraDetails for FB Campaign ${campaignId}:`, error);
+        return {
+            success: false,
+            error: 'Something went wrong'
+        };
+    }
+}
+
+
+export async function fetchUserDefaultExtraDetailsForAdmin(userEmail: string) {
     const session = await auth()
 
     if (!session || !session.user) {
@@ -164,28 +279,66 @@ export async function updateChatExtraDetails(chatId: string, extraDetails: strin
         }
     }
 
+    if (!userEmail) {
+        return {
+            error: 'Missing user email'
+        }
+    }
+
     try {
-        // Get the existing chat data
-        const chatKey = `chat:${chatId}`
-        const existingChat = await kv.hgetall(chatKey)
+        const userKey = `user:${userEmail}`
+        const defaultExtraDetails = await kv.hget(userKey, 'defaultExtraDetails')
 
-        if (!existingChat) {
-            return {
-                error: 'Chat not found'
-            }
-        }
+        return defaultExtraDetails || ''
 
-        // Add the extraDetails field to the existing chat data
-        await kv.hset(chatKey, {extraDetails})
-
-        return {
-            success: true
-        }
     } catch (error) {
-        console.error(`Error updating extraDetails for chat ${chatId}:`, error)
-        return {
-            error: 'Something went wrong'
-        }
+        console.error(`Error fetching defaultExtraDetails for user: ${userEmail}`, error)
+        return ''
+    }
+}
+
+export async function updateUserDefaultExtraDetailsForAdmin(userEmail: string, promptString: string) {
+    const session = await auth()
+    if (!session || !session.user) {
+        return { error: 'User not authenticated' }
+    }
+
+    if (!userEmail) {
+        return { error: 'Missing user email' }
+    }
+
+    if (!promptString) {
+        return { error: 'Missing prompt string' }
+    }
+
+    try {
+        const userKey = `user:${userEmail}`
+        await kv.hset(userKey, { defaultExtraDetails: promptString })
+        return { success: true, message: 'Default extra details updated successfully' }
+    } catch (error) {
+        console.error(`Error updating defaultExtraDetails for user: ${userEmail}`, error)
+        return { error: 'Failed to update default extra details' }
+    }
+}
+
+
+export async function fetchUserDefaultExtraDetails() {
+    const session = await auth()
+
+    if (!session?.user?.email) {
+        console.error('User not authenticated or email not available')
+        return ''
+    }
+
+    try {
+        const userKey = `user:${session.user.email}`
+        const defaultExtraDetails = await kv.hget(userKey, 'defaultExtraDetails')
+
+        return defaultExtraDetails || ''
+
+    } catch (error) {
+        console.error(`Error fetching defaultExtraDetails for user: ${session.user.email}`, error)
+        return ''
     }
 }
 
@@ -474,7 +627,7 @@ export async function updateChatTitle(chatSlug: string, title: string) {
         }
 
         // Update or insert the title field
-        await kv.hset(chatKey, { title })
+        await kv.hset(chatKey, {title})
         revalidatePath('/')
 
         return {

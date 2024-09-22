@@ -14,6 +14,10 @@ const CustomerSearch: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedEmail, setSelectedEmail] = useState('');
+    const [defaultPrompt, setDefaultPrompt] = useState('');
+
 
     const fetchClients = async (email: string = '') => {
         setIsLoading(true);
@@ -111,8 +115,7 @@ const CustomerSearch: React.FC = () => {
                     setError(null);
                 }
             } else {
-                setSearchResults([]);
-                setError(data.error || 'Failed to fetch clients');
+                throw new Error(data.error || 'Failed to fetch clients: Unexpected data format');
             }
         } catch (err) {
             console.error('Fetch all clients error:', err);
@@ -182,6 +185,87 @@ const CustomerSearch: React.FC = () => {
         }
     };
 
+    const handleManagePrompt = (email: string) => {
+        setSelectedEmail(email);
+        setDefaultPrompt(''); // Reset the prompt when opening the modal
+        setIsModalOpen(true);
+    };
+
+
+    const handleUpdatePrompt = async () => {
+        try {
+            setIsLoading(true);
+            setError(null); // Clear any previous errors
+
+            // Optional: Validate email
+            if (!selectedEmail || !/\S+@\S+\.\S+/.test(selectedEmail)) {
+                setError('Please enter a valid email address.');
+                setIsLoading(false);
+                return;
+            }
+
+            // Optional: Validate defaultPrompt
+            if (!defaultPrompt) {
+                setError('Default prompt cannot be empty.');
+                setIsLoading(false);
+                return;
+            }
+
+            const response = await fetch('/api/admin/update-user-default-extra-details', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({email: selectedEmail, defaultExtraDetails: defaultPrompt}),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                throw new Error(data.error || 'Failed to update default prompt');
+            }
+
+            // Display a success message to the user
+            alert(data.message || 'Default prompt updated successfully');
+
+            // Reset states
+            setDefaultPrompt('');
+            setSelectedEmail('');
+            setSuccessMessage(data.message || 'Default prompt updated successfully');
+            setIsModalOpen(false);
+        } catch (error) {
+            console.error('Error updating default prompt:', error);
+            setError(error instanceof Error ? error.message : 'An unexpected error occurred');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleFetchPrompt = async () => {
+        try {
+            setIsLoading(true);
+            setError(null);
+
+            const response = await fetch(
+                `/api/admin/fetch-user-default-extra-details?email=${encodeURIComponent(selectedEmail)}`
+            );
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to fetch default prompt');
+            }
+
+            console.log('Fetched data:', data);
+
+            setDefaultPrompt(data.defaultExtraDetails || '');
+        } catch (error) {
+            console.error('Error fetching default prompt:', error);
+            setError(error instanceof Error ? error.message : 'An unexpected error occurred');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const handleCustomerSelect = (customer: Customer) => {
         setSelectedCustomer(customer);
         setFbAccountId(customer.fbAccountId ?? '');
@@ -189,7 +273,7 @@ const CustomerSearch: React.FC = () => {
     };
 
     return (
-        <div className="bg-white shadow-md rounded-lg overflow-hidden p-6">
+        <div className="bg-white shadow-md rounded-lg overflow-hidden p-6 relative">
             <h2 className="text-2xl font-bold mb-4">Customer Search</h2>
             <div>
                 <form onSubmit={handleSearch} className="mb-4">
@@ -198,7 +282,7 @@ const CustomerSearch: React.FC = () => {
                             type="text"
                             placeholder="Search customers..."
                             value={searchQuery}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
+                            onChange={(e) => setSearchQuery(e.target.value)}
                             className="flex-grow px-3 py-2 border rounded-l"
                         />
                         <button type="submit" className="px-4 py-2 bg-black text-white rounded-r" disabled={isLoading}>
@@ -224,19 +308,31 @@ const CustomerSearch: React.FC = () => {
                             {searchResults.map((customer, index) => (
                                 <li
                                     key={index}
-                                    className={`p-2 rounded cursor-pointer ${
+                                    className={`p-2 rounded ${
                                         selectedCustomer && selectedCustomer.email === customer.email
                                             ? 'bg-emerald-500 text-white'
                                             : 'bg-gray-100 hover:bg-gray-200'
                                     }`}
-                                    onClick={() => handleCustomerSelect(customer)}
                                 >
-                                    <p className={`text-sm ${selectedCustomer && selectedCustomer.email === customer.email ? 'text-white' : 'text-gray-600'}`}>
-                                        Email: {customer.email}
-                                    </p>
-                                    <p className={`text-sm ${selectedCustomer && selectedCustomer.email === customer.email ? 'text-white' : 'text-gray-600'}`}>
-                                        Account ID: {customer.fbAccountId ?? 'Not assigned'}
-                                    </p>
+                                    <div className="flex justify-between items-center">
+                                        <div
+                                            className="cursor-pointer"
+                                            onClick={() => handleCustomerSelect(customer)}
+                                        >
+                                            <p className={`text-sm ${selectedCustomer && selectedCustomer.email === customer.email ? 'text-white' : 'text-gray-600'}`}>
+                                                Email: {customer.email}
+                                            </p>
+                                            <p className={`text-sm ${selectedCustomer && selectedCustomer.email === customer.email ? 'text-white' : 'text-gray-600'}`}>
+                                                Account ID: {customer.fbAccountId ?? 'Not assigned'}
+                                            </p>
+                                        </div>
+                                        <button
+                                            onClick={() => handleManagePrompt(customer.email)}
+                                            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                                        >
+                                            Manage Default Prompt
+                                        </button>
+                                    </div>
                                 </li>
                             ))}
                         </ul>
@@ -248,7 +344,7 @@ const CustomerSearch: React.FC = () => {
                         type="text"
                         placeholder="Assign Account ID"
                         value={fbAccountId}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFbAccountId(e.target.value)}
+                        onChange={(e) => setFbAccountId(e.target.value)}
                         className="w-full px-3 py-2 border rounded mb-2"
                     />
                     {selectedCustomer && selectedCustomer.fbAccountId === undefined && (
@@ -262,6 +358,60 @@ const CustomerSearch: React.FC = () => {
                     </button>
                 </form>
             </div>
+
+            {/* Modal */}
+            {isModalOpen && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                    <div className="bg-white p-6 rounded-lg w-full max-w-md">
+                        <h2 className="text-xl font-bold mb-4">Manage Default Prompt</h2>
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700">Email</label>
+                            <input
+                                type="text"
+                                value={selectedEmail}
+                                onChange={(e) => setSelectedEmail(e.target.value)}
+                                className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm"
+                            />
+                        </div>
+                        <div className="mb-4">
+                            <label htmlFor="defaultPrompt" className="block text-sm font-medium text-gray-700">
+                                Default User Prompt
+                            </label>
+                            <textarea
+                                id="defaultPrompt"
+                                value={defaultPrompt}
+                                onChange={(e) => setDefaultPrompt(e.target.value)}
+                                rows={4}
+                                className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                            />
+                        </div>
+                        {error && <p className="text-red-500 mb-2">{error}</p>}
+                        {isLoading && <p className="text-blue-500 mb-2">Loading...</p>}
+                        <div className="flex justify-end space-x-2">
+                            <button
+                                onClick={handleFetchPrompt}
+                                className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
+                                disabled={isLoading}
+                            >
+                                Fetch
+                            </button>
+                            <button
+                                onClick={handleUpdatePrompt}
+                                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                                disabled={isLoading}
+                            >
+                                Update
+                            </button>
+                            <button
+                                onClick={() => setIsModalOpen(false)}
+                                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

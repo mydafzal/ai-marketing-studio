@@ -1,5 +1,5 @@
 import {NextRequest, NextResponse} from 'next/server'
-import {updateChatExtraDetails} from "@/app/actions";
+import {updateFbCampaignExtraDetails} from "@/app/actions";
 
 export async function POST(request: NextRequest) {
     try {
@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({error: 'Missing required fields'}, {status: 400})
         }
 
-        const result = await updateChatExtraDetails(chatId, extraDetails)
+        const result = await updateFbCampaignExtraDetails(chatId, extraDetails)
 
 
         if (result.error) {
