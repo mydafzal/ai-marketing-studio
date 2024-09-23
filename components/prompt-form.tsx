@@ -22,6 +22,7 @@ import { getMimeType } from '@/lib/utils'
 export interface PromtFormProps {
   onSendMessage: (message: string, userContent?: Array<TextPart | ImagePart>) => Promise<void>
 }
+const MAX_SIZE = 4 * 1024 * 1024;
 
 export function PromptForm({
   onSendMessage
@@ -41,6 +42,20 @@ export function PromptForm({
   ) => {
     const files = event.target.files
     if (!files || files.length === 0) return
+    let checkSize = true;
+    Array.from(files).forEach(file => {
+      if (file) {
+        if (file.size >= MAX_SIZE) {
+          checkSize = false
+        }
+      }
+    })
+    if (!checkSize) {
+      toast.error(
+        'This image is too big. Please use images which are smaller than 4MB.'
+      )
+      return
+    }    
 
     setUploading(true)
 
