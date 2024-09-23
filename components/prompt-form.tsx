@@ -32,7 +32,7 @@ export function PromptForm({
   const inputRef = React.useRef<HTMLTextAreaElement>(null)
   const [aiState] = useAIState()
   const [isDisabled, setIsDisabled] = React.useState(true)
-  const [isHandling, setIsHandling] = React.useState(true)
+  const [isHandling, setIsHandling] = React.useState(false)
 
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
@@ -159,7 +159,8 @@ export function PromptForm({
         if (!value) return
 
         setIsHandling(true);
-        await onSendMessage(value)
+        await onSendMessage(value);
+        console.log('handleing false')
         setIsHandling(false);
       }}
     >
