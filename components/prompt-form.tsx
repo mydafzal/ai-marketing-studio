@@ -32,6 +32,7 @@ export function PromptForm({
   const inputRef = React.useRef<HTMLTextAreaElement>(null)
   const [aiState] = useAIState()
   const [isDisabled, setIsDisabled] = React.useState(true)
+  const [isHandling, setIsHandling] = React.useState(true)
 
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
@@ -157,7 +158,9 @@ export function PromptForm({
         }
         if (!value) return
 
+        setIsHandling(true);
         await onSendMessage(value)
+        setIsHandling(false);
       }}
     >
       <div className="relative flex max-h-60 w-full grow flex-col overflow-hidden bg-background px-8 sm:rounded-md sm:border sm:px-12">
@@ -186,7 +189,7 @@ export function PromptForm({
         </Tooltip>
         <Textarea
           ref={inputRef}
-          disabled={uploading}
+          disabled={uploading || isHandling}
           tabIndex={0}
           onKeyDown={onKeyDown}
           placeholder="Send a message."
@@ -204,7 +207,7 @@ export function PromptForm({
         <div className="absolute right-0 top-[13px] sm:right-4">
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button type="submit" size="icon" disabled={isDisabled || uploading}>
+              <Button type="submit" size="icon" disabled={isDisabled || uploading || isHandling}>
                 <IconArrowElbow />
                 <span className="sr-only">Send message</span>
               </Button>
