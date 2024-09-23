@@ -22,6 +22,7 @@ import { getMimeType } from '@/lib/utils'
 export interface PromtFormProps {
   onSendMessage: (message: string, userContent?: Array<TextPart | ImagePart>) => Promise<void>
 }
+const MAX_SIZE = 4 * 1024 * 1024;
 
 export function PromptForm({
   onSendMessage
@@ -41,6 +42,20 @@ export function PromptForm({
   ) => {
     const files = event.target.files
     if (!files || files.length === 0) return
+    let checkSize = true;
+    Array.from(files).forEach(file => {
+      if (file) {
+        if (file.size >= MAX_SIZE) {
+          checkSize = false
+        }
+      }
+    })
+    if (!checkSize) {
+      toast.error(
+        'This image is too big. Please use images which are smaller than 4MB.'
+      )
+      return
+    }    
 
     setUploading(true)
 
@@ -83,7 +98,6 @@ export function PromptForm({
         toast.error('Failed to upload the image. Please try again.')
         return
       }
-      toast.success('Images uploaded successfully!')
 
       const uploadedTime = new Date().getTime()
       console.log('uploaded image urls', data.urls, uploadedTime)
@@ -109,6 +123,7 @@ export function PromptForm({
       ]
 
       await onSendMessage(textPrompt, userContent)
+      toast.success('Images uploaded successfully!')
     } catch (error) {
       toast.error('Failed to upload the image. Please try again.')
     }
@@ -151,7 +166,7 @@ export function PromptForm({
           style={{ display: 'none' }}
           type="file"
           multiple
-          accept="image/*"
+          accept="image/png, image/jpeg"
           onChange={handleFileChange}
         />
         <Tooltip>
@@ -171,6 +186,7 @@ export function PromptForm({
         </Tooltip>
         <Textarea
           ref={inputRef}
+          disabled={uploading}
           tabIndex={0}
           onKeyDown={onKeyDown}
           placeholder="Send a message."
@@ -188,7 +204,7 @@ export function PromptForm({
         <div className="absolute right-0 top-[13px] sm:right-4">
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button type="submit" size="icon" disabled={isDisabled}>
+              <Button type="submit" size="icon" disabled={isDisabled || uploading}>
                 <IconArrowElbow />
                 <span className="sr-only">Send message</span>
               </Button>
