@@ -160,7 +160,6 @@ export function PromptForm({
 
         setIsHandling(true);
         await onSendMessage(value);
-        console.log('handleing false')
         setIsHandling(false);
       }}
     >
