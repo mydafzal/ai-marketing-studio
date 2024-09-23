@@ -166,7 +166,7 @@ export function PromptForm({
           style={{ display: 'none' }}
           type="file"
           multiple
-          accept="image/*"
+          accept="image/png, image/jpeg"
           onChange={handleFileChange}
         />
         <Tooltip>
