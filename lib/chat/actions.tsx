@@ -1836,66 +1836,6 @@ Engaged Shoppers]
             return textNode
         },
         tools: {
-            // listAds: {
-            //     description: 'List three imaginary ads that are currently running.',
-            //     parameters: z.object({
-            //         stocks: z.array(
-            //             z.object({
-            //                 symbol: z.string().describe('The name of the campaign'),
-            //                 price: z.number().describe('The daily ad budget of the campaign'),
-            //                 delta: z.number().describe('The change of the daily ad budget')
-            //             })
-            //         )
-            //     }),
-            //     generate: async function* ({stocks}) {
-            //         yield (
-            //             <BotCard>
-            //                 <StocksSkeleton/>
-            //             </BotCard>
-            //         )
-
-            //         await sleep(1000)
-
-            //         const toolCallId = nanoid()
-
-            //         aiState.done({
-            //             ...aiState.get(),
-            //             messages: [
-            //                 ...aiState.get().messages,
-            //                 {
-            //                     id: nanoid(),
-            //                     role: 'assistant',
-            //                     content: [
-            //                         {
-            //                             type: 'tool-call',
-            //                             toolName: 'listAds',
-            //                             toolCallId,
-            //                             args: {stocks}
-            //                         }
-            //                     ]
-            //                 },
-            //                 {
-            //                     id: nanoid(),
-            //                     role: 'tool',
-            //                     content: [
-            //                         {
-            //                             type: 'tool-result',
-            //                             toolName: 'listAds',
-            //                             toolCallId,
-            //                             result: stocks
-            //                         }
-            //                     ]
-            //                 }
-            //             ]
-            //         })
-
-            //         return (
-            //             <BotCard>
-            //                 <Stocks props={stocks}/>
-            //             </BotCard>
-            //         )
-            //     }
-            // },
             getCampaignResults: {
                 description:
                     'Get the current campaign results of a given digital marketing campaign from this user. Use this to show the current daily ad spent to the user.',
@@ -2443,7 +2383,8 @@ Engaged Shoppers]
                     )
                 }
             }
-        }
+        },
+        maxRetries: 1,
     });
     return {
         id: nanoid(),
