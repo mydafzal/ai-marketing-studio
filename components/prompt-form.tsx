@@ -98,7 +98,6 @@ export function PromptForm({
         toast.error('Failed to upload the image. Please try again.')
         return
       }
-      toast.success('Images uploaded successfully!')
 
       const uploadedTime = new Date().getTime()
       console.log('uploaded image urls', data.urls, uploadedTime)
@@ -124,6 +123,7 @@ export function PromptForm({
       ]
 
       await onSendMessage(textPrompt, userContent)
+      toast.success('Images uploaded successfully!')
     } catch (error) {
       toast.error('Failed to upload the image. Please try again.')
     }
@@ -186,6 +186,7 @@ export function PromptForm({
         </Tooltip>
         <Textarea
           ref={inputRef}
+          disabled={uploading}
           tabIndex={0}
           onKeyDown={onKeyDown}
           placeholder="Send a message."
@@ -203,7 +204,7 @@ export function PromptForm({
         <div className="absolute right-0 top-[13px] sm:right-4">
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button type="submit" size="icon" disabled={isDisabled}>
+              <Button type="submit" size="icon" disabled={isDisabled || uploading}>
                 <IconArrowElbow />
                 <span className="sr-only">Send message</span>
               </Button>
