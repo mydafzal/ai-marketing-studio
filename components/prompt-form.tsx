@@ -6,6 +6,7 @@ import Textarea from 'react-textarea-autosize'
 import { toast } from 'sonner'
 
 import { CampaignContext } from '@/components/contexts/campaign-context'
+import { TranslationContext } from '@/components/contexts/translation-context'
 import { Button } from '@/components/ui/button'
 import { IconArrowElbow, IconPlus, IconSpinner } from '@/components/ui/icons'
 import {
@@ -70,7 +71,7 @@ export function PromptForm({
           }
         })
     })
-    toast.info('Uploading your images, please wait...')
+    toast.info(translate('Uploading your images, please wait...'));
     try {
       const response = await fetch('/api/upload', {
         method: 'POST',
@@ -121,7 +122,9 @@ export function PromptForm({
     if (inputRef.current) {
       inputRef.current.focus()
     }
-  }, [])
+  }, []);
+
+  const { translate } = React.useContext(TranslationContext);
 
   return (
     <form
@@ -166,13 +169,13 @@ export function PromptForm({
               <span className="sr-only">Upload Images</span>
             </Button>
           </TooltipTrigger>
-          <TooltipContent>You can upload up to 10 images</TooltipContent>
+          <TooltipContent>{`${translate('You can upload up to 10 images')}`}</TooltipContent>
         </Tooltip>
         <Textarea
           ref={inputRef}
           tabIndex={0}
           onKeyDown={onKeyDown}
-          placeholder="Send a message."
+          placeholder={`${translate('Send a message')}`}
           className="min-h-[60px] w-full resize-none bg-transparent px-4 py-[1.3rem] focus-within:outline-none sm:text-sm"
           autoFocus
           spellCheck={false}

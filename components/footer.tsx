@@ -12,9 +12,8 @@ export function FooterText({ className, ...props }: React.ComponentProps<'p'>) {
       )}
       {...props}
     >
-     Reeply AI s decisions regarding Marketing Campaigns{' '}
+      Reeply AI s decisions regarding Marketing Campaigns{' '}
       and is extensively checked and controlled by Marketing Experts to ensure quality Campaigns!
-      
     </p>
   )
 }

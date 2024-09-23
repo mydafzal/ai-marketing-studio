@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 
 import { fetchChatFbCampaignId, updateChatFbCampaignId, updateChatTitle } from '@/app/actions'
 import { CampaignContext, CampaignContextProvider } from '@/components/contexts/campaign-context'
+import { TranslationContextProvider } from '@/components/contexts/translation-context'
 import { ChatList } from '@/components/chat-list'
 import { ChatPanel } from '@/components/chat-panel'
 import { EmptyScreen } from '@/components/empty-screen'
@@ -13,7 +14,6 @@ import { useLocalStorage } from '@/lib/hooks/use-local-storage'
 import { useScrollAnchor } from '@/lib/hooks/use-scroll-anchor'
 import { Chat as ChatType, Message, Session } from '@/lib/types'
 import { cn } from '@/lib/utils'
-import { createCampaign } from '@/lib/api/fasty-bot/create-campaign'
 
 export interface ChatProps extends React.ComponentProps<'div'> {
   initialMessages?: Message[]
@@ -124,7 +124,9 @@ function ChatCore({ id, chat, className, session, missingKeys }: ChatProps) {
 }
 
 export const Chat = ({ ...chatProps }: ChatProps) => (
-  <CampaignContextProvider>
-    <ChatCore {...chatProps} />
-  </CampaignContextProvider>
+  <TranslationContextProvider>
+    <CampaignContextProvider>
+      <ChatCore {...chatProps} />
+    </CampaignContextProvider>
+  </TranslationContextProvider>
 )

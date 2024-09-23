@@ -147,7 +147,7 @@ export function ConnectCampaign({ connectingUiProps }: ConnectCampaignProps) {
   useEffect(() => {
     async function refresh() {
       const responseMessage = await submitUserMessage(
-        'Okay, I connected campaign',
+        'Please check my previous message.',
         [],
         true
       )

@@ -16,9 +16,7 @@ import {CampaignStatus} from '@/components/stocks/campaign-status'
 import {updateChatTitle} from '@/app/actions'
 import { differenceInHours } from 'date-fns';
 import {ChatImage} from '@/components/chat-images'
-import { updateChatFbCampaignId } from '@/app/actions'
-import { ConnectCampaignResult } from '@/components/connect-campaign-result';
-import { UserContent, TextPart, ImagePart  } from 'ai'
+import { TextPart, ImagePart } from 'ai'
 
 import {formatNumber, nanoid, runAsyncFnWithoutBlocking, sleep} from '@/lib/utils'
 import {fetchChatExtraDetails, saveChat, fetchChatCampaignBudget, updateChatCampaignBudget} from '@/app/actions'
@@ -300,7 +298,7 @@ async function confirmCreateAd(data: any, adset: any, adText: AdText) {
     }
 }
 
-async function submitUserMessage(content: string, contentImages?: Array<TextPart | ImagePart>, isSilent?: boolean) {
+async function submitUserMessage(content: string, contentImages?: Array<TextPart | ImagePart>, isInvisible?: boolean, needsInvisible?: boolean) {
     'use server'
 
     const aiState = getMutableAIState<typeof AI>()
@@ -317,20 +315,20 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
     }
     const session = (await auth()) as Session
     await checkNewChat(chatId, aiState.get().messages, session);
-    if (!isSilent) {
-        aiState.update({
-            ...aiState.get(),
-            messages: [
-                ...aiState.get().messages,
-                {
-                    id: nanoid(),
-                    role: 'user',
-                    content: contentImages?.length ? contentImages : content,
-                    timestamp: new Date().toISOString(),
-                }
-            ]
-        })
-    }
+
+    aiState.update({
+        ...aiState.get(),
+        messages: [
+            ...aiState.get().messages,
+            {
+                id: nanoid(),
+                role: 'user',
+                content: contentImages?.length ? contentImages : content,
+                timestamp: new Date().toISOString(),
+                isInvisible: isInvisible,
+            }
+        ]
+    });
 
     let textStream: undefined | ReturnType<typeof createStreamableValue<string>>
     let textNode: undefined | React.ReactNode
@@ -1792,8 +1790,14 @@ Engaged Shoppers]
     - Besides that, you can also chat with users and perform budget calculations if needed.
     
     Language:
-    
+
     Always respond in the language the user is using. If the user is speaking in German, use "Du" instead of "Sie", and avoid being too formal.
+
+    If user's language is not English and the user asks for translations, then call \`show_translations\` with the translations of the following list.
+    Translations should be given to user with key:value json format, English as key and user's language as value.
+[You can upload up to 10 images
+Uploading your images, please wait...
+Send a message]
     
     ${extraDetailsText}`,
     
@@ -1814,18 +1818,13 @@ Engaged Shoppers]
                 aiState.done({
                     ...aiState.get(),
                     messages: [
-                        ...aiState.get().messages.map((message: any) => ({
-                            id: message.id, 
-                            role: message.role,
-                            content: message.content,
-                            name: message.name,
-                            timestamp: message.timestamp 
-                        })),
+                        ...aiState.get().messages,
                         {
                             id: nanoid(),
                             role: 'assistant',
                             content,
-                            timestamp: new Date().toISOString() 
+                            timestamp: new Date().toISOString(),
+                            isInvisible: needsInvisible,
                         }
                     ]
                 });
@@ -1833,7 +1832,7 @@ Engaged Shoppers]
                 textStream.update(delta)
             }
 
-            return textNode
+            return textNode;
         },
         tools: {
             // listAds: {
@@ -2442,9 +2441,61 @@ Engaged Shoppers]
                         </BotCard>
                     )
                 }
+            },
+            showTranslations: {
+                description: 'Show translations to user.',
+                parameters: z.object({
+                    responseText: z.string().describe('This is response text to user.'),
+                    translations: z.string().describe('The serialized format of translations of given list'),
+                }),
+                generate: async function* ({responseText, translations}) {
+                    const timestamp = new Date().toISOString();
+                    const toolCallId = nanoid();
+
+                    aiState.done({
+                        ...aiState.get(),
+                        messages: [
+                            ...aiState.get().messages,
+                            {
+                                id: nanoid(),
+                                role: 'assistant',
+                                content: [
+                                    {
+                                        type: 'tool-call',
+                                        toolName: 'showTranslations',
+                                        toolCallId,
+                                        args: { responseText, translations }
+                                    }
+                                ],
+                                timestamp,
+                                isInvisible: true,
+                            },
+                            {
+                                id: toolCallId,
+                                role: 'tool',
+                                content: [
+                                    {
+                                        type: 'tool-result',
+                                        toolName: 'showTranslations',
+                                        toolCallId,
+                                        result: { responseText, translations }
+                                    }
+                                ],
+                                timestamp,
+                                isInvisible: true,
+                            }
+                        ]
+                    })
+                    return (
+                        <BotCard>
+                            {responseText}
+                        </BotCard>
+                    )
+                }
             }
         }
     });
+
     return {
         id: nanoid(),
         display: result.value
@@ -2525,6 +2576,7 @@ function isToolResultArray(content: string | ToolResult[]): content is ToolResul
 export const getUIStateFromAIState = (aiState: Chat) => {
     return aiState.messages
         .filter((message: Message) => message.role !== 'system')
+        .filter((message: Message) => !message.isInvisible)
         .map((message: Message, index: number) => ({
             id: `${aiState.chatId}-${index}`,
             display:
@@ -2609,12 +2661,20 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                         <ConnectCampaign {...tool.result} />
                                     </BotCard>
                                 )
+                            case 'showTranslations': 
+                                return (
+                                    <BotCard key={tool.toolCallId}>
+                                        {tool.result.responseText}
+                                    </BotCard>
+                                )
                             default:
                                 return null;
                         }
                     })
                 ) : message.role === 'user' ? (
-                    <UserMessage userContent={message.content}>{(Array.isArray(message.content) ? (message.content[0] as TextPart).text  : message.content) as string}</UserMessage>
+                    <UserMessage userContent={message.content}>
+                        {(Array.isArray(message.content) ? (message.content[0] as TextPart).text : message.content) as string}
+                    </UserMessage>
                 ) : message.role === 'assistant' &&
                 typeof message.content === 'string' ? (
                     <BotMessage content={message.content}/>
