@@ -28,6 +28,7 @@ const MAX_SIZE = 4 * 1024 * 1024;
 export function PromptForm({
   onSendMessage
 }: PromtFormProps) {
+  const { translate } = React.useContext(TranslationContext);
   const { id } = useParams()
   const { id: campaignId } = React.useContext(CampaignContext);
   const { formRef, onKeyDown } = useEnterSubmit()
@@ -54,9 +55,9 @@ export function PromptForm({
       }
     })
     if (!checkSize) {
-      toast.error(
+      toast.error(translate(
         'This image is too big. Please use images which are smaller than 4MB.'
-      )
+      ))
       return
     }    
 
@@ -96,7 +97,7 @@ export function PromptForm({
 
       const data = await response.json()
       if (!response.ok) {
-        toast.error('Failed to upload the image. Please try again.')
+        toast.error(translate('Failed to upload the image. Please try again.'))
         return
       }
 
@@ -124,9 +125,9 @@ export function PromptForm({
       ]
 
       await onSendMessage(textPrompt, userContent)
-      toast.success('Images uploaded successfully!')
+      toast.success(translate('Images uploaded successfully!'))
     } catch (error) {
-      toast.error('Failed to upload the image. Please try again.')
+      toast.error(translate('Failed to upload the image. Please try again.'))
     }
 
     setUploading(false)
@@ -139,8 +140,6 @@ export function PromptForm({
       inputRef.current.focus()
     }
   }, []);
-
-  const { translate } = React.useContext(TranslationContext);
 
   return (
     <form

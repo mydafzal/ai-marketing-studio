@@ -1,7 +1,8 @@
 'use client'
 
+import { TranslationContext } from '@/components/contexts/translation-context'
 import { Separator } from '@/components/ui/separator'
-import { Fragment, useState } from 'react'
+import { Fragment, useContext, useState } from 'react'
 import { nanoid } from 'nanoid'
 import { toast } from 'sonner'
 import { IconSpinner } from '@/components/ui/icons'
@@ -34,6 +35,7 @@ export function AdTextItem({
   const [textEdit, setTextEdit] = useState(adText.text)
   const [headlineEdit, setHeadlineEdit] = useState(adText.headline)
   const hasFbAd = !!adText.fbAdId
+  const { translate } = useContext(TranslationContext);
 
   const handleAccept = async () => {
     setIsUpdating(true)
@@ -42,7 +44,7 @@ export function AdTextItem({
       await acceptText(index, adText)
     }
     setIsUpdating(false)
-    toast.success('Ad text added to your campaign successfully!')
+    toast.success(translate('Ad text added to your campaign successfully!'))
   }
 
   const handleSave = async () => {
@@ -53,7 +55,7 @@ export function AdTextItem({
     }
     setIsEditing(false)
     setIsUpdating(false)
-    toast.success('Ad text added to your campaign successfully!')
+    toast.success(translate('Ad text added to your campaign successfully!'))
   }
 
   const showAdjustView = () => {

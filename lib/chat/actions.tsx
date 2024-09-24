@@ -1826,9 +1826,26 @@ Engaged Shoppers]
 
     If user's language is not English and the user asks for translations, then call \`show_translations\` with the translations of the following list.
     Translations should be given to user with key:value json format, English as key and user's language as value.
-[You can upload up to 10 images
+[Ad text added to your campaign successfully!
+Are you absolutely sure?
+Cancel
+Chat deleted
+Copying...
+Copy link
+Could not copy share link to clipboard
+Delete
+Delete chat
+Failed to upload the image. Please try again.
+Images uploaded successfully!
 Uploading your images, please wait...
-Send a message]
+Send a message
+Share
+Share chat
+Share link copied to clipboard
+This image is too big. Please use images which are smaller than 4MB.
+This will permanently delete your chat message and remove your data from our servers.
+You can upload up to 10 images
+messages]
     
     ${extraDetailsFinalText}`,
 

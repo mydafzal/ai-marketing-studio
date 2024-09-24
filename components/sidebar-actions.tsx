@@ -4,7 +4,7 @@ import {useRouter} from 'next/navigation'
 import * as React from 'react'
 import {toast} from 'sonner'
 
-import {type Chat, ServerActionResult} from '@/lib/types'
+import { TranslationContext } from '@/components/contexts/translation-context'
 import {
     AlertDialog,
     AlertDialogAction,
@@ -19,6 +19,7 @@ import {Button} from '@/components/ui/button'
 import {IconShare, IconSpinner, IconTrash} from '@/components/ui/icons'
 import {ChatShareDialog} from '@/components/chat-share-dialog'
 import {Tooltip, TooltipContent, TooltipTrigger} from '@/components/ui/tooltip'
+import {type Chat, ServerActionResult} from '@/lib/types'
 
 interface SidebarActionsProps {
     chat: Chat
@@ -27,14 +28,15 @@ interface SidebarActionsProps {
 }
 
 export function SidebarActions({
-                                   chat,
-                                   removeChat,
-                                   shareChat
-                               }: SidebarActionsProps) {
+    chat,
+    removeChat,
+    shareChat
+}: SidebarActionsProps) {
     const router = useRouter()
     const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false)
     const [shareDialogOpen, setShareDialogOpen] = React.useState(false)
     const [isRemovePending, startRemoveTransition] = React.useTransition()
+    const { translate } = React.useContext(TranslationContext);
 
     return (
         <>
@@ -47,10 +49,10 @@ export function SidebarActions({
                             onClick={() => setShareDialogOpen(true)}
                         >
                             <IconShare/>
-                            <span className="sr-only">Share</span>
+                            <span className="sr-only">{translate('Share')}</span>
                         </Button>
                     </TooltipTrigger>
-                    <TooltipContent>Share chat</TooltipContent>
+                    <TooltipContent>{translate('Share chat')}</TooltipContent>
                 </Tooltip>
                 <Tooltip>
                     <TooltipTrigger asChild>
@@ -61,10 +63,10 @@ export function SidebarActions({
                             onClick={() => setDeleteDialogOpen(true)}
                         >
                             <IconTrash/>
-                            <span className="sr-only">Delete</span>
+                            <span className="sr-only">{translate('Delete')}</span>
                         </Button>
                     </TooltipTrigger>
-                    <TooltipContent>Delete chat</TooltipContent>
+                    <TooltipContent>{translate('Delete chat')}</TooltipContent>
                 </Tooltip>
             </div>
             <ChatShareDialog
@@ -77,15 +79,14 @@ export function SidebarActions({
             <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogTitle>{translate('Are you absolutely sure?')}</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This will permanently delete your chat message and remove your
-                            data from our servers.
+                            {translate('This will permanently delete your chat message and remove your data from our servers.')}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel disabled={isRemovePending}>
-                            Cancel
+                            {translate('Cancel')}
                         </AlertDialogCancel>
                         <AlertDialogAction
                             disabled={isRemovePending}
@@ -106,12 +107,12 @@ export function SidebarActions({
                                     setDeleteDialogOpen(false)
                                     router.refresh()
                                     router.push('/')
-                                    toast.success('Chat deleted')
+                                    toast.success(translate('Chat deleted'))
                                 })
                             }}
                         >
                             {isRemovePending && <IconSpinner className="mr-2 animate-spin"/>}
-                            Delete
+                            {translate('Delete')}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

@@ -42,7 +42,7 @@ export const TranslationContextProvider = ({ children }: { children: React.React
             } else {
                 const fetch = async () => {
                     await submitUserMessage(
-                      `Give me translatiions for my Language`,
+                      `Give me translations for my language if my language is not English.`,
                       [],
                       true,
                       true
@@ -54,7 +54,7 @@ export const TranslationContextProvider = ({ children }: { children: React.React
     }, [aiState.messages]);
 
     const translate = useCallback((key: string) => {
-        return map[key] ?? key;
+        return map[key] || key; // AI returns empty string if user uses English
     }, [map]);
 
     const value = useMemo(() => ({
