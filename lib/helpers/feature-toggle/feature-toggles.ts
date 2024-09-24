@@ -16,7 +16,7 @@ export const featureToggles: FeatureToggle[] = [
     },
     {
         name: "adminFeatures",
-        description: "For enabling admin features such as creating new chats, deleting chats etc.x"
+        description: "For enabling admin features such as removing chat history!"
     }
     // Add more feature toggles as needed
 ];

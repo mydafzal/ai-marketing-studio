@@ -122,7 +122,7 @@ export default function AdminForm({extraDetails = false}) {
         setSubmitResult(null)
 
         try {
-            const response = await fetch(`/api/admin/fetch-chat-extra-details?chatId=${extraDetailsChatSlug}`)
+            const response = await fetch(`/api/admin/fetch-chat-extra-details?fbCampaignId=${extraDetailsChatSlug}`)
             const result = await response.json()
 
             if (result.error) {
@@ -146,7 +146,7 @@ export default function AdminForm({extraDetails = false}) {
                         <div className="flex-grow">
                             <label htmlFor="extraDetailsChatSlug"
                                    className="block text-sm font-medium text-gray-700 mb-1">
-                                Chat Slug
+                                Campaign Id
                             </label>
                             <input
                                 type="text"
@@ -154,7 +154,7 @@ export default function AdminForm({extraDetails = false}) {
                                 value={extraDetailsChatSlug}
                                 onChange={(e) => setExtraDetailsChatSlug(e.target.value)}
                                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-300 focus:ring focus:ring-teal-200 focus:ring-opacity-50"
-                                placeholder="Enter chat slug"
+                                placeholder="Enter Campaign Id"
                             />
                         </div>
                         <button
