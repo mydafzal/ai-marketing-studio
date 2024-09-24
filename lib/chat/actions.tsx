@@ -2247,7 +2247,7 @@ Engaged Shoppers]
                                 image: z.string().describe('The link of the image to display'),
                                 date: z.string(),
                                 text: z.string(),
-                                headline: z.string().describe('The headline of the ad to display'),
+                                headline: z.string().optional().describe('The headline of the ad to display'),
                             })).describe('List of suggested ad texts')
                         })
                     ).describe('List of images to display'),
