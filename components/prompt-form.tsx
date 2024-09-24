@@ -41,8 +41,13 @@ export function PromptForm({
   const handleFileChange = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
-    const files = event.target.files
-    if (!files || files.length === 0) return
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+    if (files.length > 3) {
+      toast.error('You can select up to 3 images.');
+      return;
+    }
+
     let checkSize = true;
     Array.from(files).forEach(file => {
       if (file) {
@@ -185,7 +190,7 @@ export function PromptForm({
               <span className="sr-only">Upload Images</span>
             </Button>
           </TooltipTrigger>
-          <TooltipContent>You can upload up to 10 images</TooltipContent>
+          <TooltipContent>You can upload up to 3 images</TooltipContent>
         </Tooltip>
         <Textarea
           ref={inputRef}
