@@ -59,7 +59,7 @@ export function ChatPanel({
   const { submitUserMessage } = useActions()
   const [shareDialogOpen, setShareDialogOpen] = React.useState(false)
 
-  const sendMessage = React.useCallback(async (message: string, userContent?: Array<TextPart | ImagePart>) => {
+  const sendMessage = React.useCallback(async (message: string, userContent?: (TextPart | ImagePart)[]) => {
     // Optimistically add user message UI
     setMessages(currentMessages => [
       ...currentMessages,
@@ -70,7 +70,7 @@ export function ChatPanel({
     ])
 
     // Submit and get response message
-    const responseMessage = await submitUserMessage(message, userContent)
+    const responseMessage = await submitUserMessage(message, userContent);
     setMessages(currentMessages => [...currentMessages, responseMessage])
 
     // if (!campaignId) {
