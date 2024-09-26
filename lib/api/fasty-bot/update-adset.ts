@@ -5,7 +5,6 @@ export async function updateAdset(
   adset: any
 ): Promise<Adset | false> {
   try {
-
     const fastyEndpoint = process.env.FASTY_API_URL;
     const apiUrl = `${fastyEndpoint}/facebook/exec/direct/ads/update-adset`;
 

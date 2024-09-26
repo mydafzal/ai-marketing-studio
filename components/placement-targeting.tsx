@@ -1,5 +1,6 @@
 'use client'
 
+import { readStreamableValue } from 'ai/rsc';
 import * as React from 'react'
 import { useState, useCallback, useContext, useEffect } from 'react'
 import { Switch } from '@/components/ui/switch'
@@ -15,6 +16,7 @@ import { useActions, useAIState, useUIState } from 'ai/rsc'
 import { generateAdsetTemplate, targetPositions } from '@/lib/data'
 import { type AI } from '@/lib/chat/actions'
 import { fetchChatCampaignBudget } from '@/app/actions'
+
 interface PlacementTargetingProps {
   targetingUiProps?: {
     targeting: any
@@ -24,9 +26,12 @@ interface PlacementTargetingProps {
 }
 
 export function PlacementTargetingResult({ ...props }) {
+  console.log('props', props)
   return (
     <div className="p-6  border rounded-x">
-      Placement targeting has been updated
+      Placement targeting has been updated,<br/>success: {props.success ? 'Yes' : 'No'}<br/>
+      facebook positions: {props.targeting.facebook_positions.join(', ')}<br/>
+      instagram positions: {props.targeting.instagram_positions.join(', ')}
     </div>
   )
 }
@@ -45,7 +50,7 @@ export function PlacementTargeting({
   isActive
 }: PlacementTargetingProps) {
   const { id: campaignId } = useContext(CampaignContext)
-  const [isActivated, activate] = useState(!!isActive)
+  const [isActivated, activate] = useState(!!isActive || !!targetingUiProps)
   const [adset, setAdset] = useState<Adset>()
   const { confirmUpdateAdset } = useActions()
   const [_, setMessages] = useUIState<typeof AI>()
@@ -53,14 +58,11 @@ export function PlacementTargeting({
 
   const [selectedPositions, setSelectedPositions] = useState<TargetPosition[]>(
     []
-  )
-
-  const [targetingUI, setTargetingUI] = useState<null | React.ReactNode>(
-    targetingUiProps ? <PlacementTargetingResult {...targetingUiProps} /> : null
-  )
+  );
+  const targetingUI = targetingUiProps ? <PlacementTargetingResult {...targetingUiProps} /> : null;
 
   useEffect(() => {
-    if (campaignId && isActivated) {
+    if (!targetingUiProps && campaignId && isActivated) {
       const fetchAsets = async () => {
         try {
           const adsets = await getAdsets(campaignId)
@@ -86,7 +88,7 @@ export function PlacementTargeting({
       }
       void fetchAsets()
     }
-  }, [campaignId, isActivated])
+  }, [campaignId, isActivated, targetingUiProps])
 
   useEffect(() => {
     setSelectedPositions([
@@ -137,7 +139,7 @@ export function PlacementTargeting({
   }, [])
   return (
     <PlacementTargetingTemplate
-      adset={adset}
+      adset={targetingUiProps ? {} as Adset : adset}
       isActivated={isActivated}
       refresh={refresh}
     >
@@ -158,7 +160,7 @@ export function PlacementTargeting({
                   .filter(e => e.platform === 'facebook')
                   .map(target => renderSwitch(target))}
               </div>
-              <div className="w-1/2  p-4">
+              <div className="w-1/2 p-4">
                 {targetPositions
                   .filter(e => e.platform === 'instagram')
                   .map(target => renderSwitch(target))}
@@ -191,33 +193,44 @@ export function PlacementTargeting({
 
                 const response = await confirmUpdateAdset(adset.id, {
                   targeting: newTargeting
-                })
-                setTargetingUI(response.fbAdsetStream)
-                setAIState({
-                  ...aiState,
-                  messages: [
-                    ...aiState.messages.map((message: Message) => {
-                      if (message.role === 'tool') {
-                        const content = message.content[0]
-                        if (
-                          content.type === 'tool-result' &&
-                          content.toolName === 'showPlacementTargetingUI'
-                        ) {
-                          content.result = {
-                            ...(content.result as Object),
-                            targetingUiProps: (
-                              content.result as { targetingUiProps: object }
-                            ).targetingUiProps ?? {
-                              success: true,
-                              targeting: newTargeting
+                });
+                setMessages(currentMessages => [...currentMessages, response.newMessage]);
+                for await (const updatedAdset of readStreamableValue<Adset>(response.response)) {
+                  console.log('response', updatedAdset);
+                  if (updatedAdset) {
+                    setAdset(updatedAdset);
+                    setTimeout(() => {
+                      setAIState({
+                        ...aiState,
+                        messages: [
+                          ...aiState.messages.map((message: Message, index: number) => {
+                            if (/* index > aiState.messages.length - 3 && */ message.role === 'tool') {
+                              const content = message.content[0]
+                              console.log('content', content);
+                              if (
+                                content.type === 'tool-result' &&
+                                content.toolName === 'showPlacementTargetingUI'
+                              ) {
+                                content.result = {
+                                  ...(content.result as Object),
+                                  targetingUiProps: (
+                                    content.result as { targetingUiProps: object }
+                                  ).targetingUiProps ?? {
+                                    success: true,
+                                    targeting: newTargeting
+                                  },
+                                }
+                              }
                             }
-                          }
-                        }
-                      }
-                      return message
-                    })
-                  ]
-                })
+                            return {...message}
+                          })
+                        ]
+                      })
+                    }, 0);
+                  } else {
+
+                  }
+                }
               }
             }}
           >

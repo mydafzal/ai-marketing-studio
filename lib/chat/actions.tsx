@@ -27,21 +27,18 @@ import {ImagePart, TextPart} from 'ai'
 
 import {formatNumber, nanoid, runAsyncFnWithoutBlocking, sleep} from '@/lib/utils'
 import {SpinnerMessage, UserMessage} from '@/components/stocks/message'
-import {AdText, Chat, Message, Session} from '@/lib/types';
+import {Adset, AdText, Chat, Message, Session} from '@/lib/types';
 import {auth} from '@/auth'
 import {setDailyCampaignBudget} from '@/lib/api/fasty-bot/set-daily-campaign-budget';
 import {setCampaignStatus} from '@/lib/api/fasty-bot/set-campaign-status';
 import {createCampaignAd} from '@/lib/api/fasty-bot/create-ad';
 import {updateCampaign} from '@/lib/api/fasty-bot/update-campaign';
-
 import {updateAdset} from '@/lib/api/fasty-bot/update-adset';
-
 import {getCampaignIdFromUrl} from "@/lib/api/fasty-bot/helpers/campaign-id-from-url-helper";
 import {getChatIdFromUrl} from "@/lib/api/fasty-bot/helpers/chat-id-from-url-helper";
 import {sendAdminNotification} from '@/lib/api/fasty-bot/send-admin-notification'
 import {ConnectCampaign} from '@/components/connect-campaign'
-import {PlacementTargeting} from '@/components/placement-targeting'
-
+import {PlacementTargeting} from '@/components/placement-targeting';
 
 interface ToolResult {
     toolName: string;
@@ -311,13 +308,9 @@ async function confirmCreateAd(data: any, adset: any, adText: AdText) {
         fbAdIdStream: fbAdIdStream.value
     }
 }
+
 async function confirmUpdateAdset(adsetId: string, adset: any) {
   'use server'
-  const aiState = getMutableAIState<typeof AI>()
-  let campaignId = (await getCampaignIdFromUrl()) || '0' // for now just say you are updating even if no campaign id in place
-  if (process.env.NEXT_PUBLIC_HARDCODED_MODE === '1') {
-    campaignId = process.env.NEXT_PUBLIC_HARDCODED_CAMPAIGN_ID || '0'
-  }
   const chatId = getChatIdFromUrl()?.toString() || ''
 
   const budget = await fetchChatCampaignBudget(chatId)
@@ -326,17 +319,21 @@ async function confirmUpdateAdset(adsetId: string, adset: any) {
     adsetUpdate = { ...adsetUpdate, daily_budget: 100 }
   }
 
-  const systemMessage = createStreamableUI(null)
+  const systemMessage = createStreamableUI(null);
+  const responseStream = createStreamableValue<Adset | boolean>(false);
   const fbAdsetStream = createStreamableUI(
     <div className="inline-flex items-start gap-1 md:items-center">
       {spinner}
       <p className="mb-2">Setting the placement targeting....</p>
     </div>
-  )
-  runAsyncFnWithoutBlocking(async () => {
-    await sleep(1000)
+  );
 
-    const response = await updateAdset(adsetId, adsetUpdate)
+  runAsyncFnWithoutBlocking(async () => {
+    await sleep(1000);
+
+    const response = await updateAdset(adsetId, adsetUpdate);
+    console.log('response', response);
+    responseStream.done(response);
 
     if (response) {
       fbAdsetStream?.done(
@@ -345,22 +342,25 @@ async function confirmUpdateAdset(adsetId: string, adset: any) {
             You have successfully updated placement targeting
           </p>
         </div>
-      )
-      aiState.done({
-        ...aiState.get()
-      })
-
+      );
       systemMessage.done(
         <SystemMessage>
           You have successfully updated placement targeting
         </SystemMessage>
-      )
+      );
     } else {
+      fbAdsetStream?.done(
+        <div>
+          <p className="mb-2">
+            Error: Failed to updated placement targeting. Please try again later.
+          </p>
+        </div>
+      );
       systemMessage.done(
         <SystemMessage>
           Error: Failed to updated placement targeting. Please try again later.
         </SystemMessage>
-      )
+      );
     }
   })
 
@@ -369,7 +369,8 @@ async function confirmUpdateAdset(adsetId: string, adset: any) {
       id: nanoid(),
       display: systemMessage.value
     },
-    fbAdsetStream: fbAdsetStream.value
+    fbAdsetStream: fbAdsetStream.value,
+    response: responseStream.value
   }
 }
 
@@ -2757,9 +2758,7 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                             case 'showPlacementTargetingUI':
                                 return (
                                     <BotCard key={tool.toolCallId}>
-                                        <PlacementTargeting 
-                                           {...tool.result}
-                                        />
+                                        <PlacementTargeting {...tool.result} />
                                     </BotCard>
                                 )
                             default:
