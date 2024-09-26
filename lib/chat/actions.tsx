@@ -33,10 +33,15 @@ import {setDailyCampaignBudget} from '@/lib/api/fasty-bot/set-daily-campaign-bud
 import {setCampaignStatus} from '@/lib/api/fasty-bot/set-campaign-status';
 import {createCampaignAd} from '@/lib/api/fasty-bot/create-ad';
 import {updateCampaign} from '@/lib/api/fasty-bot/update-campaign';
+
+import {updateAdset} from '@/lib/api/fasty-bot/update-adset';
+
 import {getCampaignIdFromUrl} from "@/lib/api/fasty-bot/helpers/campaign-id-from-url-helper";
 import {getChatIdFromUrl} from "@/lib/api/fasty-bot/helpers/chat-id-from-url-helper";
 import {sendAdminNotification} from '@/lib/api/fasty-bot/send-admin-notification'
 import {ConnectCampaign} from '@/components/connect-campaign'
+import {PlacementTargeting} from '@/components/placement-targeting'
+
 
 interface ToolResult {
     toolName: string;
@@ -305,6 +310,67 @@ async function confirmCreateAd(data: any, adset: any, adText: AdText) {
         },
         fbAdIdStream: fbAdIdStream.value
     }
+}
+async function confirmUpdateAdset(adsetId: string, adset: any) {
+  'use server'
+  const aiState = getMutableAIState<typeof AI>()
+  let campaignId = (await getCampaignIdFromUrl()) || '0' // for now just say you are updating even if no campaign id in place
+  if (process.env.NEXT_PUBLIC_HARDCODED_MODE === '1') {
+    campaignId = process.env.NEXT_PUBLIC_HARDCODED_CAMPAIGN_ID || '0'
+  }
+  const chatId = getChatIdFromUrl()?.toString() || ''
+
+  const budget = await fetchChatCampaignBudget(chatId)
+  let adsetUpdate = { ...adset }
+  if (budget.error) {
+    adsetUpdate = { ...adsetUpdate, daily_budget: 100 }
+  }
+
+  const systemMessage = createStreamableUI(null)
+  const fbAdsetStream = createStreamableUI(
+    <div className="inline-flex items-start gap-1 md:items-center">
+      {spinner}
+      <p className="mb-2">Setting the placement targeting....</p>
+    </div>
+  )
+  runAsyncFnWithoutBlocking(async () => {
+    await sleep(1000)
+
+    const response = await updateAdset(adsetId, adsetUpdate)
+
+    if (response) {
+      fbAdsetStream?.done(
+        <div>
+          <p className="mb-2">
+            You have successfully updated placement targeting
+          </p>
+        </div>
+      )
+      aiState.done({
+        ...aiState.get()
+      })
+
+      systemMessage.done(
+        <SystemMessage>
+          You have successfully updated placement targeting
+        </SystemMessage>
+      )
+    } else {
+      systemMessage.done(
+        <SystemMessage>
+          Error: Failed to updated placement targeting. Please try again later.
+        </SystemMessage>
+      )
+    }
+  })
+
+  return {
+    newMessage: {
+      id: nanoid(),
+      display: systemMessage.value
+    },
+    fbAdsetStream: fbAdsetStream.value
+  }
 }
 
 async function submitUserMessage(content: string, contentImages?: Array<TextPart | ImagePart>, isSilent?: boolean) {
@@ -1802,7 +1868,7 @@ Engaged Shoppers]
     
       - "[User has changed the daily budget to $150]" means that the user has adjusted the daily budget to $150 in the UI.
     
-    - If the user asks for "campaign result" or "campaign status" or "campaign budget" but the current chat is not connected to a campaign, always call \`show_campaign_connection_ui\` to show a UI to connect a campaign to the chat.
+    - If the user asks for "campaign result" or "campaign status" or "campaign budget" or "placement targeting" but the current chat is not connected to a campaign, always call \`show_campaign_connection_ui\` to show a UI to connect a campaign to the chat.
 
     - If a campaign was connected to the chat and the user requests setting or changing the ad budget, always first make sure that they tell you the amount. If the user's message does not yet contain the amount of budget, ask the user how much they want to change the ad budget. Once they tell you the amount, always call \`show_ad_budget_ui\` to show the budget UI.
     
@@ -1813,7 +1879,9 @@ Engaged Shoppers]
     - If you want to generate ad text examples for the user, call \`show_suggestion_ad_text\` to show the ad text selection UI and let the user choose or input their ad text.
     
     - If you want to change the status of a campaign, call \`showUpdateStatusChampaign\` to show the update status UI and let the user choose the status of the campaign.
-    
+
+    - If you want to change the placement targeting of a campaign, call \`show_placement_targeting_ui\` to show the update status UI and let the user choose the status of the campaign.
+
     - If the user wants to pause a campaign, call \`showUpdateStatusChampaign\` to show the update status UI and let the user choose the status of the campaign.
     
     - If the user wants to complete another specific task, respond that you are a demo and cannot perform that action.
@@ -2471,6 +2539,52 @@ Engaged Shoppers]
                         </BotCard>
                     )
                 }
+            },
+            showPlacementTargetingUI: {
+                description: 'Show a UI to set placement targeting of the campaign',
+                parameters: z.object({}),
+                generate: async function* ({}) {
+                    console.log('tool call showPlacementTargetingUI')
+                    const timestamp: string = new Date().toISOString();
+                    const toolCallId = nanoid();
+                    aiState.done({
+                        ...aiState.get(),
+                        messages: [
+                            ...aiState.get().messages,
+                            {
+                                id: nanoid(),
+                                role: 'assistant',
+                                content: [
+                                    {
+                                        type: 'tool-call',
+                                        toolName: 'showPlacementTargetingUI',
+                                        toolCallId,
+                                        args: {}
+                                    }
+                                ],
+                                timestamp
+                            },
+                            {
+                                id: toolCallId,
+                                role: 'tool',
+                                content: [
+                                    {
+                                        type: 'tool-result',
+                                        toolName: 'showPlacementTargetingUI',
+                                        toolCallId,
+                                        result: {}
+                                    }
+                                ],
+                                timestamp
+                            }
+                        ]
+                    })
+                    return (
+                        <BotCard>
+                            <PlacementTargeting isActive/>
+                        </BotCard>
+                    )
+                }
             }
         }
     });
@@ -2496,7 +2610,8 @@ export const AI = createAI<AIState, UIState>({
         submitUserMessage,
         confirmPurchase,
         confirmUpdateStatus,
-        confirmCreateAd
+        confirmCreateAd,
+        confirmUpdateAdset
     },
     initialUIState: [],
     initialAIState: {chatId: nanoid(), title: '', messages: []},
@@ -2637,6 +2752,14 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                 return (
                                     <BotCard key={tool.toolCallId}>
                                         <ConnectCampaign {...tool.result} />
+                                    </BotCard>
+                                )
+                            case 'showPlacementTargetingUI':
+                                return (
+                                    <BotCard key={tool.toolCallId}>
+                                        <PlacementTargeting 
+                                           {...tool.result}
+                                        />
                                     </BotCard>
                                 )
                             default:

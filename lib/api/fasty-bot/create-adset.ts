@@ -4,7 +4,7 @@ import { Adset } from '@/lib/types'
 export async function createAdset(
   campaignId: string,
   adset: any
-): Promise<Adset | boolean> {
+): Promise<Adset | false> {
   try {
     const apiCreateUrl = `/api/fasty-bot/proxy-create-adset`
     const userDetail = await getUserDetail()

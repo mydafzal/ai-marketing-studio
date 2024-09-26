@@ -3,14 +3,17 @@ import { Adset } from '@/lib/types'
 export async function updateAdset(
   adsetId: string,
   adset: any
-): Promise<Adset | boolean> {
+): Promise<Adset | false> {
   try {
-    const apiCreateUrl = `/api/fasty-bot/proxy-update-adset`
+
+    const fastyEndpoint = process.env.FASTY_API_URL;
+    const apiUrl = `${fastyEndpoint}/facebook/exec/direct/ads/update-adset`;
+
     const dataSubmit = {
       adset_id: adsetId,
       adset
     }
-    const response = await fetch(apiCreateUrl, {
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

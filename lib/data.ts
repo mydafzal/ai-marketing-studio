@@ -65,3 +65,51 @@ export const generateAdsetTemplate = () => ({
   },
   status: 'PAUSED'
 })
+
+export  const targetPositions = [
+  { value: 'feed', platform: 'facebook', label: 'Facebook feed' },
+  {
+    value: 'right_hand_column',
+    platform: 'facebook',
+    label: 'Facebook right hand column'
+  },
+  { value: 'marketplace', platform: 'facebook', label: 'Facebook marketplace' },
+  { value: 'video_feeds', platform: 'facebook', label: 'Facebook video feeds' },
+  { value: 'story', platform: 'facebook', label: 'Facebook story' },
+  { value: 'search', platform: 'facebook', label: 'Facebook search' },
+  {
+    value: 'instream_video',
+    platform: 'facebook',
+    label: 'Facebook instream video'
+  },
+  {
+    value: 'facebook_reels',
+    platform: 'facebook',
+    label: 'Facebook facebook reels'
+  },
+  {
+    value: 'profile_feed',
+    platform: 'facebook',
+    label: 'Facebook profile feed'
+  },
+  { value: 'stream', platform: 'instagram', label: 'Instagram stream' },
+  { value: 'story', platform: 'instagram', label: 'Instagram story' },
+  { value: 'explore', platform: 'instagram', label: 'Instagram explore' },
+  {
+    value: 'explore_home',
+    platform: 'instagram',
+    label: 'Instagram explore home'
+  },
+  { value: 'reels', platform: 'instagram', label: 'Instagram reels' },
+  {
+    value: 'profile_feed',
+    platform: 'instagram',
+    label: 'Instagram profile feed'
+  },
+  { value: 'ig_search', platform: 'instagram', label: 'Instagram search' },
+  {
+    value: 'profile_reels',
+    platform: 'instagram',
+    label: 'Instagram profile reels'
+  }
+]

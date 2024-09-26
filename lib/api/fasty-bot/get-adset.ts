@@ -1,6 +1,6 @@
 import { Adset } from '@/lib/types'
 
-export async function getAdset(adsetId: string): Promise<Adset | boolean> {
+export async function getAdset(adsetId: string): Promise<Adset | false> {
   const apiUrl = `/api/fasty-bot/proxy-get-adset?adset_id=${adsetId}`
   try {
     const response = await fetch(apiUrl)
