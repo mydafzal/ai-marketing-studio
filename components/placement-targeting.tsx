@@ -262,7 +262,7 @@ function PlacementTargetingTemplate({
           <IconSpinner className="m-auto animate-spin" />
         ) : (
           <>
-            <div className=" text-white mb-3">
+            <div className=" mb-3">
               To view the Placement targeting settings again. Click the button
               below.
             </div>
