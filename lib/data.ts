@@ -1,4 +1,8 @@
-export const generateAdTemplate = (headline: string, text: string, image: string) => ({
+export const generateAdTemplate = (
+  headline: string,
+  text: string,
+  image: string
+) => ({
   name: 'New Link Ad Creative',
   object_story_spec: {
     page_id: 119021011189054,
@@ -66,7 +70,7 @@ export const generateAdsetTemplate = () => ({
   status: 'PAUSED'
 })
 
-export  const targetPositions = [
+export const targetPositions = [
   { value: 'feed', platform: 'facebook', label: 'Facebook feed' },
   {
     value: 'right_hand_column',
@@ -93,23 +97,37 @@ export  const targetPositions = [
     label: 'Facebook profile feed'
   },
   { value: 'stream', platform: 'instagram', label: 'Instagram stream' },
-  { value: 'story', platform: 'instagram', label: 'Instagram story' },
-  { value: 'explore', platform: 'instagram', label: 'Instagram explore' },
+  {
+    value: 'explore',
+    platform: 'instagram',
+    parent: 'stream',
+    label: 'Instagram explore'
+  },
   {
     value: 'explore_home',
     platform: 'instagram',
+    parent: 'stream',
     label: 'Instagram explore home'
   },
-  { value: 'reels', platform: 'instagram', label: 'Instagram reels' },
   {
     value: 'profile_feed',
     platform: 'instagram',
+    parent: 'stream',
     label: 'Instagram profile feed'
   },
-  { value: 'ig_search', platform: 'instagram', label: 'Instagram search' },
+  {
+    value: 'ig_search',
+    platform: 'instagram',
+    parent: 'stream',
+
+    label: 'Instagram search'
+  },
   {
     value: 'profile_reels',
     platform: 'instagram',
+    parent: 'stream',
     label: 'Instagram profile reels'
-  }
+  },
+  { value: 'story', platform: 'instagram', label: 'Instagram story' },
+  { value: 'reels', platform: 'instagram', label: 'Instagram reels' }
 ]

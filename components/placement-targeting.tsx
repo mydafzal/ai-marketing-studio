@@ -42,10 +42,12 @@ export function PlacementTargetingResult({ ...props }) {
 interface TargetPositionOption {
   platform: string
   value: string
+  parent?: string
   label: string
 }
 interface TargetPosition {
   platform: string
+  parent?: string
   value: string
 }
 
@@ -102,16 +104,29 @@ export function PlacementTargeting({
     setSelectedPositions([
       ...(adset?.targeting?.facebook_positions || []).map(position => ({
         value: position,
-        platform: 'facebook'
+        platform: 'facebook',
+        parent: targetPositions.find(
+          p => p.platform === 'facebook' && p.value === position
+        )?.parent
       })),
       ...(adset?.targeting?.instagram_positions || []).map(position => ({
         value: position,
-        platform: 'instagram'
+        platform: 'instagram',
+        parent: targetPositions.find(
+          p => p.platform === 'instagram' && p.value === position
+        )?.parent
       }))
     ])
   }, [adset])
   const renderSwitch = (target: TargetPositionOption) => (
-    <div key={target.value} className="flex items-center mb-2">
+    // ,
+    // (target?.parent && !selectedPositions.find(
+    //     e => e.platform === target.platform && e.value === target.parent
+    //   )) ? 'hidden' : ''
+    <div
+      key={target.value}
+      className={cn('flex items-center mb-2', target?.parent ? 'ml-2' : '')}
+    >
       <Switch
         checked={
           !!selectedPositions.find(
@@ -125,17 +140,43 @@ export function PlacementTargeting({
                 p => p.platform === target.platform && p.value === target.value
               )
             ) {
-              setSelectedPositions([
+              let newPositions = [
                 ...selectedPositions,
-                { platform: target.platform, value: target.value }
-              ])
+                {
+                  platform: target.platform,
+                  value: target.value,
+                  parent: target.parent
+                }
+              ]
+              if (target?.parent) {
+                if (
+                  !newPositions.find(
+                    p =>
+                      p.platform === target.platform &&
+                      p.value === target?.parent
+                  )
+                ) {
+                  newPositions = [
+                    ...newPositions,
+                    { platform: target.platform, value: target?.parent }
+                  ]
+                }
+              }
+              setSelectedPositions(newPositions)
             }
           } else {
-            setSelectedPositions([
+            let newPositions = [
               ...selectedPositions.filter(
                 p => p.platform !== target.platform || p.value !== target.value
               )
-            ])
+            ].filter(
+              p =>
+                p.platform !== target.platform ||
+                !p?.parent ||
+                p.parent !== target.value
+            )
+
+            setSelectedPositions(newPositions)
           }
         }}
       />
