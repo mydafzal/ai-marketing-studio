@@ -329,34 +329,35 @@ async function confirmUpdateAdset(toolCallId: string, adsetId: string, adset: an
     const response = await updateAdset(adsetId, adsetUpdate);
     console.log('response', response);
     if (response.success) {
-        responseStream.done(response.data);
-        aiState.done({
-          ...aiState.get(),
-          messages: [
-            ...aiState.get().messages.map(message => {
-              if (message.id === toolCallId && message.role === 'tool') {
-                const content = message.content[0]
-                if (
-                  content.type === 'tool-result' &&
-                  content.toolName === 'showPlacementTargetingUI'
-                ) {
-                  content.result = {
-                    ...(content.result as Object),
-                    targetingUiProps: (
-                      content.result as {
-                        targetingUiProps: object
-                      }
-                    ).targetingUiProps ?? {
-                      success: true,
-                      targeting: response?.data.targeting
-                    }
-                  }
-                }
-              }
-              return message
-            })
-          ]
-        })
+      const messages = aiState.get().messages;
+      const lastMessage = messages.pop();
+      if (lastMessage && lastMessage.id === toolCallId && lastMessage.role === 'tool') {
+        const content = lastMessage.content[0];
+        if (
+          content.type === 'tool-result' &&
+          content.toolName === 'showPlacementTargetingUI'
+        ) {
+          content.result = {
+            ...(content.result as Object),
+            targetingUiProps: (
+            content.result as {
+              targetingUiProps: object
+            }
+            ).targetingUiProps ?? {
+              success: true,
+              targeting: response?.data.targeting
+            }
+          }
+        }
+      }
+      responseStream.done(response.data);
+      aiState.done({
+        ...aiState.get(),
+        messages: [
+          ...messages!,
+          lastMessage!
+        ]
+      })
       systemMessage.done(
         <SystemMessage>
           You have successfully updated placement targeting

@@ -153,7 +153,6 @@ export function ConnectCampaign({ connectingUiProps }: ConnectCampaignProps) {
       )
       setMessages(currentMessages => [...currentMessages, responseMessage])
     }
-    console.log('shouldSendSilentMessage.current', shouldSendSilentMessage.current)
     if (aiMessages.length) {
       const { content, id, role } = aiMessages[0];
       if (role === 'system' && id === 'campaign-info-data' && content?.slice(0, 21) === 'Campaign is connected') {
