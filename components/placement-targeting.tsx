@@ -1,6 +1,6 @@
 'use client'
 
-import { readStreamableValue } from 'ai/rsc';
+import { readStreamableValue } from 'ai/rsc'
 import * as React from 'react'
 import { useState, useCallback, useContext, useEffect } from 'react'
 import { Switch } from '@/components/ui/switch'
@@ -29,8 +29,12 @@ export function PlacementTargetingResult({ ...props }) {
   console.log('props', props)
   return (
     <div className="p-6  border rounded-x">
-      Placement targeting has been updated,<br/>success: {props.success ? 'Yes' : 'No'}<br/>
-      facebook positions: {props.targeting.facebook_positions.join(', ')}<br/>
+      Placement targeting has been updated,
+      <br />
+      success: {props.success ? 'Yes' : 'No'}
+      <br />
+      facebook positions: {props.targeting.facebook_positions.join(', ')}
+      <br />
       instagram positions: {props.targeting.instagram_positions.join(', ')}
     </div>
   )
@@ -52,14 +56,18 @@ export function PlacementTargeting({
   const { id: campaignId } = useContext(CampaignContext)
   const [isActivated, activate] = useState(!!isActive || !!targetingUiProps)
   const [adset, setAdset] = useState<Adset>()
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
+
   const { confirmUpdateAdset } = useActions()
   const [_, setMessages] = useUIState<typeof AI>()
   const [aiState, setAIState] = useAIState()
 
   const [selectedPositions, setSelectedPositions] = useState<TargetPosition[]>(
     []
-  );
-  const targetingUI = targetingUiProps ? <PlacementTargetingResult {...targetingUiProps} /> : null;
+  )
+  const targetingUI = targetingUiProps ? (
+    <PlacementTargetingResult {...targetingUiProps} />
+  ) : null
 
   useEffect(() => {
     if (!targetingUiProps && campaignId && isActivated) {
@@ -139,7 +147,7 @@ export function PlacementTargeting({
   }, [])
   return (
     <PlacementTargetingTemplate
-      adset={targetingUiProps ? {} as Adset : adset}
+      adset={targetingUiProps ? ({} as Adset) : adset}
       isActivated={isActivated}
       refresh={refresh}
     >
@@ -152,7 +160,7 @@ export function PlacementTargeting({
           </div>
           <div className="flex w-full flex-col my-2">
             <span className="text-white-700 mb-2">
-              Optimize Your Campaign by Choosing the Right Placement Targeting
+              I recommend using the following placements for your campaign
             </span>
             <div className="flex">
               <div className="w-1/2  p-4">
@@ -168,45 +176,56 @@ export function PlacementTargeting({
             </div>
           </div>
           <button
-            className="w-full px-4 py-2 mt-6 font-boldtext-center text-white bg-gray-700 rounded-lg hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
+            aria-disabled={isSubmitting}
+            className="flex justify-center items-center flex-1 w-full h-10 px-4 py-2 mt-6 font-boldtext-center text-white bg-gray-700 rounded-lg hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
             onClick={async () => {
-              if (adset) {
-                let newTargeting: AdsetTargeting = { ...adset.targeting }
-                let publisher_platforms: string[] = []
+              if (!adset) return
+              setIsSubmitting(true)
+              let newTargeting: AdsetTargeting = { ...adset.targeting }
+              let publisherPlatforms: string[] = []
 
-                let newFacebookPositions = selectedPositions
-                  .filter(e => e.platform === 'facebook')
-                  .map(e => e.value)
-                let newInstagramPositions = selectedPositions
-                  .filter(e => e.platform === 'instagram')
-                  .map(e => e.value)
+              let newFacebookPositions = selectedPositions
+                .filter(e => e.platform === 'facebook')
+                .map(e => e.value)
+              let newInstagramPositions = selectedPositions
+                .filter(e => e.platform === 'instagram')
+                .map(e => e.value)
 
-                if (newFacebookPositions.length > 0) {
-                  publisher_platforms.push('facebook')
-                }
-                if (newInstagramPositions.length > 0) {
-                  publisher_platforms.push('instagram')
-                }
-                newTargeting.facebook_positions = newFacebookPositions
-                newTargeting.instagram_positions = newInstagramPositions
-                newTargeting.publisher_platforms = publisher_platforms
+              if (newFacebookPositions.length > 0) {
+                publisherPlatforms.push('facebook')
+              }
+              if (newInstagramPositions.length > 0) {
+                publisherPlatforms.push('instagram')
+              }
+              newTargeting.facebook_positions = newFacebookPositions
+              newTargeting.instagram_positions = newInstagramPositions
+              newTargeting.publisher_platforms = publisherPlatforms
 
-                const response = await confirmUpdateAdset(adset.id, {
-                  targeting: newTargeting
-                });
-                setMessages(currentMessages => [...currentMessages, response.newMessage]);
-                for await (const updatedAdset of readStreamableValue<Adset>(response.response)) {
-                  console.log('response', updatedAdset);
-                  if (updatedAdset) {
-                    setAdset(updatedAdset);
-                    setTimeout(() => {
-                      setAIState({
-                        ...aiState,
-                        messages: [
-                          ...aiState.messages.map((message: Message, index: number) => {
-                            if (/* index > aiState.messages.length - 3 && */ message.role === 'tool') {
+              const response = await confirmUpdateAdset(adset.id, {
+                targeting: newTargeting
+              })
+              setMessages(currentMessages => [
+                ...currentMessages,
+                response.newMessage
+              ])
+              for await (const updatedAdset of readStreamableValue<Adset>(
+                response.response
+              )) {
+                console.log('response', updatedAdset)
+                if (updatedAdset) {
+                  setAdset(updatedAdset)
+                  setTimeout(() => {
+                    setAIState({
+                      ...aiState,
+                      messages: [
+                        ...aiState.messages.map(
+                          (message: Message, index: number) => {
+                            if (
+                              /* index > aiState.messages.length - 3 && */ message.role ===
+                              'tool'
+                            ) {
                               const content = message.content[0]
-                              console.log('content', content);
+                              console.log('content', content)
                               if (
                                 content.type === 'tool-result' &&
                                 content.toolName === 'showPlacementTargetingUI'
@@ -214,27 +233,30 @@ export function PlacementTargeting({
                                 content.result = {
                                   ...(content.result as Object),
                                   targetingUiProps: (
-                                    content.result as { targetingUiProps: object }
+                                    content.result as {
+                                      targetingUiProps: object
+                                    }
                                   ).targetingUiProps ?? {
                                     success: true,
                                     targeting: newTargeting
-                                  },
+                                  }
                                 }
                               }
                             }
-                            return {...message}
-                          })
-                        ]
-                      })
-                    }, 0);
-                  } else {
-
-                  }
+                            return { ...message }
+                          }
+                        )
+                      ]
+                    })
+                  }, 0)
+                } else {
                 }
               }
+              setIsSubmitting(false)
             }}
           >
-            Confirm
+            {isSubmitting && <IconSpinner />}
+            {!isSubmitting && 'Confirm'}
           </button>
         </div>
       )}
