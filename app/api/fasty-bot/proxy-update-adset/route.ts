@@ -24,13 +24,16 @@ export async function POST(request: Request) {
         })
 
         if (!response.ok) {
-            const errorBody = await response.text()
+            const errorBody = await response.json()
             console.error('Error setting status:', {
                 status: response.status,
                 statusText: response.statusText,
                 body: errorBody
             })
-            return NextResponse.json({success: false}, {status: response.status})
+            return NextResponse.json(
+              { success: false, data: errorBody },
+              { status: response.status }
+            )
         }
         const data = await response.json()
         return NextResponse.json(data)

@@ -328,8 +328,8 @@ async function confirmUpdateAdset(toolCallId: string, adsetId: string, adset: an
 
     const response = await updateAdset(adsetId, adsetUpdate);
     console.log('response', response);
-    responseStream.done(response);
-    if (response) {
+    if (response.success) {
+        responseStream.done(response.data);
         aiState.done({
           ...aiState.get(),
           messages: [
@@ -348,7 +348,7 @@ async function confirmUpdateAdset(toolCallId: string, adsetId: string, adset: an
                       }
                     ).targetingUiProps ?? {
                       success: true,
-                      targeting: response.targeting
+                      targeting: response?.data.targeting
                     }
                   }
                 }
@@ -363,9 +363,10 @@ async function confirmUpdateAdset(toolCallId: string, adsetId: string, adset: an
         </SystemMessage>
       );
     } else {
+      responseStream.done(false);
       systemMessage.done(
         <SystemMessage>
-          Error: Failed to updated placement targeting. Please try again later.
+          Error: {response.data?.detail?.error?.error_user_msg || "Failed to updated placement targeting. Please try again later."}
         </SystemMessage>
       );
     }

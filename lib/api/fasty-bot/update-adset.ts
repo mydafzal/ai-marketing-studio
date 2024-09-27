@@ -1,12 +1,16 @@
 import { Adset } from '@/lib/types'
 
+interface UpdateAdsetResponseProp {
+  success: boolean
+  data: Adset | any
+}
 export async function updateAdset(
   adsetId: string,
   adset: any
-): Promise<Adset | false> {
+): Promise<UpdateAdsetResponseProp> {
   try {
-    const fastyEndpoint = process.env.FASTY_API_URL;
-    const apiUrl = `${fastyEndpoint}/facebook/exec/direct/ads/update-adset`;
+    const fastyEndpoint = process.env.FASTY_API_URL
+    const apiUrl = `${fastyEndpoint}/facebook/exec/direct/ads/update-adset`
 
     const dataSubmit = {
       adset_id: adsetId,
@@ -22,16 +26,18 @@ export async function updateAdset(
     })
     // Handle the response
     if (!response.ok) {
+      const errorData = await response.json()
       console.error('Error update adset:', {
         status: response.status,
-        statusText: response.statusText
+        statusText: response.statusText,
+        data: JSON.stringify(errorData)
       })
-      return false
+      return { success: false, data: errorData }
     }
     const data: Adset = await response.json()
-    return data
+    return { success: true, data }
   } catch (error) {
     console.error('Error update adset:', error)
-    return false
+    return { success: false, data: {} }
   }
 }

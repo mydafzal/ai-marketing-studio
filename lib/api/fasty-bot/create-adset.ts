@@ -24,9 +24,11 @@ export async function createAdset(
     })
     // Handle the response
     if (!response.ok) {
+      const errorData = await response.json()
       console.error('Error create adset:', {
         status: response.status,
-        statusText: response.statusText
+        statusText: response.statusText,
+        data: JSON.stringify(errorData)
       })
       return false
     }
