@@ -309,8 +309,9 @@ async function confirmCreateAd(data: any, adset: any, adText: AdText) {
     }
 }
 
-async function confirmUpdateAdset(adsetId: string, adset: any) {
+async function confirmUpdateAdset(toolCallId: string, adsetId: string, adset: any) {
   'use server'
+  const aiState = getMutableAIState<typeof AI>();
   const chatId = getChatIdFromUrl()?.toString() || ''
 
   const budget = await fetchChatCampaignBudget(chatId)
@@ -334,8 +335,34 @@ async function confirmUpdateAdset(adsetId: string, adset: any) {
     const response = await updateAdset(adsetId, adsetUpdate);
     console.log('response', response);
     responseStream.done(response);
-
     if (response) {
+        aiState.done({
+          ...aiState.get(),
+          messages: [
+            ...aiState.get().messages.map(message => {
+              if (message.id === toolCallId && message.role === 'tool') {
+                const content = message.content[0]
+                if (
+                  content.type === 'tool-result' &&
+                  content.toolName === 'showPlacementTargetingUI'
+                ) {
+                  content.result = {
+                    ...(content.result as Object),
+                    targetingUiProps: (
+                      content.result as {
+                        targetingUiProps: object
+                      }
+                    ).targetingUiProps ?? {
+                      success: true,
+                      targeting: response.targeting
+                    }
+                  }
+                }
+              }
+              return message
+            })
+          ]
+        })
       fbAdsetStream?.done(
         <div>
           <p className="mb-2">
@@ -2582,7 +2609,7 @@ Engaged Shoppers]
                     })
                     return (
                         <BotCard>
-                            <PlacementTargeting isActive/>
+                            <PlacementTargeting isActive toolCallId={toolCallId}/>
                         </BotCard>
                     )
                 }
@@ -2758,7 +2785,7 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                             case 'showPlacementTargetingUI':
                                 return (
                                     <BotCard key={tool.toolCallId}>
-                                        <PlacementTargeting {...tool.result} />
+                                        <PlacementTargeting {...tool.result} toolCallId={tool.toolCallId} />
                                     </BotCard>
                                 )
                             default:
