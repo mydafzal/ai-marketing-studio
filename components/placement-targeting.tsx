@@ -9,9 +9,8 @@ import { getAdset } from '@/lib/api/fasty-bot/get-adset'
 import { createAdset } from '@/lib/api/fasty-bot/create-adset'
 import { cn } from '@/lib/utils'
 import { IconSpinner } from '@/components/ui/icons'
-
 import { CampaignContext } from '@/components/contexts/campaign-context'
-import { Adset, AdsetTargeting, Message } from '@/lib/types'
+import { Adset, AdsetTargeting } from '@/lib/types'
 import { useActions, useAIState, useUIState } from 'ai/rsc'
 import { generateAdsetTemplate, targetPositions } from '@/lib/data'
 import { type AI } from '@/lib/chat/actions'
@@ -94,7 +93,7 @@ export function PlacementTargeting({
 
   const { confirmUpdateAdset } = useActions()
   const [_, setMessages] = useUIState<typeof AI>()
-  const [aiState, setAIState] = useAIState()
+  const [aiState] = useAIState()
 
   const [selectedPositions, setSelectedPositions] = useState<TargetPosition[]>(
     []
@@ -252,13 +251,10 @@ export function PlacementTargeting({
         setAdset(updatedAdset)
         setTargetingUI(
           <PlacementTargetingResult
-            {...{
-              targeting: updatedAdset.targeting,
-              success: true
-            }}
+            targeting={updatedAdset.targeting}
+            success
           />
         )
-      } else {
       }
     }
     setIsSubmitting(false)

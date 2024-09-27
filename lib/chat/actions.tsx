@@ -327,10 +327,9 @@ async function confirmUpdateAdset(toolCallId: string, adsetId: string, adset: an
     await sleep(1000);
 
     const response = await updateAdset(adsetId, adsetUpdate);
-    console.log('response', response);
     if (response.success) {
       const messages = aiState.get().messages;
-      const lastMessage = messages.pop();
+      const lastMessage = messages.slice(-1)[0];
       if (lastMessage && lastMessage.id === toolCallId && lastMessage.role === 'tool') {
         const content = lastMessage.content[0];
         if (
@@ -354,7 +353,7 @@ async function confirmUpdateAdset(toolCallId: string, adsetId: string, adset: an
       aiState.done({
         ...aiState.get(),
         messages: [
-          ...messages!,
+          ...messages.slice(0, -1),
           lastMessage!
         ]
       })
