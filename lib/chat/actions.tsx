@@ -322,12 +322,6 @@ async function confirmUpdateAdset(toolCallId: string, adsetId: string, adset: an
 
   const systemMessage = createStreamableUI(null);
   const responseStream = createStreamableValue<Adset | boolean>(false);
-  const fbAdsetStream = createStreamableUI(
-    <div className="inline-flex items-start gap-1 md:items-center">
-      {spinner}
-      <p className="mb-2">Setting the placement targeting....</p>
-    </div>
-  );
 
   runAsyncFnWithoutBlocking(async () => {
     await sleep(1000);
@@ -363,26 +357,12 @@ async function confirmUpdateAdset(toolCallId: string, adsetId: string, adset: an
             })
           ]
         })
-      fbAdsetStream?.done(
-        <div>
-          <p className="mb-2">
-            You have successfully updated placement targeting
-          </p>
-        </div>
-      );
       systemMessage.done(
         <SystemMessage>
           You have successfully updated placement targeting
         </SystemMessage>
       );
     } else {
-      fbAdsetStream?.done(
-        <div>
-          <p className="mb-2">
-            Error: Failed to updated placement targeting. Please try again later.
-          </p>
-        </div>
-      );
       systemMessage.done(
         <SystemMessage>
           Error: Failed to updated placement targeting. Please try again later.
@@ -396,7 +376,6 @@ async function confirmUpdateAdset(toolCallId: string, adsetId: string, adset: an
       id: nanoid(),
       display: systemMessage.value
     },
-    fbAdsetStream: fbAdsetStream.value,
     response: responseStream.value
   }
 }
