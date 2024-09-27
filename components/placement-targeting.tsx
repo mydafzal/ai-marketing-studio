@@ -51,7 +51,7 @@ export function PlacementTargetingResult({
                 Facebook:{' '}
               </span>
               <span>
-                {targeting.facebook_positions.join(', ')}
+                {targeting.facebook_positions?.join(', ')}
               </span>
             </div>
           )}
@@ -61,7 +61,7 @@ export function PlacementTargetingResult({
                 Instagram:{' '}
               </span>
               <span>
-                {targeting.instagram_positions.join(', ')}
+                {targeting.instagram_positions?.join(', ')}
               </span>
             </div>
           )}
