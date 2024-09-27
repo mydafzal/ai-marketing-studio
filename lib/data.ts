@@ -51,16 +51,11 @@ export const generateAdsetTemplate = () => ({
     facebook_positions: [
       'feed',
       'facebook_reels',
-      'video_feeds',
-      'marketplace',
-      'story'
     ],
     instagram_positions: [
       'stream',
-      'story',
       'explore',
       'reels',
-      'explore_home'
     ],
     device_platforms: ['mobile', 'desktop']
   },
@@ -89,7 +84,7 @@ export const targetPositions = [
   {
     value: 'facebook_reels',
     platform: 'facebook',
-    label: 'Facebook facebook reels'
+    label: 'Facebook reels'
   },
   {
     value: 'profile_feed',
