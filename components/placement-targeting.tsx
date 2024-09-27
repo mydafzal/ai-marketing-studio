@@ -51,13 +51,7 @@ export function PlacementTargetingResult({
                 Facebook:{' '}
               </span>
               <span>
-                {targeting.facebook_positions
-                  .map((position: string) => {
-                    return targetPositions.find(
-                      p => p.platform === 'facebook' && p.value === position
-                    )?.label
-                  })
-                  .join(', ')}
+                {targeting.facebook_positions.join(', ')}
               </span>
             </div>
           )}
@@ -67,13 +61,7 @@ export function PlacementTargetingResult({
                 Instagram:{' '}
               </span>
               <span>
-                {targeting.instagram_positions
-                  .map((position: string) => {
-                    return targetPositions.find(
-                      p => p.platform === 'instagram' && p.value === position
-                    )?.label
-                  })
-                  .join(', ')}
+                {targeting.instagram_positions.join(', ')}
               </span>
             </div>
           )}
