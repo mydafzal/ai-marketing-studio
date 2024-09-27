@@ -45,7 +45,7 @@ export function PlacementTargetingResult({
           <div className="text-md mb-2 font-bold dark:text-zinc-300">
             Placement targeting has been updated successfully!
           </div>
-          {targeting.facebook_positions.length > 0 && (
+          {targeting.facebook_positions?.length > 0 && (
             <div className="text-md mb-2">
               <span className="text-md font-bold dark:text-zinc-300">
                 Facebook:{' '}
@@ -61,7 +61,7 @@ export function PlacementTargetingResult({
               </span>
             </div>
           )}
-          {targeting.facebook_positions.length > 0 && (
+          {targeting.facebook_positions?.length > 0 && (
             <div className="text-md">
               <span className="text-md font-bold dark:text-zinc-300">
                 Instagram:{' '}
@@ -122,7 +122,9 @@ export function PlacementTargeting({
           const adsets = await getAdsets(campaignId)
           if (adsets.length > 0) {
             const res = await getAdset(adsets[0].id)
-            if (res) setAdset(res)
+            if (res) {
+              setAdset(res)
+            }
           } else {
             const budget = await fetchChatCampaignBudget(aiState.chatId)
             let adsetUpdate = {
@@ -132,9 +134,10 @@ export function PlacementTargeting({
             if (budget.error) {
               adsetUpdate = { ...adsetUpdate, daily_budget: 100 }
             }
-            console.log('create adset')
             const res = await createAdset(campaignId, adsetUpdate)
-            if (res) setAdset(res)
+            if (res) {
+              setAdset(res)
+            }
           }
         } catch (error) {
           console.error('Error fetching fetchAsets data:', error)
