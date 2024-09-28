@@ -2,7 +2,7 @@ import 'server-only'
 
 import {createAI, createStreamableUI, createStreamableValue, getAIState, getMutableAIState, streamUI} from 'ai/rsc'
 import {openai} from '@ai-sdk/openai'
-import {BotCard, BotMessage, Purchase, spinner, Stock, SystemMessage,} from '@/components/stocks'
+import {BotCard, BotMessage, Purchase, spinner, Stock, SystemMessage, SystemErrorMessage} from '@/components/stocks'
 import {AdTextSelectionSkeleton} from '@/components/stocks/ad-text-selection-skeleton'
 import {z} from 'zod'
 import {EventsSkeleton} from '@/components/stocks/events-skeleton'
@@ -365,9 +365,9 @@ async function confirmUpdateAdset(toolCallId: string, adsetId: string, adset: an
     } else {
       responseStream.done(false);
       systemMessage.done(
-        <SystemMessage>
+        <SystemErrorMessage>
           Error: {response.data?.detail?.error?.error_user_msg || "Failed to updated placement targeting. Please try again later."}
-        </SystemMessage>
+        </SystemErrorMessage>
       );
     }
   })
