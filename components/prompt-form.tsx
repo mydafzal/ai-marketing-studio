@@ -12,6 +12,7 @@ import {
   TooltipContent,
   TooltipTrigger
 } from '@/components/ui/tooltip'
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { toast } from 'sonner'
 import { useEnterSubmit } from '@/lib/hooks/use-enter-submit'
 import { useParams } from 'next/navigation'
@@ -22,7 +23,8 @@ import { getMimeType } from '@/lib/utils'
 export interface PromtFormProps {
   onSendMessage: (message: string, userContent?: Array<TextPart | ImagePart>) => Promise<void>
 }
-const MAX_SIZE = 4 * 1024 * 1024;
+const MAX_IMAGE_SIZE = 4 * 1024 * 1024;
+const MAX_VIDEO_SIZE = 20 * 1024 * 1024;
 
 export function PromptForm({
   onSendMessage
@@ -34,11 +36,12 @@ export function PromptForm({
   const [isDisabled, setIsDisabled] = React.useState(true)
   const [isHandling, setIsHandling] = React.useState(false)
 
-  const fileInputRef = React.useRef<HTMLInputElement>(null)
+  const imageInputRef = React.useRef<HTMLInputElement>(null)
+  const videoInputRef = React.useRef<HTMLInputElement>(null)
 
   const [uploading, setUploading] = React.useState(false)
 
-  const handleFileChange = async (
+  const handleImageFileChange = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     const files = event.target.files
@@ -46,7 +49,7 @@ export function PromptForm({
     let checkSize = true;
     Array.from(files).forEach(file => {
       if (file) {
-        if (file.size >= MAX_SIZE) {
+        if (file.size >= MAX_IMAGE_SIZE) {
           checkSize = false
         }
       }
@@ -64,6 +67,8 @@ export function PromptForm({
     const campaignId = chatToCampaignMapping[id as string]
 
     formData.append('id', (campaignId || id) as string)
+    formData.append('type', "image")
+
     Array.from(files).forEach(file => {
       formData.append('files', file)
     })
@@ -131,9 +136,76 @@ export function PromptForm({
 
     setUploading(false)
   }
-  const handleButtonClick = () => {
-    fileInputRef.current?.click()
+  const handleVideoFileChange =async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const files = event.target.files
+    if (!files || files.length === 0) return
+    let checkSize = true;
+    Array.from(files).forEach(file => {
+      if (file) {
+        if (file.size >= MAX_VIDEO_SIZE) {
+          checkSize = false
+        }
+      }
+    })
+    if (!checkSize) {
+      toast.error(
+        'This video is too big. Please use images which are smaller than 20MB.'
+      )
+      return
+    }    
+
+    setUploading(true)
+
+    const formData = new FormData()
+    const campaignId = chatToCampaignMapping[id as string]
+
+    formData.append('id', (campaignId || id) as string)
+    formData.append('type', "video")
+    Array.from(files).forEach(file => {
+      formData.append('files', file)
+    })
+
+    toast.info('Uploading your videos, please wait...')
+    try {
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      })
+
+      const data = await response.json()
+      if (!response.ok) {
+        toast.error('Failed to upload the video. Please try again.')
+        return
+      }
+
+      const uploadedTime = new Date().getTime()
+      console.log('uploaded image urls', data.urls, uploadedTime)
+
+      const textPrompt = `I upload videos with these urls: ${JSON.stringify(data.urls)}, at this time: ${new Date().getTime()}`
+      const userContent: UserContent = [
+        {
+          type: 'text',
+          text: textPrompt
+        }
+      ]
+
+      await onSendMessage(textPrompt, userContent)
+      toast.success('Videos uploaded successfully!')
+    } catch (error) {
+      toast.error('Failed to upload the video. Please try again.')
+    }
+
+    setUploading(false)
   }
+  const handleImageButtonClick = () => {
+    imageInputRef.current?.click()
+  }
+  const handleVideoButtonClick = () => {
+    videoInputRef.current?.click()
+  }
+  //
   React.useEffect(() => {
     if (inputRef.current) {
       inputRef.current.focus()
@@ -158,35 +230,64 @@ export function PromptForm({
         }
         if (!value) return
 
-        setIsHandling(true);
-        await onSendMessage(value);
-        setIsHandling(false);
+        setIsHandling(true)
+        await onSendMessage(value)
+        setIsHandling(false)
       }}
     >
       <div className="relative flex max-h-60 w-full grow flex-col overflow-hidden bg-background px-8 sm:rounded-md sm:border sm:px-12">
         <input
-          ref={fileInputRef}
+          ref={imageInputRef}
           style={{ display: 'none' }}
           type="file"
           multiple
           accept="image/png, image/jpeg"
-          onChange={handleFileChange}
+          onChange={handleImageFileChange}
         />
-        <Tooltip>
-          <TooltipTrigger asChild>
+       <input
+          ref={videoInputRef}
+          style={{ display: 'none' }}
+          type="file"
+          multiple
+          accept="video/*"
+          onChange={handleVideoFileChange}
+        />
+        <Popover>
+          <PopoverTrigger asChild>
             <Button
               variant="outline"
               size="icon"
               className="absolute left-0 top-[14px] size-8 rounded-full bg-background p-0 sm:left-4"
-              onClick={handleButtonClick}
               disabled={uploading}
             >
               {uploading ? <IconSpinner /> : <IconPlus />}
-              <span className="sr-only">Upload Images</span>
+              <span className="sr-only">Upload</span>
             </Button>
-          </TooltipTrigger>
-          <TooltipContent>You can upload up to 10 images</TooltipContent>
-        </Tooltip>
+          </PopoverTrigger>
+          <PopoverContent side="top">
+            <div className="w-full my-2">
+              <Button
+                variant="outline"
+                size="icon"
+                className="w-full border-0 px-4"
+                onClick={handleImageButtonClick}
+                disabled={uploading}
+              >
+                Images
+              </Button>
+            </div>
+            <div className="w-full my-2">
+              <Button
+                onClick={handleVideoButtonClick}
+                variant="outline"
+                size="icon"
+                className="w-full border-0 px-4 "
+              >
+                Videos
+              </Button>
+            </div>
+          </PopoverContent>
+        </Popover>
         <Textarea
           ref={inputRef}
           disabled={uploading || isHandling}
@@ -207,7 +308,11 @@ export function PromptForm({
         <div className="absolute right-0 top-[13px] sm:right-4">
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button type="submit" size="icon" disabled={isDisabled || uploading || isHandling}>
+              <Button
+                type="submit"
+                size="icon"
+                disabled={isDisabled || uploading || isHandling}
+              >
                 <IconArrowElbow />
                 <span className="sr-only">Send message</span>
               </Button>

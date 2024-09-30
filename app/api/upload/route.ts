@@ -17,13 +17,15 @@ export async function POST(req: Request) {
   try {
     const formData = await req.formData()
     const id = formData.get('id');
+    const type = formData.get('type');
+
     const files = formData.getAll('files')
     const fileUploadPromises = Object.values(files).map(async file => {
       const currentFile = Array.isArray(file) ? file[0] : file
       const buffer = Buffer.from(await currentFile.arrayBuffer())
       const uploadParams = {
         Bucket: process.env.AWS_BUCKET as string,
-        Key: `public/${id}/${Date.now()}_${sanitizeFileNameForUrl(currentFile?.name) || ''}`,
+        Key: `public/${id}/${type || 'image'}/${Date.now()}_${sanitizeFileNameForUrl(currentFile?.name) || ''}`,
         Body: buffer,
         ContentType: currentFile.type as string
       }
