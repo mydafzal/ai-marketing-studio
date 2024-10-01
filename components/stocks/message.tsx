@@ -11,8 +11,7 @@ import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
 import {StreamableValue, useStreamableValue} from 'ai/rsc'
 import {useStreamableText} from '@/lib/hooks/use-streamable-text'
-
-// Different types of message bubbles.
+import { VideoPlayer } from './video-player'
 
 export function UserMessage({
                                 userContent,
@@ -30,7 +29,7 @@ export function UserMessage({
                 </div>
 
                 {Array.isArray(userContent) ? (
-                    <div className=" flex flex-wrap ">
+                    <div className="flex flex-wrap">
                         {userContent
                             .filter(message => message.type === 'image')
                             .map((message, idx) => (
@@ -45,7 +44,20 @@ export function UserMessage({
                                         sizes="(max-width: 500px) 100vw, 33vw"
                                     />
                                 </div>
-                            ))}
+                            ))
+                        }
+                        {userContent
+                            .filter(message => (message.type === 'text' && message.text.includes('I upload videos with these urls:')))
+                            .map((message, idx) => {
+                                const urls = JSON.parse(`[${(message as TextPart).text?.split('[')[1]?.split(']')[0]}]`);
+
+                                return urls.map((url: string, index: number) => (
+                                    <div key={`${idx}-${index}`} className="p-4 w-1/2">
+                                        <VideoPlayer src={url} />
+                                    </div>
+                                ))
+                            })
+                        }
                     </div>
                 ) : (
                     <div className="ml-4 flex-1 space-y-2 overflow-hidden pl-2">

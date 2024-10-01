@@ -10,6 +10,7 @@ import {Events} from '@/components/stocks/events'
 import {PurchasingUi} from '@/components/stocks/purchasing-ui'
 import {StockSkeleton} from '@/components/stocks/stock-skeleton'
 import {AdTextSuggestion} from '@/components/stocks/ad-text-suggestion'
+import {VideoAdTextSuggestion} from '@/components/stocks/video-ad-text-suggestion'
 import {RefreshChatTitle} from '@/components/refresh-chat-title'
 import {RefreshSideBar} from '@/components/refresh-sidebar'
 import {CampaignStatus} from '@/components/stocks/campaign-status'
@@ -395,9 +396,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
     Please wait for the user's confirmation. If the user responds with "Yes", then generate ad text examples for the current campaign using the uploaded images, and use \`showSuggestionAdText\` to show text examples and pass corresponding image URLs to the user.
     
     If the user sends a message containing status updates, ALWAYS use \`showUpdateStatusChampaign\` to show the update status UI.
-    
-    If the user asks about ad videos, mention that ad videos need to be sent via email to maxnols@reeply.net, and inform the user that you will grab the video from there to implement it into the ad.
-    
+        
     Wait for the user’s response:
     
     After the user tells you what they want with their campaign, follow these Survey Steps in order:
@@ -1756,8 +1755,9 @@ Engaged Shoppers]
     
     - If the user asks whether you could create an ad image for them, respond that currently that is not possible but that the Reeply AI team is working hard to make it available soon.
     
-    - If the user has ad videos, tell them to send the videos to maxnols@reeply.net and inform them that you will grab the video from there to implement it into the ad.
-    
+    - If the user has upload ad videos, tell them: Thank you for uploading the video. Could you describe what is in the video or what is it about, in a few sentences? Since I can not see what is in the video?
+    After a user describe a video description, call ALWAYS call \`show_suggestion_video_ad_text\` for suggest ad texts for the video based on the video description.
+
     Reasoning: Ensure creatives are ready or note the need for assistance.
     
     Step 5: "Do you have an ad text, or should I suggest one?"
@@ -1766,6 +1766,8 @@ Engaged Shoppers]
     
     ALWAYS call \`show_suggestion_ad_text\` to show the ad text selection UI and let the user choose or input their ad text. The guide for the user about \`show_suggestion_ad_text\` is 'You can adjust my ad text suggestions or approve them. After approving, the image as well as the ad text will be added to your campaign, so make sure that you are all set with ad image and ad text!'
     
+    ALWAYS call \`show_suggestion_video_ad_text\` to show the ad text selection UI and let the user choose or input their ad text. The guide for the user about \`show_suggestion_video_ad_text\` is 'You can adjust my ad text suggestions or approve them. After approving, the image as well as the ad text will be added to your campaign, so make sure that you are all set with ad video and ad text!'
+
     Confirm the final text before proceeding.
     
     When generating ad texts, please follow these guidelines:
@@ -2310,6 +2312,76 @@ Engaged Shoppers]
                     );
                 }
             },
+            showSuggestionVideoAdText: {
+                description: 'Show UI to select or input ad text for each video a campaign.',
+                parameters: z.object({
+                    campaignName: z.string().describe('The name of the campaign'),
+                    videos: z.array(z.object({
+                        suggestedTexts: z.array(z.object({
+                            id: z.number().describe('This is timestamp of current time'),
+                            video: z.string().describe('The link of the video to display'),
+                            date: z.string(),
+                            text: z.string(),
+                            headline: z.string().describe('The headline of the ad to display'),
+                        })).describe('List of suggested video ad texts')
+                     })).describe('List of videos to display'),
+                     guideForUser: z.string().optional().describe('This is the guide for user about this component, this is optional')
+                }),
+                generate: async function* ({campaignName, videos = [], guideForUser}) {
+                    yield (
+                        <BotCard>
+                            <AdTextSelectionSkeleton/>
+                        </BotCard>
+                    );
+
+                    await sleep(1000);
+
+                    const toolCallId = nanoid();
+
+                    aiState.done({
+                        ...aiState.get(),
+                        messages: [
+                            ...aiState.get().messages,
+                            {
+                                id: nanoid(),
+                                role: 'assistant',
+                                content: [
+                                    {
+                                        type: 'tool-call',
+                                        toolName: 'showVideoAdTextSuggestion',
+                                        toolCallId,
+                                        args: {campaignName, videos, guideForUser}
+                                    }
+                                ],
+                                timestamp: new Date().toISOString()
+                            },
+                            {
+                                id: nanoid(),
+                                role: 'tool',
+                                content: [
+                                    {
+                                        type: 'tool-result',
+                                        toolName: 'showVideoAdTextSuggestion',
+                                        toolCallId,
+                                        result: {campaignName, videos, guideForUser}
+                                    }
+                                ],
+                                timestamp: new Date().toISOString()
+                            }
+                        ]
+                    });
+                    return (
+                        <>
+                            <BotCard>
+                                <VideoAdTextSuggestion props={videos}/>
+                                <div className="my-4">
+                                    {guideForUser ?? ''}
+                                </div>
+                            </BotCard>
+                        </>
+                    );
+                }
+            },
             showUpdateStatusCampaign: {
                 description: 'Show UI  to update status of the campaign.',
                 parameters: z.object({
@@ -2606,6 +2678,21 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                         </div>
                                     </>
                                 );
+                            case 'showVideoAdTextSuggestion':
+                                return (
+                                  <>
+                                    <BotCard key={tool.toolCallId}>
+                                      <VideoAdTextSuggestion
+                                        props={
+                                          tool.result.videos
+                                        }
+                                      />
+                                    </BotCard>
+                                    <div className="my-4">
+                                      {tool.result.guideForUser ?? ''}
+                                    </div>
+                                  </>
+                                )
                             case 'getCampaignImages':
                                 return (
                                     <BotCard key={tool.toolCallId}>

@@ -57,6 +57,14 @@ export interface AdText {
   headline: string
   fbAdId?: string
 }
+export interface VideoAdText {
+  id: number
+  video: string
+  date: string
+  text: string
+  headline: string
+  fbAdId?: string
+}
 export interface FbCampaign {
   id: string
   name: string

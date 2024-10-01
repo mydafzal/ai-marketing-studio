@@ -35,6 +35,7 @@ export function PromptForm({
   const [aiState] = useAIState()
   const [isDisabled, setIsDisabled] = React.useState(true)
   const [isHandling, setIsHandling] = React.useState(false)
+  const [openUploadMenu, setOpenUploadMenu] = React.useState(false);
 
   const imageInputRef = React.useRef<HTMLInputElement>(null)
   const videoInputRef = React.useRef<HTMLInputElement>(null)
@@ -201,9 +202,11 @@ export function PromptForm({
   }
   const handleImageButtonClick = () => {
     imageInputRef.current?.click()
+    setOpenUploadMenu(!openUploadMenu)
   }
   const handleVideoButtonClick = () => {
     videoInputRef.current?.click()
+    setOpenUploadMenu(!openUploadMenu)
   }
   //
   React.useEffect(() => {
@@ -244,7 +247,7 @@ export function PromptForm({
           accept="image/png, image/jpeg"
           onChange={handleImageFileChange}
         />
-       <input
+        <input
           ref={videoInputRef}
           style={{ display: 'none' }}
           type="file"
@@ -252,13 +255,14 @@ export function PromptForm({
           accept="video/*"
           onChange={handleVideoFileChange}
         />
-        <Popover>
+        <Popover open={openUploadMenu} onOpenChange={setOpenUploadMenu}>
           <PopoverTrigger asChild>
             <Button
               variant="outline"
               size="icon"
               className="absolute left-0 top-[14px] size-8 rounded-full bg-background p-0 sm:left-4"
               disabled={uploading}
+              onClick={() => setOpenUploadMenu(!openUploadMenu)}
             >
               {uploading ? <IconSpinner /> : <IconPlus />}
               <span className="sr-only">Upload</span>
@@ -269,7 +273,7 @@ export function PromptForm({
               <Button
                 variant="outline"
                 size="icon"
-                className="w-full border-0 px-4"
+                className="w-full border-0 px-4 shadow-none"
                 onClick={handleImageButtonClick}
                 disabled={uploading}
               >
@@ -281,7 +285,7 @@ export function PromptForm({
                 onClick={handleVideoButtonClick}
                 variant="outline"
                 size="icon"
-                className="w-full border-0 px-4 "
+                className="w-full border-0 px-4 shadow-none"
               >
                 Videos
               </Button>

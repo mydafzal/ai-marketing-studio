@@ -20,13 +20,13 @@ const PopoverContent = React.forwardRef<
       side={side}
       align={align}
       className={cn(
-        'z-50 bg-white shadow-lg rounded-md p-4 text-gray-800',
+        'z-50 bg-white min-w-52 dark:bg-black  shadow-lg rounded-md p-4 ',
         className
       )}
       {...props}
     >
       {props.children}
-      <PopoverPrimitive.Arrow className="fill-white" />
+      <PopoverPrimitive.Arrow className="fill-white dark:fill-black" />
     </PopoverPrimitive.Content>
   )
 )
