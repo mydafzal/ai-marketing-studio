@@ -15,6 +15,7 @@ import { useParams } from 'next/navigation'
 import { readStreamableValue } from 'ai/rsc'
 import { VideoPlayer } from './video-player'
 import { getVideoDetail } from '@/lib/api/fasty-bot/get-video-detail'
+
 export interface VideoSuggestionProps {
   suggestedTexts: VideoAdText[]
 }
@@ -154,11 +155,8 @@ export function VideoAdTextItem({
   )
 }
 
-export function VideoAdTextSuggestion({
-  props
-}: {
-  props: VideoSuggestionProps[]
-}) {
+export function VideoAdTextSuggestion(props: VideoSuggestionProps[]) {
+  const { syncMessages } = useActions()
   const [aiState, setAIState] = useAIState()
   const { id: chatSlug } = useParams()
   const [isProcessing, setIsProcessing] = useState<boolean>(true);
@@ -166,7 +164,7 @@ export function VideoAdTextSuggestion({
   const [adTexts, setAdTexts] = useState<VideoAdText[]>(
     props
       .reduce(
-        (result, items) => [...result, ...items.suggestedTexts],
+        (result, item) => [...result, ...item.suggestedTexts],
         [] as VideoAdText[]
       )
       .reduce((result, adText) => {
@@ -188,7 +186,7 @@ export function VideoAdTextSuggestion({
   )
 
   const checkVideoStatus = async (video_id: string) => {
-    const response = await getVideoDetail(video_id)
+    const response = await getVideoDetail(video_id);
     if (response && response?.source) {
       setAIState({
         ...aiState,
@@ -222,6 +220,7 @@ export function VideoAdTextSuggestion({
           })
         ]
       })
+      await syncMessages()
       setIsProcessing(false)
     }
   }

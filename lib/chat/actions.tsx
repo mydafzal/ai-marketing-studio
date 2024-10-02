@@ -308,6 +308,15 @@ async function confirmCreateAd(data: any, adset: any, adText: AdText) {
     }
 }
 
+async function syncMessages() {
+    'use server'
+
+    const aiState = getMutableAIState<typeof AI>();
+    aiState.done({
+        ...aiState.get(),
+    });
+}
+
 async function submitUserMessage(content: string, contentImages?: Array<TextPart | ImagePart>, isSilent?: boolean) {
     'use server'
 
@@ -2373,14 +2382,12 @@ Engaged Shoppers]
                         ]
                     });
                     return (
-                        <>
-                            <BotCard>
-                                <VideoAdTextSuggestion props={videos}/>
-                                <div className="my-4">
-                                    {guideForUser ?? ''}
-                                </div>
-                            </BotCard>
-                        </>
+                        <BotCard>
+                            <VideoAdTextSuggestion {...videos}/>
+                            <div className="my-4">
+                                {guideForUser ?? ''}
+                            </div>
+                        </BotCard>
                     );
                 }
             },
@@ -2570,7 +2577,8 @@ export const AI = createAI<AIState, UIState>({
         submitUserMessage,
         confirmPurchase,
         confirmUpdateStatus,
-        confirmCreateAd
+        confirmCreateAd,
+        syncMessages,
     },
     initialUIState: [],
     initialAIState: {chatId: nanoid(), title: '', messages: []},
@@ -2684,11 +2692,7 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                 return (
                                   <>
                                     <BotCard key={tool.toolCallId}>
-                                      <VideoAdTextSuggestion
-                                        props={
-                                          tool.result.videos
-                                        }
-                                      />
+                                      <VideoAdTextSuggestion {...tool.result.videos} />
                                     </BotCard>
                                     <div className="my-4">
                                       {tool.result.guideForUser ?? ''}
