@@ -2319,7 +2319,9 @@ Engaged Shoppers]
                     videos: z.array(z.object({
                         suggestedTexts: z.array(z.object({
                             id: z.number().describe('This is timestamp of current time'),
-                            video: z.string().describe('The link of the video to display'),
+                            video_id: z.string().describe('This is ID of this video'),
+                            video: z.string().describe('The video link of this video'),
+                            thumbnail: z.string().describe('The thumbnail link of this video'),
                             date: z.string(),
                             text: z.string(),
                             headline: z.string().describe('The headline of the ad to display'),

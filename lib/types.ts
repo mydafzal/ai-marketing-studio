@@ -58,10 +58,11 @@ export interface AdText {
   fbAdId?: string
 }
 export interface VideoAdText {
-  id: number
-  video: string
+  id: string
   date: string
   text: string
+  video_id: string
+  video: string
   headline: string
   fbAdId?: string
 }
@@ -70,4 +71,20 @@ export interface FbCampaign {
   name: string
   created_time: string
   status: string
+}
+
+export interface FbVideoThumbnail {
+  id: string
+  height: number
+  width: number
+  uri: string
+  is_preferred: boolean
+}
+export interface FbVideo {
+  id: string
+  permalink_url: string
+  thumbnails?: {
+    data: FbVideoThumbnail[]
+  }
+  source?: string
 }

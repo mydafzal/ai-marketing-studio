@@ -47,15 +47,17 @@ export function UserMessage({
                             ))
                         }
                         {userContent
-                            .filter(message => (message.type === 'text' && message.text.includes('I upload videos with these urls:')))
+                            .filter(message => (message.type === 'text' && message.text.includes('I upload video with these data:')))
                             .map((message, idx) => {
-                                const urls = JSON.parse(`[${(message as TextPart).text?.split('[')[1]?.split(']')[0]}]`);
-
-                                return urls.map((url: string, index: number) => (
-                                    <div key={`${idx}-${index}`} className="p-4 w-1/2">
-                                        <VideoPlayer src={url} />
-                                    </div>
-                                ))
+                                const video_data = JSON.parse(`{${(message as TextPart).text?.split('{')[1]?.split('}')[0]}}`);
+                                return (
+                                  <div
+                                    key={idx}
+                                    className="p-4 w-1/2"
+                                  >
+                                    <VideoPlayer src={video_data?.video} />
+                                  </div>
+                                )
                             })
                         }
                     </div>

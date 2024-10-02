@@ -141,7 +141,7 @@ export function PromptForm({
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     const files = event.target.files
-    if (!files || files.length === 0) return
+    if (!files || files.length !== 1) return
     let checkSize = true;
     Array.from(files).forEach(file => {
       if (file) {
@@ -160,17 +160,12 @@ export function PromptForm({
     setUploading(true)
 
     const formData = new FormData()
-    const campaignId = chatToCampaignMapping[id as string]
 
-    formData.append('id', (campaignId || id) as string)
-    formData.append('type', "video")
-    Array.from(files).forEach(file => {
-      formData.append('files', file)
-    })
+    formData.append('file', files[0])
 
     toast.info('Uploading your videos, please wait...')
     try {
-      const response = await fetch('/api/upload', {
+      const response = await fetch('/api/upload-video', {
         method: 'POST',
         body: formData
       })
@@ -182,9 +177,9 @@ export function PromptForm({
       }
 
       const uploadedTime = new Date().getTime()
-      console.log('uploaded image urls', data.urls, uploadedTime)
-
-      const textPrompt = `I upload videos with these urls: ${JSON.stringify(data.urls)}, at this time: ${new Date().getTime()}`
+      console.log('uploaded image urls', data?.data, uploadedTime)
+      
+      const textPrompt = `I upload video with these data: ${JSON.stringify({...data?.data, video: '', thumbnail: ''})}, at this time: ${new Date().getTime()}`
       const userContent: UserContent = [
         {
           type: 'text',

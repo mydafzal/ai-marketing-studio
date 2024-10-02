@@ -1,20 +1,20 @@
 'use client'
 
 import { Separator } from '@/components/ui/separator'
-import { Fragment, useState } from 'react'
+import { Fragment, useState, useEffect, useRef } from 'react'
 import { nanoid } from 'nanoid'
 import { toast } from 'sonner'
 import { IconSpinner } from '@/components/ui/icons'
 import { useActions, useAIState, useUIState } from 'ai/rsc'
 import { sleep } from '@/lib/utils'
 import type { AI } from '@/lib/chat/actions'
-import { VideoAdText } from '@/lib/types'
+import { VideoAdText, Message } from '@/lib/types'
 import { generateAdTemplate, generateAdsetTemplate } from '@/lib/data'
 import { updateAdText, updateAdTextWithFbId } from '@/app/actions'
 import { useParams } from 'next/navigation'
 import { readStreamableValue } from 'ai/rsc'
 import { VideoPlayer } from './video-player'
-
+import { getVideoDetail } from '@/lib/api/fasty-bot/get-video-detail'
 export interface VideoSuggestionProps {
   suggestedTexts: VideoAdText[]
 }
@@ -159,7 +159,9 @@ export function VideoAdTextSuggestion({
 }: {
   props: VideoSuggestionProps[]
 }) {
+  const [aiState, setAIState] = useAIState()
   const { id: chatSlug } = useParams()
+  const [isProcessing, setIsProcessing] = useState<boolean>(true);
 
   const [adTexts, setAdTexts] = useState<VideoAdText[]>(
     props
@@ -184,6 +186,59 @@ export function VideoAdTextSuggestion({
         return [...result, adText]
       }, [] as VideoAdText[])
   )
+
+  const checkVideoStatus = async (video_id: string) => {
+    const response = await getVideoDetail(video_id)
+    if (response && response?.source) {
+      setAIState({
+        ...aiState,
+        messages: [
+          ...aiState.messages.map((message: Message) => {
+            if (message.role === 'tool') {
+              const content = message.content[0]
+              if (
+                content.type === 'tool-result' &&
+                content.toolName === 'showVideoAdTextSuggestion'
+              ) {
+                let result = content.result as { videos: any[] }
+                content.result = {
+                  ...(content.result as Object),
+                  videos: [
+                    ...result.videos.map(video => {
+                      return {
+                        ...video,
+                        suggestedTexts: [
+                          ...video.suggestedTexts.map((suggestedText: any) => {
+                            return { ...suggestedText, video: response?.source }
+                          })
+                        ]
+                      }
+                    })
+                  ]
+                }
+              }
+            }
+            return message
+          })
+        ]
+      })
+      setIsProcessing(false)
+    }
+  }
+  useEffect(() => {
+    let interval: NodeJS.Timeout | undefined
+    if (!props[0].suggestedTexts[0].video && isProcessing) {
+      interval = setInterval(() => {
+        checkVideoStatus(props[0].suggestedTexts[0].video_id)
+      }, 15000)
+    }
+
+    return () => {
+      if (interval) {
+        clearInterval(interval) 
+      }
+    }
+  }, [props, isProcessing])
 
   const { confirmCreateAd } = useActions()
 
