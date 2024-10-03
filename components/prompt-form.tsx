@@ -41,13 +41,14 @@ export function PromptForm({
   const handleFileChange = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
-    const files = event.target.files;
-    if (!files || files.length === 0) return;
-    if (files.length > 3) {
-      toast.error('You can select up to 3 images.');
-      return;
+    const files = event.target.files
+    if (!files || files.length === 0) return
+    if (files.length > 1) {
+      toast.error(
+        'You can select only 1 image a t time. Please select 1 image.'
+      )
+      return
     }
-
     let checkSize = true;
     Array.from(files).forEach(file => {
       if (file) {
@@ -154,7 +155,14 @@ export function PromptForm({
     if (inputRef.current) {
       inputRef.current.focus()
     }
-  }, [])
+  }, []);
+
+  const isTextareaDisabled = uploading || isHandling;
+  React.useEffect(() => {
+    if (inputRef.current && !isTextareaDisabled) {
+      inputRef.current.focus()
+    }
+  }, [isTextareaDisabled]);
 
   return (
     <form
@@ -184,7 +192,6 @@ export function PromptForm({
           ref={fileInputRef}
           style={{ display: 'none' }}
           type="file"
-          multiple
           accept="image/png, image/jpeg"
           onChange={handleFileChange}
         />
@@ -201,11 +208,11 @@ export function PromptForm({
               <span className="sr-only">Upload Images</span>
             </Button>
           </TooltipTrigger>
-          <TooltipContent>You can upload up to 3 images</TooltipContent>
+          <TooltipContent>You can upload 1 image at a time.</TooltipContent>
         </Tooltip>
         <Textarea
           ref={inputRef}
-          disabled={uploading || isHandling}
+          disabled={isTextareaDisabled}
           tabIndex={0}
           onKeyDown={onKeyDown}
           placeholder="Send a message."
