@@ -2,6 +2,7 @@
 
 import { Separator } from '@/components/ui/separator'
 import { Fragment, useState, useEffect, useRef } from 'react'
+import { TextPart} from 'ai'
 import { nanoid } from 'nanoid'
 import { toast } from 'sonner'
 import { IconSpinner } from '@/components/ui/icons'
@@ -140,6 +141,7 @@ export function VideoAdTextItem({
                       Adjust
                     </button>
                     <button
+                      disabled={isUpdating || !adText?.video}
                       onClick={handleAccept}
                       className="px-3 py-2 text-xs inline-block align-middle font-medium text-center text-white bg-gray-700 rounded-lg hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
                     >
@@ -217,6 +219,20 @@ export function VideoAdTextSuggestion({ videos }: VideoSuggestionProps) {
                   ]
                 }
               }
+             
+            }
+            if(message.role === 'user'){
+              let content = message.content[0] as TextPart
+              if(typeof content === 'object' && content.type==="text" && content.text.includes('I upload video with these data:')){
+                let video_data = JSON.parse(`{${(content).text?.split('{')[1]?.split('}')[0]}}`);
+                video_data = {
+                  ...video_data,
+                  video: response?.source,
+                  thumbnail: response.thumbnails?.data[0].uri as string
+                };
+               
+                content.text = `${content.text?.split('{')[0]}${JSON.stringify(video_data)}${content.text?.split('}')[1]}`;
+              }
             }
             return message
           })
@@ -242,7 +258,7 @@ export function VideoAdTextSuggestion({ videos }: VideoSuggestionProps) {
     if (!videos[0].suggestedTexts[0].video && isProcessing) {
       interval = setInterval(() => {
         checkVideoStatus(videos[0].suggestedTexts[0].video_id)
-      }, 10000)
+      }, 15000)
     }
 
     return () => {
