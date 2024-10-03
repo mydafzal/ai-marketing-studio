@@ -138,7 +138,14 @@ export function PromptForm({
     if (inputRef.current) {
       inputRef.current.focus()
     }
-  }, [])
+  }, []);
+
+  const isTextareaDisabled = uploading || isHandling;
+  React.useEffect(() => {
+    if (inputRef.current && !isTextareaDisabled) {
+      inputRef.current.focus()
+    }
+  }, [isTextareaDisabled]);
 
   return (
     <form
@@ -189,7 +196,7 @@ export function PromptForm({
         </Tooltip>
         <Textarea
           ref={inputRef}
-          disabled={uploading || isHandling}
+          disabled={isTextareaDisabled}
           tabIndex={0}
           onKeyDown={onKeyDown}
           placeholder="Send a message."

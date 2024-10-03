@@ -1,0 +1,32 @@
+import { NextResponse } from 'next/server'
+
+export async function GET(request: Request) {
+    const { searchParams } = new URL(request.url)
+    const campaign_id = searchParams.get('campaign_id')
+
+    if (!campaign_id) {
+        return NextResponse.json({ error: 'Campaign ID is required' }, { status: 400 })
+    }
+
+    const fastyEndpoint = process.env.FASTY_API_URL
+    const apiUrl = `${fastyEndpoint}/facebook/exec/direct/ads/get-adsets?campaign_id=${campaign_id}`
+
+    try {
+        const response = await fetch(apiUrl, {
+            headers: {
+                'Authorization': `Bearer ${process.env.FASTY_API_TOKEN}`
+            }
+        })
+
+        if (!response.ok) {
+            console.error(`HTTP error! status: ${response.status}`);
+            return NextResponse.json({ error: 'Failed to fetch adsets' }, { status: response.status });
+        }
+
+        const data = await response.json()
+        return NextResponse.json(data.data)
+    } catch (error) {
+        console.error('Error fetching adsets:', error)
+        return NextResponse.json({ error: 'Failed to fetch adsets' }, { status: 500 })
+    }
+}
