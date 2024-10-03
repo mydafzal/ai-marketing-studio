@@ -63,29 +63,3 @@ export interface FbCampaign {
   created_time: string
   status: string
 }
-
-export interface AdsetTargeting {
-  age_max: number
-  age_min: number
-  geo_locations: {
-    countries: string[]
-    location_types: string[]
-  }
-  publisher_platforms: string[]
-  facebook_positions: string[]
-  instagram_positions: string[]
-  device_platforms: string[]
-}
-export interface Adset {
-  id: string
-  name: string
-  campaign_id: string
-  daily_budget: string
-  billing_event: string
-  optimization_goal: string
-  targeting: AdsetTargeting
-  promoted_object: {
-    page_id: string
-  }
-  status: string
-}

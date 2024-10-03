@@ -77,13 +77,13 @@ export const CampaignContextProvider = ({ children }: { children: React.ReactNod
             setAIState((aiState: any) => ({
                 ...aiState,
                 messages: [
+                    ...aiState.messages.filter((message: Message) => message.id !== 'campaign-info-data' || message.role !== 'system'),
                     {
                         id: 'campaign-info-data',
                         role: 'system',
-                        content: `Campaign is connected, the knowledge base about current campaign information: ${JSON.stringify(summary)}`,
+                        content: `Campaign is now connected, the knowledge base about current campaign information: ${JSON.stringify(summary)}`,
                         timestamp: new Date().toISOString() 
-                    },
-                    ...aiState.messages.filter((message: Message) => message.id !== 'campaign-info-data' || message.role !== 'system'),
+                    }
                 ]
             }))
             lastUpdatedRef.current = new Date();

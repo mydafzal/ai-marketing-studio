@@ -154,8 +154,8 @@ export function ConnectCampaign({ connectingUiProps }: ConnectCampaignProps) {
       setMessages(currentMessages => [...currentMessages, responseMessage])
     }
     if (aiMessages.length) {
-      const { content, id, role } = aiMessages[0];
-      if (role === 'system' && id === 'campaign-info-data' && content?.slice(0, 21) === 'Campaign is connected') {
+      const { id, role } = aiMessages[aiMessages.length - 1]
+      if (role === 'system' && id === 'campaign-info-data') {
         if (shouldSendSilentMessage.current) {
           // this is a workaround, campaign info data is replaced if I do not use setTimeout
           setTimeout(refresh, 0);
