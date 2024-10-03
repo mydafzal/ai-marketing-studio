@@ -49,15 +49,20 @@ export function UserMessage({
                         {userContent
                             .filter(message => (message.type === 'text' && message.text.includes('I upload video with these data:')))
                             .map((message, idx) => {
-                                const video_data = JSON.parse(`{${(message as TextPart).text?.split('{')[1]?.split('}')[0]}}`);
+                                let video_data;
+                                try {
+                                    video_data = JSON.parse(`{${(message as TextPart).text?.split('{')[1]?.split('}')[0]}}`);
+                                } catch (e) {
+                                    console.log('error', e)
+                                }
                                 return (
-                                  <div
-                                    key={idx}
-                                    className="p-4 w-1/2"
-                                  >
-                                    <VideoPlayer src={video_data?.video} />
-                                  </div>
-                                )
+                                    <div
+                                      key={idx}
+                                      className="p-4 w-1/2"
+                                    >
+                                      <VideoPlayer src={video_data?.video} />
+                                    </div>
+                                  )
                             })
                         }
                     </div>
