@@ -9,7 +9,7 @@ import { useActions, useAIState, useUIState } from 'ai/rsc'
 import { sleep } from '@/lib/utils'
 import type { AI } from '@/lib/chat/actions'
 import { VideoAdText, Message } from '@/lib/types'
-import { generateAdTemplate, generateAdsetTemplate } from '@/lib/data'
+import { generateVideoAdTemplate, generateAdsetTemplate } from '@/lib/data'
 import { updateAdText, updateAdTextWithFbId } from '@/app/actions'
 import { useParams } from 'next/navigation'
 import { readStreamableValue } from 'ai/rsc'
@@ -209,7 +209,7 @@ export function VideoAdTextSuggestion({ videos }: VideoSuggestionProps) {
                         ...video,
                         suggestedTexts: [
                           ...video.suggestedTexts.map((suggestedText: any) => {
-                            return { ...suggestedText, video: response?.source }
+                            return { ...suggestedText, video: response?.source, thumbnail: response.thumbnails?.data[0].uri as string }
                           })
                         ]
                       }
@@ -222,16 +222,27 @@ export function VideoAdTextSuggestion({ videos }: VideoSuggestionProps) {
           })
         ]
       })
+      
+      setAdTexts((adTexts: VideoAdText[]) => {
+        return [
+          ...adTexts.map(adText => {
+            return { ...adText, video: response.source as string, thumbnail: response.thumbnails?.data[0].uri as string }
+          })
+        ]
+      })
       await syncMessages()
       setIsProcessing(false)
     }
   }
   useEffect(() => {
+    console.log("adTexts",adTexts);
+  },[adTexts])
+  useEffect(() => {
     let interval: NodeJS.Timeout | undefined
     if (!videos[0].suggestedTexts[0].video && isProcessing) {
       interval = setInterval(() => {
         checkVideoStatus(videos[0].suggestedTexts[0].video_id)
-      }, 15000)
+      }, 10000)
     }
 
     return () => {
@@ -247,9 +258,8 @@ export function VideoAdTextSuggestion({ videos }: VideoSuggestionProps) {
 
   const acceptText = async (idx: number, adText: VideoAdText) => {
     const response = await confirmCreateAd(
-      generateAdTemplate(adText.headline, adText.text, adText.video),
-      generateAdsetTemplate(),
-      adText
+      generateVideoAdTemplate(adText.headline, adText.text, adText),
+      generateAdsetTemplate()
     )
     setMessages(currentMessages => [...currentMessages, response.newMessage])
 
@@ -296,7 +306,7 @@ export function VideoAdTextSuggestion({ videos }: VideoSuggestionProps) {
   return (
     <div className="-mt-2 flex w-full flex-col gap-4 py-4">
       {adTexts.map((adText, index) => (
-        <Fragment key={`${adText.date}${index}`}>
+        <Fragment key={`${adText.date}${index}${adText.video}`}>
           {index !== 0 && <Separator className="my-4" />}
           <div
             key={index}

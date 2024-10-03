@@ -62,6 +62,7 @@ export interface VideoAdText {
   date: string
   text: string
   video_id: string
+  thumbnail?: string
   video: string
   headline: string
   fbAdId?: string

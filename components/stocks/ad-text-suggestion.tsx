@@ -187,8 +187,7 @@ export function AdTextSuggestion({ props }: { props: ImageSuggestionProps[] }) {
         adText.text,
         adText.image
       ),
-      generateAdsetTemplate(),
-      adText
+      generateAdsetTemplate()
     )
     setMessages(currentMessages => [...currentMessages, response.newMessage])
 

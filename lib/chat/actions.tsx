@@ -249,7 +249,7 @@ async function confirmUpdateStatus(campaignName: string, status: string) {
     }
 }
 
-async function confirmCreateAd(data: any, adset: any, adText: AdText) {
+async function confirmCreateAd(data: any, adset: any) {
     'use server'
     const aiState = getMutableAIState<typeof AI>();
     let campaignId = await getCampaignIdFromUrl() || '0'; // for now just say you are updating even if no campaign id in place
