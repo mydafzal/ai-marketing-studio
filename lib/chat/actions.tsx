@@ -2383,7 +2383,7 @@ Engaged Shoppers]
                     });
                     return (
                         <BotCard>
-                            <VideoAdTextSuggestion {...videos}/>
+                            <VideoAdTextSuggestion videos={videos}/>
                             <div className="my-4">
                                 {guideForUser ?? ''}
                             </div>
@@ -2692,7 +2692,7 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                 return (
                                   <>
                                     <BotCard key={tool.toolCallId}>
-                                      <VideoAdTextSuggestion {...tool.result.videos} />
+                                      <VideoAdTextSuggestion {...tool.result} />
                                     </BotCard>
                                     <div className="my-4">
                                       {tool.result.guideForUser ?? ''}

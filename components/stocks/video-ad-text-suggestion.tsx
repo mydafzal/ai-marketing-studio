@@ -17,7 +17,9 @@ import { VideoPlayer } from './video-player'
 import { getVideoDetail } from '@/lib/api/fasty-bot/get-video-detail'
 
 export interface VideoSuggestionProps {
-  suggestedTexts: VideoAdText[]
+  videos: {
+    suggestedTexts: VideoAdText[]
+  }[]
 }
 
 export function VideoAdTextItem({
@@ -155,14 +157,14 @@ export function VideoAdTextItem({
   )
 }
 
-export function VideoAdTextSuggestion(props: VideoSuggestionProps[]) {
+export function VideoAdTextSuggestion({ videos }: VideoSuggestionProps) {
   const { syncMessages } = useActions()
   const [aiState, setAIState] = useAIState()
   const { id: chatSlug } = useParams()
   const [isProcessing, setIsProcessing] = useState<boolean>(true);
 
   const [adTexts, setAdTexts] = useState<VideoAdText[]>(
-    props
+    videos
       .reduce(
         (result, item) => [...result, ...item.suggestedTexts],
         [] as VideoAdText[]
@@ -226,9 +228,9 @@ export function VideoAdTextSuggestion(props: VideoSuggestionProps[]) {
   }
   useEffect(() => {
     let interval: NodeJS.Timeout | undefined
-    if (!props[0].suggestedTexts[0].video && isProcessing) {
+    if (!videos[0].suggestedTexts[0].video && isProcessing) {
       interval = setInterval(() => {
-        checkVideoStatus(props[0].suggestedTexts[0].video_id)
+        checkVideoStatus(videos[0].suggestedTexts[0].video_id)
       }, 15000)
     }
 
@@ -237,7 +239,7 @@ export function VideoAdTextSuggestion(props: VideoSuggestionProps[]) {
         clearInterval(interval) 
       }
     }
-  }, [props, isProcessing])
+  }, [videos, isProcessing])
 
   const { confirmCreateAd } = useActions()
 
