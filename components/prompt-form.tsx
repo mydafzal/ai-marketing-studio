@@ -24,7 +24,7 @@ export interface PromtFormProps {
   onSendMessage: (message: string, userContent?: Array<TextPart | ImagePart>) => Promise<void>
 }
 const MAX_IMAGE_SIZE = 4 * 1024 * 1024;
-const MAX_VIDEO_SIZE = 20 * 1024 * 1024;
+const MAX_VIDEO_SIZE = 1024 * 1024 * 1024;
 
 export function PromptForm({
   onSendMessage
@@ -152,7 +152,7 @@ export function PromptForm({
     })
     if (!checkSize) {
       toast.error(
-        'This video is too big. Please use images which are smaller than 20MB.'
+        'This video is too big. Please use images which are smaller than 1GB.'
       )
       return
     }    
@@ -177,7 +177,7 @@ export function PromptForm({
       }
 
       const uploadedTime = new Date().getTime()
-      console.log('uploaded image urls', data?.data, uploadedTime)
+      console.log('uploaded video data', data?.data, uploadedTime)
       
       const textPrompt = `I upload video with these data: ${JSON.stringify({...data?.data, video: '', thumbnail: ''})}, at this time: ${new Date().getTime()}`
       const userContent: UserContent = [
