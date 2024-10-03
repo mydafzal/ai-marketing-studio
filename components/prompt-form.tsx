@@ -43,6 +43,12 @@ export function PromptForm({
   ) => {
     const files = event.target.files
     if (!files || files.length === 0) return
+    if (files.length > 1) {
+      toast.error(
+        'You can select only 1 image a t time. Please select 1 image.'
+      )
+      return
+    }
     let checkSize = true;
     Array.from(files).forEach(file => {
       if (file) {
@@ -175,7 +181,6 @@ export function PromptForm({
           ref={fileInputRef}
           style={{ display: 'none' }}
           type="file"
-          multiple
           accept="image/png, image/jpeg"
           onChange={handleFileChange}
         />
@@ -192,7 +197,7 @@ export function PromptForm({
               <span className="sr-only">Upload Images</span>
             </Button>
           </TooltipTrigger>
-          <TooltipContent>You can upload up to 10 images</TooltipContent>
+          <TooltipContent>You can upload 1 image at a time.</TooltipContent>
         </Tooltip>
         <Textarea
           ref={inputRef}
