@@ -1852,7 +1852,7 @@ Engaged Shoppers]
     
     4. Vary the length and style slightly between versions to offer diverse options.
     
-    5. Label each version as "Version 1: Professional", "Version 2: Emoji-rich", and "Version 3: Conversational".
+    5. Set headline of each version.
     
     ALWAYS call \`showUpdateStatusChampaign\` to show the update status UI and let the user choose the status of the campaign.
     
@@ -2325,7 +2325,7 @@ Engaged Shoppers]
                                 image: z.string().describe('The link of the image to display'),
                                 date: z.string(),
                                 text: z.string(),
-                                headline: z.string().describe('The headline of the ad to display'),
+                                headline: z.string().optional().describe('The headline of the ad to display'),
                             })).describe('List of suggested ad texts')
                         })
                     ).describe('List of images to display'),
@@ -2374,7 +2374,6 @@ Engaged Shoppers]
                             }
                         ]
                     });
-
 
                     return (
                         <>

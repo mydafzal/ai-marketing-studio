@@ -20,7 +20,7 @@ import { Message } from '@/lib/types'
 import { getMimeType } from '@/lib/utils'
 
 export interface PromtFormProps {
-  onSendMessage: (message: string, userContent?: Array<TextPart | ImagePart>) => Promise<void>
+  onSendMessage: (message: string, userContent?: (TextPart | ImagePart)[]) => Promise<void>
 }
 const MAX_SIZE = 4 * 1024 * 1024;
 
@@ -107,14 +107,12 @@ export function PromptForm({
       }
 
       const uploadedTime = new Date().getTime()
-      console.log('uploaded image urls', data.urls, uploadedTime)
-      const imgMessages = data.urls.map((url: string) => {
-        imageIdx++
+      const imgMessages = data.urls.map((url: string, idx: number) => {
         let objUrl = {
           type: 'image',
           image: url,
           uploaded_date: uploadedTime,
-          idx: imageIdx,
+          idx,
           mimeType: getMimeType(url)
         }
         return objUrl
@@ -126,10 +124,23 @@ export function PromptForm({
           type: 'text',
           text: textPrompt
         },
-        ...imgMessages
-      ]
+        ...imgMessages,
+      ];
 
-      await onSendMessage(textPrompt, userContent)
+      let count = 0;
+      while (count < 3) {
+        console.log('try', count + 1)
+        try {
+          await onSendMessage(textPrompt, userContent);
+          break;
+        } catch(e) {
+          count++;
+        }
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+
+      console.log('userContent', userContent);
+      // await onSendMessage(textPrompt, userContent);
       toast.success('Images uploaded successfully!')
     } catch (error) {
       toast.error('Failed to upload the image. Please try again.')

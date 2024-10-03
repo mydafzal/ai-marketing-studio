@@ -14,8 +14,12 @@ import { updateAdText, updateAdTextWithFbId } from '@/app/actions'
 import { useParams } from 'next/navigation'
 import { readStreamableValue } from 'ai/rsc'
 
+interface SuggestedText extends Omit<AdText, 'headline'> {
+  headline?: string;
+}
+
 export interface ImageSuggestionProps {
-  suggestedTexts: AdText[]
+  suggestedTexts: SuggestedText[];
 }
 
 export function AdTextItem({
@@ -149,9 +153,9 @@ export function AdTextSuggestion({ props }: { props: ImageSuggestionProps[] }) {
   const { id: chatSlug } = useParams()
 
   const [adTexts, setAdTexts] = useState<AdText[]>(
-    props.reduce((result, items) => [...result,  ...items.suggestedTexts], [] as AdText[])
+    props.reduce((result, items) => [...result,  ...items.suggestedTexts], [] as SuggestedText[])
       .reduce((result, adText) => {
-        if (adText.text?.includes('Version 1:')) {
+        if (adText.text?.includes('Version')) {
           const segments = adText.text?.split('"')
           const adText1Headline = segments[0]?.split(':')?.[1]?.trim()
           const adText1Content = segments[1]
@@ -161,7 +165,7 @@ export function AdTextSuggestion({ props }: { props: ImageSuggestionProps[] }) {
           // const adText3Content = segments[5]
           return [...result, {
             ...adText,
-            headline: adText1Headline,
+            headline: adText1Headline ?? 'Headline',
             text: adText1Content
           // }, {
           //   ...adText,
@@ -173,7 +177,10 @@ export function AdTextSuggestion({ props }: { props: ImageSuggestionProps[] }) {
           //   text: adText3Content
           }]
         }
-        return [...result, adText]
+        return [...result, {
+          ...adText,
+          headline: adText.headline ?? 'Headline',
+        }]
       }, [] as AdText[])
   )
   const { confirmCreateAd } = useActions()
