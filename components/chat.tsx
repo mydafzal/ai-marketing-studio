@@ -35,7 +35,6 @@ function ChatCore({ id, chat, className, session, missingKeys }: ChatProps) {
       setAIState((aiState: any) => ({
         ...aiState,
         messages: [
-            ...aiState.messages.filter((message: Message) => message.id !== 'campaign-info-data' || message.role !== 'system'),
             {
                 id: 'campaign-info-data',
                 role: 'system',
