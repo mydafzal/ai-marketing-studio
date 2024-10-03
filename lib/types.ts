@@ -58,7 +58,7 @@ export interface AdText {
   fbAdId?: string
 }
 export interface VideoAdText {
-  id: string
+  id: number
   date: string
   text: string
   video_id: string
