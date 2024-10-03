@@ -152,7 +152,7 @@ export function PromptForm({
     })
     if (!checkSize) {
       toast.error(
-        'This video is too big. Please use images which are smaller than 1GB.'
+        'This video is too big. Please use videos which are smaller than 1GB.'
       )
       return
     }    
