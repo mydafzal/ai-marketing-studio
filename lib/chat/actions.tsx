@@ -11,7 +11,7 @@ import {PurchasingUi} from '@/components/stocks/purchasing-ui'
 import {StockSkeleton} from '@/components/stocks/stock-skeleton'
 import {AdTextSuggestion} from '@/components/stocks/ad-text-suggestion'
 import {RefreshChatTitle} from '@/components/refresh-chat-title'
-import {RefreshSideBar} from '@/components/refresh-sidebar'
+import {InjectCampaign} from '@/components/inject-campaign'
 import {CampaignStatus} from '@/components/stocks/campaign-status'
 import {
     fetchChatCampaignBudget,
@@ -2499,7 +2499,7 @@ Engaged Shoppers]
                         <BotCard>
                             <p className="mb-2 last:mb-0">{`Alright, I will update campaign name as "${campaignName}".`}</p>
                             {!!questionForBudget && <p className="mb-2 last:mb-0">{questionForBudget}</p>}
-                            <RefreshSideBar/>
+                            <InjectCampaign campaignId={campaignId} />
                             <RefreshChatTitle campaignName={campaignName} campaignId={campaignId}/>
                         </BotCard>
                     )
@@ -2526,6 +2526,7 @@ Engaged Shoppers]
                             fbCampaignId: id
                         })
                         success = success && !!result.success
+                        campaignId = id
                     }
                     const timestamp: string = new Date().toISOString();
                     const toolCallId = nanoid();
@@ -2565,7 +2566,7 @@ Engaged Shoppers]
                         <BotCard>
                             <p className="mb-2 last:mb-0">{`I created a campaign named "${campaignName}".`}</p>
                             {!!questionForBudget && <p className="mb-2 last:mb-0">{questionForBudget}</p>}
-                            <RefreshSideBar/>
+                            <InjectCampaign campaignId={campaignId} />
                             <RefreshChatTitle campaignName={campaignName} campaignId={campaignId}/>
                         </BotCard>
                     ) : (
