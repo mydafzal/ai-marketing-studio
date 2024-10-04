@@ -31,7 +31,6 @@ export function ConnectCampaignForm({
   const [selectedCampaign, setSelectedCampaign] = useState<FbCampaign>()
   const [isSubmitting, setSubmitting] = useState<boolean>(false)
   const [isCreating, setCreating] = useState<boolean>(false)
-  const [aiState] = useAIState()
   const { campaigns, getCampaignList } = useContext(CampaignContext)
 
   const handleCreateCampaign = async () => {
@@ -41,7 +40,6 @@ export function ConnectCampaignForm({
       status: 'PAUSED',
     }
     const response = await createCampaign({
-      chatSlug: aiState.chatId,
       objective: 'OUTCOME_LEADS',
       special_ad_categories: ['NONE'],
       ...createData,

@@ -19,6 +19,7 @@ import {
     fetchUserDefaultExtraDetails,
     saveChat,
     updateChatCampaignBudget,
+    updateChat,
     updateChatTitle
 } from '@/app/actions'
 import {differenceInHours} from 'date-fns';
@@ -32,6 +33,7 @@ import {auth} from '@/auth'
 import {setDailyCampaignBudget} from '@/lib/api/fasty-bot/set-daily-campaign-budget';
 import {setCampaignStatus} from '@/lib/api/fasty-bot/set-campaign-status';
 import {createCampaignAd} from '@/lib/api/fasty-bot/create-ad';
+import {createCampaign } from '@/lib/api/fasty-bot/create-campaign'
 import {updateCampaign} from '@/lib/api/fasty-bot/update-campaign';
 import {updateAdset} from '@/lib/api/fasty-bot/update-adset';
 import {getCampaignIdFromUrl} from "@/lib/api/fasty-bot/helpers/campaign-id-from-url-helper";
@@ -451,7 +453,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
     
     Objective:
     
-    When clients want to create a new Campaign ask clients a series of scripted questions to determine the most suitable advertisement type, ensuring a conversational tone. Follow the script precisely without repeating questions or inventing targeting filters not in the knowledge base. Always respond in the language the user is using. If the user is speaking in German, use "Du" instead of "Sie", and avoid being too formal.
+    When clients want to create a new Campaign, ask clients a series of scripted questions to determine the most suitable advertisement type, ensuring a conversational tone. Follow the script precisely without repeating questions or inventing targeting filters not in the knowledge base. Always respond in the language the user is using. If the user is speaking in German, use "Du" instead of "Sie", and avoid being too formal.
     
     Communication Style:
     
@@ -482,7 +484,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
     
     Reasoning: Change the campaign name.
     
-    Response: Call \`show_campaign_name_update_ui\` with [client's answer] or with [your suggestion] as the campaign name and question for budget with Step 2 as questionForBudget.
+    Response: Call \`create_campaign\` with [client's answer] or with [your suggestion] as the campaign name and question for budget with Step 2 as questionForBudget.
     
     Step 2: How much do you want to spend on your campaign daily? Ideally, spend at least €300 a month to maximize Facebook ads' potential.
     
@@ -2503,6 +2505,76 @@ Engaged Shoppers]
                     )
                 }
             },
+            createCampaign: {
+                description: 'Show a notification that the name of Facebook Ad Campaign is updated. Use this when the user wants to change campaign name. The parameter questionForBudget is optional. It is used only in step 1.',
+                parameters: z.object({
+                    campaignName: z.string().describe('The name of the campaign'),
+                    questionForBudget: z.string().describe('The question for the budget with step 2, this is optional'),
+                }),
+                generate: async function* ({campaignName, questionForBudget}) {
+                    const response = await createCampaign({
+                      objective: 'OUTCOME_LEADS',
+                      special_ad_categories: ['NONE'],
+                      name: campaignName,
+                      status: 'PAUSED',
+                    })
+                    let success = !!response.ok
+                    if (success) {
+                        const { id } = await response.json()
+                        const result = await updateChat(aiState.get().chatId, {
+                            title: campaignName,
+                            fbCampaignId: id
+                        })
+                        success = success && !!result.success
+                    }
+                    const timestamp: string = new Date().toISOString();
+                    const toolCallId = nanoid();
+                    aiState.done({
+                        ...aiState.get(),
+                        messages: [
+                            ...aiState.get().messages,
+                            {
+                                id: nanoid(),
+                                role: 'assistant',
+                                content: [
+                                    {
+                                        type: 'tool-call',
+                                        toolName: 'createCampaign',
+                                        toolCallId,
+                                        args: {success, campaignName, campaignId, questionForBudget}
+                                    }
+                                ],
+                                timestamp
+                            },
+                            {
+                                id: toolCallId,
+                                role: 'tool',
+                                content: [
+                                    {
+                                        type: 'tool-result',
+                                        toolName: 'createCampaign',
+                                        toolCallId,
+                                        result: {success, campaignName, campaignId, questionForBudget}
+                                    }
+                                ],
+                                timestamp
+                            }
+                        ]
+                    })
+                    return success ? (
+                        <BotCard>
+                            <p className="mb-2 last:mb-0">{`I created a campaign named "${campaignName}".`}</p>
+                            {!!questionForBudget && <p className="mb-2 last:mb-0">{questionForBudget}</p>}
+                            <RefreshSideBar/>
+                            <RefreshChatTitle campaignName={campaignName} campaignId={campaignId}/>
+                        </BotCard>
+                    ) : (
+                        <BotCard>
+                            <p className="mb-2 last:mb-0">Campaign creation failed, please try again later.</p>
+                        </BotCard>
+                    )
+                }
+            },
             showCampaignConnectionUI: {
                 description: 'Show a UI to connect a campaign to the chat.',
                 parameters: z.object({}),
@@ -2742,6 +2814,18 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                         <p className="mb-2 last:mb-0">{`Alright, I will update campaign name as "${tool.result.campaignName}".`}</p>
                                         {!!tool.result.questionForBudget &&
                                             <p className="mb-2 last:mb-0">{tool.result.questionForBudget}</p>}
+                                    </BotCard>
+                                )
+                            case 'createCampaign':
+                                return tool.result.success ? (
+                                    <BotCard key={tool.toolCallId}>
+                                        <p className="mb-2 last:mb-0">{`I created a campaign named "${tool.result.campaignName}".`}</p>
+                                        {!!tool.result.questionForBudget &&
+                                            <p className="mb-2 last:mb-0">{tool.result.questionForBudget}</p>}
+                                    </BotCard>
+                                ) : (
+                                    <BotCard>
+                                        <p className="mb-2 last:mb-0">Campaign creation failed, please try again later.</p>
                                     </BotCard>
                                 )
                             case 'showUpdateStatusCampaign':
