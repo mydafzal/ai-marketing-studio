@@ -13,6 +13,7 @@ import {
   TooltipTrigger
 } from '@/components/ui/tooltip'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { ProgressBar } from '@/components/ui/progress-bar'
 import { toast } from 'sonner'
 import { useEnterSubmit } from '@/lib/hooks/use-enter-submit'
 import { useParams } from 'next/navigation'
@@ -24,8 +25,21 @@ export interface PromtFormProps {
   onSendMessage: (message: string, userContent?: Array<TextPart | ImagePart>) => Promise<void>
 }
 const MAX_IMAGE_SIZE = 4 * 1024 * 1024;
-const MAX_VIDEO_SIZE = 1024 * 1024 * 1024;
+const MAX_VIDEO_SIZE = 1 * 1024 * 1024 * 1024;
+const CHUNK_VIDEO_SIZE = 4 * 1024 * 1024;
 
+ interface ChunkUploadProps {
+  file_size?: number;
+  start_offset?: string;
+  end_offset?: string;
+  video_id?: string;
+  upload_session_id?: string;
+  success?: boolean;
+}
+interface ProgressBarProps {
+  isShow: boolean;
+  value: number;
+}
 export function PromptForm({
   onSendMessage
 }: PromtFormProps) {
@@ -36,6 +50,12 @@ export function PromptForm({
   const [isDisabled, setIsDisabled] = React.useState(true)
   const [isHandling, setIsHandling] = React.useState(false)
   const [openUploadMenu, setOpenUploadMenu] = React.useState(false);
+  const [videoUploadDataInfo, setVideoUploadDataInfo] = React.useState<ChunkUploadProps>({});
+
+  const [progressBar, setProgressBar] = React.useState<ProgressBarProps>({
+    isShow: false,
+    value: 0,
+  })
 
   const imageInputRef = React.useRef<HTMLInputElement>(null)
   const videoInputRef = React.useRef<HTMLInputElement>(null)
@@ -137,62 +157,103 @@ export function PromptForm({
 
     setUploading(false)
   }
-  const handleVideoFileChange =async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const files = event.target.files
-    if (!files || files.length !== 1) return
-    let checkSize = true;
-    Array.from(files).forEach(file => {
-      if (file) {
-        if (file.size >= MAX_VIDEO_SIZE) {
-          checkSize = false
-        }
-      }
-    })
-    if (!checkSize) {
-      toast.error(
-        'This video is too big. Please use videos which are smaller than 1GB.'
-      )
-      return
-    }    
-
-    setUploading(true)
-
-    const formData = new FormData()
-
-    formData.append('file', files[0])
-
-    toast.info('Uploading your videos, please wait...')
+  const chunkUpload = async (formData: FormData) => {
     try {
       const response = await fetch('/api/upload-video', {
         method: 'POST',
         body: formData
       })
-
-      const data = await response.json()
       if (!response.ok) {
-        toast.error('Failed to upload the video. Please try again.')
-        return
+        return false
       }
+      const data = await response.json()
+      return data
+    } catch (error) {
+      console.log('chunkUpload ~ error:', error)
+      return false
+    }
+  }
+  const handleVideoFileChange = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const files = event.target.files
+    if (!files || files.length !== 1) return
+    let file = files[0]
 
-      const uploadedTime = new Date().getTime()
-      console.log('uploaded video data', data?.data, uploadedTime)
-      
-      const textPrompt = `I upload video with these data: ${JSON.stringify({...data?.data, video: '', thumbnail: ''})}, at this time: ${new Date().getTime()}`
-      const userContent: UserContent = [
-        {
-          type: 'text',
-          text: textPrompt
+    if (file.size >= MAX_VIDEO_SIZE) {
+      toast.error(
+          'This video is too big. Please use videos which are smaller than 1GB.'
+      )
+      return
+    }
+    setProgressBar({
+      isShow: true,
+      value: 0
+    })
+    setVideoUploadDataInfo({});
+    setUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      toast.info('Uploading your videos, please wait...')
+      const totalChunks = Math.ceil(file.size / CHUNK_VIDEO_SIZE)
+      const formDataStart = new FormData()
+      formDataStart.append('file_size', file.size.toString())
+      const uploadState = await chunkUpload(formDataStart)
+      if (uploadState?.success) {
+        let newUploadState: ChunkUploadProps = {
+          ...uploadState.data,
+          file_size: file.size.toString()
         }
-      ]
+        setVideoUploadDataInfo(newUploadState);
+        for (let i = 0; i < totalChunks; i++) {
+          const chunk = file.slice(
+            i * CHUNK_VIDEO_SIZE,
+            (i + 1) * CHUNK_VIDEO_SIZE
+          )
+          const formDataUpload = new FormData()
+          formDataUpload.append('file', chunk)
+          formDataUpload.append(
+            'start_offset',
+            newUploadState.start_offset || '0'
+          )
+          formDataUpload.append('finish', i === totalChunks - 1 ? '1' : '0')
+          formDataUpload.append(
+            'upload_session_id',
+            newUploadState.upload_session_id || ''
+          )
+          const uploadState = await chunkUpload(formDataUpload)
+          if (uploadState){
+            newUploadState = { ...newUploadState, ...uploadState.data }
+            setVideoUploadDataInfo(newUploadState);
+          }
+        }
+        if (newUploadState?.success) {
+          const uploadedTime = new Date().getTime()
+          console.log('uploaded image ', newUploadState, uploadedTime)
+          const textPrompt = `I upload video with these data: ${JSON.stringify({ video_id: newUploadState?.video_id, video: '', thumbnail: '' })}, at this time: ${new Date().getTime()}`
+          const userContent: UserContent = [
+            {
+              type: 'text',
+              text: textPrompt
+            }
+          ]
 
-      await onSendMessage(textPrompt, userContent)
-      toast.success('Videos uploaded successfully!')
+          await onSendMessage(textPrompt, userContent)
+          toast.success('Videos uploaded successfully!')
+        } else {
+          toast.error('Failed to upload the video. Please try again.')
+        }
+      }else{
+        toast.error('Failed to upload the video. Please try again.')
+      }
     } catch (error) {
       toast.error('Failed to upload the video. Please try again.')
     }
-
+    setProgressBar({
+      isShow: false,
+      value: 0
+    })
     setUploading(false)
   }
   const handleImageButtonClick = () => {
@@ -209,6 +270,24 @@ export function PromptForm({
       inputRef.current.focus()
     }
   }, []);
+  React.useEffect(() => {
+    console.log("progressBar", progressBar);
+  }, [progressBar]);
+  React.useEffect(() => {
+    console.log("videoUploadDataInfo", videoUploadDataInfo);
+    if(videoUploadDataInfo){
+      if(videoUploadDataInfo?.file_size && videoUploadDataInfo?.start_offset){
+       const file_size = Number(videoUploadDataInfo?.file_size)
+       const start_offset = Number(videoUploadDataInfo?.start_offset)
+       const percent = Math.round(((start_offset / file_size) * 100));
+       setProgressBar({
+         isShow: videoUploadDataInfo?.success ? false : true,
+         value: percent
+       })
+      }
+    }
+  }, [videoUploadDataInfo])
+  
 
   const isTextareaDisabled = uploading || isHandling;
   React.useEffect(() => {
@@ -240,6 +319,7 @@ export function PromptForm({
         setIsHandling(false)
       }}
     >
+      {progressBar.isShow && <ProgressBar value={progressBar.value} max={100} width="w-full" height="h-[2px]" color="bg-gray-500"/>}
       <div className="relative flex max-h-60 w-full grow flex-col overflow-hidden bg-background px-8 sm:rounded-md sm:border sm:px-12">
         <input
           ref={imageInputRef}
