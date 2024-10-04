@@ -13,7 +13,6 @@ import { useLocalStorage } from '@/lib/hooks/use-local-storage'
 import { useScrollAnchor } from '@/lib/hooks/use-scroll-anchor'
 import { Chat as ChatType, Message, Session } from '@/lib/types'
 import { cn } from '@/lib/utils'
-import { createCampaign } from '@/lib/api/fasty-bot/create-campaign'
 
 export interface ChatProps extends React.ComponentProps<'div'> {
   initialMessages?: Message[]
