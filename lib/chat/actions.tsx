@@ -2527,6 +2527,11 @@ Engaged Shoppers]
                         })
                         success = success && !!result.success
                         campaignId = id
+                    } else {
+                        console.error('Error create campaign:', {
+                            status: response.status,
+                            statusText: response.statusText
+                        })
                     }
                     const timestamp: string = new Date().toISOString();
                     const toolCallId = nanoid();
