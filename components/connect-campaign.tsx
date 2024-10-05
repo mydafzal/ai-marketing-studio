@@ -48,10 +48,7 @@ export function ConnectCampaignForm({
       })
     })
     const response = await responseStream.json()
-    console.log('responseStream', responseStream)
-    console.log('response', response)
     if (response.success && response.data.id) {
-      console.log('created campaign id is', response.data.id)
       await handleSelectCampaign({
         ...response.data,
         ...createData,
