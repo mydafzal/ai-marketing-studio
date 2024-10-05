@@ -76,6 +76,7 @@ export async function createCampaign(
     }
     const fastyEndpoint = process.env.FASTY_API_URL
     const apiUrl = `${fastyEndpoint}/facebook/exec/direct/campaign/create`
+    console.log('payload to create a new campaign', payload)
 
     const response = await fetch(apiUrl, {
       method: 'POST',
