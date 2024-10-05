@@ -33,7 +33,6 @@ export function ConnectCampaignForm({
   const { campaigns, getCampaignList } = useContext(CampaignContext)
 
   const handleCreateCampaign = async () => {
-    console.log('create campaign')
     const createData = {
       name: 'My campaign',
       status: 'PAUSED',
