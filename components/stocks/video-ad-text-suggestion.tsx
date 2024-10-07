@@ -1,7 +1,8 @@
 'use client'
 
+import { CampaignContext } from '@/components/contexts/campaign-context'
 import { Separator } from '@/components/ui/separator'
-import { Fragment, useState, useEffect, useRef } from 'react'
+import { Fragment, useContext, useState, useEffect, useRef } from 'react'
 import { TextPart} from 'ai'
 import { nanoid } from 'nanoid'
 import { toast } from 'sonner'
@@ -160,6 +161,9 @@ export function VideoAdTextItem({
 }
 
 export function VideoAdTextSuggestion({ videos }: VideoSuggestionProps) {
+  const { id, campaigns } = useContext(CampaignContext)
+  const campaign = campaigns.find(campaign => campaign.id === id)
+  console.log('campaign', campaign)
   const { syncMessages } = useActions()
   const [aiState, setAIState] = useAIState()
   const { id: chatSlug } = useParams()
@@ -274,6 +278,7 @@ export function VideoAdTextSuggestion({ videos }: VideoSuggestionProps) {
 
   const acceptText = async (idx: number, adText: VideoAdText) => {
     const response = await confirmCreateAd(
+      campaign,
       generateVideoAdTemplate(adText.headline, adText.text, adText),
       generateAdsetTemplate()
     )

@@ -251,19 +251,22 @@ async function confirmUpdateStatus(campaignName: string, status: string) {
     }
 }
 
-async function confirmCreateAd(data: any, adset: any) {
+async function confirmCreateAd(campaign: any, data: any, adset: any) {
     'use server'
     const aiState = getMutableAIState<typeof AI>();
     let campaignId = await getCampaignIdFromUrl() || '0'; // for now just say you are updating even if no campaign id in place
     if (process.env.NEXT_PUBLIC_HARDCODED_MODE === '1') {
         campaignId = process.env.NEXT_PUBLIC_HARDCODED_CAMPAIGN_ID || '0'
     }
-    const chatId = getChatIdFromUrl()?.toString() || '';
-
-    const budget = await fetchChatCampaignBudget(chatId)
-    let adsetUpdate = {...adset}
-    if (budget.error) {
-        adsetUpdate = {...adsetUpdate, daily_budget: 100}
+    let adsetUpdate = {
+        ...adset
+    }
+    if (!campaign.daily_budget) {
+        const chatId = getChatIdFromUrl()?.toString() || '';
+        const budget = await fetchChatCampaignBudget(chatId)
+        if (budget.error) {
+            adsetUpdate = {...adsetUpdate, daily_budget: 100}
+        }
     }
 
     const systemMessage = createStreamableUI(null)
@@ -282,10 +285,6 @@ async function confirmCreateAd(data: any, adset: any) {
             const id = response?.params?.id
             fbAdIdStream?.done(`${id}`)
 
-            aiState.done({
-                ...aiState.get(),
-            });
-
             systemMessage.done(
                 <SystemMessage>
                     You have successfully created a campaign ad with ID: {response?.params?.id}
@@ -299,6 +298,10 @@ async function confirmCreateAd(data: any, adset: any) {
                 </SystemMessage>
             );
         }
+
+        aiState.done({
+            ...aiState.get(),
+        });
     });
 
     return {
