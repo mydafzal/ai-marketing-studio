@@ -60,7 +60,7 @@ export async function createCampaign(
 
     const dataSubmit = {
       ...data,
-      fbAccountId: userDetail?.user?.fbAccountId || '0',
+      fb_account_id: userDetail?.user?.fbAccountId || '0',
     }
     const response = await fetch(apiCreateUrl, {
       method: 'POST',

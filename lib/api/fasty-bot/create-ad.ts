@@ -22,7 +22,7 @@ async function createCampaignAd(campaignId: string, data: any, adset: any): Prom
             campaign_id: campaignId,
             ...data,
             adset: { ...adset, campaign_id: campaignId },
-            fbAccountId: userDetail?.user?.fbAccountId || '0',
+            fb_account_id: userDetail?.user?.fbAccountId || '0',
         })
         })
 

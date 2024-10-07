@@ -12,7 +12,7 @@ export async function POST(request: Request) {
 
     const fastyEndpoint = process.env.FASTY_API_URL
     const fbFormData = new FormData()
-    fbFormData.append('fbAccountId', fbAccountId)
+    fbFormData.append('fb_account_id', fbAccountId)
     const file_size = formData.get('file_size')
     const apiUrl = `${fastyEndpoint}/facebook/exec/direct/upload/${file_size ? 'video-start' : 'video'}`
 
