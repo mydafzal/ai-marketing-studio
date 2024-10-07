@@ -2668,7 +2668,7 @@ Engaged Shoppers]
                     })
                     return (
                         <BotCard>
-                            <PlacementTargeting isActive toolCallId={toolCallId}/>
+                            <PlacementTargeting toolCallId={toolCallId}/>
                         </BotCard>
                     )
                 }
