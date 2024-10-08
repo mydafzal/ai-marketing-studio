@@ -1,7 +1,8 @@
 'use client'
 
+import { CampaignContext } from '@/components/contexts/campaign-context'
 import { Separator } from '@/components/ui/separator'
-import { Fragment, useState } from 'react'
+import { Fragment, useContext, useState } from 'react'
 import { nanoid } from 'nanoid'
 import { toast } from 'sonner'
 import { IconSpinner } from '@/components/ui/icons'
@@ -151,6 +152,8 @@ export function AdTextItem({
 
 export function AdTextSuggestion({ props }: { props: ImageSuggestionProps[] }) {
   const { id: chatSlug } = useParams()
+  const { id, campaigns } = useContext(CampaignContext)
+  const campaign = campaigns.find(campaign => campaign.id === id)
 
   const [adTexts, setAdTexts] = useState<AdText[]>(
     props.reduce((result, items) => [...result,  ...items.suggestedTexts], [] as SuggestedText[])
@@ -189,13 +192,13 @@ export function AdTextSuggestion({ props }: { props: ImageSuggestionProps[] }) {
 
   const acceptText = async (idx: number, adText: AdText) => {
     const response = await confirmCreateAd(
+      campaign,
       generateAdTemplate(
         adText.headline,
         adText.text,
         adText.image
       ),
-      generateAdsetTemplate(),
-      adText
+      generateAdsetTemplate()
     )
     setMessages(currentMessages => [...currentMessages, response.newMessage])
 

@@ -2,7 +2,7 @@ import {NextResponse} from 'next/server'
 
 export async function POST(request: Request) {
     try {
-        const {campaign_id, fbAccountId, adset} = await request.json()
+        const {campaign_id, fb_account_id, adset} = await request.json()
 
         if (!campaign_id) {
             return NextResponse.json({error: 'Campaign ID is required'}, {status: 400})
@@ -19,7 +19,7 @@ export async function POST(request: Request) {
             },
             body: JSON.stringify({
                 campaign_id,
-                fbAccountId,
+                fb_account_id,
                 adset
             })
         })

@@ -68,7 +68,7 @@ export async function createCampaign(
     }
 
     const payload = {
-      fbAccountId,
+      fb_account_id: fbAccountId,
       name,
       objective,
       status,

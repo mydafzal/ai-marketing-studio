@@ -57,11 +57,38 @@ export interface AdText {
   headline: string
   fbAdId?: string
 }
+export interface VideoAdText {
+  id: number
+  date: string
+  text: string
+  video_id: string
+  thumbnail?: string
+  video: string
+  headline: string
+  fbAdId?: string
+}
 export interface FbCampaign {
   id: string
   name: string
   created_time: string
   status: string
+}
+
+export interface FbVideoThumbnail {
+  id: string
+  height: number
+  width: number
+  uri: string
+  is_preferred: boolean
+}
+
+export interface FbVideo {
+  id: string
+  permalink_url: string
+  thumbnails?: {
+    data: FbVideoThumbnail[]
+  }
+  source?: string
 }
 
 export interface AdsetTargeting {
@@ -76,6 +103,7 @@ export interface AdsetTargeting {
   instagram_positions: string[]
   device_platforms: string[]
 }
+
 export interface Adset {
   id: string
   name: string
