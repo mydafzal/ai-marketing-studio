@@ -5,7 +5,7 @@ import {redirect} from 'next/navigation'
 import {kv} from '@vercel/kv'
 
 import {auth} from '@/auth'
-import {AdText, type Chat, User} from '@/lib/types'
+import {AdText, VideoAdText, type Chat, User} from '@/lib/types'
 
 export async function getChats(userId?: string | null) {
     if (!userId) {
@@ -766,9 +766,9 @@ export async function fetchChatCampaignBudget(chatSlug: string) {
     }
 }
 
-export async function updateAdText(chatSlug: string, idx: number, adTextId: number, newAdText: AdText) {
+export async function updateAdText(chatSlug: string, idx: number, adTextId: number, newAdText: AdText | VideoAdText, type?: string) {
     const session = await auth()
-
+    const toolName = type ? type : 'showSuggestionAdText'
     if (!session || !session.user) {
         return {
             error: 'User not authenticated'
@@ -792,35 +792,69 @@ export async function updateAdText(chatSlug: string, idx: number, adTextId: numb
             if (message.role === 'assistant') {
                 if (!Array.isArray(message.content)) return
                 message.content.forEach(tool => {
-                    if (tool.type !== "tool-call") return
-                    if (tool.toolName !== "showSuggestionAdText") return
+                  if (tool.type !== 'tool-call') return
+                  if (tool.toolName !== toolName) return
+                  if (toolName === 'showSuggestionAdText') {
                     if (!Array.isArray((tool.args as any)?.images)) return
-                    (tool.args as any)?.images.forEach((image: any) => {
-                        if (!Array.isArray(image.suggestedTexts)) return
-                        image.suggestedTexts.forEach((suggestedText: AdText, index: number) => {
-                            if (suggestedText.id === adTextId && index === idx) {
-                                suggestedText.headline = newAdText.headline
-                                suggestedText.text = newAdText.text
-                            }
-                        })
+                    ;(tool.args as any)?.images.forEach((image: any) => {
+                      if (!Array.isArray(image.suggestedTexts)) return
+                      image.suggestedTexts.forEach(
+                        (suggestedText: AdText, index: number) => {
+                          if (suggestedText.id === adTextId && index === idx) {
+                            suggestedText.headline = newAdText.headline
+                            suggestedText.text = newAdText.text
+                          }
+                        }
+                      )
                     })
+                  } else if (toolName === 'showVideoAdTextSuggestion') {
+                    if (!Array.isArray((tool.args as any)?.videos)) return
+                    ;(tool.args as any)?.videos.forEach((video: any) => {
+                      if (!Array.isArray(video.suggestedTexts)) return
+                      video.suggestedTexts.forEach(
+                        (suggestedText: AdText, index: number) => {
+                          if (suggestedText.id === adTextId && index === idx) {
+                            suggestedText.headline = newAdText.headline
+                            suggestedText.text = newAdText.text
+                          }
+                        }
+                      )
+                    })
+                  }
                 })
             }
             if (message.role === 'tool') {
                 if (!Array.isArray(message.content)) return
                 message.content.forEach(tool => {
-                    if (tool.type !== "tool-result") return
-                    if (tool.toolName !== "showSuggestionAdText") return
+                  if (tool.type !== 'tool-result') return
+                  if (tool.toolName !== toolName) return
+                  if (toolName === 'showSuggestionAdText') {
                     if (!Array.isArray((tool.result as any)?.images)) return
-                    (tool.result as any).images.forEach((image: any) => {
-                        if (!Array.isArray(image.suggestedTexts)) return
-                        image.suggestedTexts.forEach((suggestedText: AdText, index: number) => {
-                            if (suggestedText.id === adTextId && index === idx) {
-                                suggestedText.headline = newAdText.headline
-                                suggestedText.text = newAdText.text
-                            }
-                        })
+                    ;(tool.result as any).images.forEach((image: any) => {
+                      if (!Array.isArray(image.suggestedTexts)) return
+                      image.suggestedTexts.forEach(
+                        (suggestedText: AdText, index: number) => {
+                          if (suggestedText.id === adTextId && index === idx) {
+                            suggestedText.headline = newAdText.headline
+                            suggestedText.text = newAdText.text
+                          }
+                        }
+                      )
                     })
+                  } else if (toolName === 'showVideoAdTextSuggestion') {
+                    if (!Array.isArray((tool.result as any)?.videos)) return
+                    ;(tool.result as any).videos.forEach((video: any) => {
+                      if (!Array.isArray(video.suggestedTexts)) return
+                      video.suggestedTexts.forEach(
+                        (suggestedText: AdText, index: number) => {
+                          if (suggestedText.id === adTextId && index === idx) {
+                            suggestedText.headline = newAdText.headline
+                            suggestedText.text = newAdText.text
+                          }
+                        }
+                      )
+                    })
+                  }
                 })
             }
         })
@@ -840,8 +874,9 @@ export async function updateAdText(chatSlug: string, idx: number, adTextId: numb
     }
 }
 
-export async function updateAdTextWithFbId(chatSlug: string, idx: number, adTextId: number, fbAdId: string) {
+export async function updateAdTextWithFbId(chatSlug: string, idx: number, adTextId: number, fbAdId: string, type?: string) {
     const session = await auth()
+    const toolName = type ? type : 'showSuggestionAdText'
 
     if (!session || !session.user) {
         return {
@@ -867,32 +902,59 @@ export async function updateAdTextWithFbId(chatSlug: string, idx: number, adText
                 if (!Array.isArray(message.content)) return
                 message.content.forEach(tool => {
                     if (tool.type !== "tool-call") return
-                    if (tool.toolName !== "showSuggestionAdText") return
-                    if (!Array.isArray((tool.args as any)?.images)) return
-                    (tool.args as any)?.images.forEach((image: any) => {
-                        if (!Array.isArray(image.suggestedTexts)) return
-                        image.suggestedTexts.forEach((suggestedText: AdText, index: number) => {
-                            if (suggestedText.id === adTextId && index === idx) {
-                                suggestedText.fbAdId = fbAdId
-                            }
+                    if (tool.toolName !== toolName) return
+                    if (toolName === 'showSuggestionAdText') {
+                        if (!Array.isArray((tool.args as any)?.images)) return
+                        (tool.args as any)?.images.forEach((image: any) => {
+                            if (!Array.isArray(image.suggestedTexts)) return
+                            image.suggestedTexts.forEach((suggestedText: AdText, index: number) => {
+                                if (suggestedText.id === adTextId && index === idx) {
+                                    suggestedText.fbAdId = fbAdId
+                                }
+                            })
                         })
-                    })
+                    }else if (toolName === 'showVideoAdTextSuggestion') {
+                        if (!Array.isArray((tool.args as any)?.videos)) return
+                        (tool.args as any)?.videos.forEach((video: any) => {
+                            if (!Array.isArray(video.suggestedTexts)) return
+                            video.suggestedTexts.forEach((suggestedText: AdText, index: number) => {
+                                if (suggestedText.id === adTextId && index === idx) {
+                                    suggestedText.fbAdId = fbAdId
+                                }
+                            })
+                        })
+                    }
+                    
                 })
             }
             if (message.role === 'tool') {
                 if (!Array.isArray(message.content)) return
                 message.content.forEach(tool => {
                     if (tool.type !== "tool-result") return
-                    if (tool.toolName !== "showSuggestionAdText") return
-                    if (!Array.isArray((tool.result as any)?.images)) return
-                    (tool.result as any).images.forEach((image: any) => {
-                        if (!Array.isArray(image.suggestedTexts)) return
-                        image.suggestedTexts.forEach((suggestedText: AdText, index: number) => {
-                            if (suggestedText.id === adTextId && index === idx) {
-                                suggestedText.fbAdId = fbAdId
-                            }
+                    if (tool.toolName !== toolName) return
+
+                    if (toolName === 'showSuggestionAdText') {
+                        if (!Array.isArray((tool.result as any)?.images)) return
+                        (tool.result as any).images.forEach((image: any) => {
+                            if (!Array.isArray(image.suggestedTexts)) return
+                            image.suggestedTexts.forEach((suggestedText: AdText, index: number) => {
+                                if (suggestedText.id === adTextId && index === idx) {
+                                    suggestedText.fbAdId = fbAdId
+                                }
+                            })
                         })
-                    })
+                    }else if (toolName === 'showVideoAdTextSuggestion') {
+                        if (!Array.isArray((tool.result as any)?.videos)) return
+                        (tool.result as any).videos.forEach((video: any) => {
+                            if (!Array.isArray(video.suggestedTexts)) return
+                            video.suggestedTexts.forEach((suggestedText: AdText, index: number) => {
+                                if (suggestedText.id === adTextId && index === idx) {
+                                    suggestedText.fbAdId = fbAdId
+                                }
+                            })
+                        })
+                    }
+                    
                 })
             }
         })

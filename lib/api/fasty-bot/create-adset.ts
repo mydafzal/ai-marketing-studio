@@ -12,7 +12,7 @@ export async function createAdset(
     const dataSubmit = {
       campaign_id: campaignId,
       adset,
-      fbAccountId: userDetail?.user?.fbAccountId || '0'
+      fb_account_id: userDetail?.user?.fbAccountId || '0'
     }
     const response = await fetch(apiCreateUrl, {
       method: 'POST',

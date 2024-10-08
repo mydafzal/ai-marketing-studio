@@ -1,3 +1,5 @@
+import { VideoAdText } from '@/lib/types'
+
 export const generateAdTemplate = (
   headline: string,
   text: string,
@@ -20,7 +22,24 @@ export const generateAdTemplate = (
     }
   }
 })
-
+export const generateVideoAdTemplate = (headline: string, text: string, video: VideoAdText) => ({
+  name: 'New Video Ad Creative',
+  object_story_spec: {
+    page_id: 119021011189054,
+    video_data: {
+      video_id: video.video_id,
+      image_url: video.thumbnail,
+      call_to_action: {
+        type: 'LEARN_MORE',
+        value: {
+          link: 'https://www.example.com',
+        }
+      },
+      title: headline,
+      message: text,
+    }
+  }
+})
 export const generateAdsetTemplate = () => ({
   name: 'My Ad Set',
   bid_amount: 2,
