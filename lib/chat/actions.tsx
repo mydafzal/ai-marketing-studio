@@ -42,6 +42,7 @@ import {getChatIdFromUrl} from "@/lib/api/fasty-bot/helpers/chat-id-from-url-hel
 import {sendAdminNotification} from '@/lib/api/fasty-bot/send-admin-notification'
 import {ConnectCampaign} from '@/components/connect-campaign'
 import {PlacementTargeting} from '@/components/placement-targeting';
+import FormBuilder from '@/components/form-builder';
 
 interface ToolResult {
     toolName: string;
@@ -1908,6 +1909,8 @@ Engaged Shoppers]
 
     - If you want to change the placement targeting of a campaign, call \`show_placement_targeting_ui\` to show the update status UI and let the user choose the status of the campaign.
 
+    - If you want to show a form builder, call \`show_form_builder\` to show the form builder UI.
+
     - If the user wants to pause a campaign, call \`showUpdateStatusChampaign\` to show the update status UI and let the user choose the status of the campaign.
     
     - If the user wants to complete another specific task, respond that you are a demo and cannot perform that action.
@@ -2265,6 +2268,52 @@ Engaged Shoppers]
                             </>
                         )
                     }
+                }
+            },
+            showFormBuilder: {
+                description:
+                    'Show form builder',
+                parameters: z.object({}),
+                generate: async function* () {
+                    const toolCallId = nanoid()
+                    aiState.done({
+                        ...aiState.get(),
+                        messages: [
+                            ...aiState.get().messages,
+                            {
+                                id: nanoid(),
+                                role: 'assistant',
+                                content: [
+                                    {
+                                        type: 'tool-call',
+                                        toolName: 'showFormBuilder',
+                                        toolCallId,
+                                        args: {}
+                                    }
+                                ],
+                                timestamp: new Date().toISOString()
+                            },
+                            {
+                                id: nanoid(),
+                                role: 'tool',
+                                content: [
+                                    {
+                                        type: 'tool-result',
+                                        toolName: 'showFormBuilder',
+                                        toolCallId,
+                                        result: {}
+                                    }
+                                ],
+                                timestamp: new Date().toISOString()
+                            },
+                        ]
+                    });
+
+                    return (
+                        <BotCard>
+                            <FormBuilder />
+                        </BotCard>
+                    )
                 }
             },
             getEvents: {
