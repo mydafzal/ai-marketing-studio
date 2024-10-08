@@ -1,4 +1,3 @@
-import { getCampaignIdFromUrl } from '@/lib/api/fasty-bot/helpers/campaign-id-from-url-helper'
 import { getUserDetail } from '@/app/actions'
 
 interface CampaignSummary {
@@ -15,8 +14,8 @@ interface CampaignSummary {
   reach: number
   unique_clicks: number
 }
-interface CampaignData {
-  chatSlug: string
+interface CampaignCreateRequest {
+  fbAccountId?: string
   name: string
   objective: string
   status: string
@@ -26,7 +25,7 @@ interface CampaignData {
 
 
 export async function createCampaign(
-  data: CampaignData
+  request: CampaignCreateRequest
 ): Promise<any> {
   let fetchedCampaignId: string | undefined
 
@@ -55,31 +54,40 @@ export async function createCampaign(
   }
 
   try {
-    const apiCreateUrl = `/api/fasty-bot/proxy-create-campaign`
-    const userDetail = await getUserDetail();
-
-    const dataSubmit = {
-      ...data,
-      fb_account_id: userDetail?.user?.fbAccountId || '0',
+    let {
+      fbAccountId,
+      name,
+      objective,
+      status,
+      special_ad_categories
+    } = request
+    
+    if (!fbAccountId) {
+      const userDetail = await getUserDetail();
+      fbAccountId = userDetail?.user?.fbAccountId || '0'
     }
-    const response = await fetch(apiCreateUrl, {
+
+    const payload = {
+      fb_account_id: fbAccountId,
+      name,
+      objective,
+      status,
+      special_ad_categories
+    }
+    const fastyEndpoint = process.env.FASTY_API_URL
+    const apiUrl = `${fastyEndpoint}/facebook/exec/direct/campaign/create`
+    console.log('payload to create a new campaign', payload)
+
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${process.env.FASTY_API_TOKEN}`
       },
-      body: JSON.stringify(dataSubmit)
+      body: JSON.stringify(payload)
     })
-    // Handle the response
-    if (!response.ok) {
-      console.error('Error create campaign:', {
-        status: response.status,
-        statusText: response.statusText
-      })
-      return false
-    }
-    const responseData: CampaignSummary = await response.json()
-    return { ...responseData }
+
+    return response
   } catch (error) {
     console.error('Error create campaign:', error)
     return false

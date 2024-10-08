@@ -17,7 +17,6 @@ import { updateChatFbCampaignId } from '@/app/actions'
 import { ConnectCampaignResult } from '@/components/connect-campaign-result'
 import { CampaignContext } from '@/components/contexts/campaign-context'
 import { IconSpinner } from '@/components/ui/icons'
-import { createCampaign } from '@/lib/api/fasty-bot/create-campaign'
 import { FbCampaign, Message } from '@/lib/types'
 import { type AI } from '@/lib/chat/actions'
 
@@ -31,23 +30,24 @@ export function ConnectCampaignForm({
   const [selectedCampaign, setSelectedCampaign] = useState<FbCampaign>()
   const [isSubmitting, setSubmitting] = useState<boolean>(false)
   const [isCreating, setCreating] = useState<boolean>(false)
-  const [aiState] = useAIState()
   const { campaigns, getCampaignList } = useContext(CampaignContext)
 
   const handleCreateCampaign = async () => {
-    console.log('create campaign')
     const createData = {
       name: 'My campaign',
       status: 'PAUSED',
     }
-    const response = await createCampaign({
-      chatSlug: aiState.chatId,
-      objective: 'OUTCOME_LEADS',
-      special_ad_categories: ['NONE'],
-      ...createData,
+    const url = '/api/fasty-bot/proxy-create-campaign'
+    const responseStream = await fetch(url, {
+      method: 'POST',
+      body: JSON.stringify({
+        objective: 'OUTCOME_LEADS',
+        special_ad_categories: ['NONE'],
+        ...createData,
+      })
     })
+    const response = await responseStream.json()
     if (response.success && response.data.id) {
-      console.log('created campaign id is', response.data.id)
       await handleSelectCampaign({
         ...response.data,
         ...createData,

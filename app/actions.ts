@@ -604,6 +604,45 @@ export async function updateChatCampaignBudget(chatSlug: string, budget: number)
     }
 }
 
+// todo: replace other 1 field update functions with this
+export async function updateChat(chatSlug: string, patch: { [field: string]: unknown }) {
+    const session = await auth()
+
+    if (!session || !session.user) {
+        return {
+            error: 'User not authenticated'
+        }
+    }
+
+    try {
+        // Construct the chat key using the chatSlug
+        const chatKey = `chat:${chatSlug}`
+
+        // Check if the chat exists
+        const existingChat = await kv.hgetall(chatKey)
+
+        if (!existingChat) {
+            return {
+                error: 'Chat not found'
+            }
+        }
+
+        // Update or insert the title field
+        await kv.hset(chatKey, patch)
+        revalidatePath('/')
+
+        return {
+            success: true,
+            message: 'Chat title updated successfully'
+        }
+    } catch (error) {
+        console.error(`Error updating title for chat ${chatSlug}:`, error)
+        return {
+            error: 'Something went wrong'
+        }
+    }
+}
+
 export async function updateChatTitle(chatSlug: string, title: string) {
     const session = await auth()
 
