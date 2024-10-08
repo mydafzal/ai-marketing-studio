@@ -1,4 +1,4 @@
-import { useAIState } from 'ai/rsc'
+import { useActions, useAIState } from 'ai/rsc'
 import { createContext, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CampaignSummary, getCampaignSummary } from '@/lib/api/fasty-bot/get-campaign-summary'
 import { createAdset } from '@/lib/api/fasty-bot/create-adset'
@@ -36,7 +36,8 @@ const oneHour = 60 * 60 * 1000
 const fiveMins = 5 * 60 * 1000
 
 export const CampaignContextProvider = ({ children }: { children: React.ReactNode }) => {
-    const [aiState, setAIState] = useAIState()
+    const [aiState] = useAIState()
+    const {updateCampaignInfo: updateCampaignInfoBE} = useActions()
 
     const [id, setId] = useState<string | null>(null)
     const [summary, setSummary] = useState<CampaignSummary | null>(null)
@@ -123,19 +124,12 @@ export const CampaignContextProvider = ({ children }: { children: React.ReactNod
 
     useEffect(() => {
         if (summary && summary.campaign_id !== '0') {
-            setAIState((aiState: any) => ({
-                ...aiState,
-                messages: [
-                    {
-                        id: 'campaign-info-data',
-                        role: 'system',
-                        content: `Campaign is connected, the knowledge base about current campaign information: ${JSON.stringify(summary)}`,
-                        timestamp: new Date().toISOString() 
-                    },
-                    ...aiState.messages.filter((message: Message) => message.id !== 'campaign-info-data' || message.role !== 'system'),
-                ]
-            }))
-            lastUpdatedRef.current = new Date();
+            const updateCampaignInfo = async () => {
+                console.log('updateCampaignInfo', summary)
+                await updateCampaignInfoBE(summary)
+                lastUpdatedRef.current = new Date()
+            }
+            void updateCampaignInfo()
         }
     }, [summary])
 

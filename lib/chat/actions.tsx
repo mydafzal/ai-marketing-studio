@@ -34,7 +34,8 @@ import {auth} from '@/auth'
 import {setDailyCampaignBudget} from '@/lib/api/fasty-bot/set-daily-campaign-budget';
 import {setCampaignStatus} from '@/lib/api/fasty-bot/set-campaign-status';
 import {createCampaignAd} from '@/lib/api/fasty-bot/create-ad';
-import {createCampaign } from '@/lib/api/fasty-bot/create-campaign'
+import {createCampaign} from '@/lib/api/fasty-bot/create-campaign'
+import {CampaignSummary} from '@/lib/api/fasty-bot/get-campaign-summary'
 import {updateCampaign} from '@/lib/api/fasty-bot/update-campaign';
 import {updateAdset} from '@/lib/api/fasty-bot/update-adset';
 import {getCampaignIdFromUrl} from "@/lib/api/fasty-bot/helpers/campaign-id-from-url-helper";
@@ -315,10 +316,30 @@ async function confirmCreateAd(campaign: any, data: any, adset: any) {
     }
 }
 
+async function updateCampaignInfo(campaignSummary: CampaignSummary) {
+    'use server'
+
+    const aiState = getMutableAIState<typeof AI>();
+
+    aiState.done({
+        ...aiState.get(),
+        messages: [
+            {
+                id: 'campaign-info-data',
+                role: 'system',
+                content: `Campaign is connected, the knowledge base about current campaign information: ${JSON.stringify(campaignSummary)}`,
+                timestamp: new Date().toISOString() 
+            },
+            ...aiState.get().messages.filter((message: Message) => message.id !== 'campaign-info-data' || message.role !== 'system'),
+        ]
+    });
+}
+
 async function syncMessages() {
     'use server'
 
     const aiState = getMutableAIState<typeof AI>();
+    console.log('syncMessages', aiState.get().messages[0])
     aiState.done({
         ...aiState.get(),
     });
@@ -2706,7 +2727,7 @@ Engaged Shoppers]
                     })
                     return (
                         <BotCard>
-                            <ConnectCampaign/>
+                            <ConnectCampaign />
                         </BotCard>
                     )
                 }
@@ -2782,6 +2803,7 @@ export const AI = createAI<AIState, UIState>({
         confirmPurchase,
         confirmUpdateStatus,
         confirmCreateAd,
+        updateCampaignInfo,
         syncMessages,
         confirmUpdateAdset,
     },
