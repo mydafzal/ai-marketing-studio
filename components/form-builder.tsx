@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Cross1Icon, Pencil1Icon } from '@radix-ui/react-icons';
-
+import { QuestionOption, LeadgenFrom }  from '@/lib/types'
 interface Field {
   id: string;
   type: 'text' | 'select';
@@ -103,20 +103,34 @@ export default function FormBuilder() {
     setShowModal(false);
     setErrorMessage(null);
   };
+  const createLeadgenForm = async(data: LeadgenFrom) => {
+    const url = '/api/fasty-bot/proxy-create-leadgen-form'
+    const responseStream = await fetch(url, {
+      method: 'POST',
+      body: JSON.stringify({
+        page_id: "119021011189054",
+        ...data,
+      })
+    })
+    const response = await responseStream.json()
+    console.log("🚀 ~ createLeadgenForm ~ response:", response)
+    if (response.success && response.data.id) {
+    }
+  }
 
   const removeField = (id: string) => {
     setFields(prev => prev.filter(f => f.id !== id));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    const id = Date.now();
     const payload = {
-      name: "Lead Form", 
+      name: "Lead Form" + id, 
       questions: fields.map(field => ({
         key: field.id,
         label: field.label,
         type: 'CUSTOM',
-        input_type: field.type === 'text' ? 'TEXT' : 'DROPDOWN',
-        ...(field.type === 'select' && { options: field.options?.map(option => ({ value: option })) })
+        ...(field.type === 'select' && field.options && { options: field.options?.map((option,idx) => ({ key: idx, label: option, value: option })) as QuestionOption[] })
       })),
       privacy_policy: {
         url: privacyLink,
@@ -124,10 +138,12 @@ export default function FormBuilder() {
       },
       context_card: {
         title: "Engagement Card",
+        style: "PARAGRAPH_STYLE",
         content: engagementText
       },
       thank_you_page: {
         title: "Thank You",
+        button_type: 'NONE',
         body: thankyouText
       },
       tracking_parameters: {},
@@ -136,6 +152,8 @@ export default function FormBuilder() {
       locale: "en_US",
       status: "DRAFT"
     };
+    await createLeadgenForm(payload);
+
     console.log('Payload for Facebook Lead Gen Form API:', payload);
   };
 

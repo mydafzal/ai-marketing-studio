@@ -123,7 +123,7 @@ export interface Adset {
 export interface QuestionOption {
   value: string
   label: string
-  key: string
+  key: number
 }
 export interface Question {
   type: string
@@ -133,7 +133,6 @@ export interface Question {
   options?: QuestionOption[]
 }
 export interface LeadgenFrom {
-  page_id: string
   name: string
   privacy_policy?: {
     url: string
@@ -149,5 +148,10 @@ export interface LeadgenFrom {
     button_text?: string
     button_description?: string
     country_code?: string
+  },
+  context_card?: {
+    title: string,
+    style: string,
+    content: string,
   }
 }
