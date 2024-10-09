@@ -103,6 +103,7 @@ export default function FormBuilder() {
     setShowModal(false);
     setErrorMessage(null);
   };
+
   const createLeadgenForm = async(data: LeadgenFrom) => {
     const url = '/api/fasty-bot/proxy-create-leadgen-form'
     const responseStream = await fetch(url, {
@@ -153,14 +154,12 @@ export default function FormBuilder() {
       status: "DRAFT"
     };
     await createLeadgenForm(payload);
-
-    console.log('Payload for Facebook Lead Gen Form API:', payload);
   };
 
   const renderFieldPreview = (field: Field) => (
-    <div key={field.id} className="bg-gray-50 border border-gray-200 p-4 mb-4 rounded-lg relative hover:shadow-md">
+    <div key={field.id} className="bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 p-4 mb-4 rounded-lg relative hover:shadow-md">
       <div className="flex justify-between items-center mb-2">
-        <Label>{field.label}</Label>
+        <Label className="dark:text-zinc-200">{field.label}</Label>
         <div className="flex gap-2">
           <Button onClick={() => openFieldModal(field.type, field.id)} variant="ghost" className="h-8 w-8 p-0">
             <Pencil1Icon />
@@ -171,10 +170,10 @@ export default function FormBuilder() {
         </div>
       </div>
       {field.type === 'text' ? (
-        <Input disabled placeholder={field.label} />
+        <Input disabled placeholder={field.label} className="dark:bg-zinc-700 dark:text-zinc-200" />
       ) : (
         <Select disabled>
-          <SelectTrigger className="SelectTrigger" aria-label="Food">
+          <SelectTrigger className="SelectTrigger dark:bg-zinc-700 dark:text-zinc-200" aria-label="Food">
             <SelectValue placeholder={field.options?.[0]} />
           </SelectTrigger>
         </Select>
@@ -184,18 +183,18 @@ export default function FormBuilder() {
 
   return (
     <>
-      <div className="container mx-auto p-6">
-        <h1 className="text-3xl font-bold text-center mb-6">Simplified Lead Form Builder</h1>
+      <div className="container mx-auto p-6 dark:bg-zinc-900">
+        <h1 className="text-3xl font-bold text-center mb-6 dark:text-white">Simplified Lead Form Builder</h1>
         
         {step === 1 ? (
           <div className="flex flex-col md:flex-row gap-4">
-            <div className="w-full md:w-1/2 p-4 border border-gray-200 bg-gray-100 rounded-lg">
-              <h2 className="text-xl font-bold mb-4">Add Fields</h2>
+            <div className="w-full md:w-1/2 p-4 border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 rounded-lg">
+              <h2 className="text-xl font-bold mb-4 dark:text-white">Add Fields</h2>
               <Button onClick={() => openFieldModal('text')} className="w-full mb-2">Add Text Field</Button>
               <Button onClick={() => openFieldModal('select')} className="w-full">Add Select Field</Button>
             </div>
-            <div className="w-full md:w-1/2 p-4 border border-gray-200 bg-white rounded-lg">
-              <h2 className="text-xl font-bold mb-4">Form Preview</h2>
+            <div className="w-full md:w-1/2 p-4 border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 rounded-lg">
+              <h2 className="text-xl font-bold mb-4 dark:text-white">Form Preview</h2>
               <div className="space-y-4">
                 {fields.map(renderFieldPreview)}
               </div>
@@ -247,37 +246,39 @@ export default function FormBuilder() {
 
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-          <div className="bg-white p-4 rounded-lg w-full max-w-md">
-            <h3 className="text-lg font-bold mb-4">
+          <div className="bg-white dark:bg-zinc-800 p-4 rounded-lg w-full max-w-md">
+            <h3 className="text-lg font-bold mb-4 dark:text-white">
               {editingFieldId ? 'Edit' : 'Add'} {currentFieldType === 'text' ? 'Text Field' : 'Select Field'}
             </h3>
             <div className="mb-4">
-              <Label>Field Key:</Label>
+              <Label className="dark:text-zinc-200">Field Key:</Label>
               <Input
                 value={modalFieldId}
                 onChange={(e) => setModalFieldId(e.target.value)}
                 placeholder="Enter field key"
+                className="dark:bg-zinc-700 dark:text-zinc-200"
               />
             </div>
             <div className="mb-4">
-              <Label>Field Label:</Label>
+              <Label className="dark:text-zinc-200">Field Label:</Label>
               <Input
                 value={modalFieldLabel}
                 onChange={(e) => setModalFieldLabel(e.target.value)}
                 placeholder="Enter field label"
+                className="dark:bg-zinc-700 dark:text-zinc-200"
               />
             </div>
             {currentFieldType === 'select' && (
               <div className="mb-4">
-                <Label>Options:</Label>
+                <Label className="dark:text-zinc-200">Options:</Label>
                 <div className="flex mb-2">
-                  <Input ref={modalOptionInput} placeholder="Enter option" className="rounded-tr-none rounded-br-none"/>
+                  <Input ref={modalOptionInput} placeholder="Enter option" className="rounded-tr-none rounded-br-none dark:bg-zinc-700 dark:text-zinc-200"/>
                   <Button onClick={addOption} className="rounded-tl-none rounded-bl-none">+</Button>
                 </div>
                 <div className="space-y-2">
                   {optionList.map((option, index) => (
-                    <div key={index} className="flex justify-between items-center bg-gray-100 p-2 rounded">
-                      <span>{option}</span>
+                    <div key={index} className="flex justify-between items-center bg-zinc-100 dark:bg-zinc-700 p-2 rounded">
+                      <span className="dark:text-zinc-200">{option}</span>
                       <Button onClick={() => removeOption(index)} variant="ghost" className="h-8 w-8 p-0">
                         <Cross1Icon />
                       </Button>
@@ -287,7 +288,7 @@ export default function FormBuilder() {
               </div>
             )}
             {errorMessage && (
-              <div className="mb-4 p-2 bg-red-100 border border-red-400 text-red-700 rounded">
+              <div className="mb-4 p-2 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-200 rounded">
                 {errorMessage}
               </div>
             )}
