@@ -5,25 +5,69 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Select, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Cross1Icon, Pencil1Icon } from '@radix-ui/react-icons';
 import { QuestionOption, LeadgenFrom }  from '@/lib/types'
 interface Field {
   id: string;
-  type: 'text' | 'select';
-  label: string;
+  type: string;
+  label?: string;
   options?: string[];
 }
+
+const FIELD_TYPES = [
+  { value: 'CUSTOM', label: 'Custom' },
+  { value: 'CITY', label: 'City' },
+  { value: 'COMPANY_NAME', label: 'Company Name' },
+  { value: 'COUNTRY', label: 'Country' },
+  { value: 'DOB', label: 'Date of Birth' },
+  { value: 'EMAIL', label: 'Email' },
+  { value: 'GENDER', label: 'Gender' },
+  { value: 'FIRST_NAME', label: 'First Name' },
+  { value: 'FULL_NAME', label: 'Full Name' },
+  { value: 'JOB_TITLE', label: 'Job Title' },
+  { value: 'LAST_NAME', label: 'Last Name' },
+  { value: 'MARITIAL_STATUS', label: 'Marital Status' },
+  { value: 'PHONE', label: 'Phone' },
+  { value: 'PHONE_OTP', label: 'Phone OTP' },
+  { value: 'POST_CODE', label: 'Post Code' },
+  { value: 'PROVINCE', label: 'Province' },
+  { value: 'RELATIONSHIP_STATUS', label: 'Relationship Status' },
+  { value: 'STATE', label: 'State' },
+  { value: 'STREET_ADDRESS', label: 'Street Address' },
+  { value: 'ZIP', label: 'ZIP' },
+  { value: 'WORK_EMAIL', label: 'Work Email' },
+  { value: 'MILITARY_STATUS', label: 'Military Status' },
+  { value: 'WORK_PHONE_NUMBER', label: 'Work Phone Number' },
+  { value: 'SLIDER', label: 'Slider' },
+  { value: 'STORE_LOOKUP', label: 'Store Lookup' },
+  { value: 'STORE_LOOKUP_WITH_TYPEAHEAD', label: 'Store Lookup with Typeahead' },
+  { value: 'DATE_TIME', label: 'Date Time' },
+  { value: 'ID_CPF', label: 'CPF (Brazil)' },
+  { value: 'ID_AR_DNI', label: 'DNI (Argentina)' },
+  { value: 'ID_CL_RUT', label: 'RUT (Chile)' },
+  { value: 'ID_CO_CC', label: 'CC (Colombia)' },
+  { value: 'ID_EC_CI', label: 'CI (Ecuador)' },
+  { value: 'ID_PE_DNI', label: 'DNI (Peru)' },
+  { value: 'ID_MX_RFC', label: 'RFC (Mexico)' },
+  { value: 'JOIN_CODE', label: 'Join Code' },
+  { value: 'USER_PROVIDED_PHONE_NUMBER', label: 'User Provided Phone Number' },
+  { value: 'FACEBOOK_LEAD_ID', label: 'Facebook Lead ID' },
+  { value: 'EMAIL_ALIAS', label: 'Email Alias' },
+  { value: 'MESSENGER', label: 'Messenger' },
+];
+
 
 export default function FormBuilder() {
   const [step, setStep] = useState(1);
   const [fields, setFields] = useState<Field[]>([
-    { id: 'name', type: 'text', label: 'Name' },
-    { id: 'email', type: 'text', label: 'Email' },
-    { id: 'phone', type: 'text', label: 'Phone Number' },
+    { id: 'name', type: 'FULL_NAME' },
+    { id: 'email', type: 'EMAIL' },
+    { id: 'phone', type: 'PHONE' },
   ]);
   const [showModal, setShowModal] = useState(false);
-  const [currentFieldType, setCurrentFieldType] = useState<'text' | 'select'>('text');
+  const [currentInputType, setCurrentInputType] = useState<'text' | 'select'>('text');
+  const [currentFieldType, setCurrentFieldType] = useState('CUSTOM');
   const [modalFieldLabel, setModalFieldLabel] = useState('');
   const [modalFieldId, setModalFieldId] = useState('');
   const [optionList, setOptionList] = useState<string[]>([]);
@@ -35,8 +79,9 @@ export default function FormBuilder() {
   
   const modalOptionInput = useRef<HTMLInputElement>(null);
 
-  const openFieldModal = (type: 'text' | 'select', fieldId?: string) => {
-    setCurrentFieldType(type);
+  const openFieldModal = (inputType: 'text' | 'select', fieldId?: string) => {
+    setCurrentInputType(inputType);
+    setCurrentFieldType('CUSTOM');
     setShowModal(true);
     setModalFieldLabel('');
     setModalFieldId('');
@@ -45,13 +90,23 @@ export default function FormBuilder() {
     if (fieldId) {
       const field = fields.find(f => f.id === fieldId);
       if (field) {
-        setModalFieldLabel(field.label);
+        setCurrentInputType(field.options?.length ? 'select' : 'text');
+        setCurrentFieldType(field.type);
+        setModalFieldLabel(field.label || '');
         setModalFieldId(field.id);
         setOptionList(field.options || []);
         setEditingFieldId(fieldId);
       }
     } else {
       setEditingFieldId(null);
+    }
+  };
+
+  const handleFieldTypeChange = (value: string) => {
+    setCurrentFieldType(value);
+    setModalFieldId(value.toLowerCase());
+    if (value !== 'CUSTOM') {
+      setModalFieldLabel('');
     }
   };
 
@@ -71,15 +126,15 @@ export default function FormBuilder() {
 
   const saveField = () => {
     if (!modalFieldId) {
-      setErrorMessage('Please enter a field key.');
+      setErrorMessage('Please enter field name.');
       return;
     }
     if (fields.some(f => f.id === modalFieldId && f.id !== editingFieldId)) {
       setErrorMessage('A field with this key already exists. Please use a unique key.');
       return;
     }
-    if (!modalFieldLabel) {
-      setErrorMessage('Please enter a field label.');
+    if (currentFieldType === 'CUSTOM' && !modalFieldLabel) {
+      setErrorMessage('Please enter a field label for custom fields.');
       return;
     }
     if (currentFieldType === 'select' && optionList.length === 0) {
@@ -90,8 +145,8 @@ export default function FormBuilder() {
     const newField: Field = {
       id: modalFieldId,
       type: currentFieldType,
-      label: modalFieldLabel,
-      options: currentFieldType === 'select' ? optionList : undefined,
+      ...(currentFieldType === 'CUSTOM' && { label: modalFieldLabel }),
+      ...(currentInputType === 'select' && { options: optionList }),
     };
 
     setFields(prev => 
@@ -130,8 +185,8 @@ export default function FormBuilder() {
       questions: fields.map(field => ({
         key: field.id,
         label: field.label,
-        type: 'CUSTOM',
-        ...(field.type === 'select' && field.options && { options: field.options?.map((option,idx) => ({ key: idx, label: option, value: option })) as QuestionOption[] })
+        type: field.type,
+        ...(field.options?.length && { options: field.options?.map((option,idx) => ({ key: idx, label: option, value: option })) as QuestionOption[] })
       })),
       privacy_policy: {
         url: privacyLink,
@@ -159,9 +214,11 @@ export default function FormBuilder() {
   const renderFieldPreview = (field: Field) => (
     <div key={field.id} className="bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 p-4 mb-4 rounded-lg relative hover:shadow-md">
       <div className="flex justify-between items-center mb-2">
-        <Label className="dark:text-zinc-200">{field.label}</Label>
+        <Label className="dark:text-zinc-200">
+          {field.type === 'CUSTOM' ? field.label : FIELD_TYPES.find(t => t.value === field.type)?.label}
+        </Label>
         <div className="flex gap-2">
-          <Button onClick={() => openFieldModal(field.type, field.id)} variant="ghost" className="h-8 w-8 p-0">
+          <Button onClick={() => openFieldModal(field.options?.length ? 'select' : 'text', field.id)} variant="ghost" className="h-8 w-8 p-0">
             <Pencil1Icon />
           </Button>
           <Button onClick={() => removeField(field.id)} variant="ghost" className="h-8 w-8 p-0">
@@ -169,14 +226,14 @@ export default function FormBuilder() {
           </Button>
         </div>
       </div>
-      {field.type === 'text' ? (
-        <Input disabled placeholder={field.label} className="dark:bg-zinc-700 dark:text-zinc-200" />
-      ) : (
+      {field.options?.length ? (
         <Select disabled>
           <SelectTrigger className="SelectTrigger dark:bg-zinc-700 dark:text-zinc-200" aria-label="Food">
-            <SelectValue placeholder={field.options?.[0]} />
+            <SelectValue placeholder={field.options[0]} />
           </SelectTrigger>
         </Select>
+      ) : (
+        <Input disabled placeholder={field.type === 'CUSTOM' ? field.label : FIELD_TYPES.find(t => t.value === field.type)?.label} className="dark:bg-zinc-700 dark:text-zinc-200" />
       )}
     </div>
   );
@@ -248,27 +305,44 @@ export default function FormBuilder() {
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
           <div className="bg-white dark:bg-zinc-800 p-4 rounded-lg w-full max-w-md">
             <h3 className="text-lg font-bold mb-4 dark:text-white">
-              {editingFieldId ? 'Edit' : 'Add'} {currentFieldType === 'text' ? 'Text Field' : 'Select Field'}
+              {editingFieldId ? 'Edit' : 'Add'} {currentInputType === 'select' ? 'Select' : 'Text'} Field
             </h3>
             <div className="mb-4">
-              <Label className="dark:text-zinc-200">Field Key:</Label>
+              <Label className="dark:text-zinc-200">Field Type:</Label>
+              <Select value={currentFieldType} onValueChange={handleFieldTypeChange}>
+                <SelectTrigger className="w-full dark:bg-zinc-700 dark:text-zinc-200">
+                  <SelectValue placeholder="Select field type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {FIELD_TYPES.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="mb-4">
+              <Label className="dark:text-zinc-200">Field Name:</Label>
               <Input
                 value={modalFieldId}
                 onChange={(e) => setModalFieldId(e.target.value)}
-                placeholder="Enter field key"
+                placeholder="Enter field name"
                 className="dark:bg-zinc-700 dark:text-zinc-200"
               />
             </div>
-            <div className="mb-4">
-              <Label className="dark:text-zinc-200">Field Label:</Label>
-              <Input
-                value={modalFieldLabel}
-                onChange={(e) => setModalFieldLabel(e.target.value)}
-                placeholder="Enter field label"
-                className="dark:bg-zinc-700 dark:text-zinc-200"
-              />
-            </div>
-            {currentFieldType === 'select' && (
+            {currentFieldType === 'CUSTOM' && (
+              <div className="mb-4">
+                <Label className="dark:text-zinc-200">Field Label:</Label>
+                <Input
+                  value={modalFieldLabel}
+                  onChange={(e) => setModalFieldLabel(e.target.value)}
+                  placeholder="Enter field label"
+                  className="dark:bg-zinc-700 dark:text-zinc-200"
+                />
+              </div>
+            )}
+            {currentInputType === 'select' && (
               <div className="mb-4">
                 <Label className="dark:text-zinc-200">Options:</Label>
                 <div className="flex mb-2">
