@@ -12,6 +12,7 @@ import { QuestionOption, LeadgenFrom } from '@/lib/types';
 import { useActions, useAIState, useUIState } from 'ai/rsc'
 import { type AI } from '@/lib/chat/actions'
 import { IconSpinner } from '@/components/ui/icons'
+import { leadGenFormFieldTypes } from '@/data'
 
 interface Field {
   id: string;
@@ -20,47 +21,7 @@ interface Field {
   options?: string[];
 }
 
-const FIELD_TYPES = [
-  { value: 'CUSTOM', label: 'Custom' },
-  { value: 'CITY', label: 'City' },
-  { value: 'COMPANY_NAME', label: 'Company Name' },
-  { value: 'COUNTRY', label: 'Country' },
-  { value: 'DOB', label: 'Date of Birth' },
-  { value: 'EMAIL', label: 'Email' },
-  { value: 'GENDER', label: 'Gender' },
-  { value: 'FIRST_NAME', label: 'First Name' },
-  { value: 'FULL_NAME', label: 'Full Name' },
-  { value: 'JOB_TITLE', label: 'Job Title' },
-  { value: 'LAST_NAME', label: 'Last Name' },
-  { value: 'MARITIAL_STATUS', label: 'Marital Status' },
-  { value: 'PHONE', label: 'Phone' },
-  { value: 'PHONE_OTP', label: 'Phone OTP' },
-  { value: 'POST_CODE', label: 'Post Code' },
-  { value: 'PROVINCE', label: 'Province' },
-  { value: 'RELATIONSHIP_STATUS', label: 'Relationship Status' },
-  { value: 'STATE', label: 'State' },
-  { value: 'STREET_ADDRESS', label: 'Street Address' },
-  { value: 'ZIP', label: 'ZIP' },
-  { value: 'WORK_EMAIL', label: 'Work Email' },
-  { value: 'MILITARY_STATUS', label: 'Military Status' },
-  { value: 'WORK_PHONE_NUMBER', label: 'Work Phone Number' },
-  { value: 'SLIDER', label: 'Slider' },
-  { value: 'STORE_LOOKUP', label: 'Store Lookup' },
-  { value: 'STORE_LOOKUP_WITH_TYPEAHEAD', label: 'Store Lookup with Typeahead' },
-  { value: 'DATE_TIME', label: 'Date Time' },
-  { value: 'ID_CPF', label: 'CPF (Brazil)' },
-  { value: 'ID_AR_DNI', label: 'DNI (Argentina)' },
-  { value: 'ID_CL_RUT', label: 'RUT (Chile)' },
-  { value: 'ID_CO_CC', label: 'CC (Colombia)' },
-  { value: 'ID_EC_CI', label: 'CI (Ecuador)' },
-  { value: 'ID_PE_DNI', label: 'DNI (Peru)' },
-  { value: 'ID_MX_RFC', label: 'RFC (Mexico)' },
-  { value: 'JOIN_CODE', label: 'Join Code' },
-  { value: 'USER_PROVIDED_PHONE_NUMBER', label: 'User Provided Phone Number' },
-  { value: 'FACEBOOK_LEAD_ID', label: 'Facebook Lead ID' },
-  { value: 'EMAIL_ALIAS', label: 'Email Alias' },
-  { value: 'MESSENGER', label: 'Messenger' },
-];
+
 interface FormBuilderUiProps {
   formBuilder: LeadgenFrom
   success: boolean
@@ -243,7 +204,7 @@ export default function FormBuilder({
     <div key={field.id} className="bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 p-4 mb-4 rounded-lg relative hover:shadow-md">
       <div className="flex justify-between items-center mb-2">
         <Label className="dark:text-zinc-200">
-          {field.type === 'CUSTOM' ? field.label : FIELD_TYPES.find(t => t.value === field.type)?.label}
+          {field.type === 'CUSTOM' ? field.label : leadGenFormFieldTypes.find(t => t.value === field.type)?.label}
         </Label>
         <div className="flex gap-2">
           <Button disabled={isReadOnly} onClick={() => openFieldModal(field.options?.length ? 'select' : 'text', field.id)} variant="ghost" className="h-8 w-8 p-0">
@@ -261,7 +222,7 @@ export default function FormBuilder({
           </SelectTrigger>
         </Select>
       ) : (
-        <Input disabled placeholder={field.type === 'CUSTOM' ? field.label : FIELD_TYPES.find(t => t.value === field.type)?.label} className="dark:bg-zinc-700 dark:text-zinc-200" />
+        <Input disabled placeholder={field.type === 'CUSTOM' ? field.label : leadGenFormFieldTypes.find(t => t.value === field.type)?.label} className="dark:bg-zinc-700 dark:text-zinc-200" />
       )}
     </div>
   );
@@ -347,7 +308,7 @@ export default function FormBuilder({
                   <SelectValue placeholder="Select field type" />
                 </SelectTrigger>
                 <SelectContent>
-                  {FIELD_TYPES.map((type) => (
+                  {leadGenFormFieldTypes.map((type) => (
                     <SelectItem key={type.value} value={type.value}>
                       {type.label}
                     </SelectItem>
