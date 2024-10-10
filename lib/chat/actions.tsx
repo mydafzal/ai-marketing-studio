@@ -42,6 +42,7 @@ import {getChatIdFromUrl} from "@/lib/api/fasty-bot/helpers/chat-id-from-url-hel
 import {sendAdminNotification} from '@/lib/api/fasty-bot/send-admin-notification'
 import {ConnectCampaign} from '@/components/connect-campaign'
 import {PlacementTargeting} from '@/components/placement-targeting';
+import AdCreativesSwitcher from '@/components/ad-creatives-switcher'
 
 interface ToolResult {
     toolName: string;
@@ -1909,6 +1910,8 @@ Engaged Shoppers]
     - If you want to change the placement targeting of a campaign, call \`show_placement_targeting_ui\` to show the update status UI and let the user choose the status of the campaign.
 
     - If the user wants to pause a campaign, call \`showUpdateStatusChampaign\` to show the update status UI and let the user choose the status of the campaign.
+
+    - If the user wants to manage their ad creatives , call \`showAdCreativesSwitcher\` to show the update status UI and let the user choose the status of the campaign.
     
     - If the user wants to complete another specific task, respond that you are a demo and cannot perform that action.
     
@@ -2756,7 +2759,53 @@ Engaged Shoppers]
                         </BotCard>
                     )
                 }
-            }
+            },
+            showAdCreativesSwitcher: {
+                description: 'Show a UI to manage ad creatives of the campaign',
+                parameters: z.object({}),
+                generate: async function* ({}) {
+                    console.log('tool call showAdCreativesSwitcher')
+                    const timestamp: string = new Date().toISOString();
+                    const toolCallId = nanoid();
+                    aiState.done({
+                        ...aiState.get(),
+                        messages: [
+                            ...aiState.get().messages,
+                            {
+                                id: nanoid(),
+                                role: 'assistant',
+                                content: [
+                                    {
+                                        type: 'tool-call',
+                                        toolName: 'showAdCreativesSwitcher',
+                                        toolCallId,
+                                        args: {}
+                                    }
+                                ],
+                                timestamp
+                            },
+                            {
+                                id: toolCallId,
+                                role: 'tool',
+                                content: [
+                                    {
+                                        type: 'tool-result',
+                                        toolName: 'showAdCreativesSwitcher',
+                                        toolCallId,
+                                        result: {}
+                                    }
+                                ],
+                                timestamp
+                            }
+                        ]
+                    })
+                    return (
+                        <BotCard>
+                            <AdCreativesSwitcher/>
+                        </BotCard>
+                    )
+                }
+            },
         }
     });
     return {
