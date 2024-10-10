@@ -21,9 +21,26 @@ export async function createLeadgenForm(
       body: JSON.stringify(payload)
     })
 
-    return response
+    const responseData = await response.json();
+    // Handle the response
+    if (!response.ok) {
+        console.error('Error in creating leadgen form:', {
+            status: response.status,
+            statusText: response.statusText,
+            body: JSON.stringify(responseData)
+        });
+        return false;
+    }
+    if (responseData) {
+      console.log('Successfully created leadgen form:', responseData);
+      return responseData;
+    } else {
+        console.error('Unexpected response format:', responseData);
+        return false;
+    }
+
   } catch (error) {
-    console.error('Error create leadgen-form:', error)
+    console.error('Error create leadgen form:', error)
     return false
   }
 }

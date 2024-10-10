@@ -1,13 +1,18 @@
 'use client'
 
-import { useState, useRef } from 'react';
+import { useState, useMemo, useRef } from 'react';
+import { readStreamableValue } from 'ai/rsc'
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Cross1Icon, Pencil1Icon } from '@radix-ui/react-icons';
-import { QuestionOption, LeadgenFrom }  from '@/lib/types'
+import { QuestionOption, LeadgenFrom } from '@/lib/types';
+import { useActions, useAIState, useUIState } from 'ai/rsc'
+import { type AI } from '@/lib/chat/actions'
+import { IconSpinner } from '@/components/ui/icons'
+
 interface Field {
   id: string;
   type: string;
@@ -56,15 +61,41 @@ const FIELD_TYPES = [
   { value: 'EMAIL_ALIAS', label: 'Email Alias' },
   { value: 'MESSENGER', label: 'Messenger' },
 ];
+interface FormBuilderUiProps {
+  formBuilder: LeadgenFrom
+  success: boolean
+}
+interface FormBuilderProps {
+  formBuilderUiProps?: FormBuilderUiProps
+  toolCallId: string
+  isReadOnly: boolean
+}
 
-
-export default function FormBuilder() {
+export default function FormBuilder({
+  formBuilderUiProps,
+  toolCallId,
+  isReadOnly
+}: FormBuilderProps) {
   const [step, setStep] = useState(1);
-  const [fields, setFields] = useState<Field[]>([
-    { id: 'name', type: 'FULL_NAME' },
-    { id: 'email', type: 'EMAIL' },
-    { id: 'phone', type: 'PHONE' },
-  ]);
+
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
+
+  const { formBuilder } = formBuilderUiProps || {};
+  const [formData, setFormData] = useState<LeadgenFrom | undefined>(formBuilder)
+  const { confirmCreateLeadgenForm } = useActions()
+  const [_, setMessages] = useUIState<typeof AI>()
+
+  const [fields, setFields] = useState<Field[]>(
+    formData?.questions.map(field => ({
+      id: field.key,
+      type: field.type,
+      ...(field.type === 'CUSTOM' ? { label: field.label } : {})
+    })) || [
+      { id: 'name', type: 'FULL_NAME' },
+      { id: 'email', type: 'EMAIL' },
+      { id: 'phone', type: 'PHONE' }
+    ]
+  )
   const [showModal, setShowModal] = useState(false);
   const [currentInputType, setCurrentInputType] = useState<'text' | 'select'>('text');
   const [currentFieldType, setCurrentFieldType] = useState('CUSTOM');
@@ -73,10 +104,10 @@ export default function FormBuilder() {
   const [optionList, setOptionList] = useState<string[]>([]);
   const [editingFieldId, setEditingFieldId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [engagementText, setEngagementText] = useState('');
-  const [thankyouText, setThankyouText] = useState('');
-  const [privacyLink, setPrivacyLink] = useState('');
-  
+  const [engagementText, setEngagementText] = useState(formData?.context_card?.content || '');
+  const [thankyouText, setThankyouText] = useState(formData?.thank_you_page?.body || '');
+  const [privacyLink, setPrivacyLink] = useState(formData?.privacy_policy?.url || '');
+
   const modalOptionInput = useRef<HTMLInputElement>(null);
 
   const openFieldModal = (inputType: 'text' | 'select', fieldId?: string) => {
@@ -149,8 +180,8 @@ export default function FormBuilder() {
       ...(currentInputType === 'select' && { options: optionList }),
     };
 
-    setFields(prev => 
-      editingFieldId 
+    setFields(prev =>
+      editingFieldId
         ? prev.map(f => f.id === editingFieldId ? newField : f)
         : [...prev, newField]
     );
@@ -159,34 +190,21 @@ export default function FormBuilder() {
     setErrorMessage(null);
   };
 
-  const createLeadgenForm = async(data: LeadgenFrom) => {
-    const url = '/api/fasty-bot/proxy-create-leadgen-form'
-    const responseStream = await fetch(url, {
-      method: 'POST',
-      body: JSON.stringify({
-        page_id: "119021011189054",
-        ...data,
-      })
-    })
-    const response = await responseStream.json()
-    console.log("🚀 ~ createLeadgenForm ~ response:", response)
-    if (response.success && response.data.id) {
-    }
-  }
-
   const removeField = (id: string) => {
     setFields(prev => prev.filter(f => f.id !== id));
   };
 
   const handleSubmit = async () => {
+    setIsSubmitting(true);
     const id = Date.now();
     const payload = {
-      name: "Lead Form" + id, 
+      page_id: "119021011189054",
+      name: "Lead Form " + id,
       questions: fields.map(field => ({
         key: field.id,
         label: field.label,
         type: field.type,
-        ...(field.options?.length && { options: field.options?.map((option,idx) => ({ key: idx, label: option, value: option })) as QuestionOption[] })
+        ...(field.options?.length && { options: field.options?.map((option, idx) => ({ key: idx, label: option, value: option })) as QuestionOption[] })
       })),
       privacy_policy: {
         url: privacyLink,
@@ -197,18 +215,28 @@ export default function FormBuilder() {
         style: "PARAGRAPH_STYLE",
         content: engagementText
       },
+      follow_up_action_url: "https://www.example.com",
       thank_you_page: {
         title: "Thank You",
         button_type: 'NONE',
         body: thankyouText
       },
       tracking_parameters: {},
-      follow_up_action_url: "",
       legal_content_id: "",
       locale: "en_US",
       status: "DRAFT"
     };
-    await createLeadgenForm(payload);
+    const response = await confirmCreateLeadgenForm(toolCallId, payload)
+    setMessages(currentMessages => [...currentMessages, response.newMessage])
+    for await (const updatedForm of readStreamableValue<LeadgenFrom>(
+      response.response
+    )) {
+      if (updatedForm) {
+        setFormData(updatedForm)
+      }
+    }
+    setIsSubmitting(false)
+
   };
 
   const renderFieldPreview = (field: Field) => (
@@ -218,10 +246,10 @@ export default function FormBuilder() {
           {field.type === 'CUSTOM' ? field.label : FIELD_TYPES.find(t => t.value === field.type)?.label}
         </Label>
         <div className="flex gap-2">
-          <Button onClick={() => openFieldModal(field.options?.length ? 'select' : 'text', field.id)} variant="ghost" className="h-8 w-8 p-0">
+          <Button disabled={isReadOnly} onClick={() => openFieldModal(field.options?.length ? 'select' : 'text', field.id)} variant="ghost" className="h-8 w-8 p-0">
             <Pencil1Icon />
           </Button>
-          <Button onClick={() => removeField(field.id)} variant="ghost" className="h-8 w-8 p-0">
+          <Button disabled={isReadOnly} onClick={() => removeField(field.id)} variant="ghost" className="h-8 w-8 p-0">
             <Cross1Icon />
           </Button>
         </div>
@@ -242,13 +270,13 @@ export default function FormBuilder() {
     <>
       <div className="container mx-auto p-6 dark:bg-zinc-900">
         <h1 className="text-3xl font-bold text-center mb-6 dark:text-white">Simplified Lead Form Builder</h1>
-        
+
         {step === 1 ? (
           <div className="flex flex-col md:flex-row gap-4">
             <div className="w-full md:w-1/2 p-4 border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 rounded-lg">
               <h2 className="text-xl font-bold mb-4 dark:text-white">Add Fields</h2>
-              <Button onClick={() => openFieldModal('text')} className="w-full mb-2">Add Text Field</Button>
-              <Button onClick={() => openFieldModal('select')} className="w-full">Add Select Field</Button>
+              <Button disabled={isReadOnly} onClick={() => openFieldModal('text')} className="w-full mb-2">Add Text Field</Button>
+              <Button disabled={isReadOnly} onClick={() => openFieldModal('select')} className="w-full">Add Select Field</Button>
             </div>
             <div className="w-full md:w-1/2 p-4 border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 rounded-lg">
               <h2 className="text-xl font-bold mb-4 dark:text-white">Form Preview</h2>
@@ -264,6 +292,7 @@ export default function FormBuilder() {
               <Textarea
                 id="engagement-text"
                 value={engagementText}
+                disabled={isReadOnly}
                 onChange={(e) => setEngagementText(e.target.value)}
                 placeholder="Enter engaging text here..."
               />
@@ -272,6 +301,7 @@ export default function FormBuilder() {
               <Label htmlFor="thankyou-text">Thank You Page Text:</Label>
               <Textarea
                 id="thankyou-text"
+                disabled={isReadOnly}
                 value={thankyouText}
                 onChange={(e) => setThankyouText(e.target.value)}
                 placeholder="Enter thank you message here..."
@@ -281,6 +311,7 @@ export default function FormBuilder() {
               <Label htmlFor="privacy-link">Privacy Policy Link:</Label>
               <Input
                 id="privacy-link"
+                disabled={isReadOnly}
                 value={privacyLink}
                 onChange={(e) => setPrivacyLink(e.target.value)}
                 placeholder="Enter privacy policy URL"
@@ -289,18 +320,20 @@ export default function FormBuilder() {
           </>
         )}
 
-        <div className="mt-6 text-right">
+        <div className="mt-6 flex items-center justify-end">
           {step === 1 ? (
             <Button onClick={() => setStep(2)}>Next</Button>
           ) : (
             <>
-              <Button onClick={() => setStep(1)} className="mr-2">Previous</Button>
-              <Button onClick={handleSubmit}>Submit</Button>
+              <Button aria-disabled={isSubmitting} onClick={() => setStep(1)} className="h-10 mr-2">Previous</Button>
+              <Button className="h-10" aria-disabled={isSubmitting || isReadOnly} onClick={handleSubmit} disabled={isReadOnly}>
+                {isSubmitting && <IconSpinner />}
+                {!isSubmitting && 'Submit'}
+              </Button>
             </>
           )}
         </div>
       </div>
-
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
           <div className="bg-white dark:bg-zinc-800 p-4 rounded-lg w-full max-w-md">
@@ -346,7 +379,7 @@ export default function FormBuilder() {
               <div className="mb-4">
                 <Label className="dark:text-zinc-200">Options:</Label>
                 <div className="flex mb-2">
-                  <Input ref={modalOptionInput} placeholder="Enter option" className="rounded-tr-none rounded-br-none dark:bg-zinc-700 dark:text-zinc-200"/>
+                  <Input ref={modalOptionInput} placeholder="Enter option" className="rounded-tr-none rounded-br-none dark:bg-zinc-700 dark:text-zinc-200" />
                   <Button onClick={addOption} className="rounded-tl-none rounded-bl-none">+</Button>
                 </div>
                 <div className="space-y-2">
@@ -366,6 +399,7 @@ export default function FormBuilder() {
                 {errorMessage}
               </div>
             )}
+
             <div className="text-right">
               <Button onClick={() => {
                 setShowModal(false);
