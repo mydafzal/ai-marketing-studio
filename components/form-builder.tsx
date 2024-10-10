@@ -229,9 +229,7 @@ export default function FormBuilder({
 
   return (
     <>
-      <div className="container mx-auto p-6 dark:bg-zinc-900">
-        <h1 className="text-3xl font-bold text-center mb-6 dark:text-white">Simplified Lead Form Builder</h1>
-
+      <div className="mx-auto dark:bg-zinc-900">
         {step === 1 ? (
           <div className="flex flex-col md:flex-row gap-4">
             <div className="w-full md:w-1/2 p-4 border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 rounded-lg">
