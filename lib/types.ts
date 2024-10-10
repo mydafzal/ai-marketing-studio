@@ -117,3 +117,39 @@ export interface Adset {
   }
   status: string
 }
+
+export interface AdCreative {
+  id?: string
+  name: string
+  status: string
+  thumbnail_url?: string
+  object_type?: string
+  object_story_spec: {
+    page_id: string
+    video_data?: {
+      video_id: string
+      title: string
+      message: string
+      call_to_action: {
+        type: string
+        value: {
+          [key: string]: string
+        }
+      }
+      image_url?: string
+      image_hash?: string
+    }
+    link_data?: {
+      link: string
+      image_url: string
+      name: string
+      message: string
+      call_to_action: {
+        type: string
+        value: {
+          [key: string]: string
+        }
+      }
+    }
+  }
+}
