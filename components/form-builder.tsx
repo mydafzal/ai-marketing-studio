@@ -68,7 +68,7 @@ interface FormBuilderUiProps {
 interface FormBuilderProps {
   formBuilderUiProps?: FormBuilderUiProps
   toolCallId: string
-  isReadOnly: boolean
+  isReadOnly?: boolean
 }
 
 export default function FormBuilder({
