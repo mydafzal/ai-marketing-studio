@@ -724,6 +724,50 @@ export async function updateFbAccountId(email: string, fbAccountId: string) {
     }
 }
 
+export async function updateFbAccessToken(email: string, fbAccessToken: string) {
+    const session = await auth()
+
+    if (!session || !session.user) {
+        return {
+            success: false,
+            error: 'User not authenticated'
+        }
+    }
+
+    try {
+        // Construct the user key using the email
+        const userKey = `user:${email}`
+
+        // Check if the user exists
+        const existingUser = await kv.hgetall(userKey)
+
+        if (!existingUser) {
+            return {
+                success: false,
+                error: 'User not found'
+            }
+        }
+        
+
+        // encrypt the fbAccessToken
+        const encryptedAccessToken = fbAccessToken // TODO: Encryption of access token
+
+        // Update the accountId field
+        await kv.hset(userKey, {fbMarketingApiKey: encryptedAccessToken})
+
+        return {
+            success: true,
+            message: 'Facebook Access token updated successfully'
+        }
+    } catch (error) {
+        console.error(`Error updating Facebook Access token for user ${email}:`, error)
+        return {
+            success: false,
+            error: 'Something went wrong'
+        }
+    }
+}
+
 export async function fetchChatCampaignBudget(chatSlug: string) {
     const session = await auth()
 
