@@ -206,14 +206,26 @@ export default function FormBuilder({
         <Label className="dark:text-zinc-200">
           {field.type === 'CUSTOM' ? field.label : leadGenFormFieldTypes.find(t => t.value === field.type)?.label}
         </Label>
+        {field.type !== 'EMAIL' && (
         <div className="flex gap-2">
-          <Button disabled={isReadOnly} onClick={() => openFieldModal(field.options?.length ? 'select' : 'text', field.id)} variant="ghost" className="h-8 w-8 p-0">
+            <Button
+              disabled={isReadOnly}
+              onClick={() => openFieldModal(field.options?.length ? 'select' : 'text', field.id)}
+              variant="ghost"
+              className="h-8 w-8 p-0"
+            >
             <Pencil1Icon />
           </Button>
-          <Button disabled={isReadOnly} onClick={() => removeField(field.id)} variant="ghost" className="h-8 w-8 p-0">
+            <Button
+              disabled={isReadOnly}
+              onClick={() => removeField(field.id)}
+              variant="ghost"
+              className="h-8 w-8 p-0"
+            >
             <Cross1Icon />
           </Button>
         </div>
+        )}
       </div>
       {field.options?.length ? (
         <Select disabled>
