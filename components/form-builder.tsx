@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { readStreamableValue } from 'ai/rsc'
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,10 +9,10 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Cross1Icon, Pencil1Icon } from '@radix-ui/react-icons';
 import { QuestionOption, LeadgenFrom } from '@/lib/types';
-import { useActions, useAIState, useUIState } from 'ai/rsc'
+import { useActions, useUIState } from 'ai/rsc'
 import { type AI } from '@/lib/chat/actions'
 import { IconSpinner } from '@/components/ui/icons'
-import { leadGenFormFieldTypes } from '@/data'
+import { leadGenFormFieldTypes, leadGenFormLocales } from '@/data'
 
 interface Field {
   id: string;
@@ -68,6 +68,7 @@ export default function FormBuilder({
   const [engagementText, setEngagementText] = useState(formData?.context_card?.content || '');
   const [thankyouText, setThankyouText] = useState(formData?.thank_you_page?.body || '');
   const [privacyLink, setPrivacyLink] = useState(formData?.privacy_policy?.url || '');
+  const [locale, setLocale] = useState(formData?.locale || 'en_US');
 
   const modalOptionInput = useRef<HTMLInputElement>(null);
 
@@ -184,8 +185,8 @@ export default function FormBuilder({
       },
       tracking_parameters: {},
       legal_content_id: "",
-      locale: "en_US",
-      status: "DRAFT"
+      locale: locale,
+      status: "ACTIVE"
     };
     const response = await confirmCreateLeadgenForm(toolCallId, payload)
     setMessages(currentMessages => [...currentMessages, response.newMessage])
@@ -288,6 +289,25 @@ export default function FormBuilder({
                 placeholder="Enter privacy policy URL"
               />
             </div>
+            <div className="mb-6">
+              <Label htmlFor="locale">Language:</Label>
+              <Select
+                value={locale}
+                onValueChange={(value) => setLocale(value)}
+                disabled={isReadOnly}
+              >
+                <SelectTrigger className="w-full dark:bg-zinc-700 dark:text-zinc-200" id="locale">
+                  <SelectValue placeholder="Select language" />
+                </SelectTrigger>
+                <SelectContent>
+                  {leadGenFormLocales.map((localeOption) => (
+                    <SelectItem key={localeOption.value} value={localeOption.value}>
+                      {localeOption.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </>
         )}
 
@@ -346,7 +366,7 @@ export default function FormBuilder({
                 />
               </div>
             )}
-            {currentInputType === 'select' && (
+            {currentFieldType === 'CUSTOM' && currentInputType === 'select' && (
               <div className="mb-4">
                 <Label className="dark:text-zinc-200">Options:</Label>
                 <div className="flex mb-2">

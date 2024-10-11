@@ -134,6 +134,7 @@ export interface Question {
 }
 export interface LeadgenFrom {
   name: string
+  locale: string
   privacy_policy?: {
     url: string
     link_text: string
