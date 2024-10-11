@@ -95,7 +95,7 @@ const AdCreativesSwitcher = () => {
       </header>
 
       <main className="flex-grow p-4 overflow-y-auto">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid md:grid-cols-2 gap-4">
           {creatives.map(creative => (
             <div key={creative.id} className="bg-gray-50 p-4 rounded-md shadow-md">
               <div className="flex justify-between">
