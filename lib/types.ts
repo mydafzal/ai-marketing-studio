@@ -70,6 +70,7 @@ export interface VideoAdText {
 export interface FbCampaign {
   id: string
   name: string
+  daily_budget: string
   created_time: string
   status: string
 }

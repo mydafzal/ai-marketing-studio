@@ -12,6 +12,7 @@ import { fetchChatCampaignBudget } from '@/app/actions'
 interface ICampaignContext {
     id: string | null;
     campaigns: FbCampaign[];
+    campaign: FbCampaign | null;
     getCampaignList: () => Promise<void>;
     setId: (id: string) => void;
     summary: CampaignSummary | null;
@@ -25,6 +26,7 @@ interface ICampaignContext {
 export const CampaignContext = createContext<ICampaignContext>({
     id: null,
     campaigns: [],
+    campaign: null,
     getCampaignList: async () => {},
     setId: () => {},
     summary: null,
@@ -50,6 +52,11 @@ export const CampaignContextProvider = ({ children }: { children: React.ReactNod
         const data = await getCampaigns()
         setCampaigns(data || [])
     }, [])
+
+    const campaign = useMemo(() =>
+       campaigns.find(campaign => campaign.id === id) ?? null, [campaigns, id]
+    )
+    console.log('campaign', campaign)
 
     useEffect(() => {
         void getCampaignList()
@@ -78,7 +85,7 @@ export const CampaignContextProvider = ({ children }: { children: React.ReactNod
     }, [id])
 
     useEffect(() => {
-        if (id && adsets) {
+        if (campaign && adsets) {
             const fetchOrCreateAdset = async (adsets: Adset[]) => {
                 if (adsets.length > 0) {
                     const res = await getAdset(adsets[0].id)
@@ -89,12 +96,13 @@ export const CampaignContextProvider = ({ children }: { children: React.ReactNod
                     const budget = await fetchChatCampaignBudget(aiState.chatId)
                     let adsetUpdate = {
                         ...generateAdsetTemplate(),
-                        campaign_id: id
+                        campaign_id: campaign.id
                     } as any
-                    if (budget.error) {
+                    console.log('budget', budget)
+                    if (!campaign.daily_budget && budget.error) {
                         adsetUpdate = { ...adsetUpdate, daily_budget: 100 }
                     }
-                    const res = await createAdset(id, adsetUpdate)
+                    const res = await createAdset(campaign.id, adsetUpdate)
                     if (res) {
                         setAdset(res)
                     }
@@ -102,7 +110,7 @@ export const CampaignContextProvider = ({ children }: { children: React.ReactNod
             }
             void fetchOrCreateAdset(adsets)
         }
-    }, [id, adsets])
+    }, [campaign, adsets])
 
     useEffect(() => {
         if (id) {
@@ -135,6 +143,7 @@ export const CampaignContextProvider = ({ children }: { children: React.ReactNod
 
     const value = useMemo(() => ({
         id,
+        campaign,
         campaigns,
         getCampaignList,
         setId,
@@ -144,7 +153,7 @@ export const CampaignContextProvider = ({ children }: { children: React.ReactNod
         adset,
         setAdset,
         fetchAdsetIds,
-    }), [id, setId, campaigns, summary, adsets, adset, setAdset, fetchAdsetIds])
+    }), [id, setId, campaign, campaigns, summary, adsets, adset, setAdset, fetchAdsetIds])
 
     return (
         <CampaignContext.Provider value={value}>
