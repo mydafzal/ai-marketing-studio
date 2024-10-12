@@ -21,6 +21,7 @@ type FacebookAccountSettingsProps= {
 	getFacebookAdAccounts: (encryptedAccessToken:string,business_acc_id:string )=>Promise<any>;
 	updateFbBusinessAcc: (email:string,accountId:string )=>Promise<any>;
 	updateFbAccountId: (email:string,fbAccountId:string )=>Promise<any>;
+	disconnectFacebook: (email:string)=>Promise<any>;
 }
 
 const FacebookAccountSettings = ({
@@ -28,7 +29,8 @@ const FacebookAccountSettings = ({
 	getFacebookBusinessAccounts,
 	getFacebookAdAccounts,
 	updateFbBusinessAcc,
-	updateFbAccountId
+	updateFbAccountId,
+	disconnectFacebook,
 }:FacebookAccountSettingsProps) => {
 
 	const [open, setOpen] = React.useState<boolean>(true)
@@ -88,6 +90,13 @@ const FacebookAccountSettings = ({
 		if(fbAdAccs && userDetails){
 			setSelectedFbAdAcc(fbAdAccs.find((acc)=>acc.id===id));
 			await updateFbAccountId(userDetails?.email,id)
+		}
+	}
+
+	async function handleDisconnectFacebook(){
+		if(userDetails){
+			await disconnectFacebook(userDetails?.email)
+			window.location.reload();
 		}
 	}
 
@@ -167,27 +176,30 @@ const FacebookAccountSettings = ({
 					/>
 				</fieldset> */}
 
-				<div className="flex gap-2">
+				{userDetails?.fbMarketingApiKey&&
+					<div className="flex gap-2">
+						<FBAccountDropdown
+							title="Select Business Account"
+							selectedAcccount={selectedFbBusinessAcc}
+							accounts={fbBusinessAccs}
+							handleAccountChange={selectBusinessAccount}
+						/>
+						<FBAccountDropdown
+							title="Select Ad Account"
+							selectedAcccount={selectedFbAdAcc}
+							accounts={fbAdAccs}
+							handleAccountChange={selectAdAccount}
+						/>
+					</div>
+				}
 
-				<FBAccountDropdown
-					title="Select Business Account"
-					selectedAcccount={selectedFbBusinessAcc}
-					accounts={fbBusinessAccs}
-					handleAccountChange={selectBusinessAccount}
-				/>
-
-				<FBAccountDropdown
-					title="Select Ad Account"
-					selectedAcccount={selectedFbAdAcc}
-					accounts={fbAdAccs}
-					handleAccountChange={selectAdAccount}
-				/>
-				</div>
+				
 
 				<div className="flex justify-center">
 				{facebookConnected?<button 
 					// onClick={unlinkFacebook}
 					className="h-10 px-4 flex items-center justify-center bg-red-600 text-white rounded-md shadow-md transition-transform transform hover:scale-105 active:scale-100 focus:outline-none"
+					onClick={handleDisconnectFacebook}
 					>
 					Disconnect Facebook
 					</button>

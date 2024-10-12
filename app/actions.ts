@@ -809,6 +809,47 @@ export async function updateFbAccessToken(email: string, fbAccessToken: string) 
     }
 }
 
+export async function disconnectFacebook(email: string) {
+    const session = await auth()
+
+    if (!session || !session.user) {
+        return {
+            success: false,
+            error: 'User not authenticated'
+        }
+    }
+
+    try {
+        // Construct the user key using the email
+        const userKey = `user:${email}`
+
+        // Check if the user exists
+        const existingUser = await kv.hgetall(userKey)
+
+        if (!existingUser) {
+            return {
+                success: false,
+                error: 'User not found'
+            }
+        }
+        
+        // Update the accountId field
+        await kv.hset(userKey, {fbMarketingApiKey: null, fbBusinessAccId:null, fbAccountId:null})
+
+        return {
+            success: true,
+            message: 'Facebook disconnected successfully'
+        }
+    } catch (error) {
+        console.error(`Error disconnecting facebook for user ${email}:`, error)
+        return {
+            success: false,
+            error: 'Something went wrong'
+        }
+    }
+}
+
+
 export async function fetchChatCampaignBudget(chatSlug: string) {
     const session = await auth()
 
