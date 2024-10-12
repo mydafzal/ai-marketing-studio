@@ -724,6 +724,47 @@ export async function updateFbAccountId(email: string, fbAccountId: string) {
     }
 }
 
+export async function updateFbBusinessAcc(email: string, accountId: string) {
+    const session = await auth()
+
+    if (!session || !session.user) {
+        return {
+            success: false,
+            error: 'User not authenticated'
+        }
+    }
+
+    try {
+        // Construct the user key using the email
+        const userKey = `user:${email}`
+
+        // Check if the user exists
+        const existingUser = await kv.hgetall(userKey)
+
+        if (!existingUser) {
+            return {
+                success: false,
+                error: 'User not found'
+            }
+        }
+        
+        // Update the accountId field
+        await kv.hset(userKey, {fbBusinessAccId: accountId})
+
+        return {
+            success: true,
+            message: 'Facebook Business account id updated successfully'
+        }
+    } catch (error) {
+        console.error(`Error updating Facebook Business account id for user ${email}:`, error)
+        return {
+            success: false,
+            error: 'Something went wrong'
+        }
+    }
+}
+
+
 export async function updateFbAccessToken(email: string, fbAccessToken: string) {
     const session = await auth()
 

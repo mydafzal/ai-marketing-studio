@@ -40,7 +40,8 @@ export interface User extends Record<string, any> {
   password: string
   salt: string
   fbAccountId?: string
-  fbMarketingApiKey?:string
+  fbMarketingApiKey?: string
+  fbBusinessAccId?:string
 }
 
 export interface Campaign extends Record<string, any> {

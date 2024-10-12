@@ -5,15 +5,42 @@ import { Cross2Icon } from "@radix-ui/react-icons";
 
 
 import FacebookConnect from "@/components/facebook-connect";
+import FBAccountDropdown from "./fb-account-dropdown";
 
-type FacebookAccountSettingsProps= {
-	facebookConnected:boolean;
-	addAccountSelected:boolean;
+import {type User} from '@/lib/types'
+
+
+type Account = {
+    name:string;
+    id:string;
 }
 
-const FacebookAccountSettings = ({facebookConnected, addAccountSelected}:FacebookAccountSettingsProps) => {
+type FacebookAccountSettingsProps= {
+	userDetails:User | undefined;
+	getFacebookBusinessAccounts: (encryptedAccessToken:string)=>Promise<any>;
+	getFacebookAdAccounts: (encryptedAccessToken:string,business_acc_id:string )=>Promise<any>;
+	updateFbBusinessAcc: (email:string,accountId:string )=>Promise<any>;
+	updateFbAccountId: (email:string,fbAccountId:string )=>Promise<any>;
+}
+
+const FacebookAccountSettings = ({
+	userDetails,
+	getFacebookBusinessAccounts,
+	getFacebookAdAccounts,
+	updateFbBusinessAcc,
+	updateFbAccountId
+}:FacebookAccountSettingsProps) => {
+
 	const [open, setOpen] = React.useState<boolean>(true)
 	const [error, setError]  = React.useState<string|null>(null);
+	const [selectedFbBusinessAcc, setSelectedFbBusinessAcc] = React.useState<Account | undefined>();
+	const [fbBusinessAccs, setFbBusinessAccs] = React.useState<Account[] | undefined>(undefined);
+	
+	const [selectedFbAdAcc, setSelectedFbAdAcc] = React.useState<Account | undefined>(undefined);
+	const [fbAdAccs, setFbAdAccs] = React.useState<Account[] | undefined>(undefined);
+
+	const facebookConnected = userDetails?.fbMarketingApiKey?true:false;
+	const addAccountSelected = userDetails?.fbAccountId?true:false;
 
 	function handleClose(){
 		if(facebookConnected){
@@ -27,11 +54,68 @@ const FacebookAccountSettings = ({facebookConnected, addAccountSelected}:Faceboo
 		}
 	}
 
+
+	async function getBusinessAPICall(){
+		if(userDetails?.fbMarketingApiKey){
+			const data = await getFacebookBusinessAccounts(userDetails?.fbMarketingApiKey);
+			setFbBusinessAccs(data);
+		}
+	}
+
+	
+	async function getAdAccAPICall(){
+		if(userDetails?.fbMarketingApiKey && selectedFbBusinessAcc){
+			const data = await getFacebookAdAccounts(userDetails?.fbMarketingApiKey, selectedFbBusinessAcc.id);
+			let adAccs=[];
+			for (let i=0;i<data.length;i++){
+				adAccs.push({
+					id: data[i].id,
+					name: data[i].account_id,
+				})
+			}
+			setFbAdAccs(adAccs);
+		}
+	}
+
+	async function selectBusinessAccount(id:string){
+		if(fbBusinessAccs && userDetails){
+			setSelectedFbBusinessAcc(fbBusinessAccs.find((acc)=>acc.id===id));
+			await updateFbBusinessAcc(userDetails?.email,id)
+		}
+	}
+
+	async function selectAdAccount(id:string){
+		if(fbAdAccs && userDetails){
+			setSelectedFbAdAcc(fbAdAccs.find((acc)=>acc.id===id));
+			await updateFbAccountId(userDetails?.email,id)
+		}
+	}
+
+	React.useEffect(()=>{
+		getBusinessAPICall();
+	}, [])
+
+	React.useEffect(()=>{
+		if(userDetails?.fbBusinessAccId && fbBusinessAccs){
+			setSelectedFbBusinessAcc(fbBusinessAccs.find((acc)=>acc.id===`${userDetails?.fbBusinessAccId}`))
+		}
+		if(userDetails?.fbAccountId){
+			setSelectedFbAdAcc({
+				id:	userDetails?.fbAccountId,
+				name:userDetails?.fbAccountId.split("act_")[1]
+			})
+		}
+	},[fbBusinessAccs])
+
 	React.useEffect(()=>{
 		setTimeout(()=>{
 			setError(null);
 		},5000)
 	},[error])
+
+	React.useEffect(()=>{
+		getAdAccAPICall()
+	}, [selectedFbBusinessAcc])
 
 	return (
 	<Dialog.Root modal={true} open={open} onOpenChange={()=>null}>
@@ -83,8 +167,22 @@ const FacebookAccountSettings = ({facebookConnected, addAccountSelected}:Faceboo
 					/>
 				</fieldset> */}
 
-				{/* // TODO add dropdown for add accounts */}
+				<div className="flex gap-2">
 
+				<FBAccountDropdown
+					title="Select Business Account"
+					selectedAcccount={selectedFbBusinessAcc}
+					accounts={fbBusinessAccs}
+					handleAccountChange={selectBusinessAccount}
+				/>
+
+				<FBAccountDropdown
+					title="Select Ad Account"
+					selectedAcccount={selectedFbAdAcc}
+					accounts={fbAdAccs}
+					handleAccountChange={selectAdAccount}
+				/>
+				</div>
 
 				<div className="flex justify-center">
 				{facebookConnected?<button 
