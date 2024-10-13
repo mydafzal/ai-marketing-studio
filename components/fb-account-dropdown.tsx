@@ -42,12 +42,12 @@ const FBAccountDropdown = ({title,selectedAcccount,accounts,handleAccountChange}
 
                 <DropdownMenu.Portal>
                     <DropdownMenu.Content
-                        className="z-[100] min-w-[220px] p-2 flex flex-col bg-white gap-2 rounded-md bg-transparent shadow-[0px_10px_38px_-10px_rgba(22,_23,_24,_0.35),_0px_10px_20px_-15px_rgba(22,_23,_24,_0.2)] will-change-[opacity,transform] data-[side=bottom]:animate-slideUpAndFade data-[side=left]:animate-slideRightAndFade data-[side=right]:animate-slideLeftAndFade data-[side=top]:animate-slideDownAndFade"
+                        className="z-[100] min-w-[220px] p-2 flex flex-col bg-white gap-2 rounded-md shadow-[0px_10px_38px_-10px_rgba(22,_23,_24,_0.35),_0px_10px_20px_-15px_rgba(22,_23,_24,_0.2)] will-change-[opacity,transform] data-[side=bottom]:animate-slideUpAndFade data-[side=left]:animate-slideRightAndFade data-[side=right]:animate-slideLeftAndFade data-[side=top]:animate-slideDownAndFade"
                         sideOffset={5}
                     >
                         {
                             accounts?accounts.map((account, index) => (
-                                    <div>
+                                    <div key={index}>
                                         <DropdownMenu.Item 
                                             onSelect={()=>handleSelect(account.id)}
                                             className="mb-1 py-1 group bg-white relative flex select-none items-center rounded px-2 text-xs leading-none text-violet11 outline-none data-[disabled]:pointer-events-none data-[highlighted]:bg-violet9 data-[disabled]:text-mauve8 data-[highlighted]:text-violet1">
