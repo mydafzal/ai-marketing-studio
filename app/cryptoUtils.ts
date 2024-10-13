@@ -1,4 +1,4 @@
-import NextCrypto from 'next-crypto';
+import NextCrypto from "@/app/next-crypto";
 
 if (!process.env.ENCRYPTION_KEY) {
     throw new Error('Encryption key is not set');

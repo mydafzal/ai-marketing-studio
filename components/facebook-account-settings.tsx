@@ -7,6 +7,7 @@ import { Cross2Icon } from "@radix-ui/react-icons";
 import FacebookConnect from "@/components/facebook-connect";
 import FBAccountDropdown from "./fb-account-dropdown";
 
+
 import {type User} from '@/lib/types'
 
 
@@ -41,12 +42,14 @@ const FacebookAccountSettings = ({
 	const [selectedFbAdAcc, setSelectedFbAdAcc] = React.useState<Account | undefined>(undefined);
 	const [fbAdAccs, setFbAdAccs] = React.useState<Account[] | undefined>(undefined);
 
-	const facebookConnected = userDetails?.fbMarketingApiKey?true:false;
-	const addAccountSelected = userDetails?.fbAccountId?true:false;
+	const [facebookConnected, setFacebookConnected] = React.useState(userDetails?.fbMarketingApiKey?true:false);
+	const [adAccountSelected, setAdAccountSelected] =  React.useState(userDetails?.fbAccountId?true:false);
+
+	const [step, setStep] = React.useState(adAccountSelected?2:1);
 
 	function handleClose(){
 		if(facebookConnected){
-			if(addAccountSelected){
+			if(adAccountSelected){
 				setOpen(false)
 			}else{
 				setError("Please complete Add Account selection before proceeding")
@@ -90,6 +93,7 @@ const FacebookAccountSettings = ({
 		if(fbAdAccs && userDetails){
 			setSelectedFbAdAcc(fbAdAccs.find((acc)=>acc.id===id));
 			await updateFbAccountId(userDetails?.email,id)
+			setAdAccountSelected(true)
 		}
 	}
 
@@ -119,12 +123,17 @@ const FacebookAccountSettings = ({
 	React.useEffect(()=>{
 		setTimeout(()=>{
 			setError(null);
-		},5000)
-	},[error])
+		},5000) 	},[error])
 
 	React.useEffect(()=>{
 		getAdAccAPICall()
 	}, [selectedFbBusinessAcc])
+
+	// if (step==2){
+	// 	return (
+	// 		<Onboarding/>	
+	// 	)
+	// }
 
 	return (
 	<Dialog.Root modal={true} open={open} onOpenChange={()=>null}>
@@ -195,6 +204,8 @@ const FacebookAccountSettings = ({
 
 				
 
+				
+
 				<div className="flex justify-center">
 				{facebookConnected?<button 
 					// onClick={unlinkFacebook}
@@ -206,6 +217,19 @@ const FacebookAccountSettings = ({
 					:<FacebookConnect/>}
 				
 				</div>
+
+				{
+					adAccountSelected&&
+					<div className="flex justify-end">
+						<button 
+						// onClick={unlinkFacebook}
+						className="h-10 px-4 flex items-center justify-center bg-gray-700 hover:bg-gray-900 text-white rounded-md shadow-md transition-transform transform hover:scale-105 active:scale-100 focus:outline-none"
+						onClick={()=>setStep(2)}
+						>
+						Next
+						</button>
+					</div>
+				}
 
 				{/* <div className="mt-[25px] flex justify-end">
 					<Dialog.Close asChild>
