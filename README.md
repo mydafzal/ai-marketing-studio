@@ -1,1 +1,1 @@
-This is the Reeply AI Marketing Manager.
+This is the Reeply AI Marketing Manager Repository.
