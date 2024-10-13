@@ -1,8 +1,13 @@
-import { useAIState } from 'ai/rsc'
+import { useActions, useAIState } from 'ai/rsc'
 import { createContext, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CampaignSummary, getCampaignSummary } from '@/lib/api/fasty-bot/get-campaign-summary'
+import { createAdset } from '@/lib/api/fasty-bot/create-adset'
 import { getCampaigns } from '@/lib/api/fasty-bot/get-campaigns'
-import { FbCampaign, Message } from '@/lib/types'
+import { getAdset } from '@/lib/api/fasty-bot/get-adset'
+import { getAdsets } from '@/lib/api/fasty-bot/get-adsets'
+import { Adset, FbCampaign, Message } from '@/lib/types'
+import { generateAdsetTemplate } from '@/lib/data'
+import { fetchChatCampaignBudget } from '@/app/actions'
 
 interface ICampaignContext {
     id: string | null;
@@ -11,6 +16,9 @@ interface ICampaignContext {
     setId: (id: string) => void;
     summary: CampaignSummary | null;
     fetchSummary: (id: string) => Promise<void>;
+    adsetIds?: { id: string }[];
+    adset?: Adset;
+    setAdset: (adset: Adset) => void;
 }
 
 export const CampaignContext = createContext<ICampaignContext>({
@@ -19,19 +27,23 @@ export const CampaignContext = createContext<ICampaignContext>({
     getCampaignList: async () => {},
     setId: () => {},
     summary: null,
-    fetchSummary: async () => {}
+    fetchSummary: async () => {},
+    adsetIds: [],
+    setAdset: () => {},
 });
 
 const oneHour = 60 * 60 * 1000
 const fiveMins = 5 * 60 * 1000
 
 export const CampaignContextProvider = ({ children }: { children: React.ReactNode }) => {
-    const [_, setAIState] = useAIState()
+    const [aiState] = useAIState()
+    const {updateCampaignInfo: updateCampaignInfoBE} = useActions()
 
     const [id, setId] = useState<string | null>(null)
     const [summary, setSummary] = useState<CampaignSummary | null>(null)
     const [campaigns, setCampaigns] = useState<FbCampaign[]>([])
-
+    const [adsetIds, setAdsetIds] = useState<{ id: string }[]>();
+    const [adset, setAdset] = useState<Adset>();
     const getCampaignList = useCallback(async () => {
         const data = await getCampaigns()
         setCampaigns(data || [])
@@ -55,6 +67,44 @@ export const CampaignContextProvider = ({ children }: { children: React.ReactNod
     }, [])
 
     useEffect(() => {
+        const fetchAdsetIds = async (id: string) => {
+            const result = await getAdsets(id)
+            setAdsetIds(result)
+        }
+    
+        if (id) {
+            fetchAdsetIds(id)
+        }
+    }, [id])
+
+    useEffect(() => {
+        if (id && adsetIds) {
+            const fetchOrCreateAdset = async (adsetIds: { id: string }[]) => {
+                if (adsetIds.length > 0) {
+                    const res = await getAdset(adsetIds[0].id)
+                    if (res) {
+                        setAdset(res)
+                    }
+                } else {
+                    const budget = await fetchChatCampaignBudget(aiState.chatId)
+                    let adsetUpdate = {
+                        ...generateAdsetTemplate(),
+                        campaign_id: id
+                    } as any
+                    if (budget.error) {
+                        adsetUpdate = { ...adsetUpdate, daily_budget: 100 }
+                    }
+                    const res = await createAdset(id, adsetUpdate)
+                    if (res) {
+                        setAdset(res)
+                    }
+                }
+            }
+            void fetchOrCreateAdset(adsetIds)
+        }
+    }, [id, adsetIds])
+
+    useEffect(() => {
         if (id) {
             fetchSummary(id)
         }
@@ -74,19 +124,12 @@ export const CampaignContextProvider = ({ children }: { children: React.ReactNod
 
     useEffect(() => {
         if (summary && summary.campaign_id !== '0') {
-            setAIState((aiState: any) => ({
-                ...aiState,
-                messages: [
-                    {
-                        id: 'campaign-info-data',
-                        role: 'system',
-                        content: `Campaign is connected, the knowledge base about current campaign information: ${JSON.stringify(summary)}`,
-                        timestamp: new Date().toISOString() 
-                    },
-                    ...aiState.messages.filter((message: Message) => message.id !== 'campaign-info-data' || message.role !== 'system'),
-                ]
-            }))
-            lastUpdatedRef.current = new Date();
+            const updateCampaignInfo = async () => {
+                console.log('updateCampaignInfo', summary)
+                await updateCampaignInfoBE(summary)
+                lastUpdatedRef.current = new Date()
+            }
+            void updateCampaignInfo()
         }
     }, [summary])
 
@@ -96,8 +139,11 @@ export const CampaignContextProvider = ({ children }: { children: React.ReactNod
         getCampaignList,
         setId,
         summary,
-        fetchSummary
-    }), [id, setId, campaigns, summary, fetchSummary])
+        fetchSummary,
+        adsetIds,
+        adset,
+        setAdset
+    }), [id, setId, campaigns, summary, adsetIds, adset, setAdset])
 
     return (
         <CampaignContext.Provider value={value}>

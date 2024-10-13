@@ -4,7 +4,7 @@ import { FbCampaign } from '@/lib/types'
 export async function getCampaigns(): Promise<FbCampaign[]> {
   const userDetail = await getUserDetail()
   if (userDetail?.user?.fbAccountId) {
-    const apiUrl = `/api/fasty-bot/proxy-get-campaigns?fbAccountId=${userDetail?.user?.fbAccountId}`
+    const apiUrl = `/api/fasty-bot/proxy-get-campaigns?fb_account_id=${userDetail?.user?.fbAccountId}`
 
     try {
       const response = await fetch(apiUrl)

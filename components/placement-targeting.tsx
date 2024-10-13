@@ -4,17 +4,13 @@ import { readStreamableValue } from 'ai/rsc'
 import * as React from 'react'
 import { useState, useCallback, useContext, useEffect } from 'react'
 import { Switch } from '@/components/ui/switch'
-import { getAdsets } from '@/lib/api/fasty-bot/get-adsets'
-import { getAdset } from '@/lib/api/fasty-bot/get-adset'
-import { createAdset } from '@/lib/api/fasty-bot/create-adset'
 import { cn } from '@/lib/utils'
 import { IconSpinner } from '@/components/ui/icons'
 import { CampaignContext } from '@/components/contexts/campaign-context'
 import { Adset, AdsetTargeting } from '@/lib/types'
 import { useActions, useAIState, useUIState } from 'ai/rsc'
-import { generateAdsetTemplate, targetPositions } from '@/lib/data'
+import { targetPositions } from '@/lib/data'
 import { type AI } from '@/lib/chat/actions'
-import { fetchChatCampaignBudget } from '@/app/actions'
 
 interface TargetingUiProps {
   targeting: any
@@ -22,7 +18,6 @@ interface TargetingUiProps {
 }
 interface PlacementTargetingProps {
   targetingUiProps?: TargetingUiProps
-  isActive?: boolean
   toolCallId: string
 }
 
@@ -83,17 +78,13 @@ interface TargetPosition {
 
 export function PlacementTargeting({
   targetingUiProps,
-  isActive,
   toolCallId
 }: PlacementTargetingProps) {
-  const { id: campaignId } = useContext(CampaignContext)
-  const [isActivated, activate] = useState(!!isActive || !!targetingUiProps)
-  const [adset, setAdset] = useState<Adset>()
+  const { id: campaignId, adset, setAdset } = useContext(CampaignContext)
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
 
   const { confirmUpdateAdset } = useActions()
   const [_, setMessages] = useUIState<typeof AI>()
-  const [aiState] = useAIState()
 
   const [selectedPositions, setSelectedPositions] = useState<TargetPosition[]>(
     []
@@ -101,38 +92,6 @@ export function PlacementTargeting({
   const [targetingUI, setTargetingUI] = useState<null | React.ReactNode>(
     targetingUiProps ? <PlacementTargetingResult {...targetingUiProps} /> : null
   )
-
-  useEffect(() => {
-    if (!targetingUiProps && campaignId && isActivated) {
-      const fetchAsets = async () => {
-        try {
-          const adsets = await getAdsets(campaignId)
-          if (adsets.length > 0) {
-            const res = await getAdset(adsets[0].id)
-            if (res) {
-              setAdset(res)
-            }
-          } else {
-            const budget = await fetchChatCampaignBudget(aiState.chatId)
-            let adsetUpdate = {
-              ...generateAdsetTemplate(),
-              campaign_id: campaignId
-            } as any
-            if (budget.error) {
-              adsetUpdate = { ...adsetUpdate, daily_budget: 100 }
-            }
-            const res = await createAdset(campaignId, adsetUpdate)
-            if (res) {
-              setAdset(res)
-            }
-          }
-        } catch (error) {
-          console.error('Error fetching fetchAsets data:', error)
-        }
-      }
-      void fetchAsets()
-    }
-  }, [campaignId, isActivated, targetingUiProps])
 
   useEffect(() => {
     setSelectedPositions([
@@ -213,9 +172,6 @@ export function PlacementTargeting({
       <span className="text-white-500 pl-3">{target.label}</span>
     </div>
   )
-  const refresh = useCallback(() => {
-    activate(true)
-  }, [])
 
   async function handleUpdateAdset() {
     if (!adset) return
@@ -262,8 +218,6 @@ export function PlacementTargeting({
   return (
     <PlacementTargetingTemplate
       adset={targetingUiProps ? ({} as Adset) : adset}
-      isActivated={isActivated}
-      refresh={refresh}
     >
       {targetingUI ? (
         targetingUI
@@ -304,51 +258,19 @@ export function PlacementTargeting({
 }
 
 interface PlacementTargetingTemplateProps {
-  isActivated: boolean
   children: React.ReactNode
   adset?: Adset
-  refresh: () => void
 }
 
 function PlacementTargetingTemplate({
   adset,
   children,
-  isActivated,
-  refresh
 }: PlacementTargetingTemplateProps) {
-  return (
+  return adset ? (
     <div className="relative">
-      <div
-        className={cn(
-          'rounded-xl border  p-4 ',
-          !adset ? 'pointer-events-none blur' : ''
-        )}
-      >
+      <div className="rounded-xl border p-4">
         {children}
       </div>
-      <div
-        className={cn(
-          'absolute text-center top-[50%] w-full',
-          isActivated && adset ? 'hidden' : ''
-        )}
-      >
-        {isActivated ? (
-          <IconSpinner className="m-auto animate-spin" />
-        ) : (
-          <>
-            <div className=" mb-3">
-              To view the Placement targeting settings again. Click the button
-              below.
-            </div>
-            <button
-              className="px-4 py-2 rounded-lg bg-green-600"
-              onClick={refresh}
-            >
-              Refresh
-            </button>
-          </>
-        )}
-      </div>
     </div>
-  )
+  ) : null;
 }

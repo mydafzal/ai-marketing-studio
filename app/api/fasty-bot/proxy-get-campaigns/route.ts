@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
-    const fbAccountId = searchParams.get('fbAccountId')
+    const fbAccountId = searchParams.get('fb_account_id')
 
     if (!fbAccountId) {
         return NextResponse.json({ error: 'fbAccountId is required' }, { status: 400 })

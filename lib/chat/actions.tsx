@@ -10,6 +10,7 @@ import {Events} from '@/components/stocks/events'
 import {PurchasingUi} from '@/components/stocks/purchasing-ui'
 import {StockSkeleton} from '@/components/stocks/stock-skeleton'
 import {AdTextSuggestion} from '@/components/stocks/ad-text-suggestion'
+import {VideoAdTextSuggestion} from '@/components/stocks/video-ad-text-suggestion'
 import {RefreshChatTitle} from '@/components/refresh-chat-title'
 import {InjectCampaign} from '@/components/inject-campaign'
 import {CampaignStatus} from '@/components/stocks/campaign-status'
@@ -28,19 +29,22 @@ import {ImagePart, TextPart} from 'ai'
 
 import {formatNumber, nanoid, runAsyncFnWithoutBlocking, sleep} from '@/lib/utils'
 import {SpinnerMessage, UserMessage} from '@/components/stocks/message'
-import {Adset, AdText, Chat, Message, Session} from '@/lib/types';
+import {Adset, AdText, LeadgenFrom, Chat, Message, Session} from '@/lib/types';
 import {auth} from '@/auth'
 import {setDailyCampaignBudget} from '@/lib/api/fasty-bot/set-daily-campaign-budget';
 import {setCampaignStatus} from '@/lib/api/fasty-bot/set-campaign-status';
 import {createCampaignAd} from '@/lib/api/fasty-bot/create-ad';
-import {createCampaign } from '@/lib/api/fasty-bot/create-campaign'
+import {createCampaign} from '@/lib/api/fasty-bot/create-campaign'
+import {CampaignSummary} from '@/lib/api/fasty-bot/get-campaign-summary'
 import {updateCampaign} from '@/lib/api/fasty-bot/update-campaign';
+import {createLeadgenForm} from '@/lib/api/fasty-bot/create-leadgen-form';
 import {updateAdset} from '@/lib/api/fasty-bot/update-adset';
 import {getCampaignIdFromUrl} from "@/lib/api/fasty-bot/helpers/campaign-id-from-url-helper";
 import {getChatIdFromUrl} from "@/lib/api/fasty-bot/helpers/chat-id-from-url-helper";
 import {sendAdminNotification} from '@/lib/api/fasty-bot/send-admin-notification'
 import {ConnectCampaign} from '@/components/connect-campaign'
 import {PlacementTargeting} from '@/components/placement-targeting';
+import FormBuilder from '@/components/form-builder';
 
 interface ToolResult {
     toolName: string;
@@ -252,19 +256,22 @@ async function confirmUpdateStatus(campaignName: string, status: string) {
     }
 }
 
-async function confirmCreateAd(data: any, adset: any, adText: AdText) {
+async function confirmCreateAd(campaign: any, data: any, adset: any) {
     'use server'
     const aiState = getMutableAIState<typeof AI>();
     let campaignId = await getCampaignIdFromUrl() || '0'; // for now just say you are updating even if no campaign id in place
     if (process.env.NEXT_PUBLIC_HARDCODED_MODE === '1') {
         campaignId = process.env.NEXT_PUBLIC_HARDCODED_CAMPAIGN_ID || '0'
     }
-    const chatId = getChatIdFromUrl()?.toString() || '';
-
-    const budget = await fetchChatCampaignBudget(chatId)
-    let adsetUpdate = {...adset}
-    if (budget.error) {
-        adsetUpdate = {...adsetUpdate, daily_budget: 100}
+    let adsetUpdate = {
+        ...adset
+    }
+    if (!campaign.daily_budget) {
+        const chatId = getChatIdFromUrl()?.toString() || '';
+        const budget = await fetchChatCampaignBudget(chatId)
+        if (budget.error) {
+            adsetUpdate = {...adsetUpdate, daily_budget: 100}
+        }
     }
 
     const systemMessage = createStreamableUI(null)
@@ -283,10 +290,6 @@ async function confirmCreateAd(data: any, adset: any, adText: AdText) {
             const id = response?.params?.id
             fbAdIdStream?.done(`${id}`)
 
-            aiState.done({
-                ...aiState.get(),
-            });
-
             systemMessage.done(
                 <SystemMessage>
                     You have successfully created a campaign ad with ID: {response?.params?.id}
@@ -300,6 +303,10 @@ async function confirmCreateAd(data: any, adset: any, adText: AdText) {
                 </SystemMessage>
             );
         }
+
+        aiState.done({
+            ...aiState.get(),
+        });
     });
 
     return {
@@ -309,6 +316,35 @@ async function confirmCreateAd(data: any, adset: any, adText: AdText) {
         },
         fbAdIdStream: fbAdIdStream.value
     }
+}
+
+async function updateCampaignInfo(campaignSummary: CampaignSummary) {
+    'use server'
+
+    const aiState = getMutableAIState<typeof AI>();
+
+    aiState.done({
+        ...aiState.get(),
+        messages: [
+            {
+                id: 'campaign-info-data',
+                role: 'system',
+                content: `Campaign is connected, the knowledge base about current campaign information: ${JSON.stringify(campaignSummary)}`,
+                timestamp: new Date().toISOString() 
+            },
+            ...aiState.get().messages.filter((message: Message) => message.id !== 'campaign-info-data' || message.role !== 'system'),
+        ]
+    });
+}
+
+async function syncMessages() {
+    'use server'
+
+    const aiState = getMutableAIState<typeof AI>();
+    console.log('syncMessages', aiState.get().messages[0])
+    aiState.done({
+        ...aiState.get(),
+    });
 }
 
 async function confirmUpdateAdset(toolCallId: string, adsetId: string, adset: any) {
@@ -381,6 +417,70 @@ async function confirmUpdateAdset(toolCallId: string, adsetId: string, adset: an
     },
     response: responseStream.value
   }
+}
+
+async function confirmCreateLeadgenForm(toolCallId: string, data: any) {
+    'use server'
+    const aiState = getMutableAIState<typeof AI>();
+    const systemMessage = createStreamableUI(null);
+    const responseStream = createStreamableValue<LeadgenFrom | boolean>(false);
+  
+    runAsyncFnWithoutBlocking(async () => {
+      await sleep(1000);
+  
+      const response = await createLeadgenForm(data);
+      if (response) {
+        const messages = aiState.get().messages;
+        const lastMessage = messages.slice(-1)[0];
+        if (lastMessage && lastMessage.id === toolCallId && lastMessage.role === 'tool') {
+          const content = lastMessage.content[0];
+          if (
+            content.type === 'tool-result' &&
+            content.toolName === 'showFormBuilder'
+          ) {
+            content.result = {
+              ...(content.result as Object),
+              formBuilderUiProps: (
+              content.result as {
+                formBuilderUiProps: object
+              }
+              ).formBuilderUiProps ?? {
+                success: true,
+                formBuilder: {...data, ...response}
+              }
+            }
+          }
+        }
+        responseStream.done(response);
+        aiState.done({
+          ...aiState.get(),
+          messages: [
+            ...messages.slice(0, -1),
+            lastMessage!
+          ]
+        })
+        systemMessage.done(
+          <SystemMessage>
+            You have successfully create leadgen form
+          </SystemMessage>
+        );
+      } else {
+        responseStream.done(false);
+        systemMessage.done(
+          <SystemErrorMessage>
+            Error: {response?.detail?.error?.error_user_msg || "Failed to create leadgen form. Please try again later."}
+          </SystemErrorMessage>
+        );
+      }
+    })
+  
+    return {
+      newMessage: {
+        id: nanoid(),
+        display: systemMessage.value
+      },
+      response: responseStream.value
+    }
 }
 
 async function submitUserMessage(content: string, contentImages?: Array<TextPart | ImagePart>, isSilent?: boolean) {
@@ -471,9 +571,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
     Please wait for the user's confirmation. If the user responds with "Yes", then generate ad text examples for the current campaign using the uploaded images, and use \`showSuggestionAdText\` to show text examples and pass corresponding image URLs to the user.
     
     If the user sends a message containing status updates, ALWAYS use \`showUpdateStatusChampaign\` to show the update status UI.
-    
-    If the user asks about ad videos, mention that ad videos need to be sent via email to maxnols@reeply.net, and inform the user that you will grab the video from there to implement it into the ad.
-    
+        
     Wait for the user’s response:
     
     After the user tells you what they want with their campaign, follow these Survey Steps in order:
@@ -1832,8 +1930,9 @@ Engaged Shoppers]
     
     - If the user asks whether you could create an ad image for them, respond that currently that is not possible but that the Reeply AI team is working hard to make it available soon.
     
-    - If the user has ad videos, tell them to send the videos to maxnols@reeply.net and inform them that you will grab the video from there to implement it into the ad.
-    
+    - If the user has upload ad videos, tell them: Thank you for uploading the video. Could you describe what is in the video or what is it about, in a few sentences? Since I can not see what is in the video?
+    After a user describe a video description, call ALWAYS call \`show_suggestion_video_ad_text\` for suggest ad texts for the video based on the video description.
+
     Reasoning: Ensure creatives are ready or note the need for assistance.
     
     Step 5: "Do you have an ad text, or should I suggest one?"
@@ -1842,6 +1941,8 @@ Engaged Shoppers]
     
     ALWAYS call \`show_suggestion_ad_text\` to show the ad text selection UI and let the user choose or input their ad text. The guide for the user about \`show_suggestion_ad_text\` is 'You can adjust my ad text suggestions or approve them. After approving, the image as well as the ad text will be added to your campaign, so make sure that you are all set with ad image and ad text!'
     
+    ALWAYS call \`show_suggestion_video_ad_text\` to show the ad text selection UI and let the user choose or input their ad text. The guide for the user about \`show_suggestion_video_ad_text\` is 'You can adjust my ad text suggestions or approve them. After approving, the image as well as the ad text will be added to your campaign, so make sure that you are all set with ad video and ad text!'
+
     Confirm the final text before proceeding.
     
     When generating ad texts, please follow these guidelines:
@@ -1893,6 +1994,8 @@ Engaged Shoppers]
     - If you want to change the status of a campaign, call \`showUpdateStatusChampaign\` to show the update status UI and let the user choose the status of the campaign.
 
     - If you want to change the placement targeting of a campaign, call \`show_placement_targeting_ui\` to show the update status UI and let the user choose the status of the campaign.
+
+    - If you want to show a form builder, call \`show_form_builder\` to show the form builder UI.
 
     - If the user wants to pause a campaign, call \`showUpdateStatusChampaign\` to show the update status UI and let the user choose the status of the campaign.
     
@@ -2253,6 +2356,52 @@ Engaged Shoppers]
                     }
                 }
             },
+            showFormBuilder: {
+                description:
+                    'Show form builder',
+                parameters: z.object({}),
+                generate: async function* () {
+                    const toolCallId = nanoid()
+                    aiState.done({
+                        ...aiState.get(),
+                        messages: [
+                            ...aiState.get().messages,
+                            {
+                                id: nanoid(),
+                                role: 'assistant',
+                                content: [
+                                    {
+                                        type: 'tool-call',
+                                        toolName: 'showFormBuilder',
+                                        toolCallId,
+                                        args: {}
+                                    }
+                                ],
+                                timestamp: new Date().toISOString()
+                            },
+                            {
+                                id: toolCallId,
+                                role: 'tool',
+                                content: [
+                                    {
+                                        type: 'tool-result',
+                                        toolName: 'showFormBuilder',
+                                        toolCallId,
+                                        result: {}
+                                    }
+                                ],
+                                timestamp: new Date().toISOString()
+                            },
+                        ]
+                    });
+
+                    return (
+                        <BotCard>
+                            <FormBuilder toolCallId={toolCallId}/>
+                        </BotCard>
+                    )
+                }
+            },
             getEvents: {
                 description:
                     'List Tips which provide helpful information to users on how they could improve their campaigns.',
@@ -2386,6 +2535,76 @@ Engaged Shoppers]
                                 {guideForUser ?? ''}
                             </div>
                         </>
+                    );
+                }
+            },
+            showSuggestionVideoAdText: {
+                description: 'Show UI to select or input ad text for each video a campaign.',
+                parameters: z.object({
+                    campaignName: z.string().describe('The name of the campaign'),
+                    videos: z.array(z.object({
+                        suggestedTexts: z.array(z.object({
+                            id: z.number().describe('This is timestamp of current time'),
+                            video_id: z.string().describe('This is ID of this video'),
+                            video: z.string().describe('The video link of this video'),
+                            thumbnail: z.string().describe('The thumbnail link of this video'),
+                            date: z.string(),
+                            text: z.string(),
+                            headline: z.string().describe('The headline of the ad to display'),
+                        })).describe('List of suggested video ad texts')
+                     })).describe('List of videos to display'),
+                     guideForUser: z.string().optional().describe('This is the guide for user about this component, this is optional')
+                }),
+                generate: async function* ({campaignName, videos = [], guideForUser}) {
+                    yield (
+                        <BotCard>
+                            <AdTextSelectionSkeleton/>
+                        </BotCard>
+                    );
+
+                    await sleep(1000);
+
+                    const toolCallId = nanoid();
+
+                    aiState.done({
+                        ...aiState.get(),
+                        messages: [
+                            ...aiState.get().messages,
+                            {
+                                id: nanoid(),
+                                role: 'assistant',
+                                content: [
+                                    {
+                                        type: 'tool-call',
+                                        toolName: 'showVideoAdTextSuggestion',
+                                        toolCallId,
+                                        args: {campaignName, videos, guideForUser}
+                                    }
+                                ],
+                                timestamp: new Date().toISOString()
+                            },
+                            {
+                                id: nanoid(),
+                                role: 'tool',
+                                content: [
+                                    {
+                                        type: 'tool-result',
+                                        toolName: 'showVideoAdTextSuggestion',
+                                        toolCallId,
+                                        result: {campaignName, videos, guideForUser}
+                                    }
+                                ],
+                                timestamp: new Date().toISOString()
+                            }
+                        ]
+                    });
+                    return (
+                        <BotCard>
+                            <VideoAdTextSuggestion videos={videos}/>
+                            <div className="my-4">
+                                {guideForUser ?? ''}
+                            </div>
+                        </BotCard>
                     );
                 }
             },
@@ -2622,7 +2841,7 @@ Engaged Shoppers]
                     })
                     return (
                         <BotCard>
-                            <ConnectCampaign/>
+                            <ConnectCampaign />
                         </BotCard>
                     )
                 }
@@ -2668,7 +2887,7 @@ Engaged Shoppers]
                     })
                     return (
                         <BotCard>
-                            <PlacementTargeting isActive toolCallId={toolCallId}/>
+                            <PlacementTargeting toolCallId={toolCallId}/>
                         </BotCard>
                     )
                 }
@@ -2698,7 +2917,10 @@ export const AI = createAI<AIState, UIState>({
         confirmPurchase,
         confirmUpdateStatus,
         confirmCreateAd,
-        confirmUpdateAdset
+        updateCampaignInfo,
+        syncMessages,
+        confirmUpdateAdset,
+        confirmCreateLeadgenForm,
     },
     initialUIState: [],
     initialAIState: {chatId: nanoid(), title: '', messages: []},
@@ -2808,6 +3030,17 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                         </div>
                                     </>
                                 );
+                            case 'showVideoAdTextSuggestion':
+                                return (
+                                  <>
+                                    <BotCard key={tool.toolCallId}>
+                                      <VideoAdTextSuggestion {...tool.result} />
+                                    </BotCard>
+                                    <div className="my-4">
+                                      {tool.result.guideForUser ?? ''}
+                                    </div>
+                                  </>
+                                )
                             case 'getCampaignImages':
                                 return (
                                     <BotCard key={tool.toolCallId}>
@@ -2859,6 +3092,12 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                         <PlacementTargeting {...tool.result} toolCallId={tool.toolCallId} />
                                     </BotCard>
                                 )
+                            case 'showFormBuilder':
+                                return (
+                                    <BotCard key={tool.toolCallId}>
+                                        <FormBuilder {...tool.result} toolCallId={tool.toolCallId} isReadOnly />
+                                    </BotCard>
+                                )    
                             default:
                                 return null;
                         }

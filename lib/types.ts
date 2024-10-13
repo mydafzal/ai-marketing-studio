@@ -59,11 +59,38 @@ export interface AdText {
   headline: string
   fbAdId?: string
 }
+export interface VideoAdText {
+  id: number
+  date: string
+  text: string
+  video_id: string
+  thumbnail?: string
+  video: string
+  headline: string
+  fbAdId?: string
+}
 export interface FbCampaign {
   id: string
   name: string
   created_time: string
   status: string
+}
+
+export interface FbVideoThumbnail {
+  id: string
+  height: number
+  width: number
+  uri: string
+  is_preferred: boolean
+}
+
+export interface FbVideo {
+  id: string
+  permalink_url: string
+  thumbnails?: {
+    data: FbVideoThumbnail[]
+  }
+  source?: string
 }
 
 export interface AdsetTargeting {
@@ -78,6 +105,7 @@ export interface AdsetTargeting {
   instagram_positions: string[]
   device_platforms: string[]
 }
+
 export interface Adset {
   id: string
   name: string
@@ -90,4 +118,43 @@ export interface Adset {
     page_id: string
   }
   status: string
+}
+ 
+
+
+export interface QuestionOption {
+  value: string
+  label: string
+  key: number
+}
+export interface Question {
+  type: string
+  key: string
+  label?: string
+  inline_context?: string
+  options?: QuestionOption[]
+}
+export interface LeadgenFrom {
+  name: string
+  locale: string
+  privacy_policy?: {
+    url: string
+    link_text: string
+  },
+  questions: Question[]
+  thank_you_page?: {
+    title: string
+    body?: string
+    button_type: string
+    website_url?: string
+    short_message?: string
+    button_text?: string
+    button_description?: string
+    country_code?: string
+  },
+  context_card?: {
+    title: string,
+    style: string,
+    content: string,
+  }
 }
