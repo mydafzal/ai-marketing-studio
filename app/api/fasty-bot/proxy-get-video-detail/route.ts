@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { getVideoDetail } from '@/lib/api/fasty-bot/get-video-detail'
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
@@ -11,25 +12,8 @@ export async function GET(request: Request) {
       )
     }
 
-    const fastyEndpoint = process.env.FASTY_API_URL
-    const apiUrl = `${fastyEndpoint}/facebook/exec/direct/upload/video-detail?video_id=${video_id}`
-
     try {
-      const response = await fetch(apiUrl, {
-        headers: {
-          Authorization: `Bearer ${process.env.FASTY_API_TOKEN}`
-        }
-      })
-
-      if (!response.ok) {
-        console.error(`HTTP error! status: ${response.status}`)
-        return NextResponse.json(
-          { error: 'Failed to fetch video detail' },
-          { status: response.status }
-        )
-      }
-
-      const data = await response.json()
+      const data = await getVideoDetail(video_id)
       return NextResponse.json(data)
     } catch (error) {
       console.error('Error fetching video detail:', error)

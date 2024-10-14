@@ -2,33 +2,36 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { getVideoDetail } from '@/lib/api/fasty-bot/get-video-detail';
 
 interface Creative {
   id: number;
   name: string;
   status: string;
-  image_url?: string;
+  object_type: 'VIDEO' | 'IMAGE' | 'SHARE';
+  thumbnail_url?: string;
   video_url?: string;
   body?: string;
+  object_story_spec: {
+    page_id: string;
+    video_data?: {
+      video_id: string;
+      title: string;
+      message: string;
+      image_url: string;
+      image_hash: string;
+    }
+    link_data?: {
+      name: string;
+      message: string;
+      link: string;
+      image_hash: string;
+    }
+  }
 }
 
 const AdCreativesSwitcher = () => {
-  const [creatives, setCreatives] = useState<Creative[]>([
-    {
-      id: 1,
-      name: "Summer Sale",
-      status: "ACTIVE",
-      image_url: "https://placehold.co/600x400",
-      body: "Up to 50% off on all items!"
-    },
-    {
-      id: 2,
-      name: "New Product Launch",
-      status: "PAUSED",
-      video_url: "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-      body: "Check out our latest product."
-    }
-  ]);
+  const [creatives, setCreatives] = useState<Creative[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -41,7 +44,31 @@ const AdCreativesSwitcher = () => {
           throw new Error('Failed to fetch creatives');
         }
         const data = await response.json();
-        setCreatives(data);
+        console.log('adcreativesdata', data)
+        let list = data?.data?.data || [];
+        list = await Promise.all(list.map((creative: Creative) => {
+          return new Promise<Creative>((resolve) => {
+            if (creative.object_type === 'VIDEO' && creative.object_story_spec?.video_data?.video_id) {
+              fetch(`/api/fasty-bot/proxy-get-video-detail?video_id=${creative.object_story_spec.video_data.video_id}`)
+                .then(response => response.json())
+                .then(videoDetail => {
+                  console.log('videoDetail', videoDetail);
+                  if (videoDetail && videoDetail.source) {
+                    resolve({ ...creative, video_url: videoDetail.source });
+                  } else {
+                    resolve(creative);
+                  }
+                })
+                .catch(error => {
+                  console.error('Error fetching video detail:', error);
+                  resolve(creative);
+                });
+            } else {
+              resolve(creative);
+            }
+          });
+        }))
+        setCreatives(list);
       } catch (err) {
         setError('Error fetching creatives. Please try again later.');
         console.error('Error fetching creatives:', err);
@@ -50,7 +77,7 @@ const AdCreativesSwitcher = () => {
       }
     };
 
-    // fetchCreatives();
+    fetchCreatives();
   }, []);
 
   const togglePublish = async (id: number) => {
@@ -98,9 +125,9 @@ const AdCreativesSwitcher = () => {
         <div className="grid md:grid-cols-2 gap-4">
           {creatives.map(creative => (
             <div key={creative.id} className="bg-gray-50 p-4 rounded-md shadow-md">
-              <div className="flex justify-between">
-                <h5 className="font-semibold whitespace-nowrap self-end">{creative.name}</h5>
-                <div className="flex gap-2">
+              <div className="flex justify-between items-end">
+                <h5 className="font-semibold whitespace-nowrap overflow-hidden text-ellipsis flex-grow mr-2">{creative.name}</h5>
+                <div className="flex gap-2 flex-shrink-0">
                   <Button 
                     onClick={() => togglePublish(creative.id)}
                     variant={creative.status === 'ACTIVE' ? 'destructive' : 'default'}
@@ -112,9 +139,9 @@ const AdCreativesSwitcher = () => {
                 </div>
               </div>
               <div className="mt-4">
-                {creative.image_url ? (
-                  <img src={creative.image_url} alt={creative.name} className="object-cover rounded-md h-[200px] w-full" />
-                ) : creative.video_url ? (
+                {creative.object_type === 'IMAGE' && creative.thumbnail_url ? (
+                  <img src={creative.thumbnail_url} alt={creative.name} className="object-cover rounded-md h-[200px] w-full" />
+                ) : creative.object_type === 'VIDEO' && creative.video_url ? (
                   <video src={creative.video_url} className="object-cover rounded-md h-[200px] w-full" controls />
                 ) : (
                   <div 
@@ -122,7 +149,10 @@ const AdCreativesSwitcher = () => {
                     aria-label="Media placeholder"
                   ></div>
                 )}
-                <p className="mt-2 text-gray-600">{creative.body}</p>
+                <p className="mt-2 text-gray-600">
+                  {creative.object_type === 'VIDEO' && creative.object_story_spec?.video_data?.message}
+                  {creative.object_type === 'SHARE' && creative.object_story_spec?.link_data?.message}
+                </p>
               </div>
             </div>
           ))}
