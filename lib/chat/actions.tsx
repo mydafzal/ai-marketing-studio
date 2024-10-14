@@ -29,13 +29,15 @@ import {ImagePart, TextPart} from 'ai'
 
 import {formatNumber, nanoid, runAsyncFnWithoutBlocking, sleep} from '@/lib/utils'
 import {SpinnerMessage, UserMessage} from '@/components/stocks/message'
-import {Adset, AdText, Chat, Message, Session} from '@/lib/types';
+import {Adset, AdText, LeadgenFrom, Chat, Message, Session} from '@/lib/types';
 import {auth} from '@/auth'
 import {setDailyCampaignBudget} from '@/lib/api/fasty-bot/set-daily-campaign-budget';
 import {setCampaignStatus} from '@/lib/api/fasty-bot/set-campaign-status';
 import {createCampaignAd} from '@/lib/api/fasty-bot/create-ad';
-import {createCampaign } from '@/lib/api/fasty-bot/create-campaign'
+import {createCampaign} from '@/lib/api/fasty-bot/create-campaign'
+import {CampaignSummary} from '@/lib/api/fasty-bot/get-campaign-summary'
 import {updateCampaign} from '@/lib/api/fasty-bot/update-campaign';
+import {createLeadgenForm} from '@/lib/api/fasty-bot/create-leadgen-form';
 import {updateAdset} from '@/lib/api/fasty-bot/update-adset';
 import {getCampaignIdFromUrl} from "@/lib/api/fasty-bot/helpers/campaign-id-from-url-helper";
 import {getChatIdFromUrl} from "@/lib/api/fasty-bot/helpers/chat-id-from-url-helper";
@@ -43,6 +45,7 @@ import {sendAdminNotification} from '@/lib/api/fasty-bot/send-admin-notification
 import {ConnectCampaign} from '@/components/connect-campaign'
 import {PlacementTargeting} from '@/components/placement-targeting';
 import AdCreativesSwitcher from '@/components/ad-creatives-switcher'
+import FormBuilder from '@/components/form-builder';
 
 interface ToolResult {
     toolName: string;
@@ -316,10 +319,30 @@ async function confirmCreateAd(campaign: any, data: any, adset: any) {
     }
 }
 
+async function updateCampaignInfo(campaignSummary: CampaignSummary) {
+    'use server'
+
+    const aiState = getMutableAIState<typeof AI>();
+
+    aiState.done({
+        ...aiState.get(),
+        messages: [
+            {
+                id: 'campaign-info-data',
+                role: 'system',
+                content: `Campaign is connected, the knowledge base about current campaign information: ${JSON.stringify(campaignSummary)}`,
+                timestamp: new Date().toISOString() 
+            },
+            ...aiState.get().messages.filter((message: Message) => message.id !== 'campaign-info-data' || message.role !== 'system'),
+        ]
+    });
+}
+
 async function syncMessages() {
     'use server'
 
     const aiState = getMutableAIState<typeof AI>();
+    console.log('syncMessages', aiState.get().messages[0])
     aiState.done({
         ...aiState.get(),
     });
@@ -395,6 +418,70 @@ async function confirmUpdateAdset(toolCallId: string, adsetId: string, adset: an
     },
     response: responseStream.value
   }
+}
+
+async function confirmCreateLeadgenForm(toolCallId: string, data: any) {
+    'use server'
+    const aiState = getMutableAIState<typeof AI>();
+    const systemMessage = createStreamableUI(null);
+    const responseStream = createStreamableValue<LeadgenFrom | boolean>(false);
+  
+    runAsyncFnWithoutBlocking(async () => {
+      await sleep(1000);
+  
+      const response = await createLeadgenForm(data);
+      if (response) {
+        const messages = aiState.get().messages;
+        const lastMessage = messages.slice(-1)[0];
+        if (lastMessage && lastMessage.id === toolCallId && lastMessage.role === 'tool') {
+          const content = lastMessage.content[0];
+          if (
+            content.type === 'tool-result' &&
+            content.toolName === 'showFormBuilder'
+          ) {
+            content.result = {
+              ...(content.result as Object),
+              formBuilderUiProps: (
+              content.result as {
+                formBuilderUiProps: object
+              }
+              ).formBuilderUiProps ?? {
+                success: true,
+                formBuilder: {...data, ...response}
+              }
+            }
+          }
+        }
+        responseStream.done(response);
+        aiState.done({
+          ...aiState.get(),
+          messages: [
+            ...messages.slice(0, -1),
+            lastMessage!
+          ]
+        })
+        systemMessage.done(
+          <SystemMessage>
+            You have successfully create leadgen form
+          </SystemMessage>
+        );
+      } else {
+        responseStream.done(false);
+        systemMessage.done(
+          <SystemErrorMessage>
+            Error: {response?.detail?.error?.error_user_msg || "Failed to create leadgen form. Please try again later."}
+          </SystemErrorMessage>
+        );
+      }
+    })
+  
+    return {
+      newMessage: {
+        id: nanoid(),
+        display: systemMessage.value
+      },
+      response: responseStream.value
+    }
 }
 
 async function submitUserMessage(content: string, contentImages?: Array<TextPart | ImagePart>, isSilent?: boolean) {
@@ -1909,6 +1996,8 @@ Engaged Shoppers]
 
     - If you want to change the placement targeting of a campaign, call \`show_placement_targeting_ui\` to show the update status UI and let the user choose the status of the campaign.
 
+    - If you want to show a form builder, call \`show_form_builder\` to show the form builder UI.
+
     - If the user wants to pause a campaign, call \`showUpdateStatusChampaign\` to show the update status UI and let the user choose the status of the campaign.
 
     - If the user wants to manage their ad creatives , call \`showAdCreativesSwitcher\` to show the update status UI and let the user choose the status of the campaign.
@@ -2268,6 +2357,52 @@ Engaged Shoppers]
                             </>
                         )
                     }
+                }
+            },
+            showFormBuilder: {
+                description:
+                    'Show form builder',
+                parameters: z.object({}),
+                generate: async function* () {
+                    const toolCallId = nanoid()
+                    aiState.done({
+                        ...aiState.get(),
+                        messages: [
+                            ...aiState.get().messages,
+                            {
+                                id: nanoid(),
+                                role: 'assistant',
+                                content: [
+                                    {
+                                        type: 'tool-call',
+                                        toolName: 'showFormBuilder',
+                                        toolCallId,
+                                        args: {}
+                                    }
+                                ],
+                                timestamp: new Date().toISOString()
+                            },
+                            {
+                                id: toolCallId,
+                                role: 'tool',
+                                content: [
+                                    {
+                                        type: 'tool-result',
+                                        toolName: 'showFormBuilder',
+                                        toolCallId,
+                                        result: {}
+                                    }
+                                ],
+                                timestamp: new Date().toISOString()
+                            },
+                        ]
+                    });
+
+                    return (
+                        <BotCard>
+                            <FormBuilder toolCallId={toolCallId}/>
+                        </BotCard>
+                    )
                 }
             },
             getEvents: {
@@ -2709,7 +2844,7 @@ Engaged Shoppers]
                     })
                     return (
                         <BotCard>
-                            <ConnectCampaign/>
+                            <ConnectCampaign />
                         </BotCard>
                     )
                 }
@@ -2831,8 +2966,10 @@ export const AI = createAI<AIState, UIState>({
         confirmPurchase,
         confirmUpdateStatus,
         confirmCreateAd,
+        updateCampaignInfo,
         syncMessages,
         confirmUpdateAdset,
+        confirmCreateLeadgenForm,
     },
     initialUIState: [],
     initialAIState: {chatId: nanoid(), title: '', messages: []},
@@ -3004,6 +3141,12 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                         <PlacementTargeting {...tool.result} toolCallId={tool.toolCallId} />
                                     </BotCard>
                                 )
+                            case 'showFormBuilder':
+                                return (
+                                    <BotCard key={tool.toolCallId}>
+                                        <FormBuilder {...tool.result} toolCallId={tool.toolCallId} isReadOnly />
+                                    </BotCard>
+                                )    
                             default:
                                 return null;
                         }
