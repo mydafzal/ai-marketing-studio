@@ -45,6 +45,7 @@ import {sendAdminNotification} from '@/lib/api/fasty-bot/send-admin-notification
 import {ConnectCampaign} from '@/components/connect-campaign'
 import {PlacementTargeting} from '@/components/placement-targeting';
 import FormBuilder from '@/components/form-builder';
+import { AssignLeadFormAdCreative } from '@/components/assign-lead-form-ad-creative'
 
 interface ToolResult {
     toolName: string;
@@ -2000,6 +2001,8 @@ Engaged Shoppers]
     - If the user wants to pause a campaign, call \`showUpdateStatusChampaign\` to show the update status UI and let the user choose the status of the campaign.
     
     - If the user wants to complete another specific task, respond that you are a demo and cannot perform that action.
+
+    - If the user wants to assign lead form to an ad creative, call \`show_assign_lead_form_ad_creative_ui\` to show the assign lead form ad creative UI.
     
     - Besides that, you can also chat with users and perform budget calculations if needed.
     
@@ -2891,6 +2894,52 @@ Engaged Shoppers]
                         </BotCard>
                     )
                 }
+            },
+            showAssignLeadFormAdCreativeUI: {
+                description: 'Show a UI to assign a lead form to an ad creative',
+                parameters: z.object({}),
+                generate: async function* ({}) {
+                    console.log('tool call showAssignLeadFormAdCreativeUI')
+                    const timestamp: string = new Date().toISOString();
+                    const toolCallId = nanoid();
+                    aiState.done({
+                        ...aiState.get(),
+                        messages: [
+                            ...aiState.get().messages,
+                            {
+                                id: nanoid(),
+                                role: 'assistant',
+                                content: [
+                                    {
+                                        type: 'tool-call',
+                                        toolName: 'showAssignLeadFormAdCreativeUI',
+                                        toolCallId,
+                                        args: {}
+                                    }
+                                ],
+                                timestamp
+                            },
+                            {
+                                id: toolCallId,
+                                role: 'tool',
+                                content: [
+                                    {
+                                        type: 'tool-result',
+                                        toolName: 'showAssignLeadFormAdCreativeUI',
+                                        toolCallId,
+                                        result: {}
+                                    }
+                                ],
+                                timestamp
+                            }
+                        ]
+                    })
+                    return (
+                        <BotCard>
+                            <AssignLeadFormAdCreative />
+                        </BotCard>
+                    )
+                }
             }
         }
     });
@@ -3098,6 +3147,12 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                         <FormBuilder {...tool.result} toolCallId={tool.toolCallId} isReadOnly />
                                     </BotCard>
                                 )    
+                            case 'showAssignLeadFormAdCreativeUI':
+                                return (
+                                    <BotCard key={tool.toolCallId}>
+                                        <AssignLeadFormAdCreative {...tool.result} toolCallId={tool.toolCallId} />
+                                    </BotCard>
+                                )
                             default:
                                 return null;
                         }
