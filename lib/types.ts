@@ -153,3 +153,42 @@ export interface AdCreative {
     }
   }
 }
+
+export interface QuestionOption {
+  value: string
+  label: string
+  key: number
+}
+
+export interface Question {
+  type: string
+  key: string
+  label?: string
+  inline_context?: string
+  options?: QuestionOption[]
+}
+
+export interface LeadgenFrom {
+  name: string
+  locale: string
+  privacy_policy?: {
+    url: string
+    link_text: string
+  },
+  questions: Question[]
+  thank_you_page?: {
+    title: string
+    body?: string
+    button_type: string
+    website_url?: string
+    short_message?: string
+    button_text?: string
+    button_description?: string
+    country_code?: string
+  },
+  context_card?: {
+    title: string,
+    style: string,
+    content: string,
+  }
+}
