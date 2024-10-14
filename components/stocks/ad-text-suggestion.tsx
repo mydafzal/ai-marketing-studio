@@ -6,6 +6,9 @@ import { Fragment, useContext, useState } from 'react'
 import { nanoid } from 'nanoid'
 import { toast } from 'sonner'
 import { IconSpinner } from '@/components/ui/icons'
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useActions, useAIState, useUIState } from 'ai/rsc'
 import { sleep } from '@/lib/utils'
 import type { AI } from '@/lib/chat/actions'
@@ -31,9 +34,11 @@ export function AdTextItem({
 }: {
   index: number
   adText: AdText
-  acceptText?: (idx: number, adText: AdText) => Promise<void>
+  acceptText?: (idx: number, name: string, adText: AdText) => Promise<void>
   updateText?: (idx: number, adText: AdText, newAdText: AdText) => void
 }) {
+  const [showModal, setShowModal] = useState(false)
+  const [creativeName, setCreativeName] = useState('')
   const [isUpdating, setIsUpdating] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [textEdit, setTextEdit] = useState(adText.text)
@@ -42,14 +47,18 @@ export function AdTextItem({
 
   const handleAccept = async () => {
     setIsUpdating(true)
+    setShowModal(false)
     await sleep(1000)
     if (acceptText) {
-      await acceptText(index, adText)
+      await acceptText(index, creativeName, adText)
     }
+    setCreativeName('');
     setIsUpdating(false)
     toast.success('Ad text added to your campaign successfully!')
   }
-
+  const confirmEnterName = () => {
+    setShowModal(true);
+  }
   const handleSave = async () => {
     setIsUpdating(true)
     await sleep(1000)
@@ -133,7 +142,7 @@ export function AdTextItem({
                     Adjust
                   </button>
                   <button
-                    onClick={handleAccept}
+                    onClick={confirmEnterName}
                     className="px-3 py-2 text-xs inline-block align-middle font-medium text-center text-white bg-gray-700 rounded-lg hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
                   >
                     {isUpdating && <IconSpinner />}
@@ -146,6 +155,31 @@ export function AdTextItem({
         )}
       </div>
     </div>
+    {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+          <div className="bg-white dark:bg-zinc-800 p-4 rounded-lg w-full max-w-md">
+            <h3 className="text-lg font-bold mb-4 dark:text-white">
+              Creative Name
+            </h3>
+            <div className="mb-4">
+              <Label className="dark:text-zinc-200">Creative Name:</Label>
+              <Input
+                value={creativeName}
+                onChange={(e) => setCreativeName(e.target.value)}
+                placeholder="Enter creative name"
+                className="dark:bg-zinc-700 dark:text-zinc-200"
+              />
+            </div>
+
+            <div className="text-right">
+              <Button onClick={() => {
+                setShowModal(false);
+              }} className="mr-2">Cancel</Button>
+              <Button disabled={creativeName.trim().length === 0} onClick={handleAccept}>Create</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }
@@ -190,10 +224,11 @@ export function AdTextSuggestion({ props }: { props: ImageSuggestionProps[] }) {
 
   const [, setMessages] = useUIState<typeof AI>()
 
-  const acceptText = async (idx: number, adText: AdText) => {
+  const acceptText = async (idx: number, name: string, adText: AdText) => {
     const response = await confirmCreateAd(
       campaign,
       generateAdTemplate(
+        name,
         adText.headline,
         adText.text,
         adText.image

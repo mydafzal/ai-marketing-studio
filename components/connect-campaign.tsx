@@ -12,7 +12,9 @@ import {
   SelectContent,
   SelectItem
 } from '@/components/ui/select'
-
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { updateChatFbCampaignId } from '@/app/actions'
 import { ConnectCampaignResult } from '@/components/connect-campaign-result'
 import { CampaignContext } from '@/components/contexts/campaign-context'
@@ -31,10 +33,12 @@ export function ConnectCampaignForm({
   const [isSubmitting, setSubmitting] = useState<boolean>(false)
   const [isCreating, setCreating] = useState<boolean>(false)
   const { campaigns, getCampaignList } = useContext(CampaignContext)
-
+  const [showModal, setShowModal] = useState(false)
+  const [campaignName, setCampaignName] = useState('')
   const handleCreateCampaign = async () => {
+    setShowModal(false)
     const createData = {
-      name: 'My campaign',
+      name: campaignName,
       status: 'PAUSED',
     }
     const url = '/api/fasty-bot/proxy-create-campaign'
@@ -55,8 +59,11 @@ export function ConnectCampaignForm({
       })
       await getCampaignList()
     }
+    setCampaignName('')
   }
-
+  const confirmEnterName = () => {
+    setShowModal(true);
+  }
   return (
     <>
       <div className="text-lg font-medium text-gray-900 dark:text-zinc-300 mb-2">
@@ -111,8 +118,7 @@ export function ConnectCampaignForm({
         <button
           aria-disabled={isCreating}
           onClick={async () => {
-            setCreating(true)
-            await handleCreateCampaign()
+            confirmEnterName()
           }}
           className="flex justify-center items-center flex-1 px-3 py-2 text-xs align-middle font-medium text-center text-white bg-blue-700 rounded-lg hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-gray-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
         >
@@ -120,6 +126,44 @@ export function ConnectCampaignForm({
           {!isCreating && 'Create a new campaign instead'}
         </button>
       </div>
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+          <div className="bg-white dark:bg-zinc-800 p-4 rounded-lg w-full max-w-md">
+            <h3 className="text-lg font-bold mb-4 dark:text-white">
+              Campaign Name
+            </h3>
+            <div className="mb-4">
+              <Label className="dark:text-zinc-200">Campaign Name:</Label>
+              <Input
+                value={campaignName}
+                onChange={e => setCampaignName(e.target.value)}
+                placeholder="Enter campaign name"
+                className="dark:bg-zinc-700 dark:text-zinc-200"
+              />
+            </div>
+
+            <div className="text-right">
+              <Button
+                onClick={() => {
+                  setShowModal(false)
+                }}
+                className="mr-2"
+              >
+                Cancel
+              </Button>
+              <Button
+                disabled={campaignName.trim().length === 0}
+                onClick={async () => {
+                  setCreating(true)
+                  await handleCreateCampaign()
+                }}
+              >
+                Create
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }

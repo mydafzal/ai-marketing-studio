@@ -1,11 +1,12 @@
 import { VideoAdText } from '@/lib/types'
 
 export const generateAdTemplate = (
+  name: string,
   headline: string,
   text: string,
   image: string
 ) => ({
-  name: 'New Link Ad Creative',
+  name: name,
   object_story_spec: {
     page_id: 119021011189054,
     link_data: {
@@ -22,8 +23,8 @@ export const generateAdTemplate = (
     }
   }
 })
-export const generateVideoAdTemplate = (headline: string, text: string, video: VideoAdText) => ({
-  name: 'New Video Ad Creative',
+export const generateVideoAdTemplate = (name: string, headline: string, text: string, video: VideoAdText) => ({
+  name: name,
   object_story_spec: {
     page_id: 119021011189054,
     video_data: {
