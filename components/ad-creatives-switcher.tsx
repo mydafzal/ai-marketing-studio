@@ -82,12 +82,24 @@ const AdCreativesSwitcher = () => {
 
   const togglePublish = async (id: number) => {
     try {
+      const creative = creatives.find(creative => creative.id === id);
       const response = await fetch('/api/fasty-bot/proxy-update-adcreative', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ id, action: 'toggle_publish' }),
+        body: JSON.stringify({ 
+          id, 
+          name: creative?.name,
+          object_story_spec: {
+            ...creative?.object_story_spec,
+            link_data: {
+              ...creative?.object_story_spec?.link_data,
+              image_url: creative?.thumbnail_url || 'https://www.facebook.com/ads/image/?d=AQKlXBT_7410ub7p5O0BZCMS3irwdH3qhNvsrvo4qS0HydMRyYFNNlCqAHPZblzhNXYINGgEj9Y27FDuQBIMfg4dbUsLfbt6q_K7lIvOO3loD6hm-LoEGbXxcn2GlqwrL_Px8T4iLcbVw1PtHUxXwcs6',
+            }
+          },
+          status: creative?.status === 'ACTIVE' ? 'ARCHIVED' : 'ACTIVE' 
+        }),
       });
 
       if (!response.ok) {
