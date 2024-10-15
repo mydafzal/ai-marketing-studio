@@ -88,8 +88,8 @@ const AdCreativesSwitcher = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
-          id, 
+        body: JSON.stringify({
+          id,
           name: creative?.name,
           object_story_spec: {
             ...creative?.object_story_spec,
@@ -98,7 +98,7 @@ const AdCreativesSwitcher = () => {
               image_url: creative?.thumbnail_url || 'https://www.facebook.com/ads/image/?d=AQKlXBT_7410ub7p5O0BZCMS3irwdH3qhNvsrvo4qS0HydMRyYFNNlCqAHPZblzhNXYINGgEj9Y27FDuQBIMfg4dbUsLfbt6q_K7lIvOO3loD6hm-LoEGbXxcn2GlqwrL_Px8T4iLcbVw1PtHUxXwcs6',
             }
           },
-          status: creative?.status === 'ACTIVE' ? 'ARCHIVED' : 'ACTIVE' 
+          status: creative?.status === 'ACTIVE' ? 'ARCHIVED' : 'ACTIVE'
         }),
       });
 
@@ -136,27 +136,25 @@ const AdCreativesSwitcher = () => {
       <main className="flex-grow p-4 overflow-y-auto">
         <div className="grid md:grid-cols-2 gap-4">
           {creatives.map(creative => (
-            <div key={creative.id} className="bg-zinc-50 dark:bg-zinc-700 p-4 rounded-md shadow-md">
-              <div className="flex justify-between items-end">
-                <h5 className="font-semibold whitespace-nowrap overflow-hidden text-ellipsis flex-grow mr-2 dark:text-zinc-200">{creative.name}</h5>
-                <div className="flex gap-2 flex-shrink-0">
-                  <Button 
-                    onClick={() => togglePublish(creative.id)}
-                    variant={creative.status === 'ACTIVE' ? 'destructive' : 'default'}
-                    size="sm"
-                  >
-                    {creative.status === 'ACTIVE' ? 'Unpublish' : 'Publish'}
-                  </Button>
-                  <Button size="sm">Edit</Button>
-                </div>
+            <div key={creative.id} className="bg-zinc-50 dark:bg-zinc-700 p-4 rounded-md shadow-md overflow-hidden">
+              <div className="flex gap-2 justify-end">
+                <Button
+                  onClick={() => togglePublish(creative.id)}
+                  variant={creative.status === 'ACTIVE' ? 'destructive' : 'default'}
+                  size="sm"
+                >
+                  {creative.status === 'ACTIVE' ? 'Unpublish' : 'Publish'}
+                </Button>
+                <Button size="sm">Edit</Button>
               </div>
+              <h5 className="font-semibold dark:text-zinc-200">{creative.name}</h5>
               <div className="mt-4">
                 {creative.object_type === 'IMAGE' && creative.thumbnail_url ? (
                   <img src={creative.thumbnail_url} alt={creative.name} className="object-cover rounded-md h-[200px] w-full" />
                 ) : creative.object_type === 'VIDEO' && creative.video_url ? (
                   <video src={creative.video_url} className="object-cover rounded-md h-[200px] w-full" controls />
                 ) : (
-                  <div 
+                  <div
                     className="bg-zinc-300 dark:bg-zinc-600 rounded-md h-[200px] w-full"
                     aria-label="Media placeholder"
                   ></div>
