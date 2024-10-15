@@ -119,26 +119,26 @@ const AdCreativesSwitcher = () => {
   };
 
   if (isLoading) {
-    return <div>Loading creatives...</div>;
+    return <div className="dark:text-zinc-200">Loading creatives...</div>;
   }
 
   if (error) {
-    return <div>{error}</div>;
+    return <div className="dark:text-zinc-200">{error}</div>;
   }
 
   return (
-    <div className="flex flex-col h-full bg-white shadow-lg">
+    <div className="flex flex-col h-full bg-white dark:bg-zinc-800 shadow-lg">
       <header className="flex justify-between px-4 py-6">
-        <h1 className="text-2xl font-bold text-gray-800">Ad Creative Selector</h1>
+        <h1 className="text-2xl font-bold text-zinc-800 dark:text-zinc-200">Ad Creative Selector</h1>
         <Button>Create New</Button>
       </header>
 
       <main className="flex-grow p-4 overflow-y-auto">
         <div className="grid md:grid-cols-2 gap-4">
           {creatives.map(creative => (
-            <div key={creative.id} className="bg-gray-50 p-4 rounded-md shadow-md">
+            <div key={creative.id} className="bg-zinc-50 dark:bg-zinc-700 p-4 rounded-md shadow-md">
               <div className="flex justify-between items-end">
-                <h5 className="font-semibold whitespace-nowrap overflow-hidden text-ellipsis flex-grow mr-2">{creative.name}</h5>
+                <h5 className="font-semibold whitespace-nowrap overflow-hidden text-ellipsis flex-grow mr-2 dark:text-zinc-200">{creative.name}</h5>
                 <div className="flex gap-2 flex-shrink-0">
                   <Button 
                     onClick={() => togglePublish(creative.id)}
@@ -157,11 +157,11 @@ const AdCreativesSwitcher = () => {
                   <video src={creative.video_url} className="object-cover rounded-md h-[200px] w-full" controls />
                 ) : (
                   <div 
-                    className="bg-gray-300 rounded-md h-[200px] w-full"
+                    className="bg-zinc-300 dark:bg-zinc-600 rounded-md h-[200px] w-full"
                     aria-label="Media placeholder"
                   ></div>
                 )}
-                <p className="mt-2 text-gray-600">
+                <p className="mt-2 text-zinc-600 dark:text-zinc-300">
                   {creative.object_type === 'VIDEO' && creative.object_story_spec?.video_data?.message}
                   {creative.object_type === 'SHARE' && creative.object_story_spec?.link_data?.message}
                 </p>
