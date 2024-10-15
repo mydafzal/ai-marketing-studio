@@ -2936,7 +2936,7 @@ Engaged Shoppers]
                     })
                     return (
                         <BotCard>
-                            <AdCreativesSwitcher/>
+                            <AdCreativesSwitcher />
                         </BotCard>
                     )
                 }
@@ -3146,7 +3146,7 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                     <BotCard key={tool.toolCallId}>
                                         <FormBuilder {...tool.result} toolCallId={tool.toolCallId} isReadOnly />
                                     </BotCard>
-                                )    
+                                )
                             case 'showAdCreativesSwitcher':
                                 return (
                                     <BotCard key={tool.toolCallId}>

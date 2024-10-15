@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { getVideoDetail } from '@/lib/api/fasty-bot/get-video-detail';
+import { VideoPlayer } from './stocks/video-player'
 
 interface Creative {
   id: number;
@@ -46,28 +46,6 @@ const AdCreativesSwitcher = () => {
         const data = await response.json();
         console.log('adcreativesdata', data)
         let list = data?.data?.data || [];
-        list = await Promise.all(list.map((creative: Creative) => {
-          return new Promise<Creative>((resolve) => {
-            if (creative.object_type === 'VIDEO' && creative.object_story_spec?.video_data?.video_id) {
-              fetch(`/api/fasty-bot/proxy-get-video-detail?video_id=${creative.object_story_spec.video_data.video_id}`)
-                .then(response => response.json())
-                .then(videoDetail => {
-                  console.log('videoDetail', videoDetail);
-                  if (videoDetail && videoDetail.source) {
-                    resolve({ ...creative, video_url: videoDetail.source });
-                  } else {
-                    resolve(creative);
-                  }
-                })
-                .catch(error => {
-                  console.error('Error fetching video detail:', error);
-                  resolve(creative);
-                });
-            } else {
-              resolve(creative);
-            }
-          });
-        }))
         setCreatives(list);
       } catch (err) {
         setError('Error fetching creatives. Please try again later.');
@@ -95,7 +73,7 @@ const AdCreativesSwitcher = () => {
             ...creative?.object_story_spec,
             link_data: {
               ...creative?.object_story_spec?.link_data,
-              image_url: creative?.thumbnail_url || 'https://www.facebook.com/ads/image/?d=AQKlXBT_7410ub7p5O0BZCMS3irwdH3qhNvsrvo4qS0HydMRyYFNNlCqAHPZblzhNXYINGgEj9Y27FDuQBIMfg4dbUsLfbt6q_K7lIvOO3loD6hm-LoEGbXxcn2GlqwrL_Px8T4iLcbVw1PtHUxXwcs6',
+              // image_url: creative?.thumbnail_url
             }
           },
           status: creative?.status === 'ACTIVE' ? 'ARCHIVED' : 'ACTIVE'
@@ -151,13 +129,17 @@ const AdCreativesSwitcher = () => {
               <div className="mt-4">
                 {creative.object_type === 'IMAGE' && creative.thumbnail_url ? (
                   <img src={creative.thumbnail_url} alt={creative.name} className="object-cover rounded-md h-[200px] w-full" />
-                ) : creative.object_type === 'VIDEO' && creative.video_url ? (
-                  <video src={creative.video_url} className="object-cover rounded-md h-[200px] w-full" controls />
+                ) : creative.object_type === 'VIDEO' ? (
+                  <VideoPlayer
+                    className="object-cover rounded-md" height="h-[200px]"
+                    videoId={creative.object_story_spec?.video_data?.video_id}
+                  />
                 ) : (
-                  <div
-                    className="bg-zinc-300 dark:bg-zinc-600 rounded-md h-[200px] w-full"
-                    aria-label="Media placeholder"
-                  ></div>
+                  <img src={creative.thumbnail_url} alt={creative.name} className="object-cover rounded-md h-[200px] w-full" />
+                  // <div
+                  //   className="bg-zinc-300 dark:bg-zinc-600 rounded-md h-[200px] w-full"
+                  //   aria-label="Media placeholder"
+                  // ></div>
                 )}
                 <p className="mt-2 text-zinc-600 dark:text-zinc-300">
                   {creative.object_type === 'VIDEO' && creative.object_story_spec?.video_data?.message}
