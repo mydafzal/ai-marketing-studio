@@ -12,7 +12,6 @@ import {
   SelectContent,
   SelectItem
 } from '@/components/ui/select'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { updateChatFbCampaignId, updateChatFbPageId } from '@/app/actions'
@@ -35,67 +34,92 @@ export function ConnectCampaignForm({
   const [selectedCampaign, setSelectedCampaign] = useState<FbCampaign>()
   const [selectedPageAccount, setSelectedPageAccount] =
     useState<FbPageAccount>()
-  const [isSubmitting, setSubmitting] = useState<boolean>(false)
-  const [isCreating, setCreating] = useState<boolean>(false)
+  const [isConnecting, setConnecting] = useState<boolean>(false)
   const [showCampaignError, setShowCampaignError] = useState<boolean>(false)
+  const [showCampaignNameError, setShowCampaignNameError] = useState<boolean>(false)
   const [showPageError, setShowPageError] = useState<boolean>(false)
+  const [formType, setFormType] = useState<'connect' | 'create'>('connect')
 
   const { campaigns, pageAccounts, getCampaignList } =
     useContext(CampaignContext)
-  const [showModal, setShowModal] = useState(false)
-
   const [campaignName, setCampaignName] = useState('')
+  const [isCreatingCampaign, setIsCreatingCampaign] = useState<boolean>(false)
+
   const handleCreateCampaign = async () => {
-    if (!selectedPageAccount) return
-    setShowModal(false)
-    const createData = {
-      name: campaignName,
-      status: 'PAUSED'
-    }
-    const url = '/api/fasty-bot/proxy-create-campaign'
-    const responseStream = await fetch(url, {
-      method: 'POST',
-      body: JSON.stringify({
-        objective: 'OUTCOME_LEADS',
-        special_ad_categories: ['NONE'],
-        ...createData
+    if (!selectedPageAccount || !campaignName.trim()) return
+    setIsCreatingCampaign(true)
+    try {
+      const createData = {
+        name: campaignName,
+        status: 'PAUSED'
+      }
+      const url = '/api/fasty-bot/proxy-create-campaign'
+      const responseStream = await fetch(url, {
+        method: 'POST',
+        body: JSON.stringify({
+          objective: 'OUTCOME_LEADS',
+          special_ad_categories: ['NONE'],
+          ...createData
+        })
       })
-    })
-    const response = await responseStream.json()
-    if (response.success && response.data.id) {
-      await handleSelectCampaign(
-        {
-          ...response.data,
-          ...createData,
-          created_time: Date.toString()
-        },
-        selectedPageAccount
-      )
-      await getCampaignList()
+      const response = await responseStream.json()
+      if (response.success && response.data.id) {
+        await handleSelectCampaign(
+          {
+            ...response.data,
+            ...createData,
+            created_time: Date.toString()
+          },
+          selectedPageAccount
+        )
+        await getCampaignList()
+      }
+      setCampaignName('')
+    } catch (error) {
+      console.error('Error creating campaign:', error)
+    } finally {
+      setIsCreatingCampaign(false)
     }
-    setCampaignName('')
   }
-  const confirmEnterName = () => {
-    setShowModal(true)
-  }
+
   const resetErrorMessages = () => {
     setShowPageError(false)
     setShowCampaignError(false)
   }
-  const vaildateForm = (type = 'connect') => {
+  const setFormTypeAndValidate = (type: 'connect' | 'create') => {
+    setFormType(type)
     setShowPageError(!selectedPageAccount)
     if (type === 'connect') {
       setShowCampaignError(!selectedCampaign)
+      setShowCampaignNameError(false)
     } else {
       setShowCampaignError(false)
+      setShowCampaignNameError(campaignName.trim().length === 0)
     }
   }
+
+  const handleClickConnect = async () => {
+    setFormTypeAndValidate('connect')
+    if (selectedCampaign && selectedPageAccount) {
+      setConnecting(true)
+      await handleSelectCampaign(
+        selectedCampaign,
+        selectedPageAccount
+      )
+      setConnecting(false)
+    }
+  }
+  const handleClickCreate = async () => {
+    setFormTypeAndValidate('create')
+    await handleCreateCampaign()
+  }
+
   return (
     <>
       <div className="text-lg font-medium text-gray-900 dark:text-zinc-300 mb-2">
         Let&apos;s connect this chat to a campaign:
       </div>
-      {campaigns.length > 0 && (
+      {formType === 'connect' && campaigns.length > 0 && (
         <div className="mb-4">
           <Label className="dark:text-zinc-200">Select a Campaign:</Label>
           <Select
@@ -171,81 +195,44 @@ export function ConnectCampaignForm({
         </div>
       )}
 
+      {formType === 'create' && (
+        <div className="mb-4">
+          <Label className="dark:text-zinc-200">Campaign Name:</Label>
+          <Input
+            value={campaignName}
+            onChange={e => setCampaignName(e.target.value)}
+            placeholder="Enter campaign name"
+            className={`dark:bg-zinc-700 dark:text-zinc-200 ${showCampaignNameError ? 'border-rose-500' : ''}`}
+          />
+          {showCampaignNameError && (
+            <div className="py-2 text-xs inline-block align-middle text-center text-rose-500 dark:text-rose-500">
+              Please enter a campaign name.
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="flex mt-4 gap-4">
         {campaigns.length > 0 && (
           <button
-            aria-disabled={!selectedCampaign || isSubmitting}
-            onClick={async () => {
-              if (selectedCampaign && selectedPageAccount) {
-                setSubmitting(true)
-                await handleSelectCampaign(
-                  selectedCampaign,
-                  selectedPageAccount
-                )
-              } else {
-                vaildateForm()
-              }
-            }}
+            aria-disabled={!selectedCampaign || isConnecting}
+            onClick={handleClickConnect}
             className="flex justify-center items-center flex-1 px-3 mr-5 py-2 text-xs  font-medium text-center text-white bg-gray-700 rounded-lg hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
           >
-            {isSubmitting && <IconSpinner />}
-            {!isSubmitting && 'Connect existing campaign'}
+            {isConnecting && <IconSpinner />}
+            {!isConnecting && 'Connect existing campaign'}
           </button>
         )}
 
         <button
-          aria-disabled={isCreating}
-          onClick={async () => {
-            if (selectedPageAccount) {
-              confirmEnterName()
-            } else {
-              vaildateForm('create')
-            }
-          }}
+          aria-disabled={isCreatingCampaign}
+          onClick={handleClickCreate}
           className="flex justify-center items-center flex-1 px-3 py-2 text-xs align-middle font-medium text-center text-white bg-blue-700 rounded-lg hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-gray-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
         >
-          {isCreating && <IconSpinner />}
-          {!isCreating && 'Create a new campaign instead'}
+          {isCreatingCampaign && <IconSpinner />}
+          {!isCreatingCampaign && 'Create a new campaign'}
         </button>
       </div>
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-          <div className="bg-white dark:bg-zinc-800 p-4 rounded-lg w-full max-w-md">
-            <h3 className="text-lg font-bold mb-4 dark:text-white">
-              Campaign Name
-            </h3>
-            <div className="mb-4">
-              <Label className="dark:text-zinc-200">Campaign Name:</Label>
-              <Input
-                value={campaignName}
-                onChange={e => setCampaignName(e.target.value)}
-                placeholder="Enter campaign name"
-                className="dark:bg-zinc-700 dark:text-zinc-200"
-              />
-            </div>
-
-            <div className="text-right">
-              <Button
-                onClick={() => {
-                  setShowModal(false)
-                }}
-                className="mr-2"
-              >
-                Cancel
-              </Button>
-              <Button
-                disabled={campaignName.trim().length === 0}
-                onClick={async () => {
-                  setCreating(true)
-                  await handleCreateCampaign()
-                }}
-              >
-                Create
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   )
 }
