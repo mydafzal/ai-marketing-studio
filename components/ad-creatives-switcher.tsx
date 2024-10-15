@@ -3,6 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { VideoPlayer } from './stocks/video-player'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 
 interface Creative {
   id: number;
@@ -34,6 +37,11 @@ const AdCreativesSwitcher = () => {
   const [creatives, setCreatives] = useState<Creative[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [editingCreative, setEditingCreative] = useState<Creative | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editMessage, setEditMessage] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchCreatives = async () => {
@@ -96,6 +104,59 @@ const AdCreativesSwitcher = () => {
     }
   };
 
+  const handleEdit = (creative: Creative) => {
+    setEditingCreative(creative);
+    setEditName(creative.name);
+    setEditMessage((creative.object_type === 'VIDEO' ? creative.object_story_spec.video_data?.message : creative.object_story_spec.link_data?.message) || '');
+  };
+
+  const handleSubmitEdit = async () => {
+    if (!editingCreative) return;
+    setIsEditing(true);
+    setEditError(null);
+
+    try {
+      const response = await fetch('/api/fasty-bot/proxy-update-adcreative', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: editingCreative.id,
+          name: editName,
+          object_story_spec: {
+            ...editingCreative.object_story_spec,
+            video_data: editingCreative.object_story_spec.video_data 
+              ? { ...editingCreative.object_story_spec.video_data, message: editMessage }
+              : undefined,
+            link_data: editingCreative.object_story_spec.link_data
+              ? { ...editingCreative.object_story_spec.link_data, message: editMessage }
+              : undefined,
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update creative');
+      }
+
+      const updatedCreative = await response.json();
+
+      setCreatives(prevCreatives =>
+        prevCreatives.map(creative =>
+          creative.id === editingCreative.id ? { ...creative, name: editName, object_story_spec: updatedCreative.object_story_spec } : creative
+        )
+      );
+
+      setEditingCreative(null);
+    } catch (error) {
+      console.error('Error updating creative:', error);
+      setEditError('Failed to update creative. Please try again.');
+    } finally {
+      setIsEditing(false);
+    }
+  };
+
   if (isLoading) {
     return <div className="dark:text-zinc-200">Loading creatives...</div>;
   }
@@ -123,7 +184,7 @@ const AdCreativesSwitcher = () => {
                 >
                   {creative.status === 'ACTIVE' ? 'Unpublish' : 'Publish'}
                 </Button>
-                <Button size="sm">Edit</Button>
+                <Button size="sm" onClick={() => handleEdit(creative)}>Edit</Button>
               </div>
               <h5 className="font-semibold dark:text-zinc-200">{creative.name}</h5>
               <div className="mt-4">
@@ -150,6 +211,60 @@ const AdCreativesSwitcher = () => {
           ))}
         </div>
       </main>
+
+      <Dialog open={!!editingCreative} onOpenChange={() => {
+        setEditingCreative(null);
+        setEditError(null); 
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Ad Creative</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <label htmlFor="name" className="text-right">
+                Name
+              </label>
+              <Input
+                id="name"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <label htmlFor="message" className="text-right">
+                Message
+              </label>
+              <Textarea
+                id="message"
+                value={editMessage}
+                onChange={(e) => setEditMessage(e.target.value)}
+                className="col-span-3"
+                rows={8}
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <div className="col-span-1"></div>
+              {editError && (
+                <p className="col-span-3 text-red-500 text-sm">{editError}</p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={handleSubmitEdit} disabled={isEditing}>
+              {isEditing ? (
+                <>
+                  <span className="mr-2">Saving...</span>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                </>
+              ) : (
+                'Save changes'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
