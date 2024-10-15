@@ -17,6 +17,7 @@ import { generateAdTemplate, generateAdsetTemplate } from '@/lib/data'
 import { updateAdText, updateAdTextWithFbId } from '@/app/actions'
 import { useParams } from 'next/navigation'
 import { readStreamableValue } from 'ai/rsc'
+import { fetchChatFbPageId } from '@/app/actions'
 
 interface SuggestedText extends Omit<AdText, 'headline'> {
   headline?: string;
@@ -225,15 +226,19 @@ export function AdTextSuggestion({ props }: { props: ImageSuggestionProps[] }) {
   const [, setMessages] = useUIState<typeof AI>()
 
   const acceptText = async (idx: number, name: string, adText: AdText) => {
+    const result = await fetchChatFbPageId(chatSlug as string)
+    if (!result?.success) { return }
+
     const response = await confirmCreateAd(
       campaign,
       generateAdTemplate(
+        result.fbPageId as string,
         name,
         adText.headline,
         adText.text,
         adText.image
       ),
-      generateAdsetTemplate()
+      generateAdsetTemplate(result.fbPageId as string)
     )
     setMessages(currentMessages => [...currentMessages, response.newMessage])
 

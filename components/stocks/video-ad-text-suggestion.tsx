@@ -20,6 +20,7 @@ import { useParams } from 'next/navigation'
 import { readStreamableValue } from 'ai/rsc'
 import { VideoPlayer } from './video-player'
 import { getVideoDetail } from '@/lib/api/fasty-bot/get-video-detail'
+import { fetchChatFbPageId } from '@/app/actions'
 
 export interface VideoSuggestionProps {
   videos: {
@@ -312,10 +313,13 @@ export function VideoAdTextSuggestion({ videos }: VideoSuggestionProps) {
   const [, setMessages] = useUIState<typeof AI>()
 
   const acceptText = async (idx: number, name: string, adText: VideoAdText) => {
+    const result = await fetchChatFbPageId(chatSlug as string)
+    if (!result?.success) { return }
+
     const response = await confirmCreateAd(
       campaign,
-      generateVideoAdTemplate(name, adText.headline, adText.text, adText),
-      generateAdsetTemplate()
+      generateVideoAdTemplate(result.fbPageId as string, name, adText.headline, adText.text, adText),
+      generateAdsetTemplate(result.fbPageId as string)
     )
     setMessages(currentMessages => [...currentMessages, response.newMessage])
 

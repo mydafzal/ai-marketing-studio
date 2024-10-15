@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { fetchChatFbPageId } from '@/app/actions'
+import { useParams } from 'next/navigation'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Cross1Icon, Pencil1Icon } from '@radix-ui/react-icons';
 import { QuestionOption, LeadgenFrom } from '@/lib/types';
@@ -38,6 +40,7 @@ export default function FormBuilder({
   isReadOnly
 }: FormBuilderProps) {
   const [step, setStep] = useState(1);
+  const { id: chatSlug } = useParams()
 
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
 
@@ -158,43 +161,46 @@ export default function FormBuilder({
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
-    const id = Date.now();
-    const payload = {
-      page_id: "119021011189054",
-      name: "Lead Form " + id,
-      questions: fields.map(field => ({
-        key: field.id,
-        label: field.label,
-        type: field.type,
-        ...(field.options?.length && { options: field.options?.map((option, idx) => ({ key: idx, label: option, value: option })) as QuestionOption[] })
-      })),
-      privacy_policy: {
-        url: privacyLink,
-        link_text: "Privacy Policy"
-      },
-      context_card: {
-        title: "Engagement Card",
-        style: "PARAGRAPH_STYLE",
-        content: engagementText
-      },
-      follow_up_action_url: "https://www.example.com",
-      thank_you_page: {
-        title: "Thank You",
-        button_type: 'NONE',
-        body: thankyouText
-      },
-      tracking_parameters: {},
-      legal_content_id: "",
-      locale: locale,
-      status: "ACTIVE"
-    };
-    const response = await confirmCreateLeadgenForm(toolCallId, payload)
-    setMessages(currentMessages => [...currentMessages, response.newMessage])
-    for await (const updatedForm of readStreamableValue<LeadgenFrom>(
-      response.response
-    )) {
-      if (updatedForm) {
-        setFormData(updatedForm)
+    const result = await fetchChatFbPageId(chatSlug as string)
+    if (result.success) {
+      const id = Date.now();
+      const payload = {
+        page_id: result?.fbPageId,
+        name: "Lead Form " + id,
+        questions: fields.map(field => ({
+          key: field.id,
+          label: field.label,
+          type: field.type,
+          ...(field.options?.length && { options: field.options?.map((option, idx) => ({ key: idx, label: option, value: option })) as QuestionOption[] })
+        })),
+        privacy_policy: {
+          url: privacyLink,
+          link_text: "Privacy Policy"
+        },
+        context_card: {
+          title: "Engagement Card",
+          style: "PARAGRAPH_STYLE",
+          content: engagementText
+        },
+        follow_up_action_url: "https://www.example.com",
+        thank_you_page: {
+          title: "Thank You",
+          button_type: 'NONE',
+          body: thankyouText
+        },
+        tracking_parameters: {},
+        legal_content_id: "",
+        locale: locale,
+        status: "ACTIVE"
+      };
+      const response = await confirmCreateLeadgenForm(toolCallId, payload)
+      setMessages(currentMessages => [...currentMessages, response.newMessage])
+      for await (const updatedForm of readStreamableValue<LeadgenFrom>(
+        response.response
+      )) {
+        if (updatedForm) {
+          setFormData(updatedForm)
+        }
       }
     }
     setIsSubmitting(false)

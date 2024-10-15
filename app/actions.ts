@@ -524,7 +524,43 @@ export async function updateChatFbCampaignId(chatSlug: string, fbCampaignId: str
     }
 }
 
+export async function updateChatFbPageId(chatSlug: string, fbPageId: string) {
+    const session = await auth()
 
+    if (!session || !session.user) {
+        return {
+            error: 'User not authenticated'
+        }
+    }
+
+    try {
+        // Construct the chat key using the chatSlug
+        const chatKey = `chat:${chatSlug}`
+
+        // Check if the chat exists
+        const existingChat = await kv.hgetall(chatKey)
+
+        if (!existingChat) {
+            return {
+                error: 'Chat not found'
+            }
+        }
+
+        // Update or insert the fbPageId field
+        await kv.hset(chatKey, {fbPageId})
+        revalidatePath('/')
+
+        return {
+            success: true,
+            message: 'Facebook Page ID updated successfully'
+        }
+    } catch (error) {
+        console.error(`Error updating fbPageId for chat ${chatSlug}:`, error)
+        return {
+            error: 'Something went wrong'
+        }
+    }
+}
 export async function fetchChatFbCampaignId(chatSlug: string) {
     const session = await auth()
 
@@ -566,7 +602,47 @@ export async function fetchChatFbCampaignId(chatSlug: string) {
         }
     }
 }
+export async function fetchChatFbPageId(chatSlug: string) {
+    const session = await auth()
 
+    if (!session || !session.user) {
+        return {
+            error: 'User not authenticated'
+        }
+    }
+
+    try {
+        // Construct the chat key using the chatSlug
+        const chatKey = `chat:${chatSlug}`
+
+        // Fetch the chat data
+        const chatData = await kv.hgetall(chatKey)
+
+        if (!chatData) {
+            return {
+                error: 'Chat not found'
+            }
+        }
+
+        const fbPageId = chatData.fbPageId
+
+        if (!fbPageId) {
+            return {
+                error: 'Facebook Page ID not found for this chat'
+            }
+        }
+
+        return {
+            success: true,
+            fbPageId
+        }
+    } catch (error) {
+        console.error(`Error fetching fbPageId for chat ${chatSlug}:`, error)
+        return {
+            error: 'Something went wrong'
+        }
+    }
+}
 export async function updateChatCampaignBudget(chatSlug: string, budget: number) {
     const session = await auth()
 

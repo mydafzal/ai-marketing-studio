@@ -74,6 +74,12 @@ export interface FbCampaign {
   status: string
 }
 
+export interface FbPageAccount {
+  id: string
+  name: string
+  category: string
+  status: string
+}
 export interface FbVideoThumbnail {
   id: string
   height: number

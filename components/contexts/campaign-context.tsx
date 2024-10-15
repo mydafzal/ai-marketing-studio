@@ -3,16 +3,19 @@ import { createContext, useCallback, useEffect, useMemo, useRef, useState } from
 import { CampaignSummary, getCampaignSummary } from '@/lib/api/fasty-bot/get-campaign-summary'
 import { createAdset } from '@/lib/api/fasty-bot/create-adset'
 import { getCampaigns } from '@/lib/api/fasty-bot/get-campaigns'
+import { getPageAccounts } from '@/lib/api/fasty-bot/get-page-accounts'
 import { getAdset } from '@/lib/api/fasty-bot/get-adset'
 import { getAdsets } from '@/lib/api/fasty-bot/get-adsets'
-import { Adset, FbCampaign, Message } from '@/lib/types'
+import { Adset, FbCampaign, FbPageAccount, Message } from '@/lib/types'
 import { generateAdsetTemplate } from '@/lib/data'
-import { fetchChatCampaignBudget } from '@/app/actions'
+import { fetchChatCampaignBudget, fetchChatFbPageId } from '@/app/actions'
 
 interface ICampaignContext {
     id: string | null;
     campaigns: FbCampaign[];
     getCampaignList: () => Promise<void>;
+    pageAccounts: FbPageAccount[];
+    getPageAccountList: () => Promise<void>;
     setId: (id: string) => void;
     summary: CampaignSummary | null;
     fetchSummary: (id: string) => Promise<void>;
@@ -30,6 +33,8 @@ export const CampaignContext = createContext<ICampaignContext>({
     fetchSummary: async () => {},
     adsetIds: [],
     setAdset: () => {},
+    pageAccounts: [],
+    getPageAccountList: async () => {},
 });
 
 const oneHour = 60 * 60 * 1000
@@ -42,6 +47,8 @@ export const CampaignContextProvider = ({ children }: { children: React.ReactNod
     const [id, setId] = useState<string | null>(null)
     const [summary, setSummary] = useState<CampaignSummary | null>(null)
     const [campaigns, setCampaigns] = useState<FbCampaign[]>([])
+    const [pageAccounts, setPageAccounts] = useState<FbPageAccount[]>([])
+
     const [adsetIds, setAdsetIds] = useState<{ id: string }[]>();
     const [adset, setAdset] = useState<Adset>();
     const getCampaignList = useCallback(async () => {
@@ -52,6 +59,17 @@ export const CampaignContextProvider = ({ children }: { children: React.ReactNod
     useEffect(() => {
         void getCampaignList()
     }, [getCampaignList])
+
+
+    const getPageAccountList = useCallback(async () => {
+        const data = await getPageAccounts()
+        setPageAccounts(data || [])
+    }, [])
+
+    useEffect(() => {
+        void getPageAccountList()
+    }, [getPageAccountList])
+    
 
     const lastUpdatedRef = useRef<Date | null>(null)
 
@@ -87,8 +105,10 @@ export const CampaignContextProvider = ({ children }: { children: React.ReactNod
                     }
                 } else {
                     const budget = await fetchChatCampaignBudget(aiState.chatId)
+                    const result = await fetchChatFbPageId(aiState.chatId)
+
                     let adsetUpdate = {
-                        ...generateAdsetTemplate(),
+                        ...generateAdsetTemplate(result?.fbPageId as string),
                         campaign_id: id
                     } as any
                     if (budget.error) {
@@ -139,6 +159,8 @@ export const CampaignContextProvider = ({ children }: { children: React.ReactNod
         getCampaignList,
         setId,
         summary,
+        pageAccounts,
+        getPageAccountList,
         fetchSummary,
         adsetIds,
         adset,

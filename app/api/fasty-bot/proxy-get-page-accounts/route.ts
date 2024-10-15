@@ -1,0 +1,24 @@
+import { NextResponse } from 'next/server'
+
+export async function GET(request: Request) {
+    const fastyEndpoint = process.env.FASTY_API_URL
+    const apiUrl = `${fastyEndpoint}/facebook/read/account/get-account-list`
+    try {
+        const response = await fetch(apiUrl, {
+            headers: {
+                'Authorization': `Bearer ${process.env.FASTY_API_TOKEN}`
+            }
+        })
+
+        if (!response.ok) {
+            console.error(`HTTP error! status: ${response.status}`);
+            return NextResponse.json({ error: 'Failed to fetch accounts' }, { status: response.status });
+        }
+
+        const data = await response.json()
+        return NextResponse.json(data)
+    } catch (error) {
+        console.error('Error fetching page accounts:', error)
+        return NextResponse.json({ error: 'Failed to fetch page accounts' }, { status: 500 })
+    }
+}

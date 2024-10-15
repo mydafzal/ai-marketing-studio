@@ -1,6 +1,7 @@
 import { VideoAdText } from '@/lib/types'
 
 export const generateAdTemplate = (
+  fbPageId: string,
   name: string,
   headline: string,
   text: string,
@@ -8,7 +9,7 @@ export const generateAdTemplate = (
 ) => ({
   name: name,
   object_story_spec: {
-    page_id: 119021011189054,
+    page_id: fbPageId,
     link_data: {
       link: 'https://www.example.com',
       name: headline,
@@ -23,10 +24,10 @@ export const generateAdTemplate = (
     }
   }
 })
-export const generateVideoAdTemplate = (name: string, headline: string, text: string, video: VideoAdText) => ({
+export const generateVideoAdTemplate = (fbPageId: string, name: string, headline: string, text: string, video: VideoAdText) => ({
   name: name,
   object_story_spec: {
-    page_id: 119021011189054,
+    page_id: fbPageId,
     video_data: {
       video_id: video.video_id,
       image_url: video.thumbnail,
@@ -41,7 +42,7 @@ export const generateVideoAdTemplate = (name: string, headline: string, text: st
     }
   }
 })
-export const generateAdsetTemplate = () => ({
+export const generateAdsetTemplate = (fbPageId: string) => ({
   name: 'My Ad Set',
   bid_amount: 2,
   billing_event: 'IMPRESSIONS',
@@ -80,7 +81,7 @@ export const generateAdsetTemplate = () => ({
     device_platforms: ['mobile', 'desktop']
   },
   promoted_object: {
-    page_id: 119021011189054
+    page_id: fbPageId
   },
   status: 'PAUSED'
 })
