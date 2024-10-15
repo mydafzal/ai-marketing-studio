@@ -3147,6 +3147,12 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                         <FormBuilder {...tool.result} toolCallId={tool.toolCallId} isReadOnly />
                                     </BotCard>
                                 )    
+                            case 'showAdCreativesSwitcher':
+                                return (
+                                    <BotCard key={tool.toolCallId}>
+                                        <AdCreativesSwitcher {...tool.result} toolCallId={tool.toolCallId} />
+                                    </BotCard>
+                                )
                             default:
                                 return null;
                         }
