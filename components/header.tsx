@@ -15,7 +15,7 @@ import { SidebarMobile } from './sidebar-mobile';
 import { SidebarToggle } from './sidebar-toggle';
 import { ChatHistory } from './chat-history';
 import { Session } from '@/lib/types';
-import {getUserDetail,updateFbBusinessAcc, updateFbAccountId,disconnectFacebook} from '@/app/actions';
+import {getUserDetail,updateFbBusinessAcc, updateFbAccountId,disconnectFacebook, updateOnboardingDetails} from '@/app/actions';
 import {getFacebookBusinessAccounts, getFacebookAdAccounts} from "@/app/facebook-actions";
 
 import {type User} from '@/lib/types'
@@ -72,6 +72,7 @@ async function UserOrLogin() {
             updateFbBusinessAcc={updateFbBusinessAcc}
             updateFbAccountId = {updateFbAccountId}
             disconnectFacebook = {disconnectFacebook}
+            updateOnboardingDetails={updateOnboardingDetails}
           />
           {/* {userDetails?.fbMarketingApiKey&&<FacebookConnect/>:<FacebookConnect/>} */}
           </div>

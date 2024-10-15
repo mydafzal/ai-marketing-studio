@@ -24,7 +24,7 @@ export async function getFacebookAdAccounts(encryptedAccessToken:string, busines
 
     const token = await decryptToken(encryptedAccessToken)
 
-    const resp = await fetch(`${FACEBOOK_API_URL}/${business_acc_id}/owned_ad_accounts?access_token=${token}`, {
+    const resp = await fetch(`${FACEBOOK_API_URL}/${business_acc_id}/owned_ad_accounts?access_token=${token}&fields=id,name`, {
         method: 'GET',
       });
       const data = await resp.json();

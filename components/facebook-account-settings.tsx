@@ -6,6 +6,7 @@ import { Cross2Icon } from "@radix-ui/react-icons";
 
 import FacebookConnect from "@/components/facebook-connect";
 import FBAccountDropdown from "./fb-account-dropdown";
+import Onboarding from "./onboarding"
 
 
 import {type User} from '@/lib/types'
@@ -23,6 +24,7 @@ type FacebookAccountSettingsProps= {
 	updateFbBusinessAcc: (email:string,accountId:string )=>Promise<any>;
 	updateFbAccountId: (email:string,fbAccountId:string )=>Promise<any>;
 	disconnectFacebook: (email:string)=>Promise<any>;
+	updateOnboardingDetails:(email:string, details:{first_name:string; last_name:string,company_name:string; company_description:string; website_link:string; preferred_language:string; goal:string})=>Promise<any>
 }
 
 const FacebookAccountSettings = ({
@@ -32,9 +34,9 @@ const FacebookAccountSettings = ({
 	updateFbBusinessAcc,
 	updateFbAccountId,
 	disconnectFacebook,
+	updateOnboardingDetails,
 }:FacebookAccountSettingsProps) => {
 
-	const [open, setOpen] = React.useState<boolean>(true)
 	const [error, setError]  = React.useState<string|null>(null);
 	const [selectedFbBusinessAcc, setSelectedFbBusinessAcc] = React.useState<Account | undefined>();
 	const [fbBusinessAccs, setFbBusinessAccs] = React.useState<Account[] | undefined>(undefined);
@@ -45,7 +47,8 @@ const FacebookAccountSettings = ({
 	const [facebookConnected, setFacebookConnected] = React.useState(userDetails?.fbMarketingApiKey?true:false);
 	const [adAccountSelected, setAdAccountSelected] =  React.useState(userDetails?.fbAccountId?true:false);
 
-	const [step, setStep] = React.useState(adAccountSelected?2:1);
+	const [step, setStep] = React.useState<number>(adAccountSelected?2:1);
+	const [open, setOpen] = React.useState<boolean>(!(facebookConnected&&adAccountSelected))
 
 	function handleClose(){
 		if(facebookConnected){
@@ -71,14 +74,7 @@ const FacebookAccountSettings = ({
 	async function getAdAccAPICall(){
 		if(userDetails?.fbMarketingApiKey && selectedFbBusinessAcc){
 			const data = await getFacebookAdAccounts(userDetails?.fbMarketingApiKey, selectedFbBusinessAcc.id);
-			let adAccs=[];
-			for (let i=0;i<data.length;i++){
-				adAccs.push({
-					id: data[i].id,
-					name: data[i].account_id,
-				})
-			}
-			setFbAdAccs(adAccs);
+			setFbAdAccs(data);
 		}
 	}
 
@@ -129,14 +125,16 @@ const FacebookAccountSettings = ({
 		getAdAccAPICall()
 	}, [selectedFbBusinessAcc])
 
-	// if (step==2){
-	// 	return (
-	// 		<Onboarding/>	
-	// 	)
-	// }
-
-	return (
-	<Dialog.Root modal={true} open={open} onOpenChange={()=>null}>
+	return <>
+		{
+			step==2?(<Onboarding
+			userDetails={userDetails}
+			open={open}
+			setOpen={setOpen}
+			setStep={setStep}
+			updateOnboardingDetails={updateOnboardingDetails}
+			/>):
+	(<Dialog.Root modal={true} open={open} onOpenChange={()=>null}>
 		<Dialog.Trigger asChild>
 			<button 
 			onClick={()=>setOpen(true)}
@@ -149,7 +147,7 @@ const FacebookAccountSettings = ({
 			<Dialog.Content className="z-[100] fixed left-1/2 top-1/2 max-h-[85vh] w-[90vw] max-w-[550px] -translate-x-1/2 -translate-y-1/2 rounded-md bg-white p-[25px] shadow-[hsl(206_22%_7%_/_35%)_0px_10px_38px_-10px,_hsl(206_22%_7%_/_20%)_0px_10px_20px_-15px] focus:outline-none data-[state=open]:animate-contentShow">
 				
 				<div className="flex justify-center mb-3 py-4">
-					<span className="text-3xl font-bold">Reeply.AI{facebookConnected}</span>
+					<span className="text-3xl font-bold">Reeply.AI</span>
 				</div>
 				<p className="text-center text-red-600">{error}</p>
 				<Dialog.Title className="m-0 text-lg font-semi-bold text-mauve12">
@@ -251,9 +249,9 @@ const FacebookAccountSettings = ({
 				</Dialog.Close>
 			</Dialog.Content>
 		</Dialog.Portal>
-	</Dialog.Root>
-	);
-
+	</Dialog.Root>)
+	}
+	</>
 };
 
 export default FacebookAccountSettings;

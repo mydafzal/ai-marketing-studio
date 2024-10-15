@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { getFbMarketingApiKey } from '@/app/actions';
 
 export async function POST(request: Request) {
     try {
@@ -10,6 +11,12 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Timestamp, event, and message are required' }, { status: 400 });
         }
 
+        const token_resp = await getFbMarketingApiKey()
+        let token=""
+        if(token_resp.success && token_resp.token){
+            token=token_resp.token
+        }
+
         // Construct the API endpoint URL
         const fastyEndpoint = process.env.FASTY_API_URL;
         const apiUrl = `${fastyEndpoint}/external-logs/post-drain-log`;
@@ -19,7 +26,9 @@ export async function POST(request: Request) {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${process.env.FASTY_API_TOKEN}`,
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'fb-api-key': token
+
             },
             body: JSON.stringify({ timestamp, event, message })
         });
