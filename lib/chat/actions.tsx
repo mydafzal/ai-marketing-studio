@@ -42,7 +42,6 @@ import {updateAdset} from '@/lib/api/fasty-bot/update-adset';
 import {getCampaignIdFromUrl} from "@/lib/api/fasty-bot/helpers/campaign-id-from-url-helper";
 import {getChatIdFromUrl} from "@/lib/api/fasty-bot/helpers/chat-id-from-url-helper";
 import {sendAdminNotification} from '@/lib/api/fasty-bot/send-admin-notification'
-import {ConnectCampaign} from '@/components/connect-campaign'
 import {ConnectCampaignAdvanced} from '@/components/connect-campaign-advanced'
 import {PlacementTargeting} from '@/components/placement-targeting';
 import FormBuilder from '@/components/form-builder';
@@ -2805,52 +2804,6 @@ Engaged Shoppers]
                 description: 'Show a UI to connect a campaign to the chat.',
                 parameters: z.object({}),
                 generate: async function* ({}) {
-                    console.log('tool call showCampaignConnectionUI')
-                    const timestamp: string = new Date().toISOString();
-                    const toolCallId = nanoid();
-                    aiState.done({
-                        ...aiState.get(),
-                        messages: [
-                            ...aiState.get().messages,
-                            {
-                                id: nanoid(),
-                                role: 'assistant',
-                                content: [
-                                    {
-                                        type: 'tool-call',
-                                        toolName: 'showCampaignConnectionUI',
-                                        toolCallId,
-                                        args: {}
-                                    }
-                                ],
-                                timestamp
-                            },
-                            {
-                                id: toolCallId,
-                                role: 'tool',
-                                content: [
-                                    {
-                                        type: 'tool-result',
-                                        toolName: 'showCampaignConnectionUI',
-                                        toolCallId,
-                                        result: {}
-                                    }
-                                ],
-                                timestamp
-                            }
-                        ]
-                    })
-                    return (
-                        <BotCard>
-                            <ConnectCampaign />
-                        </BotCard>
-                    )
-                }
-            },
-            showCampaignConnectionUIAdvanced: {
-                description: 'Show a UI Advanced to connect a campaign to the chat.',
-                parameters: z.object({}),
-                generate: async function* ({}) {
                     console.log('tool call showCampaignConnectionUIAdvanced')
                     const timestamp: string = new Date().toISOString();
                     const toolCallId = nanoid();
@@ -2864,7 +2817,7 @@ Engaged Shoppers]
                                 content: [
                                     {
                                         type: 'tool-call',
-                                        toolName: 'showCampaignConnectionUIAdvanced',
+                                        toolName: 'showCampaignConnectionUI',
                                         toolCallId,
                                         args: {}
                                     }
@@ -2877,7 +2830,7 @@ Engaged Shoppers]
                                 content: [
                                     {
                                         type: 'tool-result',
-                                        toolName: 'showCampaignConnectionUIAdvanced',
+                                        toolName: 'showCampaignConnectionUI',
                                         toolCallId,
                                         result: {}
                                     }
@@ -3128,11 +3081,6 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                     </BotCard>
                                 )
                             case 'showCampaignConnectionUI':
-                                return (
-                                    <BotCard key={tool.toolCallId}>
-                                        <ConnectCampaign {...tool.result} />
-                                    </BotCard>
-                                )
                             case 'showCampaignConnectionUIAdvanced':
                                 return (
                                     <BotCard key={tool.toolCallId}>

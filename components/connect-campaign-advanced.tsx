@@ -180,7 +180,7 @@ export function ConnectCampaignForm({
                     key={pageAccount.id}
                     value={pageAccount.id}
                   >
-                    {!isDisabled && `${pageAccount.name} - ${pageAccount.id})`}
+                    {!isDisabled && `${pageAccount.name} - ${pageAccount.id}`}
                     {isDisabled && (
                       <>
                         {`${pageAccount.name} - `}
