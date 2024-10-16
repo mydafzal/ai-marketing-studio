@@ -40,9 +40,7 @@ const FacebookAccountSettings = ({
 
 	const pathname = usePathname();
  	const isAdminPath = pathname === "/admin"; 
-	if(isAdminPath){
-		return;
-	}
+	
 
 	const [error, setError]  = React.useState<string|null>(null);
 	const [selectedFbBusinessAcc, setSelectedFbBusinessAcc] = React.useState<Account | undefined>();
@@ -60,6 +58,7 @@ const FacebookAccountSettings = ({
 		!(facebookConnected&&adAccountSelected):
 		!(adAccountSelected)
 	)
+	
 
 	function handleClose(){
 	if(isFeatureToggleEnabled("enforceUserApiKey")){
@@ -145,6 +144,10 @@ const FacebookAccountSettings = ({
 	React.useEffect(()=>{
 		getAdAccAPICall()
 	}, [selectedFbBusinessAcc])
+
+	if(isAdminPath){
+		return;
+	}
 
 	return <>
 		{
