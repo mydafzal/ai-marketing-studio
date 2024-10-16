@@ -42,10 +42,35 @@ const AdCreativesSwitcher = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [editingCreative, setEditingCreative] = useState<Creative | null>(null);
+  const [imagePermalinkUrl, setImagePermalinkUrl] = useState<string>('');
   const [editName, setEditName] = useState('');
   const [editMessage, setEditMessage] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
+
+  const getImageDetail = (imageHash: string) => {
+    fetch(`/api/fasty-bot/proxy-get-image-detail?image_hash=${imageHash}`)
+      .then(response => response.json())
+      .then(imageDetail => {
+        if(editingCreative){
+          setImagePermalinkUrl(imageDetail?.permalink_url)
+        }
+      })
+      .catch(error => {
+        console.error('Error fetching video detail:', error)
+      })
+  }
+  useEffect(() => {
+    if (
+      editingCreative &&
+      editingCreative.object_story_spec?.link_data?.image_hash
+    ) {
+      getImageDetail(editingCreative.object_story_spec?.link_data?.image_hash)
+    }
+    if(!editingCreative){
+      setImagePermalinkUrl('');
+    }
+  }, [editingCreative])
 
   useEffect(() => {
     const fetchCreatives = async () => {
@@ -234,6 +259,36 @@ const AdCreativesSwitcher = () => {
             <DialogTitle>Edit Ad Creative</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
+            {editingCreative?.object_type === 'VIDEO' ? (
+              <div className="grid grid-cols-4 items-center gap-4">
+                <label htmlFor="message" className="text-right">
+                  Video
+                </label>
+                <div className="flex-none col-span-3">
+                  <VideoPlayer
+                    className="object-cover rounded-md"
+                    height="h-[200px]"
+                    videoId={
+                      editingCreative?.object_story_spec?.video_data?.video_id
+                    }
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-4 items-center gap-4">
+                <label htmlFor="message" className="text-right">
+                  Image
+                </label>
+                <div className="flex-none col-span-3">
+                  <img
+                    src={imagePermalinkUrl || editingCreative?.thumbnail_url}
+                    alt=""
+                    className="inset-0  w-full object-cover h-[200px] "
+                    loading="lazy"
+                  />
+                </div>
+              </div>
+            )}
             <div className="grid grid-cols-4 items-center gap-4">
               <label htmlFor="name" className="text-right">
                 Name
