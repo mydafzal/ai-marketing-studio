@@ -523,20 +523,21 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
     }
     const session = (await auth()) as Session
     await checkNewChat(chatId, aiState.get().messages, session);
-    if (!isSilent) {
-        aiState.update({
-            ...aiState.get(),
-            messages: [
-                ...aiState.get().messages,
-                {
-                    id: nanoid(),
-                    role: 'user',
-                    content: contentImages?.length ? contentImages : content,
-                    timestamp: new Date().toISOString(),
-                }
-            ]
-        })
-    }
+    const messageId = nanoid();
+   
+    aiState.update({
+      ...aiState.get(),
+      messages: [
+        ...aiState.get().messages,
+        {
+          id: messageId,
+          role: 'user',
+          content: contentImages?.length ? contentImages : content,
+          timestamp: new Date().toISOString()
+        }
+      ]
+    })
+  
 
     let textStream: undefined | ReturnType<typeof createStreamableValue<string>>
     let textNode: undefined | React.ReactNode
@@ -1927,7 +1928,7 @@ Engaged Shoppers]
     
     Ad Creatives:
     
-    - Instruct the user to upload their ad images by saying: "Please upload your ad images by clicking on the plus button. I will create ad text suggestions for you."
+    - Instruct the user to upload their ad images or videos by saying: "Please upload your ad images or videos by clicking on the plus button. I will create ad text suggestions for you."
     
     - If the user asks whether you could create an ad image for them, respond that currently that is not possible but that the Reeply AI team is working hard to make it available soon.
     
@@ -2027,23 +2028,28 @@ Engaged Shoppers]
             if (done) {
                 textStream.done();
                 aiState.done({
-                    ...aiState.get(),
-                    messages: [
-                        ...aiState.get().messages.map((message: any) => ({
-                            id: message.id,
-                            role: message.role,
-                            content: message.content,
-                            name: message.name,
-                            timestamp: message.timestamp
-                        })),
-                        {
-                            id: nanoid(),
-                            role: 'assistant',
-                            content,
-                            timestamp: new Date().toISOString()
-                        }
-                    ]
-                });
+                  ...aiState.get(),
+                  messages: [
+                    ...aiState
+                      .get()
+                      .messages.filter((message: any) =>
+                        isSilent ? message.id !== messageId : true
+                      )
+                      .map((message: any) => ({
+                        id: message.id,
+                        role: message.role,
+                        content: message.content,
+                        name: message.name,
+                        timestamp: message.timestamp
+                      })),
+                    {
+                      id: nanoid(),
+                      role: 'assistant',
+                      content,
+                      timestamp: new Date().toISOString()
+                    }
+                  ]
+                })
             } else {
                 textStream.update(delta)
             }

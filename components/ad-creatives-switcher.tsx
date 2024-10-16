@@ -1,6 +1,8 @@
 'use client'
 
 import React, { useState, useEffect } from 'react';
+import { useActions, useUIState } from 'ai/rsc'
+import { type AI } from '@/lib/chat/actions'
 import { Button } from '@/components/ui/button';
 import { VideoPlayer } from './stocks/video-player'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
@@ -34,6 +36,8 @@ interface Creative {
 }
 
 const AdCreativesSwitcher = () => {
+  const { submitUserMessage } = useActions()
+  const [_, setMessages] = useUIState<typeof AI>()
   const [creatives, setCreatives] = useState<Creative[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -157,6 +161,15 @@ const AdCreativesSwitcher = () => {
     }
   };
 
+  const addNewCreative = async () => {
+    const responseMessage = await submitUserMessage(
+      'I want to create new ad creative',
+      [],
+      true
+    )
+    setMessages(currentMessages => [...currentMessages, responseMessage])
+  }
+
   if (isLoading) {
     return <div className="dark:text-zinc-200">Loading creatives...</div>;
   }
@@ -169,7 +182,7 @@ const AdCreativesSwitcher = () => {
     <div className="flex flex-col h-full bg-white dark:bg-zinc-800 shadow-lg">
       <header className="flex justify-between px-4 py-6">
         <h1 className="text-2xl font-bold text-zinc-800 dark:text-zinc-200">Ad Creative Selector</h1>
-        <Button>Create New</Button>
+        <Button onClick={addNewCreative}>Create New</Button>
       </header>
 
       <main className="flex-grow p-4 overflow-y-auto">
