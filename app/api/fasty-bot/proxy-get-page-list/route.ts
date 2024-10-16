@@ -5,9 +5,8 @@ export async function GET(request: Request) {
     const fbBusinessAccId = searchParams.get('fb_business_acc_id')
 
     const fastyEndpoint = process.env.FASTY_API_URL
-    const apiUrl = `${fastyEndpoint}/facebook/read/account/get-page-list?fb_business_acc_id=${fbBusinessAccId}`
+    const apiUrl = `${fastyEndpoint}/facebook/read/page/get-list?fb_business_acc_id=${fbBusinessAccId}`
     try {
-        console.log("🚀 ~ GET ~ apiUrl:", apiUrl)
         const response = await fetch(apiUrl, {
             headers: {
                 'Authorization': `Bearer ${process.env.FASTY_API_TOKEN}`

@@ -63,6 +63,8 @@ export const CampaignContextProvider = ({ children }: { children: React.ReactNod
 
     const getPageAccountList = useCallback(async () => {
         const data = await getPageList()
+        console.log("🚀 ~ getPageAccountList ~ data:", data)
+        
         setPageAccounts(data || [])
     }, [])
 
@@ -165,7 +167,7 @@ export const CampaignContextProvider = ({ children }: { children: React.ReactNod
         adsetIds,
         adset,
         setAdset
-    }), [id, setId, campaigns, summary, adsetIds, adset, setAdset])
+    }), [id, setId, campaigns, pageAccounts, summary, adsetIds, adset, setAdset])
 
     return (
         <CampaignContext.Provider value={value}>
