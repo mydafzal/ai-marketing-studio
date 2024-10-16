@@ -1,15 +1,18 @@
 import { NextResponse } from 'next/server'
 
 export async function GET(request: Request) {
+    const { searchParams } = new URL(request.url)
+    const fbBusinessAccId = searchParams.get('fb_business_acc_id')
+
     const fastyEndpoint = process.env.FASTY_API_URL
-    const apiUrl = `${fastyEndpoint}/facebook/read/account/get-account-list`
+    const apiUrl = `${fastyEndpoint}/facebook/read/account/get-page-list?fb_business_acc_id=${fbBusinessAccId}`
     try {
+        console.log("🚀 ~ GET ~ apiUrl:", apiUrl)
         const response = await fetch(apiUrl, {
             headers: {
                 'Authorization': `Bearer ${process.env.FASTY_API_TOKEN}`
             }
         })
-
         if (!response.ok) {
             console.error(`HTTP error! status: ${response.status}`);
             return NextResponse.json({ error: 'Failed to fetch accounts' }, { status: response.status });

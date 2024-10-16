@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { updateChatFbCampaignId, updateChatFbPageId } from '@/app/actions'
+import { updateChatFbCampaignId, updateChatFbPageId, getUserDetail } from '@/app/actions'
 import { ConnectCampaignAdvancedResult } from '@/components/connect-campaign-advanced-result'
 import { CampaignContext } from '@/components/contexts/campaign-context'
 import { IconSpinner } from '@/components/ui/icons'
@@ -113,7 +113,6 @@ export function ConnectCampaignForm({
     setFormTypeAndValidate('create')
     await handleCreateCampaign()
   }
-
   return (
     <>
       <div className="text-lg font-medium text-gray-900 dark:text-zinc-300 mb-2">
@@ -174,9 +173,22 @@ export function ConnectCampaignForm({
             </SelectTrigger>
             <SelectContent>
               {pageAccounts.map((pageAccount: FbPageAccount) => {
+                const isDisabled = !pageAccount?.access_token;
                 return (
-                  <SelectItem key={pageAccount.id} value={pageAccount.id}>
-                    {pageAccount.name} - ({pageAccount.id})
+                  <SelectItem
+                    disabled={isDisabled}
+                    key={pageAccount.id}
+                    value={pageAccount.id}
+                  >
+                    {!isDisabled && `${pageAccount.name} - ${pageAccount.id})`}
+                    {isDisabled && (
+                      <>
+                        {`${pageAccount.name} - `}
+                        <span className={'text-red-600'}>
+                          Missing permissions
+                        </span>
+                      </>
+                    )}
                   </SelectItem>
                 )
               })}

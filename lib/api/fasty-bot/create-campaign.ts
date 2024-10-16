@@ -57,7 +57,7 @@ export async function createCampaign(
     let {
       fbAccountId,
       name,
-      objective,
+      objective, 
       status,
       special_ad_categories
     } = request

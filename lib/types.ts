@@ -78,7 +78,7 @@ export interface FbPageAccount {
   id: string
   name: string
   category: string
-  status: string
+  access_token?: string
 }
 export interface FbVideoThumbnail {
   id: string

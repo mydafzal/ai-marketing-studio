@@ -3,7 +3,7 @@ import { createContext, useCallback, useEffect, useMemo, useRef, useState } from
 import { CampaignSummary, getCampaignSummary } from '@/lib/api/fasty-bot/get-campaign-summary'
 import { createAdset } from '@/lib/api/fasty-bot/create-adset'
 import { getCampaigns } from '@/lib/api/fasty-bot/get-campaigns'
-import { getPageAccounts } from '@/lib/api/fasty-bot/get-page-accounts'
+import { getPageList } from '@/lib/api/fasty-bot/get-page-list'
 import { getAdset } from '@/lib/api/fasty-bot/get-adset'
 import { getAdsets } from '@/lib/api/fasty-bot/get-adsets'
 import { Adset, FbCampaign, FbPageAccount, Message } from '@/lib/types'
@@ -62,7 +62,7 @@ export const CampaignContextProvider = ({ children }: { children: React.ReactNod
 
 
     const getPageAccountList = useCallback(async () => {
-        const data = await getPageAccounts()
+        const data = await getPageList()
         setPageAccounts(data || [])
     }, [])
 
