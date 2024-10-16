@@ -142,6 +142,7 @@ export interface AdCreative {
     link_data?: {
       link: string
       image_url: string
+      image_hash?: string
       name: string
       message: string
       call_to_action: {

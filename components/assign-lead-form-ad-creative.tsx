@@ -146,7 +146,7 @@ export function AssignLeadFormAdCreative() {
         </SelectTrigger>
         <SelectContent>
           {adCreatives.map((creative) => (
-            <SelectItem key={creative.id} value={creative.id}>
+            <SelectItem key={creative.id} value={creative.id || ''}>
               {`${creative.name} (ID: ${creative.id})`}
             </SelectItem>
           ))}
