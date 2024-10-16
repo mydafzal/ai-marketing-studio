@@ -2,11 +2,12 @@
 import React from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { Cross2Icon } from "@radix-ui/react-icons";
-
+import { usePathname } from 'next/navigation';
 
 import FacebookConnect from "@/components/facebook-connect";
 import FBAccountDropdown from "./fb-account-dropdown";
 import Onboarding from "./onboarding"
+import {isFeatureToggleEnabled} from "@/lib/helpers/feature-toggle/feature-toggle-manager";
 
 
 import {type User} from '@/lib/types'
@@ -37,6 +38,12 @@ const FacebookAccountSettings = ({
 	updateOnboardingDetails,
 }:FacebookAccountSettingsProps) => {
 
+	const pathname = usePathname();
+ 	const isAdminPath = pathname === "/admin"; 
+	if(isAdminPath){
+		return;
+	}
+
 	const [error, setError]  = React.useState<string|null>(null);
 	const [selectedFbBusinessAcc, setSelectedFbBusinessAcc] = React.useState<Account | undefined>();
 	const [fbBusinessAccs, setFbBusinessAccs] = React.useState<Account[] | undefined>(undefined);
@@ -47,19 +54,33 @@ const FacebookAccountSettings = ({
 	const [facebookConnected, setFacebookConnected] = React.useState(userDetails?.fbMarketingApiKey?true:false);
 	const [adAccountSelected, setAdAccountSelected] =  React.useState(userDetails?.fbAccountId?true:false);
 
-	const [step, setStep] = React.useState<number>(adAccountSelected?2:1);
-	const [open, setOpen] = React.useState<boolean>(!(facebookConnected&&adAccountSelected))
+	const [step, setStep] = React.useState<number>(facebookConnected&&adAccountSelected?2:1);
+	const [open, setOpen] = React.useState<boolean>(
+		isFeatureToggleEnabled("enforceUserApiKey")?
+		!(facebookConnected&&adAccountSelected):
+		!(adAccountSelected)
+	)
 
 	function handleClose(){
+	if(isFeatureToggleEnabled("enforceUserApiKey")){
 		if(facebookConnected){
 			if(adAccountSelected){
-				setOpen(false)
+					setOpen(false)
+				}else{
+					setError("Please complete Add Account selection before proceeding")
+				}
 			}else{
-				setError("Please complete Add Account selection before proceeding")
+				setError("Please link your account before proceeding")
 			}
+	}
+	else{
+		if(adAccountSelected){
+			setOpen(false)
 		}else{
-			setError("Please link your account before proceeding")
+			setError("Please complete Add Account selection before proceeding")
 		}
+	}
+		
 	}
 
 
@@ -217,7 +238,7 @@ const FacebookAccountSettings = ({
 				</div>
 
 				{
-					adAccountSelected&&
+					facebookConnected&&adAccountSelected&&
 					<div className="flex justify-end">
 						<button 
 						// onClick={unlinkFacebook}

@@ -1,6 +1,5 @@
 import * as React from 'react';
 import Link from 'next/link';
-
 import { cn } from '@/lib/utils';
 import { auth } from '@/auth';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -21,9 +20,11 @@ import {getFacebookBusinessAccounts, getFacebookAdAccounts} from "@/app/facebook
 import {type User} from '@/lib/types'
 import FacebookConnect from '@/components/facebook-connect';
 import FacebookAccountSettings from '@/components/facebook-account-settings'
+import {isFeatureToggleEnabled} from "@/lib/helpers/feature-toggle/feature-toggle-manager";
 
 async function UserOrLogin() {
   const session = (await auth()) as Session;
+
   let userDetails;
 
   const response = await getUserDetail();
@@ -65,15 +66,18 @@ async function UserOrLogin() {
         {session?.user ? (
           <div className='flex justify-between w-full'>
           <UserMenu user={session.user} />
-          <FacebookAccountSettings 
-            userDetails={userDetails}
-            getFacebookBusinessAccounts={getFacebookBusinessAccounts}
-            getFacebookAdAccounts={getFacebookAdAccounts}
-            updateFbBusinessAcc={updateFbBusinessAcc}
-            updateFbAccountId = {updateFbAccountId}
-            disconnectFacebook = {disconnectFacebook}
-            updateOnboardingDetails={updateOnboardingDetails}
-          />
+          {
+          isFeatureToggleEnabled('onboardingFeatures') &&
+            <FacebookAccountSettings 
+              userDetails={userDetails}
+              getFacebookBusinessAccounts={getFacebookBusinessAccounts}
+              getFacebookAdAccounts={getFacebookAdAccounts}
+              updateFbBusinessAcc={updateFbBusinessAcc}
+              updateFbAccountId = {updateFbAccountId}
+              disconnectFacebook = {disconnectFacebook}
+              updateOnboardingDetails={updateOnboardingDetails}
+            />
+          }
           {/* {userDetails?.fbMarketingApiKey&&<FacebookConnect/>:<FacebookConnect/>} */}
           </div>
         ) : (
