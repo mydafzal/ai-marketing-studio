@@ -2840,7 +2840,7 @@ Engaged Shoppers]
                     })
                     return (
                         <BotCard>
-                            <ConnectCampaignAdvanced />
+                            <ConnectCampaignAdvanced toolCallId={toolCallId} />
                         </BotCard>
                     )
                 }

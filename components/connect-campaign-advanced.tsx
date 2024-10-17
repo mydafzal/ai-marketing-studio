@@ -1,5 +1,6 @@
 'use client'
 
+import { ToolContent } from 'ai'
 import { useActions, useAIState, useUIState } from 'ai/rsc'
 import { format } from 'date-fns'
 import { useContext, useEffect, useRef, useState } from 'react'
@@ -14,7 +15,7 @@ import {
 } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { updateChatFbCampaignId, updateChatFbPageId, getUserDetail } from '@/app/actions'
+import { updateChat } from '@/app/actions'
 import { ConnectCampaignAdvancedResult } from '@/components/connect-campaign-advanced-result'
 import { CampaignContext } from '@/components/contexts/campaign-context'
 import { IconSpinner } from '@/components/ui/icons'
@@ -250,6 +251,7 @@ export function ConnectCampaignForm({
 }
 
 interface ConnectCampaignAdvancedProps {
+  toolCallId?: string
   connectingUiProps?: {
     campaignName: string
     pageName: string
@@ -258,6 +260,7 @@ interface ConnectCampaignAdvancedProps {
 }
 
 export function ConnectCampaignAdvanced({
+  toolCallId,
   connectingUiProps
 }: ConnectCampaignAdvancedProps) {
   const [aiState, setAIState] = useAIState()
@@ -309,18 +312,43 @@ export function ConnectCampaignAdvanced({
       </div>
     )
     try {
-      const updateSuccess = await updateChatFbCampaignId(
+      const updateSuccess = await updateChat(
         aiState.chatId,
-        campaign.id
+        {
+          fbCampaignId: campaign.id,
+          fbPageId: pageAccount.id
+        }
       )
-      const updatePageSuccess = await updateChatFbPageId(
-        aiState.chatId,
-        pageAccount.id
-      )
+      if (updateSuccess?.success) {
+        const lastMessage = aiMessages[aiMessages.length - 1]
+        if (lastMessage.id !== toolCallId) {
+          console.error('Unexpected exception: toolCallId mismatch', lastMessage.toolCallId, toolCallId)
+          return
+        }
 
-      if (updateSuccess?.success && updatePageSuccess?.success) {
         shouldSendSilentMessage.current = true
-        setCampaignId(campaign.id)
+        setAIState({
+          ...aiState,
+          messages: [
+            ...aiMessages.slice(0, -1),
+            {
+              ...lastMessage,
+              content: [
+                {
+                  ...lastMessage.content[0],
+                  result: {
+                    connectingUiProps: {
+                      success: !!updateSuccess?.success,
+                      campaignName: campaign.name,
+                      pageName: pageAccount.name
+                    }
+                  }
+                },
+                ...lastMessage.content.slice(1),
+              ]
+            }
+          ]
+        })
         setConnectingUI(
           <ConnectCampaignAdvancedResult
             success={!!updateSuccess?.success}
@@ -328,32 +356,7 @@ export function ConnectCampaignAdvanced({
             pageName={pageAccount.name}
           />
         )
-        setAIState({
-          ...aiState,
-          messages: [
-            ...aiState.messages.map((message: Message) => {
-              if (message.role === 'tool') {
-                const content = message.content[0]
-                if (
-                  content.type === 'tool-result' &&
-                  content.toolName === 'showCampaignConnectionUI'
-                ) {
-                  content.result = {
-                    ...(content.result as Object),
-                    connectingUiProps: (
-                      content.result as { connectingUiProps: object }
-                    ).connectingUiProps ?? {
-                      success: !!updateSuccess?.success,
-                      campaignName: campaign.name,
-                      pageName: pageAccount.name
-                    }
-                  }
-                }
-              }
-              return message
-            })
-          ]
-        })
+        setCampaignId(campaign.id)
       } else {
         setConnectingUI(
           <SystemMessage>
