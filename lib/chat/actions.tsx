@@ -2804,7 +2804,6 @@ Engaged Shoppers]
                 description: 'Show a UI to connect a campaign to the chat.',
                 parameters: z.object({}),
                 generate: async function* ({}) {
-                    console.log('tool call showCampaignConnectionUIAdvanced')
                     const timestamp: string = new Date().toISOString();
                     const toolCallId = nanoid();
                     aiState.done({

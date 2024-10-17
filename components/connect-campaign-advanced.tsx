@@ -336,7 +336,7 @@ export function ConnectCampaignAdvanced({
                 const content = message.content[0]
                 if (
                   content.type === 'tool-result' &&
-                  content.toolName === 'showCampaignConnectionUIAdvanced'
+                  content.toolName === 'showCampaignConnectionUI'
                 ) {
                   content.result = {
                     ...(content.result as Object),
