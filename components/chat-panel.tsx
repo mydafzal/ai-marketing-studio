@@ -60,7 +60,7 @@ export function ChatPanel({
   const [messages, setMessages] = useUIState<typeof AI>()
   const { submitUserMessage } = useActions()
   const [shareDialogOpen, setShareDialogOpen] = React.useState(false)
-  const [showTaskPalette, setShowTaskPalette] = React.useState(false)
+  const [isTaskPaletteOpen, setIsTaskPaletteOpen] = React.useState(false)
 
   const sendMessage = React.useCallback(async (message: string, userContent?: (TextPart | ImagePart)[]) => {
     // Optimistically add user message UI
@@ -76,6 +76,10 @@ export function ChatPanel({
     const responseMessage = await submitUserMessage(message, userContent);
     setMessages(currentMessages => [...currentMessages, responseMessage])
   }, [])
+
+  const handleShowMe = (prompt: string) => {
+    sendMessage(prompt)
+  }
 
   return (
     <>
@@ -140,9 +144,13 @@ export function ChatPanel({
             <FooterText className="hidden sm:block" />
           </div>
         </div>
-        <FloatingButton onClick={() => setShowTaskPalette(true)} />
+        <FloatingButton onClick={() => setIsTaskPaletteOpen(true)} />
+        <TaskPalette
+          isOpen={isTaskPaletteOpen}
+          onClose={() => setIsTaskPaletteOpen(false)}
+          onShowMe={handleShowMe}
+        />
       </div>
-      {showTaskPalette && <TaskPalette />}
     </>
   )
 }
