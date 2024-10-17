@@ -319,36 +319,10 @@ export function ConnectCampaignAdvanced({
           fbPageId: pageAccount.id
         }
       )
-      if (updateSuccess?.success) {
-        const lastMessage = aiMessages[aiMessages.length - 1]
-        if (lastMessage.id !== toolCallId) {
-          console.error('Unexpected exception: toolCallId mismatch', lastMessage.toolCallId, toolCallId)
-          return
-        }
 
+      if (updateSuccess?.success) {
         shouldSendSilentMessage.current = true
-        setAIState({
-          ...aiState,
-          messages: [
-            ...aiMessages.slice(0, -1),
-            {
-              ...lastMessage,
-              content: [
-                {
-                  ...lastMessage.content[0],
-                  result: {
-                    connectingUiProps: {
-                      success: !!updateSuccess?.success,
-                      campaignName: campaign.name,
-                      pageName: pageAccount.name
-                    }
-                  }
-                },
-                ...lastMessage.content.slice(1),
-              ]
-            }
-          ]
-        })
+        setCampaignId(campaign.id)
         setConnectingUI(
           <ConnectCampaignAdvancedResult
             success={!!updateSuccess?.success}
@@ -356,7 +330,26 @@ export function ConnectCampaignAdvanced({
             pageName={pageAccount.name}
           />
         )
-        setCampaignId(campaign.id)
+        setAIState({
+          ...aiState,
+          messages: [
+            // we use map, instead of updating only last message, because user might use this component in chat history, which failed to connect before
+            ...aiState.messages.map((message: Message) => {
+              if (message.id === toolCallId) {
+                const content = (message.content as ToolContent)[0]
+                content.result = {
+                  toolCallId,
+                  connectingUiProps: {
+                    success: !!updateSuccess?.success,
+                    campaignName: campaign.name,
+                    pageName: pageAccount.name
+                  }
+                }
+              }
+              return message
+            })
+          ]
+        })
       } else {
         setConnectingUI(
           <SystemMessage>
