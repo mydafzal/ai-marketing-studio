@@ -9,6 +9,14 @@ const FACEBOOK_CLIENT_ID = process.env.FACEBOOK_CLIENT_ID;
 const FACEBOOK_CLIENT_SECRET = process.env.FACEBOOK_CLIENT_SECRET;
 const FACEBOOK_REDIRECT_URI = process.env.FACEBOOK_REDIRECT_URI;
 
+function getProductionURL(){
+  if(process.env.VERCEL_PROJECT_PRODUCTION_URL?.includes("localhost")){
+    return "http://"+process.env.VERCEL_PROJECT_PRODUCTION_URL;
+
+  }
+  return "https://"+process.env.VERCEL_PROJECT_PRODUCTION_URL;
+}
+
 // Handle Facebook OAuth callback and get access token
 export async function GET(request: Request) {
   const session = (await auth()) as Session;
@@ -16,7 +24,7 @@ export async function GET(request: Request) {
   if (!session.user){
     // TODO Show proper user messages
 
-    return NextResponse.redirect(`${process.env.VERCEL_PROJECT_PRODUCTION_URL}`);
+    return NextResponse.redirect(getProductionURL());
 
   }
 
@@ -25,7 +33,7 @@ export async function GET(request: Request) {
 
   if (!code) {
     // TODO Show proper user messages
-    return NextResponse.redirect(`${process.env.VERCEL_PROJECT_PRODUCTION_URL}`);
+    return NextResponse.redirect(getProductionURL());
 
     // return NextResponse.json({ error: 'Authorization code missing' }, { status: 400 });
   }
@@ -59,5 +67,5 @@ export async function GET(request: Request) {
 
   await updateFbAccessToken(session.user.email,encryptedToken) // TODO fail error handling
 
-  return NextResponse.redirect(`${process.env.VERCEL_PROJECT_PRODUCTION_URL}`);
+  return NextResponse.redirect(getProductionURL());
 }
