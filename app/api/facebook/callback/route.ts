@@ -16,7 +16,7 @@ export async function GET(request: Request) {
   if (!session.user){
     // TODO Show proper user messages
 
-    return NextResponse.redirect("http://"+process.env.VERCEL_URL+ "/");
+    return NextResponse.redirect(`${process.env.VERCEL_PROJECT_PRODUCTION_URL}`);
 
   }
 
@@ -25,7 +25,7 @@ export async function GET(request: Request) {
 
   if (!code) {
     // TODO Show proper user messages
-    return NextResponse.redirect("http://"+process.env.VERCEL_URL+ "/");
+    return NextResponse.redirect(`${process.env.VERCEL_PROJECT_PRODUCTION_URL}`);
 
     // return NextResponse.json({ error: 'Authorization code missing' }, { status: 400 });
   }
@@ -59,5 +59,5 @@ export async function GET(request: Request) {
 
   await updateFbAccessToken(session.user.email,encryptedToken) // TODO fail error handling
 
-  return NextResponse.redirect("http://"+process.env.VERCEL_URL+ "/");
+  return NextResponse.redirect(`${process.env.VERCEL_PROJECT_PRODUCTION_URL}`);
 }

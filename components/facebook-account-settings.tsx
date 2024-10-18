@@ -39,7 +39,7 @@ const FacebookAccountSettings = ({
 }:FacebookAccountSettingsProps) => {
 
 	const pathname = usePathname();
- 	const isAdminPath = pathname === "/admin"; 
+ 	const isChatPage = pathname.includes("/chat/"); 
 	
 
 	const [error, setError]  = React.useState<string|null>(null);
@@ -145,7 +145,7 @@ const FacebookAccountSettings = ({
 		getAdAccAPICall()
 	}, [selectedFbBusinessAcc])
 
-	if(isAdminPath){
+	if(!isChatPage){
 		return;
 	}
 
