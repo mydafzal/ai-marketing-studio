@@ -240,8 +240,6 @@ const FacebookAccountSettings = ({
 				
 				</div>
 
-				{
-					facebookConnected&&adAccountSelected&&
 					<div className="flex justify-end">
 						<button 
 						// onClick={unlinkFacebook}
@@ -251,7 +249,6 @@ const FacebookAccountSettings = ({
 						Next
 						</button>
 					</div>
-				}
 
 				{/* <div className="mt-[25px] flex justify-end">
 					<Dialog.Close asChild>
