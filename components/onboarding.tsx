@@ -90,9 +90,11 @@ export default function Onboarding({userDetails,open, setOpen, setStep, updateOn
 				setInputError(errors)
 				return;
 			}
+			setOpen(false)
+
 			const resp = await updateOnboardingDetails(userDetails?.email, details);
 			if(resp.success){
-				setOpen(false)
+				alert("Your profile updated successfuly")
 			}
 			else{
 				setError(resp.message)

@@ -6,6 +6,7 @@ import {kv} from '@vercel/kv'
 
 import {auth} from '@/auth'
 import {AdText, VideoAdText, type Chat, User} from '@/lib/types'
+import {getBaseUrl} from "@/lib/helpers/vercel/get-base-url"
 
 export async function getChats(userId?: string | null) {
     if (!userId) {
@@ -1181,7 +1182,7 @@ export async function updateOnboardingDetails(email: string, details:{first_name
         const userKey = `user:${email}`
 
         // Check if the user exists
-        const existingUser = await kv.hgetall(userKey)
+        const existingUser: User | null = (await kv.hgetall(userKey))
 
         if (!existingUser) {
             return {
@@ -1189,10 +1190,53 @@ export async function updateOnboardingDetails(email: string, details:{first_name
                 error: 'User not found'
             }
         }
+
+
+        let defaultExtraDetails = existingUser.defaultExtraDetails;
+        let website_data = "";
+
+
+        if(!(existingUser.website_link==details.website_link && existingUser.website_data)){
+                
+
+            const resp = await fetch(`${getBaseUrl()}/api/fasty-bot/proxy-get-website-data`,{
+                method: 'POST',
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    website_link:details.website_link
+                })
+            });
+
+            if(resp.ok){
+                const resp_data = await resp.json()
+                website_data = resp_data.response
+            }
+        }
+        else{
+            website_data =  existingUser.website_data;
+        }
+
+
+        let newDetails = `First Name: ${details.first_name}\nLast Name: ${details.last_name}\nCompany Name: ${details.company_name}\nCompany Description: ${details.company_description}\nWebsite Link: ${details.website_link}\nWebsite data (scraped): ${website_data}\nPreferred Language: ${details.preferred_language}\nGoal: ${details.goal}`;
+
+        
+        if (defaultExtraDetails) {
+            let splitDetails = defaultExtraDetails.split('---');
+            
+            if (splitDetails.length > 1) {
+                newDetails += `\n---\n${splitDetails[1].trim()}`;
+            } else {
+                newDetails += `\n---\n`;
+            }
+        } else {
+            newDetails += `\n---\n`;
+        }
         
 
         // Update the accountId field
-        await kv.hset(userKey,details)
+        await kv.hset(userKey,{...details,defaultExtraDetails:newDetails, website_data:website_data})
 
         return {
             success: true,
