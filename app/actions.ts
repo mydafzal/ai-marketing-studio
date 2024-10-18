@@ -724,6 +724,132 @@ export async function updateFbAccountId(email: string, fbAccountId: string) {
     }
 }
 
+export async function updateFbBusinessAcc(email: string, accountId: string) {
+    const session = await auth()
+
+    if (!session || !session.user) {
+        return {
+            success: false,
+            error: 'User not authenticated'
+        }
+    }
+
+    try {
+        // Construct the user key using the email
+        const userKey = `user:${email}`
+
+        // Check if the user exists
+        const existingUser = await kv.hgetall(userKey)
+
+        if (!existingUser) {
+            return {
+                success: false,
+                error: 'User not found'
+            }
+        }
+        
+        // Update the accountId field
+        await kv.hset(userKey, {fbBusinessAccId: accountId})
+
+        return {
+            success: true,
+            message: 'Facebook Business account id updated successfully'
+        }
+    } catch (error) {
+        console.error(`Error updating Facebook Business account id for user ${email}:`, error)
+        return {
+            success: false,
+            error: 'Something went wrong'
+        }
+    }
+}
+
+
+export async function updateFbAccessToken(email: string, fbAccessToken: string) {
+    const session = await auth()
+
+    if (!session || !session.user) {
+        return {
+            success: false,
+            error: 'User not authenticated'
+        }
+    }
+
+    try {
+        // Construct the user key using the email
+        const userKey = `user:${email}`
+
+        // Check if the user exists
+        const existingUser = await kv.hgetall(userKey)
+
+        if (!existingUser) {
+            return {
+                success: false,
+                error: 'User not found'
+            }
+        }
+        
+
+        // encrypt the fbAccessToken
+        const encryptedAccessToken = fbAccessToken // TODO: Encryption of access token
+
+        // Update the accountId field
+        await kv.hset(userKey, {fbMarketingApiKey: encryptedAccessToken})
+
+        return {
+            success: true,
+            message: 'Facebook Access token updated successfully'
+        }
+    } catch (error) {
+        console.error(`Error updating Facebook Access token for user ${email}:`, error)
+        return {
+            success: false,
+            error: 'Something went wrong'
+        }
+    }
+}
+
+export async function disconnectFacebook(email: string) {
+    const session = await auth()
+
+    if (!session || !session.user) {
+        return {
+            success: false,
+            error: 'User not authenticated'
+        }
+    }
+
+    try {
+        // Construct the user key using the email
+        const userKey = `user:${email}`
+
+        // Check if the user exists
+        const existingUser = await kv.hgetall(userKey)
+
+        if (!existingUser) {
+            return {
+                success: false,
+                error: 'User not found'
+            }
+        }
+        
+        // Update the accountId field
+        await kv.hset(userKey, {fbMarketingApiKey: null, fbBusinessAccId:null, fbAccountId:null})
+
+        return {
+            success: true,
+            message: 'Facebook disconnected successfully'
+        }
+    } catch (error) {
+        console.error(`Error disconnecting facebook for user ${email}:`, error)
+        return {
+            success: false,
+            error: 'Something went wrong'
+        }
+    }
+}
+
+
 export async function fetchChatCampaignBudget(chatSlug: string) {
     const session = await auth()
 
@@ -1001,6 +1127,81 @@ export async function getUserDetail() {
     } catch (error) {
         console.error(`Error get current user detail:`, error)
         return {
+            error: 'Something went wrong'
+        }
+    }
+}
+
+
+export async function getFbMarketingApiKey() {
+    const session = await auth()
+
+    if (!session || !session.user) {
+        return {
+            error: 'User not authenticated'
+        }
+    }
+
+    try {
+        const userKey = `user:${session.user.email}`
+
+        // Check if the chat exists
+        const user: User | null = (await kv.hgetall(userKey))
+
+        if (!user) {
+            return {
+                error: 'User not found'
+            }
+        }
+        return {
+            success: true,
+            token: user.fbMarketingApiKey
+        }
+    } catch (error) {
+        console.error(`Error get current user detail:`, error)
+        return {
+            error: 'Something went wrong'
+        }
+    }
+}
+
+
+export async function updateOnboardingDetails(email: string, details:{first_name:string; last_name:string,company_name:string; company_description:string; website_link:string; preferred_language:string; goal:string}) {
+    const session = await auth()
+
+    if (!session || !session.user) {
+        return {
+            success: false,
+            error: 'User not authenticated'
+        }
+    }
+
+    try {
+        // Construct the user key using the email
+        const userKey = `user:${email}`
+
+        // Check if the user exists
+        const existingUser = await kv.hgetall(userKey)
+
+        if (!existingUser) {
+            return {
+                success: false,
+                error: 'User not found'
+            }
+        }
+        
+
+        // Update the accountId field
+        await kv.hset(userKey,details)
+
+        return {
+            success: true,
+            message: 'Onboarding data updated successfully'
+        }
+    } catch (error) {
+        console.error(`Error updating onboarding data for user ${email}:`, error)
+        return {
+            success: false,
             error: 'Something went wrong'
         }
     }
