@@ -54,6 +54,8 @@ export default function Onboarding({userDetails,open, setOpen, setStep, updateOn
 	const [preferredLanguage, setPreferredLanguage] = React.useState<string>(userDetails?.preferred_language || "en");
 	const [goal, setGoal] = React.useState<string>(userDetails?.goal || "customers");
 
+	const [dbChangeRequested, setDbChangeRequested] = React.useState(false)
+	const [showSuccesMessage, setShowSuccessMessage] = React.useState(false)
 
 	const handleSave = async ()=>{
 		if(userDetails){
@@ -90,9 +92,14 @@ export default function Onboarding({userDetails,open, setOpen, setStep, updateOn
 				setInputError(errors)
 				return;
 			}
+			setOpen(false)
+			setDbChangeRequested(true)
+
+
 			const resp = await updateOnboardingDetails(userDetails?.email, details);
 			if(resp.success){
-				setOpen(false)
+				setDbChangeRequested(false)
+				setShowSuccessMessage(true)
 			}
 			else{
 				setError(resp.message)
@@ -100,7 +107,38 @@ export default function Onboarding({userDetails,open, setOpen, setStep, updateOn
 		}
 	}
 
+	React.useEffect(()=>{
+		setTimeout(()=>{
+			setShowSuccessMessage(false)
+
+		},5000)
+	},[showSuccesMessage])
+
   return (
+	<>
+	{showSuccesMessage&&
+	<div className="mt-4 flex items-center p-4 mb-4 text-sm text-green-800 rounded-lg bg-green-50 dark:bg-gray-800 dark:text-green-400" role="alert">
+		<svg className="flex-shrink-0 inline w-4 h-4 me-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+		<path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5ZM9.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM12 15H8a1 1 0 0 1 0-2h1v-3H8a1 1 0 0 1 0-2h2a1 1 0 0 1 1 1v4h1a1 1 0 0 1 0 2Z"/>
+		</svg>
+		<span className="sr-only">Info</span>
+		<div>
+		Your profile has been updated successfully
+		</div>
+	</div>
+	}
+	{!open && dbChangeRequested &&
+		<div className="mt-4 flex items-center p-4 mb-4 text-sm text-yellow-800 rounded-lg bg-yellow-50 dark:bg-gray-800 dark:text-yellow-300" role="alert">
+		<svg className="flex-shrink-0 inline w-4 h-4 me-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+		  <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5ZM9.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM12 15H8a1 1 0 0 1 0-2h1v-3H8a1 1 0 0 1 0-2h2a1 1 0 0 1 1 1v4h1a1 1 0 0 1 0 2Z"/>
+		</svg>
+		<span className="sr-only">Info</span>
+		<div>
+		  Updating your profile. This may take a few seconds...
+		</div>
+	  </div>
+	  
+	}
     <Dialog.Root modal={true} open={open} onOpenChange={()=>null}>
 		<Dialog.Trigger asChild>
 			<button 
@@ -321,5 +359,6 @@ export default function Onboarding({userDetails,open, setOpen, setStep, updateOn
 			</Dialog.Content>
 		</Dialog.Portal>
 	</Dialog.Root>
+	</>
   )
 }
