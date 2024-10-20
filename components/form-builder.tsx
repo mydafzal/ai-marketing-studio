@@ -261,13 +261,13 @@ export default function FormBuilder({
         ) : (
           <>
             <div className="mb-6">
-              <Label htmlFor="engagement-title">Engagement Title:</Label>
+              <Label htmlFor="engagement-title">Form Title:</Label>
               <Input
                 id="engagement-title"
                 value={engagementTitle}
                 disabled={isReadOnly}
                 onChange={(e) => setEngagementTitle(e.target.value)}
-                placeholder="Enter engagement title here..."
+                placeholder="Choose a name for your form..."
               />
             </div>
             <div className="mb-6">
