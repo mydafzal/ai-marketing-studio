@@ -277,7 +277,7 @@ export default function FormBuilder({
                 value={engagementText}
                 disabled={isReadOnly}
                 onChange={(e) => setEngagementText(e.target.value)}
-                placeholder="Enter engaging text here..."
+                placeholder="Type an engaging message to motivate people to fill in the form..."
               />
             </div>
             <div className="mb-6">
