@@ -267,7 +267,7 @@ export default function FormBuilder({
                 value={engagementTitle}
                 disabled={isReadOnly}
                 onChange={(e) => setEngagementTitle(e.target.value)}
-                placeholder="Choose a name for your form..."
+                placeholder="Type a captivating title for your form to grab attention..."
               />
             </div>
             <div className="mb-6">
