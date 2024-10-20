@@ -65,6 +65,7 @@ export default function FormBuilder({
   const [optionList, setOptionList] = useState<string[]>([]);
   const [editingFieldId, setEditingFieldId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [engagementTitle, setEngagementTitle] = useState(formData?.context_card?.title || '');
   const [engagementText, setEngagementText] = useState(formData?.context_card?.content || '');
   const [thankyouText, setThankyouText] = useState(formData?.thank_you_page?.body || '');
   const [privacyLink, setPrivacyLink] = useState(formData?.privacy_policy?.url || '');
@@ -173,7 +174,7 @@ export default function FormBuilder({
         link_text: "Privacy Policy"
       },
       context_card: {
-        title: "Engagement Card",
+        title: engagementTitle,
         style: "PARAGRAPH_STYLE",
         content: engagementText
       },
@@ -260,13 +261,23 @@ export default function FormBuilder({
         ) : (
           <>
             <div className="mb-6">
+              <Label htmlFor="engagement-title">Form Title:</Label>
+              <Input
+                id="engagement-title"
+                value={engagementTitle}
+                disabled={isReadOnly}
+                onChange={(e) => setEngagementTitle(e.target.value)}
+                placeholder="Type a relevant and captivating title for your form to grab attention..."
+              />
+            </div>
+            <div className="mb-6">
               <Label htmlFor="engagement-text">Engaging Text:</Label>
               <Textarea
                 id="engagement-text"
                 value={engagementText}
                 disabled={isReadOnly}
                 onChange={(e) => setEngagementText(e.target.value)}
-                placeholder="Enter engaging text here..."
+                placeholder="This is the main text people will see. Capture their attention by explaining the benefits they’ll receive and include a strong call to action to encourage them to fill in the form."
               />
             </div>
             <div className="mb-6">
