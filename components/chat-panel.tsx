@@ -14,6 +14,7 @@ import type { AI } from '@/lib/chat/actions'
 import { UserMessage } from './stocks/message'
 import { FloatingButton } from './floating-button'
 import { TaskPalette } from './task-palette'
+import {isFeatureToggleEnabled} from "@/lib/helpers/feature-toggle/feature-toggle-manager";
 
 
 const exampleMessages = [
@@ -33,9 +34,9 @@ const exampleMessages = [
     message: `I would like to change my campaign budget`
   },
   {
-    heading: 'What are some Tipps you can give me for my campaigns?',
+    heading: 'What are some Tips you can give me for my campaigns?',
     subheading: `Learn more about how to improve your campaigns`,
-    message: `I would like to learn about some tipps on how I can improve my campaigns`
+    message: `I would like to learn about some tips on how I can improve my campaigns`
   }
 ]
 
@@ -61,7 +62,7 @@ export function ChatPanel({
   const { submitUserMessage } = useActions()
   const [shareDialogOpen, setShareDialogOpen] = React.useState(false)
   const [isTaskPaletteOpen, setIsTaskPaletteOpen] = React.useState(false)
-
+  let isUserGuideButtonEnabled = isFeatureToggleEnabled("userGuideFloatingButton")
   const sendMessage = React.useCallback(async (message: string, userContent?: (TextPart | ImagePart)[]) => {
     // Optimistically add user message UI
     setMessages(currentMessages => [
@@ -144,12 +145,12 @@ export function ChatPanel({
             <FooterText className="hidden sm:block" />
           </div>
         </div>
-        <FloatingButton onClick={() => setIsTaskPaletteOpen(true)} />
-        <TaskPalette
-          isOpen={isTaskPaletteOpen}
-          onClose={() => setIsTaskPaletteOpen(false)}
-          onShowMe={handleShowMe}
-        />
+        {isUserGuideButtonEnabled && <FloatingButton onClick={() => setIsTaskPaletteOpen(true)} />}
+        {isUserGuideButtonEnabled && <TaskPalette
+            isOpen={isTaskPaletteOpen}
+            onClose={() => setIsTaskPaletteOpen(false)}
+            onShowMe={handleShowMe}
+        />}
       </div>
     </>
   )
