@@ -1,34 +1,35 @@
 import {NextResponse} from 'next/server'
-import { getFbMarketingApiKey } from '@/app/actions';
+
+const enableBackendCall = true;
 
 export async function POST(request: Request) {
+    if (!enableBackendCall){
+        return NextResponse.json({
+            response:""
+        })
+    }
     try {
-        const {adset_id, adset} = await request.json()
+        const {website_link} = await request.json()
 
-        if (!adset_id) {
-            return NextResponse.json({error: 'Adset ID is required'}, {status: 400})
+        if (!website_link) {
+            return NextResponse.json({error: 'website_link is required'}, {status: 400})
         }
 
         const fastyEndpoint = process.env.FASTY_API_URL
-        const apiUrl = `${fastyEndpoint}/facebook/exec/direct/ads/update-adset`
+        const apiUrl = `${fastyEndpoint}/misc/grab-company-info-from-website`
 
-        const token_resp = await getFbMarketingApiKey()
-        let token=""
-        if(token_resp.success && token_resp.token){
-            token=token_resp.token
-        }
+        console.log("\n\n\n\---------------\n\n\n")
+
         
         const response = await fetch(apiUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${process.env.FASTY_API_TOKEN}`,
-                'fb-api-key': token
-
+                'x-api-key': `${process.env.OPENAI_API_KEY}`
             },
             body: JSON.stringify({
-                adset_id,
-                adset
+                website_link,
             })
         })
 

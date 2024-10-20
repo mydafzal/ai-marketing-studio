@@ -1,6 +1,5 @@
 import * as React from 'react';
 import Link from 'next/link';
-
 import { cn } from '@/lib/utils';
 import { auth } from '@/auth';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -15,9 +14,28 @@ import { SidebarMobile } from './sidebar-mobile';
 import { SidebarToggle } from './sidebar-toggle';
 import { ChatHistory } from './chat-history';
 import { Session } from '@/lib/types';
+import {getUserDetail,updateFbBusinessAcc, updateFbAccountId,disconnectFacebook, updateOnboardingDetails} from '@/app/actions';
+import {getFacebookBusinessAccounts, getFacebookAdAccounts} from "@/app/facebook-actions";
+
+import {type User} from '@/lib/types'
+import FacebookConnect from '@/components/facebook-connect';
+import FacebookAccountSettings from '@/components/facebook-account-settings'
+import {isFeatureToggleEnabled} from "@/lib/helpers/feature-toggle/feature-toggle-manager";
 
 async function UserOrLogin() {
   const session = (await auth()) as Session;
+
+  let userDetails;
+
+  const response = await getUserDetail();
+  if (response.success){
+    userDetails = response.user;
+  }
+  else{
+    console.log(response.error)
+  }
+
+  
   return (
     <>
       {session?.user ? (
@@ -43,10 +61,25 @@ async function UserOrLogin() {
           />
         </Link>
       )}
-      <div className="flex items-center">
+      <div className="flex items-center w-full">
         <IconSeparator className="size-6 text-muted-foreground/50" />
         {session?.user ? (
+          <div className='flex justify-between w-full'>
           <UserMenu user={session.user} />
+          {
+          isFeatureToggleEnabled('onboardingFeatures') &&
+            <FacebookAccountSettings 
+              userDetails={userDetails}
+              getFacebookBusinessAccounts={getFacebookBusinessAccounts}
+              getFacebookAdAccounts={getFacebookAdAccounts}
+              updateFbBusinessAcc={updateFbBusinessAcc}
+              updateFbAccountId = {updateFbAccountId}
+              disconnectFacebook = {disconnectFacebook}
+              updateOnboardingDetails={updateOnboardingDetails}
+            />
+          }
+          {/* {userDetails?.fbMarketingApiKey&&<FacebookConnect/>:<FacebookConnect/>} */}
+          </div>
         ) : (
           <Button variant="link" asChild className="-ml-2">
             <Link href="/login">Login</Link>
@@ -60,7 +93,7 @@ async function UserOrLogin() {
 export function Header() {
   return (
     <header className="sticky top-0 z-50 flex items-center justify-between w-full h-16 px-4 border-b shrink-0 bg-gradient-to-b from-background/10 via-background/50 to-background/80 backdrop-blur-xl">
-      <div className="flex items-center">
+      <div className="flex items-center w-full">
         <React.Suspense fallback={<div className="flex-1 overflow-auto" />}>
           <UserOrLogin />
         </React.Suspense>

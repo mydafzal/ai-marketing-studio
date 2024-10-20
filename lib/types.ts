@@ -39,7 +39,18 @@ export interface User extends Record<string, any> {
   email: string
   password: string
   salt: string
+  defaultExtraDetails?:string
   fbAccountId?: string
+  fbMarketingApiKey?: string
+  fbBusinessAccId?:string
+  first_name?:string
+  last_name?:string
+  company_name?:string
+  company_description?:string
+  website_link?:string
+  website_data?:string
+  preferred_language?:string
+  goal?:string
 }
 
 export interface Campaign extends Record<string, any> {
