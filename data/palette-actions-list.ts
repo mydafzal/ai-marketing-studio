@@ -33,7 +33,7 @@ export const paletteActions: PaletteAction[] = [
   },
   {
     action: 'Assign campaign budget',
-    explanation: 'Allocate a specific budget for your ad campaign, either daily or total.',
+    explanation: 'Allocate a specific budget for your ad campaign.',
     exampleMessage: 'Set the budget for my campaign',
   },
   {

@@ -142,7 +142,7 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
             />
         );
 
-        const newMessage = 'Wanna go on?';
+        const newMessage = 'Would you like to continue?';
         // optimistic update
         newMessageStream.done(
             <div>
