@@ -267,7 +267,7 @@ export default function FormBuilder({
                 value={engagementTitle}
                 disabled={isReadOnly}
                 onChange={(e) => setEngagementTitle(e.target.value)}
-                placeholder="Type a captivating title for your form to grab attention..."
+                placeholder="Type a relevant and captivating title for your form to grab attention..."
               />
             </div>
             <div className="mb-6">
@@ -277,7 +277,7 @@ export default function FormBuilder({
                 value={engagementText}
                 disabled={isReadOnly}
                 onChange={(e) => setEngagementText(e.target.value)}
-                placeholder="Type an engaging message to motivate people to fill in the form..."
+                placeholder="This is the main text people will see. Capture their attention by explaining the benefits they’ll receive and include a strong call to action to encourage them to fill in the form."
               />
             </div>
             <div className="mb-6">
