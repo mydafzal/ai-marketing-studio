@@ -45,6 +45,7 @@ import {sendAdminNotification} from '@/lib/api/fasty-bot/send-admin-notification
 import {ConnectCampaign} from '@/components/connect-campaign'
 import {PlacementTargeting} from '@/components/placement-targeting';
 import FormBuilder from '@/components/form-builder';
+import {sendSupervisedTaskMail}  from '@/lib/api/fasty-bot/send-supervised-task-mail';
 
 interface ToolResult {
     toolName: string;
@@ -142,7 +143,7 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
             />
         );
 
-        const newMessage = 'Would you like to continue?';
+        const newMessage = 'Wanna go on?';
         // optimistic update
         newMessageStream.done(
             <div>
@@ -2888,6 +2889,77 @@ Engaged Shoppers]
                     return (
                         <BotCard>
                             <PlacementTargeting toolCallId={toolCallId}/>
+                        </BotCard>
+                    )
+                }
+            },
+            showSupervisedTaskUI: {
+                description: 'Show this UI if user want to perform anything related to AB testing',
+                parameters: z.object({
+                    task_name:z.string().describe("Name of the task which user asked to perform")
+                }),
+                generate: async function* ({task_name}) {
+                    console.log('tool call showSupervisedTaskUI')
+                    const timestamp: string = new Date().toISOString();
+                    const toolCallId = nanoid();
+                    const allMessages = aiState.get().messages;
+        
+                    // Filter user messages only (assuming 'role' field exists)
+                    const userMessages = allMessages.filter(msg => msg.role === 'user');
+                    
+                    // Get the last 6 user messages (if available)
+                    const lastSixUserMessages = userMessages.slice(-6);
+                    
+                    yield(
+                        <BotCard>
+                            {/* <PlacementTargeting toolCallId={toolCallId}/> */}
+                            <p className='mb-2'>Please wait we are processing your query.</p>
+                        </BotCard>
+                    )
+                    const messages = lastSixUserMessages.map(msg => (msg.content)) as string[];
+                    await sendSupervisedTaskMail(
+                        task_name,
+                        messages
+                    )
+                    
+                    aiState.done({
+                        ...aiState.get(),
+                        messages: [
+                            ...aiState.get().messages,
+                            {
+                                id: nanoid(),
+                                role: 'assistant',
+                                content: [
+                                    {
+                                        type: 'tool-call',
+                                        toolName: 'showPlacementTargetingUI',
+                                        toolCallId,
+                                        args: {}
+                                    }
+                                ],
+                                timestamp
+                            },
+                            {
+                                id: toolCallId,
+                                role: 'tool',
+                                content: [
+                                    {
+                                        type: 'tool-result',
+                                        toolName: 'showPlacementTargetingUI',
+                                        toolCallId,
+                                        result: {}
+                                    }
+                                ],
+                                timestamp
+                            }
+                        ]
+                    })
+                    return (
+                        <BotCard>
+                            {/* <PlacementTargeting toolCallId={toolCallId}/> */}
+                            <p className='mb-2'>We are taking care of this taks. This may take upto 24 hours. Team Reeply will reach you on your registered email.</p>
+                            <p className='mb-2'>If you want to get this task completed urgently. Please click on below link to schedule a meeting with us.</p>
+                            <a href="#" className='text-blue-500'>Schedule meeting</a>
                         </BotCard>
                     )
                 }
