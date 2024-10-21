@@ -45,6 +45,8 @@ import {sendAdminNotification} from '@/lib/api/fasty-bot/send-admin-notification
 import {ConnectCampaign} from '@/components/connect-campaign'
 import {PlacementTargeting} from '@/components/placement-targeting';
 import FormBuilder from '@/components/form-builder';
+import {GeographicalLocation} from '@/components/geographical-location';
+
 
 interface ToolResult {
     toolName: string;
@@ -591,10 +593,11 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
     Response: Call \`show_ad_budget_ui\` to show the budget UI when the user tells you how much they want to spend on the campaign. The guide for the user about \`show_ad_budget_ui\` is 'Confirm the ad budget for your campaign by clicking "Set Ad Budget". You can change this at any given point to adjust your campaign.'
     
     Next action to always do after setting the budget when creating a campaign: "In what geographical area do you want to advertise?"
+
+    Reasoning: Set the geographical area, ensuring the user understands the impact of geographical area.
     
-    Reasoning: Determine the ad group targeting size.
+    Response: Call \`show_geographical_location_ui\` to show the geographical area of the campaign.'
     
-    Response: Acknowledge the area.
     
     Step 3: Targeting:
     
@@ -2891,6 +2894,60 @@ Engaged Shoppers]
                         </BotCard>
                     )
                 }
+            },
+            showGeographicalLocationUI: {
+                description: 'Show a UI of result geographical',
+                parameters: z.object({
+                    countries: z.array(z.object({
+                        name: z.string().describe('The name of the country to display'),
+                        code: z.string().describe('The country code (alpha-2 codes) of the country to display'),
+                    })).describe('List of countries user provided')
+                }),
+                generate: async function* ({countries}) {
+                    const timestamp: string = new Date().toISOString();
+                    const toolCallId = nanoid();
+                    aiState.done({
+                        ...aiState.get(),
+                        messages: [
+                            ...aiState.get().messages,
+                            {
+                                id: nanoid(),
+                                role: 'assistant',
+                                content: [
+                                    {
+                                        type: 'tool-call',
+                                        toolName: 'showGeographicalLocationUI',
+                                        toolCallId,
+                                        args: {
+                                            countries
+                                        }
+                                    }
+                                ],
+                                timestamp
+                            },
+                            {
+                                id: toolCallId,
+                                role: 'tool',
+                                content: [
+                                    {
+                                        type: 'tool-result',
+                                        toolName: 'showGeographicalLocationUI',
+                                        toolCallId,
+                                        result: {
+                                            countries
+                                        }
+                                    }
+                                ],
+                                timestamp
+                            }
+                        ]
+                    })
+                    return (
+                        <BotCard>
+                            <GeographicalLocation toolCallId={toolCallId} countries={countries} />
+                        </BotCard>
+                    )
+                }
             }
         }
     });
@@ -3098,6 +3155,12 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                         <FormBuilder {...tool.result} toolCallId={tool.toolCallId} isReadOnly />
                                     </BotCard>
                                 )    
+                            case 'showGeographicalLocationUI':
+                                return (
+                                    <BotCard key={tool.toolCallId}>
+                                        <GeographicalLocation toolCallId={tool.toolCallId} countries={tool.result.countries} isReadOnly/>
+                                    </BotCard>
+                                ) 
                             default:
                                 return null;
                         }
