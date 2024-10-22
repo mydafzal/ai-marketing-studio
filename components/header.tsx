@@ -35,7 +35,6 @@ async function UserOrLogin() {
     console.log(response.error)
   }
 
-  
   return (
     <>
       {session?.user ? (
@@ -65,20 +64,23 @@ async function UserOrLogin() {
         <IconSeparator className="size-6 text-muted-foreground/50" />
         {session?.user ? (
           <div className='flex justify-between w-full'>
-          <UserMenu user={session.user} />
-          {
-          isFeatureToggleEnabled('onboardingFeatures') &&
-            <FacebookAccountSettings 
-              userDetails={userDetails}
-              getFacebookBusinessAccounts={getFacebookBusinessAccounts}
-              getFacebookAdAccounts={getFacebookAdAccounts}
-              updateFbBusinessAcc={updateFbBusinessAcc}
-              updateFbAccountId = {updateFbAccountId}
-              disconnectFacebook = {disconnectFacebook}
-              updateOnboardingDetails={updateOnboardingDetails}
-            />
-          }
-          {/* {userDetails?.fbMarketingApiKey&&<FacebookConnect/>:<FacebookConnect/>} */}
+            <UserMenu user={session.user} />
+            <div className="flex items-center">
+              <Link href="/ai-content" className={cn(buttonVariants({ variant: 'ghost' }), "ml-8")}>
+                AI Content
+              </Link>
+              {isFeatureToggleEnabled('onboardingFeatures') &&
+                <FacebookAccountSettings 
+                  userDetails={userDetails}
+                  getFacebookBusinessAccounts={getFacebookBusinessAccounts}
+                  getFacebookAdAccounts={getFacebookAdAccounts}
+                  updateFbBusinessAcc={updateFbBusinessAcc}
+                  updateFbAccountId={updateFbAccountId}
+                  disconnectFacebook={disconnectFacebook}
+                  updateOnboardingDetails={updateOnboardingDetails}
+                />
+              }
+            </div>
           </div>
         ) : (
           <Button variant="link" asChild className="-ml-2">
