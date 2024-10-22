@@ -66,6 +66,9 @@ async function UserOrLogin() {
           <div className='flex justify-between w-full'>
             <UserMenu user={session.user} />
             <div className="flex items-center">
+              <Link href="/" className={cn(buttonVariants({ variant: 'ghost' }), "ml-8")}>
+                AI Marketer
+              </Link>
               <Link href="/ai-content" className={cn(buttonVariants({ variant: 'ghost' }), "ml-8")}>
                 AI Content
               </Link>
@@ -83,20 +86,21 @@ async function UserOrLogin() {
             </div>
           </div>
         ) : (
-          <Button variant="link" asChild className="-ml-2">
-            <Link href="/login">Login</Link>
-          </Button>
+          <Link href="/login" className={cn(buttonVariants({ variant: 'link' }), "-ml-2")}>
+            Login
+          </Link>
         )}
       </div>
     </>
   );
 }
 
-export function Header() {
+export async function Header() {
   return (
     <header className="sticky top-0 z-50 flex items-center justify-between w-full h-16 px-4 border-b shrink-0 bg-gradient-to-b from-background/10 via-background/50 to-background/80 backdrop-blur-xl">
       <div className="flex items-center w-full">
         <React.Suspense fallback={<div className="flex-1 overflow-auto" />}>
+          {/* @ts-expect-error Async Server Component */}
           <UserOrLogin />
         </React.Suspense>
       </div>

@@ -10,10 +10,14 @@ import { useToast } from "@/components/ui/use-toast"
 import Image from "next/image"
 import { Twitter, Linkedin, Instagram, Copy, Check } from "lucide-react"
 import { generateContent } from "@/app/actions/generate"
+import { generateImages } from "@/app/actions/generate-image"
 
 export default function AiContentPage() {
-  const [prompt, setPrompt] = React.useState("")
+  const [textPrompt, setTextPrompt] = React.useState("")
+  const [imagePrompt, setImagePrompt] = React.useState("")
   const [isGenerating, setIsGenerating] = React.useState(false)
+  const [isGeneratingImages, setIsGeneratingImages] = React.useState(false)
+  const [generatedImages, setGeneratedImages] = React.useState<string[]>([])
   const [copiedStates, setCopiedStates] = React.useState({
     twitter: false,
     linkedin: false,
@@ -35,14 +39,13 @@ export default function AiContentPage() {
       description: `${platform.charAt(0).toUpperCase() + platform.slice(1)} content copied to clipboard`,
     })
 
-    // Reset the copied state after 2 seconds
     setTimeout(() => {
       setCopiedStates(prev => ({ ...prev, [platform]: false }))
     }, 2000)
   }
 
   const handleGenerate = async () => {
-    if (!prompt.trim()) {
+    if (!textPrompt.trim()) {
       toast({
         title: "Error",
         description: "Please enter a prompt first",
@@ -53,7 +56,7 @@ export default function AiContentPage() {
 
     setIsGenerating(true)
     try {
-      const generatedContent = await generateContent(prompt)
+      const generatedContent = await generateContent(textPrompt)
       setContent(generatedContent)
       toast({
         title: "Success",
@@ -71,6 +74,44 @@ export default function AiContentPage() {
     }
   }
 
+  const handleImageGenerate = async () => {
+    if (!imagePrompt.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a prompt first",
+        variant: "destructive"
+      })
+      return
+    }
+  
+    setIsGeneratingImages(true)
+    try {
+      const result = await generateImages(imagePrompt)
+      console.log('Generation result:', JSON.stringify(result));
+      
+      if (result.success && result.images && result.images.length > 0) {
+        // Ensure we're working with an array of strings
+        const validUrls = result.images.filter(url => typeof url === 'string');
+        setGeneratedImages(validUrls);
+        
+        toast({
+          title: "Success",
+          description: `Generated ${validUrls.length} image(s) successfully`,
+        })
+      } else {
+        throw new Error(result.error || 'Failed to generate images')
+      }
+    } catch (error) {
+      console.error('Error in handleImageGenerate:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to generate images. Please try again.",
+        variant: "destructive"
+      })
+    } finally {
+      setIsGeneratingImages(false)
+    }
+  }
   return (
     <div className="container mx-auto p-6">
       <div className="flex flex-col space-y-6">
@@ -114,11 +155,61 @@ export default function AiContentPage() {
                   Generate custom images and visual assets for your marketing campaigns
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="h-96 rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-800 flex items-center justify-center">
-                  <span className="text-muted-foreground">
-                    Image Generation Interface Coming Soon
-                  </span>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Left side - Input */}
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label htmlFor="imagePrompt" className="text-sm font-medium">
+                        Enter your image prompt
+                      </label>
+                      <Textarea
+                        id="imagePrompt"
+                        value={imagePrompt}
+                        onChange={(e) => setImagePrompt(e.target.value)}
+                        placeholder="Describe the images you want to generate..."
+                        className="min-h-[100px]"
+                      />
+                    </div>
+                    <Button 
+                      className="w-full" 
+                      onClick={handleImageGenerate}
+                      disabled={isGeneratingImages}
+                    >
+                      {isGeneratingImages ? "Generating..." : "Generate Images"}
+                    </Button>
+                  </div>
+
+                  {/* Right side - Image Previews */}
+                  <div className="grid grid-cols-2 gap-4">
+                    {generatedImages.length > 0 ? (
+                      generatedImages.map((imageUrl, index) => (
+                        <div 
+                          key={index}
+                          className="aspect-square relative rounded-lg overflow-hidden border border-gray-200 dark:border-gray-800"
+                        >
+                          <Image
+                            src={imageUrl}
+                            alt={`Generated image ${index + 1}`}
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
+                      ))
+                    ) : (
+                      // Placeholder grid
+                      Array.from({ length: 4 }).map((_, index) => (
+                        <div 
+                          key={index}
+                          className="aspect-square rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-800 flex items-center justify-center"
+                        >
+                          <span className="text-muted-foreground text-sm">
+                            Image {index + 1}
+                          </span>
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -137,13 +228,13 @@ export default function AiContentPage() {
                   {/* Left side - Input */}
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <label htmlFor="prompt" className="text-sm font-medium">
+                      <label htmlFor="textPrompt" className="text-sm font-medium">
                         Enter your content prompt
                       </label>
                       <Textarea
-                        id="prompt"
-                        value={prompt}
-                        onChange={(e) => setPrompt(e.target.value)}
+                        id="textPrompt"
+                        value={textPrompt}
+                        onChange={(e) => setTextPrompt(e.target.value)}
                         placeholder="Describe what kind of content you want to generate..."
                         className="min-h-[100px]"
                       />
