@@ -46,6 +46,7 @@ import {ConnectCampaign} from '@/components/connect-campaign'
 import {PlacementTargeting} from '@/components/placement-targeting';
 import FormBuilder from '@/components/form-builder';
 import {sendSupervisedTaskMail}  from '@/lib/api/fasty-bot/send-supervised-task-mail';
+import SupervisedTaskMessage from '@/components/supervised-task-message'
 
 interface ToolResult {
     toolName: string;
@@ -2932,7 +2933,7 @@ Engaged Shoppers]
                                 content: [
                                     {
                                         type: 'tool-call',
-                                        toolName: 'showPlacementTargetingUI',
+                                        toolName: 'showSupervisedTaskUI',
                                         toolCallId,
                                         args: {}
                                     }
@@ -2945,7 +2946,7 @@ Engaged Shoppers]
                                 content: [
                                     {
                                         type: 'tool-result',
-                                        toolName: 'showPlacementTargetingUI',
+                                        toolName: 'showSupervisedTaskUI',
                                         toolCallId,
                                         result: {}
                                     }
@@ -2957,9 +2958,7 @@ Engaged Shoppers]
                     return (
                         <BotCard>
                             {/* <PlacementTargeting toolCallId={toolCallId}/> */}
-                            <p className='mb-2'>We are taking care of this taks. This may take upto 24 hours. Team Reeply will reach you on your registered email.</p>
-                            <p className='mb-2'>If you want to get this task completed urgently. Please click on below link to schedule a meeting with us.</p>
-                            <a href="#" className='text-blue-500'>Schedule meeting</a>
+                            <SupervisedTaskMessage/>
                         </BotCard>
                     )
                 }
@@ -3055,6 +3054,7 @@ export const getUIStateFromAIState = (aiState: Chat) => {
             display:
                 message.role === 'tool' && isToolResultArray(message.content) ? (
                     message.content.map((tool: ToolResult) => {
+                        console.log(tool,'-------------------')
                         switch (tool.toolName) {
                             // case 'listAds':
                             //     return (
@@ -3169,7 +3169,15 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                     <BotCard key={tool.toolCallId}>
                                         <FormBuilder {...tool.result} toolCallId={tool.toolCallId} isReadOnly />
                                     </BotCard>
-                                )    
+                                )
+                            case 'showSupervisedTaskUI':
+                                return (
+                                    <>
+                                        <BotCard>
+                                            <SupervisedTaskMessage/>
+                                        </BotCard>
+                                    </>
+                                );
                             default:
                                 return null;
                         }
