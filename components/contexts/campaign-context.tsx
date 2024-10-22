@@ -19,6 +19,7 @@ interface ICampaignContext {
     adsets: Adset[];
     adset?: Adset;
     setAdset: (adset: Adset) => void;
+    fetchAdsetIds: () => Promise<void>;
 }
 
 export const CampaignContext = createContext<ICampaignContext>({
@@ -30,6 +31,7 @@ export const CampaignContext = createContext<ICampaignContext>({
     fetchSummary: async () => {},
     adsets: [],
     setAdset: () => {},
+    fetchAdsetIds: async () => {},
 });
 
 const oneHour = 60 * 60 * 1000
@@ -65,16 +67,14 @@ export const CampaignContextProvider = ({ children }: { children: React.ReactNod
           console.error('Error fetching campaign data:', error)
         }
     }, [])
-
-    useEffect(() => {
-        const fetchAdsetIds = async (id: string) => {
+    const fetchAdsetIds = useCallback(async () => {
+        if (id) {
             const result = await getAdsets(id)
             setAdsets(result)
         }
-    
-        if (id) {
-            fetchAdsetIds(id)
-        }
+    }, [id])
+    useEffect(() => {
+        void fetchAdsetIds()
     }, [id])
 
     useEffect(() => {
@@ -142,8 +142,9 @@ export const CampaignContextProvider = ({ children }: { children: React.ReactNod
         fetchSummary,
         adsets,
         adset,
-        setAdset
-    }), [id, setId, campaigns, summary, adsets, adset, setAdset])
+        setAdset,
+        fetchAdsetIds,
+    }), [id, setId, campaigns, summary, adsets, adset, setAdset, fetchAdsetIds])
 
     return (
         <CampaignContext.Provider value={value}>

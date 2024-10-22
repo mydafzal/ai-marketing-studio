@@ -1,7 +1,6 @@
 'use client'
 
 import { useActions, useAIState, useUIState } from 'ai/rsc'
-import { format } from 'date-fns'
 import { useContext, useEffect, useRef, useState } from 'react'
 import { spinner, SystemMessage } from '@/components/stocks'
 
@@ -13,92 +12,89 @@ import {
   SelectItem
 } from '@/components/ui/select'
 
-import { updateChatFbCampaignId } from '@/app/actions'
-import { ConnectCampaignResult } from '@/components/connect-campaign-result'
+import { fetchChatCampaignBudget, getUserDetail, updateChatFbAdsetId } from '@/app/actions'
+import { ConnectAdsetResult } from '@/components/connect-adset-result'
 import { CampaignContext } from '@/components/contexts/campaign-context'
 import { IconSpinner } from '@/components/ui/icons'
-import { FbCampaign, Message, Adset } from '@/lib/types'
+import { Adset, Message } from '@/lib/types'
 import { type AI } from '@/lib/chat/actions'
+import { createAdset } from '@/lib/api/fasty-bot/create-adset'
+import { generateAdsetTemplate } from '@/lib/data'
 
-interface ConnectCampaignFormProps {
-  handleSelectCampaign: (campaign: FbCampaign) => Promise<void>
+interface ConnectAdsetFormProps {
+  handleSelectAdset: (adset: Adset) => Promise<void>
 }
 
-export function ConnectCampaignForm({
-  handleSelectCampaign
-}: ConnectCampaignFormProps) {
-  const [selectedCampaign, setSelectedCampaign] = useState<FbCampaign>()
+export function ConnectAdsetForm({
+  handleSelectAdset,
+}: ConnectAdsetFormProps) {
+  const [selectedAdset, setSelectedAdset] = useState<Adset>()
   const [isSubmitting, setSubmitting] = useState<boolean>(false)
   const [isCreating, setCreating] = useState<boolean>(false)
-  const { adsets } = useContext(CampaignContext)
+  const campaignContext = useContext(CampaignContext)
+  console.log('campaignContext', campaignContext)
+  const { adsets } = campaignContext
+  const [aiState, setAIState] = useAIState()
 
-  const handleCreateCampaign = async () => {
-    const createData = {
-      name: 'My campaign',
-      status: 'PAUSED'
+  const handleCreateAdset = async () => {
+    const budget = await fetchChatCampaignBudget(aiState.chatId)
+    let createData = {
+        ...generateAdsetTemplate(),
+        campaign_id: campaignContext.id
+    } as any
+    if (budget.error) {
+        createData = { ...createData, daily_budget: 100 }
     }
-    const url = '/api/fasty-bot/proxy-create-campaign'
-    const responseStream = await fetch(url, {
-      method: 'POST',
-      body: JSON.stringify({
-        objective: 'OUTCOME_LEADS',
-        special_ad_categories: ['NONE'],
-        ...createData
-      })
-    })
-    const response = await responseStream.json()
-    if (response.success && response.data.id) {
-      await handleSelectCampaign({
-        ...response.data,
+    const adset = await createAdset(campaignContext.id as string, createData)
+    if (adset && adset.id) {
+      await handleSelectAdset({
+        ...adset,
         ...createData,
         created_time: Date.toString()
       })
-     // await getCampaignList()
+      campaignContext.fetchAdsetIds()
     }
   }
 
   return (
     <>
       <div className="text-lg font-medium text-gray-900 dark:text-zinc-300 mb-2">
-        Let&apos;s connect this chat to a adset:
+        Let&apos;s connect this chat to an adset:
       </div>
       {adsets.length > 0 && (
         <Select
           onValueChange={value => {
-            // setSelectedCampaign(campaigns.find(e => e.id === value))
+            setSelectedAdset(adsets.find(e => e.id === value))
           }}
         >
-          <SelectTrigger className="SelectTrigger" aria-label="Food">
-            <SelectValue placeholder="Select a adset" />
+          <SelectTrigger className="SelectTrigger" aria-label="Adset">
+            <SelectValue placeholder="Select an adset" />
           </SelectTrigger>
           <SelectContent>
-            {adsets.map((adset: Adset) => {
-             
-              return (
-                <SelectItem key={adset.id} value={adset.id}>
-                  {adset.name} - {adset.status} ({adset.id})
-                </SelectItem>
-              )
-            })}
+            {adsets.map((adset: Adset) => (
+              <SelectItem key={adset.id} value={adset.id}>
+                {adset.id}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       )}
       {adsets.length === 0 && (
-        <div className="py-2 text-md inline-block align-middle  text-center text-gray-700 dark:text-white">
-          No adset are currently available. Please create a new campaign
+        <div className="py-2 text-md inline-block align-middle text-center text-gray-700 dark:text-white">
+          No adsets are currently available. Please create a new adset
         </div>
       )}
       <div className="flex mt-4 gap-4">
         {adsets.length > 0 && (
           <button
-            aria-disabled={!selectedCampaign || isSubmitting}
+            aria-disabled={!selectedAdset || isSubmitting}
             onClick={async () => {
-              if (selectedCampaign) {
+              if (selectedAdset) {
                 setSubmitting(true)
-                await handleSelectCampaign(selectedCampaign)
+                await handleSelectAdset(selectedAdset)
               }
             }}
-            className="flex justify-center items-center flex-1 px-3 mr-5 py-2 text-xs  font-medium text-center text-white bg-gray-700 rounded-lg hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
+            className="flex justify-center items-center flex-1 px-3 mr-5 py-2 text-xs font-medium text-center text-white bg-gray-700 rounded-lg hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
           >
             {isSubmitting && <IconSpinner />}
             {!isSubmitting && 'Connect existing adset'}
@@ -109,7 +105,7 @@ export function ConnectCampaignForm({
           aria-disabled={isCreating}
           onClick={async () => {
             setCreating(true)
-            await handleCreateCampaign()
+            await handleCreateAdset()
           }}
           className="flex justify-center items-center flex-1 px-3 py-2 text-xs align-middle font-medium text-center text-white bg-blue-700 rounded-lg hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-gray-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
         >
@@ -121,18 +117,18 @@ export function ConnectCampaignForm({
   )
 }
 
-interface ConnectCampaignProps {
+interface ConnectAdsetProps {
   connectingUiProps?: {
-    campaignName: string
+    adsetId: string
     success: boolean
   }
 }
 
-export function ConnectAdset({ connectingUiProps }: ConnectCampaignProps) {
+export function ConnectAdset({ connectingUiProps }: ConnectAdsetProps) {
   const [aiState, setAIState] = useAIState()
   const { submitUserMessage } = useActions()
   const [connectingUI, setConnectingUI] = useState<null | React.ReactNode>(
-    connectingUiProps ? <ConnectCampaignResult {...connectingUiProps} /> : null
+    connectingUiProps ? <ConnectAdsetResult {...connectingUiProps} /> : null
   )
   const [_, setMessages] = useUIState<typeof AI>()
   const { adsets } = useContext(CampaignContext)
@@ -143,7 +139,7 @@ export function ConnectAdset({ connectingUiProps }: ConnectCampaignProps) {
   useEffect(() => {
     async function refresh() {
       const responseMessage = await submitUserMessage(
-        'Okay, I connected campaign',
+        'Okay, I connected adset',
         [],
         true
       )
@@ -153,11 +149,10 @@ export function ConnectAdset({ connectingUiProps }: ConnectCampaignProps) {
       const { content, id, role } = aiMessages[0]
       if (
         role === 'system' &&
-        id === 'campaign-info-data' &&
-        content?.slice(0, 21) === 'Campaign is connected'
+        id === 'adset-info-data' &&
+        content?.slice(0, 18) === 'Adset is connected'
       ) {
         if (shouldSendSilentMessage.current) {
-          // this is a workaround, campaign info data is replaced if I do not use setTimeout
           setTimeout(refresh, 0)
           shouldSendSilentMessage.current = false
         }
@@ -165,25 +160,25 @@ export function ConnectAdset({ connectingUiProps }: ConnectCampaignProps) {
     }
   }, [aiMessages])
 
-  async function handleCampaignSelection(campaign: FbCampaign) {
+  async function handleAdsetSelection(adset: Adset) {
+    console.log('handleAdsetSelection', adset)
     setConnectingUI(
       <div className="inline-flex items-start gap-1 md:items-center">
         {spinner}
-        <p>Connecting to {campaign.name}...</p>
+        <p>Connecting to {adset.name}...</p>
       </div>
     )
     try {
-      const updateSuccess = await updateChatFbCampaignId(
+      const updateSuccess = await updateChatFbAdsetId(
         aiState.chatId,
-        campaign.id
+        adset.id
       )
       if (updateSuccess?.success) {
         shouldSendSilentMessage.current = true
-        // setCampaignId(campaign.id)
         setConnectingUI(
-          <ConnectCampaignResult
+          <ConnectAdsetResult
             success={!!updateSuccess?.success}
-            campaignName={campaign.name}
+            adsetId={adset.id}
           />
         )
         setAIState({
@@ -194,7 +189,7 @@ export function ConnectAdset({ connectingUiProps }: ConnectCampaignProps) {
                 const content = message.content[0]
                 if (
                   content.type === 'tool-result' &&
-                  content.toolName === 'showCampaignConnectionUI'
+                  content.toolName === 'showAdsetConnectionUI'
                 ) {
                   content.result = {
                     ...(content.result as Object),
@@ -202,7 +197,7 @@ export function ConnectAdset({ connectingUiProps }: ConnectCampaignProps) {
                       content.result as { connectingUiProps: object }
                     ).connectingUiProps ?? {
                       success: !!updateSuccess?.success,
-                      campaignName: campaign.name
+                      adsetId: adset.id
                     }
                   }
                 }
@@ -232,8 +227,10 @@ export function ConnectAdset({ connectingUiProps }: ConnectCampaignProps) {
       {connectingUI ? (
         connectingUI
       ) : (
-        <div className="p-6  border rounded-x">
-          <ConnectCampaignForm handleSelectCampaign={handleCampaignSelection} />
+        <div className="p-6 border rounded-x">
+          <ConnectAdsetForm 
+            handleSelectAdset={handleAdsetSelection} 
+          />
         </div>
       )}
     </>
