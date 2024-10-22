@@ -12,7 +12,7 @@ import {
   SelectItem
 } from '@/components/ui/select'
 
-import { fetchChatCampaignBudget, getUserDetail, updateChatFbAdsetId } from '@/app/actions'
+import { fetchChatCampaignBudget, updateChat } from '@/app/actions'
 import { ConnectAdsetResult } from '@/components/connect-adset-result'
 import { CampaignContext } from '@/components/contexts/campaign-context'
 import { IconSpinner } from '@/components/ui/icons'
@@ -131,8 +131,6 @@ export function ConnectAdset({ connectingUiProps }: ConnectAdsetProps) {
     connectingUiProps ? <ConnectAdsetResult {...connectingUiProps} /> : null
   )
   const [_, setMessages] = useUIState<typeof AI>()
-  const { adsets } = useContext(CampaignContext)
-
   const aiMessages = aiState.messages
   const shouldSendSilentMessage = useRef(false)
 
@@ -169,9 +167,9 @@ export function ConnectAdset({ connectingUiProps }: ConnectAdsetProps) {
       </div>
     )
     try {
-      const updateSuccess = await updateChatFbAdsetId(
+      const updateSuccess = await updateChat(
         aiState.chatId,
-        adset.id
+        { fbAdsetId: adset.id }
       )
       if (updateSuccess?.success) {
         shouldSendSilentMessage.current = true

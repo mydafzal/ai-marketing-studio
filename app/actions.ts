@@ -524,32 +524,6 @@ export async function updateChatFbCampaignId(chatSlug: string, fbCampaignId: str
     }
 }
 
-export async function updateChatFbAdsetId(chatSlug: string, fbAdsetId: string) {
-    const session = await auth()
-
-    if (!session || !session.user) {
-        return {
-            error: 'User not authenticated'
-        }
-    }
-
-    try {
-        const chatKey = `chat:${chatSlug}`
-        await kv.hset(chatKey, {fbAdsetId})
-        revalidatePath('/')
-
-        return {
-            success: true,
-            message: 'Facebook Adset ID updated successfully'
-        }
-    } catch (error) {
-        console.error(`Error updating fbAdsetId for chat ${chatSlug}:`, error)
-        return {
-            error: 'Something went wrong'
-        }
-    }
-}
-
 export async function fetchChatFbCampaignId(chatSlug: string) {
     const session = await auth()
 
