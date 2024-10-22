@@ -44,6 +44,8 @@ import {getChatIdFromUrl} from "@/lib/api/fasty-bot/helpers/chat-id-from-url-hel
 import {sendAdminNotification} from '@/lib/api/fasty-bot/send-admin-notification'
 import {ConnectCampaign} from '@/components/connect-campaign'
 import {PlacementTargeting} from '@/components/placement-targeting';
+import {ConnectAdset} from '@/components/connect-adset'
+
 import FormBuilder from '@/components/form-builder';
 
 interface ToolResult {
@@ -2888,6 +2890,52 @@ Engaged Shoppers]
                     return (
                         <BotCard>
                             <PlacementTargeting toolCallId={toolCallId}/>
+                        </BotCard>
+                    )
+                }
+            },
+            showAdsetConnectionUI: {
+                description: 'Show a UI to connect a adset to the chat.',
+                parameters: z.object({}),
+                generate: async function* ({}) {
+                    console.log('tool call showAdsetConnectionUI')
+                    const timestamp: string = new Date().toISOString();
+                    const toolCallId = nanoid();
+                    aiState.done({
+                        ...aiState.get(),
+                        messages: [
+                            ...aiState.get().messages,
+                            {
+                                id: nanoid(),
+                                role: 'assistant',
+                                content: [
+                                    {
+                                        type: 'tool-call',
+                                        toolName: 'showAdsetConnectionUI',
+                                        toolCallId,
+                                        args: {}
+                                    }
+                                ],
+                                timestamp
+                            },
+                            {
+                                id: toolCallId,
+                                role: 'tool',
+                                content: [
+                                    {
+                                        type: 'tool-result',
+                                        toolName: 'showAdsetConnectionUI',
+                                        toolCallId,
+                                        result: {}
+                                    }
+                                ],
+                                timestamp
+                            }
+                        ]
+                    })
+                    return (
+                        <BotCard>
+                            <ConnectAdset />
                         </BotCard>
                     )
                 }

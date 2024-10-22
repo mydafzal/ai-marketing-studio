@@ -1,7 +1,6 @@
-export interface AdsetResult {
-  id: string
-}
-export async function getAdsets(campaignId: string): Promise<AdsetResult[]> {
+import { Adset } from '@/lib/types'
+
+export async function getAdsets(campaignId: string): Promise<Adset[]> {
   const apiUrl = `/api/fasty-bot/proxy-get-adsets?campaign_id=${campaignId}`
   try {
     const response = await fetch(apiUrl)
@@ -10,7 +9,7 @@ export async function getAdsets(campaignId: string): Promise<AdsetResult[]> {
       console.error(`HTTP error! status: ${response.status}`)
     }
 
-    const data: AdsetResult[] = await response.json()
+    const data: Adset[] = await response.json()
     return data
   } catch (error) {
     console.error('Error fetching adsets:', error)

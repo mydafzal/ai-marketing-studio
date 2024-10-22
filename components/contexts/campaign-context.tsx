@@ -16,7 +16,7 @@ interface ICampaignContext {
     setId: (id: string) => void;
     summary: CampaignSummary | null;
     fetchSummary: (id: string) => Promise<void>;
-    adsetIds?: { id: string }[];
+    adsets: Adset[];
     adset?: Adset;
     setAdset: (adset: Adset) => void;
 }
@@ -28,7 +28,7 @@ export const CampaignContext = createContext<ICampaignContext>({
     setId: () => {},
     summary: null,
     fetchSummary: async () => {},
-    adsetIds: [],
+    adsets: [],
     setAdset: () => {},
 });
 
@@ -42,7 +42,7 @@ export const CampaignContextProvider = ({ children }: { children: React.ReactNod
     const [id, setId] = useState<string | null>(null)
     const [summary, setSummary] = useState<CampaignSummary | null>(null)
     const [campaigns, setCampaigns] = useState<FbCampaign[]>([])
-    const [adsetIds, setAdsetIds] = useState<{ id: string }[]>();
+    const [adsets, setAdsets] = useState<Adset[]>([]);
     const [adset, setAdset] = useState<Adset>();
     const getCampaignList = useCallback(async () => {
         const data = await getCampaigns()
@@ -69,7 +69,7 @@ export const CampaignContextProvider = ({ children }: { children: React.ReactNod
     useEffect(() => {
         const fetchAdsetIds = async (id: string) => {
             const result = await getAdsets(id)
-            setAdsetIds(result)
+            setAdsets(result)
         }
     
         if (id) {
@@ -78,10 +78,10 @@ export const CampaignContextProvider = ({ children }: { children: React.ReactNod
     }, [id])
 
     useEffect(() => {
-        if (id && adsetIds) {
-            const fetchOrCreateAdset = async (adsetIds: { id: string }[]) => {
-                if (adsetIds.length > 0) {
-                    const res = await getAdset(adsetIds[0].id)
+        if (id && adsets) {
+            const fetchOrCreateAdset = async (adsets: Adset[]) => {
+                if (adsets.length > 0) {
+                    const res = await getAdset(adsets[0].id)
                     if (res) {
                         setAdset(res)
                     }
@@ -100,9 +100,9 @@ export const CampaignContextProvider = ({ children }: { children: React.ReactNod
                     }
                 }
             }
-            void fetchOrCreateAdset(adsetIds)
+            void fetchOrCreateAdset(adsets)
         }
-    }, [id, adsetIds])
+    }, [id, adsets])
 
     useEffect(() => {
         if (id) {
@@ -140,10 +140,10 @@ export const CampaignContextProvider = ({ children }: { children: React.ReactNod
         setId,
         summary,
         fetchSummary,
-        adsetIds,
+        adsets,
         adset,
         setAdset
-    }), [id, setId, campaigns, summary, adsetIds, adset, setAdset])
+    }), [id, setId, campaigns, summary, adsets, adset, setAdset])
 
     return (
         <CampaignContext.Provider value={value}>
