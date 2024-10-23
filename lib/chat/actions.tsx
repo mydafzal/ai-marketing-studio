@@ -2935,7 +2935,7 @@ Engaged Shoppers]
                                         type: 'tool-call',
                                         toolName: 'showSupervisedTaskUI',
                                         toolCallId,
-                                        args: {}
+                                        args: {task_name}
                                     }
                                 ],
                                 timestamp
@@ -3174,7 +3174,7 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                 return (
                                     <>
                                         <BotCard>
-                                            <SupervisedTaskMessage/>
+                                            <SupervisedTaskMessage result={tool.result}/>
                                         </BotCard>
                                     </>
                                 );
