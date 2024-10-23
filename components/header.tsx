@@ -14,12 +14,11 @@ import { SidebarMobile } from './sidebar-mobile';
 import { SidebarToggle } from './sidebar-toggle';
 import { ChatHistory } from './chat-history';
 import { Session } from '@/lib/types';
-import {getUserDetail,updateFbBusinessAcc, updateFbAccountId,disconnectFacebook, updateOnboardingDetails} from '@/app/actions';
+import {getUserDetail, updateFbBusinessAcc, updateFbAccountId, disconnectFacebook, updateOnboardingDetails} from '@/app/actions';
 import {getFacebookBusinessAccounts, getFacebookAdAccounts} from "@/app/facebook-actions";
-
-import {type User} from '@/lib/types'
+import {type User} from '@/lib/types';
 import FacebookConnect from '@/components/facebook-connect';
-import FacebookAccountSettings from '@/components/facebook-account-settings'
+import FacebookAccountSettings from '@/components/facebook-account-settings';
 import {isFeatureToggleEnabled} from "@/lib/helpers/feature-toggle/feature-toggle-manager";
 
 async function UserOrLogin() {
@@ -28,11 +27,11 @@ async function UserOrLogin() {
   let userDetails;
 
   const response = await getUserDetail();
-  if (response.success){
+  if (response.success) {
     userDetails = response.user;
   }
-  else{
-    console.log(response.error)
+  else {
+    console.log(response.error);
   }
 
   return (
@@ -100,7 +99,7 @@ export async function Header() {
     <header className="sticky top-0 z-50 flex items-center justify-between w-full h-16 px-4 border-b shrink-0 bg-gradient-to-b from-background/10 via-background/50 to-background/80 backdrop-blur-xl">
       <div className="flex items-center w-full">
         <React.Suspense fallback={<div className="flex-1 overflow-auto" />}>
-          {/* @ts-expect-error Async Server Component */}
+          {/* @ts-ignore */}
           <UserOrLogin />
         </React.Suspense>
       </div>
