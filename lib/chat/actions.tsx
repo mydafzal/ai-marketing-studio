@@ -1983,6 +1983,8 @@ Engaged Shoppers]
     
     - If the user asks for "campaign result" or "campaign status" or "campaign budget" or "placement targeting" but the current chat is not connected to a campaign, always call \`show_campaign_connection_ui\` to show a UI to connect a campaign to the chat.
 
+    - If the user asks for "connecting adset" or "adset connection UI" but the current chat is not connected to a campaign, then ask the user to connect a campaign first, and ask him if it is ok to show campaign connection UI. If the user agrees, then call \`show_campaign_connection_ui\` to show a UI to connect a campaign to the chat.
+
     - If the user asks for "placement targeting" but the "campaign budget" is not set for the current campaign, tell the user that campaign budget should be set first. And ask if the user wants to see a UI to set campaign budget.
 
     - If a campaign was connected to the chat and the user requests setting or changing the ad budget, always first make sure that they tell you the amount. If the user's message does not yet contain the amount of budget, ask the user how much they want to change the ad budget. Once they tell you the amount, always call \`show_ad_budget_ui\` to show the budget UI.
@@ -2926,7 +2928,7 @@ Engaged Shoppers]
                                         type: 'tool-result',
                                         toolName: 'showAdsetConnectionUI',
                                         toolCallId,
-                                        result: {}
+                                        result: { toolCallId }
                                     }
                                 ],
                                 timestamp
@@ -2935,7 +2937,7 @@ Engaged Shoppers]
                     })
                     return (
                         <BotCard>
-                            <ConnectAdset />
+                            <ConnectAdset toolCallId={toolCallId} />
                         </BotCard>
                     )
                 }
@@ -3132,6 +3134,12 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                 return (
                                     <BotCard key={tool.toolCallId}>
                                         <ConnectCampaign {...tool.result} />
+                                    </BotCard>
+                                )
+                            case 'showAdsetConnectionUI':
+                                return (
+                                    <BotCard key={tool.toolCallId}>
+                                        <ConnectAdset {...tool.result} toolCallId={tool.toolCallId} />
                                     </BotCard>
                                 )
                             case 'showPlacementTargetingUI':

@@ -1,14 +1,11 @@
-import { useActions, useAIState } from 'ai/rsc'
+import { useActions } from 'ai/rsc'
 import { createContext, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CampaignSummary, getCampaignSummary } from '@/lib/api/fasty-bot/get-campaign-summary'
-import { createAdset } from '@/lib/api/fasty-bot/create-adset'
 import { getCampaigns } from '@/lib/api/fasty-bot/get-campaigns'
-import { getAdset } from '@/lib/api/fasty-bot/get-adset'
 import { getAdsets } from '@/lib/api/fasty-bot/get-adsets'
-import { Adset, FbCampaign, Message } from '@/lib/types'
-import { generateAdsetTemplate } from '@/lib/data'
-import { fetchChatCampaignBudget } from '@/app/actions'
+import { Adset, FbCampaign } from '@/lib/types'
 
+// todo: rename CampaignContext to FacebookContext
 interface ICampaignContext {
     id: string | null;
     campaigns: FbCampaign[];
@@ -20,7 +17,7 @@ interface ICampaignContext {
     adsets: Adset[];
     adset?: Adset;
     setAdset: (adset: Adset) => void;
-    fetchAdsetIds: () => Promise<void>;
+    fetchAdsets: () => Promise<void>;
 }
 
 export const CampaignContext = createContext<ICampaignContext>({
@@ -33,14 +30,13 @@ export const CampaignContext = createContext<ICampaignContext>({
     fetchSummary: async () => {},
     adsets: [],
     setAdset: () => {},
-    fetchAdsetIds: async () => {},
+    fetchAdsets: async () => {},
 });
 
 const oneHour = 60 * 60 * 1000
 const fiveMins = 5 * 60 * 1000
 
 export const CampaignContextProvider = ({ children }: { children: React.ReactNode }) => {
-    const [aiState] = useAIState()
     const {updateCampaignInfo: updateCampaignInfoBE} = useActions()
 
     const [id, setId] = useState<string | null>(null)
@@ -74,43 +70,20 @@ export const CampaignContextProvider = ({ children }: { children: React.ReactNod
           console.error('Error fetching campaign data:', error)
         }
     }, [])
-    const fetchAdsetIds = useCallback(async () => {
+    const fetchAdsets = useCallback(async () => {
         if (id) {
-            const result = await getAdsets(id)
-            setAdsets(result)
-        }
-    }, [id])
-    useEffect(() => {
-        void fetchAdsetIds()
-    }, [id])
-
-    useEffect(() => {
-        if (campaign && adsets) {
-            const fetchOrCreateAdset = async (adsets: Adset[]) => {
-                if (adsets.length > 0) {
-                    const res = await getAdset(adsets[0].id)
-                    if (res) {
-                        setAdset(res)
-                    }
-                } else {
-                    const budget = await fetchChatCampaignBudget(aiState.chatId)
-                    let adsetUpdate = {
-                        ...generateAdsetTemplate(),
-                        campaign_id: campaign.id
-                    } as any
-                    console.log('budget', budget)
-                    if (!campaign.daily_budget && budget.error) {
-                        adsetUpdate = { ...adsetUpdate, daily_budget: 100 }
-                    }
-                    const res = await createAdset(campaign.id, adsetUpdate)
-                    if (res) {
-                        setAdset(res)
-                    }
-                }
+            const url = `/api/fasty-bot/proxy-get-adsets?campaign_id=${id}`
+            const responseStream = await fetch(url)
+            const response = await responseStream.json()
+            if (response.success && response.data) {
+                // .data is due to pagination
+                setAdsets(response.data.data)
             }
-            void fetchOrCreateAdset(adsets)
         }
-    }, [campaign, adsets])
+    }, [id])
+    useEffect(() => {
+        void fetchAdsets()
+    }, [fetchAdsets])
 
     useEffect(() => {
         if (id) {
@@ -152,8 +125,8 @@ export const CampaignContextProvider = ({ children }: { children: React.ReactNod
         adsets,
         adset,
         setAdset,
-        fetchAdsetIds,
-    }), [id, setId, campaign, campaigns, summary, adsets, adset, setAdset, fetchAdsetIds])
+        fetchAdsets,
+    }), [id, setId, campaign, campaigns, summary, adsets, adset, setAdset, fetchAdsets])
 
     return (
         <CampaignContext.Provider value={value}>
