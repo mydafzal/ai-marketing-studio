@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { getFbMarketingApiKey } from '@/app/actions';
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
@@ -14,10 +15,19 @@ export async function GET(request: Request) {
     const fastyEndpoint = process.env.FASTY_API_URL
     const apiUrl = `${fastyEndpoint}/facebook/exec/direct/upload/video-detail?video_id=${video_id}`
 
+
+    const token_resp = await getFbMarketingApiKey()
+    let token=""
+    if(token_resp.success && token_resp.token){
+        token=token_resp.token
+    }
+
     try {
       const response = await fetch(apiUrl, {
         headers: {
-          Authorization: `Bearer ${process.env.FASTY_API_TOKEN}`
+          Authorization: `Bearer ${process.env.FASTY_API_TOKEN}`,
+          'fb-api-key': token
+
         }
       })
 

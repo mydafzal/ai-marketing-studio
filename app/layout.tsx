@@ -6,7 +6,8 @@ import { cn } from '@/lib/utils'
 import { TailwindIndicator } from '@/components/tailwind-indicator'
 import { Providers } from '@/components/providers'
 import { Header } from '@/components/header'
-import { Toaster } from '@/components/ui/sonner'
+import { Toaster as SonnerToaster } from '@/components/ui/sonner'
+import { Toaster } from '@/components/ui/toaster'
 
 export const metadata = {
   metadataBase: process.env.VERCEL_URL
@@ -45,7 +46,8 @@ export default function RootLayout({ children }: RootLayoutProps) {
           GeistMono.variable
         )}
       >
-        <Toaster position="top-center" />
+        <SonnerToaster position="top-center" />
+        <Toaster />
         <Providers
           attribute="class"
           defaultTheme="system"

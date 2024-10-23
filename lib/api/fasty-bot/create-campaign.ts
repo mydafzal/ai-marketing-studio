@@ -1,4 +1,5 @@
 import { getUserDetail } from '@/app/actions'
+import { getFbMarketingApiKey } from '@/app/actions';
 
 interface CampaignSummary {
   campaign_id: string
@@ -77,12 +78,19 @@ export async function createCampaign(
     const fastyEndpoint = process.env.FASTY_API_URL
     const apiUrl = `${fastyEndpoint}/facebook/exec/direct/campaign/create`
     console.log('payload to create a new campaign', payload)
+    const token_resp = await getFbMarketingApiKey()
+    let token=""
+    if(token_resp.success && token_resp.token){
+        token=token_resp.token
+    }
 
     const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.FASTY_API_TOKEN}`
+        Authorization: `Bearer ${process.env.FASTY_API_TOKEN}`,
+       'fb-api-key': token
+
       },
       body: JSON.stringify(payload)
     })

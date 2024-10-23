@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getUserDetail } from '@/app/actions'
+import { getFbMarketingApiKey } from '@/app/actions';
 
 export async function POST(request: Request) {
   try {
@@ -15,6 +16,12 @@ export async function POST(request: Request) {
     fbFormData.append('fb_account_id', fbAccountId)
     const file_size = formData.get('file_size')
     const apiUrl = `${fastyEndpoint}/facebook/exec/direct/upload/${file_size ? 'video-start' : 'video'}`
+
+    const token_resp = await getFbMarketingApiKey()
+    let token=""
+    if(token_resp.success && token_resp.token){
+        token=token_resp.token
+    }
 
     if (file_size) {
       fbFormData.append('file_size', file_size)
@@ -33,7 +40,9 @@ export async function POST(request: Request) {
     const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${process.env.FASTY_API_TOKEN}`
+        Authorization: `Bearer ${process.env.FASTY_API_TOKEN}`,
+        'fb-api-key': token
+
       },
       body: fbFormData
     })
