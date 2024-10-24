@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/use-toast"
 import Image from "next/image"
-import { Twitter, Linkedin, Instagram, Copy, Check } from "lucide-react"
+import { Twitter, Linkedin, Instagram, Copy, Check, Download } from "lucide-react"
 import { generateContent } from "@/app/actions/generate"
 import { generateImages } from "@/app/actions/generate-image"
 
@@ -90,7 +90,6 @@ export default function AiContentPage() {
       console.log('Generation result:', JSON.stringify(result));
       
       if (result.success && result.images && result.images.length > 0) {
-        // Ensure we're working with an array of strings
         const validUrls = result.images.filter(url => typeof url === 'string');
         setGeneratedImages(validUrls);
         
@@ -112,6 +111,34 @@ export default function AiContentPage() {
       setIsGeneratingImages(false)
     }
   }
+
+  const handleDownload = async (imageUrl: string, index: number) => {
+    try {
+      const response = await fetch(imageUrl)
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `generated-image-${index + 1}.png`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+
+      toast({
+        title: "Success",
+        description: "Image downloaded successfully",
+      })
+    } catch (error) {
+      console.error('Error downloading image:', error)
+      toast({
+        title: "Error",
+        description: "Failed to download image. Please try again.",
+        variant: "destructive"
+      })
+    }
+  }
+
   return (
     <div className="container mx-auto p-6">
       <div className="flex flex-col space-y-6">
@@ -180,24 +207,30 @@ export default function AiContentPage() {
                     </Button>
                   </div>
 
-                  {/* Right side - Image Previews */}
-                  <div className="grid grid-cols-2 gap-4">
-                    {generatedImages.length > 0 ? (
-                      generatedImages.map((imageUrl, index) => (
-                        <div 
-                          key={index}
-                          className="aspect-square relative rounded-lg overflow-hidden border border-gray-200 dark:border-gray-800"
-                        >
-                          <Image
-                            src={imageUrl}
-                            alt={`Generated image ${index + 1}`}
-                            fill
-                            className="object-cover"
-                          />
-                        </div>
-                      ))
+                {/* Right side - Image Previews */}
+<div className="grid grid-cols-2 gap-4">
+  {generatedImages.length > 0 ? (
+    generatedImages.map((imageUrl, index) => (
+      <div 
+        key={index}
+        className="aspect-square relative rounded-lg overflow-hidden border border-gray-200 dark:border-gray-800 group"
+      >
+        <Image
+          src={imageUrl}
+          alt={`Generated image ${index + 1}`}
+          fill
+          className="object-cover"
+        />
+        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-opacity duration-200" />
+        <Button
+          className="absolute bottom-2 right-2 w-8 h-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-white hover:bg-white/80"
+          onClick={() => handleDownload(imageUrl, index)}
+        >
+          <Download className="h-4 w-4 text-black" />
+        </Button>
+      </div>
+    ))
                     ) : (
-                      // Placeholder grid
                       Array.from({ length: 4 }).map((_, index) => (
                         <div 
                           key={index}
@@ -348,7 +381,8 @@ export default function AiContentPage() {
                           </div>
                           <div className="font-bold">reeplyai</div>
                         </div>
-                        <div className="text-gray-900 dark:text-gray-100 whitespace-pre-line">
+                        <div className="text-gray-900 dark:text-gray-100
+                        whitespace-pre-line">
                           {content.instagram}
                         </div>
                       </div>
