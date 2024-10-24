@@ -13,6 +13,8 @@ export interface Chat extends Record<string, any> {
   path: string
   messages: Message[]
   sharePath?: string
+  fbAdsetId?: string
+  fbCampaignId?: string
 }
 
 export type ServerActionResult<Result> = Promise<
@@ -81,6 +83,7 @@ export interface VideoAdText {
 export interface FbCampaign {
   id: string
   name: string
+  daily_budget: string
   created_time: string
   status: string
 }

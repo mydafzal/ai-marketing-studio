@@ -525,7 +525,6 @@ export async function updateChatFbCampaignId(chatSlug: string, fbCampaignId: str
     }
 }
 
-
 export async function fetchChatFbCampaignId(chatSlug: string) {
     const session = await auth()
 
