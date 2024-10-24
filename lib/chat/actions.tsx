@@ -2896,7 +2896,7 @@ Engaged Shoppers]
                 }
             },
             showSupervisedTaskUI: {
-                description: 'Show this UI if user want to perform anything related to AB testing',
+                description: 'Show this UI if user want to perform anything related to "retargeting campaign" or "AB testing between adsets"',
                 parameters: z.object({
                     task_name:z.string().describe("Name of the task which user asked to perform")
                 }),
@@ -3059,7 +3059,6 @@ export const getUIStateFromAIState = (aiState: Chat) => {
             display:
                 message.role === 'tool' && isToolResultArray(message.content) ? (
                     message.content.map((tool: ToolResult) => {
-                        console.log(tool,'-------------------')
                         switch (tool.toolName) {
                             // case 'listAds':
                             //     return (
