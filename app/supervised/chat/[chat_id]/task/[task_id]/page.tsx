@@ -109,7 +109,7 @@ export default async function TaskPage({ params,searchParams }: Props) {
             Comment provided{" "}
             <blockquote className="text-md italic font-semibold text-gray-900 dark:text-white">
             <span>
-              "{tool_data[0].result.comment}"
+            &#34;{tool_data[0].result.comment}&#34;
             </span>
             </blockquote>
           </p>
