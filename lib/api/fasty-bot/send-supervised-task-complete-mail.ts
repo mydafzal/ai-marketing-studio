@@ -1,16 +1,18 @@
 import { getUserDetail } from '@/app/actions'
 import { getFbMarketingApiKey } from '@/app/actions';
 
-async function sendSupervisedTaskMail(
+
+async function sendSupervisedTaskMailToUser(
     task_name: string, 
-    messages: string[],
-    user_email:string,
-    task_url: string
+    comment: string,
+    status: string,
+    chat_link:string,
+    user_email:string
 
 ): Promise<boolean | any> {
     try {
         const fastyEndpoint = process.env.FASTY_API_URL;
-        const apiUrl = `${fastyEndpoint}/misc/send-supervised-task-update/admin`;
+        const apiUrl = `${fastyEndpoint}/misc/send-supervised-task-update/user`;
 
         const token_resp = await getFbMarketingApiKey()
         let token=""
@@ -29,9 +31,10 @@ async function sendSupervisedTaskMail(
           },
           body: JSON.stringify({
             task_name: task_name,
-            messages: messages,
-            user_email: user_email,
-            task_url:task_url
+            comment: comment,
+            status: status,
+            chat_link:chat_link,
+            user_email:user_email
         })
         })
 
@@ -62,4 +65,4 @@ async function sendSupervisedTaskMail(
     }
 }
 
-export {sendSupervisedTaskMail};
+export {sendSupervisedTaskMailToUser};

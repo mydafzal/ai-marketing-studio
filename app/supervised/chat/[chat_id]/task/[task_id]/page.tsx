@@ -1,27 +1,26 @@
-import { getTaskAndPreviousMessages, updateTaskWithStatus } from "@/app/actions";
+import { getTaskAndPreviousMessages, updateTaskWithStatus, getUserByEmail } from "@/app/actions";
 import { redirect } from "next/navigation";
-
+import {sendSupervisedTaskMailToUser}  from '@/lib/api/fasty-bot/send-supervised-task-complete-mail';
+import {getBaseUrl} from "@/lib/helpers/vercel/get-base-url"
 interface Props {
   params: {
     chat_id: string;
     task_id: string;
   };
+  searchParams: {
+    [key: string]: string | undefined;
+  };
 }
 
-// Server-side function to handle task updates
-async function handleTaskUpdate(formData: FormData) {
-    "use server"
-  const chat_id = formData.get('chat_id') as string;
-  const task_id = formData.get('task_id') as string;
-  const comment = formData.get('comment') as string;
-  const status = formData.get('status') as 'done' | 'reject';
 
-  await updateTaskWithStatus(chat_id, task_id, { comment, status });
-  redirect(`/supervised/chat/${chat_id}/task/${task_id}`);
-}
 
-export default async function TaskPage({ params }: Props) {
+export default async function TaskPage({ params,searchParams }: Props) {
   const { chat_id, task_id } = params;
+  const userEmail = searchParams.user_email;
+
+  if(!userEmail){
+    return <div>Invalid URL</div>
+  }
 
   // Fetch the task data from the server
   const data = await getTaskAndPreviousMessages(chat_id, task_id);
@@ -39,7 +38,38 @@ export default async function TaskPage({ params }: Props) {
     );
   }
 
-  const { task, previousMessages } = data;
+  const { task, previousMessages, user_id } = data;
+
+
+  const resp = await getUserByEmail(userEmail);
+  if (!resp.success){
+    return <>Invalid URL</>
+  }
+  const user = resp.user;
+
+  if (user_id !== user.id){
+    return <>Invalid URL</>
+  }
+
+    // Server-side function to handle task updates
+  async function handleTaskUpdate(formData: FormData) {
+      "use server"
+    const chat_id = formData.get('chat_id') as string;
+    const task_id = formData.get('task_id') as string;
+    const comment = formData.get('comment') as string;
+    const user_email = formData.get('user_email') as string;
+    const status = formData.get('status') as 'done' | 'reject';
+
+    const chat_link = getBaseUrl()+"/chat/"+chat_id
+
+
+    await updateTaskWithStatus(chat_id, task_id, { comment, status });
+    console.log("task_Name", comment,status,chat_link,user_email);
+    await sendSupervisedTaskMailToUser("task_Name", comment,status,chat_link,user_email);
+    redirect(`/supervised/chat/${chat_id}/task/${task_id}?user_email=${user_email}`);
+  }
+
+  
 
   type SupervisedToolResult = {
     type:string;
@@ -54,13 +84,38 @@ export default async function TaskPage({ params }: Props) {
   const tool_data = task.content as SupervisedToolResult[];
   if (tool_data[0].result.status!="pending") {
     return (
-      <div className="bg-gray-100 min-h-screen flex items-center justify-center">
-        <div className="max-w-lg bg-white shadow-lg rounded-lg p-8">
-          <p className="mt-4 text-red-500 font-semibold">
-            This task is already in {tool_data[0].result.status} state
+      <div className="bg-gray-100 min-h-[600px] h-screen flex items-center justify-center">
+      <div className="max-w-lg w-full bg-white shadow-lg rounded-lg p-8 flex items-center space-x-4">
+        {/* Icon or graphic */}
+        <div className="flex-shrink-0">
+        <div className="text-xl flex items-center border-4 border-green-600 justify-center w-8 max-h-8 text-green-600 bg-transparent rounded-full mr-4">
+            &#x2714;
+        </div>
+        </div>
+
+        {/* Text */}
+        <div>
+          <h3 className="text-xl font-semibold text-gray-800">
+            Task Completed
+          </h3>
+          <p className="mt-2 text-gray-600">
+            This task has been completed. Its current status is{" "}
+            <span className={`font-bold text-${tool_data[0].result.status=="done"?"green":"red"}-600`}>
+              {tool_data[0].result.status}
+            </span>
+            .
+          </p>
+          <p className="mt-2 text-gray-600">
+            Comment provided{" "}
+            <blockquote className="text-md italic font-semibold text-gray-900 dark:text-white">
+            <span>
+              "{tool_data[0].result.comment}"
+            </span>
+            </blockquote>
           </p>
         </div>
       </div>
+    </div>
     );
   }
 
@@ -93,6 +148,7 @@ export default async function TaskPage({ params }: Props) {
           <form action={handleTaskUpdate} method="post" className="mt-6">
             <input type="hidden" name="chat_id" value={chat_id} />
             <input type="hidden" name="task_id" value={task_id} />
+            <input type="hidden" name="user_email" value={user.email} />
 
             <label htmlFor="comments" className="block text-sm font-medium text-gray-700">
               Your comments

@@ -47,6 +47,7 @@ import {PlacementTargeting} from '@/components/placement-targeting';
 import FormBuilder from '@/components/form-builder';
 import {sendSupervisedTaskMail}  from '@/lib/api/fasty-bot/send-supervised-task-mail';
 import SupervisedTaskMessage from '@/components/supervised-task-message'
+import {getBaseUrl} from "@/lib/helpers/vercel/get-base-url"
 
 interface ToolResult {
     toolName: string;
@@ -2920,7 +2921,9 @@ Engaged Shoppers]
                     const messages = lastSixUserMessages.map(msg => (msg.content)) as string[];
                     await sendSupervisedTaskMail(
                         task_name,
-                        messages
+                        messages,
+                        session?.user.email,
+                        getBaseUrl()+"/supervised/chat/"+chatId+"/task/"+toolCallId+"?user_email="+session?.user.email  // TODO: Need to find better way to change this URL at one place if we change route of this task.
                     )
                     
                     aiState.done({
@@ -2948,7 +2951,10 @@ Engaged Shoppers]
                                         type: 'tool-result',
                                         toolName: 'showSupervisedTaskUI',
                                         toolCallId,
-                                        result: {}
+                                        result: {
+                                            content:"",
+                                            status:"pending"
+                                        }
                                     }
                                 ],
                                 timestamp
@@ -2957,7 +2963,6 @@ Engaged Shoppers]
                     })
                     return (
                         <BotCard>
-                            {/* <PlacementTargeting toolCallId={toolCallId}/> */}
                             <SupervisedTaskMessage/>
                         </BotCard>
                     )

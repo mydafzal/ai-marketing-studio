@@ -1289,7 +1289,7 @@ export async function getTaskAndPreviousMessages(chat_id: string, task_id: strin
     return {
         task: taskMessage,
         previousMessages: previousUserMessages,
-        user_id:  existingChat.user_id,
+        user_id:  existingChat.userId,
     };
 }
 
@@ -1331,3 +1331,26 @@ export async function updateTaskWithStatus(
     };
   }
   
+export async function getUserByEmail(user_email:string) {
+    try {
+        const userKey = `user:${user_email}`
+
+        // Check if the chat exists
+        const user: User | null = (await kv.hgetall(userKey))
+
+        if (!user) {
+            return {
+                error: 'User not found'
+            }
+        }
+        return {
+            success: true,
+            user: user
+        }
+    } catch (error) {
+        console.error(`Error get current user detail:`, error)
+        return {
+            error: 'Something went wrong'
+        }
+    }
+}
