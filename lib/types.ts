@@ -156,3 +156,33 @@ export interface LeadgenFrom {
     content: string,
   }
 }
+
+export interface Country {
+  key: string
+  country_code: string
+  type: string
+  name: string
+  supports_city: boolean
+  supports_region: boolean
+}
+
+export interface Region {
+  key: string
+  country_code: string
+  country_name: string
+  type: string
+  name: string
+  supports_city: boolean
+  supports_region: boolean
+}
+export interface City {
+  key: string
+  name: string
+  type: string
+  country_code: string
+  country_name: string
+  region: string
+  region_id: string
+  supports_city: boolean
+  supports_region: boolean
+}

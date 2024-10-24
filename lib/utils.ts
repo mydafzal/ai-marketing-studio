@@ -114,3 +114,20 @@ export const sanitizeFileNameForUrl = (fileName: string) => {
 
   return encodeURIComponent(sanitizedFileName)
 }
+
+export const builQueryString = (params: Record<string, any>) => {
+  const filteredParams = Object.entries(params)
+    .filter(([_, value]) => value !== undefined && value !== null)
+    .reduce((acc, [key, value]) => {
+      if (Array.isArray(value)) {
+        value.forEach(item => {
+          acc.append(key, item)
+        })
+      } else {
+        acc.append(key, value)
+      }
+      return acc
+    }, new URLSearchParams())
+  const queryString = new URLSearchParams(filteredParams).toString()
+  return `?${queryString}`
+}
