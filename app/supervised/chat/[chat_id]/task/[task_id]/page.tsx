@@ -2,6 +2,9 @@ import { getTaskAndPreviousMessages, updateTaskWithStatus, getUserByEmail } from
 import { redirect } from "next/navigation";
 import {sendSupervisedTaskMailToUser}  from '@/lib/api/fasty-bot/send-supervised-task-complete-mail';
 import {getBaseUrl} from "@/lib/helpers/vercel/get-base-url"
+import {gpt_process_comment} from "@/app/gpt-actions"
+
+
 interface Props {
   params: {
     chat_id: string;
@@ -62,13 +65,19 @@ export default async function TaskPage({ params,searchParams }: Props) {
 
     const chat_link = getBaseUrl()+"/chat/"+chat_id
 
+    const resp = await gpt_process_comment(comment);
 
-    await updateTaskWithStatus(chat_id, task_id, { comment, status });
-    console.log("task_Name", comment,status,chat_link,user_email);
-    await sendSupervisedTaskMailToUser("task_Name", comment,status,chat_link,user_email);
+    let gpt_comment=null;
+
+    if (resp.success){
+      gpt_comment = resp.message;
+    }
+
+
+    await updateTaskWithStatus(chat_id, task_id, {comment:gpt_comment??comment, status });
+    await sendSupervisedTaskMailToUser("task_Name", gpt_comment??comment,status,chat_link,user_email);
     redirect(`/supervised/chat/${chat_id}/task/${task_id}?user_email=${user_email}`);
   }
-
   
 
   type SupervisedToolResult = {
