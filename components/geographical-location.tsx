@@ -11,7 +11,6 @@ import { IconSpinner } from '@/components/ui/icons'
 import { builQueryString } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { Input } from '@/components/ui/input'
 import { ComboBox } from '@/components/ui/combo-box'
 import { GeographicalLocationResult } from '@/components/geographical-location-result'
 import { RangeSlider } from '@/components/range-slider'
@@ -310,8 +309,6 @@ export function GeographicalLocation({
       <div className="mb-4">
         <Label className="dark:text-zinc-200">Age Range</Label>
         <RangeSlider
-          initialMin={ageMin}
-          initialMax={ageMax}
           min={13}
           max={65}
           step={1}

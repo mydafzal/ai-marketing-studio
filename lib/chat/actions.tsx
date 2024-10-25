@@ -2283,7 +2283,11 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                             case 'showGeographicalLocationUI':
                                 return (
                                     <BotCard key={tool.toolCallId}>
-                                        <GeographicalLocation toolCallId={tool.toolCallId} locationUiProps={tool.result.locationUiProps} isReadOnly />
+                                        <GeographicalLocation
+                                          toolCallId={tool.toolCallId}
+                                          locationUiProps={tool.result.locationUiProps}
+                                          isReadOnly={!!tool.result.locationUiProps}
+                                        />
                                     </BotCard>
                                 ) 
                             case 'showInterestFilterUI':

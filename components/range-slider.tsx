@@ -2,8 +2,6 @@ import React, { useState, useEffect, useRef, ChangeEvent } from 'react'
 import { Input } from '@/components/ui/input'
 
 interface RangeSliderProps {
-  initialMin: number
-  initialMax: number
   min: number
   max: number
   step: number
@@ -12,8 +10,6 @@ interface RangeSliderProps {
 }
 
 const RangeSlider: React.FC<RangeSliderProps> = ({
-  initialMin,
-  initialMax,
   min,
   max,
   step,
@@ -21,8 +17,8 @@ const RangeSlider: React.FC<RangeSliderProps> = ({
   onChange
 }) => {
   const progressRef = useRef<HTMLDivElement>(null)
-  const [minValue, setMinValue] = useState<number>(initialMin)
-  const [maxValue, setMaxValue] = useState<number>(initialMax)
+  const [minValue, setMinValue] = useState<number>(min)
+  const [maxValue, setMaxValue] = useState<number>(max)
 
   const handleMin = (e: ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value)
@@ -52,10 +48,14 @@ const RangeSlider: React.FC<RangeSliderProps> = ({
 
   useEffect(() => {
     if (progressRef.current) {
-      progressRef.current.style.left = (minValue / max) * step + '%'
-      progressRef.current.style.right = (step - maxValue / max) * step + '%'
+      console.log('minValue', minValue)
+      console.log('maxValue', maxValue)
+      console.log('max', max)
+      console.log('min', min)
+      progressRef.current.style.left = (minValue - min) / (max - min) * 100 + '%'
+      progressRef.current.style.right = (max - maxValue) / (max - min) * 100 + '%'
     }
-  }, [minValue, maxValue, max, step])
+  }, [minValue, maxValue, max, min])
   useEffect(() => {
     onChange(minValue, maxValue)
   }, [minValue, maxValue])
