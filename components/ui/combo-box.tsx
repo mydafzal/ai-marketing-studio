@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { IconTrash } from '@/components/ui/icons'
 
 interface ComboBoxProps {
+  disabled?: boolean
   selectedOptions: {
     value: string
     label: string
@@ -19,17 +20,19 @@ interface ComboBoxProps {
 }
 
 const ComboBox: React.FC<ComboBoxProps> = ({
+  disabled,
   selectedOptions,
   options,
   onSelect,
   onRemove,
   onChangeKeyword
 }) => {
+  console.log("🚀 ~ disabled:", disabled);
   const [query, setQuery] = useState('')
   return (
     <div className="relative w-full">
-     
       <Input
+        disabled={disabled}
         value={query}
         onChange={e => {
           setQuery(e.target.value)
@@ -54,22 +57,23 @@ const ComboBox: React.FC<ComboBoxProps> = ({
           ))}
         </ul>
       )}
-       {selectedOptions.length > 0 && (
+      {selectedOptions.length > 0 && (
         <div className="flex gap-x-6">
           {selectedOptions.map(selected => (
-            <>
-              <div className="flex justify-items-center mt-2">
-                <Badge>{selected.label}</Badge>
-                <Button
-                  variant="ghost"
-                  onClick={() => onRemove(selected.value)}
-                  className="size-7 p-0 hover:bg-background"
-                >
-                  <IconTrash />
-                  <span className="sr-only">Delete</span>
-                </Button>
-              </div>
-            </>
+            <div
+              key={selected.value}
+              className="flex justify-items-center mt-2"
+            >
+              <Badge>{selected.label}</Badge>
+              <Button
+                variant="ghost"
+                onClick={() => onRemove(selected.value)}
+                className="size-7 p-0 hover:bg-background"
+              >
+                <IconTrash />
+                <span className="sr-only">Delete</span>
+              </Button>
+            </div>
           ))}
         </div>
       )}

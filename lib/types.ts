@@ -99,7 +99,7 @@ export interface AdsetTargeting {
     regions?: { key: string }[]
     cities?: { key: string, radius?: number, distance_unit?: string }[]
   }
-
+  genders?: number[]
   publisher_platforms: string[]
   facebook_positions: string[]
   instagram_positions: string[]

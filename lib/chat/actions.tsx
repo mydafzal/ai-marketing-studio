@@ -46,6 +46,7 @@ import {ConnectCampaign} from '@/components/connect-campaign'
 import {PlacementTargeting} from '@/components/placement-targeting';
 import FormBuilder from '@/components/form-builder';
 import {GeographicalLocation} from '@/components/geographical-location';
+import {InterestFilter} from '@/components/interest-filter';
 
 
 interface ToolResult {
@@ -349,7 +350,7 @@ async function syncMessages() {
     });
 }
 
-async function confirmUpdateAdset(toolCallId: string, adsetId: string, adset: any, locationInfo?: string) {
+async function confirmUpdateAdset(toolCallId: string, adsetId: string, adset: any, locationData: any) {
   'use server'
   const aiState = getMutableAIState<typeof AI>();
   const chatId = getChatIdFromUrl()?.toString() || ''
@@ -388,6 +389,23 @@ async function confirmUpdateAdset(toolCallId: string, adsetId: string, adset: an
             }
           }
         }
+        if (
+            content.type === 'tool-result' &&
+            content.toolName === 'showGeographicalLocationUI'
+          ) {
+            content.result = {
+              ...(content.result as Object),
+              locationUiProps: (
+              content.result as {
+                locationUiProps: object
+              }
+              ).locationUiProps ?? {
+                success: true,
+                targeting: response?.data.targeting,
+                locationData: locationData
+              }
+            }
+          }
       }
       responseStream.done(response.data);
       aiState.done({
@@ -592,12 +610,8 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
     
     Response: Call \`show_ad_budget_ui\` to show the budget UI when the user tells you how much they want to spend on the campaign. The guide for the user about \`show_ad_budget_ui\` is 'Confirm the ad budget for your campaign by clicking "Set Ad Budget". You can change this at any given point to adjust your campaign.'
     
-    Next action to always do after setting the budget when creating a campaign: "In what geographical area do you want to advertise?"
+    Next action to always do after setting the budget when creating a campaign: Call \`show_geographical_location_ui\` to show the geographical area of the campaign.'
 
-    Reasoning: Set the geographical area, ensuring the user understands the impact of geographical area.
-    
-    Response: Call \`show_geographical_location_ui\` to show the geographical area of the campaign.'
-    
     
     Step 3: Targeting:
     
@@ -1068,6 +1082,10 @@ Technology
     
     - If the user wants to complete another specific task, respond that you are a demo and cannot perform that action.
     
+    - If you want to update or add geographical area location, call \`show_geographical_location_ui\` to show the form geographical area UI.
+    
+    - If you want to update interest filters ask to user about name of the filter (use Categories of interest filters to suggestion to user, user must select one or more filters name from it), always ask to user add more filter. then  \`show_interest_filter_ui\` to show the result to UI.
+
     - Besides that, you can also chat with users and perform budget calculations if needed.
     
     Language:
@@ -1961,13 +1979,8 @@ Technology
             },
             showGeographicalLocationUI: {
                 description: 'Show a UI of result geographical',
-                parameters: z.object({
-                    country: z.object({
-                        name: z.string().describe('The name of the country to display'),
-                        code: z.string().describe('The country code (alpha-2 codes) of the country to display'),
-                    }).describe('The country user provided')
-                }),
-                generate: async function* ({country}) {
+                parameters: z.object({}),
+                generate: async function* ({}) {
                     const timestamp: string = new Date().toISOString();
                     const toolCallId = nanoid();
                     aiState.done({
@@ -1982,9 +1995,7 @@ Technology
                                         type: 'tool-call',
                                         toolName: 'showGeographicalLocationUI',
                                         toolCallId,
-                                        args: {
-                                            country
-                                        }
+                                        args: {}
                                     }
                                 ],
                                 timestamp
@@ -1997,8 +2008,57 @@ Technology
                                         type: 'tool-result',
                                         toolName: 'showGeographicalLocationUI',
                                         toolCallId,
+                                        result: {}
+                                    }
+                                ],
+                                timestamp
+                            }
+                        ]
+                    })
+                    return (
+                        <BotCard>
+                            <GeographicalLocation toolCallId={toolCallId} />
+                        </BotCard>
+                    )
+                }
+            },
+            showInterestFilterUI:{
+                description: 'Show a UI of result interest filter',
+                parameters: z.object({
+                    filterNames: z.array(z.string()).describe('The array of interest filter from user provided')
+                }),
+                generate: async function* ({filterNames}) {
+                    const timestamp: string = new Date().toISOString();
+                    const toolCallId = nanoid();
+                    aiState.done({
+                        ...aiState.get(),
+                        messages: [
+                            ...aiState.get().messages,
+                            {
+                                id: nanoid(),
+                                role: 'assistant',
+                                content: [
+                                    {
+                                        type: 'tool-call',
+                                        toolName: 'showAgeGenderUI',
+                                        toolCallId,
+                                        args: {
+                                            filterNames,
+                                        }
+                                    }
+                                ],
+                                timestamp
+                            },
+                            {
+                                id: toolCallId,
+                                role: 'tool',
+                                content: [
+                                    {
+                                        type: 'tool-result',
+                                        toolName: 'showAgeGenderUI',
+                                        toolCallId,
                                         result: {
-                                            country
+                                            filterNames
                                         }
                                     }
                                 ],
@@ -2008,11 +2068,12 @@ Technology
                     })
                     return (
                         <BotCard>
-                            <GeographicalLocation toolCallId={toolCallId} country={country} />
+                            <InterestFilter toolCallId={toolCallId} filterNames={filterNames}  />
                         </BotCard>
                     )
                 }
             }
+            
         }
     });
     return {
@@ -2222,9 +2283,15 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                             case 'showGeographicalLocationUI':
                                 return (
                                     <BotCard key={tool.toolCallId}>
-                                        <GeographicalLocation toolCallId={tool.toolCallId} countries={tool.result.country} isReadOnly/>
+                                        <GeographicalLocation toolCallId={tool.toolCallId} locationUiProps={tool.result.locationUiProps} isReadOnly />
                                     </BotCard>
                                 ) 
+                            case 'showInterestFilterUI':
+                                return (
+                                    <BotCard key={tool.toolCallId}>
+                                        <InterestFilter toolCallId={tool.toolCallId} filterNames={tool.result.filterNames} />
+                                    </BotCard>
+                                )
                             default:
                                 return null;
                         }

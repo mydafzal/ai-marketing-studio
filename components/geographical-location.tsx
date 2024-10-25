@@ -11,8 +11,10 @@ import { IconSpinner } from '@/components/ui/icons'
 import { builQueryString } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
 import { ComboBox } from '@/components/ui/combo-box'
-
+import { GeographicalLocationResult } from '@/components/geographical-location-result'
+import { RangeSlider } from '@/components/range-slider'
 import {
   Select,
   SelectTrigger,
@@ -21,22 +23,26 @@ import {
   SelectItem
 } from '@/components/ui/select'
 
+import { Checkbox } from '@/components/ui/checkbox'
+
 import { type AI } from '@/lib/chat/actions'
 interface GeoGraphicalLocationProps {
   toolCallId: string
-  country?: {
-    name: string
-    code: string
+  locationUiProps?: {
+    locationData: {
+      [key: string]: any
+    }
+    success: boolean
   }
   isReadOnly?: boolean
 }
 
 export function GeographicalLocation({
   toolCallId,
-  country,
+  locationUiProps,
   isReadOnly
 }: GeoGraphicalLocationProps) {
-  const { id: campaignId, adset, setAdset } = useContext(CampaignContext)
+  const { adset, setAdset } = useContext(CampaignContext)
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
   const { confirmUpdateAdset } = useActions()
   const [_, setMessages] = useUIState<typeof AI>()
@@ -47,38 +53,70 @@ export function GeographicalLocation({
   const [loading, setLoading] = useState(false)
   const [cityData, setCityData] = useState<City[]>([])
   const [citiesSelected, setCitiesSelected] = useState<City[]>([])
+  const [isMale, setIsMale] = useState<boolean>(false)
+  const [isFemale, setIsFemale] = useState<boolean>(false)
+
+  const [ageMin, setAgeMin] = useState<number>(13)
+  const [ageMax, setAgeMax] = useState<number>(65)
+
+  const [graphicalLocationUI, setGraphicalLocationUI] =
+    useState<null | React.ReactNode>(
+      locationUiProps ? (
+        <GeographicalLocationResult {...locationUiProps} />
+      ) : null
+    )
 
   async function handleUpdateAdset() {
     if (!adset || !countrySelected) return
     let newTargeting: AdsetTargeting = { ...adset.targeting }
-    let locationInfo = "";
+    let locationData: {
+      [key: string]: any
+    } = {}
+
+    let genders = []
+    if (isMale) {
+      genders.push(1)
+    }
+    if (isFemale) {
+      genders.push(2)
+    }
+
+    newTargeting.age_min = ageMin
+    newTargeting.age_max = ageMax
+    newTargeting.genders = genders
+
     if (citiesSelected.length > 0) {
       newTargeting.geo_locations = {
         cities: citiesSelected.map(city => ({
           key: city.key
         }))
       }
-      citiesSelected.map(city => ({
-        key: city.key
-      }))
-      locationInfo = citiesSelected.map(city => city.name).join(', ');
 
+      locationData.cities = citiesSelected
     } else if (regionSelected) {
       newTargeting.geo_locations = {
         regions: [{ key: regionSelected?.key }]
       }
-      locationInfo = regionSelected.name;
-
+      locationData.regions = [regionSelected]
     } else {
       newTargeting.geo_locations = {
         countries: [countrySelected?.country_code]
       }
-      locationInfo = countrySelected.name;
+      locationData.countries = [countrySelected]
     }
+    locationData.age_min = ageMin
+    locationData.age_max = ageMax
 
-    const response = await confirmUpdateAdset(toolCallId, adset.id, {
-      targeting: newTargeting
-    }, locationInfo)
+    locationData.genders = genders
+
+    const response = await confirmUpdateAdset(
+      toolCallId,
+      adset.id,
+      {
+        targeting: newTargeting
+      },
+      locationData
+    )
     setMessages(currentMessages => [...currentMessages, response.newMessage])
     for await (const updatedAdset of readStreamableValue<Adset>(
       response.response
@@ -86,6 +124,12 @@ export function GeographicalLocation({
       if (updatedAdset) {
         setAdset(updatedAdset)
         setIsSubmitting(false)
+        setGraphicalLocationUI(
+          <GeographicalLocationResult
+            success={true}
+            locationData={locationData}
+          />
+        )
       }
     }
     setIsSubmitting(false)
@@ -111,7 +155,7 @@ export function GeographicalLocation({
       type: 'adgeolocation',
       location_types: "['region']",
       country_code: countryCode,
-      limit: 300,
+      limit: 300
     }
     fetch(`/api/fasty-bot/proxy-search${builQueryString(params)}`)
       .then(response => response.json())
@@ -149,7 +193,6 @@ export function GeographicalLocation({
       setLoading(true)
       try {
         const cities = await getCityList(regionId, searchTerm)
-        console.log('🚀 ~ debounce ~ cities:', cities)
         setCityData(cities)
       } catch (error) {
         console.error('Error fetching results:', error)
@@ -162,16 +205,9 @@ export function GeographicalLocation({
   )
   useEffect(() => {
     if (!isReadOnly) {
-    getCountryList()
+      getCountryList()
     }
   }, [isReadOnly])
-
-
-  useEffect(() => {
-    if (countryData.length>0 && country) {
-      setCountrySelected(countryData.find(c => c.country_code === country.code))
-    }
-  }, [country, countryData])
 
   useEffect(() => {
     if (countrySelected) {
@@ -197,10 +233,13 @@ export function GeographicalLocation({
       setCityData([])
     }
   }
-  return isReadOnly  ? (
-    <div className="p-6  border rounded-x">
-      You have selected the geographical area:
-    </div>
+  const handleChangeAge = (min: number, max: number) => {
+    setAgeMax(max)
+    setAgeMin(min)
+  }
+
+  return graphicalLocationUI ? (
+    graphicalLocationUI
   ) : (
     <div className="p-6  border rounded-x">
       <div className="text-lg font-medium text-gray-900 dark:text-zinc-300 mb-2">
@@ -209,7 +248,7 @@ export function GeographicalLocation({
       <div className="mb-4">
         <Label className="dark:text-zinc-200">Country</Label>
         <Select
-          disabled={countryData.length === 0}
+          disabled={countryData.length === 0 || isReadOnly}
           value={countrySelected?.country_code}
           onValueChange={value => {
             setCountrySelected(countryData.find(e => e.key === value))
@@ -232,7 +271,7 @@ export function GeographicalLocation({
       <div className="mb-4">
         <Label className="dark:text-zinc-200">Region</Label>
         <Select
-          disabled={regionData.length === 0}
+          disabled={regionData.length === 0 || isReadOnly}
           onValueChange={value => {
             setRegionSelected(regionData.find(e => e.key === value))
           }}
@@ -254,6 +293,7 @@ export function GeographicalLocation({
       <div className="mb-4">
         <Label className="dark:text-zinc-200">City</Label>
         <ComboBox
+          disabled={!regionSelected || isReadOnly}
           selectedOptions={citiesSelected.map(city => ({
             label: city.name,
             value: city.key
@@ -267,7 +307,56 @@ export function GeographicalLocation({
           onRemove={handleRemoveCity}
         />
       </div>
+      <div className="mb-4">
+        <Label className="dark:text-zinc-200">Age Range</Label>
+        <RangeSlider
+          initialMin={ageMin}
+          initialMax={ageMax}
+          min={13}
+          max={65}
+          step={1}
+          priceCap={2}
+          onChange={handleChangeAge}
+        />
+      </div>
+      <div className="mb-4">
+        <Label className="dark:text-zinc-200">Gender</Label>
 
+        <div className="items-top flex space-x-2 my-4">
+          <Checkbox
+            id="male"
+            checked={isMale}
+            onCheckedChange={checked => {
+              setIsMale(!isMale)
+            }}
+          />
+          <div className="grid gap-1.5 leading-none">
+            <label
+              htmlFor="male"
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            >
+              Male
+            </label>
+          </div>
+        </div>
+        <div className="items-top flex space-x-2 mb-4">
+          <Checkbox
+            id="female"
+            checked={isFemale}
+            onCheckedChange={checked => {
+              setIsFemale(!isFemale)
+            }}
+          />
+          <div className="grid gap-1.5 leading-none">
+            <label
+              htmlFor="female"
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            >
+              Female
+            </label>
+          </div>
+        </div>
+      </div>
       <div className="flex mt-4 gap-4">
         <Button
           disabled={isSubmitting || !countrySelected}
