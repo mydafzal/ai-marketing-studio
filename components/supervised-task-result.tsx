@@ -34,7 +34,7 @@ export default function SupervisedTaskResult({comment, status}:SupervisedTaskRes
                     &#x2716;
                 </div>
                 <div className="flex-grow">
-                    <h4 className="text-lg font-semibold text-red-900">Task Rejected</h4>
+                    <h4 className="text-lg font-semibold text-red-900">Task could not be completed</h4>
                     <p className="mt-1 text-sm text-red-900">{comment}</p>
                     <small className="block mt-2 text-xs text-red-900 opacity-80">Thank you for understanding.</small>
                 </div>
