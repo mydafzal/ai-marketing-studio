@@ -1,40 +1,23 @@
 import { NextResponse } from 'next/server'
-import { getFbMarketingApiKey } from '@/app/actions';
+import { getAdsets } from '@/lib/api/fasty-bot/get-adsets';
 
 export async function GET(request: Request) {
+  try {
     const { searchParams } = new URL(request.url)
-    const campaign_id = searchParams.get('campaign_id')
-
-    if (!campaign_id) {
-        return NextResponse.json({ error: 'Campaign ID is required' }, { status: 400 })
+    const campaignId = searchParams.get('campaign_id')
+    if (!campaignId) {
+      return NextResponse.json({ error: 'Campaign ID is required' }, { status: 400 })
     }
 
-    const fastyEndpoint = process.env.FASTY_API_URL
-    const apiUrl = `${fastyEndpoint}/facebook/exec/direct/ads/get-adsets?campaign_id=${campaign_id}`
-
-    const token_resp = await getFbMarketingApiKey()
-    let token=""
-    if(token_resp.success && token_resp.token){
-        token=token_resp.token
+    const response = await getAdsets(campaignId)
+    if (!response.ok) {
+      return NextResponse.json({ success: false }, { status: response.status })
     }
+    const data = await response.json()
     
-    try {
-        const response = await fetch(apiUrl, {
-            headers: {
-                'Authorization': `Bearer ${process.env.FASTY_API_TOKEN}`,
-                'fb-api-key': token
-            }
-        })
-
-        if (!response.ok) {
-            console.error(`HTTP error! status: ${response.status}`);
-            return NextResponse.json({ error: 'Failed to fetch adsets' }, { status: response.status });
-        }
-
-        const data = await response.json()
-        return NextResponse.json(data.data)
-    } catch (error) {
-        console.error('Error fetching adsets:', error)
-        return NextResponse.json({ error: 'Failed to fetch adsets' }, { status: 500 })
-    }
+    return NextResponse.json({ success: true, data: data })
+  } catch (error) {
+    console.error('Error fetching adsets:', error)
+    return NextResponse.json({ error: 'Failed to fetch adsets' }, { status: 500 })
+  }
 }

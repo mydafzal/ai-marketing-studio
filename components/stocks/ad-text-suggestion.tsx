@@ -152,8 +152,7 @@ export function AdTextItem({
 
 export function AdTextSuggestion({ props }: { props: ImageSuggestionProps[] }) {
   const { id: chatSlug } = useParams()
-  const { id, campaigns } = useContext(CampaignContext)
-  const campaign = campaigns.find(campaign => campaign.id === id)
+  const { campaign } = useContext(CampaignContext)
 
   const [adTexts, setAdTexts] = useState<AdText[]>(
     props.reduce((result, items) => [...result,  ...items.suggestedTexts], [] as SuggestedText[])

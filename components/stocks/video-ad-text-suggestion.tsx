@@ -161,13 +161,13 @@ export function VideoAdTextItem({
 }
 
 export function VideoAdTextSuggestion({ videos }: VideoSuggestionProps) {
-  const { id, campaigns } = useContext(CampaignContext)
-  const campaign = campaigns.find(campaign => campaign.id === id)
-  console.log('campaign', campaign)
+  const { campaign } = useContext(CampaignContext)
   const { syncMessages } = useActions()
   const [aiState, setAIState] = useAIState()
   const { id: chatSlug } = useParams()
-  const [isProcessing, setIsProcessing] = useState<boolean>(true);
+  const [isProcessing, setIsProcessing] = useState<boolean>(true)
+  const { confirmCreateAd } = useActions()
+  const [, setMessages] = useUIState<typeof AI>()
 
   const [adTexts, setAdTexts] = useState<VideoAdText[]>(
     videos
@@ -255,9 +255,6 @@ export function VideoAdTextSuggestion({ videos }: VideoSuggestionProps) {
     }
   }
   useEffect(() => {
-    console.log("adTexts",adTexts);
-  },[adTexts])
-  useEffect(() => {
     let interval: NodeJS.Timeout | undefined
     if (!videos[0].suggestedTexts[0].video && isProcessing) {
       interval = setInterval(() => {
@@ -271,10 +268,6 @@ export function VideoAdTextSuggestion({ videos }: VideoSuggestionProps) {
       }
     }
   }, [videos, isProcessing])
-
-  const { confirmCreateAd } = useActions()
-
-  const [, setMessages] = useUIState<typeof AI>()
 
   const acceptText = async (idx: number, adText: VideoAdText) => {
     const response = await confirmCreateAd(
