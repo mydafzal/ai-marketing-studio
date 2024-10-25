@@ -7,6 +7,7 @@ import {kv} from '@vercel/kv'
 import {auth} from '@/auth'
 import {AdText, VideoAdText, type Chat, User} from '@/lib/types'
 import {getBaseUrl} from "@/lib/helpers/vercel/get-base-url"
+import { Message } from '@/lib/types';
 
 export async function getChats(userId?: string | null) {
     if (!userId) {
@@ -1245,6 +1246,109 @@ export async function updateOnboardingDetails(email: string, details:{first_name
         console.error(`Error updating onboarding data for user ${email}:`, error)
         return {
             success: false,
+            error: 'Something went wrong'
+        }
+    }
+}
+
+
+export async function getTaskAndPreviousMessages(chat_id: string, task_id: string) {
+    const existingChat = await kv.hgetall<Chat>(`chat:${chat_id}`);
+
+    if (!existingChat) {
+        return null;
+    }
+
+   
+
+    // Find the index of the message that contains the tool with the matching task_id
+    const taskIndex = existingChat.messages.findIndex(message => {
+        if (message.role === 'tool' && Array.isArray(message.content)) {
+            // Find the tool where toolCallId matches task_id
+            return message.content.some(tool => tool.toolCallId === task_id);
+        }
+        return false;  // Ensure we return a boolean for every message
+    });
+
+    if (taskIndex === -1) {
+        // If the task was not found, return null
+        return null;
+    }
+
+    // Get the task message at the found index
+    const taskMessage = existingChat.messages[taskIndex];
+
+    // Filter messages before the task that have the role 'user'
+    const previousUserMessages = existingChat.messages
+        .slice(0, taskIndex)  // Only consider messages before the task
+        .filter(message => message.role === 'user')  // Filter for 'user' role
+        .slice(-6);  // Get the last six messages
+
+    // Return both the taskMessage and the previous six 'user' messages
+    return {
+        task: taskMessage,
+        previousMessages: previousUserMessages,
+        user_id:  existingChat.userId,
+    };
+}
+
+
+export async function updateTaskWithStatus(
+    chat_id: string,
+    task_id: string,
+    update: { comment: string; status: 'done' | 'reject' }
+  ) {
+    // Retrieve the chat object
+    const existingChat = await kv.hgetall<Chat>(`chat:${chat_id}`);
+  
+    if (!existingChat) {
+      throw new Error("Chat not found");
+    }
+
+    // Iterate over messages and update the relevant task
+    existingChat.messages.forEach((message) => {
+      if (message.role === "tool" && Array.isArray(message.content)) {
+        message.content.forEach((tool) => {
+          if (tool.type === "tool-result" && tool.toolCallId === task_id) {
+            // Update the tool result with the provided comment and status
+            tool.result = {
+              comment: update.comment,
+              status: update.status,
+            };
+          }
+        });
+      }
+    });
+  
+  
+    // Save the updated chat object back to the database
+    await kv.hset(`chat:${chat_id}`, existingChat);
+  
+    return {
+      success: true,
+      message: "Task updated successfully",
+    };
+  }
+  
+export async function getUserByEmail(user_email:string) {
+    try {
+        const userKey = `user:${user_email}`
+
+        // Check if the chat exists
+        const user: User | null = (await kv.hgetall(userKey))
+
+        if (!user) {
+            return {
+                error: 'User not found'
+            }
+        }
+        return {
+            success: true,
+            user: user
+        }
+    } catch (error) {
+        console.error(`Error get current user detail:`, error)
+        return {
             error: 'Something went wrong'
         }
     }

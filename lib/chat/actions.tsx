@@ -47,6 +47,9 @@ import {PlacementTargeting} from '@/components/placement-targeting';
 import {ConnectAdset} from '@/components/connect-adset'
 
 import FormBuilder from '@/components/form-builder';
+import {sendSupervisedTaskMail}  from '@/lib/api/fasty-bot/send-supervised-task-mail';
+import SupervisedTaskMessage from '@/components/supervised-task-message'
+import {getBaseUrl} from "@/lib/helpers/vercel/get-base-url"
 
 interface ToolResult {
     toolName: string;
@@ -145,7 +148,7 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
         );
 
         const newMessage = 'Would you like to continue?';
-        // optimistic update
+
         newMessageStream.done(
             <div>
                 {newMessage}
@@ -2896,6 +2899,79 @@ Engaged Shoppers]
                     )
                 }
             },
+            showSupervisedTaskUI: {
+                description: 'Show this UI if user want to perform anything related to "retargeting campaign" or "AB testing between adsets"',
+                parameters: z.object({
+                    task_name:z.string().describe("Name of the task which user asked to perform")
+                }),
+                generate: async function* ({task_name}) {
+                    console.log('tool call showSupervisedTaskUI')
+                    const timestamp: string = new Date().toISOString();
+                    const toolCallId = nanoid();
+                    const allMessages = aiState.get().messages;
+
+                    // Filter user messages only (assuming 'role' field exists)
+                    const userMessages = allMessages.filter(msg => msg.role === 'user');
+
+                    // Get the last 6 user messages (if available)
+                    const lastSixUserMessages = userMessages.slice(-6);
+
+                    yield(
+                        <BotCard>
+                            {/* <PlacementTargeting toolCallId={toolCallId}/> */}
+                            <p className='mb-2'>Please wait we are processing your query.</p>
+                        </BotCard>
+                    )
+                    const messages = lastSixUserMessages.map(msg => (msg.content)) as string[];
+                    await sendSupervisedTaskMail(
+                        task_name,
+                        messages,
+                        session?.user.email,
+                        getBaseUrl()+"/supervised/chat/"+chatId+"/task/"+toolCallId+"?user_email="+session?.user.email  // TODO: Need to find better way to change this URL at one place if we change route of this task.
+                    )
+
+                    aiState.done({
+                        ...aiState.get(),
+                        messages: [
+                            ...aiState.get().messages,
+                            {
+                                id: nanoid(),
+                                role: 'assistant',
+                                content: [
+                                    {
+                                        type: 'tool-call',
+                                        toolName: 'showSupervisedTaskUI',
+                                        toolCallId,
+                                        args: {task_name}
+                                    }
+                                ],
+                                timestamp
+                            },
+                            {
+                                id: toolCallId,
+                                role: 'tool',
+                                content: [
+                                    {
+                                        type: 'tool-result',
+                                        toolName: 'showSupervisedTaskUI',
+                                        toolCallId,
+                                        result: {
+                                            content:"",
+                                            status:"pending"
+                                        }
+                                    }
+                                ],
+                                timestamp
+                            }
+                        ]
+                    })
+                    return (
+                        <BotCard>
+                            <SupervisedTaskMessage/>
+                        </BotCard>
+                    )
+                }
+            },
             showAdsetConnectionUI: {
                 description: 'Show a UI to connect a adset to the chat.',
                 parameters: z.object({}),
@@ -3153,7 +3229,15 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                     <BotCard key={tool.toolCallId}>
                                         <FormBuilder {...tool.result} toolCallId={tool.toolCallId} isReadOnly />
                                     </BotCard>
-                                )    
+                                )
+                            case 'showSupervisedTaskUI':
+                                return (
+                                    <>
+                                        <BotCard>
+                                            <SupervisedTaskMessage result={tool.result}/>
+                                        </BotCard>
+                                    </>
+                                );
                             default:
                                 return null;
                         }
