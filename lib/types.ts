@@ -95,9 +95,11 @@ export interface AdsetTargeting {
   age_max: number
   age_min: number
   geo_locations: {
-    countries: string[]
-    location_types: string[]
+    countries?: string[]
+    regions?: { key: string }[]
+    cities?: { key: string, radius?: number, distance_unit?: string }[]
   }
+
   publisher_platforms: string[]
   facebook_positions: string[]
   instagram_positions: string[]

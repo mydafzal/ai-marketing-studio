@@ -2,13 +2,14 @@
 
 import * as React from 'react'
 import { useState, useCallback, useContext, useEffect } from 'react'
+import debounce from 'lodash/debounce'
 import { CampaignContext } from '@/components/contexts/campaign-context'
 import { useActions, useAIState, useUIState } from 'ai/rsc'
 import { Adset, AdsetTargeting, Country, Region, City } from '@/lib/types'
 import { readStreamableValue } from 'ai/rsc'
 import { IconSpinner } from '@/components/ui/icons'
 import { builQueryString } from '@/lib/utils'
-import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { ComboBox } from '@/components/ui/combo-box'
 
@@ -23,16 +24,16 @@ import {
 import { type AI } from '@/lib/chat/actions'
 interface GeoGraphicalLocationProps {
   toolCallId: string
-  countries?: {
+  country?: {
     name: string
     code: string
-  }[]
+  }
   isReadOnly?: boolean
 }
 
 export function GeographicalLocation({
   toolCallId,
-  countries,
+  country,
   isReadOnly
 }: GeoGraphicalLocationProps) {
   const { id: campaignId, adset, setAdset } = useContext(CampaignContext)
@@ -43,18 +44,41 @@ export function GeographicalLocation({
   const [countrySelected, setCountrySelected] = useState<Country>()
   const [regionData, setRegionData] = useState<Region[]>([])
   const [regionSelected, setRegionSelected] = useState<Region>()
+  const [loading, setLoading] = useState(false)
+  const [cityData, setCityData] = useState<City[]>([])
+  const [citiesSelected, setCitiesSelected] = useState<City[]>([])
 
   async function handleUpdateAdset() {
-    if (!adset) return
+    if (!adset || !countrySelected) return
     let newTargeting: AdsetTargeting = { ...adset.targeting }
+    let locationInfo = "";
+    if (citiesSelected.length > 0) {
+      newTargeting.geo_locations = {
+        cities: citiesSelected.map(city => ({
+          key: city.key
+        }))
+      }
+      citiesSelected.map(city => ({
+        key: city.key
+      }))
+      locationInfo = citiesSelected.map(city => city.name).join(', ');
 
-    newTargeting.geo_locations.countries =
-      countries?.map(country => country.code) ||
-      newTargeting.geo_locations.countries
+    } else if (regionSelected) {
+      newTargeting.geo_locations = {
+        regions: [{ key: regionSelected?.key }]
+      }
+      locationInfo = regionSelected.name;
+
+    } else {
+      newTargeting.geo_locations = {
+        countries: [countrySelected?.country_code]
+      }
+      locationInfo = countrySelected.name;
+    }
 
     const response = await confirmUpdateAdset(toolCallId, adset.id, {
       targeting: newTargeting
-    })
+    }, locationInfo)
     setMessages(currentMessages => [...currentMessages, response.newMessage])
     for await (const updatedAdset of readStreamableValue<Adset>(
       response.response
@@ -66,10 +90,6 @@ export function GeographicalLocation({
     }
     setIsSubmitting(false)
   }
-  useEffect(() => {
-    if (!isReadOnly) {
-    }
-  }, [isReadOnly])
 
   const getCountryList = () => {
     const params = {
@@ -91,43 +111,67 @@ export function GeographicalLocation({
       type: 'adgeolocation',
       location_types: "['region']",
       country_code: countryCode,
-      limit: 300
+      limit: 300,
     }
     fetch(`/api/fasty-bot/proxy-search${builQueryString(params)}`)
       .then(response => response.json())
       .then(data => {
         setRegionData((data.data as Region[]) || [])
-        console.log('🚀 ~ getRegionList ~ data:', data.data)
       })
       .catch(error => {
         console.error('Error fetching:', error)
       })
   }
+
   const getCityList = async (regionId: string, q: string) => {
     const params = {
       type: 'adgeolocation',
       location_types: "['city']",
       region_id: regionId,
       q,
-      limit: 300
+      limit: 10
     }
     try {
       const response = await fetch(
         `/api/fasty-bot/proxy-search${builQueryString(params)}`
       )
-      const data = response.json() as any
-      const citys = data.data.filter((e: any) => e?.type === 'city') as City[]
-      console.log('🚀 ~ getCityList ~ citys:', citys)
+      const data = (await response.json()) as any
+      const cities = data.data.filter((e: any) => e?.type === 'city') as City[]
+      return cities
     } catch (error) {
       console.error('Error fetching results:', error)
     } finally {
     }
+    return []
   }
+  const searchCity = useCallback(
+    debounce(async (regionId: string, searchTerm: string) => {
+      setLoading(true)
+      try {
+        const cities = await getCityList(regionId, searchTerm)
+        console.log('🚀 ~ debounce ~ cities:', cities)
+        setCityData(cities)
+      } catch (error) {
+        console.error('Error fetching results:', error)
+        setCityData([])
+      } finally {
+        setLoading(false)
+      }
+    }, 500), // 500ms debounce time
+    [getCityList, setCityData]
+  )
   useEffect(() => {
     if (!isReadOnly) {
-      getCountryList()
+    getCountryList()
     }
   }, [isReadOnly])
+
+
+  useEffect(() => {
+    if (countryData.length>0 && country) {
+      setCountrySelected(countryData.find(c => c.country_code === country.code))
+    }
+  }, [country, countryData])
 
   useEffect(() => {
     if (countrySelected) {
@@ -135,25 +179,28 @@ export function GeographicalLocation({
     }
   }, [countrySelected])
 
-  useEffect(() => {
-    if (regionSelected) {
-      getCityList(regionSelected.key, 'los')
+  const handleSelectCity = (value: string) => {
+    const city = cityData.find(e => e.key === value)
+    const exist = citiesSelected.find(e => e.key === value)
+    if (city && !exist) {
+      setCitiesSelected([...citiesSelected, city])
     }
-  }, [regionSelected])
-
-  const options = ['1', '2']
-
-  const handleSelect = (value: string) => {
-    console.log('Selected value:', value)
+    setCityData([])
   }
-
-  return isReadOnly ? (
+  const handleRemoveCity = (value: string) => {
+    setCitiesSelected(citiesSelected.filter(city => city.key !== value))
+  }
+  const handleChangeKeyword = (value: string) => {
+    if (regionSelected && value.length > 0) {
+      searchCity(regionSelected.key, value)
+    } else {
+      setCityData([])
+    }
+  }
+  return isReadOnly  ? (
     <div className="p-6  border rounded-x">
-      You have selected the geographical area:{' '}
-      {countries?.map(country => country.name).join(', ')}
+      You have selected the geographical area:
     </div>
-  ) : isSubmitting ? (
-    <IconSpinner />
   ) : (
     <div className="p-6  border rounded-x">
       <div className="text-lg font-medium text-gray-900 dark:text-zinc-300 mb-2">
@@ -163,6 +210,7 @@ export function GeographicalLocation({
         <Label className="dark:text-zinc-200">Country</Label>
         <Select
           disabled={countryData.length === 0}
+          value={countrySelected?.country_code}
           onValueChange={value => {
             setCountrySelected(countryData.find(e => e.key === value))
           }}
@@ -204,8 +252,34 @@ export function GeographicalLocation({
         </Select>
       </div>
       <div className="mb-4">
-        <Label className="dark:text-zinc-200">City:</Label>
-        <ComboBox options={options} onSelect={handleSelect} />
+        <Label className="dark:text-zinc-200">City</Label>
+        <ComboBox
+          selectedOptions={citiesSelected.map(city => ({
+            label: city.name,
+            value: city.key
+          }))}
+          onChangeKeyword={handleChangeKeyword}
+          options={cityData.map(city => ({
+            label: city.name,
+            value: city.key
+          }))}
+          onSelect={handleSelectCity}
+          onRemove={handleRemoveCity}
+        />
+      </div>
+
+      <div className="flex mt-4 gap-4">
+        <Button
+          disabled={isSubmitting || !countrySelected}
+          onClick={async () => {
+            setIsSubmitting(true)
+            await handleUpdateAdset()
+          }}
+          className="flex justify-center items-center flex-1 px-3 py-2 text-xs align-middle font-medium text-center"
+        >
+          {isSubmitting && <IconSpinner />}
+          {!isSubmitting && 'Update'}
+        </Button>
       </div>
     </div>
   )

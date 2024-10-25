@@ -349,7 +349,7 @@ async function syncMessages() {
     });
 }
 
-async function confirmUpdateAdset(toolCallId: string, adsetId: string, adset: any) {
+async function confirmUpdateAdset(toolCallId: string, adsetId: string, adset: any, locationInfo?: string) {
   'use server'
   const aiState = getMutableAIState<typeof AI>();
   const chatId = getChatIdFromUrl()?.toString() || ''
@@ -1962,12 +1962,12 @@ Technology
             showGeographicalLocationUI: {
                 description: 'Show a UI of result geographical',
                 parameters: z.object({
-                    countries: z.array(z.object({
+                    country: z.object({
                         name: z.string().describe('The name of the country to display'),
                         code: z.string().describe('The country code (alpha-2 codes) of the country to display'),
-                    })).describe('List of countries user provided')
+                    }).describe('The country user provided')
                 }),
-                generate: async function* ({countries}) {
+                generate: async function* ({country}) {
                     const timestamp: string = new Date().toISOString();
                     const toolCallId = nanoid();
                     aiState.done({
@@ -1983,7 +1983,7 @@ Technology
                                         toolName: 'showGeographicalLocationUI',
                                         toolCallId,
                                         args: {
-                                            countries
+                                            country
                                         }
                                     }
                                 ],
@@ -1998,7 +1998,7 @@ Technology
                                         toolName: 'showGeographicalLocationUI',
                                         toolCallId,
                                         result: {
-                                            countries
+                                            country
                                         }
                                     }
                                 ],
@@ -2008,7 +2008,7 @@ Technology
                     })
                     return (
                         <BotCard>
-                            <GeographicalLocation toolCallId={toolCallId} countries={countries} />
+                            <GeographicalLocation toolCallId={toolCallId} country={country} />
                         </BotCard>
                     )
                 }
@@ -2222,7 +2222,7 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                             case 'showGeographicalLocationUI':
                                 return (
                                     <BotCard key={tool.toolCallId}>
-                                        <GeographicalLocation toolCallId={tool.toolCallId} countries={tool.result.countries} isReadOnly/>
+                                        <GeographicalLocation toolCallId={tool.toolCallId} countries={tool.result.country} isReadOnly/>
                                     </BotCard>
                                 ) 
                             default:
