@@ -51,6 +51,7 @@ import {sendSupervisedTaskMail}  from '@/lib/api/fasty-bot/send-supervised-task-
 import SupervisedTaskMessage from '@/components/supervised-task-message'
 import {getBaseUrl} from "@/lib/helpers/vercel/get-base-url"
 import adBudgetModule from "@/lib/ui-magic/modules/adBudgetModule";
+import targetingModule from "@/lib/ui-magic/modules/targetingModule";
 
 interface ToolResult {
     toolName: string;
@@ -993,6 +994,51 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
                     });
 
                     return await adBudgetModule.component({ symbol, price, numberOfShares, guideForUser });
+                }
+            }, analyzeCampaignTargeting: {
+                description: targetingModule.description,
+                parameters: targetingModule.parameters,
+                generate: async function* ({ campaignType, userDescription }) {
+                    const toolCallId = nanoid();
+
+                    // Initial loading state
+                    yield (
+                        <BotCard>
+                            <SpinnerMessage />
+                            <p>Analyzing campaign for targeting suggestions...</p>
+                        </BotCard>
+                    );
+
+                    await sleep(1000);
+
+                    // Update AI state
+                    aiState.done({
+                        ...aiState.get(),
+                        messages: [
+                            ...aiState.get().messages,
+                            {
+                                id: nanoid(),
+                                role: 'assistant',
+                                content: [
+                                    {
+                                        type: 'tool-call',
+                                        toolName: 'analyzeCampaignTargeting',
+                                        toolCallId,
+                                        args: { campaignType, userDescription }
+                                    }
+                                ],
+                                timestamp: new Date().toISOString()
+                            }
+                        ]
+                    });
+
+                    // Get result from module
+                    const result = await targetingModule.component({
+                        campaignType,
+                        userDescription
+                    });
+
+                    return result;
                 }
             },
             showFormBuilder: {
