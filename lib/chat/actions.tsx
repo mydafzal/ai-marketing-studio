@@ -50,6 +50,7 @@ import FormBuilder from '@/components/form-builder';
 import {sendSupervisedTaskMail}  from '@/lib/api/fasty-bot/send-supervised-task-mail';
 import SupervisedTaskMessage from '@/components/supervised-task-message'
 import {getBaseUrl} from "@/lib/helpers/vercel/get-base-url"
+import adBudgetModule from "@/lib/ui-magic/modules/adBudgetModule";
 
 interface ToolResult {
     toolName: string;
@@ -2055,66 +2056,6 @@ Engaged Shoppers]
             return textNode
         },
         tools: {
-            // listAds: {
-            //     description: 'List three imaginary ads that are currently running.',
-            //     parameters: z.object({
-            //         stocks: z.array(
-            //             z.object({
-            //                 symbol: z.string().describe('The name of the campaign'),
-            //                 price: z.number().describe('The daily ad budget of the campaign'),
-            //                 delta: z.number().describe('The change of the daily ad budget')
-            //             })
-            //         )
-            //     }),
-            //     generate: async function* ({stocks}) {
-            //         yield (
-            //             <BotCard>
-            //                 <StocksSkeleton/>
-            //             </BotCard>
-            //         )
-
-            //         await sleep(1000)
-
-            //         const toolCallId = nanoid()
-
-            //         aiState.done({
-            //             ...aiState.get(),
-            //             messages: [
-            //                 ...aiState.get().messages,
-            //                 {
-            //                     id: nanoid(),
-            //                     role: 'assistant',
-            //                     content: [
-            //                         {
-            //                             type: 'tool-call',
-            //                             toolName: 'listAds',
-            //                             toolCallId,
-            //                             args: {stocks}
-            //                         }
-            //                     ]
-            //                 },
-            //                 {
-            //                     id: nanoid(),
-            //                     role: 'tool',
-            //                     content: [
-            //                         {
-            //                             type: 'tool-result',
-            //                             toolName: 'listAds',
-            //                             toolCallId,
-            //                             result: stocks
-            //                         }
-            //                     ]
-            //                 }
-            //             ]
-            //         })
-
-            //         return (
-            //             <BotCard>
-            //                 <Stocks props={stocks}/>
-            //             </BotCard>
-            //         )
-            //     }
-            // },
             getCampaignResults: {
                 description:
                     'Get the current campaign results of a given digital marketing campaign from this user. Use this to show the current daily ad spent to the user.',
@@ -2235,26 +2176,11 @@ Engaged Shoppers]
                 }
             },
             showAdBudgetUI: {
-                description:
-                    'Show Facebook Ad Campaign name and the UI to set ad budget. Use this if the user wants to change his ad budget.',
-                parameters: z.object({
-                    symbol: z
-                        .string()
-                        .describe(
-                            'The name of the digital marketing campaign. e.g. Recruiting Campaign Chef Cook.'
-                        ),
-                    price: z.number().describe('The current daily amount of ad budget spent.'),
-                    numberOfShares: z
-                        .number()
-                        .optional()
-                        .describe(
-                            'The **daily ad spend** for a campaign that a user wants to invest. Can be optional if the user did not specify it.'
-                        ),
-                    guideForUser: z.string().optional().describe('This is the guide for user about this component, this is optional'),
-                }),
-                generate: async function* ({symbol, price, numberOfShares, guideForUser}) {
-                    const toolCallId = nanoid()
-                    const initialBudget = numberOfShares || price
+                description: adBudgetModule.description,
+                parameters: adBudgetModule.parameters,
+                generate: async function* ({ symbol, price, numberOfShares, guideForUser }) {
+                    const toolCallId = nanoid();
+                    const initialBudget = numberOfShares || price;
 
                     if (initialBudget <= 0 || initialBudget > 1000) {
                         aiState.done({
@@ -2269,7 +2195,7 @@ Engaged Shoppers]
                                             type: 'tool-call',
                                             toolName: 'showAdBudgetUI',
                                             toolCallId,
-                                            args: {symbol, price, numberOfShares: initialBudget, guideForUser}
+                                            args: { symbol, price, numberOfShares: initialBudget, guideForUser }
                                         }
                                     ],
                                     timestamp: new Date().toISOString()
@@ -2302,65 +2228,48 @@ Engaged Shoppers]
                             ]
                         });
 
-
-                        return <BotMessage content={'Invalid amount'}/>
-                    } else {
-                        aiState.done({
-                            ...aiState.get(),
-                            messages: [
-                                ...aiState.get().messages,
-                                {
-                                    id: nanoid(),
-                                    role: 'assistant',
-                                    content: [
-                                        {
-                                            type: 'tool-call',
-                                            toolName: 'showAdBudgetUI',
-                                            toolCallId,
-                                            args: {symbol, price, numberOfShares: initialBudget, guideForUser}
-                                        }
-                                    ],
-                                    timestamp: new Date().toISOString()
-                                },
-                                {
-                                    id: nanoid(),
-                                    role: 'tool',
-                                    content: [
-                                        {
-                                            type: 'tool-result',
-                                            toolName: 'showAdBudgetUI',
-                                            toolCallId,
-                                            result: {
-                                                symbol,
-                                                price,
-                                                numberOfShares: initialBudget,
-                                                guideForUser
-                                            }
-                                        }
-                                    ],
-                                    timestamp: new Date().toISOString()
-                                }
-                            ]
-                        });
-
-                        return (
-                            <>
-                                <BotCard>
-                                    <Purchase
-                                        props={{
-                                            symbol,
-                                            price: +price,
-                                            initialBudget: initialBudget,
-                                            status: 'requires_action'
-                                        }}
-                                    />
-                                </BotCard>
-                                <div className="my-4">
-                                    {guideForUser ?? ''}
-                                </div>
-                            </>
-                        )
+                        return await adBudgetModule.component({ symbol, price, numberOfShares, guideForUser });
                     }
+
+                    aiState.done({
+                        ...aiState.get(),
+                        messages: [
+                            ...aiState.get().messages,
+                            {
+                                id: nanoid(),
+                                role: 'assistant',
+                                content: [
+                                    {
+                                        type: 'tool-call',
+                                        toolName: 'showAdBudgetUI',
+                                        toolCallId,
+                                        args: { symbol, price, numberOfShares: initialBudget, guideForUser }
+                                    }
+                                ],
+                                timestamp: new Date().toISOString()
+                            },
+                            {
+                                id: nanoid(),
+                                role: 'tool',
+                                content: [
+                                    {
+                                        type: 'tool-result',
+                                        toolName: 'showAdBudgetUI',
+                                        toolCallId,
+                                        result: {
+                                            symbol,
+                                            price,
+                                            numberOfShares: initialBudget,
+                                            guideForUser
+                                        }
+                                    }
+                                ],
+                                timestamp: new Date().toISOString()
+                            }
+                        ]
+                    });
+
+                    return await adBudgetModule.component({ symbol, price, numberOfShares, guideForUser });
                 }
             },
             showFormBuilder: {
