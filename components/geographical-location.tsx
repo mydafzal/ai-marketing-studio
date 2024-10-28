@@ -28,7 +28,7 @@ import { type AI } from '@/lib/chat/actions'
 interface GeoGraphicalLocationProps {
   toolCallId: string
   locationUiProps?: {
-    locationData: {
+    demographicData: {
       [key: string]: any
     }
     success: boolean
@@ -68,7 +68,7 @@ export function GeographicalLocation({
   async function handleUpdateAdset() {
     if (!adset || !countrySelected) return
     let newTargeting: AdsetTargeting = { ...adset.targeting }
-    let locationData: {
+    let demographicData: {
       [key: string]: any
     } = {}
 
@@ -91,22 +91,22 @@ export function GeographicalLocation({
         }))
       }
 
-      locationData.cities = citiesSelected
+      demographicData.cities = citiesSelected
     } else if (regionSelected) {
       newTargeting.geo_locations = {
         regions: [{ key: regionSelected?.key }]
       }
-      locationData.regions = [regionSelected]
+      demographicData.regions = [regionSelected]
     } else {
       newTargeting.geo_locations = {
         countries: [countrySelected?.country_code]
       }
-      locationData.countries = [countrySelected]
+      demographicData.countries = [countrySelected]
     }
-    locationData.age_min = ageMin
-    locationData.age_max = ageMax
+    demographicData.age_min = ageMin
+    demographicData.age_max = ageMax
 
-    locationData.genders = genders
+    demographicData.genders = genders
 
     const response = await confirmUpdateAdset(
       toolCallId,
@@ -114,7 +114,7 @@ export function GeographicalLocation({
       {
         targeting: newTargeting
       },
-      locationData
+      demographicData
     )
     setMessages(currentMessages => [...currentMessages, response.newMessage])
     for await (const updatedAdset of readStreamableValue<Adset>(
@@ -126,7 +126,7 @@ export function GeographicalLocation({
         setGraphicalLocationUI(
           <GeographicalLocationResult
             success={true}
-            locationData={locationData}
+            demographicData={demographicData}
           />
         )
       }

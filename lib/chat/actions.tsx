@@ -350,7 +350,7 @@ async function syncMessages() {
     });
 }
 
-async function confirmUpdateAdset(toolCallId: string, adsetId: string, adset: any, locationData: any) {
+async function confirmUpdateAdset(toolCallId: string, adsetId: string, adset: any, demographicData: any) {
   'use server'
   const aiState = getMutableAIState<typeof AI>();
   const chatId = getChatIdFromUrl()?.toString() || ''
@@ -402,24 +402,23 @@ async function confirmUpdateAdset(toolCallId: string, adsetId: string, adset: an
               ).locationUiProps ?? {
                 success: true,
                 targeting: response?.data.targeting,
-                locationData: locationData
+                demographicData: demographicData
               }
             }
           }
       }
-      responseStream.done(response.data);
+      responseStream.done(response.data)
       aiState.done({
         ...aiState.get(),
-        messages: [
-          ...messages.slice(0, -1),
-          lastMessage!
-        ]
+        messages: [...messages.slice(0, -1), lastMessage!]
       })
       systemMessage.done(
         <SystemMessage>
-          You have successfully updated placement targeting
+          You have successfully updated{' '}
+          {demographicData ? `demographic targeting` : `placement targeting`}
         </SystemMessage>
-      );
+      )
+    
     } else {
       responseStream.done(false);
       systemMessage.done(
