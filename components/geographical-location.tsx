@@ -43,7 +43,8 @@ export function GeographicalLocation({
 }: GeoGraphicalLocationProps) {
   const { adset, setAdset } = useContext(CampaignContext)
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
-  const { confirmUpdateAdset } = useActions()
+  const { confirmUpdateAdset, submitUserMessage } = useActions()
+
   const [_, setMessages] = useUIState<typeof AI>()
   const [countryData, setCountryData] = useState<Country[]>([])
   const [countrySelected, setCountrySelected] = useState<Country>()
@@ -129,6 +130,12 @@ export function GeographicalLocation({
             demographicData={demographicData}
           />
         )
+        const responseMessage = await submitUserMessage(
+          'Please make suggestions interest filters use Categories of interest filters and current demographic targeting',
+          [],
+          true
+        )
+        setMessages(currentMessages => [...currentMessages, responseMessage])
       }
     }
     setIsSubmitting(false)

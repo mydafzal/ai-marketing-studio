@@ -541,20 +541,20 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
     }
     const session = (await auth()) as Session
     await checkNewChat(chatId, aiState.get().messages, session);
-    if (!isSilent) {
-        aiState.update({
-            ...aiState.get(),
-            messages: [
-                ...aiState.get().messages,
-                {
-                    id: nanoid(),
-                    role: 'user',
-                    content: contentImages?.length ? contentImages : content,
-                    timestamp: new Date().toISOString(),
-                }
-            ]
-        })
-    }
+    const messageId = nanoid();
+
+    aiState.update({
+      ...aiState.get(),
+      messages: [
+        ...aiState.get().messages,
+        {
+          id: messageId,
+          role: 'user',
+          content: contentImages?.length ? contentImages : content,
+          timestamp: new Date().toISOString()
+        }
+      ]
+    })
 
     let textStream: undefined | ReturnType<typeof createStreamableValue<string>>
     let textNode: undefined | React.ReactNode
@@ -1081,9 +1081,9 @@ Technology
     
     - If the user wants to complete another specific task, respond that you are a demo and cannot perform that action.
     
-    - If you want to update or add geographical area location, call \`show_geographical_location_ui\` to show the form geographical area UI.
+    - If you want to update or add demographic targeting, call \`show_demographic_location_ui\` to show the form demographic targeting UI.
     
-    - If you want to update interest filters ask to user about name of the filter (use Categories of interest filters to suggestion to user, user must select one or more filters name from it), always ask to user add more filter. then  \`show_interest_filter_ui\` to show the result to UI.
+    - If you want to make suggestions filter call \`show_suggested_filters\` , (use Categories of interest filters) and current demographic targeting to make 5 suggestions filter
 
     - Besides that, you can also chat with users and perform budget calculations if needed.
     
@@ -1110,20 +1110,25 @@ Technology
                 aiState.done({
                     ...aiState.get(),
                     messages: [
-                        ...aiState.get().messages.map((message: any) => ({
+                        ...aiState
+                          .get()
+                          .messages.filter((message: any) =>
+                            isSilent ? message.id !== messageId : true
+                          )
+                          .map((message: any) => ({
                             id: message.id,
                             role: message.role,
                             content: message.content,
                             name: message.name,
                             timestamp: message.timestamp
-                        })),
+                          })),
                         {
-                            id: nanoid(),
-                            role: 'assistant',
-                            content,
-                            timestamp: new Date().toISOString()
+                          id: nanoid(),
+                          role: 'assistant',
+                          content,
+                          timestamp: new Date().toISOString()
                         }
-                    ]
+                      ]
                 });
             } else {
                 textStream.update(delta)
@@ -2021,14 +2026,19 @@ Technology
                     )
                 }
             },
-            showInterestFilterUI:{
-                description: 'Show a UI of result interest filter',
+            showSuggestedFilters: {
+                description: 'Show a UI of result suggested filters',
                 parameters: z.object({
-                    filterNames: z.array(z.string()).describe('The array of interest filter from user provided')
+                    suggestedFitlers: z.array(
+                        z.array(
+                            z.string().describe('filter name of suggestion')
+                        )
+                    ).describe('The array of suggested filters from AI provided, a suggestion filter will have one or more filter name')
                 }),
-                generate: async function* ({filterNames}) {
+                generate: async function* ({suggestedFitlers}) {
                     const timestamp: string = new Date().toISOString();
                     const toolCallId = nanoid();
+                    console.log("🚀 ~ submitUserMessage ~ suggestedFitlers:", suggestedFitlers)
                     aiState.done({
                         ...aiState.get(),
                         messages: [
@@ -2042,7 +2052,7 @@ Technology
                                         toolName: 'showAgeGenderUI',
                                         toolCallId,
                                         args: {
-                                            filterNames,
+                                            suggestedFitlers,
                                         }
                                     }
                                 ],
@@ -2057,7 +2067,7 @@ Technology
                                         toolName: 'showAgeGenderUI',
                                         toolCallId,
                                         result: {
-                                            filterNames
+                                            suggestedFitlers
                                         }
                                     }
                                 ],
@@ -2067,7 +2077,7 @@ Technology
                     })
                     return (
                         <BotCard>
-                            <InterestFilter toolCallId={toolCallId} filterNames={filterNames}  />
+                            <InterestFilter toolCallId={toolCallId} suggestedFitlers={suggestedFitlers}  />
                         </BotCard>
                     )
                 }
@@ -2289,10 +2299,10 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                         />
                                     </BotCard>
                                 ) 
-                            case 'showInterestFilterUI':
+                            case 'showSuggestedFilters':
                                 return (
                                     <BotCard key={tool.toolCallId}>
-                                        <InterestFilter toolCallId={tool.toolCallId} filterNames={tool.result.filterNames} />
+                                        <InterestFilter toolCallId={tool.toolCallId} suggestedFitlers={tool.result.suggestedFitlers} />
                                     </BotCard>
                                 )
                             default:
