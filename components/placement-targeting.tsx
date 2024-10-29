@@ -198,7 +198,7 @@ export function PlacementTargeting({
 
     const response = await confirmUpdateAdset(toolCallId, adset.id, {
       targeting: newTargeting
-    })
+    }, 'placement')
     setMessages(currentMessages => [...currentMessages, response.newMessage])
     for await (const updatedAdset of readStreamableValue<Adset>(
       response.response

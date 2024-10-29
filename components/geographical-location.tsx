@@ -115,6 +115,7 @@ export function GeographicalLocation({
       {
         targeting: newTargeting
       },
+      'geographical',
       demographicData
     )
     setMessages(currentMessages => [...currentMessages, response.newMessage])

@@ -29,7 +29,7 @@ import {ImagePart, TextPart} from 'ai'
 
 import {formatNumber, nanoid, runAsyncFnWithoutBlocking, sleep} from '@/lib/utils'
 import {SpinnerMessage, UserMessage} from '@/components/stocks/message'
-import {Adset, AdText, LeadgenFrom, Chat, Message, Session} from '@/lib/types';
+import {Adset, ReachEstimateResult, LeadgenFrom, Chat, Message, Session} from '@/lib/types';
 import {auth} from '@/auth'
 import {setDailyCampaignBudget} from '@/lib/api/fasty-bot/set-daily-campaign-budget';
 import {setCampaignStatus} from '@/lib/api/fasty-bot/set-campaign-status';
@@ -350,13 +350,33 @@ async function syncMessages() {
     });
 }
 
-async function confirmUpdateAdset(toolCallId: string, adsetId: string, adset: any, demographicData: any) {
+async function confirmUpdateAdset(toolCallId: string, adsetId: string, adset: any, type: string, extraData: any) {
   'use server'
   const aiState = getMutableAIState<typeof AI>();
   const chatId = getChatIdFromUrl()?.toString() || ''
-
-  const budget = await fetchChatCampaignBudget(chatId)
+  const MIN_REACH = 1000;
+  const MAX_REACH = 50000;
   let adsetUpdate = { ...adset }
+  let selectedFilter = undefined;
+  if (type === 'suggested_filters' && extraData.length > 0) {
+    const estimateResult = extraData as ReachEstimateResult[]
+    selectedFilter = estimateResult.find(
+      result =>
+        result.result.users_lower_bound >= MIN_REACH &&
+        result.result.users_lower_bound <= MAX_REACH
+    )
+    if (!selectedFilter) {
+      selectedFilter = estimateResult[0]
+    }
+    adsetUpdate = {
+      ...adsetUpdate,
+      targeting: {
+        ...adsetUpdate.targeting,
+        flexible_spec: selectedFilter.targeting_spec.flexible_spec
+      }
+    }
+  }
+  const budget = await fetchChatCampaignBudget(chatId)
   if (budget.error) {
     adsetUpdate = { ...adsetUpdate, daily_budget: 100 }
   }
@@ -402,7 +422,24 @@ async function confirmUpdateAdset(toolCallId: string, adsetId: string, adset: an
               ).locationUiProps ?? {
                 success: true,
                 targeting: response?.data.targeting,
-                demographicData: demographicData
+                demographicData: extraData
+              }
+            }
+          }
+          if (
+            content.type === 'tool-result' &&
+            content.toolName === 'showSuggestedFilters'
+          ) {
+            content.result = {
+              ...(content.result as Object),
+              suggestedUiProps: (
+              content.result as {
+                suggestedUiProps: object
+              }
+              ).suggestedUiProps ?? {
+                success: true,
+                targeting: response?.data.targeting,
+                suggestedFilter: response?.data.targeting.flexible_spec[0]
               }
             }
           }
@@ -415,7 +452,7 @@ async function confirmUpdateAdset(toolCallId: string, adsetId: string, adset: an
       systemMessage.done(
         <SystemMessage>
           You have successfully updated{' '}
-          {demographicData ? `demographic targeting` : `placement targeting`}
+          {type==="geographical" ? `demographic targeting` : type==="suggested_filters" ? 'interest filter' : `placement targeting`}
         </SystemMessage>
       )
     
@@ -2301,7 +2338,7 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                             case 'showSuggestedFilters':
                                 return (
                                     <BotCard key={tool.toolCallId}>
-                                        <SuggestedFilters toolCallId={tool.toolCallId} suggestedFitlers={tool.result.suggestedFitlers} />
+                                        <SuggestedFilters toolCallId={tool.toolCallId} suggestedFitlers={tool.result.suggestedFitlers} suggestedUiProps={tool.result.suggestedUiProps} isReadOnly  />
                                     </BotCard>
                                 )
                             default:
