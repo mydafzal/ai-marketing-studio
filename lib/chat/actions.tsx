@@ -46,7 +46,7 @@ import {ConnectCampaign} from '@/components/connect-campaign'
 import {PlacementTargeting} from '@/components/placement-targeting';
 import FormBuilder from '@/components/form-builder';
 import {GeographicalLocation} from '@/components/geographical-location';
-import {InterestFilter} from '@/components/interest-filter';
+import {SuggestedFilters} from '@/components/suggested-filters';
 
 
 interface ToolResult {
@@ -2038,7 +2038,6 @@ Technology
                 generate: async function* ({suggestedFitlers}) {
                     const timestamp: string = new Date().toISOString();
                     const toolCallId = nanoid();
-                    console.log("🚀 ~ submitUserMessage ~ suggestedFitlers:", suggestedFitlers)
                     aiState.done({
                         ...aiState.get(),
                         messages: [
@@ -2049,7 +2048,7 @@ Technology
                                 content: [
                                     {
                                         type: 'tool-call',
-                                        toolName: 'showAgeGenderUI',
+                                        toolName: 'showSuggestedFilters',
                                         toolCallId,
                                         args: {
                                             suggestedFitlers,
@@ -2064,7 +2063,7 @@ Technology
                                 content: [
                                     {
                                         type: 'tool-result',
-                                        toolName: 'showAgeGenderUI',
+                                        toolName: 'showSuggestedFilters',
                                         toolCallId,
                                         result: {
                                             suggestedFitlers
@@ -2077,7 +2076,7 @@ Technology
                     })
                     return (
                         <BotCard>
-                            <InterestFilter toolCallId={toolCallId} suggestedFitlers={suggestedFitlers}  />
+                            <SuggestedFilters toolCallId={toolCallId} suggestedFitlers={suggestedFitlers}  />
                         </BotCard>
                     )
                 }
@@ -2302,7 +2301,7 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                             case 'showSuggestedFilters':
                                 return (
                                     <BotCard key={tool.toolCallId}>
-                                        <InterestFilter toolCallId={tool.toolCallId} suggestedFitlers={tool.result.suggestedFitlers} />
+                                        <SuggestedFilters toolCallId={tool.toolCallId} suggestedFitlers={tool.result.suggestedFitlers} />
                                     </BotCard>
                                 )
                             default:
