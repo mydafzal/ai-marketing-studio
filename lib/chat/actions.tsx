@@ -1427,38 +1427,35 @@ Technology
                 parameters: z.object({}),
                 generate: async function* () {
                     const toolCallId = nanoid()
-                    aiState.done({
-                        ...aiState.get(),
-                        messages: [
-                            ...aiState.get().messages,
-                            {
-                                id: nanoid(),
-                                role: 'assistant',
-                                content: [
-                                    {
-                                        type: 'tool-call',
-                                        toolName: 'showFormBuilder',
-                                        toolCallId,
-                                        args: {}
-                                    }
-                                ],
-                                timestamp: new Date().toISOString()
-                            },
-                            {
-                                id: toolCallId,
-                                role: 'tool',
-                                content: [
-                                    {
-                                        type: 'tool-result',
-                                        toolName: 'showFormBuilder',
-                                        toolCallId,
-                                        result: {}
-                                    }
-                                ],
-                                timestamp: new Date().toISOString()
-                            },
-                        ]
-                    });
+                    pushMessages([
+                        {
+                            id: nanoid(),
+                            role: 'assistant',
+                            content: [
+                                {
+                                    type: 'tool-call',
+                                    toolName: 'showFormBuilder',
+                                    toolCallId,
+                                    args: {}
+                                }
+                            ],
+                            timestamp: new Date().toISOString()
+                        },
+                        {
+                            id: toolCallId,
+                            role: 'tool',
+                            content: [
+                                {
+                                    type: 'tool-result',
+                                    toolName: 'showFormBuilder',
+                                    toolCallId,
+                                    result: {}
+                                }
+                            ],
+                            timestamp: new Date().toISOString()
+                        },
+                    ])
+                
 
                     return (
                         <BotCard>
@@ -1489,40 +1486,35 @@ Technology
                     await sleep(1000)
 
                     const toolCallId = nanoid()
-
-                    aiState.done({
-                        ...aiState.get(),
-                        messages: [
-                            ...aiState.get().messages,
-                            {
-                                id: nanoid(),
-                                role: 'assistant',
-                                content: [
-                                    {
-                                        type: 'tool-call',
-                                        toolName: 'getEvents',
-                                        toolCallId,
-                                        args: {events}
-                                    }
-                                ],
-                                timestamp: new Date().toISOString()
-                            },
-                            {
-                                id: nanoid(),
-                                role: 'tool',
-                                content: [
-                                    {
-                                        type: 'tool-result',
-                                        toolName: 'getEvents',
-                                        toolCallId,
-                                        result: events
-                                    }
-                                ],
-                                timestamp: new Date().toISOString()
-                            }
-                        ]
-                    });
-
+                    pushMessages([
+                        {
+                            id: nanoid(),
+                            role: 'assistant',
+                            content: [
+                                {
+                                    type: 'tool-call',
+                                    toolName: 'getEvents',
+                                    toolCallId,
+                                    args: {events}
+                                }
+                            ],
+                            timestamp: new Date().toISOString()
+                        },
+                        {
+                            id: nanoid(),
+                            role: 'tool',
+                            content: [
+                                {
+                                    type: 'tool-result',
+                                    toolName: 'getEvents',
+                                    toolCallId,
+                                    result: events
+                                }
+                            ],
+                            timestamp: new Date().toISOString()
+                        }
+                    ])
+                  
 
                     return (
                         <BotCard>
@@ -1557,39 +1549,35 @@ Technology
                     await sleep(1000);
 
                     const toolCallId = nanoid();
-
-                    aiState.done({
-                        ...aiState.get(),
-                        messages: [
-                            ...aiState.get().messages,
-                            {
-                                id: nanoid(),
-                                role: 'assistant',
-                                content: [
-                                    {
-                                        type: 'tool-call',
-                                        toolName: 'showSuggestionAdText',
-                                        toolCallId,
-                                        args: {campaignName, images, guideForUser}
-                                    }
-                                ],
-                                timestamp: new Date().toISOString()
-                            },
-                            {
-                                id: nanoid(),
-                                role: 'tool',
-                                content: [
-                                    {
-                                        type: 'tool-result',
-                                        toolName: 'showSuggestionAdText',
-                                        toolCallId,
-                                        result: {campaignName, images, guideForUser}
-                                    }
-                                ],
-                                timestamp: new Date().toISOString()
-                            }
-                        ]
-                    });
+                    pushMessages([
+                        {
+                            id: nanoid(),
+                            role: 'assistant',
+                            content: [
+                                {
+                                    type: 'tool-call',
+                                    toolName: 'showSuggestionAdText',
+                                    toolCallId,
+                                    args: {campaignName, images, guideForUser}
+                                }
+                            ],
+                            timestamp: new Date().toISOString()
+                        },
+                        {
+                            id: nanoid(),
+                            role: 'tool',
+                            content: [
+                                {
+                                    type: 'tool-result',
+                                    toolName: 'showSuggestionAdText',
+                                    toolCallId,
+                                    result: {campaignName, images, guideForUser}
+                                }
+                            ],
+                            timestamp: new Date().toISOString()
+                        }
+                    ])
+                
 
                     return (
                         <>
@@ -1630,39 +1618,35 @@ Technology
                     await sleep(1000);
 
                     const toolCallId = nanoid();
-
-                    aiState.done({
-                        ...aiState.get(),
-                        messages: [
-                            ...aiState.get().messages,
-                            {
-                                id: nanoid(),
-                                role: 'assistant',
-                                content: [
-                                    {
-                                        type: 'tool-call',
-                                        toolName: 'showVideoAdTextSuggestion',
-                                        toolCallId,
-                                        args: {campaignName, videos, guideForUser}
-                                    }
-                                ],
-                                timestamp: new Date().toISOString()
-                            },
-                            {
-                                id: nanoid(),
-                                role: 'tool',
-                                content: [
-                                    {
-                                        type: 'tool-result',
-                                        toolName: 'showVideoAdTextSuggestion',
-                                        toolCallId,
-                                        result: {campaignName, videos, guideForUser}
-                                    }
-                                ],
-                                timestamp: new Date().toISOString()
-                            }
-                        ]
-                    });
+                    pushMessages([
+                        {
+                            id: nanoid(),
+                            role: 'assistant',
+                            content: [
+                                {
+                                    type: 'tool-call',
+                                    toolName: 'showVideoAdTextSuggestion',
+                                    toolCallId,
+                                    args: {campaignName, videos, guideForUser}
+                                }
+                            ],
+                            timestamp: new Date().toISOString()
+                        },
+                        {
+                            id: nanoid(),
+                            role: 'tool',
+                            content: [
+                                {
+                                    type: 'tool-result',
+                                    toolName: 'showVideoAdTextSuggestion',
+                                    toolCallId,
+                                    result: {campaignName, videos, guideForUser}
+                                }
+                            ],
+                            timestamp: new Date().toISOString()
+                        }
+                    ])
+           
                     return (
                         <BotCard>
                             <VideoAdTextSuggestion videos={videos}/>
@@ -1689,40 +1673,34 @@ Technology
                     await sleep(1000);
 
                     const toolCallId = nanoid();
-
-                    aiState.done({
-                        ...aiState.get(),
-                        messages: [
-                            ...aiState.get().messages,
-                            {
-                                id: nanoid(),
-                                role: 'assistant',
-                                content: [
-                                    {
-                                        type: 'tool-call',
-                                        toolName: 'showUpdateStatusCampaign',
-                                        toolCallId,
-                                        args: {campaignName, status}
-                                    }
-                                ],
-                                timestamp: new Date().toISOString()
-                            },
-                            {
-                                id: nanoid(),
-                                role: 'tool',
-                                content: [
-                                    {
-                                        type: 'tool-result',
-                                        toolName: 'showUpdateStatusCampaign',
-                                        toolCallId,
-                                        result: {campaignName, status}
-                                    }
-                                ],
-                                timestamp: new Date().toISOString()
-                            }
-                        ]
-                    });
-
+                    pushMessages([
+                        {
+                            id: nanoid(),
+                            role: 'assistant',
+                            content: [
+                                {
+                                    type: 'tool-call',
+                                    toolName: 'showUpdateStatusCampaign',
+                                    toolCallId,
+                                    args: {campaignName, status}
+                                }
+                            ],
+                            timestamp: new Date().toISOString()
+                        },
+                        {
+                            id: nanoid(),
+                            role: 'tool',
+                            content: [
+                                {
+                                    type: 'tool-result',
+                                    toolName: 'showUpdateStatusCampaign',
+                                    toolCallId,
+                                    result: {campaignName, status}
+                                }
+                            ],
+                            timestamp: new Date().toISOString()
+                        }
+                    ])
 
                     return (
                         <BotCard>
@@ -1747,38 +1725,34 @@ Technology
                     await updateChatTitle(aiState.get().chatId, campaignName)
                     const timestamp: string = new Date().toISOString();
                     const toolCallId = nanoid();
-                    aiState.done({
-                        ...aiState.get(),
-                        messages: [
-                            ...aiState.get().messages,
-                            {
-                                id: nanoid(),
-                                role: 'assistant',
-                                content: [
-                                    {
-                                        type: 'tool-call',
-                                        toolName: 'showCampaignNameUpdateUI',
-                                        toolCallId,
-                                        args: {campaignName, campaignId, questionForBudget}
-                                    }
-                                ],
-                                timestamp
-                            },
-                            {
-                                id: toolCallId,
-                                role: 'tool',
-                                content: [
-                                    {
-                                        type: 'tool-result',
-                                        toolName: 'showCampaignNameUpdateUI',
-                                        toolCallId,
-                                        result: {campaignName, campaignId, questionForBudget}
-                                    }
-                                ],
-                                timestamp
-                            }
-                        ]
-                    })
+                    pushMessages([
+                        {
+                            id: nanoid(),
+                            role: 'assistant',
+                            content: [
+                                {
+                                    type: 'tool-call',
+                                    toolName: 'showCampaignNameUpdateUI',
+                                    toolCallId,
+                                    args: {campaignName, campaignId, questionForBudget}
+                                }
+                            ],
+                            timestamp
+                        },
+                        {
+                            id: toolCallId,
+                            role: 'tool',
+                            content: [
+                                {
+                                    type: 'tool-result',
+                                    toolName: 'showCampaignNameUpdateUI',
+                                    toolCallId,
+                                    result: {campaignName, campaignId, questionForBudget}
+                                }
+                            ],
+                            timestamp
+                        }
+                    ])
                     return (
                         <BotCard>
                             <p className="mb-2 last:mb-0">{`Alright, I will update campaign name as "${campaignName}".`}</p>
@@ -1819,38 +1793,35 @@ Technology
                     }
                     const timestamp: string = new Date().toISOString();
                     const toolCallId = nanoid();
-                    aiState.done({
-                        ...aiState.get(),
-                        messages: [
-                            ...aiState.get().messages,
-                            {
-                                id: nanoid(),
-                                role: 'assistant',
-                                content: [
-                                    {
-                                        type: 'tool-call',
-                                        toolName: 'createCampaign',
-                                        toolCallId,
-                                        args: {success, campaignName, campaignId, questionForBudget}
-                                    }
-                                ],
-                                timestamp
-                            },
-                            {
-                                id: toolCallId,
-                                role: 'tool',
-                                content: [
-                                    {
-                                        type: 'tool-result',
-                                        toolName: 'createCampaign',
-                                        toolCallId,
-                                        result: {success, campaignName, campaignId, questionForBudget}
-                                    }
-                                ],
-                                timestamp
-                            }
-                        ]
-                    })
+                    pushMessages([
+                        {
+                            id: nanoid(),
+                            role: 'assistant',
+                            content: [
+                                {
+                                    type: 'tool-call',
+                                    toolName: 'createCampaign',
+                                    toolCallId,
+                                    args: {success, campaignName, campaignId, questionForBudget}
+                                }
+                            ],
+                            timestamp
+                        },
+                        {
+                            id: toolCallId,
+                            role: 'tool',
+                            content: [
+                                {
+                                    type: 'tool-result',
+                                    toolName: 'createCampaign',
+                                    toolCallId,
+                                    result: {success, campaignName, campaignId, questionForBudget}
+                                }
+                            ],
+                            timestamp
+                        }
+                    ])
+             
                     return success ? (
                         <BotCard>
                             <p className="mb-2 last:mb-0">{`I created a campaign named "${campaignName}".`}</p>
@@ -1872,38 +1843,34 @@ Technology
                     console.log('tool call showCampaignConnectionUI')
                     const timestamp: string = new Date().toISOString();
                     const toolCallId = nanoid();
-                    aiState.done({
-                        ...aiState.get(),
-                        messages: [
-                            ...aiState.get().messages,
-                            {
-                                id: nanoid(),
-                                role: 'assistant',
-                                content: [
-                                    {
-                                        type: 'tool-call',
-                                        toolName: 'showCampaignConnectionUI',
-                                        toolCallId,
-                                        args: {}
-                                    }
-                                ],
-                                timestamp
-                            },
-                            {
-                                id: toolCallId,
-                                role: 'tool',
-                                content: [
-                                    {
-                                        type: 'tool-result',
-                                        toolName: 'showCampaignConnectionUI',
-                                        toolCallId,
-                                        result: {}
-                                    }
-                                ],
-                                timestamp
-                            }
-                        ]
-                    })
+                    pushMessages([
+                        {
+                            id: nanoid(),
+                            role: 'assistant',
+                            content: [
+                                {
+                                    type: 'tool-call',
+                                    toolName: 'showCampaignConnectionUI',
+                                    toolCallId,
+                                    args: {}
+                                }
+                            ],
+                            timestamp
+                        },
+                        {
+                            id: toolCallId,
+                            role: 'tool',
+                            content: [
+                                {
+                                    type: 'tool-result',
+                                    toolName: 'showCampaignConnectionUI',
+                                    toolCallId,
+                                    result: {}
+                                }
+                            ],
+                            timestamp
+                        }
+                    ])
                     return (
                         <BotCard>
                             <ConnectCampaign />
@@ -1918,38 +1885,35 @@ Technology
                     console.log('tool call showPlacementTargetingUI')
                     const timestamp: string = new Date().toISOString();
                     const toolCallId = nanoid();
-                    aiState.done({
-                        ...aiState.get(),
-                        messages: [
-                            ...aiState.get().messages,
-                            {
-                                id: nanoid(),
-                                role: 'assistant',
-                                content: [
-                                    {
-                                        type: 'tool-call',
-                                        toolName: 'showPlacementTargetingUI',
-                                        toolCallId,
-                                        args: {}
-                                    }
-                                ],
-                                timestamp
-                            },
-                            {
-                                id: toolCallId,
-                                role: 'tool',
-                                content: [
-                                    {
-                                        type: 'tool-result',
-                                        toolName: 'showPlacementTargetingUI',
-                                        toolCallId,
-                                        result: {}
-                                    }
-                                ],
-                                timestamp
-                            }
-                        ]
-                    })
+                    pushMessages([
+                        {
+                            id: nanoid(),
+                            role: 'assistant',
+                            content: [
+                                {
+                                    type: 'tool-call',
+                                    toolName: 'showPlacementTargetingUI',
+                                    toolCallId,
+                                    args: {}
+                                }
+                            ],
+                            timestamp
+                        },
+                        {
+                            id: toolCallId,
+                            role: 'tool',
+                            content: [
+                                {
+                                    type: 'tool-result',
+                                    toolName: 'showPlacementTargetingUI',
+                                    toolCallId,
+                                    result: {}
+                                }
+                            ],
+                            timestamp
+                        }
+                    ])
+
                     return (
                         <BotCard>
                             <PlacementTargeting toolCallId={toolCallId}/>
@@ -1963,38 +1927,34 @@ Technology
                 generate: async function* ({}) {
                     const timestamp: string = new Date().toISOString();
                     const toolCallId = nanoid();
-                    aiState.done({
-                        ...aiState.get(),
-                        messages: [
-                            ...aiState.get().messages,
-                            {
-                                id: nanoid(),
-                                role: 'assistant',
-                                content: [
-                                    {
-                                        type: 'tool-call',
-                                        toolName: 'showGeographicalLocationUI',
-                                        toolCallId,
-                                        args: {}
-                                    }
-                                ],
-                                timestamp
-                            },
-                            {
-                                id: toolCallId,
-                                role: 'tool',
-                                content: [
-                                    {
-                                        type: 'tool-result',
-                                        toolName: 'showGeographicalLocationUI',
-                                        toolCallId,
-                                        result: {}
-                                    }
-                                ],
-                                timestamp
-                            }
-                        ]
-                    })
+                    pushMessages([
+                        {
+                            id: nanoid(),
+                            role: 'assistant',
+                            content: [
+                                {
+                                    type: 'tool-call',
+                                    toolName: 'showGeographicalLocationUI',
+                                    toolCallId,
+                                    args: {}
+                                }
+                            ],
+                            timestamp
+                        },
+                        {
+                            id: toolCallId,
+                            role: 'tool',
+                            content: [
+                                {
+                                    type: 'tool-result',
+                                    toolName: 'showGeographicalLocationUI',
+                                    toolCallId,
+                                    result: {}
+                                }
+                            ],
+                            timestamp
+                        }
+                    ])
                     return (
                         <BotCard>
                             <GeographicalLocation toolCallId={toolCallId} />
@@ -2268,7 +2228,7 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                     <BotCard key={tool.toolCallId}>
                                         <GeographicalLocation
                                           toolCallId={tool.toolCallId}
-                                          locationUiProps={tool.result.locationUiProps}
+                                          uiProps={tool.result.uiProps}
                                           isReadOnly={!!tool.result.locationUiProps}
                                         />
                                     </BotCard>
