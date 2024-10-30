@@ -1,12 +1,12 @@
 'use client'
 
+import { ToolContent } from 'ai';
+import { readStreamableValue, useActions, useAIState, useUIState } from 'ai/rsc'
 import * as React from 'react'
 import { useState, useCallback, useContext, useEffect } from 'react'
 import debounce from 'lodash/debounce'
 import { CampaignContext } from '@/components/contexts/campaign-context'
-import { useActions, useAIState, useUIState } from 'ai/rsc'
 import { Adset, AdsetTargeting, Country, Region, City } from '@/lib/types'
-import { readStreamableValue } from 'ai/rsc'
 import { IconSpinner } from '@/components/ui/icons'
 import { builQueryString } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -27,7 +27,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { type AI } from '@/lib/chat/actions'
 interface GeoGraphicalLocationProps {
   toolCallId: string
-  locationUiProps?: {
+  uiProps?: {
     demographicData: {
       [key: string]: any
     }
@@ -38,12 +38,14 @@ interface GeoGraphicalLocationProps {
 
 export function GeographicalLocation({
   toolCallId,
-  locationUiProps,
+  uiProps,
   isReadOnly
 }: GeoGraphicalLocationProps) {
   const { adset, setAdset } = useContext(CampaignContext)
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
-  const { confirmUpdateAdset, submitUserMessage } = useActions()
+  const { confirmUpdateAdset, submitUserMessage, syncMessages } = useActions()
+
+  const [aiState, setAIState] = useAIState()
 
   const [_, setMessages] = useUIState<typeof AI>()
   const [countryData, setCountryData] = useState<Country[]>([])
@@ -61,8 +63,8 @@ export function GeographicalLocation({
 
   const [graphicalLocationUI, setGraphicalLocationUI] =
     useState<null | React.ReactNode>(
-      locationUiProps ? (
-        <GeographicalLocationResult {...locationUiProps} />
+      uiProps ? (
+        <GeographicalLocationResult {...uiProps} />
       ) : null
     )
 
@@ -110,7 +112,6 @@ export function GeographicalLocation({
     demographicData.genders = genders
 
     const response = await confirmUpdateAdset(
-      toolCallId,
       adset.id,
       {
         targeting: newTargeting
@@ -123,6 +124,31 @@ export function GeographicalLocation({
       response.response
     )) {
       if (updatedAdset) {
+        const messages = aiState.messages;
+        const lastMessage = messages.slice(-1)[0];
+        if (!lastMessage || lastMessage.id !== toolCallId) {
+          return console.error('Exception: last message is empty or not matching to toolCallId in geographical-location component.', lastMessage);
+        }
+        const content = (lastMessage.content as ToolContent)[0];
+        if (content.type !== 'tool-result') {
+          return console.error("Exception: content type is not tool-result in geographical-location component.", lastMessage)
+        }
+        if (content.toolName !== 'showGeographicalLocationUI') {
+          return console.error("Exception: tool name not matching in geographical-location component.", lastMessage)
+        }
+        content.result = {
+          ...(content.result as Object),
+          uiProps: {
+            success: true,
+            targeting: updatedAdset.targeting,
+            demographicData
+          }
+        }
+        setAIState({
+          ...aiState,
+          messages: [...messages]
+        });
+
         setAdset(updatedAdset)
         setIsSubmitting(false)
         setGraphicalLocationUI(
@@ -131,8 +157,10 @@ export function GeographicalLocation({
             demographicData={demographicData}
           />
         )
+        await syncMessages();
+        console.log('submitUserMessage')
         const responseMessage = await submitUserMessage(
-          'Please make suggestions interest filters use Categories of interest filters and current demographic targeting',
+          'Please suggest interest filters using the categories of interest filters for this demographic targeting',
           [],
           true
         )

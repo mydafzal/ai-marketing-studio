@@ -1,15 +1,15 @@
 'use client'
 
+import { ToolContent } from 'ai';
+import { readStreamableValue, useActions, useAIState, useUIState } from 'ai/rsc'
 import * as React from 'react'
 import { useState, useContext, useEffect } from 'react'
 import { CampaignContext } from '@/components/contexts/campaign-context'
-import { useActions, useUIState } from 'ai/rsc'
 import {
   Adset,
   FlexibleSpec,
   ReachEstimateResult,
 } from '@/lib/types'
-import { readStreamableValue } from 'ai/rsc'
 import { IconSpinner } from '@/components/ui/icons'
 import { builQueryString } from '@/lib/utils'
 import { SuggestedFiltersResult } from './suggested-filters-result'
@@ -18,7 +18,7 @@ import { type AI } from '@/lib/chat/actions'
 interface SuggestedFiltersProps {
   toolCallId: string
   suggestedFitlers: string[][]
-  suggestedUiProps?: {
+  uiProps?: {
     suggestedFilter: FlexibleSpec
     success: boolean
   }
@@ -29,24 +29,25 @@ export function SuggestedFilters({
   toolCallId,
   suggestedFitlers,
   isReadOnly,
-  suggestedUiProps
+  uiProps
 }: SuggestedFiltersProps) {
+  console.log('uiProps', toolCallId, uiProps)
   const { adset, setAdset } = useContext(CampaignContext)
   const [isLoading, setLoading] = useState<boolean>(false)
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
-  const { confirmUpdateAdset } = useActions()
+  const { confirmUpdateAdset, syncMessages } = useActions()
+  const [aiState, setAIState] = useAIState()
   const [_, setMessages] = useUIState<typeof AI>()
 
   const [suggestedFiltersUI, setSuggestedFiltersUI] =
     useState<null | React.ReactNode>(
-      suggestedUiProps ? <SuggestedFiltersResult {...suggestedUiProps} /> : null
+      uiProps ? <SuggestedFiltersResult {...uiProps} /> : null
     )
 
   const handleUpdateAdset = async (estimateResult: ReachEstimateResult[]) => {
     if (!adset || estimateResult.length === 0) return
     setIsSubmitting(true)
     const response = await confirmUpdateAdset(
-      toolCallId,
       adset.id,
       {
         targeting: adset.targeting
@@ -61,6 +62,31 @@ export function SuggestedFilters({
       if (updatedAdset) {
         const flexible_spec = updatedAdset?.targeting
           ?.flexible_spec as FlexibleSpec[]
+
+        const messages = aiState.messages;
+        const lastMessage = messages.slice(-1)[0];
+        if (!lastMessage || lastMessage.id !== toolCallId) {
+          return console.error('Exception: last message is empty or not matching to toolCallId in suggested-filters component.', lastMessage);
+        }
+        const content = (lastMessage.content as ToolContent)[0];
+        if (content.type !== 'tool-result') {
+          return console.error("Exception: content type is not tool-result in suggested-filters component.", lastMessage)
+        }
+        if (content.toolName !== 'showSuggestedFilters') {
+          return console.error("Exception: tool name not matching in suggested-filters component.", lastMessage)
+        }
+        content.result = {
+          ...(content.result as Object),
+          uiProps: {
+            success: true,
+            targeting: updatedAdset.targeting,
+            suggestedFilter: updatedAdset.targeting.flexible_spec?.[0]
+          }
+        }
+        setAIState({
+          ...aiState,
+          messages: [...messages]
+        });
         setAdset(updatedAdset)
         setSuggestedFiltersUI(
           <SuggestedFiltersResult
@@ -68,6 +94,7 @@ export function SuggestedFilters({
             suggestedFilter={flexible_spec[0]}
           />
         )
+        await syncMessages();
       }
     }
     setIsSubmitting(false)
@@ -77,11 +104,13 @@ export function SuggestedFilters({
       targeting_spec: JSON.stringify(targeting),
       filters: JSON.stringify(filters)
     }
+    console.log('reach estimate result', params)
     try {
       const response = await fetch(
         `/api/fasty-bot/proxy-reach-estimate${builQueryString(params)}`
       )
       const data = (await response.json()) as ReachEstimateResult[]
+      console.log('reach estimate result', data)
       await handleUpdateAdset(data)
     } catch (error) {
       console.error('Error fetching results:', error)
@@ -95,7 +124,7 @@ export function SuggestedFilters({
       setLoading(true)
       getReachEstimates(adset?.targeting, suggestedFitlers)
     }
-  }, [isReadOnly, adset, suggestedFitlers])
+  }, [isReadOnly, adset, isLoading, suggestedFitlers])
 
   return suggestedFiltersUI ? (
     suggestedFiltersUI

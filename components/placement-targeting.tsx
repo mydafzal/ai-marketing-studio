@@ -1,6 +1,7 @@
 'use client'
 
-import { readStreamableValue } from 'ai/rsc'
+import { ToolContent } from 'ai';
+import { readStreamableValue, useActions, useAIState, useUIState } from 'ai/rsc'
 import * as React from 'react'
 import { useState, useCallback, useContext, useEffect } from 'react'
 import { Switch } from '@/components/ui/switch'
@@ -8,7 +9,6 @@ import { cn } from '@/lib/utils'
 import { IconSpinner } from '@/components/ui/icons'
 import { CampaignContext } from '@/components/contexts/campaign-context'
 import { Adset, AdsetTargeting } from '@/lib/types'
-import { useActions, useAIState, useUIState } from 'ai/rsc'
 import { targetPositions } from '@/lib/data'
 import { type AI } from '@/lib/chat/actions'
 
@@ -82,8 +82,8 @@ export function PlacementTargeting({
 }: PlacementTargetingProps) {
   const { id: campaignId, adset, setAdset } = useContext(CampaignContext)
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
-
-  const { confirmUpdateAdset } = useActions()
+  const [aiState, setAIState] = useAIState()
+  const { confirmUpdateAdset, syncMessages } = useActions()
   const [_, setMessages] = useUIState<typeof AI>()
 
   const [selectedPositions, setSelectedPositions] = useState<TargetPosition[]>(
@@ -196,7 +196,7 @@ export function PlacementTargeting({
     newTargeting.instagram_positions = newInstagramPositions
     newTargeting.publisher_platforms = publisherPlatforms
 
-    const response = await confirmUpdateAdset(toolCallId, adset.id, {
+    const response = await confirmUpdateAdset(adset.id, {
       targeting: newTargeting
     }, 'placement')
     setMessages(currentMessages => [...currentMessages, response.newMessage])
@@ -204,6 +204,29 @@ export function PlacementTargeting({
       response.response
     )) {
       if (updatedAdset) {
+        const messages = aiState.messages;
+        const lastMessage = messages.slice(-1)[0];
+        if (!lastMessage || lastMessage.id !== toolCallId) {
+          return console.error('Exception: last message is empty or not matching to toolCallId in placement-targeting component.', lastMessage);
+        }
+        const content = (lastMessage.content as ToolContent)[0];
+        if (content.type !== 'tool-result') {
+          return console.error("Exception: content type is not tool-result in placement-targeting component.", lastMessage)
+        }
+        if (content.toolName !== 'showPlacementTargetingUI') {
+          return console.error("Exception: tool name not matching in placement-targeting component.", lastMessage)
+        }
+        content.result = {
+          ...(content.result as Object),
+          uiProps: {
+            success: true,
+            targeting: updatedAdset.targeting
+          }
+        }
+        setAIState({
+          ...aiState,
+          messages: [...messages]
+        });
         setAdset(updatedAdset)
         setTargetingUI(
           <PlacementTargetingResult
@@ -211,6 +234,7 @@ export function PlacementTargeting({
             success
           />
         )
+        await syncMessages();
       }
     }
     setIsSubmitting(false)

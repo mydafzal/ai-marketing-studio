@@ -350,7 +350,7 @@ async function syncMessages() {
     });
 }
 
-async function confirmUpdateAdset(toolCallId: string, adsetId: string, adset: any, type: string, extraData: any) {
+async function confirmUpdateAdset(adsetId: string, adset: any, type: string, extraData: any) {
   'use server'
   const aiState = getMutableAIState<typeof AI>();
   const chatId = getChatIdFromUrl()?.toString() || ''
@@ -389,66 +389,7 @@ async function confirmUpdateAdset(toolCallId: string, adsetId: string, adset: an
 
     const response = await updateAdset(adsetId, adsetUpdate);
     if (response.success) {
-      const messages = aiState.get().messages;
-      const lastMessage = messages.slice(-1)[0];
-      if (lastMessage && lastMessage.id === toolCallId && lastMessage.role === 'tool') {
-        const content = lastMessage.content[0];
-        if (
-          content.type === 'tool-result' &&
-          content.toolName === 'showPlacementTargetingUI'
-        ) {
-          content.result = {
-            ...(content.result as Object),
-            targetingUiProps: (
-            content.result as {
-              targetingUiProps: object
-            }
-            ).targetingUiProps ?? {
-              success: true,
-              targeting: response?.data.targeting
-            }
-          }
-        }
-        if (
-            content.type === 'tool-result' &&
-            content.toolName === 'showGeographicalLocationUI'
-          ) {
-            content.result = {
-              ...(content.result as Object),
-              locationUiProps: (
-              content.result as {
-                locationUiProps: object
-              }
-              ).locationUiProps ?? {
-                success: true,
-                targeting: response?.data.targeting,
-                demographicData: extraData
-              }
-            }
-          }
-          if (
-            content.type === 'tool-result' &&
-            content.toolName === 'showSuggestedFilters'
-          ) {
-            content.result = {
-              ...(content.result as Object),
-              suggestedUiProps: (
-              content.result as {
-                suggestedUiProps: object
-              }
-              ).suggestedUiProps ?? {
-                success: true,
-                targeting: response?.data.targeting,
-                suggestedFilter: response?.data.targeting.flexible_spec[0]
-              }
-            }
-          }
-      }
       responseStream.done(response.data)
-      aiState.done({
-        ...aiState.get(),
-        messages: [...messages.slice(0, -1), lastMessage!]
-      })
       systemMessage.done(
         <SystemMessage>
           You have successfully updated{' '}
@@ -595,6 +536,29 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
 
     let textStream: undefined | ReturnType<typeof createStreamableValue<string>>
     let textNode: undefined | React.ReactNode
+
+    const pushMessages = (messages: Message[]) => {
+        aiState.done({
+            ...aiState.get(),
+            messages: [
+                ...(!isSilent ? aiState.get().messages : aiState.get().messages.filter(
+                    (message: any) => message.id !== messageId
+                )).map((message: any) => ({
+                    id: message.id,
+                    role: message.role,
+                    content: message.content,
+                    name: message.name,
+                    timestamp: message.timestamp
+                })),
+                ...messages
+              ]
+        });
+
+        if (isSilent) {
+            console.log('isSilent', isSilent, messageId)
+            console.log('messages', aiState.get().messages.map(m => [m.id, m.content]))
+        }
+    }
 
     const result = await streamUI({
         model: openai('gpt-4o'),
@@ -1147,18 +1111,13 @@ Technology
                 aiState.done({
                     ...aiState.get(),
                     messages: [
-                        ...aiState
-                          .get()
-                          .messages.filter((message: any) =>
-                            isSilent ? message.id !== messageId : true
-                          )
-                          .map((message: any) => ({
+                        ...aiState.get().messages.map((message: any) => ({
                             id: message.id,
                             role: message.role,
                             content: message.content,
                             name: message.name,
                             timestamp: message.timestamp
-                          })),
+                        })),
                         {
                           id: nanoid(),
                           role: 'assistant',
@@ -1252,38 +1211,34 @@ Technology
 
                     const toolCallId = nanoid()
 
-                    aiState.done({
-                        ...aiState.get(),
-                        messages: [
-                            ...aiState.get().messages,
-                            {
-                                id: nanoid(),
-                                role: 'assistant',
-                                content: [
-                                    {
-                                        type: 'tool-call',
-                                        toolName: 'getCampaignResults',
-                                        toolCallId,
-                                        args: {campaignId, guideForUser}
-                                    }
-                                ],
-                                timestamp: new Date().toISOString()
-                            },
-                            {
-                                id: nanoid(),
-                                role: 'tool',
-                                content: [
-                                    {
-                                        type: 'tool-result',
-                                        toolName: 'getCampaignResults',
-                                        toolCallId,
-                                        result: {campaignId, guideForUser}
-                                    }
-                                ],
-                                timestamp: new Date().toISOString()
-                            }
-                        ]
-                    });
+                    pushMessages([
+                        {
+                            id: nanoid(),
+                            role: 'assistant',
+                            content: [
+                                {
+                                    type: 'tool-call',
+                                    toolName: 'getCampaignResults',
+                                    toolCallId,
+                                    args: {campaignId, guideForUser}
+                                }
+                            ],
+                            timestamp: new Date().toISOString()
+                        },
+                        {
+                            id: nanoid(),
+                            role: 'tool',
+                            content: [
+                                {
+                                    type: 'tool-result',
+                                    toolName: 'getCampaignResults',
+                                    toolCallId,
+                                    result: {campaignId, guideForUser}
+                                }
+                            ],
+                            timestamp: new Date().toISOString()
+                        }
+                    ])
 
                     return (
                         <>
@@ -1312,39 +1267,32 @@ Technology
 
                     const toolCallId = nanoid()
 
-                    aiState.done({
-                        ...aiState.get(),
-                        messages: [
-                            ...aiState.get().messages,
+                    pushMessages([{
+                        id: nanoid(),
+                        role: 'assistant',
+                        content: [
                             {
-                                id: nanoid(),
-                                role: 'assistant',
-                                content: [
-                                    {
-                                        type: 'tool-call',
-                                        toolName: 'getCampaignImages',
-                                        toolCallId,
-                                        args: {}
-                                    }
-                                ],
-                                timestamp: new Date().toISOString()
-                            },
-                            {
-                                id: nanoid(),
-                                role: 'tool',
-                                content: [
-                                    {
-                                        type: 'tool-result',
-                                        toolName: 'getCampaignImages',
-                                        toolCallId,
-                                        result: {}
-                                    }
-                                ],
-                                timestamp: new Date().toISOString()
+                                type: 'tool-call',
+                                toolName: 'getCampaignImages',
+                                toolCallId,
+                                args: {}
                             }
-                        ]
-                    });
-
+                        ],
+                        timestamp: new Date().toISOString()
+                    },
+                    {
+                        id: nanoid(),
+                        role: 'tool',
+                        content: [
+                            {
+                                type: 'tool-result',
+                                toolName: 'getCampaignImages',
+                                toolCallId,
+                                result: {}
+                            }
+                        ],
+                        timestamp: new Date().toISOString()
+                    }]);
 
                     return (
                         <BotCard>
@@ -1376,91 +1324,82 @@ Technology
                     const initialBudget = numberOfShares || price
 
                     if (initialBudget <= 0 || initialBudget > 1000) {
-                        aiState.done({
-                            ...aiState.get(),
-                            messages: [
-                                ...aiState.get().messages,
-                                {
-                                    id: nanoid(),
-                                    role: 'assistant',
-                                    content: [
-                                        {
-                                            type: 'tool-call',
-                                            toolName: 'showAdBudgetUI',
-                                            toolCallId,
-                                            args: {symbol, price, numberOfShares: initialBudget, guideForUser}
+                        pushMessages([
+                            {
+                                id: nanoid(),
+                                role: 'assistant',
+                                content: [
+                                    {
+                                        type: 'tool-call',
+                                        toolName: 'showAdBudgetUI',
+                                        toolCallId,
+                                        args: {symbol, price, numberOfShares: initialBudget, guideForUser}
+                                    }
+                                ],
+                                timestamp: new Date().toISOString()
+                            },
+                            {
+                                id: nanoid(),
+                                role: 'tool',
+                                content: [
+                                    {
+                                        type: 'tool-result',
+                                        toolName: 'showAdBudgetUI',
+                                        toolCallId,
+                                        result: {
+                                            symbol,
+                                            price,
+                                            numberOfShares: initialBudget,
+                                            status: 'expired',
+                                            guideForUser
                                         }
-                                    ],
-                                    timestamp: new Date().toISOString()
-                                },
-                                {
-                                    id: nanoid(),
-                                    role: 'tool',
-                                    content: [
-                                        {
-                                            type: 'tool-result',
-                                            toolName: 'showAdBudgetUI',
-                                            toolCallId,
-                                            result: {
-                                                symbol,
-                                                price,
-                                                numberOfShares: initialBudget,
-                                                status: 'expired',
-                                                guideForUser
-                                            }
-                                        }
-                                    ],
-                                    timestamp: new Date().toISOString()
-                                },
-                                {
-                                    id: nanoid(),
-                                    role: 'system',
-                                    content: `[User has selected an invalid amount]`,
-                                    timestamp: new Date().toISOString()
-                                }
-                            ]
-                        });
-
+                                    }
+                                ],
+                                timestamp: new Date().toISOString()
+                            },
+                            {
+                                id: nanoid(),
+                                role: 'system',
+                                content: `[User has selected an invalid amount]`,
+                                timestamp: new Date().toISOString()
+                            }
+                        ]);
 
                         return <BotMessage content={'Invalid amount'}/>
                     } else {
-                        aiState.done({
-                            ...aiState.get(),
-                            messages: [
-                                ...aiState.get().messages,
-                                {
-                                    id: nanoid(),
-                                    role: 'assistant',
-                                    content: [
-                                        {
-                                            type: 'tool-call',
-                                            toolName: 'showAdBudgetUI',
-                                            toolCallId,
-                                            args: {symbol, price, numberOfShares: initialBudget, guideForUser}
+                        pushMessages([
+                            {
+                                id: nanoid(),
+                                role: 'assistant',
+                                content: [
+                                    {
+                                        type: 'tool-call',
+                                        toolName: 'showAdBudgetUI',
+                                        toolCallId,
+                                        args: {symbol, price, numberOfShares: initialBudget, guideForUser}
+                                    }
+                                ],
+                                timestamp: new Date().toISOString()
+                            },
+                            {
+                                id: nanoid(),
+                                role: 'tool',
+                                content: [
+                                    {
+                                        type: 'tool-result',
+                                        toolName: 'showAdBudgetUI',
+                                        toolCallId,
+                                        result: {
+                                            symbol,
+                                            price,
+                                            numberOfShares: initialBudget,
+                                            guideForUser
                                         }
-                                    ],
-                                    timestamp: new Date().toISOString()
-                                },
-                                {
-                                    id: nanoid(),
-                                    role: 'tool',
-                                    content: [
-                                        {
-                                            type: 'tool-result',
-                                            toolName: 'showAdBudgetUI',
-                                            toolCallId,
-                                            result: {
-                                                symbol,
-                                                price,
-                                                numberOfShares: initialBudget,
-                                                guideForUser
-                                            }
-                                        }
-                                    ],
-                                    timestamp: new Date().toISOString()
-                                }
-                            ]
-                        });
+                                    }
+                                ],
+                                timestamp: new Date().toISOString()
+                            }
+                        ]);
 
                         return (
                             <>
@@ -2073,44 +2012,42 @@ Technology
                     ).describe('The array of suggested filters from AI provided, a suggestion filter will have one or more filter name')
                 }),
                 generate: async function* ({suggestedFitlers}) {
+                    console.log('suggestedFitlers', suggestedFitlers);
                     const timestamp: string = new Date().toISOString();
                     const toolCallId = nanoid();
-                    aiState.done({
-                        ...aiState.get(),
-                        messages: [
-                            ...aiState.get().messages,
-                            {
-                                id: nanoid(),
-                                role: 'assistant',
-                                content: [
-                                    {
-                                        type: 'tool-call',
-                                        toolName: 'showSuggestedFilters',
-                                        toolCallId,
-                                        args: {
-                                            suggestedFitlers,
-                                        }
+                    pushMessages([
+                        {
+                            id: nanoid(),
+                            role: 'assistant',
+                            content: [
+                                {
+                                    type: 'tool-call',
+                                    toolName: 'showSuggestedFilters',
+                                    toolCallId,
+                                    args: {
+                                        suggestedFitlers,
                                     }
-                                ],
-                                timestamp
-                            },
-                            {
-                                id: toolCallId,
-                                role: 'tool',
-                                content: [
-                                    {
-                                        type: 'tool-result',
-                                        toolName: 'showSuggestedFilters',
-                                        toolCallId,
-                                        result: {
-                                            suggestedFitlers
-                                        }
+                                }
+                            ],
+                            timestamp
+                        },
+                        {
+                            id: toolCallId,
+                            role: 'tool',
+                            content: [
+                                {
+                                    type: 'tool-result',
+                                    toolName: 'showSuggestedFilters',
+                                    toolCallId,
+                                    result: {
+                                        suggestedFitlers
                                     }
-                                ],
-                                timestamp
-                            }
-                        ]
-                    })
+                                }
+                            ],
+                            timestamp
+                        }
+                    ])
+
                     return (
                         <BotCard>
                             <SuggestedFilters toolCallId={toolCallId} suggestedFitlers={suggestedFitlers}  />
@@ -2121,6 +2058,7 @@ Technology
             
         }
     });
+
     return {
         id: nanoid(),
         display: result.value
@@ -2338,7 +2276,7 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                             case 'showSuggestedFilters':
                                 return (
                                     <BotCard key={tool.toolCallId}>
-                                        <SuggestedFilters toolCallId={tool.toolCallId} suggestedFitlers={tool.result.suggestedFitlers} suggestedUiProps={tool.result.suggestedUiProps} isReadOnly  />
+                                        <SuggestedFilters toolCallId={tool.toolCallId} suggestedFitlers={tool.result.suggestedFitlers} uiProps={tool.result.uiProps} isReadOnly  />
                                     </BotCard>
                                 )
                             default:

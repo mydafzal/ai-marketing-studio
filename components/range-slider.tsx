@@ -48,10 +48,6 @@ const RangeSlider: React.FC<RangeSliderProps> = ({
 
   useEffect(() => {
     if (progressRef.current) {
-      console.log('minValue', minValue)
-      console.log('maxValue', maxValue)
-      console.log('max', max)
-      console.log('min', min)
       progressRef.current.style.left = (minValue - min) / (max - min) * 100 + '%'
       progressRef.current.style.right = (max - maxValue) / (max - min) * 100 + '%'
     }
