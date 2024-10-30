@@ -31,7 +31,6 @@ export function SuggestedFilters({
   isReadOnly,
   uiProps
 }: SuggestedFiltersProps) {
-  console.log('uiProps', toolCallId, uiProps)
   const { adset, setAdset } = useContext(CampaignContext)
   const [isLoading, setLoading] = useState<boolean>(false)
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)

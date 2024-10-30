@@ -2229,7 +2229,7 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                         <GeographicalLocation
                                           toolCallId={tool.toolCallId}
                                           uiProps={tool.result.uiProps}
-                                          isReadOnly={!!tool.result.locationUiProps}
+                                          isReadOnly={!!tool.result.uiProps}
                                         />
                                     </BotCard>
                                 ) 
