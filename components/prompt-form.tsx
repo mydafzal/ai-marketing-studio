@@ -258,6 +258,7 @@ export function PromptForm({
 
           await onSendMessage(textPrompt, userContent)
           toast.success('Videos uploaded successfully!')
+          console.log('test')
         } else {
           toast.error('Failed to upload the video. Please try again.')
         }
