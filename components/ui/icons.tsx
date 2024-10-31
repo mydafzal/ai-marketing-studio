@@ -476,6 +476,34 @@ function IconChevronUpDown({
   )
 }
 
+function IconEye({ className, ...props }: React.ComponentProps<'svg'>) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="currentColor"
+      className={cn('size-4', className)}
+      viewBox="0 0 256 256"
+      {...props}
+    >
+      <path d="M128 48C76.8 48 32.3 82.7 16 128c16.3 45.3 60.8 80 112 80s95.7-34.7 112-80c-16.3-45.3-60.8-80-112-80zm0 128a48 48 0 1 1 48-48 48.1 48.1 0 0 1-48 48zm0-80a32 32 0 1 0 32 32 32.1 32.1 0 0 0-32-32z" />
+    </svg>
+  )
+}
+
+function IconMessageCircle({ className, ...props }: React.ComponentProps<'svg'>) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="currentColor"
+      className={cn('size-4', className)}
+      viewBox="0 0 256 256"
+      {...props}
+    >
+      <path d="M128 24A104 104 0 0 0 24 128a103.2 103.2 0 0 0 15.1 54.4 8 8 0 0 1 .9 7.2l-10.7 32.1a8 8 0 0 0 10.1 10.1l32.1-10.7a8 8 0 0 1 7.2.9A104 104 0 1 0 128 24zm0 192a87.6 87.6 0 0 1-45.1-12.3 24 24 0 0 0-21.6-2.7l-19.6 6.5 6.5-19.6a24 24 0 0 0-2.7-21.6A88 88 0 1 1 128 216z" />
+    </svg>
+  )
+}
+
 export {
   IconEdit,
   IconNextChat,
@@ -503,5 +531,7 @@ export {
   IconShare,
   IconUsers,
   IconExternalLink,
-  IconChevronUpDown
+  IconChevronUpDown,
+  IconEye,
+  IconMessageCircle
 }

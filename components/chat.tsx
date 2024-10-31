@@ -28,18 +28,25 @@ function ChatCore({ id, chat, className, session, missingKeys }: ChatProps) {
   const [_, setNewChatId] = useLocalStorage('newChatId', id)
   const { id: campaignId, setId: setCampaignId, summary: campaignSummary } = useContext(CampaignContext)
   console.log('aiState.messages', aiState.messages)
+  console.log('chat', chat)
 
   useEffect(() => {
     if (!aiState.messages.length) {
       setAIState((aiState: any) => ({
         ...aiState,
         messages: [
-            {
-                id: 'campaign-info-data',
-                role: 'system',
-                content: 'No campaign is connected to this chat. You should always show UI to connect a campaign to the chat when user asks about one of "setting campaign budget", "changing campaign budget" "campaign result" and "campaign status".',
-                timestamp: new Date().toISOString() 
-            }
+          {
+            id: 'campaign-info-data',
+            role: 'system',
+            content: 'No campaign is connected to this chat. You should always show UI to connect a campaign to the chat when user asks about one of "setting campaign budget", "changing campaign budget" "campaign result" and "campaign status".',
+            timestamp: new Date().toISOString() 
+          },
+          {
+            id: 'adset-info-data',
+            role: 'system',
+            content: 'No adset is selected to this chat. You should always show UI to select an adset for the chat when user asks to generate ad suggestion.',
+            timestamp: new Date().toISOString() 
+          }
         ]
     }))
     }

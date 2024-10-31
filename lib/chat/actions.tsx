@@ -44,10 +44,13 @@ import {getChatIdFromUrl} from "@/lib/api/fasty-bot/helpers/chat-id-from-url-hel
 import {sendAdminNotification} from '@/lib/api/fasty-bot/send-admin-notification'
 import {ConnectCampaign} from '@/components/connect-campaign'
 import {PlacementTargeting} from '@/components/placement-targeting';
+import {ConnectAdset} from '@/components/connect-adset'
 import FormBuilder from '@/components/form-builder';
 import {GeographicalLocation} from '@/components/geographical-location';
 import {SuggestedFilters} from '@/components/suggested-filters';
-
+import {sendSupervisedTaskMail}  from '@/lib/api/fasty-bot/send-supervised-task-mail';
+import SupervisedTaskMessage from '@/components/supervised-task-message'
+import {getBaseUrl} from "@/lib/helpers/vercel/get-base-url"
 
 interface ToolResult {
     toolName: string;
@@ -145,8 +148,8 @@ async function confirmPurchase(campaignName: string, budget: number, days: numbe
             />
         );
 
-        const newMessage = 'Wanna go on?';
-        // optimistic update
+        const newMessage = 'Would you like to continue?';
+
         newMessageStream.done(
             <div>
                 {newMessage}
@@ -1061,6 +1064,8 @@ Technology
       - "[User has changed the daily budget to $150]" means that the user has adjusted the daily budget to $150 in the UI.
     
     - If the user asks for "campaign result" or "campaign status" or "campaign budget" or "placement targeting" but the current chat is not connected to a campaign, always call \`show_campaign_connection_ui\` to show a UI to connect a campaign to the chat.
+
+    - If the user asks for "connecting adset" or "adset connection UI" but the current chat is not connected to a campaign, then ask the user to connect a campaign first, and ask him if it is ok to show campaign connection UI. If the user agrees, then call \`show_campaign_connection_ui\` to show a UI to connect a campaign to the chat.
 
     - If the user asks for "placement targeting" but the "campaign budget" is not set for the current campaign, tell the user that campaign budget should be set first. And ask if the user wants to see a UI to set campaign budget.
 
@@ -2014,6 +2019,125 @@ Technology
                         </BotCard>
                     )
                 }
+            },
+            showSupervisedTaskUI: {
+                description: 'Show this UI if user want to perform anything related to "retargeting campaign" or "AB testing between adsets"',
+                parameters: z.object({
+                    task_name:z.string().describe("Name of the task which user asked to perform")
+                }),
+                generate: async function* ({task_name}) {
+                    console.log('tool call showSupervisedTaskUI')
+                    const timestamp: string = new Date().toISOString();
+                    const toolCallId = nanoid();
+                    const allMessages = aiState.get().messages;
+
+                    // Filter user messages only (assuming 'role' field exists)
+                    const userMessages = allMessages.filter(msg => msg.role === 'user');
+
+                    // Get the last 6 user messages (if available)
+                    const lastSixUserMessages = userMessages.slice(-6);
+
+                    yield(
+                        <BotCard>
+                            {/* <PlacementTargeting toolCallId={toolCallId}/> */}
+                            <p className='mb-2'>Please wait we are processing your query.</p>
+                        </BotCard>
+                    )
+                    const messages = lastSixUserMessages.map(msg => (msg.content)) as string[];
+                    await sendSupervisedTaskMail(
+                        task_name,
+                        messages,
+                        session?.user.email,
+                        getBaseUrl()+"/supervised/chat/"+chatId+"/task/"+toolCallId+"?user_email="+session?.user.email  // TODO: Need to find better way to change this URL at one place if we change route of this task.
+                    )
+
+                    aiState.done({
+                        ...aiState.get(),
+                        messages: [
+                            ...aiState.get().messages,
+                            {
+                                id: nanoid(),
+                                role: 'assistant',
+                                content: [
+                                    {
+                                        type: 'tool-call',
+                                        toolName: 'showSupervisedTaskUI',
+                                        toolCallId,
+                                        args: {task_name}
+                                    }
+                                ],
+                                timestamp
+                            },
+                            {
+                                id: toolCallId,
+                                role: 'tool',
+                                content: [
+                                    {
+                                        type: 'tool-result',
+                                        toolName: 'showSupervisedTaskUI',
+                                        toolCallId,
+                                        result: {
+                                            content:"",
+                                            status:"pending"
+                                        }
+                                    }
+                                ],
+                                timestamp
+                            }
+                        ]
+                    })
+                    return (
+                        <BotCard>
+                            <SupervisedTaskMessage/>
+                        </BotCard>
+                    )
+                }
+            },
+            showAdsetConnectionUI: {
+                description: 'Show a UI to connect a adset to the chat.',
+                parameters: z.object({}),
+                generate: async function* ({}) {
+                    console.log('tool call showAdsetConnectionUI')
+                    const timestamp: string = new Date().toISOString();
+                    const toolCallId = nanoid();
+                    aiState.done({
+                        ...aiState.get(),
+                        messages: [
+                            ...aiState.get().messages,
+                            {
+                                id: nanoid(),
+                                role: 'assistant',
+                                content: [
+                                    {
+                                        type: 'tool-call',
+                                        toolName: 'showAdsetConnectionUI',
+                                        toolCallId,
+                                        args: {}
+                                    }
+                                ],
+                                timestamp
+                            },
+                            {
+                                id: toolCallId,
+                                role: 'tool',
+                                content: [
+                                    {
+                                        type: 'tool-result',
+                                        toolName: 'showAdsetConnectionUI',
+                                        toolCallId,
+                                        result: { toolCallId }
+                                    }
+                                ],
+                                timestamp
+                            }
+                        ]
+                    })
+                    return (
+                        <BotCard>
+                            <ConnectAdset toolCallId={toolCallId} />
+                        </BotCard>
+                    )
+                }
             }
             
         }
@@ -2211,6 +2335,12 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                         <ConnectCampaign {...tool.result} />
                                     </BotCard>
                                 )
+                            case 'showAdsetConnectionUI':
+                                return (
+                                    <BotCard key={tool.toolCallId}>
+                                        <ConnectAdset {...tool.result} toolCallId={tool.toolCallId} />
+                                    </BotCard>
+                                )
                             case 'showPlacementTargetingUI':
                                 return (
                                     <BotCard key={tool.toolCallId}>
@@ -2239,6 +2369,14 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                         <SuggestedFilters toolCallId={tool.toolCallId} suggestedFitlers={tool.result.suggestedFitlers} uiProps={tool.result.uiProps} isReadOnly  />
                                     </BotCard>
                                 )
+                            case 'showSupervisedTaskUI':
+                                return (
+                                    <>
+                                        <BotCard>
+                                            <SupervisedTaskMessage result={tool.result}/>
+                                        </BotCard>
+                                    </>
+                                );
                             default:
                                 return null;
                         }
