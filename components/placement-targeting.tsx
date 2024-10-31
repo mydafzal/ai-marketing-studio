@@ -80,7 +80,7 @@ export function PlacementTargeting({
   targetingUiProps,
   toolCallId
 }: PlacementTargetingProps) {
-  const { id: campaignId, adset, setAdset } = useContext(CampaignContext)
+  const { adset, setAdset } = useContext(CampaignContext)
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
 
   const { confirmUpdateAdset } = useActions()
