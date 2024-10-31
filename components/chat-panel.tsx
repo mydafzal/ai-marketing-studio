@@ -1,4 +1,4 @@
-import { TextPart, ImagePart } from 'ai'
+import { FilePart, TextPart, ImagePart } from 'ai'
 import { useAIState, useActions, useUIState } from 'ai/rsc'
 import { nanoid } from 'nanoid'
 import * as React from 'react'
@@ -63,7 +63,7 @@ export function ChatPanel({
   const [shareDialogOpen, setShareDialogOpen] = React.useState(false)
   const [isTaskPaletteOpen, setIsTaskPaletteOpen] = React.useState(false)
   let isUserGuideButtonEnabled = isFeatureToggleEnabled("userGuideFloatingButton")
-  const sendMessage = React.useCallback(async (message: string, userContent?: (TextPart | ImagePart)[]) => {
+  const sendMessage = React.useCallback(async (message: string, userContent?: (TextPart | ImagePart | FilePart)[]) => {
     // Optimistically add user message UI
     setMessages(currentMessages => [
       ...currentMessages,
