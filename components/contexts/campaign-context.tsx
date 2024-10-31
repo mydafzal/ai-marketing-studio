@@ -78,6 +78,9 @@ export const CampaignContextProvider = ({ children }: { children: React.ReactNod
             if (response.success && response.data) {
                 // .data is due to pagination
                 setAdsets(response.data.data)
+                // set default adset temporarily but we need to remove this once adset selector PR is merged
+                // and we need to let user to select an adset for the chat if there are more than 2 adsets in the campaign
+                setAdset(response.data.data[0])
             }
         }
     }, [id])
