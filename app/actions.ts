@@ -1353,3 +1353,31 @@ export async function getUserByEmail(user_email:string) {
         }
     }
 }
+
+
+export async function createUserWithoutPassword(
+    email: string,
+  ) {
+    const resp = await getUserByEmail(email)
+  
+    if (resp.success) {
+      return {
+        error:"User already exists"
+      }
+    } else {
+      const user = {
+        id: crypto.randomUUID(),
+        email,
+        provider:"facebook",
+        password:"",
+        salt:""
+      }
+  
+      await kv.hmset(`user:${email}`, user)
+  
+      return {
+            success:true,
+            user:user
+        }
+    }
+  }
