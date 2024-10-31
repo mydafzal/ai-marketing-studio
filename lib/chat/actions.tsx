@@ -2004,7 +2004,7 @@ Engaged Shoppers]
     
     - If you want to change the status of a campaign, call \`showUpdateStatusChampaign\` to show the update status UI and let the user choose the status of the campaign.
 
-    - If you want to change the placement targeting of a campaign, call \`show_placement_targeting_ui\` to show the update status UI and let the user choose the status of the campaign.
+    - If you want to change the placement targeting of a campaign, alwasy check 3 conditions: 1) if campaign is connected to the chat, 2) if adset is connected to the chat, 3) campaign budget is set for current campaign. Only when all 3 conditions are met, call \`show_placement_targeting_ui\` to show the update status UI and let the user choose the status of the campaign.
 
     - If you want to show a form builder, call \`show_form_builder\` to show the form builder UI.
 
