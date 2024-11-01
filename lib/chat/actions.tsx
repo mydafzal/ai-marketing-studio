@@ -625,7 +625,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
     
       Question: "Can you broadly describe who you want to reach with the campaign? I will search for targeting filters that are available in the Campaign targeting Settings and match them based on your descriptions"
     
-    Reasoning: Create a suitable target group using filters from the knowledge base only. Also, creating custom Audiences from Website Visitors or other Sources is currently not available to you.
+    Reasoning: Create a suitable target group using filters from the knowledge base only.
     
     Important:
     
