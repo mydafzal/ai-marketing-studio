@@ -10,7 +10,7 @@ export default function FacebookConnect() {
       onClick={connectFacebook}
       className="h-10 px-4 flex items-center justify-center bg-[#1877F2] text-white rounded-md shadow-md transition-transform transform hover:scale-105 active:scale-100 focus:outline-none"
     >
-      Connect to Facebook
+      Login with Facebook
     </button>
   );
 }

@@ -4,7 +4,6 @@ import { authConfig } from './auth.config'
 import { z } from 'zod'
 import { getStringFromBuffer } from './lib/utils'
 import { getUser } from './app/login/actions'
-
 export const { auth, signIn, signOut } = NextAuth({
   ...authConfig,
   providers: [
@@ -13,15 +12,23 @@ export const { auth, signIn, signOut } = NextAuth({
         const parsedCredentials = z
           .object({
             email: z.string().email(),
-            password: z.string().min(6)
+            password: z.string().min(6),
+            login_type:z.string().optional()
           })
           .safeParse(credentials)
+        
+          console.log(parsedCredentials, parsedCredentials.success)
 
         if (parsedCredentials.success) {
-          const { email, password } = parsedCredentials.data
+          const { email, password, login_type } = parsedCredentials.data
           const user = await getUser(email)
+          console.log("User extracted from db", user)
 
           if (!user) return null
+
+          if (login_type && login_type=="facebook"){
+            return user
+          } 
 
           const encoder = new TextEncoder()
           const saltedPassword = encoder.encode(password + user.salt)

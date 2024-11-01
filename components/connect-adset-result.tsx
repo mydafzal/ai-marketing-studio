@@ -13,14 +13,14 @@ export function ConnectAdsetResult({
   success
 }: ConnectAdsetProps) {
   return (
-    <div className="p-6 border rounded-xl bg-gray-50 dark:bg-gray-800">
+    <div className="p-6 border rounded-x">
       {success ? (
-        <div className="flex items-center space-x-2 text-green-600 dark:text-green-400">
-          <span className="font-medium">Connected to adset: {adset.name} ({adset.id})</span>
+        <div className="flex items-center space-x-2">
+          Connected to adset: {adset.name} ({adset.id})
         </div>
       ) : (
         <div className="flex items-center space-x-2 text-red-600 dark:text-red-400">
-          <span className="font-medium">Failed to connect to adset: {adset.name} ({adset.id})</span>
+          Failed to connect to adset: {adset.name} ({adset.id})
         </div>
       )}
     </div>

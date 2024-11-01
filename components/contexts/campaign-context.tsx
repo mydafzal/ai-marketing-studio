@@ -1,8 +1,8 @@
 import { useActions } from 'ai/rsc'
-import { createContext, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { KvContext }  from '@/components/contexts/kv-context';
 import { CampaignSummary, getCampaignSummary } from '@/lib/api/fasty-bot/get-campaign-summary'
 import { getCampaigns } from '@/lib/api/fasty-bot/get-campaigns'
-import { getAdsets } from '@/lib/api/fasty-bot/get-adsets'
 import { Adset, FbCampaign } from '@/lib/types'
 
 // todo: rename CampaignContext to FacebookContext
@@ -37,11 +37,11 @@ const oneHour = 60 * 60 * 1000
 const fiveMins = 5 * 60 * 1000
 
 export const CampaignContextProvider = ({ children }: { children: React.ReactNode }) => {
-    const {updateCampaignInfo: updateCampaignInfoBE} = useActions()
-
+    const { updateCampaignInfo: updateCampaignInfoBE } = useActions()
     const [id, setId] = useState<string | null>(null)
     const [summary, setSummary] = useState<CampaignSummary | null>(null)
     const [campaigns, setCampaigns] = useState<FbCampaign[]>([])
+    const { chat } = useContext(KvContext);
     const [adsets, setAdsets] = useState<Adset[]>([]);
     const [adset, setAdset] = useState<Adset>();
     const getCampaignList = useCallback(async () => {
@@ -78,9 +78,14 @@ export const CampaignContextProvider = ({ children }: { children: React.ReactNod
             if (response.success && response.data) {
                 // .data is due to pagination
                 setAdsets(response.data.data)
-                // set default adset temporarily but we need to remove this once adset selector PR is merged
-                // and we need to let user to select an adset for the chat if there are more than 2 adsets in the campaign
-                setAdset(response.data.data[0])
+                if (chat?.fbAdsetId) {
+                    setAdset(
+                        response.data.data.find(
+                            (a: Adset) => a.id === chat?.fbAdsetId
+                        )
+                    )
+                }
+                
             }
         }
     }, [id])

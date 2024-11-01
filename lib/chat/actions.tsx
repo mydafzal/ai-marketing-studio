@@ -11,8 +11,7 @@ import {PurchasingUi} from '@/components/stocks/purchasing-ui'
 import {StockSkeleton} from '@/components/stocks/stock-skeleton'
 import {AdTextSuggestion} from '@/components/stocks/ad-text-suggestion'
 import {VideoAdTextSuggestion} from '@/components/stocks/video-ad-text-suggestion'
-import {RefreshChatTitle} from '@/components/refresh-chat-title'
-import {InjectCampaign} from '@/components/inject-campaign'
+
 import {CampaignStatus} from '@/components/stocks/campaign-status'
 import {
     fetchChatCampaignBudget,
@@ -51,6 +50,23 @@ import {SuggestedFilters} from '@/components/suggested-filters';
 import {sendSupervisedTaskMail}  from '@/lib/api/fasty-bot/send-supervised-task-mail';
 import SupervisedTaskMessage from '@/components/supervised-task-message'
 import {getBaseUrl} from "@/lib/helpers/vercel/get-base-url"
+
+import getCampaignResultsModule from "@/lib/ui-magic/modules/getCampaignResultsModule";
+import getCampaignImagesModule from "@/lib/ui-magic/modules/getCampaignImagesModule";
+import adBudgetModule from "@/lib/ui-magic/modules/adBudgetModule";
+import formBuilderModule from "@/lib/ui-magic/modules/formBuilderModule";
+import getEventsModule from "@/lib/ui-magic/modules/getEventsModule";
+import showGeographicalLocationUIModule from "@/lib/ui-magic/modules/showGeographicalLocationUIModule";
+import showSuggestedFiltersUIModule from "@/lib/ui-magic/modules/showSuggestedFiltersUIModule";
+import showSuggestionAdTextModule from "@/lib/ui-magic/modules/showSuggestionAdTextModule";
+import showSuggestionVideoAdTextModule from "@/lib/ui-magic/modules/showSuggestionVideoAdTextModule";
+import showUpdateStatusCampaignModule from "@/lib/ui-magic/modules/showUpdateStatusCampaignModule";
+import showCampaignNameUpdateUIModule from "@/lib/ui-magic/modules/showCampaignNameUpdateUIModule";
+import createCampaignModule from "@/lib/ui-magic/modules/createCampaignModule";
+import showCampaignConnectionUIModule from "@/lib/ui-magic/modules/showCampaignConnectionUIModule";
+import showPlacementTargetingUIModule from "@/lib/ui-magic/modules/showPlacementTargetingUIModule";
+import showSupervisedTaskUIModule from "@/lib/ui-magic/modules/showSupervisedTaskUIModule";
+import showAdsetConnectionUIModule from "@/lib/ui-magic/modules/showAdsetConnectionUIModule";
 
 interface ToolResult {
     toolName: string;
@@ -566,7 +582,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
     
     Open the conversation:
     
-    If the user says they want to create a campaign, ask if they want to run a lead campaign, a campaign to recruit employees, or a retargeting campaign.
+    If the user says they want to create a campaign, ask if they want to run a lead campaign, a campaign to recruit employees.
     
     Every time the user sends a message containing images, please confirm: "Would you like me to generate ad text examples for these images?"
     
@@ -605,9 +621,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
     
       Question: "Can you broadly describe who you want to reach with the campaign? I will search for targeting filters that are available in the Campaign targeting Settings and match them based on your descriptions"
     
-    - **Retargeting Campaign**: Recommend creating a custom audience from a video ad and then using that custom audience to create a lookalike audience. Inform the user that you will take care of creating those for them but that this will take up to 48 hours until ready.
-    
-    Reasoning: Create a suitable target group using filters from the knowledge base only. Also, creating custom Audiences from Website Visitors or other Sources is currently not available to you.
+    Reasoning: Create a suitable target group using filters from the knowledge base only.
     
     Important:
     
@@ -1042,11 +1056,15 @@ Technology
     
       - "[User has changed the daily budget to $150]" means that the user has adjusted the daily budget to $150 in the UI.
     
-    - If the user asks for "campaign result" or "campaign status" or "campaign budget" or "placement targeting" but the current chat is not connected to a campaign, always call \`show_campaign_connection_ui\` to show a UI to connect a campaign to the chat.
+    - If the user asks for "campaign result" or "campaign status" or "campaign budget" but the current chat is not connected to a campaign, always call \`show_campaign_connection_ui\` to show a UI to connect a campaign to the chat.
 
-    - If the user asks for "connecting adset" or "adset connection UI" but the current chat is not connected to a campaign, then ask the user to connect a campaign first, and ask him if it is ok to show campaign connection UI. If the user agrees, then call \`show_campaign_connection_ui\` to show a UI to connect a campaign to the chat.
+    - If the user asks for "connecting adset" or "adset connection UI" but the current chat is not connected to a campaign, then ask the user to connect a campaign first, and ask him if it is ok to show campaign connection UI. If the user agrees, then call \`show_campaign_connection_ui\` to show a UI to connect a campaign to the chat.    - If the user asks for "connecting adset" or "adset connection UI" but the current chat is not connected to a campaign, then ask the user to connect a campaign first, and ask him if it is ok to show campaign connection UI. If the user agrees, then call \`show_campaign_connection_ui\` to show a UI to connect a campaign to the chat.
 
-    - If the user asks for "placement targeting" but the "campaign budget" is not set for the current campaign, tell the user that campaign budget should be set first. And ask if the user wants to see a UI to set campaign budget.
+    - If the user asks for "placement targeting", then you should check the following 3 items.
+      1. You need to check if any campaign is connected to the chat. If not, call \`show_campaign_connection_ui\` to show a UI to connect a campaign to the chat.
+      2. If campaign is connected to the chat then you should check if any adset is connected to the chat. If not, call \`show_adset_connection_ui\` to show a UI to connect adset to the chat.
+      3. If campaign and adset are connected to the chat but the "campaign budget" is not set for the current campaign, tell the user that campaign budget should be set first. And ask if the user wants to see a UI to set campaign budget. If the user agrees, then ask him initial budget of the campaign. If he answers then show him campaign budget UI by calling \`show_ad_budget_ui\`
+      Only when all of the above 3 conditions are met, then you should show placement targeting UI.
 
     - If a campaign was connected to the chat and the user requests setting or changing the ad budget, always first make sure that they tell you the amount. If the user's message does not yet contain the amount of budget, ask the user how much they want to change the ad budget. Once they tell you the amount, always call \`show_ad_budget_ui\` to show the budget UI.
     
@@ -1058,7 +1076,7 @@ Technology
     
     - If you want to change the status of a campaign, call \`showUpdateStatusChampaign\` to show the update status UI and let the user choose the status of the campaign.
 
-    - If you want to change the placement targeting of a campaign, call \`show_placement_targeting_ui\` to show the update status UI and let the user choose the status of the campaign.
+    - If you want to change the placement targeting of a campaign, alwasy check 3 conditions: 1) if campaign is connected to the chat, 2) if adset is connected to the chat, 3) campaign budget is set for current campaign. Only when all 3 conditions are met, call \`show_placement_targeting_ui\` to show the update status UI and let the user choose the status of the campaign.
 
     - If you want to show a form builder, call \`show_form_builder\` to show the form builder UI.
 
@@ -1117,84 +1135,17 @@ Technology
             return textNode
         },
         tools: {
-            // listAds: {
-            //     description: 'List three imaginary ads that are currently running.',
-            //     parameters: z.object({
-            //         stocks: z.array(
-            //             z.object({
-            //                 symbol: z.string().describe('The name of the campaign'),
-            //                 price: z.number().describe('The daily ad budget of the campaign'),
-            //                 delta: z.number().describe('The change of the daily ad budget')
-            //             })
-            //         )
-            //     }),
-            //     generate: async function* ({stocks}) {
-            //         yield (
-            //             <BotCard>
-            //                 <StocksSkeleton/>
-            //             </BotCard>
-            //         )
-
-            //         await sleep(1000)
-
-            //         const toolCallId = nanoid()
-
-            //         aiState.done({
-            //             ...aiState.get(),
-            //             messages: [
-            //                 ...aiState.get().messages,
-            //                 {
-            //                     id: nanoid(),
-            //                     role: 'assistant',
-            //                     content: [
-            //                         {
-            //                             type: 'tool-call',
-            //                             toolName: 'listAds',
-            //                             toolCallId,
-            //                             args: {stocks}
-            //                         }
-            //                     ]
-            //                 },
-            //                 {
-            //                     id: nanoid(),
-            //                     role: 'tool',
-            //                     content: [
-            //                         {
-            //                             type: 'tool-result',
-            //                             toolName: 'listAds',
-            //                             toolCallId,
-            //                             result: stocks
-            //                         }
-            //                     ]
-            //                 }
-            //             ]
-            //         })
-
-            //         return (
-            //             <BotCard>
-            //                 <Stocks props={stocks}/>
-            //             </BotCard>
-            //         )
-            //     }
-            // },
             getCampaignResults: {
-                description:
-                    'Get the current campaign results of a given digital marketing campaign from this user. Use this to show the current daily ad spent to the user.',
-                parameters: z.object({
-                    campaignId: z.string().describe('The id of the campaign.'),
-                    guideForUser: z.string().optional().describe('This is the guide for user about this component, this is optional'),
-                }),
+                description: getCampaignResultsModule.description,
+                parameters: getCampaignResultsModule.parameters,
                 generate: async function* ({campaignId, guideForUser}) {
                     yield (
                         <BotCard>
                             <StockSkeleton/>
                         </BotCard>
                     )
-
                     await sleep(1000)
-
                     const toolCallId = nanoid()
-
                     pushMessages([
                         {
                             id: nanoid(),
@@ -1224,22 +1175,15 @@ Technology
                         }
                     ])
 
-                    return (
-                        <>
-                            <BotCard>
-                                <Stock campaignId={campaignId} isActive/>
-                            </BotCard>
-                            <div className="my-4">
-                                {guideForUser ?? ''}
-                            </div>
-                        </>
-                    )
+                    return await getCampaignResultsModule.component({
+                        campaignId,
+                        guideForUser
+                    })
                 }
             },
             getCampaignImages: {
-                description:
-                    'Get the current images of campaign of a given digital marketing campaign from this user. Use this to show the campaign images to the user.',
-                parameters: z.object({}),
+                description: getCampaignImagesModule.description,
+                parameters: getCampaignImagesModule.parameters,
                 generate: async function* ({}) {
                     yield (
                         <BotCard>
@@ -1278,34 +1222,15 @@ Technology
                         timestamp: new Date().toISOString()
                     }]);
 
-                    return (
-                        <BotCard>
-                            <ChatImage/>
-                        </BotCard>
-                    )
+                    return await getCampaignImagesModule.component({})
                 }
             },
             showAdBudgetUI: {
-                description:
-                    'Show Facebook Ad Campaign name and the UI to set ad budget. Use this if the user wants to change his ad budget.',
-                parameters: z.object({
-                    symbol: z
-                        .string()
-                        .describe(
-                            'The name of the digital marketing campaign. e.g. Recruiting Campaign Chef Cook.'
-                        ),
-                    price: z.number().describe('The current daily amount of ad budget spent.'),
-                    numberOfShares: z
-                        .number()
-                        .optional()
-                        .describe(
-                            'The **daily ad spend** for a campaign that a user wants to invest. Can be optional if the user did not specify it.'
-                        ),
-                    guideForUser: z.string().optional().describe('This is the guide for user about this component, this is optional'),
-                }),
-                generate: async function* ({symbol, price, numberOfShares, guideForUser}) {
-                    const toolCallId = nanoid()
-                    const initialBudget = numberOfShares || price
+                description: adBudgetModule.description,
+                parameters: adBudgetModule.parameters,
+                generate: async function* ({ symbol, price, numberOfShares, guideForUser }) {
+                    const toolCallId = nanoid();
+                    const initialBudget = numberOfShares || price;
 
                     if (initialBudget <= 0 || initialBudget > 1000) {
                         pushMessages([
@@ -1349,66 +1274,49 @@ Technology
                             }
                         ]);
 
-                        return <BotMessage content={'Invalid amount'}/>
-                    } else {
-                        pushMessages([
-                            {
-                                id: nanoid(),
-                                role: 'assistant',
-                                content: [
-                                    {
-                                        type: 'tool-call',
-                                        toolName: 'showAdBudgetUI',
-                                        toolCallId,
-                                        args: {symbol, price, numberOfShares: initialBudget, guideForUser}
-                                    }
-                                ],
-                                timestamp: new Date().toISOString()
-                            },
-                            {
-                                id: nanoid(),
-                                role: 'tool',
-                                content: [
-                                    {
-                                        type: 'tool-result',
-                                        toolName: 'showAdBudgetUI',
-                                        toolCallId,
-                                        result: {
-                                            symbol,
-                                            price,
-                                            numberOfShares: initialBudget,
-                                            guideForUser
-                                        }
-                                    }
-                                ],
-                                timestamp: new Date().toISOString()
-                            }
-                        ]);
-
-                        return (
-                            <>
-                                <BotCard>
-                                    <Purchase
-                                        props={{
-                                            symbol,
-                                            price: +price,
-                                            initialBudget: initialBudget,
-                                            status: 'requires_action'
-                                        }}
-                                    />
-                                </BotCard>
-                                <div className="my-4">
-                                    {guideForUser ?? ''}
-                                </div>
-                            </>
-                        )
+                        return await adBudgetModule.component({ symbol, price, numberOfShares, guideForUser });
                     }
+                    
+                    pushMessages([
+                        {
+                            id: nanoid(),
+                            role: 'assistant',
+                            content: [
+                                {
+                                    type: 'tool-call',
+                                    toolName: 'showAdBudgetUI',
+                                    toolCallId,
+                                    args: { symbol, price, numberOfShares: initialBudget, guideForUser }
+                                }
+                            ],
+                            timestamp: new Date().toISOString()
+                        },
+                        {
+                            id: nanoid(),
+                            role: 'tool',
+                            content: [
+                                {
+                                    type: 'tool-result',
+                                    toolName: 'showAdBudgetUI',
+                                    toolCallId,
+                                    result: {
+                                        symbol,
+                                        price,
+                                        numberOfShares: initialBudget,
+                                        guideForUser
+                                    }
+                                }
+                            ],
+                            timestamp: new Date().toISOString()
+                        }
+                    ]);
+
+                    return await adBudgetModule.component({ symbol, price, numberOfShares, guideForUser });
                 }
             },
             showFormBuilder: {
-                description:
-                    'Show form builder',
-                parameters: z.object({}),
+                description: formBuilderModule.description,
+                parameters: formBuilderModule.parameters,
                 generate: async function* () {
                     const toolCallId = nanoid()
                     pushMessages([
@@ -1440,26 +1348,12 @@ Technology
                         },
                     ])
                 
-
-                    return (
-                        <BotCard>
-                            <FormBuilder toolCallId={toolCallId}/>
-                        </BotCard>
-                    )
+                    return await formBuilderModule.component({ toolCallId });
                 }
             },
             getEvents: {
-                description:
-                    'List Tips which provide helpful information to users on how they could improve their campaigns.',
-                parameters: z.object({
-                    events: z.array(
-                        z.object({
-
-                            headline: z.string().describe('The headline of the event'),
-                            description: z.string().describe('The description of the event')
-                        })
-                    )
-                }),
+                description: getEventsModule.description,
+                parameters: getEventsModule.parameters,
                 generate: async function* ({events}) {
                     yield (
                         <BotCard>
@@ -1468,7 +1362,6 @@ Technology
                     )
 
                     await sleep(1000)
-
                     const toolCallId = nanoid()
                     pushMessages([
                         {
@@ -1499,30 +1392,12 @@ Technology
                         }
                     ])
                   
-
-                    return (
-                        <BotCard>
-                            <Events props={events}/>
-                        </BotCard>
-                    )
+                    return await getEventsModule.component({ events });
                 }
             },
             showSuggestionAdText: {
-                description: 'Show UI to select or input ad text for each image a campaign.',
-                parameters: z.object({
-                    campaignName: z.string().describe('The name of the campaign'),
-                    images: z.array(z.object({
-                            suggestedTexts: z.array(z.object({
-                                id: z.number().describe('This is timestamp of current time'),
-                                image: z.string().describe('The link of the image to display'),
-                                date: z.string(),
-                                text: z.string(),
-                                headline: z.string().optional().describe('The headline of the ad to display'),
-                            })).describe('List of suggested ad texts')
-                        })
-                    ).describe('List of images to display'),
-                    guideForUser: z.string().optional().describe('This is the guide for user about this component, this is optional')
-                }),
+                description: showSuggestionAdTextModule.description,
+                parameters: showSuggestionAdTextModule.parameters,
                 generate: async function* ({campaignName, images = [], guideForUser}) {
                     yield (
                         <BotCard>
@@ -1531,7 +1406,6 @@ Technology
                     );
 
                     await sleep(1000);
-
                     const toolCallId = nanoid();
                     pushMessages([
                         {
@@ -1562,36 +1436,12 @@ Technology
                         }
                     ])
                 
-
-                    return (
-                        <>
-                            <BotCard>
-                                <AdTextSuggestion props={images}/>
-                            </BotCard>
-                            <div className="my-4">
-                                {guideForUser ?? ''}
-                            </div>
-                        </>
-                    );
+                    return await showSuggestionAdTextModule.component({images, guideForUser})
                 }
             },
             showSuggestionVideoAdText: {
-                description: 'Show UI to select or input ad text for each video a campaign.',
-                parameters: z.object({
-                    campaignName: z.string().describe('The name of the campaign'),
-                    videos: z.array(z.object({
-                        suggestedTexts: z.array(z.object({
-                            id: z.number().describe('This is timestamp of current time'),
-                            video_id: z.string().describe('This is ID of this video'),
-                            video: z.string().describe('The video link of this video'),
-                            thumbnail: z.string().describe('The thumbnail link of this video'),
-                            date: z.string(),
-                            text: z.string(),
-                            headline: z.string().describe('The headline of the ad to display'),
-                        })).describe('List of suggested video ad texts')
-                     })).describe('List of videos to display'),
-                     guideForUser: z.string().optional().describe('This is the guide for user about this component, this is optional')
-                }),
+                description: showSuggestionVideoAdTextModule.description,
+                parameters: showSuggestionVideoAdTextModule.parameters,
                 generate: async function* ({campaignName, videos = [], guideForUser}) {
                     yield (
                         <BotCard>
@@ -1600,7 +1450,6 @@ Technology
                     );
 
                     await sleep(1000);
-
                     const toolCallId = nanoid();
                     pushMessages([
                         {
@@ -1630,23 +1479,13 @@ Technology
                             timestamp: new Date().toISOString()
                         }
                     ])
-           
-                    return (
-                        <BotCard>
-                            <VideoAdTextSuggestion videos={videos}/>
-                            <div className="my-4">
-                                {guideForUser ?? ''}
-                            </div>
-                        </BotCard>
-                    );
+
+                    return await showSuggestionVideoAdTextModule.component({videos, guideForUser})
                 }
             },
             showUpdateStatusCampaign: {
-                description: 'Show UI  to update status of the campaign.',
-                parameters: z.object({
-                    campaignName: z.string().describe('The name of the campaign'),
-                    status: z.string().describe('The current status of the campaign'),
-                }),
+                description: showUpdateStatusCampaignModule.description,
+                parameters: showUpdateStatusCampaignModule.parameters,
                 generate: async function* ({campaignName, status}) {
                     yield (
                         <BotCard>
@@ -1655,7 +1494,6 @@ Technology
                     );
 
                     await sleep(1000);
-
                     const toolCallId = nanoid();
                     pushMessages([
                         {
@@ -1686,19 +1524,12 @@ Technology
                         }
                     ])
 
-                    return (
-                        <BotCard>
-                            <CampaignStatus props={{toolCallId, campaignName, status}}/>
-                        </BotCard>
-                    )
+                    return await showUpdateStatusCampaignModule.component({toolCallId, campaignName, status})
                 }
             },
             showCampaignNameUpdateUI: {
-                description: 'Show a notification that the name of Facebook Ad Campaign is updated. Use this when the user wants to change campaign name. The parameter questionForBudget is optional. It is used only in step 1.',
-                parameters: z.object({
-                    campaignName: z.string().describe('The name of the campaign'),
-                    questionForBudget: z.string().describe('The question for the budget with step 2, this is optional'),
-                }),
+                description: showCampaignNameUpdateUIModule.description,
+                parameters: showCampaignNameUpdateUIModule.parameters,
                 generate: async function* ({campaignName, questionForBudget}) {
                     let campaignId = await getCampaignIdFromUrl() || '0'; // for now just say you are updating even if no campaign id in place
                     if (process.env.NEXT_PUBLIC_HARDCODED_MODE === '1') {
@@ -1737,22 +1568,13 @@ Technology
                             timestamp
                         }
                     ])
-                    return (
-                        <BotCard>
-                            <p className="mb-2 last:mb-0">{`Alright, I will update campaign name as "${campaignName}".`}</p>
-                            {!!questionForBudget && <p className="mb-2 last:mb-0">{questionForBudget}</p>}
-                            <InjectCampaign campaignId={campaignId} />
-                            <RefreshChatTitle campaignName={campaignName} campaignId={campaignId}/>
-                        </BotCard>
-                    )
+
+                    return await showCampaignNameUpdateUIModule.component({campaignId, campaignName, questionForBudget});
                 }
             },
             createCampaign: {
-                description: 'Show a notification that the name of Facebook Ad Campaign is updated. Use this when the user wants to change campaign name. The parameter questionForBudget is optional. It is used only in step 1.',
-                parameters: z.object({
-                    campaignName: z.string().describe('The name of the campaign'),
-                    questionForBudget: z.string().describe('The question for the budget with step 2, this is optional'),
-                }),
+                description: createCampaignModule.description,
+                parameters: createCampaignModule.parameters,
                 generate: async function* ({campaignName, questionForBudget}) {
                     const response = await createCampaign({
                       objective: 'OUTCOME_LEADS',
@@ -1805,24 +1627,13 @@ Technology
                             timestamp
                         }
                     ])
-             
-                    return success ? (
-                        <BotCard>
-                            <p className="mb-2 last:mb-0">{`I created a campaign named "${campaignName}".`}</p>
-                            {!!questionForBudget && <p className="mb-2 last:mb-0">{questionForBudget}</p>}
-                            <InjectCampaign campaignId={campaignId} />
-                            <RefreshChatTitle campaignName={campaignName} campaignId={campaignId}/>
-                        </BotCard>
-                    ) : (
-                        <BotCard>
-                            <p className="mb-2 last:mb-0">Campaign creation failed, please try again later.</p>
-                        </BotCard>
-                    )
+
+                    return await createCampaignModule.component({success, campaignName, campaignId, questionForBudget})
                 }
             },
             showCampaignConnectionUI: {
-                description: 'Show a UI to connect a campaign to the chat.',
-                parameters: z.object({}),
+                description: showCampaignConnectionUIModule.description,
+                parameters: showCampaignConnectionUIModule.parameters,
                 generate: async function* ({}) {
                     console.log('tool call showCampaignConnectionUI')
                     const timestamp: string = new Date().toISOString();
@@ -1855,16 +1666,13 @@ Technology
                             timestamp
                         }
                     ])
-                    return (
-                        <BotCard>
-                            <ConnectCampaign />
-                        </BotCard>
-                    )
+
+                    return await showCampaignConnectionUIModule.component({})
                 }
             },
             showPlacementTargetingUI: {
-                description: 'Show a UI to set placement targeting of the campaign',
-                parameters: z.object({}),
+                description: showPlacementTargetingUIModule.description,
+                parameters: showPlacementTargetingUIModule.parameters,
                 generate: async function* ({}) {
                     console.log('tool call showPlacementTargetingUI')
                     const timestamp: string = new Date().toISOString();
@@ -1898,16 +1706,12 @@ Technology
                         }
                     ])
 
-                    return (
-                        <BotCard>
-                            <PlacementTargeting toolCallId={toolCallId}/>
-                        </BotCard>
-                    )
+                    return await showPlacementTargetingUIModule.component({toolCallId})
                 }
             },
             showGeographicalLocationUI: {
-                description: 'Show a UI of result geographical',
-                parameters: z.object({}),
+                description: showGeographicalLocationUIModule.description,
+                parameters: showGeographicalLocationUIModule.parameters,
                 generate: async function* ({}) {
                     const timestamp: string = new Date().toISOString();
                     const toolCallId = nanoid();
@@ -1939,26 +1743,17 @@ Technology
                             timestamp
                         }
                     ])
-                    return (
-                        <BotCard>
-                            <GeographicalLocation toolCallId={toolCallId} />
-                        </BotCard>
-                    )
+
+                    return await showGeographicalLocationUIModule.component({toolCallId})
                 }
             },
             showSuggestedFilters: {
-                description: 'Show a UI of result suggested filters',
-                parameters: z.object({
-                    suggestedFitlers: z.array(
-                        z.array(
-                            z.string().describe('filter name of suggestion')
-                        )
-                    ).describe('The array of suggested filters from AI provided, a suggestion filter will have one or more filter name')
-                }),
+                description: showSuggestedFiltersUIModule.description,
+                parameters: showSuggestedFiltersUIModule.parameters,
                 generate: async function* ({suggestedFitlers}) {
-                    console.log('suggestedFitlers', suggestedFitlers);
-                    const timestamp: string = new Date().toISOString();
-                    const toolCallId = nanoid();
+                    console.log('suggestedFitlers', suggestedFitlers)
+                    const timestamp: string = new Date().toISOString()
+                    const toolCallId = nanoid()
                     pushMessages([
                         {
                             id: nanoid(),
@@ -1992,18 +1787,15 @@ Technology
                         }
                     ])
 
-                    return (
-                        <BotCard>
-                            <SuggestedFilters toolCallId={toolCallId} suggestedFitlers={suggestedFitlers}  />
-                        </BotCard>
-                    )
+                    return await showSuggestedFiltersUIModule.component({
+                        suggestedFitlers,
+                        toolCallId
+                    })
                 }
             },
             showSupervisedTaskUI: {
-                description: 'Show this UI if user want to perform anything related to "retargeting campaign" or "AB testing between adsets"',
-                parameters: z.object({
-                    task_name:z.string().describe("Name of the task which user asked to perform")
-                }),
+                description: showSupervisedTaskUIModule.description,
+                parameters: showSupervisedTaskUIModule.parameters,
                 generate: async function* ({task_name}) {
                     console.log('tool call showSupervisedTaskUI')
                     const timestamp: string = new Date().toISOString();
@@ -2065,16 +1857,12 @@ Technology
                             }
                         ]
                     })
-                    return (
-                        <BotCard>
-                            <SupervisedTaskMessage/>
-                        </BotCard>
-                    )
+                    return await showSupervisedTaskUIModule.component({})
                 }
             },
             showAdsetConnectionUI: {
-                description: 'Show a UI to connect a adset to the chat.',
-                parameters: z.object({}),
+                description: showAdsetConnectionUIModule.description,
+                parameters: showAdsetConnectionUIModule.parameters,
                 generate: async function* ({}) {
                     console.log('tool call showAdsetConnectionUI')
                     const timestamp: string = new Date().toISOString();
@@ -2111,11 +1899,9 @@ Technology
                             }
                         ]
                     })
-                    return (
-                        <BotCard>
-                            <ConnectAdset toolCallId={toolCallId} />
-                        </BotCard>
-                    )
+                    return await showAdsetConnectionUIModule.component({
+                        toolCallId
+                    })
                 }
             }
             
