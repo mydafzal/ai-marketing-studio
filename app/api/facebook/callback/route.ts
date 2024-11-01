@@ -52,25 +52,10 @@ export async function GET(request: Request) {
 
   const accessToken = tokenData.access_token;
 
-  // Exchange the short-lived token for a long-lived token
-  const longLivedTokenRes = await fetch(`${FACEBOOK_TOKEN_URL}?grant_type=fb_exchange_token&client_id=${FACEBOOK_CLIENT_ID}&client_secret=${FACEBOOK_CLIENT_SECRET}&fb_exchange_token=${accessToken}`, {
-    method: 'GET',
-  });
-  const longLivedTokenData = await longLivedTokenRes.json();
-
-  if (longLivedTokenData.error) {
-    return NextResponse.json({ error: longLivedTokenData.error.message }, { status: 400 });
-  }
-
-  const longLivedAccessToken = longLivedTokenData.access_token;
-  // return  NextResponse.json({ longLivedAccessToken });
-
-  const encryptedToken = await encryptToken(longLivedAccessToken);
-
   if(!session){
     // Fetch user information with long-lived access token
     const userRes = await fetch(
-      `https://graph.facebook.com/me?fields=id,name,email&access_token=${longLivedAccessToken}`,
+      `https://graph.facebook.com/me?fields=id,name,email&access_token=${accessToken}`,
       {
         method: 'GET',
       }
@@ -97,12 +82,26 @@ export async function GET(request: Request) {
       }
   
       user = user_create_resp.user;
+      // Exchange the short-lived token for a long-lived token
+      const longLivedTokenRes = await fetch(`${FACEBOOK_TOKEN_URL}?grant_type=fb_exchange_token&client_id=${FACEBOOK_CLIENT_ID}&client_secret=${FACEBOOK_CLIENT_SECRET}&fb_exchange_token=${accessToken}`, {
+        method: 'GET',
+      });
+      const longLivedTokenData = await longLivedTokenRes.json();
+
+      if (longLivedTokenData.error) {
+        return NextResponse.json({ error: longLivedTokenData.error.message }, { status: 400 });
+      }
+
+      const longLivedAccessToken = longLivedTokenData.access_token;
+      // return  NextResponse.json({ longLivedAccessToken });
+
+      const encryptedToken = await encryptToken(longLivedAccessToken);
+      const token_save_resp = await updateFbAccessToken(email,encryptedToken) // TODO fail error handling
+
     }
     else{
       user = existing_user.user;
     }
-
-    
 
     const password="Just dummy password" // Not in use.  This is just for demo purposes.
 
@@ -112,12 +111,26 @@ export async function GET(request: Request) {
       login_type:"facebook",
       redirect: false
     })
-    await updateFbAccessToken(email,encryptedToken) // TODO fail error handling
+
 
     return NextResponse.redirect(getProductionURL());
   }
 
-  await updateFbAccessToken(session.user.email,encryptedToken) // TODO fail error handling
+  // Exchange the short-lived token for a long-lived token
+  const longLivedTokenRes = await fetch(`${FACEBOOK_TOKEN_URL}?grant_type=fb_exchange_token&client_id=${FACEBOOK_CLIENT_ID}&client_secret=${FACEBOOK_CLIENT_SECRET}&fb_exchange_token=${accessToken}`, {
+    method: 'GET',
+  });
+  const longLivedTokenData = await longLivedTokenRes.json();
+
+  if (longLivedTokenData.error) {
+    return NextResponse.json({ error: longLivedTokenData.error.message }, { status: 400 });
+  }
+
+  const longLivedAccessToken = longLivedTokenData.access_token;
+  // return  NextResponse.json({ longLivedAccessToken });
+
+  const encryptedToken = await encryptToken(longLivedAccessToken);
+  const token_save_resp = await updateFbAccessToken(session.user.email,encryptedToken) // TODO fail error handling
 
   return NextResponse.redirect(getProductionURL());
 }
