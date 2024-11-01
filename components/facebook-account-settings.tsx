@@ -1,13 +1,13 @@
 "use client"
-import React from "react";
+import React, {SetStateAction} from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { Cross2Icon } from "@radix-ui/react-icons";
 import { usePathname } from 'next/navigation';
 
 import FacebookConnect from "@/components/facebook-connect";
 import FBAccountDropdown from "./fb-account-dropdown";
-import Onboarding from "./onboarding"
 import {isFeatureToggleEnabled} from "@/lib/helpers/feature-toggle/feature-toggle-manager";
+import { Button } from '@/components/ui/button'
 
 
 import {type User} from '@/lib/types'
@@ -20,6 +20,8 @@ type Account = {
 
 type FacebookAccountSettingsProps= {
 	userDetails:User | undefined;
+	open:boolean;
+	setOpen:React.Dispatch<SetStateAction<boolean>>;
 	getFacebookBusinessAccounts: (encryptedAccessToken:string)=>Promise<any>;
 	getFacebookAdAccounts: (encryptedAccessToken:string,business_acc_id:string )=>Promise<any>;
 	updateFbBusinessAcc: (email:string,accountId:string )=>Promise<any>;
@@ -30,6 +32,8 @@ type FacebookAccountSettingsProps= {
 
 const FacebookAccountSettings = ({
 	userDetails,
+	open, 
+	setOpen,
 	getFacebookBusinessAccounts,
 	getFacebookAdAccounts,
 	updateFbBusinessAcc,
@@ -52,12 +56,7 @@ const FacebookAccountSettings = ({
 	const [facebookConnected, setFacebookConnected] = React.useState(userDetails?.fbMarketingApiKey?true:false);
 	const [adAccountSelected, setAdAccountSelected] =  React.useState(userDetails?.fbAccountId?true:false);
 
-	const [step, setStep] = React.useState<number>(facebookConnected&&adAccountSelected?2:1);
-	const [open, setOpen] = React.useState<boolean>(
-		isFeatureToggleEnabled("enforceUserApiKey")?
-		!(facebookConnected&&adAccountSelected):
-		!(adAccountSelected)
-	)
+	
 	
 
 	function handleClose(){
@@ -73,11 +72,11 @@ const FacebookAccountSettings = ({
 			}
 	}
 	else{
-		if(adAccountSelected){
+		// if(adAccountSelected){
 			setOpen(false)
-		}else{
-			setError("Please complete Add Account selection before proceeding")
-		}
+		// }else{
+		// 	setError("Please complete Add Account selection before proceeding")
+		// }
 	}
 		
 	}
@@ -121,6 +120,11 @@ const FacebookAccountSettings = ({
 	}
 
 	React.useEffect(()=>{
+		// setOpen(
+		// 	isFeatureToggleEnabled("enforceUserApiKey")?
+		// 	!(facebookConnected&&adAccountSelected):
+		// 	!(adAccountSelected)
+		// )
 		getBusinessAPICall();
 	}, [])
 
@@ -150,21 +154,11 @@ const FacebookAccountSettings = ({
 	}
 
 	return <>
-		{
-			step==2?(<Onboarding
-			userDetails={userDetails}
-			open={open}
-			setOpen={setOpen}
-			setStep={setStep}
-			updateOnboardingDetails={updateOnboardingDetails}
-			/>):
-	(<Dialog.Root modal={true} open={open} onOpenChange={()=>null}>
+     <Dialog.Root modal={true} open={open} onOpenChange={()=>null}>
 		<Dialog.Trigger asChild>
-			<button 
-			onClick={()=>setOpen(true)}
-			className="inline-flex h-[35px] items-center justify-center rounded bg-white px-[5px] font-medium leading-none text-violet11 focus:outline-none">
-				Adjust Account 
-			</button>
+			<Button variant="ghost" className="w-full" onClick={()=>setOpen(true)}>
+				Facebook Settings
+			</Button>
 		</Dialog.Trigger>
 		<Dialog.Portal>
 			<Dialog.Overlay className="z-[100] fixed inset-0 bg-black/50 data-[state=open]:animate-overlayShow" />
@@ -240,15 +234,7 @@ const FacebookAccountSettings = ({
 				
 				</div>
 
-					<div className="flex justify-end">
-						<button 
-						// onClick={unlinkFacebook}
-						className="h-10 px-4 flex items-center justify-center bg-gray-700 hover:bg-gray-900 text-white rounded-md shadow-md transition-transform transform hover:scale-105 active:scale-100 focus:outline-none"
-						onClick={()=>setStep(2)}
-						>
-						Next
-						</button>
-					</div>
+					
 
 				{/* <div className="mt-[25px] flex justify-end">
 					<Dialog.Close asChild>
@@ -270,8 +256,7 @@ const FacebookAccountSettings = ({
 				</Dialog.Close>
 			</Dialog.Content>
 		</Dialog.Portal>
-	</Dialog.Root>)
-	}
+	</Dialog.Root>
 	</>
 };
 

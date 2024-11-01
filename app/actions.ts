@@ -769,12 +769,12 @@ export async function updateFbBusinessAcc(email: string, accountId: string) {
 export async function updateFbAccessToken(email: string, fbAccessToken: string) {
     const session = await auth()
 
-    if (!session || !session.user) {
-        return {
-            success: false,
-            error: 'User not authenticated'
-        }
-    }
+    // if (!session || !session.user) {
+    //     return {
+    //         success: false,
+    //         error: 'User not authenticated'
+    //     }
+    // }
 
     try {
         // Construct the user key using the email
@@ -1353,3 +1353,31 @@ export async function getUserByEmail(user_email:string) {
         }
     }
 }
+
+
+export async function createUserWithoutPassword(
+    email: string,
+  ) {
+    const resp = await getUserByEmail(email)
+  
+    if (resp.success) {
+      return {
+        error:"User already exists"
+      }
+    } else {
+      const user = {
+        id: crypto.randomUUID(),
+        email,
+        provider:"facebook",
+        password:"",
+        salt:""
+      }
+  
+      await kv.hmset(`user:${email}`, user)
+  
+      return {
+            success:true,
+            user:user
+        }
+    }
+  }
