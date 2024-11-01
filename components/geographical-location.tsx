@@ -2,17 +2,18 @@
 
 import { ToolContent } from 'ai';
 import { readStreamableValue, useActions, useAIState, useUIState } from 'ai/rsc'
+import debounce from 'lodash/debounce'
 import * as React from 'react'
 import { useState, useCallback, useContext, useEffect } from 'react'
-import debounce from 'lodash/debounce'
+import { toast } from 'sonner'
 import { CampaignContext } from '@/components/contexts/campaign-context'
-import { Adset, AdsetTargeting, Country, Region, City } from '@/lib/types'
+import { GeographicalLocationResult } from '@/components/geographical-location-result'
 import { IconSpinner } from '@/components/ui/icons'
 import { builQueryString } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
 import { ComboBox } from '@/components/ui/combo-box'
-import { GeographicalLocationResult } from '@/components/geographical-location-result'
+import { Label } from '@/components/ui/label'
 import { RangeSlider } from '@/components/range-slider'
 import {
   Select,
@@ -21,10 +22,9 @@ import {
   SelectContent,
   SelectItem
 } from '@/components/ui/select'
-
-import { Checkbox } from '@/components/ui/checkbox'
-
 import { type AI } from '@/lib/chat/actions'
+import { Adset, AdsetTargeting, Country, Region, City, Message } from '@/lib/types'
+
 interface GeoGraphicalLocationProps {
   toolCallId: string
   uiProps?: {
@@ -44,9 +44,7 @@ export function GeographicalLocation({
   const { adset, setAdset } = useContext(CampaignContext)
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
   const { confirmUpdateAdset, submitUserMessage, syncMessages } = useActions()
-
   const [aiState, setAIState] = useAIState()
-
   const [_, setMessages] = useUIState<typeof AI>()
   const [countryData, setCountryData] = useState<Country[]>([])
   const [countrySelected, setCountrySelected] = useState<Country>()
@@ -69,7 +67,15 @@ export function GeographicalLocation({
     )
 
   async function handleUpdateAdset() {
-    if (!adset || !countrySelected) return
+    if (!adset) {
+      return toast.info('Adset is not set in this chat, please select adset first.')
+    }
+    if (!countrySelected) {
+      return toast.info('You should select at least a country to set targeting.')
+    }
+    setIsSubmitting(true)
+
+
     let newTargeting: AdsetTargeting = { ...adset.targeting }
     let demographicData: {
       [key: string]: any
@@ -111,6 +117,7 @@ export function GeographicalLocation({
 
     demographicData.genders = genders
 
+    setIsSubmitting(true)
     const response = await confirmUpdateAdset(
       adset.id,
       {
@@ -124,29 +131,29 @@ export function GeographicalLocation({
       response.response
     )) {
       if (updatedAdset) {
-        const messages = aiState.messages;
-        const lastMessage = messages.slice(-1)[0];
-        if (!lastMessage || lastMessage.id !== toolCallId) {
-          return console.error('Exception: last message is empty or not matching to toolCallId in geographical-location component.', lastMessage);
-        }
-        const content = (lastMessage.content as ToolContent)[0];
-        if (content.type !== 'tool-result') {
-          return console.error("Exception: content type is not tool-result in geographical-location component.", lastMessage)
-        }
-        if (content.toolName !== 'showGeographicalLocationUI') {
-          return console.error("Exception: tool name not matching in geographical-location component.", lastMessage)
-        }
-        content.result = {
-          ...(content.result as Object),
-          uiProps: {
-            success: true,
-            targeting: updatedAdset.targeting,
-            demographicData
-          }
-        }
         setAIState({
           ...aiState,
-          messages: [...messages]
+          messages: aiState.messages.map((message: Message) => {
+            if (message.id !== toolCallId) return message
+
+            const content = (message.content as ToolContent)[0];
+            if (content.type !== 'tool-result') {
+              return console.error("Exception: content type is not tool-result in geographical-location component.", message)
+            }
+            if (content.toolName !== 'showGeographicalLocationUI') {
+              return console.error("Exception: tool name not matching in geographical-location component.", message)
+            }
+            content.result = {
+              ...(content.result as Object),
+              uiProps: {
+                success: true,
+                targeting: updatedAdset.targeting,
+                demographicData
+              }
+            }
+            
+            return message
+          })
         });
 
         setAdset(updatedAdset)
@@ -392,11 +399,8 @@ export function GeographicalLocation({
       </div>
       <div className="flex mt-4 gap-4">
         <Button
-          disabled={isSubmitting || !countrySelected}
-          onClick={async () => {
-            setIsSubmitting(true)
-            await handleUpdateAdset()
-          }}
+          disabled={isSubmitting}
+          onClick={handleUpdateAdset}
           className="flex justify-center items-center flex-1 px-3 py-2 text-xs align-middle font-medium text-center"
         >
           {isSubmitting && <IconSpinner />}

@@ -1086,7 +1086,7 @@ Technology
     
     - If you want to update or add demographic targeting, call \`show_demographic_location_ui\` to show the form demographic targeting UI.
     
-    - If you want to make suggestions filter call \`show_suggested_filters\` , (use Categories of interest filters) and current demographic targeting to make 5 suggestions filter
+    - If you want to show suggestions-filter, then generate 5 filter suggestions using Categories of interest filters, Location, demographic targeting information, and user input - "${extraDetailsFinalText}", and then call \`show_suggested_filters\` with the suggestions.
 
     - Besides that, you can also chat with users and perform budget calculations if needed.
     

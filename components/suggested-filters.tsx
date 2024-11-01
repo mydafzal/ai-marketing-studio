@@ -42,16 +42,13 @@ const SuggestedFilterItem = ({
                 <div className="mt-4">
                     <p>Reach estimate:</p>
                     <p className="mt-2 text-zinc-600 dark:text-zinc-300">
-                        Lower bound:{' '}
+                        Between{' '}
                         <span className="font-semibold">
                             {formatNumberDigit(
                                 estimate?.result.users_lower_bound || 0
                             )}
                         </span>{' '}
-                        users
-                    </p>
-                    <p className="mt-2 text-zinc-600 dark:text-zinc-300">
-                        Upper bound:{' '}
+                        and{' '}
                         <span className="font-semibold">
                             {formatNumberDigit(
                                 estimate?.result.users_upper_bound || 0
@@ -203,7 +200,7 @@ export function SuggestedFilters({
     ) : !isReadOnly ? (
         <div className="p-0">
             <div className="text-lg font-medium text-gray-900 dark:text-zinc-300 mb-2">
-                Let&apos;s select a suggestion filter:
+                Let&apos;s pick some filters to target your audience
             </div>
             <div className="grid md:grid-cols-1 gap-4">
                 {estimates.map((estimate, key) => (
