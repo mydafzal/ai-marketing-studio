@@ -47,7 +47,8 @@ export const formatNumber = (value: number) =>
     style: 'currency',
     currency: 'EUR'
   }).format(value)
-
+export const formatNumberDigit = (value: number) =>
+    new Intl.NumberFormat('en-US').format(value)
 export const runAsyncFnWithoutBlocking = (
   fn: (...args: any) => Promise<any>
 ) => {

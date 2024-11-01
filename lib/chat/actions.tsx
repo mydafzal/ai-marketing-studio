@@ -353,32 +353,11 @@ async function syncMessages() {
     });
 }
 
-async function confirmUpdateAdset(adsetId: string, adset: any, type: string, extraData: any) {
+async function confirmUpdateAdset(adsetId: string, adset: any, type: string) {
   'use server'
   const aiState = getMutableAIState<typeof AI>();
   const chatId = getChatIdFromUrl()?.toString() || ''
-  const MIN_REACH = 1000;
-  const MAX_REACH = 50000;
   let adsetUpdate = { ...adset }
-  let selectedFilter = undefined;
-  if (type === 'suggested_filters' && extraData.length > 0) {
-    const estimateResult = extraData as ReachEstimateResult[]
-    selectedFilter = estimateResult.find(
-      result =>
-        result.result.users_lower_bound >= MIN_REACH &&
-        result.result.users_lower_bound <= MAX_REACH
-    )
-    if (!selectedFilter) {
-      selectedFilter = estimateResult[0]
-    }
-    adsetUpdate = {
-      ...adsetUpdate,
-      targeting: {
-        ...adsetUpdate.targeting,
-        flexible_spec: selectedFilter.targeting_spec.flexible_spec
-      }
-    }
-  }
   const budget = await fetchChatCampaignBudget(chatId)
   if (budget.error) {
     adsetUpdate = { ...adsetUpdate, daily_budget: 100 }
