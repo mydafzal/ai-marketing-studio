@@ -79,6 +79,8 @@ async function checkNewChat(chatId: string, messages: Message[], session: Sessio
         'contact@reeply.net',
         'themadnoise@gmail.com',
         'maxnols@reeply.net',
+        'vinayak@reeply.ai',
+        'madani.farzam@gmail.com'
     ];
 
     if (disabledEmails.includes(session.user.email)) return false;
@@ -2758,6 +2760,7 @@ Engaged Shoppers]
                                         toolName: 'showSupervisedTaskUI',
                                         toolCallId,
                                         result: {
+                                            task_name:task_name,
                                             content:"",
                                             status:"pending"
                                         }
