@@ -72,11 +72,11 @@ const FacebookAccountSettings = ({
 			}
 	}
 	else{
-		if(adAccountSelected){
+		// if(adAccountSelected){
 			setOpen(false)
-		}else{
-			setError("Please complete Add Account selection before proceeding")
-		}
+		// }else{
+		// 	setError("Please complete Add Account selection before proceeding")
+		// }
 	}
 		
 	}
@@ -120,11 +120,11 @@ const FacebookAccountSettings = ({
 	}
 
 	React.useEffect(()=>{
-		setOpen(
-			isFeatureToggleEnabled("enforceUserApiKey")?
-			!(facebookConnected&&adAccountSelected):
-			!(adAccountSelected)
-		)
+		// setOpen(
+		// 	isFeatureToggleEnabled("enforceUserApiKey")?
+		// 	!(facebookConnected&&adAccountSelected):
+		// 	!(adAccountSelected)
+		// )
 		getBusinessAPICall();
 	}, [])
 
