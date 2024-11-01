@@ -9,13 +9,13 @@ export const showSupervisedTaskUIModule = new ModuleConfigBuilder(
     'showSupervisedTaskUI'
 )
     .setDescription(
-        'Show this UI if user want to perform anything related to "retargeting campaign" or "AB testing between adsets"'
+        'Display this UI when the user wants to perform actions related to retargeting campaigns, A/B testing between ad sets, duplicating campaigns, or creating lookalike or custom audiences.'
     )
     .setParameters(
         z.object({
             task_name: z
                 .string()
-                .describe('Name of the task which user asked to perform')
+                .describe('The task which user asked to perform')
         })
     )
     .setComponent(async ({}: ShowSupervisedTaskUIModuleParams) => {
