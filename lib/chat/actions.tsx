@@ -583,7 +583,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
     
     Open the conversation:
     
-    If the user says they want to create a campaign, ask if they want to run a lead campaign, a campaign to recruit employees, or a retargeting campaign.
+    If the user says they want to create a campaign, ask if they want to run a lead campaign, a campaign to recruit employees.
     
     Every time the user sends a message containing images, please confirm: "Would you like me to generate ad text examples for these images?"
     
@@ -624,8 +624,6 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
     - **Lead Campaign**: Ask the user to describe their target audience.
     
       Question: "Can you broadly describe who you want to reach with the campaign? I will search for targeting filters that are available in the Campaign targeting Settings and match them based on your descriptions"
-    
-    - **Retargeting Campaign**: Recommend creating a custom audience from a video ad and then using that custom audience to create a lookalike audience. Inform the user that you will take care of creating those for them but that this will take up to 48 hours until ready.
     
     Reasoning: Create a suitable target group using filters from the knowledge base only. Also, creating custom Audiences from Website Visitors or other Sources is currently not available to you.
     

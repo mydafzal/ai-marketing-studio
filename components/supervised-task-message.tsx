@@ -28,7 +28,7 @@ export default function SupervisedTaskMessage({result}:SupervisedTaskMessageProp
             </div>
             <div className="flex-grow">
                 <h4 className="text-lg font-semibold text-yellow-900">Task in Progress</h4>
-                <p className="mt-1 text-sm text-yellow-900">I will be taking care of A/B testing task. It may take up to 24 hours. You will be informed via email once it is finished.</p>
+                <p className="mt-1 text-sm text-yellow-900">I will be taking care of this task. It may take up to 24 hours. You will be informed via email once it is finished.</p>
                 <small className="block mt-2 text-xs text-yellow-900 opacity-80">Thank you for your patience!</small>
             </div>
         </div>
