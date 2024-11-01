@@ -2,6 +2,7 @@ import React, { SetStateAction } from 'react'
 import * as Dialog from "@radix-ui/react-dialog";
 import {type User} from '@/lib/types'
 import { Cross2Icon } from "@radix-ui/react-icons";
+import { Button } from '@/components/ui/button'
 
 
 type Details ={
@@ -26,7 +27,6 @@ type InputErrors = {
   
 type OnboardingProps= {
 	userDetails:User | undefined;
-	setStep:React.Dispatch<SetStateAction<number>>;
 	open:boolean;
 	setOpen:React.Dispatch<SetStateAction<boolean>>;
 	updateOnboardingDetails:(email:string, details:{first_name:string; last_name:string,company_name:string; company_description:string; website_link:string; preferred_language:string; goal:string})=>Promise<any>
@@ -35,7 +35,7 @@ type OnboardingProps= {
 
 
 
-export default function Onboarding({userDetails,open, setOpen, setStep, updateOnboardingDetails}:OnboardingProps) {
+export default function Onboarding({userDetails,open, setOpen, updateOnboardingDetails}:OnboardingProps) {
 	const [error, setError]  = React.useState<string|null>(null);
 	const [inputError, setInputError]  = React.useState<InputErrors>({
 		first_name: "",
@@ -141,11 +141,14 @@ export default function Onboarding({userDetails,open, setOpen, setStep, updateOn
 	}
     <Dialog.Root modal={true} open={open} onOpenChange={()=>null}>
 		<Dialog.Trigger asChild>
-			<button 
+			{/* <button 
 			onClick={()=>setOpen(true)}
 			className="inline-flex h-[35px] items-center justify-center rounded bg-white px-[5px] font-medium leading-none text-violet11 focus:outline-none">
-				Adjust Account 
-			</button>
+				Profile
+			</button> */}
+			<Button variant="ghost" className="w-full" onClick={()=>setOpen(true)}>
+				Profile
+			</Button>
 		</Dialog.Trigger>
 		<Dialog.Portal>
 			<Dialog.Overlay className="z-[100] fixed inset-0 bg-black/50 data-[state=open]:animate-overlayShow" />
@@ -326,13 +329,13 @@ export default function Onboarding({userDetails,open, setOpen, setStep, updateOn
 					}
 				</div>
 				<div className="flex justify-between">
-					<button 
+					{/* <button 
 						// onClick={unlinkFacebook}
 						className="h-10 px-4 flex items-center justify-center bg-gray-700 hover:bg-gray-900 text-white rounded-md shadow-md transition-transform transform hover:scale-105 active:scale-100 focus:outline-none"
 						onClick={()=>setStep(1)}
 						>
 						Back
-					</button>
+					</button> */}
 					<button 
 						// onClick={unlinkFacebook}
 						className="h-10 px-4 flex items-center justify-center bg-blue-700 hover:bg-blue-900 text-white rounded-md shadow-md transition-transform transform hover:scale-105 active:scale-100 focus:outline-none"

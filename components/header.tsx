@@ -20,7 +20,7 @@ import {type User} from '@/lib/types';
 import FacebookConnect from '@/components/facebook-connect';
 import FacebookAccountSettings from '@/components/facebook-account-settings';
 import {isFeatureToggleEnabled} from "@/lib/helpers/feature-toggle/feature-toggle-manager";
-
+import ProfileSettings from "@/components/profile-settings"
 async function UserOrLogin() {
   const session = (await auth()) as Session;
 
@@ -71,7 +71,7 @@ async function UserOrLogin() {
               <Link href="/ai-content" className={cn(buttonVariants({ variant: 'ghost' }), "ml-8")}>
                 AI Content
               </Link>
-              {isFeatureToggleEnabled('onboardingFeatures') &&
+              {/* {isFeatureToggleEnabled('onboardingFeatures') &&
                 <FacebookAccountSettings 
                   userDetails={userDetails}
                   getFacebookBusinessAccounts={getFacebookBusinessAccounts}
@@ -81,7 +81,16 @@ async function UserOrLogin() {
                   disconnectFacebook={disconnectFacebook}
                   updateOnboardingDetails={updateOnboardingDetails}
                 />
-              }
+              } */}
+              <ProfileSettings
+                userDetails={userDetails}
+                getFacebookBusinessAccounts={getFacebookBusinessAccounts}
+                getFacebookAdAccounts={getFacebookAdAccounts}
+                updateFbBusinessAcc={updateFbBusinessAcc}
+                updateFbAccountId={updateFbAccountId}
+                disconnectFacebook={disconnectFacebook}
+                updateOnboardingDetails={updateOnboardingDetails}
+              />
             </div>
           </div>
         ) : (
