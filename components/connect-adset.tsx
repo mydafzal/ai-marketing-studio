@@ -135,6 +135,7 @@ interface ConnectAdsetProps {
 export function ConnectAdset({ connectingUiProps, toolCallId }: ConnectAdsetProps) {
   const [aiState, setAIState] = useAIState()
   const { submitUserMessage, syncMessages } = useActions()
+  const { setAdset } = useContext(CampaignContext)
   console.log('connectingUiProps', connectingUiProps)
   const [connectingUI, setConnectingUI] = useState<null | React.ReactNode>(
     connectingUiProps ? <ConnectAdsetResult {...connectingUiProps} /> : null
@@ -157,7 +158,7 @@ export function ConnectAdset({ connectingUiProps, toolCallId }: ConnectAdsetProp
       if (
         role === 'system' &&
         id === 'adset-info-data' &&
-        content?.slice(0, 18) === 'Adset is connected'
+        content?.slice(0, 17) === 'Adset is selected'
       ) {
         if (shouldSendSilentMessage.current) {
           setTimeout(refresh, 0)
@@ -181,6 +182,7 @@ export function ConnectAdset({ connectingUiProps, toolCallId }: ConnectAdsetProp
         { fbAdsetId: adset.id }
       )
       if (updateSuccess?.success) {
+        setAdset(adset);
         shouldSendSilentMessage.current = true
         setConnectingUI(
           <ConnectAdsetResult
