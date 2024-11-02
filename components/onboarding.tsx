@@ -69,7 +69,19 @@ function Onboarding({
   const [dbChangeRequested, setDbChangeRequested] = React.useState(false)
   const [showSuccessMessage, setShowSuccessMessage] = React.useState(false)
 
-  // Keeping the exact same handleSave function
+  // Update states when userDetails changes
+  React.useEffect(() => {
+    if (userDetails) {
+      setFirstName(userDetails.first_name || "")
+      setLastName(userDetails.last_name || "")
+      setCompanyName(userDetails.company_name || "")
+      setCompanyDescription(userDetails.company_description || "")
+      setWebsiteLink(userDetails.website_link || "")
+      setPreferredLanguage(userDetails.preferred_language || "en")
+      setGoal(userDetails.goal || "customers")
+    }
+  }, [userDetails])
+
   const handleSave = async () => {
     if (userDetails) {
       const details = {
@@ -179,15 +191,18 @@ function Onboarding({
               "data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]"
             )}
           >
+            <Dialog.Title className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white text-center mb-6">
+              Welcome! Let&apos;s Get Started
+            </Dialog.Title>
+            
+            <Dialog.Description className="text-sm text-zinc-500 dark:text-zinc-400 text-center mb-6">
+              Please fill in your details to get started. All fields are required.
+            </Dialog.Description>
+
             <div className="space-y-6">
-              <div className="flex flex-col items-center text-center space-y-2">
-                <h2 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">
-                  Welcome! Let&apos;s Get Started
-                </h2>
-                {error && (
-                  <p className="text-sm text-red-500 dark:text-red-400">{error}</p>
-                )}
-              </div>
+              {error && (
+                <p className="text-sm text-red-500 dark:text-red-400 text-center">{error}</p>
+              )}
 
               <div className="grid gap-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -316,162 +331,162 @@ function Onboarding({
                       if(e.target.value.length > 0) {
                         setInputError({...inputError, company_description: ""})
                       } else {
-                        setInputError({...inputError, company_description: "This field is required"})
-                      }
-                      setCompanyDescription(e.target.value)
-                    }}
-                  />
-                  {inputError?.company_description && (
-                    <p className="text-sm text-red-500 flex items-center gap-1">
-                      <AlertCircle className="size-3" />
-                      {inputError.company_description}
-                    </p>
-                  )}
-                </div>
+						setInputError({...inputError, company_description: "This field is required"})
+					}
+					setCompanyDescription(e.target.value)
+				  }}
+				/>
+				{inputError?.company_description && (
+				  <p className="text-sm text-red-500 flex items-center gap-1">
+					<AlertCircle className="size-3" />
+					{inputError.company_description}
+				  </p>
+				)}
+			  </div>
 
-                <div className="space-y-2">
-				<label htmlFor="website_link" className="text-sm font-medium text-zinc-900 dark:text-zinc-200">
-                    Website Link
-                  </label>
-                  <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                    Our AI will analyze your website to better understand your company and provide more relevant suggestions.
-                  </p>
-                  <input 
-                    type="text" 
-                    id="website_link" 
-                    className={cn(
-                      "w-full px-3 py-2 rounded-lg text-sm transition-colors",
-                      "bg-white dark:bg-zinc-800 border",
-                      inputError?.website_link
-                        ? "border-red-500 dark:border-red-500 focus:ring-red-500"
-                        : "border-zinc-200 dark:border-zinc-700 focus:border-blue-500 dark:focus:border-blue-400",
-                      "focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-zinc-900",
-                    )}
-                    placeholder="https://yourwebsite.com" 
-                    value={websiteLink}
-                    onChange={(e) => {
-                      if(e.target.value.length > 0) {
-                        setInputError({...inputError, website_link: ""})
-                      } else {
-                        setInputError({...inputError, website_link: "This field is required"})
-                      }
-                      setWebsiteLink(e.target.value)
-                    }}
-                  />
-                  {inputError?.website_link && (
-                    <p className="text-sm text-red-500 flex items-center gap-1">
-                      <AlertCircle className="size-3" />
-                      {inputError.website_link}
-                    </p>
-                  )}
-                </div>
+			  <div className="space-y-2">
+				<label htmlFor="webciste_link" className="text-sm font-medium text-zinc-900 dark:text-zinc-200">
+				  Website Link
+				</label>
+				<p className="text-sm text-zinc-500 dark:text-zinc-400">
+				  Our AI will analyze your website to better understand your company and provide more relevant suggestions.
+				</p>
+				<input 
+				  type="text" 
+				  id="webciste_link" 
+				  className={cn(
+					"w-full px-3 py-2 rounded-lg text-sm transition-colors",
+					"bg-white dark:bg-zinc-800 border",
+					inputError?.website_link
+					  ? "border-red-500 dark:border-red-500 focus:ring-red-500"
+					  : "border-zinc-200 dark:border-zinc-700 focus:border-blue-500 dark:focus:border-blue-400",
+					"focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-zinc-900",
+				  )}
+				  placeholder="https://yourwebsite.com" 
+				  value={websiteLink}
+				  onChange={(e) => {
+					if(e.target.value.length > 0) {
+					  setInputError({...inputError, website_link: ""})
+					} else {
+					  setInputError({...inputError, website_link: "This field is required"})
+					}
+					setWebsiteLink(e.target.value)
+				  }}
+				/>
+				{inputError?.website_link && (
+				  <p className="text-sm text-red-500 flex items-center gap-1">
+					<AlertCircle className="size-3" />
+					{inputError.website_link}
+				  </p>
+				)}
+			  </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label htmlFor="languages" className="text-sm font-medium text-zinc-900 dark:text-zinc-200">
-                      Preferred Language
-                    </label>
-                    <select 
-                      id="languages" 
-                      value={preferredLanguage}
-                      onChange={(e) => {
-                        if(e.target.value.length > 0) {
-                          setInputError({...inputError, preferred_language: ""})
-                        } else {
-                          setInputError({...inputError, preferred_language: "This field is required"})
-                        }
-                        setPreferredLanguage(e.target.value)
-                      }}
-                      className={cn(
-                        "w-full px-3 py-2 rounded-lg text-sm transition-colors",
-                        "bg-white dark:bg-zinc-800 border",
-                        inputError?.preferred_language
-                          ? "border-red-500 dark:border-red-500 focus:ring-red-500"
-                          : "border-zinc-200 dark:border-zinc-700 focus:border-blue-500 dark:focus:border-blue-400",
-                        "focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-zinc-900",
-                      )}
-                    >
-                      <option value="en">English</option>
-                      <option value="nl">Dutch</option>
-                      <option value="de">German</option>
-                      <option value="es">Spanish</option>
-                      <option value="it">Italian</option>
-                      <option value="fr">French</option>
-                    </select>
-                    {inputError?.preferred_language && (
-                      <p className="text-sm text-red-500 flex items-center gap-1">
-                        <AlertCircle className="size-3" />
-                        {inputError.preferred_language}
-                      </p>
-                    )}
-                  </div>
+			  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+				<div className="space-y-2">
+				  <label htmlFor="languages" className="text-sm font-medium text-zinc-900 dark:text-zinc-200">
+					Preferred Language
+				  </label>
+				  <select 
+					id="languages" 
+					value={preferredLanguage}
+					onChange={(e) => {
+					  if(e.target.value.length > 0) {
+						setInputError({...inputError, preferred_language: ""})
+					  } else {
+						setInputError({...inputError, preferred_language: "This field is required"})
+					  }
+					  setPreferredLanguage(e.target.value)
+					}}
+					className={cn(
+					  "w-full px-3 py-2 rounded-lg text-sm transition-colors",
+					  "bg-white dark:bg-zinc-800 border",
+					  inputError?.preferred_language
+						? "border-red-500 dark:border-red-500 focus:ring-red-500"
+						: "border-zinc-200 dark:border-zinc-700 focus:border-blue-500 dark:focus:border-blue-400",
+					  "focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-zinc-900",
+					)}
+				  >
+					<option value="en">English</option>
+					<option value="nl">Dutch</option>
+					<option value="de">German</option>
+					<option value="es">Spanish</option>
+					<option value="it">Italian</option>
+					<option value="fr">French</option>
+				  </select>
+				  {inputError?.preferred_language && (
+					<p className="text-sm text-red-500 flex items-center gap-1">
+					  <AlertCircle className="size-3" />
+					  {inputError.preferred_language}
+					</p>
+				  )}
+				</div>
 
-                  <div className="space-y-2">
-                    <label htmlFor="goal" className="text-sm font-medium text-zinc-900 dark:text-zinc-200">
-                      What is your goal?
-                    </label>
-                    <select 
-                      id="goal" 
-                      value={goal}
-                      onChange={(e) => {
-                        if(e.target.value.length > 0) {
-                          setInputError({...inputError, goal: ""})
-                        } else {
-                          setInputError({...inputError, goal: "This field is required"})
-                        }
-                        setGoal(e.target.value)
-                      }}
-                      className={cn(
-                        "w-full px-3 py-2 rounded-lg text-sm transition-colors",
-                        "bg-white dark:bg-zinc-800 border",
-                        inputError?.goal
-                          ? "border-red-500 dark:border-red-500 focus:ring-red-500"
-                          : "border-zinc-200 dark:border-zinc-700 focus:border-blue-500 dark:focus:border-blue-400",
-                        "focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-zinc-900",
-                      )}
-                    >
-                      <option value="customers">I want to attract more customers</option>
-                      <option value="employees">I want to recruit employees</option>
-                    </select>
-                    {inputError?.goal && (
-                      <p className="text-sm text-red-500 flex items-center gap-1">
-                        <AlertCircle className="size-3" />
-                        {inputError.goal}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
+				<div className="space-y-2">
+				  <label htmlFor="goal" className="text-sm font-medium text-zinc-900 dark:text-zinc-200">
+					What is your goal?
+				  </label>
+				  <select 
+					id="goal" 
+					value={goal}
+					onChange={(e) => {
+					  if(e.target.value.length > 0) {
+						setInputError({...inputError, goal: ""})
+					  } else {
+						setInputError({...inputError, goal: "This field is required"})
+					  }
+					  setGoal(e.target.value)
+					}}
+					className={cn(
+					  "w-full px-3 py-2 rounded-lg text-sm transition-colors",
+					  "bg-white dark:bg-zinc-800 border",
+					  inputError?.goal
+						? "border-red-500 dark:border-red-500 focus:ring-red-500"
+						: "border-zinc-200 dark:border-zinc-700 focus:border-blue-500 dark:focus:border-blue-400",
+					  "focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-zinc-900",
+					)}
+				  >
+					<option value="customers">I want to attract more customers</option>
+					<option value="employees">I want to recruit employees</option>
+				  </select>
+				  {inputError?.goal && (
+					<p className="text-sm text-red-500 flex items-center gap-1">
+					  <AlertCircle className="size-3" />
+					  {inputError.goal}
+					</p>
+				  )}
+				</div>
+			  </div>
+			</div>
 
-              <div className="flex justify-end">
-                <Button
-                  onClick={handleSave}
-                  className="bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-500 dark:hover:bg-blue-600"
-                >
-                  Save Changes
-                </Button>
-              </div>
-            </div>
+			<div className="flex justify-end">
+			  <Button
+				onClick={handleSave}
+				className="bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-500 dark:hover:bg-blue-600"
+			  >
+				Save Changes
+			  </Button>
+			</div>
+		  </div>
 
-            <Dialog.Close asChild>
-              <button
-                onClick={() => setOpen(false)}
-                className={cn(
-                  "absolute right-4 top-4 rounded-full p-2 opacity-70 transition-all",
-                  "hover:opacity-100 hover:bg-zinc-100 dark:hover:bg-zinc-800",
-                  "focus:outline-none focus:ring-2 focus:ring-zinc-950 focus:ring-offset-2",
-                  "dark:focus:ring-zinc-200 dark:ring-offset-zinc-900",
-                )}
-              >
-                <Cross2Icon className="size-4" />
-                <span className="sr-only">Close</span>
-              </button>
-            </Dialog.Close>
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
-    </>
-  );
+		  <Dialog.Close asChild>
+			<button
+			  onClick={() => setOpen(false)}
+			  className={cn(
+				"absolute right-4 top-4 rounded-full p-2 opacity-70 transition-all",
+				"hover:opacity-100 hover:bg-zinc-100 dark:hover:bg-zinc-800",
+				"focus:outline-none focus:ring-2 focus:ring-zinc-950 focus:ring-offset-2",
+				"dark:focus:ring-zinc-200 dark:ring-offset-zinc-900",
+			  )}
+			>
+			  <Cross2Icon className="size-4" />
+			  <span className="sr-only">Close</span>
+			</button>
+		  </Dialog.Close>
+		</Dialog.Content>
+	  </Dialog.Portal>
+	</Dialog.Root>
+  </>
+);
 }
 
 export default Onboarding;
