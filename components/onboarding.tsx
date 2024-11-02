@@ -100,10 +100,24 @@ export default function Onboarding({userDetails,open, setOpen, updateOnboardingD
 			if(resp.success){
 				setDbChangeRequested(false)
 				setShowSuccessMessage(true)
+
+				// To update user details in header.tsx file
+				setTimeout(() => {
+					window.location.reload();
+				}, 2000);
 			}
 			else{
 				setError(resp.message)
 			}
+		}
+	}
+
+	function handleClose(){
+		if(!userDetails?.defaultExtraDetails){
+			setError("Please complete your profile setup to proceed.")
+		}
+		else{
+			setOpen(false)
 		}
 	}
 
@@ -352,7 +366,7 @@ export default function Onboarding({userDetails,open, setOpen, updateOnboardingD
 				 
 				<Dialog.Close asChild>
 					<button
-						onClick={()=> setOpen(false)}
+						onClick={handleClose}
 						className="absolute right-2.5 top-2.5 inline-flex size-[25px] appearance-none items-center justify-center rounded-full text-violet11 hover:bg-violet4 focus:shadow-[0_0_0_2px] focus:shadow-violet7 focus:outline-none"
 						aria-label="Close"
 					>
