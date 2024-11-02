@@ -71,17 +71,6 @@ async function UserOrLogin() {
               <Link href="/ai-content" className={cn(buttonVariants({ variant: 'ghost' }), "ml-8")}>
                 AI Content
               </Link>
-              {/* {isFeatureToggleEnabled('onboardingFeatures') &&
-                <FacebookAccountSettings 
-                  userDetails={userDetails}
-                  getFacebookBusinessAccounts={getFacebookBusinessAccounts}
-                  getFacebookAdAccounts={getFacebookAdAccounts}
-                  updateFbBusinessAcc={updateFbBusinessAcc}
-                  updateFbAccountId={updateFbAccountId}
-                  disconnectFacebook={disconnectFacebook}
-                  updateOnboardingDetails={updateOnboardingDetails}
-                />
-              } */}
               <ProfileSettings
                 userDetails={userDetails}
                 getFacebookBusinessAccounts={getFacebookBusinessAccounts}

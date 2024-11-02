@@ -74,7 +74,7 @@ export default function LoginForm() {
           </div>
         </div>
         <LoginButton />
-        {isFeatureToggleEnabled('onboardingFeatures') &&
+        {isFeatureToggleEnabled('AddFbToLoginPage') &&
             <FacebookConnect/>
               }
 
