@@ -1,5 +1,3 @@
-'use client'
-
 import React, { SetStateAction } from 'react'
 import * as Dialog from "@radix-ui/react-dialog"
 import { type User } from '@/lib/types'
@@ -34,7 +32,7 @@ type OnboardingProps = {
   setOpen: React.Dispatch<SetStateAction<boolean>>
   updateOnboardingDetails: (email: string, details: {
     first_name: string
-    last_name: string,
+    last_name: string
     company_name: string
     company_description: string
     website_link: string
@@ -69,8 +67,9 @@ function Onboarding({
   const [goal, setGoal] = React.useState<string>(userDetails?.goal || "customers")
 
   const [dbChangeRequested, setDbChangeRequested] = React.useState(false)
-  const [showSuccesMessage, setShowSuccessMessage] = React.useState(false)
+  const [showSuccessMessage, setShowSuccessMessage] = React.useState(false)
 
+  // Keeping the exact same handleSave function
   const handleSave = async () => {
     if (userDetails) {
       const details = {
@@ -122,11 +121,11 @@ function Onboarding({
     setTimeout(() => {
       setShowSuccessMessage(false)
     }, 5000)
-  }, [showSuccesMessage])
+  }, [showSuccessMessage])
 
   return (
     <>
-      {showSuccesMessage && (
+      {showSuccessMessage && (
         <div className={cn(
           "my-4 flex items-center gap-2 p-4 text-sm rounded-lg",
           "bg-green-50 text-green-800 dark:bg-green-950/50 dark:text-green-400",
@@ -210,10 +209,10 @@ function Onboarding({
                       placeholder="Enter your first name" 
                       value={firstName}
                       onChange={(e) => {
-                        if(e.target.value.length>0){
-                          setInputError({...inputError,first_name:""})
+                        if(e.target.value.length > 0) {
+                          setInputError({...inputError, first_name: ""})
                         } else {
-                          setInputError({...inputError,first_name:"This field is required"})
+                          setInputError({...inputError, first_name: "This field is required"})
                         }
                         setFirstName(e.target.value)
                       }}
@@ -244,10 +243,10 @@ function Onboarding({
                       placeholder="Enter your last name" 
                       value={lastName}
                       onChange={(e) => {
-                        if(e.target.value.length>0){
-                          setInputError({...inputError,last_name:""})
+                        if(e.target.value.length > 0) {
+                          setInputError({...inputError, last_name: ""})
                         } else {
-                          setInputError({...inputError,last_name:"This field is required"})
+                          setInputError({...inputError, last_name: "This field is required"})
                         }
                         setLastName(e.target.value)
                       }}
@@ -279,10 +278,10 @@ function Onboarding({
                     placeholder="Enter your company name" 
                     value={companyName}
                     onChange={(e) => {
-                      if(e.target.value.length>0){
-                        setInputError({...inputError,company_name:""})
+                      if(e.target.value.length > 0) {
+                        setInputError({...inputError, company_name: ""})
                       } else {
-                        setInputError({...inputError,company_name:"This field is required"})
+                        setInputError({...inputError, company_name: "This field is required"})
                       }
                       setCompanyName(e.target.value)
                     }}
@@ -314,10 +313,10 @@ function Onboarding({
                     placeholder="Please share your companies advertising goals and any unique details about your company that our AI might not be able to gather from your website."
                     value={companyDescription}
                     onChange={(e) => {
-                      if(e.target.value.length>0){
-                        setInputError({...inputError,company_description:""})
+                      if(e.target.value.length > 0) {
+                        setInputError({...inputError, company_description: ""})
                       } else {
-                        setInputError({...inputError,company_description:"This field is required"})
+                        setInputError({...inputError, company_description: "This field is required"})
                       }
                       setCompanyDescription(e.target.value)
                     }}
@@ -331,7 +330,8 @@ function Onboarding({
                 </div>
 
                 <div className="space-y-2">
-                  <label htmlFor="website_link" className="text-sm font-medium text-zinc-900 dark:text-zinc-200">Website Link
+				<label htmlFor="website_link" className="text-sm font-medium text-zinc-900 dark:text-zinc-200">
+                    Website Link
                   </label>
                   <p className="text-sm text-zinc-500 dark:text-zinc-400">
                     Our AI will analyze your website to better understand your company and provide more relevant suggestions.
@@ -350,10 +350,10 @@ function Onboarding({
                     placeholder="https://yourwebsite.com" 
                     value={websiteLink}
                     onChange={(e) => {
-                      if(e.target.value.length>0){
-                        setInputError({...inputError,website_link:""})
+                      if(e.target.value.length > 0) {
+                        setInputError({...inputError, website_link: ""})
                       } else {
-                        setInputError({...inputError,website_link:"This field is required"})
+                        setInputError({...inputError, website_link: "This field is required"})
                       }
                       setWebsiteLink(e.target.value)
                     }}
@@ -375,10 +375,10 @@ function Onboarding({
                       id="languages" 
                       value={preferredLanguage}
                       onChange={(e) => {
-                        if(e.target.value.length>0){
-                          setInputError({...inputError,preferred_language:""})
+                        if(e.target.value.length > 0) {
+                          setInputError({...inputError, preferred_language: ""})
                         } else {
-                          setInputError({...inputError,preferred_language:"This field is required"})
+                          setInputError({...inputError, preferred_language: "This field is required"})
                         }
                         setPreferredLanguage(e.target.value)
                       }}
@@ -414,10 +414,10 @@ function Onboarding({
                       id="goal" 
                       value={goal}
                       onChange={(e) => {
-                        if(e.target.value.length>0){
-                          setInputError({...inputError,goal:""})
+                        if(e.target.value.length > 0) {
+                          setInputError({...inputError, goal: ""})
                         } else {
-                          setInputError({...inputError,goal:"This field is required"})
+                          setInputError({...inputError, goal: "This field is required"})
                         }
                         setGoal(e.target.value)
                       }}
