@@ -9,6 +9,7 @@ import { IconSpinner } from './ui/icons'
 import { getMessageFromCode } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
 import FacebookConnect from "@/components/facebook-connect";
+import {isFeatureToggleEnabled} from "@/lib/helpers/feature-toggle/feature-toggle-manager";
 
 
 export default function LoginForm() {
@@ -73,7 +74,10 @@ export default function LoginForm() {
           </div>
         </div>
         <LoginButton />
-        <FacebookConnect/>
+        {isFeatureToggleEnabled('AddFbToLoginPage') &&
+            <FacebookConnect/>
+              }
+
 
       </div>
 
