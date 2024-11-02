@@ -202,7 +202,7 @@ function Onboarding({
             <div className="space-y-6">
               <div className="flex flex-col items-center text-center space-y-2">
                 <h2 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">
-                  Welcome! Let's Get Started
+                  Welcome! Let&lsquo;s Get Started
                 </h2>
                 {error && (
                   <p className="text-sm text-red-500 dark:text-red-400">{error}</p>
