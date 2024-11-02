@@ -39,9 +39,9 @@ export function ConnectAdsetForm({
 
   if (!campaign) {
     return (
-      <Card className="bg-zinc-900 border-zinc-800">
+      <Card className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
         <CardContent className="p-6">
-          <div className="text-zinc-200">
+          <div className="text-zinc-900 dark:text-zinc-200">
             Please connect a campaign to this chat first...
           </div>
         </CardContent>
@@ -51,8 +51,8 @@ export function ConnectAdsetForm({
 
   const handleCreateAdset = async () => {
     let adsetTemplate = {
-        ...generateAdsetTemplate(),
-        campaign_id: campaign.id
+      ...generateAdsetTemplate(),
+      campaign_id: campaign.id
     } as any
     const budget = await fetchChatCampaignBudget(aiState.chatId)
     if (!campaign.daily_budget && budget.error) {
@@ -72,10 +72,10 @@ export function ConnectAdsetForm({
 
   return (
     <>
-      <div className="text-xl font-semibold text-zinc-200 mb-4">
+      <div className="text-xl font-semibold text-zinc-900 dark:text-zinc-200 mb-4">
         Connect to Ad Set
       </div>
-      <div className="text-sm text-zinc-400 mb-6">
+      <div className="text-sm text-zinc-600 dark:text-zinc-400 mb-6">
         Select an existing ad set or create a new one for your campaign
       </div>
       
@@ -87,21 +87,26 @@ export function ConnectAdsetForm({
             }}
           >
             <SelectTrigger 
-              className="w-full bg-zinc-800 border-zinc-700 text-zinc-200 h-12"
+              className={cn(
+                "w-full h-12",
+                "bg-white dark:bg-zinc-800",
+                "border-zinc-200 dark:border-zinc-700",
+                "text-zinc-900 dark:text-zinc-200"
+              )}
               aria-label="Select Ad Set"
             >
               <SelectValue placeholder="Select an ad set" />
             </SelectTrigger>
-            <SelectContent className="bg-zinc-800 border-zinc-700">
+            <SelectContent className="bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700">
               {adsets.map((adset: Adset) => (
                 <SelectItem 
                   key={adset.id} 
                   value={adset.id}
-                  className="text-zinc-200 focus:bg-zinc-700 focus:text-zinc-200"
+                  className="text-zinc-900 dark:text-zinc-200 focus:bg-zinc-100 dark:focus:bg-zinc-700"
                 >
                   <div className="flex flex-col">
                     <span>{adset.name}</span>
-                    <span className="text-xs text-zinc-400">
+                    <span className="text-xs text-zinc-500 dark:text-zinc-400">
                       ID: {adset.id}
                     </span>
                   </div>
@@ -121,8 +126,9 @@ export function ConnectAdsetForm({
               }}
               className={cn(
                 'flex justify-center items-center gap-2 flex-1 h-12 px-6',
-                'text-zinc-200 font-medium rounded-lg',
-                'bg-zinc-800 hover:bg-zinc-700 border border-zinc-700',
+                'text-zinc-900 dark:text-zinc-200 font-medium rounded-lg',
+                'bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700',
+                'hover:bg-zinc-100 dark:hover:bg-zinc-700',
                 'transition-colors duration-200',
                 'disabled:opacity-50 disabled:cursor-not-allowed',
                 'focus:outline-none focus:ring-2 focus:ring-blue-500'
@@ -165,8 +171,8 @@ export function ConnectAdsetForm({
           </div>
         </div>
       ) : (
-        <div className="py-8 text-center bg-zinc-800/50 rounded-lg border border-zinc-700">
-          <div className="text-zinc-400 mb-4">
+        <div className="py-8 text-center bg-zinc-100/50 dark:bg-zinc-800/50 rounded-lg border border-zinc-200 dark:border-zinc-700">
+          <div className="text-zinc-600 dark:text-zinc-400 mb-4">
             No ad sets available
           </div>
           <button
@@ -209,11 +215,11 @@ interface ConnectAdsetProps {
 
 export function ConnectingStatus({ adsetName }: { adsetName: string }) {
   return (
-    <Card className="bg-zinc-900 border-zinc-800">
+    <Card className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
       <CardContent className="p-6">
         <div className="flex items-center gap-3">
-          <IconSpinner className="size-5 text-blue-500" />
-          <span className="text-zinc-200">
+          <IconSpinner className="size-5 text-blue-600 dark:text-blue-500" />
+          <span className="text-zinc-900 dark:text-zinc-200">
             Connecting to {adsetName}...
           </span>
         </div>
@@ -269,15 +275,15 @@ export function ConnectAdset({ connectingUiProps, toolCallId }: ConnectAdsetProp
         setAdset(adset);
         shouldSendSilentMessage.current = true
         setConnectingUI(
-          <Card className="bg-zinc-900 border-zinc-800">
+          <Card className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
             <CardContent className="p-6">
               <div className="flex items-center gap-3">
-                <CheckCircle className="size-6 text-green-500 shrink-0" />
+                <CheckCircle className="size-6 text-green-600 dark:text-green-500 shrink-0" />
                 <div>
-                  <div className="text-zinc-200 font-medium">
+                  <div className="text-zinc-900 dark:text-zinc-200 font-medium">
                     Successfully connected to ad set
                   </div>
-                  <div className="text-zinc-400 text-sm">
+                  <div className="text-zinc-600 dark:text-zinc-400 text-sm">
                     {adset.name}
                   </div>
                 </div>
@@ -315,18 +321,22 @@ export function ConnectAdset({ connectingUiProps, toolCallId }: ConnectAdsetProp
         await syncMessages()
       } else {
         setConnectingUI(
-          <Card className="bg-zinc-900 border-zinc-800">
-            <CardContent className="p-6 text-red-400">
-              Connection failed. Please check your connection and try again.
+          <Card className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
+            <CardContent className="p-6">
+              <div className="text-red-600 dark:text-red-400">
+                Connection failed. Please check your connection and try again.
+              </div>
             </CardContent>
           </Card>
         )
       }
     } catch (error) {
       setConnectingUI(
-        <Card className="bg-zinc-900 border-zinc-800">
-          <CardContent className="p-6 text-red-400">
-            Connection failed. Please check your connection and try again.
+        <Card className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
+          <CardContent className="p-6">
+            <div className="text-red-600 dark:text-red-400">
+              Connection failed. Please check your connection and try again.
+            </div>
           </CardContent>
         </Card>
       )
@@ -334,7 +344,7 @@ export function ConnectAdset({ connectingUiProps, toolCallId }: ConnectAdsetProp
   }
 
   return (
-    <Card className="bg-zinc-900 border-zinc-800">
+    <Card className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
       <CardContent className="p-6">
         {connectingUI ?? (
           <ConnectAdsetForm 

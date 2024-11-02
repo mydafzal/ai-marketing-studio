@@ -97,7 +97,7 @@ export function Purchase({
             <div className="p-4 rounded-lg bg-zinc-900/50 border border-zinc-800">
               <div className="flex items-center gap-2 mb-2">
                 <Calendar className="size-5 text-blue-400" />
-                <h4 className="font-medium text-zinc-200">Campaign Duration</h4>
+                <h4 className="font-medium text-zinc-200">Ad Budget calculation based on one Month</h4>
               </div>
               <div className="text-2xl font-semibold text-blue-400">
                 {days} Days
@@ -113,9 +113,9 @@ export function Purchase({
               <div className="flex items-center gap-3 text-zinc-400">
                 <span>{days} Days</span>
                 <ArrowRight className="size-4" />
-                <span>€{formatNumber(budget)} daily</span>
+                <span>{formatNumber(budget)} daily</span>
                 <ArrowRight className="size-4" />
-                <span className="text-2xl font-bold text-purple-400">€{formatNumber(days * budget)}</span>
+                <span className="text-2xl font-bold text-purple-400">{formatNumber(days * budget)}</span>
               </div>
             </div>
 

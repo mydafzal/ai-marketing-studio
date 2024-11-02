@@ -45,14 +45,14 @@ export const PurchasingUi = ({
             
             <div className="flex items-center gap-2 text-zinc-300">
               <Calendar className="size-4 text-zinc-500" />
-              <span className="text-zinc-500">Duration:</span>
+              <span className="text-zinc-500">One Month:</span>
               <span className="font-medium">{days} days</span>
             </div>
             
             <div className="pt-3 mt-3 border-t border-zinc-800">
               <div className="flex items-center gap-2 text-zinc-300">
                 <DollarSign className="size-4 text-zinc-500" />
-                <span className="text-zinc-500">Total Budget:</span>
+                <span className="text-zinc-500">Total Budget in One Month:</span>
                 <span className="font-medium">{formatNumber(totalBudget)}</span>
               </div>
             </div>
