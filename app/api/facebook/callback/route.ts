@@ -68,6 +68,7 @@ export async function GET(request: Request) {
 
       // Extract user information
     const { id, name, email } = userData;
+    console.log(`User Name: ${name}, User Email: ${email}`);
 
     const existing_user = await getUserByEmail(email);
 
