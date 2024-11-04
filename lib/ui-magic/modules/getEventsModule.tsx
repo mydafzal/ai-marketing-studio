@@ -11,7 +11,7 @@ export interface GetEventsParams {
 
 export const getEventsModule = new ModuleConfigBuilder('getEvents')
     .setDescription(
-        'List Tips which provide helpful information to users on how they could improve their campaigns.'
+        'Generate a marketing plan based on the user’s information.'
     )
     .setParameters(
         z.object({

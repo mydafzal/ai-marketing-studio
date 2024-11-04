@@ -49,6 +49,7 @@ import FormBuilder from '@/components/form-builder';
 import {sendSupervisedTaskMail}  from '@/lib/api/fasty-bot/send-supervised-task-mail';
 import SupervisedTaskMessage from '@/components/supervised-task-message'
 import {getBaseUrl} from "@/lib/helpers/vercel/get-base-url"
+import getAICampaignAnalysisModule from "@/lib/ui-magic/modules/getAICampaignAnalysisModule";
 
 import getCampaignResultsModule from "@/lib/ui-magic/modules/getCampaignResultsModule";
 import getCampaignImagesModule from "@/lib/ui-magic/modules/getCampaignImagesModule";
@@ -2027,7 +2028,14 @@ Engaged Shoppers]
     - If the user wants to complete another specific task, respond that you are a demo and cannot perform that action.
     
     - Besides that, you can also chat with users and perform budget calculations if needed.
-    
+
+    - If you want to show AI-driven campaign analysis, first ask the user two important questions:
+  1. "What is your product or service's sales price?"
+  2. "What percentage of your leads typically book a sales call? If you're not sure, I can help estimate based on your industry."
+
+Only after getting these answers, call \`getAICampaignAnalysis\` with these values and a guide for the user—'Here is my detailed AI analysis of your campaign performance based on your sales price of [X] and lead-to-call rate of [Y]%. Would you like me to explain any specific metrics or provide optimization recommendations?'
+
+Ensure to convert percentages into decimals (e.g., 15% becomes 0.15) when passing to the analysis tool.
     Language:
     
     Always respond in the language the user is using. If the user is speaking in German, use "Du" instead of "Sie", and avoid being too formal.
@@ -2272,6 +2280,7 @@ Engaged Shoppers]
                     return await adBudgetModule.component({ symbol, price, numberOfShares, guideForUser });
                 }
             },
+            
             showFormBuilder: {
                 description: formBuilderModule.description,
                 parameters: formBuilderModule.parameters,
@@ -2773,6 +2782,62 @@ Engaged Shoppers]
                     return await showSupervisedTaskUIModule.component({})
                 }
             },
+
+            getAICampaignAnalysis: {
+                description: getAICampaignAnalysisModule.description,
+                parameters: getAICampaignAnalysisModule.parameters,
+                generate: async function* ({ campaignId, guideForUser }: { campaignId: string; guideForUser?: string }) {
+                    yield (
+                        <BotCard>
+                            <StockSkeleton />
+                        </BotCard>
+                    )
+    
+                    await sleep(1000)
+    
+                    const toolCallId = nanoid()
+    
+                    aiState.done({
+                        ...aiState.get(),
+                        messages: [
+                            ...aiState.get().messages,
+                            {
+                                id: nanoid(),
+                                role: 'assistant',
+                                content: [
+                                    {
+                                        type: 'tool-call',
+                                        toolName: 'getAICampaignAnalysis',
+                                        toolCallId,
+                                        args: { campaignId, guideForUser }
+                                    }
+                                ],
+                                timestamp: new Date().toISOString()
+                            },
+                            {
+                                id: nanoid(),
+                                role: 'tool',
+                                content: [
+                                    {
+                                        type: 'tool-result',
+                                        toolName: 'getAICampaignAnalysis',
+                                        toolCallId,
+                                        result: { campaignId, guideForUser }
+                                    }
+                                ],
+                                timestamp: new Date().toISOString()
+                            }
+                        ]
+                    });
+    
+                    return await getAICampaignAnalysisModule.component({
+                        campaignId,
+                        guideForUser
+                    })
+                }
+            },
+
+
             showAdsetConnectionUI: {
                 description: showAdsetConnectionUIModule.description,
                 parameters: showAdsetConnectionUIModule.parameters,
@@ -2817,7 +2882,9 @@ Engaged Shoppers]
                     })
                 }
             }
-        }
+        },
+        
+        
     });
     return {
         id: nanoid(),
