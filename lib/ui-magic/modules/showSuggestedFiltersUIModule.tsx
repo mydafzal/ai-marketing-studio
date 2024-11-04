@@ -17,9 +17,7 @@ export const showSuggestedFiltersUIModule = new ModuleConfigBuilder(
     .setParameters(
         z.object({
             suggestedFitlers: z.array(
-                z.array(
                     z.string().describe('filter name of suggestion')
-                )
             ).describe('The array of suggested filters from AI provided, a suggestion filter will have one or more filter name')
         }),
     )

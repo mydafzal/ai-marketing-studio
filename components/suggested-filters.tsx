@@ -6,6 +6,7 @@ import * as React from 'react'
 import { useState, useContext, useCallback, useEffect } from 'react'
 import { CampaignContext } from '@/components/contexts/campaign-context'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { formatNumberDigit } from '@/lib/utils'
 import { Adset, FlexibleSpec, ReachEstimateResult } from '@/lib/types'
 import { IconSpinner } from '@/components/ui/icons'
@@ -16,7 +17,7 @@ import { type AI } from '@/lib/chat/actions'
 
 interface SuggestedFiltersProps {
     toolCallId: string
-    suggestedFitlers: string[][]
+    suggestedFitlers: string[]
     uiProps?: {
         suggestedFilter: FlexibleSpec
         success: boolean
@@ -25,12 +26,13 @@ interface SuggestedFiltersProps {
 }
 const SuggestedFilterItem = ({
     estimate,
-    handleUpdateAdset
+    isChecked,
+    onChange
 }: {
+    isChecked: boolean,
     estimate: ReachEstimateResult
-    handleUpdateAdset: (estimate: ReachEstimateResult) => void
+    onChange: () => void
 }) => {
-    const [isSubmitting, setIsSubmitting] = useState(false)
     return (
         <div className="bg-zinc-50 dark:bg-zinc-700 p-4 rounded-md shadow-md overflow-hidden flex justify-between items-center ">
             <div className="text-left">
@@ -59,18 +61,12 @@ const SuggestedFilterItem = ({
                 </div>
             </div>
             <div className="text-right gap-2 mb-2 justify-end">
-                <Button
-                    disabled={isSubmitting}
-                    onClick={() => {
-                        setIsSubmitting(true)
-                        handleUpdateAdset(estimate)
-                    }}
-                    variant={'default'}
-                    size="sm"
-                >
-                    {isSubmitting && <IconSpinner />}
-                    {!isSubmitting && 'Accept'}
-                </Button>
+                    <Checkbox
+                    id="male"
+                    checked={isChecked}
+                    onCheckedChange={onChange}
+                />
+            
             </div>
         </div>
     )
@@ -88,21 +84,46 @@ export function SuggestedFilters({
     const [aiState, setAIState] = useAIState()
     const [_, setMessages] = useUIState<typeof AI>()
     const [estimates, setEstimates] = useState<ReachEstimateResult[]>([])
-
+    const [filterIdxs,setFilterIdxs] = useState<number[]>([]);
+    const handleChange = (idx: number) => {
+      if (!filterIdxs.includes(idx)) {
+        setFilterIdxs([...filterIdxs, idx])
+      } else {
+        setFilterIdxs([...filterIdxs.filter(index => index != idx)])
+      }
+    }
     const [suggestedFiltersUI, setSuggestedFiltersUI] =
         useState<null | React.ReactNode>(
             uiProps ? <SuggestedFiltersResult {...uiProps} /> : null
         )
 
-    const handleUpdateAdset = async (estimateResult: ReachEstimateResult) => {
-        if (!adset || !estimateResult) return
+    const handleUpdateAdset = async () => {
+        let seletedinterests: {
+            id: string
+            name: string
+          }[] = [];
+        estimates
+          .filter((estimate, idx) => filterIdxs.includes(idx))
+          .map((estimate, idx) => {
+            if (estimate.targeting_spec.flexible_spec) {
+              estimate.targeting_spec.flexible_spec?.map(estimate => {
+                seletedinterests = [...seletedinterests, ...estimate.interests]
+              })
+            }
+          })
+        if (!adset || filterIdxs.length === 0) return
         setIsSubmitting(true)
         const response = await confirmUpdateAdset(
             adset.id,
             {
                 targeting: {
                     ...adset.targeting,
-                    flexible_spec: estimateResult.targeting_spec.flexible_spec
+                    flexible_spec: [
+                        {
+                            interests: seletedinterests
+                        }
+                    ]
+                   
                 }
             },
             'suggested_filters'
@@ -194,27 +215,42 @@ export function SuggestedFilters({
     }, [isReadOnly, adset, suggestedFitlers])
 
     return suggestedFiltersUI ? (
-        suggestedFiltersUI
+      suggestedFiltersUI
     ) : isLoading ? (
-        <IconSpinner />
+      <IconSpinner />
     ) : !isReadOnly ? (
-        <div className="p-0">
-            <div className="text-lg font-medium text-gray-900 dark:text-zinc-300 mb-2">
-                Let&apos;s pick some filters to target your audience
-            </div>
-            <div className="grid md:grid-cols-1 gap-4">
-                {estimates.map((estimate, key) => (
-                    <SuggestedFilterItem
-                        key={key}
-                        estimate={estimate}
-                        handleUpdateAdset={handleUpdateAdset}
-                    />
-                ))}
-            </div>
+      <div className="p-0">
+        <div className="text-lg font-medium text-gray-900 dark:text-zinc-300 mb-2">
+          Let&apos;s pick some filters to target your audience
         </div>
+        <div className="grid md:grid-cols-1 gap-4">
+          {estimates.map((estimate, key) => (
+            <SuggestedFilterItem
+              key={key}
+              isChecked={filterIdxs.includes(key)}
+              estimate={estimate}
+              onChange={() => handleChange(key)}
+            />
+          ))}
+        </div>
+        <div className="text-right gap-2 my-2 justify-end">
+          <Button
+            disabled={isSubmitting || filterIdxs.length === 0}
+            onClick={() => {
+              setIsSubmitting(true)
+              handleUpdateAdset()
+            }}
+            variant={'default'}
+            size="sm"
+          >
+            {isSubmitting && <IconSpinner />}
+            {!isSubmitting && 'Accept'}
+          </Button>
+        </div>
+      </div>
     ) : (
-        <div className="p-0">
-            Error: Failed to set filter. Please try again later.
-        </div>
+      <div className="p-0">
+        Error: Failed to set filter. Please try again later.
+      </div>
     )
 }
