@@ -1,5 +1,6 @@
 'use client'
 
+import { ToolContent } from 'ai'
 import { useState, useMemo, useEffect } from 'react'
 import { AdTextSelectionSkeleton } from '@/components/stocks/ad-text-selection-skeleton'
 import { useActions, useAIState, useUIState } from 'ai/rsc'
@@ -39,9 +40,12 @@ export function CampaignStatus({ props }: { props: CampaignStatusProps }) {
     })
   }
   const isLastedMessage = useMemo(() => {
-    const messages = aiState.messages.filter(message => message.role === 'tool')
+    const messages = aiState.messages
     if (messages.length > 0) {
-      return messages[messages.length - 1].id === props?.toolCallId
+      const content = messages[messages.length - 1].content as ToolContent
+      if (content.length > 0) {
+        return content[0].toolCallId === props?.toolCallId
+      }
     }
     return false
   }, [aiState.messages, props?.toolCallId])
