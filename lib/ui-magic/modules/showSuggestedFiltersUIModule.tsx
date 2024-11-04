@@ -4,7 +4,7 @@ import { ModuleConfigBuilder } from '@/lib/ui-magic/moduleConfigBuilder'
 import { SuggestedFilters } from '@/components/suggested-filters';
 
 export interface ShowSuggestedFiltersUIParams {
-    suggestedFitlers: string[][]
+    suggestedFitlers: string[]
     toolCallId: string
 }
 
