@@ -61,6 +61,7 @@ export default async function TaskPage({ params,searchParams }: Props) {
     const task_id = formData.get('task_id') as string;
     const comment = formData.get('comment') as string;
     const user_email = formData.get('user_email') as string;
+    const task_name = formData.get('task_name') as string;
     const status = formData.get('status') as 'done' | 'reject';
 
     const chat_link = getBaseUrl()+"/chat/"+chat_id
@@ -75,7 +76,7 @@ export default async function TaskPage({ params,searchParams }: Props) {
 
 
     await updateTaskWithStatus(chat_id, task_id, {comment:gpt_comment??comment, status });
-    await sendSupervisedTaskMailToUser("task_Name", gpt_comment??comment,status,chat_link,user_email);
+    await sendSupervisedTaskMailToUser(task_name, gpt_comment??comment,status,chat_link,user_email);
     redirect(`/supervised/chat/${chat_id}/task/${task_id}?user_email=${user_email}`);
   }
   
@@ -85,6 +86,7 @@ export default async function TaskPage({ params,searchParams }: Props) {
     toolName:string;
     toolCallId:string;
     result:{
+      task_name:string;
       comment:string;
       status:string;
     }
@@ -158,6 +160,7 @@ export default async function TaskPage({ params,searchParams }: Props) {
             <input type="hidden" name="chat_id" value={chat_id} />
             <input type="hidden" name="task_id" value={task_id} />
             <input type="hidden" name="user_email" value={user.email} />
+            <input type="hidden" name="task_name" value={tool_data[0].result.task_name??""} />
 
             <label htmlFor="comments" className="block text-sm font-medium text-gray-700">
               Your comments

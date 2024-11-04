@@ -50,6 +50,7 @@ import {SuggestedFilters} from '@/components/suggested-filters';
 import {sendSupervisedTaskMail}  from '@/lib/api/fasty-bot/send-supervised-task-mail';
 import SupervisedTaskMessage from '@/components/supervised-task-message'
 import {getBaseUrl} from "@/lib/helpers/vercel/get-base-url"
+import getAICampaignAnalysisModule from "@/lib/ui-magic/modules/getAICampaignAnalysisModule";
 
 import getCampaignResultsModule from "@/lib/ui-magic/modules/getCampaignResultsModule";
 import getCampaignImagesModule from "@/lib/ui-magic/modules/getCampaignImagesModule";
@@ -82,6 +83,8 @@ async function checkNewChat(chatId: string, messages: Message[], session: Sessio
         'contact@reeply.net',
         'themadnoise@gmail.com',
         'maxnols@reeply.net',
+        'vinayak@reeply.ai',
+        'madani.farzam@gmail.com'
     ];
 
     if (disabledEmails.includes(session.user.email)) return false;
@@ -1089,7 +1092,14 @@ Technology
     - If you want to show suggestions-filter, then generate 5 filter suggestions using Categories of interest filters, Location, demographic targeting information, and user input - "${extraDetailsFinalText}", and then call \`show_suggested_filters\` with the suggestions.
 
     - Besides that, you can also chat with users and perform budget calculations if needed.
-    
+
+    - If you want to show AI-driven campaign analysis, first ask the user two important questions:
+  1. "What is your product or service's sales price?"
+  2. "What percentage of your leads typically book a sales call? If you're not sure, I can help estimate based on your industry."
+
+Only after getting these answers, call \`getAICampaignAnalysis\` with these values and a guide for the user—'Here is my detailed AI analysis of your campaign performance based on your sales price of [X] and lead-to-call rate of [Y]%. Would you like me to explain any specific metrics or provide optimization recommendations?'
+
+Ensure to convert percentages into decimals (e.g., 15% becomes 0.15) when passing to the analysis tool.
     Language:
     
     Always respond in the language the user is using. If the user is speaking in German, use "Du" instead of "Sie", and avoid being too formal.
@@ -1314,6 +1324,7 @@ Technology
                     return await adBudgetModule.component({ symbol, price, numberOfShares, guideForUser });
                 }
             },
+            
             showFormBuilder: {
                 description: formBuilderModule.description,
                 parameters: formBuilderModule.parameters,
@@ -1848,6 +1859,7 @@ Technology
                                         toolName: 'showSupervisedTaskUI',
                                         toolCallId,
                                         result: {
+                                            task_name:task_name,
                                             content:"",
                                             status:"pending"
                                         }
@@ -1860,6 +1872,62 @@ Technology
                     return await showSupervisedTaskUIModule.component({})
                 }
             },
+
+            getAICampaignAnalysis: {
+                description: getAICampaignAnalysisModule.description,
+                parameters: getAICampaignAnalysisModule.parameters,
+                generate: async function* ({ campaignId, guideForUser }: { campaignId: string; guideForUser?: string }) {
+                    yield (
+                        <BotCard>
+                            <StockSkeleton />
+                        </BotCard>
+                    )
+    
+                    await sleep(1000)
+    
+                    const toolCallId = nanoid()
+    
+                    aiState.done({
+                        ...aiState.get(),
+                        messages: [
+                            ...aiState.get().messages,
+                            {
+                                id: nanoid(),
+                                role: 'assistant',
+                                content: [
+                                    {
+                                        type: 'tool-call',
+                                        toolName: 'getAICampaignAnalysis',
+                                        toolCallId,
+                                        args: { campaignId, guideForUser }
+                                    }
+                                ],
+                                timestamp: new Date().toISOString()
+                            },
+                            {
+                                id: nanoid(),
+                                role: 'tool',
+                                content: [
+                                    {
+                                        type: 'tool-result',
+                                        toolName: 'getAICampaignAnalysis',
+                                        toolCallId,
+                                        result: { campaignId, guideForUser }
+                                    }
+                                ],
+                                timestamp: new Date().toISOString()
+                            }
+                        ]
+                    });
+    
+                    return await getAICampaignAnalysisModule.component({
+                        campaignId,
+                        guideForUser
+                    })
+                }
+            },
+
+
             showAdsetConnectionUI: {
                 description: showAdsetConnectionUIModule.description,
                 parameters: showAdsetConnectionUIModule.parameters,
@@ -1904,7 +1972,6 @@ Technology
                     })
                 }
             }
-            
         }
     });
 

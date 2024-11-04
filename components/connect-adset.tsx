@@ -3,6 +3,7 @@
 import { ToolContent } from 'ai'
 import { useActions, useAIState, useUIState } from 'ai/rsc'
 import { useContext, useEffect, useRef, useState } from 'react'
+import { cn } from '@/lib/utils'
 
 import { fetchChatCampaignBudget, updateChat } from '@/app/actions'
 import { spinner, SystemMessage } from '@/components/stocks'
@@ -20,6 +21,8 @@ import { Adset, Message } from '@/lib/types'
 import { type AI } from '@/lib/chat/actions'
 import { createAdset } from '@/lib/api/fasty-bot/create-adset'
 import { generateAdsetTemplate } from '@/lib/data'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { CheckCircle, Plus, Link as LinkIcon } from 'lucide-react'
 
 interface ConnectAdsetFormProps {
   handleSelectAdset: (adset: Adset) => Promise<void>
@@ -36,16 +39,20 @@ export function ConnectAdsetForm({
 
   if (!campaign) {
     return (
-      <div>
-        Please connect a campaign to this chat first...
-      </div>
+      <Card className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
+        <CardContent className="p-6">
+          <div className="text-zinc-900 dark:text-zinc-200">
+            Please connect a campaign to this chat first...
+          </div>
+        </CardContent>
+      </Card>
     )
   }
 
   const handleCreateAdset = async () => {
     let adsetTemplate = {
-        ...generateAdsetTemplate(),
-        campaign_id: campaign.id
+      ...generateAdsetTemplate(),
+      campaign_id: campaign.id
     } as any
     const budget = await fetchChatCampaignBudget(aiState.chatId)
     if (!campaign.daily_budget && budget.error) {
@@ -64,63 +71,137 @@ export function ConnectAdsetForm({
   }
 
   return (
-    <div className="p-6 border rounded-x">
-      <div className="text-lg font-medium text-gray-900 dark:text-zinc-300 mb-2">
-        Let&apos;s connect this chat to an adset:
+    <>
+      <div className="text-xl font-semibold text-zinc-900 dark:text-zinc-200 mb-4">
+        Connect to Ad Set
       </div>
-      {adsets.length > 0 && (
-        <Select
-          onValueChange={value => {
-            setSelectedAdset(adsets.find(e => e.id === value))
-          }}
-        >
-          <SelectTrigger className="SelectTrigger" aria-label="Adset">
-            <SelectValue placeholder="Select an adset" />
-          </SelectTrigger>
-          <SelectContent>
-            {adsets.map((adset: Adset) => (
-              <SelectItem key={adset.id} value={adset.id}>
-                {adset.name} ({adset.id})
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      )}
-      {adsets.length === 0 && (
-        <div className="py-2 text-md inline-block align-middle text-center text-gray-700 dark:text-white">
-          No adsets are currently available. Please create a new adset
+      <div className="text-sm text-zinc-600 dark:text-zinc-400 mb-6">
+        Select an existing ad set or create a new one for your campaign
+      </div>
+      
+      {adsets.length > 0 ? (
+        <div className="space-y-6">
+          <Select
+            onValueChange={value => {
+              setSelectedAdset(adsets.find(e => e.id === value))
+            }}
+          >
+            <SelectTrigger 
+              className={cn(
+                "w-full h-12",
+                "bg-white dark:bg-zinc-800",
+                "border-zinc-200 dark:border-zinc-700",
+                "text-zinc-900 dark:text-zinc-200"
+              )}
+              aria-label="Select Ad Set"
+            >
+              <SelectValue placeholder="Select an ad set" />
+            </SelectTrigger>
+            <SelectContent className="bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700">
+              {adsets.map((adset: Adset) => (
+                <SelectItem 
+                  key={adset.id} 
+                  value={adset.id}
+                  className="text-zinc-900 dark:text-zinc-200 focus:bg-zinc-100 dark:focus:bg-zinc-700"
+                >
+                  <div className="flex flex-col">
+                    <span>{adset.name}</span>
+                    <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                      ID: {adset.id}
+                    </span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <div className="flex gap-4">
+            <button
+              disabled={!selectedAdset || isSubmitting}
+              onClick={async () => {
+                if (selectedAdset) {
+                  setSubmitting(true)
+                  await handleSelectAdset(selectedAdset)
+                }
+              }}
+              className={cn(
+                'flex justify-center items-center gap-2 flex-1 h-12 px-6',
+                'text-zinc-900 dark:text-zinc-200 font-medium rounded-lg',
+                'bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700',
+                'hover:bg-zinc-100 dark:hover:bg-zinc-700',
+                'transition-colors duration-200',
+                'disabled:opacity-50 disabled:cursor-not-allowed',
+                'focus:outline-none focus:ring-2 focus:ring-blue-500'
+              )}
+            >
+              {isSubmitting ? (
+                <IconSpinner className="size-5" />
+              ) : (
+                <>
+                  <LinkIcon className="size-4" />
+                  Connect Ad Set
+                </>
+              )}
+            </button>
+
+            <button
+              disabled={isCreating}
+              onClick={async () => {
+                setCreating(true)
+                await handleCreateAdset()
+              }}
+              className={cn(
+                'flex justify-center items-center gap-2 flex-1 h-12 px-6',
+                'text-white font-medium rounded-lg',
+                'bg-blue-600 hover:bg-blue-700',
+                'transition-colors duration-200',
+                'disabled:opacity-50 disabled:cursor-not-allowed',
+                'focus:outline-none focus:ring-2 focus:ring-blue-500'
+              )}
+            >
+              {isCreating ? (
+                <IconSpinner className="size-5" />
+              ) : (
+                <>
+                  <Plus className="size-4" />
+                  Create New Ad Set
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="py-8 text-center bg-zinc-100/50 dark:bg-zinc-800/50 rounded-lg border border-zinc-200 dark:border-zinc-700">
+          <div className="text-zinc-600 dark:text-zinc-400 mb-4">
+            No ad sets available
+          </div>
+          <button
+            disabled={isCreating}
+            onClick={async () => {
+              setCreating(true)
+              await handleCreateAdset()
+            }}
+            className={cn(
+              'flex justify-center items-center gap-2 mx-auto h-12 px-6',
+              'text-white font-medium rounded-lg',
+              'bg-blue-600 hover:bg-blue-700',
+              'transition-colors duration-200',
+              'disabled:opacity-50 disabled:cursor-not-allowed',
+              'focus:outline-none focus:ring-2 focus:ring-blue-500'
+            )}
+          >
+            {isCreating ? (
+              <IconSpinner className="size-5" />
+            ) : (
+              <>
+                <Plus className="size-4" />
+                Create New Ad Set
+              </>
+            )}
+          </button>
         </div>
       )}
-      <div className="flex mt-4 gap-4">
-        {adsets.length > 0 && (
-          <button
-            aria-disabled={!selectedAdset || isSubmitting}
-            onClick={async () => {
-              if (selectedAdset) {
-                setSubmitting(true)
-                await handleSelectAdset(selectedAdset)
-              }
-            }}
-            className="flex justify-center items-center flex-1 px-3 mr-5 py-2 text-xs font-medium text-center text-white bg-gray-700 rounded-lg hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
-          >
-            {isSubmitting && <IconSpinner />}
-            {!isSubmitting && 'Connect existing adset'}
-          </button>
-        )}
-
-        <button
-          aria-disabled={isCreating}
-          onClick={async () => {
-            setCreating(true)
-            await handleCreateAdset()
-          }}
-          className="flex justify-center items-center flex-1 px-3 py-2 text-xs align-middle font-medium text-center text-white bg-blue-700 rounded-lg hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-gray-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
-        >
-          {isCreating && <IconSpinner />}
-          {!isCreating && 'Create a new adset instead'}
-        </button>
-      </div>
-    </div>
+    </>
   )
 }
 
@@ -132,11 +213,25 @@ interface ConnectAdsetProps {
   toolCallId: string
 }
 
+export function ConnectingStatus({ adsetName }: { adsetName: string }) {
+  return (
+    <Card className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
+      <CardContent className="p-6">
+        <div className="flex items-center gap-3">
+          <IconSpinner className="size-5 text-blue-600 dark:text-blue-500" />
+          <span className="text-zinc-900 dark:text-zinc-200">
+            Connecting to {adsetName}...
+          </span>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export function ConnectAdset({ connectingUiProps, toolCallId }: ConnectAdsetProps) {
   const [aiState, setAIState] = useAIState()
   const { submitUserMessage, syncMessages } = useActions()
   const { setAdset } = useContext(CampaignContext)
-  console.log('connectingUiProps', connectingUiProps)
   const [connectingUI, setConnectingUI] = useState<null | React.ReactNode>(
     connectingUiProps ? <ConnectAdsetResult {...connectingUiProps} /> : null
   )
@@ -166,16 +261,11 @@ export function ConnectAdset({ connectingUiProps, toolCallId }: ConnectAdsetProp
         }
       }
     }
-  }, [aiMessages])
+  }, [aiMessages, setMessages, submitUserMessage])
 
   async function handleAdsetSelection(adset: Adset) {
-    console.log('handleAdsetSelection', adset)
-    setConnectingUI(
-      <div className="inline-flex items-start gap-1 md:items-center">
-        {spinner}
-        <p>Connecting to {adset.name}...</p>
-      </div>
-    )
+    setConnectingUI(<ConnectingStatus adsetName={adset.name} />)
+    
     try {
       const updateSuccess = await updateChat(
         aiState.chatId,
@@ -185,12 +275,23 @@ export function ConnectAdset({ connectingUiProps, toolCallId }: ConnectAdsetProp
         setAdset(adset);
         shouldSendSilentMessage.current = true
         setConnectingUI(
-          <ConnectAdsetResult
-            success={!!updateSuccess?.success}
-            adset={adset}
-          />
+          <Card className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3">
+                <CheckCircle className="size-6 text-green-600 dark:text-green-500 shrink-0" />
+                <div>
+                  <div className="text-zinc-900 dark:text-zinc-200 font-medium">
+                    Successfully connected to ad set
+                  </div>
+                  <div className="text-zinc-600 dark:text-zinc-400 text-sm">
+                    {adset.name}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         )
-        console.log('toolCallId', toolCallId)
+        
         setAIState({
           ...aiState,
           messages: [
@@ -220,23 +321,37 @@ export function ConnectAdset({ connectingUiProps, toolCallId }: ConnectAdsetProp
         await syncMessages()
       } else {
         setConnectingUI(
-          <SystemMessage>
-            Please check your connection and try again.
-          </SystemMessage>
+          <Card className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
+            <CardContent className="p-6">
+              <div className="text-red-600 dark:text-red-400">
+                Connection failed. Please check your connection and try again.
+              </div>
+            </CardContent>
+          </Card>
         )
       }
     } catch (error) {
       setConnectingUI(
-        <SystemMessage>
-          Please check your connection and try again.
-        </SystemMessage>
+        <Card className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
+          <CardContent className="p-6">
+            <div className="text-red-600 dark:text-red-400">
+              Connection failed. Please check your connection and try again.
+            </div>
+          </CardContent>
+        </Card>
       )
     }
   }
 
-  return connectingUI ?? (
-    <ConnectAdsetForm 
-      handleSelectAdset={handleAdsetSelection} 
-    />
+  return (
+    <Card className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
+      <CardContent className="p-6">
+        {connectingUI ?? (
+          <ConnectAdsetForm 
+            handleSelectAdset={handleAdsetSelection} 
+          />
+        )}
+      </CardContent>
+    </Card>
   )
 }

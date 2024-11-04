@@ -1,13 +1,29 @@
 'use client'
 
-import { useCallback, useState, useRef, useEffect } from 'react'
-import { format } from 'date-fns'
-import { useResizeObserver } from 'usehooks-ts'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import { CampaignSummary, getCampaignSummary } from '@/lib/api/fasty-bot/get-campaign-summary'
+import React, { useCallback, useState, useRef, useEffect } from 'react';
+import { format } from 'date-fns';
+import { useResizeObserver } from 'usehooks-ts';
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts';
+import {
+  Users,
+  MousePointer,
+  Eye,
+  DollarSign,
+  RotateCw,
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CampaignSummary, getCampaignSummary } from '@/lib/api/fasty-bot/get-campaign-summary';
 import { getCampaignHistoricalLeadsResults } from "@/lib/api/fasty-bot/get-historical-leads";
-import { cn } from '@/lib/utils'
-import { IconSpinner } from '@/components/ui/icons'
+import { cn } from '@/lib/utils';
+import { IconSpinner } from '@/components/ui/icons';
 
 interface IStockProps {
   campaignId: string;
@@ -15,10 +31,18 @@ interface IStockProps {
 }
 
 export function Stock({ campaignId, isActive }: IStockProps) {
-  console.log('isActive', isActive)
-  const [isActivated, activate] = useState(!!isActive)
-
+  const [isActivated, activate] = useState(!!isActive);
   const [campaignSummary, setSummary] = useState<CampaignSummary | null>(null);
+  const [dailyData, setDailyData] = useState<{ date: string; leads: number }[]>([]);
+  const [view, setView] = useState<'daily' | 'weekly'>('daily');
+  const chartRef = useRef<HTMLDivElement>(null);
+
+  const { width = 0 } = useResizeObserver({
+    ref: chartRef,
+    box: 'border-box'
+  });
+
+  // Keep your original useEffects unchanged
   useEffect(() => {
     if (campaignId && isActivated) {
       const fetch = async () => {
@@ -34,7 +58,6 @@ export function Stock({ campaignId, isActive }: IStockProps) {
     }
   }, [campaignId, isActivated]);
 
-  const [dailyData, setDailyData] = useState<{ date: string; leads: number }[]>([]);
   useEffect(() => {
     if (campaignSummary && isActivated) {
       const fetch = async () => {
@@ -54,115 +77,193 @@ export function Stock({ campaignId, isActive }: IStockProps) {
   }, [campaignSummary, isActivated]);
 
   const refresh = useCallback(() => {
-    activate(true)
+    activate(true);
   }, []);
 
-  const [view, setView] = useState<'daily' | 'historical'>('daily');
-  const chartRef = useRef<HTMLDivElement>(null);
-  const { width = 0 } = useResizeObserver({
-    ref: chartRef,
-    box: 'border-box'
-  });
+  const costPerLead = campaignSummary
+    ? (campaignSummary.total_spent / campaignSummary.total_leads).toFixed(2)
+    : '0';
 
-  return (
-    <StockTemplate isActivated={isActivated} campaignSummary={campaignSummary} refresh={refresh}>
-      <div className="mt-4 flex justify-between">
+  const conversionRate = campaignSummary
+    ? ((campaignSummary.total_leads / campaignSummary.clicks) * 100).toFixed(2)
+    : '0';
+
+  if (!isActivated) {
+    return (
+      <div className="flex h-96 items-center justify-center">
         <button
-            className={`px-4 py-2 rounded-lg ${view === 'daily' ? 'bg-zinc-700' : 'bg-zinc-600'}`}
-            onClick={() => setView('daily')}
+          onClick={refresh}
+          className="flex items-center gap-2 rounded-lg bg-green-500 px-6 py-3 font-medium text-white transition-colors hover:bg-green-600"
         >
-          Daily View
-        </button>
-        <button
-            className={`px-4 py-2 rounded-lg ${view === 'historical' ? 'bg-zinc-700' : 'bg-zinc-600'}`}
-            onClick={() => setView('historical')}
-        >
-          Historical View
+          <RotateCw className="size-5" />
+          Refresh Dashboard
         </button>
       </div>
+    );
+  }
 
-      <div className="relative mt-4" ref={chartRef}>
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={view === 'daily' ? [dailyData[dailyData.length - 1]] : dailyData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" />
-            <YAxis />
-            <Tooltip />
-            <Bar dataKey="leads" fill="#34a853" />
-          </BarChart>
-        </ResponsiveContainer>
+  if (!campaignSummary) {
+    return (
+      <div className="flex h-96 items-center justify-center">
+        <IconSpinner className="size-8 animate-spin text-green-500" />
       </div>
-    </StockTemplate>
-  );
-}
+    );
+  }
 
-interface IStockTemplateProps {
-  isActivated: boolean;
-  campaignSummary: CampaignSummary | null;
-  children: React.ReactNode;
-  refresh: () => void;
-}
-
-function StockTemplate({ campaignSummary, children, isActivated, refresh }: IStockTemplateProps) {
   return (
-    <div className="relative">
-      <div className={cn(
-        'rounded-xl border bg-zinc-950 p-4 text-green-400',
-        !campaignSummary ? 'pointer-events-none	blur' : '',
-      )}>
-        <div className="float-right inline-block rounded-full bg-white/10 px-2 py-1 text-xs">
-          {campaignSummary?.status ?? 'Campaign Status'}
+    <div className="space-y-6 p-6">
+      {/* Header Section */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-200">
+            {campaignSummary.campaign_name}
+          </h1>
+          <p className="text-sm text-zinc-600 dark:text-zinc-400">
+            Created {format(new Date(campaignSummary.creation_date), 'MMM d, yyyy')}
+          </p>
         </div>
-        <div className="text-lg text-zinc-300">{campaignSummary?.campaign_name ?? 'Campaign Name'}</div>
-        <div className="text-3xl font-bold">{campaignSummary?.total_leads ?? 'Campaign Total'} Leads</div>
-        <div className="text mt-1 text-xs text-zinc-500">
-          Created: {campaignSummary?.creation_date ? format(new Date(campaignSummary.creation_date), 'MMM d, yyyy HH:mm') : ''}
+        <div className="flex items-center gap-2">
+          <span className={cn(
+            "rounded-full px-3 py-1 text-sm font-medium",
+            campaignSummary.status === 'ACTIVE' 
+              ? "bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-500"
+              : "bg-zinc-100 text-zinc-700 dark:bg-zinc-500/10 dark:text-zinc-500"
+          )}>
+            {campaignSummary.status}
+          </span>
         </div>
-        <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
-          <div>
-            <span className="text-zinc-500">Clicks:</span> {campaignSummary?.clicks ?? '0'}
-          </div>
-          <div>
-            <span className="text-zinc-500">Impressions:</span> {campaignSummary?.impressions ?? '0'}
-          </div>
-          <div>
-            <span className="text-zinc-500">CTR:</span> {campaignSummary?.ctr.toFixed(2) ?? 0}%
-          </div>
-          <div>
-            <span className="text-zinc-500">Reach:</span> {campaignSummary?.reach ?? 0}
-          </div>
-          <div>
-            <span className="text-zinc-500">Frequency:</span> {campaignSummary?.frequency.toFixed(2) ?? 0}
-          </div>
-          <div>
-            <span className="text-zinc-500">Unique Clicks:</span> {campaignSummary?.unique_clicks ?? 0}
-          </div>
-          <div>
-            <span className="text-zinc-500">Total Spent:</span> ${campaignSummary?.total_spent.toFixed(2) ?? 0}
-          </div>
-        </div>
-        { children }
       </div>
-      <div className={cn(
-        'absolute text-center top-[50%] w-full',
-        isActivated && campaignSummary ? 'hidden' : '',
-      )}>
-        {isActivated ? (
-          <IconSpinner className="m-auto animate-spin" />
-        ) : (
-          <>
-            <div className="text-white mb-3">
-              To view the results again. Click the button below.
+
+      {/* Key Metrics Grid */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-zinc-600 dark:text-zinc-400">Total Leads</CardTitle>
+            <Users className="size-4 text-green-600 dark:text-green-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-zinc-900 dark:text-zinc-200">{campaignSummary.total_leads}</div>
+            <div className="text-xs text-zinc-600 dark:text-zinc-500">Conversion Rate: {conversionRate}%</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-zinc-600 dark:text-zinc-400">Total Spent</CardTitle>
+            <DollarSign className="size-4 text-green-600 dark:text-green-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-zinc-900 dark:text-zinc-200">
+              ${campaignSummary.total_spent.toFixed(2)}
             </div>
-            <button
-              className="px-4 py-2 rounded-lg bg-green-600"
-              onClick={refresh}
-            >
-              Refresh
-            </button>
-          </>
-        )}
+            <div className="text-xs text-zinc-600 dark:text-zinc-500">Cost per Lead: ${costPerLead}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-zinc-600 dark:text-zinc-400">Click Performance</CardTitle>
+            <MousePointer className="size-4 text-green-600 dark:text-green-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-zinc-900 dark:text-zinc-200">{campaignSummary.clicks}</div>
+            <div className="text-xs text-zinc-600 dark:text-zinc-500">
+              CTR: {campaignSummary.ctr.toFixed(2)}% • Unique: {campaignSummary.unique_clicks}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-zinc-600 dark:text-zinc-400">Reach & Frequency</CardTitle>
+            <Eye className="size-4 text-green-600 dark:text-green-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-zinc-900 dark:text-zinc-200">{campaignSummary.reach}</div>
+            <div className="text-xs text-zinc-600 dark:text-zinc-500">
+              Frequency: {campaignSummary.frequency.toFixed(2)} • Impressions: {campaignSummary.impressions}
+            </div>
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Chart Section */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-zinc-900 dark:text-zinc-200">Leads Over Time</CardTitle>
+            <div className="space-x-2">
+              <button
+                onClick={() => setView('daily')}
+                className={cn(
+                  "rounded-lg px-3 py-1 text-sm transition-colors",
+                  view === 'daily' 
+                    ? "bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-500" 
+                    : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700"
+                )}
+              >
+                Daily
+              </button>
+              <button
+                onClick={() => setView('weekly')}
+                className={cn(
+                  "rounded-lg px-3 py-1 text-sm transition-colors",
+                  view === 'weekly' 
+                    ? "bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-500" 
+                    : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700"
+                )}
+              >
+                Weekly
+              </button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[300px]" ref={chartRef}>
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={view === 'daily' ? [dailyData[dailyData.length - 1]] : dailyData}>
+                <defs>
+                  <linearGradient id="leadGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#22c55e" stopOpacity={0.2}/>
+                    <stop offset="95%" stopColor="#22c55e" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid 
+                  strokeDasharray="3 3" 
+                  stroke="#e5e7eb" 
+                  className="dark:stroke-zinc-800" 
+                />
+                <XAxis 
+                  dataKey="date" 
+                  stroke="#71717a"
+                  fontSize={12}
+                  className="dark:stroke-zinc-500"
+                />
+                <YAxis
+                  stroke="#71717a"
+                  fontSize={12}
+                  className="dark:stroke-zinc-500"
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'var(--card-background)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '8px'
+                  }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="leads"
+                  stroke="#16a34a"
+                  strokeWidth={2}
+                  fill="url(#leadGradient)"
+                  className="dark:stroke-green-500"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

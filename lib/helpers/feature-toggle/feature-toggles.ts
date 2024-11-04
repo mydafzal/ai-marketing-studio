@@ -15,12 +15,12 @@ export const featureToggles: FeatureToggle[] = [
         description: "For enabling admin features such as removing chat history!"
     },
     {
-        name: "onboardingFeatures",
-        description: "Enable onboarding pop-up and enforce if FbAccountId is missing"
+        name: "AddFbToLoginPage",
+        description: "Adds login with facebook to login page"
     },
     {
         name: "enforceUserApiKey",
-        description: "Enforce user to link their own facebook account (Go live after 'onboardingFeatures')"
+        description: "Enforce user to link their own facebook account"
     },
     {
         name: "userGuideFloatingButton",
