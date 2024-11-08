@@ -34,20 +34,21 @@ type ProfileSettingsProps = {
 }
 
 export default function ProfileSettings({
-  userDetails,
-  getFacebookBusinessAccounts,
-  getFacebookAdAccounts,
-  updateFbBusinessAcc,
-  updateFbAccountId,
-  disconnectFacebook,
-  updateOnboardingDetails
-}: ProfileSettingsProps) {
-  const [openOnboarding, setOpenOnboarding] = React.useState<boolean>(false)
-  const [openFacebookSettings, setOpenFacebookSettings] = React.useState<boolean>(false)
+    userDetails,
+    getFacebookBusinessAccounts,
+    getFacebookAdAccounts,
+    updateFbBusinessAcc,
+    updateFbAccountId,
+    disconnectFacebook,
+    updateOnboardingDetails}:ProfileSettingsProps) {
+    const [openOnboarding, setOpenOnboarding] = React.useState<boolean>(userDetails?.defaultExtraDetails?false:true)
+    const [openFacebookSettings, setOpenFacebookSettings] = React.useState<boolean>(false)
+    const [dropdownOpen, setDropdownOpen] = React.useState<boolean>(openOnboarding);
 
+    
   return (
     <>
-      <DropdownMenu>
+        <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
