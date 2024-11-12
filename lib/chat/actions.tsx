@@ -1977,13 +1977,12 @@ Engaged Shoppers]
     
     5. Set headline of each version.
     
-    ALWAYS call \`showUpdateStatusChampaign\` to show the update status UI and let the user choose the status of the campaign.
+    Step 6: Lead Questionnaire: Tell the user "This is the last step. Please think about, what information you would like to get from the people who click on your ad. I will give you a lead form to fill."
+After the user answers to this call \`show_form_builder\` to show the form builder UI.
     
-    Step 6: Lead Questionnaire: Determine the required information from leads.
     
-    Question: "Do you want to ask for contact details only, or also pre-qualify leads with additional questions such as [examples]? I can help with the creation, or you can provide your ideas."
+    Reasoning: Ensure the user has a lead form to collect information from potential customers.
     
-    Reasoning: Ensure the questionnaire meets the client's needs.
     
     Confirm each additional question with the user.
     
