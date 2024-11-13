@@ -55,7 +55,6 @@ export function ConnectCampaignForm({
     if (response.success && response.data.campaign.id) {
       await handleSelectCampaign({
         ...response.data.campaign,
-        ...createData, // Just to avoid error
         created_time: Date.toString(),
         daily_budget:"300"  // Just to avoid error
       })
