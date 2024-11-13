@@ -37,29 +37,6 @@ export function ConnectCampaignForm({
 
   const handleCreateCampaign = async () => {
 
-    // OLD method of create campaign
-    // const createData = {
-    //   name: 'My campaign',
-    //   status: 'PAUSED',
-    // }
-    // const url = '/api/fasty-bot/proxy-create-campaign'
-    // const responseStream = await fetch(url, {
-    //   method: 'POST',
-    //   body: JSON.stringify({
-    //     objective: 'OUTCOME_LEADS',
-    //     special_ad_categories: ['NONE'],
-    //     ...createData,
-    //   })
-    // })
-    // const response = await responseStream.json()
-    // if (response.success && response.data.id) {
-    //   await handleSelectCampaign({
-    //     ...response.data,
-    //     ...createData,
-    //     created_time: Date.toString(),
-    //   })
-    //   await getCampaignList()
-    // }
 
     const createData = {
       name: 'My campaign',

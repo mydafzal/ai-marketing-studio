@@ -34,6 +34,7 @@ import {setDailyCampaignBudget} from '@/lib/api/fasty-bot/set-daily-campaign-bud
 import {setCampaignStatus} from '@/lib/api/fasty-bot/set-campaign-status';
 import {createCampaignAd} from '@/lib/api/fasty-bot/create-ad';
 import {createCampaign} from '@/lib/api/fasty-bot/create-campaign'
+import {createBase} from '@/lib/api/fasty-bot/create-base'
 import {CampaignSummary} from '@/lib/api/fasty-bot/get-campaign-summary'
 import {updateCampaign} from '@/lib/api/fasty-bot/update-campaign';
 import {createLeadgenForm} from '@/lib/api/fasty-bot/create-leadgen-form';
@@ -2570,15 +2571,13 @@ Ensure to convert percentages into decimals (e.g., 15% becomes 0.15) when passin
                 description: createCampaignModule.description,
                 parameters: createCampaignModule.parameters,
                 generate: async function* ({campaignName, questionForBudget}) {
-                    const response = await createCampaign({
-                      objective: 'OUTCOME_LEADS',
-                      special_ad_categories: ['NONE'],
-                      name: campaignName,
-                      status: 'PAUSED',
+                    const response = await createBase({
+                      campaign_name: campaignName,
                     })
                     let success = !!response.ok
                     if (success) {
-                        const { id } = await response.json()
+                        const { campaign } = await response.json()
+                        const id = campaign.id;
                         const result = await updateChat(aiState.get().chatId, {
                             title: campaignName,
                             fbCampaignId: id
