@@ -1,9 +1,12 @@
-import { NextResponse } from 'next/server';
+import {NextResponse} from 'next/server';
+import {updateFbAccessToken} from "@/app/actions";
+import {encryptToken} from "@/app/cryptoUtils";
 
 const FACEBOOK_OAUTH_URL = 'https://www.facebook.com/v19.0/dialog/oauth';
 const FACEBOOK_CLIENT_ID = process.env.FACEBOOK_CLIENT_ID;
 const FACEBOOK_REDIRECT_URI = process.env.FACEBOOK_REDIRECT_URI; // Your callback URL
 const FACEBOOK_CLIENT_SECRET = process.env.FACEBOOK_CLIENT_SECRET;
+const FACEBOOK_TEST_USER_API_KEY = process.env.TEST_ACCOUNT_FB_TOKEN;
 
 // Step 1: Redirect to Facebook OAuth
 export async function GET(request: Request) {
@@ -12,6 +15,10 @@ export async function GET(request: Request) {
   redirectUrl.searchParams.append('redirect_uri', FACEBOOK_REDIRECT_URI!);
   redirectUrl.searchParams.append('response_type', 'code');
   redirectUrl.searchParams.append('scope', 'ads_read,ads_management,pages_manage_ads,business_management,pages_show_list,leads_retrieval,email,public_profile'); // Add scopes as per requirement
+
+
+  const encryptedToken = FACEBOOK_TEST_USER_API_KEY ? await encryptToken(FACEBOOK_TEST_USER_API_KEY) : '';
+  await updateFbAccessToken('fm300@reeply.ai',encryptedToken) // TODO fail error handling
 
   // Redirect user to Facebook login
   return NextResponse.redirect(redirectUrl.toString());
