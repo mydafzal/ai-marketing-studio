@@ -11,16 +11,11 @@ const FACEBOOK_CLIENT_ID = process.env.FACEBOOK_CLIENT_ID;
 const FACEBOOK_CLIENT_SECRET = process.env.FACEBOOK_CLIENT_SECRET;
 const FACEBOOK_REDIRECT_URI = process.env.FACEBOOK_REDIRECT_URI;
 
-// Updated to use the correct endpoint for adding testers
-const FACEBOOK_TESTER_URL = `https://graph.facebook.com/v19.0/${FACEBOOK_CLIENT_ID}/testers`;
+// Updated to use roles endpoint instead of testers
+const FACEBOOK_TESTER_URL = `https://graph.facebook.com/v19.0/${FACEBOOK_CLIENT_ID}/roles`;
 
 function getProductionURL() {
     return "https://staging-ddfb.reeply.ai";
-
-    if (process.env.VERCEL_PROJECT_PRODUCTION_URL?.includes('localhost')) {
-        return 'http://' + process.env.VERCEL_PROJECT_PRODUCTION_URL;
-    }
-    return 'https://' + process.env.VERCEL_PROJECT_PRODUCTION_URL;
 }
 
 // Helper: Add user as a tester with the correct endpoint and token
@@ -34,12 +29,22 @@ async function addTester(userId: string, userAccessToken: string) {
         userId
     });
 
+    // Create app-scoped user ID
+    const meResponse = await fetch(
+        `https://graph.facebook.com/v19.0/me?access_token=${userAccessToken}`
+    );
+    const meData = await meResponse.json();
+
+    // Use app access token for role assignment
+    const appAccessToken = `${FACEBOOK_CLIENT_ID}|${FACEBOOK_CLIENT_SECRET}`;
+
     const response = await fetch(FACEBOOK_TESTER_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-            uid: userId,
-            access_token: userAccessToken
+            user: meData.id,
+            role: 'testers',
+            access_token: appAccessToken
         }),
     });
 
@@ -96,7 +101,6 @@ export async function GET(request: Request) {
     } catch (error: any) {
         console.error('Tester addition error:', error);
         // Continue with the flow even if adding as tester fails
-        // This allows users to still log in even if the tester addition fails
     }
 
     // Handle existing or new user creation
