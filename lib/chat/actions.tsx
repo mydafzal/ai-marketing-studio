@@ -1977,13 +1977,12 @@ Engaged Shoppers]
     4. Vary the length and style slightly between versions to offer diverse options.
     
     5. Set headline of each version.
-    
+        
     Step 6: Lead Questionnaire: Tell the user "This is the last step. Please think about, what information you would like to get from the people who click on your ad. I will give you a lead form to fill."
 After the user answers to this call \`show_form_builder\` to show the form builder UI.
     
     
     Reasoning: Ensure the user has a lead form to collect information from potential customers.
-    
     
     Confirm each additional question with the user.
     

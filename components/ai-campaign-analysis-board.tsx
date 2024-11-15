@@ -1,6 +1,8 @@
 'use client';
-import React, { useState } from 'react';
+
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { format } from 'date-fns';
+import { useResizeObserver } from 'usehooks-ts';
 import {
   AreaChart,
   Area,
@@ -13,211 +15,204 @@ import {
 import {
   Users,
   Brain,
-  TrendingUp,
+  MousePointer,
   DollarSign,
-  MessageSquare,
-  AlertCircle,
-  TrendingDown,
-  BarChart,
-  Target,
-  Eye
+  RotateCw,
+  TrendingUp
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CampaignSummary, getCampaignSummary } from '@/lib/api/fasty-bot/get-campaign-summary';
+import { getCampaignHistoricalLeadsResults } from '@/lib/api/fasty-bot/get-historical-leads';
+import { cn } from '@/lib/utils';
+import { IconSpinner } from '@/components/ui/icons';
 
-interface HistoricalData {
-  date: string;
-  leads: number;
-}
-
-interface CampaignData {
-  campaign_id: string;
-  campaign_name: string;
-  total_leads: number;
-  total_spent: number;
-  ctr: number;
-  frequency: number;
-  impressions: number;
-  reach: number;
-  unique_clicks: number;
-  clicks: number;
-  creation_date: string;
-  status: string;
-  historical_data: HistoricalData[];
-}
-
-interface CampaignContext {
-  subscription_price?: number;
-  lead_to_call_rate?: number;
+export interface AIChatContext {
+  subscription_price: number;
+  lead_to_call_rate: number;
   target_cost_per_lead?: number;
   industry_average_ctr?: number;
-  previous_period_leads?: number;
-  previous_period_cost?: number;
 }
 
-interface AICampaignAnalysisProps {
-  campaignData: CampaignData;
-  context?: CampaignContext;
+export interface AICampaignAnalysisProps {
+  campaignId: string;
+  isActive?: boolean;
+  chatContext: AIChatContext;
 }
 
-const AICampaignAnalysis: React.FC<AICampaignAnalysisProps> = ({ 
-  campaignData, 
-  context = {}
+const AICampaignAnalysis: React.FC<AICampaignAnalysisProps> = ({
+  campaignId,
+  isActive = true,
+  chatContext
 }) => {
+  const [isActivated, setIsActivated] = useState(!!isActive);
+  const [campaignSummary, setCampaignSummary] = useState<CampaignSummary | null>(null);
+  const [dailyData, setDailyData] = useState<{ date: string; leads: number }[]>([]);
   const [timeRange, setTimeRange] = useState<'weekly' | 'monthly'>('monthly');
-  
-  // Fallback values if context properties are undefined
-  const subscriptionPrice = context.subscription_price || 0;
-  const leadToCallRate = context.lead_to_call_rate || 0;
+  const chartRef = useRef<HTMLDivElement>(null);
 
-  // Calculate key metrics
-  const costPerLead = campaignData.total_spent / campaignData.total_leads;
-  const costPerClick = campaignData.total_spent / campaignData.clicks;
-  const expectedSalesCalls = Math.round(campaignData.total_leads * leadToCallRate);
-  const costPerSalesCall = costPerLead / leadToCallRate;
-  const breakevenConversionRate = (costPerSalesCall / subscriptionPrice * 100).toFixed(1);
-  const maxMonthlyRevenue = expectedSalesCalls * subscriptionPrice;
+  const { width = 0 } = useResizeObserver({
+    ref: chartRef,
+    box: 'border-box'
+  });
 
-  // Calculate ROI metrics
-  const potentialROI = ((maxMonthlyRevenue - campaignData.total_spent) / campaignData.total_spent * 100).toFixed(1);
-  const leadConversionRate = (campaignData.total_leads / campaignData.clicks * 100).toFixed(1);
-
-  // Performance assessments
-  const performanceStatus = (() => {
-    if (context.target_cost_per_lead) {
-      return costPerLead < context.target_cost_per_lead ? 'Healthy' : 'Needs Attention';
-    }
-    return costPerLead < 8 ? 'Healthy' : 'Needs Attention';
-  })();
-  const performanceColor = performanceStatus === 'Healthy' ? 'green' : 'yellow';
-
-  // CTR assessment
-  const ctrAssessment = (() => {
-    if (context.industry_average_ctr) {
-      if (campaignData.ctr > context.industry_average_ctr * 1.2) return "excellent";
-      if (campaignData.ctr > context.industry_average_ctr) return "good";
-      return "below average";
-    }
-    return campaignData.ctr > 2 ? "good" : "needs improvement";
-  })();
-
-  // Engagement assessment
-  const engagementAssessment = (() => {
-    if (campaignData.frequency < 2) return "could be increased";
-    if (campaignData.frequency > 4) return "might be too high";
-    return "optimal";
-  })();
-
-  // Lead growth assessment
-  const leadGrowthAssessment = (() => {
-    if (context.previous_period_leads) {
-      const growth = ((campaignData.total_leads - context.previous_period_leads) / context.previous_period_leads) * 100;
-      return {
-        percentage: growth.toFixed(1),
-        status: growth > 0 ? "increased" : "decreased"
+  useEffect(() => {
+    if (campaignId && isActivated) {
+      const fetchSummary = async () => {
+        try {
+          // Fetch campaign summary using the campaignId
+          const result = await getCampaignSummary(campaignId);
+          console.log('campaign summary in AI analysis:', result);
+          setCampaignSummary(result);
+        } catch (error) {
+          console.error('Error fetching campaign summary:', error);
+        }
       };
+      void fetchSummary();
     }
-    return null;
-  })();
+  }, [campaignId, isActivated]);
 
-  // Cost efficiency assessment
-  const costEfficiencyAssessment = (() => {
-    if (context.previous_period_cost) {
-      const previousCostPerLead = context.previous_period_cost / context.previous_period_leads!;
-      const costEfficiencyChange = ((costPerLead - previousCostPerLead) / previousCostPerLead * 100).toFixed(1);
-      return {
-        percentage: costEfficiencyChange,
-        status: Number(costEfficiencyChange) < 0 ? "improved" : "declined"
+  useEffect(() => {
+    if (campaignId && isActivated) {
+      const fetchHistoricalLeads = async () => {
+        try {
+          // Fetch historical leads using the campaignId
+          const results = await getCampaignHistoricalLeadsResults(campaignId, 'last_month');
+          const formattedData = results.lead_results.map(item => ({
+            date: format(new Date(item.date), 'MMM d'),
+            leads: item.leads
+          }));
+          setDailyData(formattedData);
+        } catch (error) {
+          console.error('Error fetching campaign data:', error);
+        }
       };
+      void fetchHistoricalLeads();
     }
-    return null;
-  })();
+  }, [campaignId, isActivated]);
+
+  const refresh = useCallback(() => {
+    setIsActivated(true);
+  }, []);
+
+  if (!isActivated) {
+    return (
+      <div className="flex h-96 items-center justify-center">
+        <button
+          onClick={refresh}
+          className="flex items-center gap-2 rounded-lg bg-green-500 px-6 py-3 font-medium text-white transition-colors hover:bg-green-600"
+        >
+          <RotateCw className="size-5" />
+          View AI Analysis
+        </button>
+      </div>
+    );
+  }
+
+  if (!campaignSummary) {
+    return (
+      <div className="flex h-96 items-center justify-center">
+        <IconSpinner className="size-8 animate-spin text-green-500" />
+      </div>
+    );
+  }
+
+  // Basic campaign metrics
+  const costPerLead = campaignSummary.total_spent / campaignSummary.total_leads;
+  const conversionRate = ((campaignSummary.total_leads / campaignSummary.clicks) * 100).toFixed(2);
+
+  // Additional AI-driven metrics using chat context
+  const expectedSalesCalls = Math.round(campaignSummary.total_leads * chatContext.lead_to_call_rate);
+  const costPerSalesCall = costPerLead / chatContext.lead_to_call_rate;
+  const breakevenConversionRate = ((costPerSalesCall / chatContext.subscription_price) * 100).toFixed(1);
+  const maxMonthlyRevenue = expectedSalesCalls * chatContext.subscription_price;
+  const potentialROI = (((maxMonthlyRevenue - campaignSummary.total_spent) / campaignSummary.total_spent) * 100).toFixed(1);
 
   return (
     <div className="space-y-6 p-6">
-      {/* Header with AI Status */}
+      {/* Header Section */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-200">
-            AI Analysis: {campaignData.campaign_name}
+            AI Analysis: {campaignSummary.campaign_name}
           </h1>
           <p className="text-sm text-zinc-600 dark:text-zinc-400">
-            Campaign Status: {campaignData.status} • Last updated {format(new Date(), 'MMM d, yyyy HH:mm')}
+            Created {format(new Date(campaignSummary.creation_date), 'MMM d, yyyy')}
           </p>
         </div>
         <div className="flex items-center gap-2">
           <Brain className="size-5 text-green-500" />
-          <span className={`rounded-full px-3 py-1 text-sm font-medium bg-${performanceColor}-100 text-${performanceColor}-700`}>
-            {performanceStatus}
+          <span
+            className={cn(
+              'rounded-full px-3 py-1 text-sm font-medium',
+              campaignSummary.status === 'ACTIVE'
+                ? 'bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-500'
+                : 'bg-zinc-100 text-zinc-700 dark:bg-zinc-500/10 dark:text-zinc-500'
+            )}
+          >
+            {campaignSummary.status}
           </span>
         </div>
       </div>
 
-      {/* Key Metrics Grid */}
+      {/* Campaign Metrics Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Lead Generation</CardTitle>
-            <Users className="size-4 text-green-500" />
+            <CardTitle className="text-sm font-medium text-zinc-600 dark:text-zinc-400">Leads & Calls</CardTitle>
+            <Users className="size-4 text-green-600 dark:text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {campaignData.total_leads}
+            <div className="text-2xl font-bold text-zinc-900 dark:text-zinc-200">{campaignSummary.total_leads}</div>
+            <div className="text-xs text-zinc-600 dark:text-zinc-500">
+              Expected Calls: {expectedSalesCalls}
             </div>
-            <p className="text-xs text-zinc-500">
-              {leadGrowthAssessment 
-                ? `${leadGrowthAssessment.status} by ${leadGrowthAssessment.percentage}%`
-                : `${leadConversionRate}% conversion rate`}
-            </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Cost Analysis</CardTitle>
-            <DollarSign className="size-4 text-green-500" />
+            <CardTitle className="text-sm font-medium text-zinc-600 dark:text-zinc-400">Cost Analysis</CardTitle>
+            <DollarSign className="size-4 text-green-600 dark:text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-2xl font-bold text-zinc-900 dark:text-zinc-200">
               €{costPerLead.toFixed(2)}
             </div>
-            <p className="text-xs text-zinc-500">
-              Cost per Lead
-              {costEfficiencyAssessment && 
-                ` • ${costEfficiencyAssessment.status} by ${costEfficiencyAssessment.percentage}%`}
-            </p>
+            <div className="text-xs text-zinc-600 dark:text-zinc-500">
+              Per lead • €{costPerSalesCall.toFixed(2)} per call
+            </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Campaign Reach</CardTitle>
-            <Eye className="size-4 text-green-500" />
+            <CardTitle className="text-sm font-medium text-zinc-600 dark:text-zinc-400">Click Performance</CardTitle>
+            <MousePointer className="size-4 text-green-600 dark:text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {campaignData.reach.toLocaleString()}
+            <div className="text-2xl font-bold text-zinc-900 dark:text-zinc-200">{campaignSummary.clicks}</div>
+            <div className="text-xs text-zinc-600 dark:text-zinc-500">
+              CTR: {campaignSummary.ctr.toFixed(2)}% • Unique: {campaignSummary.unique_clicks}
             </div>
-            <p className="text-xs text-zinc-500">
-              Frequency: {campaignData.frequency.toFixed(1)} • CTR: {campaignData.ctr.toFixed(2)}%
-            </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Sales Potential</CardTitle>
-            <Target className="size-4 text-green-500" />
+            <CardTitle className="text-sm font-medium text-zinc-600 dark:text-zinc-400">Potential Revenue</CardTitle>
+            <TrendingUp className="size-4 text-green-600 dark:text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {expectedSalesCalls}
+            <div className="text-2xl font-bold text-zinc-900 dark:text-zinc-200">
+              €{maxMonthlyRevenue.toFixed(2)}
             </div>
-            <p className="text-xs text-zinc-500">
-              Expected sales calls • {breakevenConversionRate}% to break even
-            </p>
+            <div className="text-xs text-zinc-600 dark:text-zinc-500">
+              ROI: {potentialROI}%
+            </div>
           </CardContent>
         </Card>
       </div>
+
       {/* AI Insights Card */}
       <Card>
         <CardHeader>
@@ -228,89 +223,41 @@ const AICampaignAnalysis: React.FC<AICampaignAnalysisProps> = ({
         </CardHeader>
         <CardContent>
           <p className="text-sm text-zinc-700 dark:text-zinc-300">
-            Your campaign&apos;s CTR of {campaignData.ctr.toFixed(2)}% is {ctrAssessment}, with an ad frequency that is {engagementAssessment}. 
-            {leadGrowthAssessment && ` Lead generation has ${leadGrowthAssessment.status} by ${leadGrowthAssessment.percentage}% compared to the previous period. `}
-            Your cost per lead is €{costPerLead.toFixed(2)}, requiring a {breakevenConversionRate}% 
-            conversion rate of sales calls to break even on your €{subscriptionPrice} subscription price.
-            {costEfficiencyAssessment && ` Cost efficiency has ${costEfficiencyAssessment.status} by ${costEfficiencyAssessment.percentage}%.`}
+            Your campaign CTR of {campaignSummary.ctr.toFixed(2)}% is{' '}
+            {campaignSummary.ctr > (chatContext.industry_average_ctr || 2) ? 'above' : 'below'} average. With{' '}
+            {expectedSalesCalls} expected sales calls from {campaignSummary.total_leads} leads, your cost per sales call
+            is €{costPerSalesCall.toFixed(2)}. To break even at €{chatContext.subscription_price} per subscription, you
+            need to convert {breakevenConversionRate}% of sales calls. The campaign has reached{' '}
+            {campaignSummary.reach.toLocaleString()} people with a frequency of {campaignSummary.frequency.toFixed(1)}.
           </p>
         </CardContent>
       </Card>
 
-      {/* AI Recommendations */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Brain className="size-5" />
-            AI Recommendations
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="rounded-lg bg-zinc-50 p-4 dark:bg-zinc-800">
-            <h3 className="font-medium text-green-600 dark:text-green-500">Ad Performance</h3>
-            <p className="mt-1 text-sm">
-              {ctrAssessment === "excellent" 
-                ? "Your CTR is performing exceptionally well above industry standards."
-                : `Your CTR of ${campaignData.ctr.toFixed(2)}% shows ${ctrAssessment} engagement.`}
-              {campaignData.frequency > 3 
-                ? " Consider refreshing ad creatives to prevent ad fatigue."
-                : " Current ad frequency suggests room for increased exposure."}
-              {" "}With a reach of {campaignData.reach.toLocaleString()} users, 
-              {campaignData.reach < 50000 
-                ? " there may be opportunities to expand your audience."
-                : " you're maintaining strong market presence."}
-            </p>
-          </div>
-          
-          <div className="rounded-lg bg-zinc-50 p-4 dark:bg-zinc-800">
-            <h3 className="font-medium text-green-600 dark:text-green-500">Cost Optimization</h3>
-            <p className="mt-1 text-sm">
-              {costPerLead > (context.target_cost_per_lead || 8)
-                ? `Current cost per lead (€${costPerLead.toFixed(2)}) is above target. Consider optimizing targeting or ad creative to improve efficiency.`
-                : `Cost per lead of €${costPerLead.toFixed(2)} is within acceptable range.`}
-              {" "}With a cost per click of €${costPerClick.toFixed(2)}, 
-              {costPerClick > 0.5 
-                ? " focus on improving ad relevance to reduce costs."
-                : " you're achieving efficient click costs."}
-              {potentialROI && ` Potential ROI at current rates: ${potentialROI}%.`}
-            </p>
-          </div>
-          
-          <div className="rounded-lg bg-zinc-50 p-4 dark:bg-zinc-800">
-            <h3 className="font-medium text-green-600 dark:text-green-500">Lead Quality & Conversion</h3>
-            <p className="mt-1 text-sm">
-              Your lead-to-call rate of {(leadToCallRate * 100).toFixed(1)}% suggests
-              {leadToCallRate < 0.15 
-                ? " there's room to improve lead quality through better qualification."
-                : " you're generating well-qualified leads."} 
-              To achieve profitability, aim to convert at least {breakevenConversionRate}% of sales calls.
-              {leadConversionRate && Number(leadConversionRate) < 10 
-                ? " Consider adjusting your lead form to better qualify prospects."
-                : " Your lead form is effectively qualifying potential customers."}
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Performance Trends */}
+      {/* Chart Section */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Lead Generation Trends</CardTitle>
+            <CardTitle className="text-zinc-900 dark:text-zinc-200">Leads Over Time</CardTitle>
             <div className="space-x-2">
               <button
                 onClick={() => setTimeRange('weekly')}
-                className={`rounded-lg px-3 py-1 text-sm ${
-                  timeRange === 'weekly' ? 'bg-green-100 text-green-700' : 'bg-zinc-100'
-                }`}
+                className={cn(
+                  'rounded-lg px-3 py-1 text-sm transition-colors',
+                  timeRange === 'weekly'
+                    ? 'bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-500'
+                    : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
+                )}
               >
                 Weekly
               </button>
               <button
                 onClick={() => setTimeRange('monthly')}
-                className={`rounded-lg px-3 py-1 text-sm ${
-                  timeRange === 'monthly' ? 'bg-green-100 text-green-700' : 'bg-zinc-100'
-                }`}
+                className={cn(
+                  'rounded-lg px-3 py-1 text-sm transition-colors',
+                  timeRange === 'monthly'
+                    ? 'bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-500'
+                    : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
+                )}
               >
                 Monthly
               </button>
@@ -318,30 +265,22 @@ const AICampaignAnalysis: React.FC<AICampaignAnalysisProps> = ({
           </div>
         </CardHeader>
         <CardContent>
-          <div className="h-[300px]">
+          <div className="h-[300px]" ref={chartRef}>
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={campaignData.historical_data}>
+              <AreaChart data={timeRange === 'weekly' ? dailyData.slice(-7) : dailyData}>
                 <defs>
-                  <linearGradient id="colorLeads" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#22c55e" stopOpacity={0.2}/>
-                    <stop offset="95%" stopColor="#22c55e" stopOpacity={0}/>
+                  <linearGradient id="leadGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#22c55e" stopOpacity={0.2} />
+                    <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid 
-                  strokeDasharray="3 3" 
-                  className="stroke-zinc-200 dark:stroke-zinc-700"
-                />
-                <XAxis 
-                  dataKey="date"
-                  className="text-xs text-zinc-600 dark:text-zinc-400"
-                />
-                <YAxis 
-                  className="text-xs text-zinc-600 dark:text-zinc-400"
-                />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" className="dark:stroke-zinc-800" />
+                <XAxis dataKey="date" stroke="#71717a" fontSize={12} className="dark:stroke-zinc-500" />
+                <YAxis stroke="#71717a" fontSize={12} className="dark:stroke-zinc-500" />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: 'var(--background)',
-                    borderColor: 'var(--border)',
+                    backgroundColor: 'var(--card-background)',
+                    border: '1px solid var(--border-color)',
                     borderRadius: '8px'
                   }}
                 />
@@ -350,8 +289,7 @@ const AICampaignAnalysis: React.FC<AICampaignAnalysisProps> = ({
                   dataKey="leads"
                   stroke="#16a34a"
                   strokeWidth={2}
-                  fillOpacity={1}
-                  fill="url(#colorLeads)"
+                  fill="url(#leadGradient)"
                   className="dark:stroke-green-500"
                 />
               </AreaChart>
