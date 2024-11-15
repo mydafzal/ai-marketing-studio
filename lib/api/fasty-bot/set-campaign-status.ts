@@ -1,7 +1,15 @@
+import { getFbMarketingApiKey } from '@/app/actions';
+
 async function setCampaignStatus(campaignId: string, status: string): Promise<boolean> {
     if (campaignId == '0') { // TODO: Remove this once Fasty bot is live and campaign IDs are available
         console.log('Bypassing API call for campaign ID 0');
         return true;
+    }
+
+    const token_resp = await getFbMarketingApiKey()
+    let token=""
+    if(token_resp.success && token_resp.token){
+        token=token_resp.token
     }
 
     try {
@@ -13,7 +21,9 @@ async function setCampaignStatus(campaignId: string, status: string): Promise<bo
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${process.env.FASTY_API_TOKEN}`
+                'Authorization': `Bearer ${process.env.FASTY_API_TOKEN}`,
+                'fb-api-key': token
+
             },
             body: JSON.stringify({
                 campaign_id: campaignId,

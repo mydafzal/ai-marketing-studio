@@ -1,4 +1,5 @@
 import {NextResponse} from 'next/server'
+import { getFbMarketingApiKey } from '@/app/actions';
 
 export async function POST(request: Request) {
     try {
@@ -11,11 +12,21 @@ export async function POST(request: Request) {
         const fastyEndpoint = process.env.FASTY_API_URL
         const apiUrl = `${fastyEndpoint}/facebook/exec/direct/adjust-campaign/set-daily-budget`
 
+        const token_resp = await getFbMarketingApiKey()
+        let token=""
+        if(token_resp.success && token_resp.token){
+            token=token_resp.token
+        }
+
+
+
         const response = await fetch(apiUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${process.env.FASTY_API_TOKEN}`
+                'Authorization': `Bearer ${process.env.FASTY_API_TOKEN}`,
+                'fb-api-key': token
+
             },
             body: JSON.stringify({
                 campaign_id,

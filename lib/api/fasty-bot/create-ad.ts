@@ -1,4 +1,5 @@
 import { getUserDetail } from '@/app/actions'
+import { getFbMarketingApiKey } from '@/app/actions';
 
 async function createCampaignAd(campaignId: string, data: any, adset: any): Promise<boolean | any> {
     if (campaignId == '0') { // TODO: Remove this once Fasty bot is live and campaign IDs are available
@@ -11,12 +12,20 @@ async function createCampaignAd(campaignId: string, data: any, adset: any): Prom
         const apiUrl = `${fastyEndpoint}/facebook/exec/direct/ads/create`;
         const userDetail = await getUserDetail();
 
+        const token_resp = await getFbMarketingApiKey()
+        let token=""
+        if(token_resp.success && token_resp.token){
+            token=token_resp.token
+        }
+
         // Make the direct API call
         const response = await fetch(apiUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${process.env.FASTY_API_TOKEN}`
+            Authorization: `Bearer ${process.env.FASTY_API_TOKEN}`,
+            'fb-api-key': token
+
           },
           body: JSON.stringify({
             campaign_id: campaignId,

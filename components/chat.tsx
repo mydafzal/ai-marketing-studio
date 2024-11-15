@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 
 import { fetchChatFbCampaignId, updateChatFbCampaignId, updateChatTitle } from '@/app/actions'
 import { CampaignContext, CampaignContextProvider } from '@/components/contexts/campaign-context'
+import { KvContextProvider } from '@/components/contexts/kv-context'
 import { ChatList } from '@/components/chat-list'
 import { ChatPanel } from '@/components/chat-panel'
 import { EmptyScreen } from '@/components/empty-screen'
@@ -27,19 +28,29 @@ function ChatCore({ id, chat, className, session, missingKeys }: ChatProps) {
   const [aiState, setAIState] = useAIState()
   const [_, setNewChatId] = useLocalStorage('newChatId', id)
   const { id: campaignId, setId: setCampaignId, summary: campaignSummary } = useContext(CampaignContext)
+  
+ 
+
   console.log('aiState.messages', aiState.messages)
+  console.log('chat', chat)
 
   useEffect(() => {
     if (!aiState.messages.length) {
       setAIState((aiState: any) => ({
         ...aiState,
         messages: [
-            {
-                id: 'campaign-info-data',
-                role: 'system',
-                content: 'No campaign is connected to this chat. You should always show UI to connect a campaign to the chat when user asks about one of "setting campaign budget", "changing campaign budget" "campaign result" and "campaign status".',
-                timestamp: new Date().toISOString() 
-            }
+          {
+            id: 'campaign-info-data',
+            role: 'system',
+            content: 'No campaign is connected to this chat. You should always show UI to connect a campaign to the chat when user asks about one of "setting campaign budget", "changing campaign budget" "campaign result" and "campaign status".',
+            timestamp: new Date().toISOString() 
+          },
+          {
+            id: 'adset-info-data',
+            role: 'system',
+            content: 'No adset is selected to this chat. You should always show UI to select an adset for the chat when user asks to generate ad suggestion.',
+            timestamp: new Date().toISOString() 
+          }
         ]
     }))
     }
@@ -120,9 +131,10 @@ function ChatCore({ id, chat, className, session, missingKeys }: ChatProps) {
     </div>
   )
 }
-
 export const Chat = ({ ...chatProps }: ChatProps) => (
-  <CampaignContextProvider>
-    <ChatCore {...chatProps} />
-  </CampaignContextProvider>
+  <KvContextProvider chat={chatProps.chat}>
+    <CampaignContextProvider>
+      <ChatCore {...chatProps} />
+    </CampaignContextProvider>
+  </KvContextProvider>
 )

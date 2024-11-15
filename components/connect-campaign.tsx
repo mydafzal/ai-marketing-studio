@@ -4,6 +4,7 @@ import { useActions, useAIState, useUIState } from 'ai/rsc'
 import { format } from 'date-fns'
 import { useContext, useEffect, useRef, useState } from 'react'
 import { spinner, SystemMessage } from '@/components/stocks'
+import { cn } from '@/lib/utils'
 
 import {
   Select,
@@ -19,6 +20,8 @@ import { CampaignContext } from '@/components/contexts/campaign-context'
 import { IconSpinner } from '@/components/ui/icons'
 import { FbCampaign, Message } from '@/lib/types'
 import { type AI } from '@/lib/chat/actions'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { CheckCircle, Plus, Link as LinkIcon } from 'lucide-react'
 
 interface ConnectCampaignFormProps {
   handleSelectCampaign: (campaign: FbCampaign) => Promise<void>;
@@ -33,25 +36,27 @@ export function ConnectCampaignForm({
   const { campaigns, getCampaignList } = useContext(CampaignContext)
 
   const handleCreateCampaign = async () => {
+
+
     const createData = {
       name: 'My campaign',
       status: 'PAUSED',
     }
-    const url = '/api/fasty-bot/proxy-create-campaign'
+    const url = '/api/fasty-bot/proxy-create-base'
     const responseStream = await fetch(url, {
       method: 'POST',
       body: JSON.stringify({
-        objective: 'OUTCOME_LEADS',
-        special_ad_categories: ['NONE'],
-        ...createData,
+        // objective: 'OUTCOME_LEADS',
+        // special_ad_categories: ['NONE'],
+        // ...createData,
       })
     })
     const response = await responseStream.json()
-    if (response.success && response.data.id) {
+    if (response.success && response.data.campaign.id) {
       await handleSelectCampaign({
-        ...response.data,
-        ...createData,
+        ...response.data.campaign,
         created_time: Date.toString(),
+        daily_budget:"300"  // Just to avoid error
       })
       await getCampaignList()
     }
@@ -59,67 +64,136 @@ export function ConnectCampaignForm({
 
   return (
     <>
-      <div className="text-lg font-medium text-gray-900 dark:text-zinc-300 mb-2">
-        Let&apos;s connect this chat to a campaign:
+      <div className="text-xl font-semibold text-zinc-900 dark:text-zinc-200 mb-4">
+        Connect to Campaign
       </div>
-      {campaigns.length > 0 && (
-        <Select
-          onValueChange={value => {
-            setSelectedCampaign(campaigns.find(e => e.id === value))
-          }}
-        >
-          <SelectTrigger className="SelectTrigger" aria-label="Food">
-            <SelectValue placeholder="Select a campaign" />
-          </SelectTrigger>
-          <SelectContent>
-            {campaigns.map((campaign: FbCampaign) => {
-              const created_time = format(
-                new Date(campaign.created_time),
-                'MMM d, yyyy HH:mm'
-              )
-              return (
-                <SelectItem key={campaign.id} value={campaign.id}>
-                  {campaign.name} - {campaign.status} ({created_time})
-                </SelectItem>
-              )
-            })}
-          </SelectContent>
-        </Select>
-      )}
-      {campaigns.length === 0 && (
-        <div className="py-2 text-md inline-block align-middle  text-center text-gray-700 dark:text-white">
-          No campaigns are currently available. Please create a new campaign
+      <div className="text-sm text-zinc-600 dark:text-zinc-400 mb-6">
+        Select an existing campaign or create a new one to get started
+      </div>
+      
+      {campaigns.length > 0 ? (
+        <div className="space-y-6">
+          <Select
+            onValueChange={value => {
+              setSelectedCampaign(campaigns.find(e => e.id === value))
+            }}
+          >
+            <SelectTrigger 
+              className="w-full bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-200 h-12"
+              aria-label="Select Campaign"
+            >
+              <SelectValue placeholder="Select a campaign" />
+            </SelectTrigger>
+            <SelectContent className="bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700">
+              {campaigns.map((campaign: FbCampaign) => {
+                const created_time = format(
+                  new Date(campaign.created_time),
+                  'MMM d, yyyy HH:mm'
+                )
+                return (
+                  <SelectItem 
+                    key={campaign.id} 
+                    value={campaign.id}
+                    className="text-zinc-900 dark:text-zinc-200 focus:bg-zinc-100 dark:focus:bg-zinc-700"
+                  >
+                    <div className="flex flex-col">
+                      <span>{campaign.name}</span>
+                      <span className="text-xs text-zinc-600 dark:text-zinc-400">
+                        {campaign.status} • {created_time}
+                      </span>
+                    </div>
+                  </SelectItem>
+                )
+              })}
+            </SelectContent>
+          </Select>
+
+          <div className="flex gap-4">
+            <button
+              disabled={!selectedCampaign || isSubmitting}
+              onClick={async () => {
+                if (selectedCampaign) {
+                  setSubmitting(true)
+                  await handleSelectCampaign(selectedCampaign)
+                }
+              }}
+              className={cn(
+                'flex justify-center items-center gap-2 flex-1 h-12 px-6',
+                'text-zinc-900 dark:text-zinc-200 font-medium rounded-lg',
+                'bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700',
+                'hover:bg-zinc-100 dark:hover:bg-zinc-700',
+                'transition-colors duration-200',
+                'disabled:opacity-50 disabled:cursor-not-allowed',
+                'focus:outline-none focus:ring-2 focus:ring-blue-500'
+              )}
+            >
+              {isSubmitting ? (
+                <IconSpinner className="size-5" />
+              ) : (
+                <>
+                  <LinkIcon className="size-4" />
+                  Connect Campaign
+                </>
+              )}
+            </button>
+
+            <button
+              disabled={isCreating}
+              onClick={async () => {
+                setCreating(true)
+                await handleCreateCampaign()
+              }}
+              className={cn(
+                'flex justify-center items-center gap-2 flex-1 h-12 px-6',
+                'text-white font-medium rounded-lg',
+                'bg-blue-600 hover:bg-blue-700',
+                'transition-colors duration-200',
+                'disabled:opacity-50 disabled:cursor-not-allowed',
+                'focus:outline-none focus:ring-2 focus:ring-blue-500'
+              )}
+            >
+              {isCreating ? (
+                <IconSpinner className="size-5" />
+              ) : (
+                <>
+                  <Plus className="size-4" />
+                  Create New Campaign
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="py-8 text-center bg-zinc-100/50 dark:bg-zinc-800/50 rounded-lg border border-zinc-200 dark:border-zinc-700">
+          <div className="text-zinc-600 dark:text-zinc-400 mb-4">
+            No campaigns available
+          </div>
+          <button
+            disabled={isCreating}
+            onClick={async () => {
+              setCreating(true)
+              await handleCreateCampaign()
+            }}
+            className={cn(
+              'flex justify-center items-center gap-2 mx-auto h-12 px-6',
+              'text-white font-medium rounded-lg',
+              'bg-blue-600 hover:bg-blue-700',
+              'transition-colors duration-200',
+              'disabled:opacity-50 disabled:cursor-not-allowed',
+              'focus:outline-none focus:ring-2 focus:ring-blue-500'
+            )}
+          >
+            {isCreating ? (
+              <IconSpinner className="size-5" />
+            ) : (
+              <>
+                <Plus className="size-4" />
+                Create New Campaign
+              </>
+            )}
+          </button>
         </div>
       )}
-      <div className="flex mt-4 gap-4">
-        {campaigns.length > 0 && (
-          <button
-            aria-disabled={!selectedCampaign || isSubmitting}
-            onClick={async () => {
-              if (selectedCampaign) {
-                setSubmitting(true)
-                await handleSelectCampaign(selectedCampaign)
-              }
-            }}
-            className="flex justify-center items-center flex-1 px-3 mr-5 py-2 text-xs  font-medium text-center text-white bg-gray-700 rounded-lg hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
-          >
-            {isSubmitting && <IconSpinner />}
-            {!isSubmitting && 'Connect existing campaign'}
-          </button>
-        )}
-
-        <button
-          aria-disabled={isCreating}
-          onClick={async () => {
-            setCreating(true)
-            await handleCreateCampaign()
-          }}
-          className="flex justify-center items-center flex-1 px-3 py-2 text-xs align-middle font-medium text-center text-white bg-blue-700 rounded-lg hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-gray-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
-        >
-          {isCreating && <IconSpinner />}
-          {!isCreating && 'Create a new campaign instead'}
-        </button>
-      </div>
     </>
   )
 }
@@ -131,6 +205,21 @@ interface ConnectCampaignProps {
   }
 }
 
+export function ConnectingStatus({ campaignName }: { campaignName: string }) {
+  return (
+    <Card className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
+      <CardContent className="p-6">
+        <div className="flex items-center gap-3">
+          <IconSpinner className="size-5 text-blue-600 dark:text-blue-500" />
+          <span className="text-zinc-900 dark:text-zinc-200">
+            Connecting to {campaignName}...
+          </span>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export function ConnectCampaign({ connectingUiProps }: ConnectCampaignProps) {
   const [aiState, setAIState] = useAIState()
   const { submitUserMessage } = useActions()
@@ -138,8 +227,7 @@ export function ConnectCampaign({ connectingUiProps }: ConnectCampaignProps) {
     connectingUiProps ? <ConnectCampaignResult {...connectingUiProps} /> : null
   )
   const [_, setMessages] = useUIState<typeof AI>()
-  const { setId: setCampaignId } =
-    useContext(CampaignContext)
+  const { setId: setCampaignId } = useContext(CampaignContext)
 
   const aiMessages = aiState.messages;
   const shouldSendSilentMessage = useRef(false);
@@ -157,21 +245,16 @@ export function ConnectCampaign({ connectingUiProps }: ConnectCampaignProps) {
       const { content, id, role } = aiMessages[0];
       if (role === 'system' && id === 'campaign-info-data' && content?.slice(0, 21) === 'Campaign is connected') {
         if (shouldSendSilentMessage.current) {
-          // this is a workaround, campaign info data is replaced if I do not use setTimeout
           setTimeout(refresh, 0);
           shouldSendSilentMessage.current = false;
         }
       }
     }
-  }, [aiMessages]);
+  }, [aiMessages, setMessages, submitUserMessage]);
 
   async function handleCampaignSelection(campaign: FbCampaign) {
-    setConnectingUI(
-      <div className="inline-flex items-start gap-1 md:items-center">
-        {spinner}
-        <p>Connecting to {campaign.name}...</p>
-      </div>
-    )
+    setConnectingUI(<ConnectingStatus campaignName={campaign.name} />)
+    
     try {
       const updateSuccess = await updateChatFbCampaignId(
         aiState.chatId,
@@ -181,10 +264,21 @@ export function ConnectCampaign({ connectingUiProps }: ConnectCampaignProps) {
         shouldSendSilentMessage.current = true;
         setCampaignId(campaign.id)
         setConnectingUI(
-          <ConnectCampaignResult
-            success={!!updateSuccess?.success}
-            campaignName={campaign.name}
-          />
+          <Card className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3">
+                <CheckCircle className="size-6 text-green-600 dark:text-green-500 shrink-0" />
+                <div>
+                  <div className="text-zinc-900 dark:text-zinc-200 font-medium">
+                    Successfully connected to campaign
+                  </div>
+                  <div className="text-zinc-600 dark:text-zinc-400 text-sm">
+                    {campaign.name}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         )
         setAIState({
           ...aiState,
@@ -198,9 +292,7 @@ export function ConnectCampaign({ connectingUiProps }: ConnectCampaignProps) {
                 ) {
                   content.result = {
                     ...(content.result as Object),
-                    connectingUiProps: (
-                      content.result as { connectingUiProps: object }
-                    ).connectingUiProps ?? {
+                    connectingUiProps: {
                       success: !!updateSuccess?.success,
                       campaignName: campaign.name
                     }
@@ -213,29 +305,37 @@ export function ConnectCampaign({ connectingUiProps }: ConnectCampaignProps) {
         })
       } else {
         setConnectingUI(
-          <SystemMessage>
-            Please check your connection and try again.
-          </SystemMessage>
+          <Card className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
+            <CardContent className="p-6">
+              <div className="text-red-600 dark:text-red-400">
+                Connection failed. Please check your connection and try again.
+              </div>
+            </CardContent>
+          </Card>
         )
       }
     } catch (error) {
       setConnectingUI(
-        <SystemMessage>
-          Please check your connection and try again.
-        </SystemMessage>
+        <Card className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
+          <CardContent className="p-6">
+            <div className="text-red-600 dark:text-red-400">
+              Connection failed. Please check your connection and try again.
+            </div>
+          </CardContent>
+        </Card>
       )
     }
   }
 
   return (
-    <>
-      {connectingUI ? (
-        connectingUI
-      ) : (
-        <div className="p-6  border rounded-x">
+    <Card className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
+      <CardContent className="p-6">
+        {connectingUI ? (
+          connectingUI
+        ) : (
           <ConnectCampaignForm handleSelectCampaign={handleCampaignSelection} />
-        </div>
-      )}
-    </>
+        )}
+      </CardContent>
+    </Card>
   )
 }
