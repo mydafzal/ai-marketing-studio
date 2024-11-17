@@ -568,6 +568,48 @@ export async function fetchChatFbCampaignId(chatSlug: string) {
     }
 }
 
+export async function fetchChatFbAdsetId(chatSlug: string) {
+    const session = await auth()
+
+    if (!session || !session.user) {
+        return {
+            error: 'User not authenticated'
+        }
+    }
+
+    try {
+        // Construct the chat key using the chatSlug
+        const chatKey = `chat:${chatSlug}`
+
+        // Fetch the chat data
+        const chatData = await kv.hgetall(chatKey)
+
+        if (!chatData) {
+            return {
+                error: 'Chat not found'
+            }
+        }
+
+        const fbAdsetId = chatData.fbAdsetId
+
+        if (!fbAdsetId) {
+            return {
+                error: 'Facebook Ad Set ID not found for this chat'
+            }
+        }
+
+        return {
+            success: true,
+            fbAdsetId
+        }
+    } catch (error) {
+        console.error(`Error fetching fbAdsetId for chat ${chatSlug}:`, error)
+        return {
+            error: 'Something went wrong'
+        }
+    }
+}
+
 export async function updateChatCampaignBudget(chatSlug: string, budget: number) {
     const session = await auth()
 
