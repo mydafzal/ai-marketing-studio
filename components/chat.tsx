@@ -1,7 +1,7 @@
 // chat.tsx
 'use client'
 
-import { useAIState, useActions, useUIState } from 'ai/rsc'  // Add useActions here
+import {useActions, useAIState, useUIState} from 'ai/rsc' // Add useActions here
 import React, {useCallback, useContext, useEffect, useState} from 'react'
 import {toast} from 'sonner'
 
@@ -23,7 +23,6 @@ import {Chat as ChatType, Message, Session} from '@/lib/types'
 import {cn} from '@/lib/utils'
 import CampaignOverview from "@/components/stocks/campaign-overview-basic-ui"
 import {getChatIdFromUrl} from "@/lib/api/fasty-bot/helpers/chat-id-from-url-helper"
-import {sendMessage} from "next/dist/client/components/react-dev-overlay/pages/websocket";
 import {nanoid} from "nanoid";
 import {UserMessage} from "@/components/stocks/message";
 import {ImagePart, TextPart} from "ai";
@@ -74,7 +73,7 @@ function ChatCore({id, chat, className, session, missingKeys}: ChatProps) {
     const [adsetData, setAdsetData] = useState<FbFetchedObject | null>(null)
     const [isLoadingAdset, setIsLoadingAdset] = useState(false)
     const [messages, setMessages] = useUIState<typeof AI>()
-    const { submitUserMessage } = useActions()  // Get submitUserMessage from useActions
+    const {submitUserMessage} = useActions()  // Get submitUserMessage from useActions
 
     // Add sendMessage function
     const sendMessage = React.useCallback(async (message: string, userContent?: (TextPart | ImagePart)[]) => {
@@ -235,6 +234,7 @@ function ChatCore({id, chat, className, session, missingKeys}: ChatProps) {
                          style={{position: 'fixed', zIndex: 40}}>
                         <CampaignOverview
                             campaignName={campaignSummary?.campaign_name}
+                            campaignId={campaignId ?? null}
                             adsetData={adsetData}
                             adsetId={adsetId}
                             isLoading={isLoadingAdset}

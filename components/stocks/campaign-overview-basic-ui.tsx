@@ -8,6 +8,7 @@ import {paletteActions} from '@/data/palette-actions-list';
 
 interface CampaignOverviewProps {
     campaignName?: string;
+    campaignId: string | null;
     adsetData: {
         name: string;
     } | null;
@@ -19,6 +20,7 @@ interface CampaignOverviewProps {
 
 const CampaignOverview: React.FC<CampaignOverviewProps> = ({
                                                                campaignName = "",
+                                                               campaignId,
                                                                adsetData,
                                                                adsetId,
                                                                isLoading,
@@ -59,6 +61,9 @@ const CampaignOverview: React.FC<CampaignOverviewProps> = ({
                     <>
                         <h3 className="text-sm font-normal">Your selected campaign is</h3>
                         <h1 className="text-xl font-semibold break-words">{campaignName}</h1>
+                        {campaignId && (
+                            <p className="text-xs text-zinc-500">ID: {campaignId}</p>
+                        )}
                     </>
                 )}
             </CardHeader>
