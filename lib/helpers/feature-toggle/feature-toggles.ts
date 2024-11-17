@@ -25,6 +25,10 @@ export const featureToggles: FeatureToggle[] = [
     {
         name: "userGuideFloatingButton",
         description: "Show the floating button 'Things to ask Reeply AI' on the chat panel"
+    },
+    {
+        name: "rightSideOverviewCard",
+        description: "Show the right hand side campaign overview card"
     }
     // Add more feature toggles as needed
 ];
