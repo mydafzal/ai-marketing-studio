@@ -11,14 +11,24 @@ interface CampaignOverviewProps {
 }
 
 const CampaignOverview: React.FC<CampaignOverviewProps> = ({
-                                                               campaignName = "Campaign Name",
-                                                               adsetName = "Adset Name"
+                                                               campaignName = "",
+                                                               adsetName = ""
                                                            }) => {
+    const isEmpty = !campaignName.trim();
     return (
         <Card className="w-full max-w-md p-6 bg-zinc-950 text-zinc-300 overflow-hidden">
             <CardHeader className="space-y-2">
-                <h3 className="text-sm font-normal">Your selected campaign is</h3>
-                <h1 className="text-xl font-semibold break-words">{campaignName}</h1>
+                {isEmpty ? (
+                    <>
+                        <h3 className="text-sm font-normal text-zinc-400">Status</h3>
+                        <h1 className="text-xl font-semibold text-zinc-300">Chat is not connected to a campaign.</h1>
+                    </>
+                ) : (
+                    <>
+                        <h3 className="text-sm font-normal">Your selected campaign is</h3>
+                        <h1 className="text-xl font-semibold break-words">{campaignName}</h1>
+                    </>
+                )}
             </CardHeader>
 
             <CardContent className="space-y-6">
