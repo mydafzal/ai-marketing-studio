@@ -1,15 +1,43 @@
 'use client'
 
-import React, { useEffect, useState } from 'react';
-import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { MessageSquare, Info, RefreshCw } from 'lucide-react';
-import { fetchChatFbAdsetId } from '@/app/actions';
+import React, {useEffect, useState} from 'react';
+import {Card, CardContent, CardFooter, CardHeader} from '@/components/ui/card';
+import {Button} from '@/components/ui/button';
+import {MessageSquare, RefreshCw} from 'lucide-react';
+import {fetchChatFbAdsetId, getFbFetchedObject} from '@/app/actions';
 import {getChatIdFromUrl} from "@/lib/api/fasty-bot/helpers/chat-id-from-url-helper";
+
+interface FbFetchedObject {
+    id: string;
+    name: string;
+    status: string;
+    daily_budget: string;
+    start_time: string;
+    campaign_id: string;
+    destination_type: string;
+    is_dynamic_creative: boolean;
+    targeting: {
+        age_max: number;
+        age_min: number;
+        flexible_spec: Array<{
+            interests: Array<{
+                id: string;
+                name: string;
+            }>;
+        }>;
+        geo_locations: {
+            countries: string[];
+            location_types: string[];
+        };
+        publisher_platforms: string[];
+        facebook_positions: string[];
+        instagram_positions: string[];
+        device_platforms: string[];
+    };
+}
 
 interface CampaignOverviewProps {
     campaignName?: string;
-    adsetName?: string;  // Added this prop to match usage
 }
 
 const CampaignOverview: React.FC<CampaignOverviewProps> = ({
@@ -17,9 +45,11 @@ const CampaignOverview: React.FC<CampaignOverviewProps> = ({
                                                            }) => {
     const isEmpty = !campaignName.trim();
     const [adsetId, setAdsetId] = useState<string | null>(null);
+    const [adsetData, setAdsetData] = useState<FbFetchedObject | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
-        const fetchAdsetId = async () => {
+        const initializeAdsetId = async () => {
             const chatId = getChatIdFromUrl();
             if (chatId) {
                 const result = await fetchChatFbAdsetId(chatId);
@@ -29,12 +59,36 @@ const CampaignOverview: React.FC<CampaignOverviewProps> = ({
             }
         };
 
-        fetchAdsetId();
+        initializeAdsetId();
     }, []);
 
-    const handleFetchName = () => {
-        // This will be implemented later to fetch the adset name
-        console.log('Fetch adset name for ID:', adsetId);
+    useEffect(() => {
+        if (adsetId) {
+            fetchAdsetData(adsetId);
+        }
+    }, [adsetId]);
+
+    const fetchAdsetData = async (id: string) => {
+        setIsLoading(true);
+        try {
+            const result = await getFbFetchedObject('adset', id);
+            if (result.success && result.data && 'content' in result.data) {
+                const content = result.data.content as Record<string, unknown>;
+                if (content && typeof content === 'object') {
+                    setAdsetData(content as unknown as FbFetchedObject);
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching adset data:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleRefresh = () => {
+        if (adsetId) {
+            fetchAdsetData(adsetId);
+        }
     };
 
     return (
@@ -56,11 +110,11 @@ const CampaignOverview: React.FC<CampaignOverviewProps> = ({
             <CardContent className="space-y-6">
                 <div className="flex gap-2 flex-wrap">
                     <Button variant="outline" className="flex items-center gap-2 text-sm">
-                        <MessageSquare className="w-4 h-4" />
+                        <MessageSquare className="w-4 h-4"/>
                         Switch
                     </Button>
                     <Button variant="outline" className="flex items-center gap-2 text-sm">
-                        <MessageSquare className="w-4 h-4" />
+                        <MessageSquare className="w-4 h-4"/>
                         Create New
                     </Button>
                 </div>
@@ -71,18 +125,24 @@ const CampaignOverview: React.FC<CampaignOverviewProps> = ({
                         <Button
                             variant="ghost"
                             size="sm"
-                            onClick={handleFetchName}
+                            onClick={handleRefresh}
                             className="h-8 w-8 p-0"
-                            title="Fetch ad set name"
+                            disabled={isLoading}
+                            title="Refresh ad set data"
                         >
-                            <RefreshCw className="h-4 w-4" />
+                            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`}/>
                         </Button>
                     </div>
-                    <h2 className="text-lg font-medium break-words">
-                        {adsetId ? `ID: ${adsetId}` : 'Not connected'}
-                    </h2>
+                    <div className="space-y-1">
+                        <h2 className="text-lg font-medium break-words">
+                            {adsetData ? adsetData.name : 'Not connected'}
+                        </h2>
+                        {adsetId && (
+                            <p className="text-xs text-zinc-500">ID: {adsetId}</p>
+                        )}
+                    </div>
                     <Button variant="outline" className="flex items-center gap-2 text-sm">
-                        <MessageSquare className="w-4 h-4" />
+                        <MessageSquare className="w-4 h-4"/>
                         Switch Ad Set
                     </Button>
                 </div>
@@ -92,10 +152,7 @@ const CampaignOverview: React.FC<CampaignOverviewProps> = ({
                 </Button>
             </CardContent>
 
-            <CardFooter className="flex items-center gap-2 text-sm">
-                {/*<Info className="w-4 h-4" />*/}
-                {/*<span>How to use Reeply?</span>*/}
-            </CardFooter>
+            <CardFooter className="flex items-center gap-2 text-sm"/>
         </Card>
     );
 };
