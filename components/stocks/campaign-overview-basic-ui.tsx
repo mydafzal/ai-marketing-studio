@@ -1,10 +1,10 @@
-// campaign-overview-basic-ui.tsx
 'use client'
 
 import React from 'react';
 import {Card, CardContent, CardFooter, CardHeader} from '@/components/ui/card';
 import {Button} from '@/components/ui/button';
 import {MessageSquare, RefreshCw} from 'lucide-react';
+import {paletteActions} from '@/data/palette-actions-list';
 
 interface CampaignOverviewProps {
     campaignName?: string;
@@ -14,6 +14,7 @@ interface CampaignOverviewProps {
     adsetId: string | null;
     isLoading: boolean;
     onRefresh: () => void;
+    onShowMe: (message: string) => void; // This will directly use the sendMessage function
 }
 
 const CampaignOverview: React.FC<CampaignOverviewProps> = ({
@@ -21,9 +22,30 @@ const CampaignOverview: React.FC<CampaignOverviewProps> = ({
                                                                adsetData,
                                                                adsetId,
                                                                isLoading,
-                                                               onRefresh
+                                                               onRefresh,
+                                                               onShowMe
                                                            }) => {
     const isEmpty = !campaignName.trim();
+
+    // Simplified handleActionClick that just finds the message and sends it
+    const handleActionClick = (actionType: string) => {
+        let action;
+        switch (actionType) {
+            case 'switch':
+                action = paletteActions.find(a => a.action === 'Connect to an existing campaign');
+                break;
+            case 'create':
+                action = paletteActions.find(a => a.action === 'Create a Facebook campaign');
+                break;
+            case 'switch_adset':
+                action = paletteActions.find(a => a.action === 'Switch Adset');
+                break;
+        }
+
+        if (action?.exampleMessage) {
+            onShowMe(action.exampleMessage);
+        }
+    };
 
     return (
         <Card className="w-full max-w-md p-6 bg-zinc-950 text-zinc-300 overflow-hidden">
@@ -43,11 +65,19 @@ const CampaignOverview: React.FC<CampaignOverviewProps> = ({
 
             <CardContent className="space-y-6">
                 <div className="flex gap-2 flex-wrap">
-                    <Button variant="outline" className="flex items-center gap-2 text-sm">
+                    <Button
+                        variant="outline"
+                        className="flex items-center gap-2 text-sm"
+                        onClick={() => handleActionClick('switch')}
+                    >
                         <MessageSquare className="w-4 h-4"/>
                         Switch
                     </Button>
-                    <Button variant="outline" className="flex items-center gap-2 text-sm">
+                    <Button
+                        variant="outline"
+                        className="flex items-center gap-2 text-sm"
+                        onClick={() => handleActionClick('create')}
+                    >
                         <MessageSquare className="w-4 h-4"/>
                         Create New
                     </Button>
@@ -75,15 +105,15 @@ const CampaignOverview: React.FC<CampaignOverviewProps> = ({
                             <p className="text-xs text-zinc-500">ID: {adsetId}</p>
                         )}
                     </div>
-                    <Button variant="outline" className="flex items-center gap-2 text-sm">
+                    <Button
+                        variant="outline"
+                        className="flex items-center gap-2 text-sm"
+                        onClick={() => handleActionClick('switch_adset')}
+                    >
                         <MessageSquare className="w-4 h-4"/>
                         Switch Ad Set
                     </Button>
                 </div>
-
-                {/*<Button variant="ghost" className="w-full justify-start text-sm">*/}
-                {/*    View Ad Creatives*/}
-                {/*</Button>*/}
             </CardContent>
 
             <CardFooter className="flex items-center gap-2 text-sm"/>

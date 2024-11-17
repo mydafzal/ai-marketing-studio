@@ -1,8 +1,8 @@
 // chat.tsx
 'use client'
 
-import {useAIState, useUIState} from 'ai/rsc'
-import {useCallback, useContext, useEffect, useState} from 'react'
+import { useAIState, useActions, useUIState } from 'ai/rsc'  // Add useActions here
+import React, {useCallback, useContext, useEffect, useState} from 'react'
 import {toast} from 'sonner'
 
 import {
@@ -23,6 +23,11 @@ import {Chat as ChatType, Message, Session} from '@/lib/types'
 import {cn} from '@/lib/utils'
 import CampaignOverview from "@/components/stocks/campaign-overview-basic-ui"
 import {getChatIdFromUrl} from "@/lib/api/fasty-bot/helpers/chat-id-from-url-helper"
+import {sendMessage} from "next/dist/client/components/react-dev-overlay/pages/websocket";
+import {nanoid} from "nanoid";
+import {UserMessage} from "@/components/stocks/message";
+import {ImagePart, TextPart} from "ai";
+import {AI} from "@/lib/chat/actions";
 
 interface FbFetchedObject {
     id: string;
@@ -62,13 +67,35 @@ export interface ChatProps extends React.ComponentProps<'div'> {
 }
 
 function ChatCore({id, chat, className, session, missingKeys}: ChatProps) {
-    const [messages] = useUIState()
     const [aiState, setAIState] = useAIState()
     const [_, setNewChatId] = useLocalStorage('newChatId', id)
     const {id: campaignId, setId: setCampaignId, summary: campaignSummary} = useContext(CampaignContext)
     const [adsetId, setAdsetId] = useState<string | null>(null)
     const [adsetData, setAdsetData] = useState<FbFetchedObject | null>(null)
     const [isLoadingAdset, setIsLoadingAdset] = useState(false)
+    const [messages, setMessages] = useUIState<typeof AI>()
+    const { submitUserMessage } = useActions()  // Get submitUserMessage from useActions
+
+    // Add sendMessage function
+    const sendMessage = React.useCallback(async (message: string, userContent?: (TextPart | ImagePart)[]) => {
+        // Optimistically add user message UI
+        setMessages(currentMessages => [
+            ...currentMessages,
+            {
+                id: nanoid(),
+                display: <UserMessage userContent={userContent}>{message}</UserMessage>
+            }
+        ])
+
+        // Submit and get response message
+        const responseMessage = await submitUserMessage(message, userContent);
+        setMessages(currentMessages => [...currentMessages, responseMessage])
+    }, [])
+
+    // Add handleShowMe that uses sendMessage
+    const handleShowMe = useCallback((message: string) => {
+        sendMessage(message);
+    }, [sendMessage]);
 
     useEffect(() => {
         if (!aiState.messages.length) {
@@ -212,6 +239,7 @@ function ChatCore({id, chat, className, session, missingKeys}: ChatProps) {
                             adsetId={adsetId}
                             isLoading={isLoadingAdset}
                             onRefresh={handleRefreshAdset}
+                            onShowMe={sendMessage}
                         />
                     </div>
                 </div>
