@@ -1,10 +1,17 @@
+// chat.tsx
 'use client'
 
 import {useAIState, useUIState} from 'ai/rsc'
-import {useCallback, useContext, useEffect} from 'react'
+import {useCallback, useContext, useEffect, useState} from 'react'
 import {toast} from 'sonner'
 
-import {fetchChatFbCampaignId, updateChatFbCampaignId, updateChatTitle} from '@/app/actions'
+import {
+    fetchChatFbAdsetId,
+    fetchChatFbCampaignId,
+    getFbFetchedObject,
+    updateChatFbCampaignId,
+    updateChatTitle
+} from '@/app/actions'
 import {CampaignContext, CampaignContextProvider} from '@/components/contexts/campaign-context'
 import {KvContextProvider} from '@/components/contexts/kv-context'
 import {ChatList} from '@/components/chat-list'
@@ -14,7 +21,37 @@ import {useLocalStorage} from '@/lib/hooks/use-local-storage'
 import {useScrollAnchor} from '@/lib/hooks/use-scroll-anchor'
 import {Chat as ChatType, Message, Session} from '@/lib/types'
 import {cn} from '@/lib/utils'
-import CampaignOverview from "@/components/stocks/campaign-overview-basic-ui";
+import CampaignOverview from "@/components/stocks/campaign-overview-basic-ui"
+import {getChatIdFromUrl} from "@/lib/api/fasty-bot/helpers/chat-id-from-url-helper"
+
+interface FbFetchedObject {
+    id: string;
+    name: string;
+    status: string;
+    daily_budget: string;
+    start_time: string;
+    campaign_id: string;
+    destination_type: string;
+    is_dynamic_creative: boolean;
+    targeting: {
+        age_max: number;
+        age_min: number;
+        flexible_spec: Array<{
+            interests: Array<{
+                id: string;
+                name: string;
+            }>;
+        }>;
+        geo_locations: {
+            countries: string[];
+            location_types: string[];
+        };
+        publisher_platforms: string[];
+        facebook_positions: string[];
+        instagram_positions: string[];
+        device_platforms: string[];
+    };
+}
 
 export interface ChatProps extends React.ComponentProps<'div'> {
     initialMessages?: Message[]
@@ -29,10 +66,9 @@ function ChatCore({id, chat, className, session, missingKeys}: ChatProps) {
     const [aiState, setAIState] = useAIState()
     const [_, setNewChatId] = useLocalStorage('newChatId', id)
     const {id: campaignId, setId: setCampaignId, summary: campaignSummary} = useContext(CampaignContext)
-
-
-    console.log('aiState.messages', aiState.messages)
-    console.log('chat', chat)
+    const [adsetId, setAdsetId] = useState<string | null>(null)
+    const [adsetData, setAdsetData] = useState<FbFetchedObject | null>(null)
+    const [isLoadingAdset, setIsLoadingAdset] = useState(false)
 
     useEffect(() => {
         if (!aiState.messages.length) {
@@ -54,13 +90,25 @@ function ChatCore({id, chat, className, session, missingKeys}: ChatProps) {
                 ]
             }))
         }
-    }, []);
+    }, [])
+
+    // Fetch campaign ID and update title
+    useEffect(() => {
+        if (!campaignId && id) {
+            const fetch = async () => {
+                const result = await fetchChatFbCampaignId(id)
+                if (result.success) {
+                    setCampaignId(result.fbCampaignId as string)
+                }
+            }
+            void fetch()
+        }
+    }, [campaignId, id])
 
     useEffect(() => {
         if (campaignSummary && campaignSummary.campaign_id !== '0') {
             const updateTitle = async () => {
                 await updateChatTitle(aiState.chatId, campaignSummary.campaign_name)
-                // dispatch is for only optimistic update
                 window.dispatchEvent(new CustomEvent("update-chat-title", {
                     detail: {
                         campaignId: campaignSummary.campaign_id,
@@ -75,17 +123,43 @@ function ChatCore({id, chat, className, session, missingKeys}: ChatProps) {
         }
     }, [campaignSummary, chat])
 
+    // Fetch adset data
     useEffect(() => {
-        if (!campaignId && id) {
-            const fetch = async () => {
-                const result = await fetchChatFbCampaignId(id)
-                if (result.success) {
-                    setCampaignId(result.fbCampaignId as string)
+        const initializeAdsetId = async () => {
+            const chatId = getChatIdFromUrl()
+            if (chatId) {
+                const result = await fetchChatFbAdsetId(chatId)
+                if (result.success && typeof result.fbAdsetId === 'string') {
+                    setAdsetId(result.fbAdsetId)
                 }
             }
-            void fetch()
         }
-    }, [campaignId, id])
+
+        initializeAdsetId()
+    }, [])
+
+    const fetchAdsetData = async (id: string) => {
+        setIsLoadingAdset(true)
+        try {
+            const result = await getFbFetchedObject('adset', id)
+            if (result.success && result.data && 'content' in result.data) {
+                const content = result.data.content as Record<string, unknown>
+                if (content && typeof content === 'object') {
+                    setAdsetData(content as unknown as FbFetchedObject)
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching adset data:', error)
+        } finally {
+            setIsLoadingAdset(false)
+        }
+    }
+
+    useEffect(() => {
+        if (adsetId) {
+            fetchAdsetData(adsetId)
+        }
+    }, [adsetId])
 
     useEffect(() => {
         setNewChatId(id)
@@ -104,6 +178,12 @@ function ChatCore({id, chat, className, session, missingKeys}: ChatProps) {
         setCampaignId(campaignId)
         await updateChatFbCampaignId(id, campaignId)
     }, [id])
+
+    const handleRefreshAdset = () => {
+        if (adsetId) {
+            fetchAdsetData(adsetId)
+        }
+    }
 
     return (
         <div
@@ -124,12 +204,14 @@ function ChatCore({id, chat, className, session, missingKeys}: ChatProps) {
                         <div className="w-full h-px" ref={visibilityRef}/>
                     </div>
 
-                    {/* Fixed right card */}
                     <div className="hidden lg:block fixed top-20 right-10 w-[350px]"
                          style={{position: 'fixed', zIndex: 40}}>
                         <CampaignOverview
                             campaignName={campaignSummary?.campaign_name}
-                            adsetName="to be fetched"
+                            adsetData={adsetData}
+                            adsetId={adsetId}
+                            isLoading={isLoadingAdset}
+                            onRefresh={handleRefreshAdset}
                         />
                     </div>
                 </div>

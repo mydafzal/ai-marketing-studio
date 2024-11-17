@@ -50,5 +50,10 @@ export const paletteActions: PaletteAction[] = [
     action: 'Get campaign results',
     explanation: 'Retrieve and review the performance metrics for your ad campaign.',
     exampleMessage: 'Show me the results of my campaign',
+  },
+  {
+    action: 'Switch Adset',
+    explanation: 'Connect your chat to a different ad set.',
+    exampleMessage: 'Show me adset connection UI.',
   }
 ]

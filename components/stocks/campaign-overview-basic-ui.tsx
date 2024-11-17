@@ -1,95 +1,29 @@
+// campaign-overview-basic-ui.tsx
 'use client'
 
-import React, {useEffect, useState} from 'react';
+import React from 'react';
 import {Card, CardContent, CardFooter, CardHeader} from '@/components/ui/card';
 import {Button} from '@/components/ui/button';
 import {MessageSquare, RefreshCw} from 'lucide-react';
-import {fetchChatFbAdsetId, getFbFetchedObject} from '@/app/actions';
-import {getChatIdFromUrl} from "@/lib/api/fasty-bot/helpers/chat-id-from-url-helper";
-
-interface FbFetchedObject {
-    id: string;
-    name: string;
-    status: string;
-    daily_budget: string;
-    start_time: string;
-    campaign_id: string;
-    destination_type: string;
-    is_dynamic_creative: boolean;
-    targeting: {
-        age_max: number;
-        age_min: number;
-        flexible_spec: Array<{
-            interests: Array<{
-                id: string;
-                name: string;
-            }>;
-        }>;
-        geo_locations: {
-            countries: string[];
-            location_types: string[];
-        };
-        publisher_platforms: string[];
-        facebook_positions: string[];
-        instagram_positions: string[];
-        device_platforms: string[];
-    };
-}
 
 interface CampaignOverviewProps {
     campaignName?: string;
+    adsetData: {
+        name: string;
+    } | null;
+    adsetId: string | null;
+    isLoading: boolean;
+    onRefresh: () => void;
 }
 
 const CampaignOverview: React.FC<CampaignOverviewProps> = ({
-                                                               campaignName = ""
+                                                               campaignName = "",
+                                                               adsetData,
+                                                               adsetId,
+                                                               isLoading,
+                                                               onRefresh
                                                            }) => {
     const isEmpty = !campaignName.trim();
-    const [adsetId, setAdsetId] = useState<string | null>(null);
-    const [adsetData, setAdsetData] = useState<FbFetchedObject | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
-
-    useEffect(() => {
-        const initializeAdsetId = async () => {
-            const chatId = getChatIdFromUrl();
-            if (chatId) {
-                const result = await fetchChatFbAdsetId(chatId);
-                if (result.success && typeof result.fbAdsetId === 'string') {
-                    setAdsetId(result.fbAdsetId);
-                }
-            }
-        };
-
-        initializeAdsetId();
-    }, []);
-
-    useEffect(() => {
-        if (adsetId) {
-            fetchAdsetData(adsetId);
-        }
-    }, [adsetId]);
-
-    const fetchAdsetData = async (id: string) => {
-        setIsLoading(true);
-        try {
-            const result = await getFbFetchedObject('adset', id);
-            if (result.success && result.data && 'content' in result.data) {
-                const content = result.data.content as Record<string, unknown>;
-                if (content && typeof content === 'object') {
-                    setAdsetData(content as unknown as FbFetchedObject);
-                }
-            }
-        } catch (error) {
-            console.error('Error fetching adset data:', error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const handleRefresh = () => {
-        if (adsetId) {
-            fetchAdsetData(adsetId);
-        }
-    };
 
     return (
         <Card className="w-full max-w-md p-6 bg-zinc-950 text-zinc-300 overflow-hidden">
@@ -125,7 +59,7 @@ const CampaignOverview: React.FC<CampaignOverviewProps> = ({
                         <Button
                             variant="ghost"
                             size="sm"
-                            onClick={handleRefresh}
+                            onClick={onRefresh}
                             className="h-8 w-8 p-0"
                             disabled={isLoading}
                             title="Refresh ad set data"
@@ -147,9 +81,9 @@ const CampaignOverview: React.FC<CampaignOverviewProps> = ({
                     </Button>
                 </div>
 
-                <Button variant="ghost" className="w-full justify-start text-sm">
-                    View Ad Creatives
-                </Button>
+                {/*<Button variant="ghost" className="w-full justify-start text-sm">*/}
+                {/*    View Ad Creatives*/}
+                {/*</Button>*/}
             </CardContent>
 
             <CardFooter className="flex items-center gap-2 text-sm"/>
