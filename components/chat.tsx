@@ -27,6 +27,8 @@ import {nanoid} from "nanoid";
 import {UserMessage} from "@/components/stocks/message";
 import {ImagePart, TextPart} from "ai";
 import {AI} from "@/lib/chat/actions";
+import {isFeatureToggleEnabled} from "@/lib/helpers/feature-toggle/feature-toggle-manager";
+
 
 interface FbFetchedObject {
     id: string;
@@ -230,7 +232,7 @@ function ChatCore({id, chat, className, session, missingKeys}: ChatProps) {
                         <div className="w-full h-px" ref={visibilityRef}/>
                     </div>
 
-                    <div className="hidden lg:block fixed top-20 right-10 w-[350px]"
+                    {isFeatureToggleEnabled('rightSideOverviewCard') && <div className="hidden lg:block fixed top-20 right-10 w-[350px]"
                          style={{position: 'fixed', zIndex: 40}}>
                         <CampaignOverview
                             campaignName={campaignSummary?.campaign_name}
@@ -241,7 +243,7 @@ function ChatCore({id, chat, className, session, missingKeys}: ChatProps) {
                             onRefresh={handleRefreshAdset}
                             onShowMe={sendMessage}
                         />
-                    </div>
+                    </div>}
                 </div>
             </div>
 
