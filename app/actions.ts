@@ -1423,3 +1423,35 @@ export async function createUserWithoutPassword(
         }
     }
   }
+
+interface FbFetchedObject {
+    type: string
+    id: string
+    content: any
+    timestamp: number
+}
+
+export async function storeFbFetchedObject(type: string, id: string, content: any) {
+    try {
+        const objectKey = `fbFetchedObject:${type}:${id}`
+
+        // Create the object with current timestamp
+        const fetchedObject: FbFetchedObject = {
+            type,
+            id,
+            content,
+            timestamp: Date.now()
+        }
+
+        await kv.hset(objectKey, fetchedObject as unknown as Record<string, unknown>)
+
+        return {
+            success: true
+        }
+    } catch (error) {
+        console.error(`Error storing fetched ${type} ${id}:`, error)
+        return {
+            error: 'Failed to store fetched object'
+        }
+    }
+}
