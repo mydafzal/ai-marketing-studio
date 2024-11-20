@@ -447,7 +447,7 @@ export function GeographicalLocation({
       </div>
       {
         selectedGeoLocations.map((geoLocation, index) => (
-          <div className='border rounded p-4 mb-3'>
+          <div className='border rounded p-4 mb-3' key={index}>
            <div className="mb-4">
               <Label className="dark:text-zinc-200">Country</Label>
               <Select
