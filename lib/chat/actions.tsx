@@ -11,7 +11,6 @@ import {PurchasingUi} from '@/components/stocks/purchasing-ui'
 import {StockSkeleton} from '@/components/stocks/stock-skeleton'
 import {AdTextSuggestion} from '@/components/stocks/ad-text-suggestion'
 import {VideoAdTextSuggestion} from '@/components/stocks/video-ad-text-suggestion'
-import {CampaignOverview} from '@/components/stocks/campaign-overview-basic-ui'
 import {CampaignStatus} from '@/components/stocks/campaign-status'
 import {
     fetchChatCampaignBudget,
