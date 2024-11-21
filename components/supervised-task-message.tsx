@@ -28,7 +28,7 @@ export default function SupervisedTaskMessage({result}:SupervisedTaskMessageProp
             </div>
             <div className="flex-grow">
                 <h4 className="text-lg font-semibold text-yellow-900">Task in Progress</h4>
-                <p className="mt-1 text-sm text-yellow-900">I will be taking care of this task. It may take up to 24 hours. You will be informed via email once it is finished.</p>
+                <p className="mt-1 text-sm text-yellow-900">Thank you! I’ve gathered all the information I need and will begin processing now. To ensure everything is perfect, our dedicated Reeply AI Team will also review it thoroughly. This may take up to 24 hours. Once completed, you’ll be notified via email and here in this chat. Stay tuned!</p>
                 <small className="block mt-2 text-xs text-yellow-900 opacity-80">Thank you for your patience!</small>
             </div>
         </div>
