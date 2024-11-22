@@ -13,7 +13,6 @@ export interface CampaignSummary {
     impressions: number;
     reach: number;
     unique_clicks: number;
-    daily_budget: number | null;
 }
 
 export async function getCampaignSummary(campaignId?: string): Promise<CampaignSummary> {
@@ -57,7 +56,6 @@ export async function getCampaignSummary(campaignId?: string): Promise<CampaignS
         impressions: 0,
         reach: 0,
         unique_clicks: 0,
-        daily_budget: null
     };
 
     // If the campaign ID is '0', return immediately with default values
@@ -97,6 +95,5 @@ function getMockData(campaignId: string): CampaignSummary {
         reach: 1500,
         frequency: 1.5,
         unique_clicks: 800,
-        daily_budget: 1000
     };
 }
