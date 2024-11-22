@@ -2,9 +2,8 @@ import 'server-only'
 
 import {createAI, createStreamableUI, createStreamableValue, getAIState, getMutableAIState, streamUI} from 'ai/rsc'
 import {openai} from '@ai-sdk/openai'
-import {BotCard, BotMessage, Purchase, spinner, Stock, SystemMessage, SystemErrorMessage} from '@/components/stocks'
+import {BotCard, BotMessage, Purchase, spinner, Stock, SystemErrorMessage, SystemMessage} from '@/components/stocks'
 import {AdTextSelectionSkeleton} from '@/components/stocks/ad-text-selection-skeleton'
-import {z} from 'zod'
 import {EventsSkeleton} from '@/components/stocks/events-skeleton'
 import {Events} from '@/components/stocks/events'
 import {PurchasingUi} from '@/components/stocks/purchasing-ui'
@@ -17,8 +16,8 @@ import {
     fetchFbCampaignExtraDetailsForChat,
     fetchUserDefaultExtraDetails,
     saveChat,
-    updateChatCampaignBudget,
     updateChat,
+    updateChatCampaignBudget,
     updateChatTitle
 } from '@/app/actions'
 import {differenceInHours} from 'date-fns';
@@ -27,7 +26,7 @@ import {ImagePart, TextPart} from 'ai'
 
 import {formatNumber, nanoid, runAsyncFnWithoutBlocking, sleep} from '@/lib/utils'
 import {SpinnerMessage, UserMessage} from '@/components/stocks/message'
-import {Adset, AdText, LeadgenFrom, Chat, Message, Session} from '@/lib/types';
+import {Adset, Chat, LeadgenFrom, Message, Session} from '@/lib/types';
 import {auth} from '@/auth'
 import {setDailyCampaignBudget} from '@/lib/api/fasty-bot/set-daily-campaign-budget';
 import {setCampaignStatus} from '@/lib/api/fasty-bot/set-campaign-status';
@@ -46,7 +45,7 @@ import {PlacementTargeting} from '@/components/placement-targeting';
 import {ConnectAdset} from '@/components/connect-adset'
 
 import FormBuilder from '@/components/form-builder';
-import {sendSupervisedTaskMail}  from '@/lib/api/fasty-bot/send-supervised-task-mail';
+import {sendSupervisedTaskMail} from '@/lib/api/fasty-bot/send-supervised-task-mail';
 import SupervisedTaskMessage from '@/components/supervised-task-message'
 import {getBaseUrl} from "@/lib/helpers/vercel/get-base-url"
 import getAICampaignAnalysisModule from "@/lib/ui-magic/modules/getAICampaignAnalysisModule";
@@ -70,6 +69,13 @@ interface ToolResult {
     toolName: string;
     toolCallId: string;
     result: any; // You might want to make this more specific based on your data
+}
+
+interface ExtractedMessage {
+    id?: string;
+    role: 'user' | 'system' | 'assistant';
+    content: string | { [key: string]: any };  // content can be string or object
+    timestamp?: string;
 }
 
 async function checkNewChat(chatId: string, messages: Message[], session: Session | null) {
@@ -352,7 +358,7 @@ async function updateCampaignInfo(campaignSummary: CampaignSummary) {
                 id: 'campaign-info-data',
                 role: 'system',
                 content: `Campaign is connected, the knowledge base about current campaign information: ${JSON.stringify(campaignSummary)}`,
-                timestamp: new Date().toISOString() 
+                timestamp: new Date().toISOString()
             },
             ...aiState.get().messages.filter((message: Message) => message.id !== 'campaign-info-data' || message.role !== 'system'),
         ]
@@ -370,75 +376,75 @@ async function syncMessages() {
 }
 
 async function confirmUpdateAdset(toolCallId: string, adsetId: string, adset: any) {
-  'use server'
-  const aiState = getMutableAIState<typeof AI>();
-  const chatId = getChatIdFromUrl()?.toString() || ''
+    'use server'
+    const aiState = getMutableAIState<typeof AI>();
+    const chatId = getChatIdFromUrl()?.toString() || ''
 
-  const budget = await fetchChatCampaignBudget(chatId)
-  let adsetUpdate = { ...adset }
-  if (budget.error) {
-    adsetUpdate = { ...adsetUpdate, daily_budget: 100 }
-  }
-
-  const systemMessage = createStreamableUI(null);
-  const responseStream = createStreamableValue<Adset | boolean>(false);
-
-  runAsyncFnWithoutBlocking(async () => {
-    await sleep(1000);
-
-    const response = await updateAdset(adsetId, adsetUpdate);
-    if (response.success) {
-      const messages = aiState.get().messages;
-      const lastMessage = messages.slice(-1)[0];
-      if (lastMessage && lastMessage.id === toolCallId && lastMessage.role === 'tool') {
-        const content = lastMessage.content[0];
-        if (
-          content.type === 'tool-result' &&
-          content.toolName === 'showPlacementTargetingUI'
-        ) {
-          content.result = {
-            ...(content.result as Object),
-            targetingUiProps: (
-            content.result as {
-              targetingUiProps: object
-            }
-            ).targetingUiProps ?? {
-              success: true,
-              targeting: response?.data.targeting
-            }
-          }
-        }
-      }
-      responseStream.done(response.data);
-      aiState.done({
-        ...aiState.get(),
-        messages: [
-          ...messages.slice(0, -1),
-          lastMessage!
-        ]
-      })
-      systemMessage.done(
-        <SystemMessage>
-          You have successfully updated placement targeting
-        </SystemMessage>
-      );
-    } else {
-      responseStream.done(false);
-      systemMessage.done(
-        <SystemErrorMessage>
-          Error: {response.data?.detail?.error?.error_user_msg || "Failed to updated placement targeting. Please try again later."}
-        </SystemErrorMessage>
-      );
+    const budget = await fetchChatCampaignBudget(chatId)
+    let adsetUpdate = {...adset}
+    if (budget.error) {
+        adsetUpdate = {...adsetUpdate, daily_budget: 100}
     }
-  })
 
-  return {
-    newMessage: {
-      id: nanoid(),
-      display: systemMessage.value
-    },
-    response: responseStream.value
-  }
+    const systemMessage = createStreamableUI(null);
+    const responseStream = createStreamableValue<Adset | boolean>(false);
+
+    runAsyncFnWithoutBlocking(async () => {
+        await sleep(1000);
+
+        const response = await updateAdset(adsetId, adsetUpdate);
+        if (response.success) {
+            const messages = aiState.get().messages;
+            const lastMessage = messages.slice(-1)[0];
+            if (lastMessage && lastMessage.id === toolCallId && lastMessage.role === 'tool') {
+                const content = lastMessage.content[0];
+                if (
+                    content.type === 'tool-result' &&
+                    content.toolName === 'showPlacementTargetingUI'
+                ) {
+                    content.result = {
+                        ...(content.result as Object),
+                        targetingUiProps: (
+                            content.result as {
+                                targetingUiProps: object
+                            }
+                        ).targetingUiProps ?? {
+                            success: true,
+                            targeting: response?.data.targeting
+                        }
+                    }
+                }
+            }
+            responseStream.done(response.data);
+            aiState.done({
+                ...aiState.get(),
+                messages: [
+                    ...messages.slice(0, -1),
+                    lastMessage!
+                ]
+            })
+            systemMessage.done(
+                <SystemMessage>
+                    You have successfully updated placement targeting
+                </SystemMessage>
+            );
+        } else {
+            responseStream.done(false);
+            systemMessage.done(
+                <SystemErrorMessage>
+                    Error: {response.data?.detail?.error?.error_user_msg || "Failed to updated placement targeting. Please try again later."}
+                </SystemErrorMessage>
+            );
+        }
+    })
+
+    return {
+        newMessage: {
+            id: nanoid(),
+            display: systemMessage.value
+        },
+        response: responseStream.value
+    }
 }
 
 async function confirmCreateLeadgenForm(toolCallId: string, data: any) {
@@ -446,62 +452,62 @@ async function confirmCreateLeadgenForm(toolCallId: string, data: any) {
     const aiState = getMutableAIState<typeof AI>();
     const systemMessage = createStreamableUI(null);
     const responseStream = createStreamableValue<LeadgenFrom | boolean>(false);
-  
+
     runAsyncFnWithoutBlocking(async () => {
-      await sleep(1000);
-  
-      const response = await createLeadgenForm(data);
-      if (response) {
-        const messages = aiState.get().messages;
-        const lastMessage = messages.slice(-1)[0];
-        if (lastMessage && lastMessage.id === toolCallId && lastMessage.role === 'tool') {
-          const content = lastMessage.content[0];
-          if (
-            content.type === 'tool-result' &&
-            content.toolName === 'showFormBuilder'
-          ) {
-            content.result = {
-              ...(content.result as Object),
-              formBuilderUiProps: (
-              content.result as {
-                formBuilderUiProps: object
-              }
-              ).formBuilderUiProps ?? {
-                success: true,
-                formBuilder: {...data, ...response}
-              }
+        await sleep(1000);
+
+        const response = await createLeadgenForm(data);
+        if (response) {
+            const messages = aiState.get().messages;
+            const lastMessage = messages.slice(-1)[0];
+            if (lastMessage && lastMessage.id === toolCallId && lastMessage.role === 'tool') {
+                const content = lastMessage.content[0];
+                if (
+                    content.type === 'tool-result' &&
+                    content.toolName === 'showFormBuilder'
+                ) {
+                    content.result = {
+                        ...(content.result as Object),
+                        formBuilderUiProps: (
+                            content.result as {
+                                formBuilderUiProps: object
+                            }
+                        ).formBuilderUiProps ?? {
+                            success: true,
+                            formBuilder: {...data, ...response}
+                        }
+                    }
+                }
             }
-          }
+            responseStream.done(response);
+            aiState.done({
+                ...aiState.get(),
+                messages: [
+                    ...messages.slice(0, -1),
+                    lastMessage!
+                ]
+            })
+            systemMessage.done(
+                <SystemMessage>
+                    You have successfully create leadgen form
+                </SystemMessage>
+            );
+        } else {
+            responseStream.done(false);
+            systemMessage.done(
+                <SystemErrorMessage>
+                    Error: {response?.detail?.error?.error_user_msg || "Failed to create leadgen form. Please try again later."}
+                </SystemErrorMessage>
+            );
         }
-        responseStream.done(response);
-        aiState.done({
-          ...aiState.get(),
-          messages: [
-            ...messages.slice(0, -1),
-            lastMessage!
-          ]
-        })
-        systemMessage.done(
-          <SystemMessage>
-            You have successfully create leadgen form
-          </SystemMessage>
-        );
-      } else {
-        responseStream.done(false);
-        systemMessage.done(
-          <SystemErrorMessage>
-            Error: {response?.detail?.error?.error_user_msg || "Failed to create leadgen form. Please try again later."}
-          </SystemErrorMessage>
-        );
-      }
     })
-  
+
     return {
-      newMessage: {
-        id: nanoid(),
-        display: systemMessage.value
-      },
-      response: responseStream.value
+        newMessage: {
+            id: nanoid(),
+            display: systemMessage.value
+        },
+        response: responseStream.value
     }
 }
 
@@ -854,7 +860,7 @@ Maintain a professional but friendly tone throughout.
             showAdBudgetUI: {
                 description: adBudgetModule.description,
                 parameters: adBudgetModule.parameters,
-                generate: async function* ({ symbol, price, numberOfShares, guideForUser }) {
+                generate: async function* ({symbol, price, numberOfShares, guideForUser}) {
                     const toolCallId = nanoid();
                     const initialBudget = numberOfShares || price;
 
@@ -871,7 +877,7 @@ Maintain a professional but friendly tone throughout.
                                             type: 'tool-call',
                                             toolName: 'showAdBudgetUI',
                                             toolCallId,
-                                            args: { symbol, price, numberOfShares: initialBudget, guideForUser }
+                                            args: {symbol, price, numberOfShares: initialBudget, guideForUser}
                                         }
                                     ],
                                     timestamp: new Date().toISOString()
@@ -904,7 +910,7 @@ Maintain a professional but friendly tone throughout.
                             ]
                         });
 
-                        return await adBudgetModule.component({ symbol, price, numberOfShares, guideForUser });
+                        return await adBudgetModule.component({symbol, price, numberOfShares, guideForUser});
                     }
 
                     aiState.done({
@@ -919,7 +925,7 @@ Maintain a professional but friendly tone throughout.
                                         type: 'tool-call',
                                         toolName: 'showAdBudgetUI',
                                         toolCallId,
-                                        args: { symbol, price, numberOfShares: initialBudget, guideForUser }
+                                        args: {symbol, price, numberOfShares: initialBudget, guideForUser}
                                     }
                                 ],
                                 timestamp: new Date().toISOString()
@@ -945,10 +951,10 @@ Maintain a professional but friendly tone throughout.
                         ]
                     });
 
-                    return await adBudgetModule.component({ symbol, price, numberOfShares, guideForUser });
+                    return await adBudgetModule.component({symbol, price, numberOfShares, guideForUser});
                 }
             },
-            
+
             showFormBuilder: {
                 description: formBuilderModule.description,
                 parameters: formBuilderModule.parameters,
@@ -986,7 +992,7 @@ Maintain a professional but friendly tone throughout.
                             },
                         ]
                     });
-                    return await formBuilderModule.component({ toolCallId });
+                    return await formBuilderModule.component({toolCallId});
                 }
             },
             getEvents: {
@@ -1035,7 +1041,7 @@ Maintain a professional but friendly tone throughout.
                             }
                         ]
                     });
-                    return await getEventsModule.component({ events });
+                    return await getEventsModule.component({events});
                 }
             },
             showSuggestionAdText: {
@@ -1084,7 +1090,7 @@ Maintain a professional but friendly tone throughout.
                             }
                         ]
                     });
-                    return await showSuggestionAdTextModule.component({images, guideForUser}) 
+                    return await showSuggestionAdTextModule.component({images, guideForUser})
                 }
             },
             showSuggestionVideoAdText: {
@@ -1231,7 +1237,11 @@ Maintain a professional but friendly tone throughout.
                             }
                         ]
                     })
-                    return await showCampaignNameUpdateUIModule.component({campaignId, campaignName, questionForBudget});
+                    return await showCampaignNameUpdateUIModule.component({
+                        campaignId,
+                        campaignName,
+                        questionForBudget
+                    });
                 }
             },
             createCampaign: {
@@ -1239,11 +1249,11 @@ Maintain a professional but friendly tone throughout.
                 parameters: createCampaignModule.parameters,
                 generate: async function* ({campaignName, questionForBudget}) {
                     const response = await createBase({
-                      campaign_name: campaignName,
+                        campaign_name: campaignName,
                     })
                     let success = !!response.ok
                     if (success) {
-                        const { campaign } = await response.json()
+                        const {campaign} = await response.json()
                         const id = campaign.id;
                         const result = await updateChat(aiState.get().chatId, {
                             title: campaignName,
@@ -1387,13 +1397,26 @@ Maintain a professional but friendly tone throughout.
                     console.log('tool call showSupervisedTaskUI')
                     const timestamp: string = new Date().toISOString();
                     const toolCallId = nanoid();
-                    const allMessages = aiState.get().messages;
+                    const allMessages = aiState.get().messages as ExtractedMessage[];
+                    const lastTwelveMessages = allMessages.slice(-12);
+                    const extractedMessages = lastTwelveMessages.map((msg: ExtractedMessage) => {
+                        const prefix = {
+                            'user': 'User: ',
+                            'system': 'System: ',
+                            'assistant': 'Assistant: '
+                        }[msg.role] || '';
 
-                    // Filter user messages only (assuming 'role' field exists)
-                    const userMessages = allMessages.filter(msg => msg.role === 'user');
+                        // Handle content that might be an object
+                        const messageContent = typeof msg.content === 'object'
+                            ? JSON.stringify(msg.content)
+                            : msg.content;
 
-                    // Get the last 6 user messages (if available)
-                    const lastSixUserMessages = userMessages.slice(-6);
+                        return {
+                            ...msg,
+                            content: `${prefix}${messageContent}`
+                        };
+                    });
+
 
                     yield(
                         <BotCard>
@@ -1401,12 +1424,12 @@ Maintain a professional but friendly tone throughout.
                             <p className='mb-2'>Please wait we are processing your query.</p>
                         </BotCard>
                     )
-                    const messages = lastSixUserMessages.map(msg => (msg.content)) as string[];
+                    const messages = extractedMessages.map(msg => (msg.content)) as string[];
                     await sendSupervisedTaskMail(
                         task_name,
                         messages,
                         session?.user.email,
-                        getBaseUrl()+"/supervised/chat/"+chatId+"/task/"+toolCallId+"?user_email="+session?.user.email  // TODO: Need to find better way to change this URL at one place if we change route of this task.
+                        getBaseUrl() + "/supervised/chat/" + chatId + "/task/" + toolCallId + "?user_email=" + session?.user.email  // TODO: Need to find better way to change this URL at one place if we change route of this task.
                     )
 
                     aiState.done({
@@ -1435,9 +1458,9 @@ Maintain a professional but friendly tone throughout.
                                         toolName: 'showSupervisedTaskUI',
                                         toolCallId,
                                         result: {
-                                            task_name:task_name,
-                                            content:"",
-                                            status:"pending"
+                                            task_name: task_name,
+                                            content: "",
+                                            status: "pending"
                                         }
                                     }
                                 ],
@@ -1452,17 +1475,17 @@ Maintain a professional but friendly tone throughout.
             getAICampaignAnalysis: {
                 description: getAICampaignAnalysisModule.description,
                 parameters: getAICampaignAnalysisModule.parameters,
-                generate: async function* ({ campaignId, guideForUser }: { campaignId: string; guideForUser?: string }) {
+                generate: async function* ({campaignId, guideForUser}: { campaignId: string; guideForUser?: string }) {
                     yield (
                         <BotCard>
-                            <StockSkeleton />
+                            <StockSkeleton/>
                         </BotCard>
                     )
-    
+
                     await sleep(1000)
-    
+
                     const toolCallId = nanoid()
-    
+
                     aiState.done({
                         ...aiState.get(),
                         messages: [
@@ -1475,7 +1498,7 @@ Maintain a professional but friendly tone throughout.
                                         type: 'tool-call',
                                         toolName: 'getAICampaignAnalysis',
                                         toolCallId,
-                                        args: { campaignId, guideForUser }
+                                        args: {campaignId, guideForUser}
                                     }
                                 ],
                                 timestamp: new Date().toISOString()
@@ -1488,14 +1511,14 @@ Maintain a professional but friendly tone throughout.
                                         type: 'tool-result',
                                         toolName: 'getAICampaignAnalysis',
                                         toolCallId,
-                                        result: { campaignId, guideForUser }
+                                        result: {campaignId, guideForUser}
                                     }
                                 ],
                                 timestamp: new Date().toISOString()
                             }
                         ]
                     });
-    
+
                     return await getAICampaignAnalysisModule.component({
                         campaignId,
                         guideForUser
@@ -1536,7 +1559,7 @@ Maintain a professional but friendly tone throughout.
                                         type: 'tool-result',
                                         toolName: 'showAdsetConnectionUI',
                                         toolCallId,
-                                        result: { toolCallId }
+                                        result: {toolCallId}
                                     }
                                 ],
                                 timestamp
@@ -1549,8 +1572,8 @@ Maintain a professional but friendly tone throughout.
                 }
             }
         },
-        
-        
+
+
     });
     return {
         id: nanoid(),
@@ -1690,14 +1713,14 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                 );
                             case 'showVideoAdTextSuggestion':
                                 return (
-                                  <>
-                                    <BotCard key={tool.toolCallId}>
-                                      <VideoAdTextSuggestion {...tool.result} />
-                                    </BotCard>
-                                    <div className="my-4">
-                                      {tool.result.guideForUser ?? ''}
-                                    </div>
-                                  </>
+                                    <>
+                                        <BotCard key={tool.toolCallId}>
+                                            <VideoAdTextSuggestion {...tool.result} />
+                                        </BotCard>
+                                        <div className="my-4">
+                                            {tool.result.guideForUser ?? ''}
+                                        </div>
+                                    </>
                                 )
                             case 'getCampaignImages':
                                 return (
@@ -1722,7 +1745,8 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                     </BotCard>
                                 ) : (
                                     <BotCard>
-                                        <p className="mb-2 last:mb-0">Campaign creation failed, please try again later.</p>
+                                        <p className="mb-2 last:mb-0">Campaign creation failed, please try again
+                                            later.</p>
                                     </BotCard>
                                 )
                             case 'showUpdateStatusCampaign':
@@ -1747,19 +1771,19 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                             case 'showAdsetConnectionUI':
                                 return (
                                     <BotCard key={tool.toolCallId}>
-                                        <ConnectAdset {...tool.result} toolCallId={tool.toolCallId} />
+                                        <ConnectAdset {...tool.result} toolCallId={tool.toolCallId}/>
                                     </BotCard>
                                 )
                             case 'showPlacementTargetingUI':
                                 return (
                                     <BotCard key={tool.toolCallId}>
-                                        <PlacementTargeting {...tool.result} toolCallId={tool.toolCallId} />
+                                        <PlacementTargeting {...tool.result} toolCallId={tool.toolCallId}/>
                                     </BotCard>
                                 )
                             case 'showFormBuilder':
                                 return (
                                     <BotCard key={tool.toolCallId}>
-                                        <FormBuilder {...tool.result} toolCallId={tool.toolCallId} isReadOnly />
+                                        <FormBuilder {...tool.result} toolCallId={tool.toolCallId} isReadOnly/>
                                     </BotCard>
                                 )
                             case 'showSupervisedTaskUI':
