@@ -17,7 +17,7 @@ interface CampaignOverviewProps {
     isLoading: boolean;
     onRefresh: () => void;
     onShowMe: (message: string) => void;
-    campaignBudget?: number | null;
+    campaignBudget?: string | null;
 }
 
 const CampaignOverview: React.FC<CampaignOverviewProps> = ({
@@ -90,8 +90,8 @@ const CampaignOverview: React.FC<CampaignOverviewProps> = ({
                                     <p className="text-sm text-zinc-500">ID: {campaignId}</p>
                                 )}
                                 <h4 className="text-xl font-normal">
-                                    Campaign Budget:{' '}
-                                    {campaignBudget ? '€' + campaignBudget / 100 + '/day' : 'Not Set'}
+                                    Campaign Budget:
+                                    {campaignBudget}
                                 </h4>
                             </>
                         )}

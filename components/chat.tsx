@@ -249,7 +249,7 @@ function ChatCore({id, chat, className, session, missingKeys}: ChatProps) {
                                 <CampaignOverview
                                     campaignName={campaignSummary?.campaign_name}
                                     campaignId={campaignId ?? null}
-                                    campaignBudget={campaignSummary?.daily_budget}
+                                    campaignBudget='to be implemented'
                                     adsetData={adsetData}
                                     adsetId={adsetId}
                                     isLoading={isLoadingAdset}
