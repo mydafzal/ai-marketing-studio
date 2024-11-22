@@ -73,7 +73,7 @@ interface ToolResult {
 
 interface ExtractedMessage {
     id?: string;
-    role: 'user' | 'system' | 'assistant';
+    role: 'user' | 'system' | 'assistant' | 'tool';
     content: string | { [key: string]: any };  // content can be string or object
     timestamp?: string;
 }
@@ -1403,7 +1403,8 @@ Maintain a professional but friendly tone throughout.
                         const prefix = {
                             'user': 'User: ',
                             'system': 'System: ',
-                            'assistant': 'Assistant: '
+                            'assistant': 'Assistant: ',
+                            'tool': 'Tool/UI Result: '
                         }[msg.role] || '';
 
                         // Handle content that might be an object
