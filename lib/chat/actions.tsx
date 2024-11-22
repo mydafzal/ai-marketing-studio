@@ -293,7 +293,7 @@ async function confirmCreateAd(campaign: any, data: any, adset: any) {
     }
     if (!campaign.daily_budget) {
         const chatId = getChatIdFromUrl()?.toString() || '';
-        const budget = await fetchChatCampaignBudget(chatId)
+        const budget = await fetchChatCampaignBudget(chatId) //TODO: remove hardcoded fallback budget setting as it will fail
         if (budget.error) {
             adsetUpdate = {...adsetUpdate, daily_budget: 100}
         }
