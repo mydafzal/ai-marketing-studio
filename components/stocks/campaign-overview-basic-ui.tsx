@@ -7,15 +7,16 @@ import {MessageSquare, RefreshCw} from 'lucide-react';
 import {paletteActions} from '@/data/palette-actions-list';
 
 interface CampaignOverviewProps {
-    campaignName?: string;
-    campaignId: string | null;
+    campaignName?: string,
+    campaignId: string | null,
     adsetData: {
         name: string;
-    } | null;
-    adsetId: string | null;
-    isLoading: boolean;
-    onRefresh: () => void;
-    onShowMe: (message: string) => void; // This will directly use the sendMessage function
+    } | null,
+    adsetId: string | null,
+    isLoading: boolean,
+    onRefresh: () => void,
+    onShowMe: (message: string) => void,
+    campaignBudget?: number | null
 }
 
 const CampaignOverview: React.FC<CampaignOverviewProps> = ({
@@ -25,7 +26,8 @@ const CampaignOverview: React.FC<CampaignOverviewProps> = ({
                                                                adsetId,
                                                                isLoading,
                                                                onRefresh,
-                                                               onShowMe
+                                                               onShowMe,
+                                                               campaignBudget
                                                            }) => {
     const isEmpty = !campaignName.trim();
 
@@ -64,6 +66,7 @@ const CampaignOverview: React.FC<CampaignOverviewProps> = ({
                         {campaignId && (
                             <p className="text-xs text-zinc-500">ID: {campaignId}</p>
                         )}
+                        <h4 className="text-sm font-normal">Campaign Budget: {campaignBudget ? '€' + (campaignBudget/100) + '/day'   : 'Not Set'}</h4>
                     </>
                 )}
             </CardHeader>
@@ -76,7 +79,7 @@ const CampaignOverview: React.FC<CampaignOverviewProps> = ({
                         onClick={() => handleActionClick('switch')}
                     >
                         <MessageSquare className="w-4 h-4"/>
-                        Switch
+                        Switch Campaign
                     </Button>
                     <Button
                         variant="outline"
@@ -84,7 +87,7 @@ const CampaignOverview: React.FC<CampaignOverviewProps> = ({
                         onClick={() => handleActionClick('create')}
                     >
                         <MessageSquare className="w-4 h-4"/>
-                        Create New
+                        Create New Campaign
                     </Button>
                 </div>
 

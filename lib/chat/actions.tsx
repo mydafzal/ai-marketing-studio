@@ -357,10 +357,10 @@ async function updateCampaignInfo(campaignSummary: CampaignSummary) {
             {
                 id: 'campaign-info-data',
                 role: 'system',
-                content: `Campaign is connected, the knowledge base about current campaign information: ${JSON.stringify(campaignSummary)}`,
+                content: `Campaign is connected, the knowledge base about current campaign information (note: budget is provided in cents): ${JSON.stringify(campaignSummary)}`,
                 timestamp: new Date().toISOString()
             },
-            ...aiState.get().messages.filter((message: Message) => message.id !== 'campaign-info-data' || message.role !== 'system'),
+            ...aiState.get().messages.filter((message: Message) => message.id !== 'campaign-info-data' || message.role !== 'system'), //TODO: only pass last 50 messages or so. (enforce a limit)
         ]
     });
 }
