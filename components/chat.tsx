@@ -232,19 +232,32 @@ function ChatCore({id, chat, className, session, missingKeys}: ChatProps) {
                         <div className="w-full h-px" ref={visibilityRef}/>
                     </div>
 
-                    {isFeatureToggleEnabled('rightSideOverviewCard') && <div className="hidden lg:block fixed top-20 right-10 w-[350px]"
-                         style={{position: 'fixed', zIndex: 40}}>
-                        <CampaignOverview
-                            campaignName={campaignSummary?.campaign_name}
-                            campaignId={campaignId ?? null}
-                            campaignBudget={campaignSummary?.daily_budget}
-                            adsetData={adsetData}
-                            adsetId={adsetId}
-                            isLoading={isLoadingAdset}
-                            onRefresh={handleRefreshAdset}
-                            onShowMe={sendMessage}
-                        />
-                    </div>}
+                    {isFeatureToggleEnabled('rightSideOverviewCard') &&
+                        <div
+                            className="hidden lg:block fixed top-20 right-10 w-[350px]"
+                            style={{
+                                position: 'fixed',
+                                zIndex: 40,
+                            }}
+                        >
+                            <div className="campaign-overview-container" style={{
+                                transform: 'scale(0.55)',
+                                transformOrigin: 'top right',
+                                width: '100%',
+                                height: 'auto',
+                            }}>
+                                <CampaignOverview
+                                    campaignName={campaignSummary?.campaign_name}
+                                    campaignId={campaignId ?? null}
+                                    campaignBudget={campaignSummary?.daily_budget}
+                                    adsetData={adsetData}
+                                    adsetId={adsetId}
+                                    isLoading={isLoadingAdset}
+                                    onRefresh={handleRefreshAdset}
+                                    onShowMe={sendMessage}
+                                />
+                            </div>
+                        </div>}
                 </div>
             </div>
 
