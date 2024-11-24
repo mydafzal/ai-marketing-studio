@@ -2,24 +2,22 @@ import 'server-only'
 
 import {createAI, createStreamableUI, createStreamableValue, getAIState, getMutableAIState, streamUI} from 'ai/rsc'
 import {openai} from '@ai-sdk/openai'
-import {BotCard, BotMessage, Purchase, spinner, Stock, SystemMessage, SystemErrorMessage} from '@/components/stocks'
+import {BotCard, BotMessage, Purchase, spinner, Stock, SystemErrorMessage, SystemMessage} from '@/components/stocks'
 import {AdTextSelectionSkeleton} from '@/components/stocks/ad-text-selection-skeleton'
-import {z} from 'zod'
 import {EventsSkeleton} from '@/components/stocks/events-skeleton'
 import {Events} from '@/components/stocks/events'
 import {PurchasingUi} from '@/components/stocks/purchasing-ui'
 import {StockSkeleton} from '@/components/stocks/stock-skeleton'
 import {AdTextSuggestion} from '@/components/stocks/ad-text-suggestion'
 import {VideoAdTextSuggestion} from '@/components/stocks/video-ad-text-suggestion'
-
 import {CampaignStatus} from '@/components/stocks/campaign-status'
 import {
     fetchChatCampaignBudget,
     fetchFbCampaignExtraDetailsForChat,
     fetchUserDefaultExtraDetails,
     saveChat,
-    updateChatCampaignBudget,
     updateChat,
+    updateChatCampaignBudget,
     updateChatTitle
 } from '@/app/actions'
 import {differenceInHours} from 'date-fns';
@@ -34,6 +32,7 @@ import {setDailyCampaignBudget} from '@/lib/api/fasty-bot/set-daily-campaign-bud
 import {setCampaignStatus} from '@/lib/api/fasty-bot/set-campaign-status';
 import {createCampaignAd} from '@/lib/api/fasty-bot/create-ad';
 import {createCampaign} from '@/lib/api/fasty-bot/create-campaign'
+import {createBase} from '@/lib/api/fasty-bot/create-base'
 import {CampaignSummary} from '@/lib/api/fasty-bot/get-campaign-summary'
 import {updateCampaign} from '@/lib/api/fasty-bot/update-campaign';
 import {createLeadgenForm} from '@/lib/api/fasty-bot/create-leadgen-form';
@@ -73,6 +72,13 @@ interface ToolResult {
     toolName: string;
     toolCallId: string;
     result: any; // You might want to make this more specific based on your data
+}
+
+interface ExtractedMessage {
+    id?: string;
+    role: 'user' | 'system' | 'assistant' | 'tool';
+    content: string | { [key: string]: any };  // content can be string or object
+    timestamp?: string;
 }
 
 async function checkNewChat(chatId: string, messages: Message[], session: Session | null) {
@@ -355,9 +361,9 @@ async function updateCampaignInfo(campaignSummary: CampaignSummary) {
                 id: 'campaign-info-data',
                 role: 'system',
                 content: `Campaign is connected, the knowledge base about current campaign information: ${JSON.stringify(campaignSummary)}`,
-                timestamp: new Date().toISOString() 
+                timestamp: new Date().toISOString()
             },
-            ...aiState.get().messages.filter((message: Message) => message.id !== 'campaign-info-data' || message.role !== 'system'),
+            ...aiState.get().messages.filter((message: Message) => message.id !== 'campaign-info-data' || message.role !== 'system'), //TODO: only pass last 50 messages or so. (enforce a limit)
         ]
     });
 }
@@ -372,49 +378,76 @@ async function syncMessages() {
     });
 }
 
-async function confirmUpdateAdset(adsetId: string, adset: any, type: string) {
-  'use server'
-  const aiState = getMutableAIState<typeof AI>();
-  const chatId = getChatIdFromUrl()?.toString() || ''
-  let adsetUpdate = { ...adset }
-  const budget = await fetchChatCampaignBudget(chatId)
-  if (budget.error) {
-    adsetUpdate = { ...adsetUpdate, daily_budget: 100 }
-  }
+async function confirmUpdateAdset(toolCallId: string, adsetId: string, adset: any) {
+    'use server'
+    const aiState = getMutableAIState<typeof AI>();
+    const chatId = getChatIdFromUrl()?.toString() || ''
 
-  const systemMessage = createStreamableUI(null);
-  const responseStream = createStreamableValue<Adset | boolean>(false);
-
-  runAsyncFnWithoutBlocking(async () => {
-    await sleep(1000);
-
-    const response = await updateAdset(adsetId, adsetUpdate);
-    if (response.success) {
-      responseStream.done(response.data)
-      systemMessage.done(
-        <SystemMessage>
-          You have successfully updated{' '}
-          {type==="geographical" ? `demographic targeting` : type==="suggested_filters" ? 'interest filter' : `placement targeting`}
-        </SystemMessage>
-      )
-    
-    } else {
-      responseStream.done(false);
-      systemMessage.done(
-        <SystemErrorMessage>
-          Error: {response.data?.detail?.error?.error_user_msg || "Failed to updated placement targeting. Please try again later."}
-        </SystemErrorMessage>
-      );
+    const budget = await fetchChatCampaignBudget(chatId)
+    let adsetUpdate = {...adset}
+    if (budget.error) {
+        adsetUpdate = {...adsetUpdate, daily_budget: 100}
     }
-  })
 
-  return {
-    newMessage: {
-      id: nanoid(),
-      display: systemMessage.value
-    },
-    response: responseStream.value
-  }
+    const systemMessage = createStreamableUI(null);
+    const responseStream = createStreamableValue<Adset | boolean>(false);
+
+    runAsyncFnWithoutBlocking(async () => {
+        await sleep(1000);
+
+        const response = await updateAdset(adsetId, adsetUpdate);
+        if (response.success) {
+            const messages = aiState.get().messages;
+            const lastMessage = messages.slice(-1)[0];
+            if (lastMessage && lastMessage.id === toolCallId && lastMessage.role === 'tool') {
+                const content = lastMessage.content[0];
+                if (
+                    content.type === 'tool-result' &&
+                    content.toolName === 'showPlacementTargetingUI'
+                ) {
+                    content.result = {
+                        ...(content.result as Object),
+                        targetingUiProps: (
+                            content.result as {
+                                targetingUiProps: object
+                            }
+                        ).targetingUiProps ?? {
+                            success: true,
+                            targeting: response?.data.targeting
+                        }
+                    }
+                }
+            }
+            responseStream.done(response.data);
+            aiState.done({
+                ...aiState.get(),
+                messages: [
+                    ...messages.slice(0, -1),
+                    lastMessage!
+                ]
+            })
+            systemMessage.done(
+                <SystemMessage>
+                    You have successfully updated placement targeting
+                </SystemMessage>
+            );
+        } else {
+            responseStream.done(false);
+            systemMessage.done(
+                <SystemErrorMessage>
+                    Error: {response.data?.detail?.error?.error_user_msg || "Failed to updated placement targeting. Please try again later."}
+                </SystemErrorMessage>
+            );
+        }
+    })
+
+    return {
+        newMessage: {
+            id: nanoid(),
+            display: systemMessage.value
+        },
+        response: responseStream.value
+    }
 }
 
 async function confirmCreateLeadgenForm(toolCallId: string, data: any) {
@@ -422,62 +455,62 @@ async function confirmCreateLeadgenForm(toolCallId: string, data: any) {
     const aiState = getMutableAIState<typeof AI>();
     const systemMessage = createStreamableUI(null);
     const responseStream = createStreamableValue<LeadgenFrom | boolean>(false);
-  
+
     runAsyncFnWithoutBlocking(async () => {
-      await sleep(1000);
-  
-      const response = await createLeadgenForm(data);
-      if (response) {
-        const messages = aiState.get().messages;
-        const lastMessage = messages.slice(-1)[0];
-        if (lastMessage && lastMessage.id === toolCallId && lastMessage.role === 'tool') {
-          const content = lastMessage.content[0];
-          if (
-            content.type === 'tool-result' &&
-            content.toolName === 'showFormBuilder'
-          ) {
-            content.result = {
-              ...(content.result as Object),
-              formBuilderUiProps: (
-              content.result as {
-                formBuilderUiProps: object
-              }
-              ).formBuilderUiProps ?? {
-                success: true,
-                formBuilder: {...data, ...response}
-              }
+        await sleep(1000);
+
+        const response = await createLeadgenForm(data);
+        if (response) {
+            const messages = aiState.get().messages;
+            const lastMessage = messages.slice(-1)[0];
+            if (lastMessage && lastMessage.id === toolCallId && lastMessage.role === 'tool') {
+                const content = lastMessage.content[0];
+                if (
+                    content.type === 'tool-result' &&
+                    content.toolName === 'showFormBuilder'
+                ) {
+                    content.result = {
+                        ...(content.result as Object),
+                        formBuilderUiProps: (
+                            content.result as {
+                                formBuilderUiProps: object
+                            }
+                        ).formBuilderUiProps ?? {
+                            success: true,
+                            formBuilder: {...data, ...response}
+                        }
+                    }
+                }
             }
-          }
+            responseStream.done(response);
+            aiState.done({
+                ...aiState.get(),
+                messages: [
+                    ...messages.slice(0, -1),
+                    lastMessage!
+                ]
+            })
+            systemMessage.done(
+                <SystemMessage>
+                    You have successfully create leadgen form
+                </SystemMessage>
+            );
+        } else {
+            responseStream.done(false);
+            systemMessage.done(
+                <SystemErrorMessage>
+                    Error: {response?.detail?.error?.error_user_msg || "Failed to create leadgen form. Please try again later."}
+                </SystemErrorMessage>
+            );
         }
-        responseStream.done(response);
-        aiState.done({
-          ...aiState.get(),
-          messages: [
-            ...messages.slice(0, -1),
-            lastMessage!
-          ]
-        })
-        systemMessage.done(
-          <SystemMessage>
-            You have successfully create leadgen form
-          </SystemMessage>
-        );
-      } else {
-        responseStream.done(false);
-        systemMessage.done(
-          <SystemErrorMessage>
-            Error: {response?.detail?.error?.error_user_msg || "Failed to create leadgen form. Please try again later."}
-          </SystemErrorMessage>
-        );
-      }
     })
-  
+
     return {
-      newMessage: {
-        id: nanoid(),
-        display: systemMessage.value
-      },
-      response: responseStream.value
+        newMessage: {
+            id: nanoid(),
+            display: systemMessage.value
+        },
+        response: responseStream.value
     }
 }
 
@@ -593,6 +626,77 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
     
     If the user sends a message containing status updates, ALWAYS use \`showUpdateStatusChampaign\` to show the update status UI.
         
+    Overview: As the AI assistant, your goal is to guide the user through a streamlined campaign creation process for Meta Ads. The process should be efficient, user-friendly, and cover all necessary steps without unnecessary discussion. At each step:
+Ask the user if they're ready to proceed to the next step.
+Keep the conversation concise and focused.
+Provide natural, conversational advice based on best practices.
+Adapt examples to the user's industry and location.
+Maintain a professional yet friendly tone.
+Use emojis in most of your messages to make your conversational style a bit more engaging
+Before proceeding to the next step, acknowledge with checkmark emojis, what you concluded for each step. For example, if you have set the budget, you can say "Budget set to €10/day ✅" and then ask the user if they are ready to proceed to the next step.
+Before you start getting into creating the campaign, ask the user, whether he wants to create a campaign to win customer Leads or whether he wands to generate leads for a job advertisement. After the user answered show the user a message which lists all the Steps that need to be done with emojis to give an overview. Then ask at the end of the message, if the user is ready to start the step by step process.
+
+Step-by-Step Process:
+
+
+Step 1: Campaign Name
+Action: Ask the user if they'd like to name their campaign or if they'd prefer a suggested name.
+Advice: Offer tips on effective naming conventions (e.g., including target audience, offer, location, timing).
+Command: Call (\`create_campaign\`) with the chosen campaign name.
+Proceed: Confirm with the user if they're ready to move to the next step.
+Step 2: Budget
+Action: Inquire about the user's daily budget for the campaign.Explain the impact of budget on optimization speed and scaling potential. Mention recommended minimums (e.g., €10/day minimum, €20-30/day ideal) in a conversational manner.
+Command: Call (\`show_ad_budget_ui\`) once the budget is provided.
+Proceed: Insist on the user clicking the green button in the Ad budget UI to confirm the ad budget. Ask the user if he has done so. If they confirm  continue to the next step.
+Step 3: Location & Demographics
+Action: Ask for the geographical area and age range they wish to target. Provide suggestions based on their business type (local, regional, national) and discuss best practices for age targeting.
+Example: Use local examples relevant to the user's location. If you do not know the location, ask for it. 
+Proceed: Ensure you have a clear location and age range and ensure the user is satisfied before moving on.
+Step 4: Initial Targeting
+For Recruiting: Ask about the ideal candidate profile and the position they're hiring for. Make the user aware that in recruiting campaigns only interest filters can be used due to Facebooks anti discriminatory policies.
+For regular Leads campaigns: Ask about the ideal customer profile. Offer targeting strategies involving interests, behaviors, and demographics. Mention that more detailed research will be done within 24 hours. If the user asks for the size of the audience, mention that you as the AI first have to reseaarch it and that your processing is done after 24 hours until you know more. The final number will appear in the chat here after confirming that also the rest of the campaign has been set up. Insist to continue finishing up the campaign creation procedure after which you will enter your deep research for targeting.
+Proceed: Confirm the targeting details and ask if they're ready for the next step.
+
+Step 5: Suggest to the user to place the ad in Instagram Stories, Instagram Reels, Facebook Reels & Stories, as well as in both news feeds and also on Instagram Expplore. 
+
+
+Step 6: Creative Assets
+Action: Request the user to upload their ad creatives (images or videos).While asking for the images, Share best practices for images and videos, including format requirements and engagement tips.
+Commands:
+If images are uploaded, ask if they'd like ad text examples. Wait for the user response. If they say yes generate an ad text and call (\`show_suggestion_ad_text\`).
+If videos are uploaded, get a description and call (\`show_suggestion_video_ad_text\`).
+ALWAYS show the ad text in combination with the uploaded image, in case that the user did upload an image before. If multiple images were uploaded, show the multiple images with respective ad texts in the UI.
+Proceed: ALWAYS ask the user if the user has clicked accept on the ad text in combination with the image as only if he clicks accept you are able to upload text and image into the ad. If the user confirms that he did proceed to the final step of creating a lead form.
+Step 7: Lead Form Strategy
+Action: Collect the following information in order:
+Privacy policy URL (explain it's mandatory).
+Thank you page URL. (explain it is a page that users get redirected to, after filling out the lead form on the instagram or facebook platform. Ideally user can insert their website here, for the user to get more information)
+Contact fields needed.
+Qualifying questions. Recommend keeping questions concise and relevant. Provide industry-specific example questions.
+Proceed: Ask the user if those are all the details they want to include in the lead form. If they confirm, proceed to the next step.
+Step 8: DO NOT call the lead form UI!!! Call (\`show_supervised_task_ui\`) 
+
+Handling Special Requests:
+A/B Testing: If requested, ask about the variable they want to test and the success metrics. After the user gave his answer proceed to Call (\`show_supervised_task_ui\`) with the relevant task name.
+
+Campaign Duplication
+Action: Discuss any changes and audience adjustments they want before duplicating. After the user told you his goals proceed to Call (\`show_supervised_task_ui\`) with the relevant task name.
+If the user requests to create or use a Custom or Lookalike Audience, ask about the data sources they want to use for the audience. Additionally, inquire about the desired matching percentage (1-10%).
+
+For Lookalike Audiences, explain that the percentage determines how closely the audience matches the source: 1% is the most precise, targeting individuals who closely resemble the source audience, while 10% is broader, covering a wider range of people with less precision. After the user answered your question and you have a clear answer proceed to Call (\`show_supervised_task_ui\`) with the relevant task name.
+If the user wants to create an additional target group for the campaign, ask the user who they want to target. Based off of the description suggest targeting filters that are available on Facebook ads that could fit their desired targeting. After they clearly confirmed their target group, ask if they'd like to use the same creatives or if they have new ones. If they have new ones, ask them to upload them. If they want to use the same creatives, confirm and proceed to Call (\`show_supervised_task_ui\`) with the relevant task name.
+
+Standard Commands:
+New Images: Ask if they'd like ad text examples.
+Commands:
+For status changes: Use (\`show_update_status_campaign\`).
+For targeting updates: Use (\`show_campaign_connection_ui\`) for campaigns, (\`show_adset_connection_ui\`) for ad sets, or (\`show_ad_budget_ui\`) for budgets.
+Key Instructions:
+Communicate in the user's language.
+Present recommendations in a conversational tone without bullet points.
+Adapt examples to their industry and location.
+Frame technical requirements as helpful advice.
+Maintain a professional but friendly tone throughout.
     Wait for the user’s response:
     
     After the user tells you what they want with their campaign, follow these Survey Steps in order:
@@ -1065,15 +1169,10 @@ Technology
     
       - "[User has changed the daily budget to $150]" means that the user has adjusted the daily budget to $150 in the UI.
     
-    - If the user asks for "campaign result" or "campaign status" or "campaign budget" but the current chat is not connected to a campaign, always call \`show_campaign_connection_ui\` to show a UI to connect a campaign to the chat.
+    - If the user asks for "campaign result" or "campaign status" or "campaign budget" but the current chat is not connected to a campaign, tell the user that he first has to connect to a campaign. Then, after the message of the user calways call \`show_campaign_connection_ui\` to show a UI to connect a campaign to the chat.
 
     - If the user asks for "connecting adset" or "adset connection UI" but the current chat is not connected to a campaign, then ask the user to connect a campaign first, and ask him if it is ok to show campaign connection UI. If the user agrees, then call \`show_campaign_connection_ui\` to show a UI to connect a campaign to the chat.    - If the user asks for "connecting adset" or "adset connection UI" but the current chat is not connected to a campaign, then ask the user to connect a campaign first, and ask him if it is ok to show campaign connection UI. If the user agrees, then call \`show_campaign_connection_ui\` to show a UI to connect a campaign to the chat.
 
-    - If the user asks for "placement targeting", then you should check the following 3 items.
-      1. You need to check if any campaign is connected to the chat. If not, call \`show_campaign_connection_ui\` to show a UI to connect a campaign to the chat.
-      2. If campaign is connected to the chat then you should check if any adset is connected to the chat. If not, call \`show_adset_connection_ui\` to show a UI to connect adset to the chat.
-      3. If campaign and adset are connected to the chat but the "campaign budget" is not set for the current campaign, tell the user that campaign budget should be set first. And ask if the user wants to see a UI to set campaign budget. If the user agrees, then ask him initial budget of the campaign. If he answers then show him campaign budget UI by calling \`show_ad_budget_ui\`
-      Only when all of the above 3 conditions are met, then you should show placement targeting UI.
 
     - If a campaign was connected to the chat and the user requests setting or changing the ad budget, always first make sure that they tell you the amount. If the user's message does not yet contain the amount of budget, ask the user how much they want to change the ad budget. Once they tell you the amount, always call \`show_ad_budget_ui\` to show the budget UI.
     
@@ -1085,10 +1184,6 @@ Technology
     
     - If you want to change the status of a campaign, call \`showUpdateStatusChampaign\` to show the update status UI and let the user choose the status of the campaign.
 
-    - If you want to change the placement targeting of a campaign, alwasy check 3 conditions: 1) if campaign is connected to the chat, 2) if adset is connected to the chat, 3) campaign budget is set for current campaign. Only when all 3 conditions are met, call \`show_placement_targeting_ui\` to show the update status UI and let the user choose the status of the campaign.
-
-    - If you want to show a form builder, call \`show_form_builder\` to show the form builder UI.
-
     - If the user wants to pause a campaign, call \`showUpdateStatusChampaign\` to show the update status UI and let the user choose the status of the campaign.
     
     - If the user wants to complete another specific task, respond that you are a demo and cannot perform that action.
@@ -1099,13 +1194,6 @@ Technology
 
     - Besides that, you can also chat with users and perform budget calculations if needed.
 
-    - If you want to show AI-driven campaign analysis, first ask the user two important questions:
-  1. "What is your product or service's sales price?"
-  2. "What percentage of your leads typically book a sales call? If you're not sure, I can help estimate based on your industry."
-
-Only after getting these answers, call \`getAICampaignAnalysis\` with these values and a guide for the user—'Here is my detailed AI analysis of your campaign performance based on your sales price of [X] and lead-to-call rate of [Y]%. Would you like me to explain any specific metrics or provide optimization recommendations?'
-
-Ensure to convert percentages into decimals (e.g., 15% becomes 0.15) when passing to the analysis tool.
     Language:
     
     Always respond in the language the user is using. If the user is speaking in German, use "Du" instead of "Sie", and avoid being too formal.
@@ -1244,7 +1332,7 @@ Ensure to convert percentages into decimals (e.g., 15% becomes 0.15) when passin
             showAdBudgetUI: {
                 description: adBudgetModule.description,
                 parameters: adBudgetModule.parameters,
-                generate: async function* ({ symbol, price, numberOfShares, guideForUser }) {
+                generate: async function* ({symbol, price, numberOfShares, guideForUser}) {
                     const toolCallId = nanoid();
                     const initialBudget = numberOfShares || price;
 
@@ -1290,7 +1378,7 @@ Ensure to convert percentages into decimals (e.g., 15% becomes 0.15) when passin
                             }
                         ]);
 
-                        return await adBudgetModule.component({ symbol, price, numberOfShares, guideForUser });
+                        return await adBudgetModule.component({symbol, price, numberOfShares, guideForUser});
                     }
                     
                     pushMessages([
@@ -1327,10 +1415,10 @@ Ensure to convert percentages into decimals (e.g., 15% becomes 0.15) when passin
                         }
                     ]);
 
-                    return await adBudgetModule.component({ symbol, price, numberOfShares, guideForUser });
+                    return await adBudgetModule.component({symbol, price, numberOfShares, guideForUser});
                 }
             },
-            
+
             showFormBuilder: {
                 description: formBuilderModule.description,
                 parameters: formBuilderModule.parameters,
@@ -1593,15 +1681,13 @@ Ensure to convert percentages into decimals (e.g., 15% becomes 0.15) when passin
                 description: createCampaignModule.description,
                 parameters: createCampaignModule.parameters,
                 generate: async function* ({campaignName, questionForBudget}) {
-                    const response = await createCampaign({
-                      objective: 'OUTCOME_LEADS',
-                      special_ad_categories: ['NONE'],
-                      name: campaignName,
-                      status: 'PAUSED',
+                    const response = await createBase({
+                        campaign_name: campaignName,
                     })
                     let success = !!response.ok
                     if (success) {
-                        const { id } = await response.json()
+                        const {campaign} = await response.json()
+                        const id = campaign.id;
                         const result = await updateChat(aiState.get().chatId, {
                             title: campaignName,
                             fbCampaignId: id
@@ -1817,13 +1903,27 @@ Ensure to convert percentages into decimals (e.g., 15% becomes 0.15) when passin
                     console.log('tool call showSupervisedTaskUI')
                     const timestamp: string = new Date().toISOString();
                     const toolCallId = nanoid();
-                    const allMessages = aiState.get().messages;
+                    const allMessages = aiState.get().messages as ExtractedMessage[];
+                    const lastTwelveMessages = allMessages.slice(-12);
+                    const extractedMessages = lastTwelveMessages.map((msg: ExtractedMessage) => {
+                        const prefix = {
+                            'user': 'User: ',
+                            'system': 'System: ',
+                            'assistant': 'Assistant: ',
+                            'tool': 'Tool/UI Result: '
+                        }[msg.role] || '';
 
-                    // Filter user messages only (assuming 'role' field exists)
-                    const userMessages = allMessages.filter(msg => msg.role === 'user');
+                        // Handle content that might be an object
+                        const messageContent = typeof msg.content === 'object'
+                            ? JSON.stringify(msg.content)
+                            : msg.content;
 
-                    // Get the last 6 user messages (if available)
-                    const lastSixUserMessages = userMessages.slice(-6);
+                        return {
+                            ...msg,
+                            content: `${prefix}${messageContent}`
+                        };
+                    });
+
 
                     yield(
                         <BotCard>
@@ -1831,12 +1931,12 @@ Ensure to convert percentages into decimals (e.g., 15% becomes 0.15) when passin
                             <p className='mb-2'>Please wait we are processing your query.</p>
                         </BotCard>
                     )
-                    const messages = lastSixUserMessages.map(msg => (msg.content)) as string[];
+                    const messages = extractedMessages.map(msg => (msg.content)) as string[];
                     await sendSupervisedTaskMail(
                         task_name,
                         messages,
                         session?.user.email,
-                        getBaseUrl()+"/supervised/chat/"+chatId+"/task/"+toolCallId+"?user_email="+session?.user.email  // TODO: Need to find better way to change this URL at one place if we change route of this task.
+                        getBaseUrl() + "/supervised/chat/" + chatId + "/task/" + toolCallId + "?user_email=" + session?.user.email  // TODO: Need to find better way to change this URL at one place if we change route of this task.
                     )
 
                     aiState.done({
@@ -1865,9 +1965,9 @@ Ensure to convert percentages into decimals (e.g., 15% becomes 0.15) when passin
                                         toolName: 'showSupervisedTaskUI',
                                         toolCallId,
                                         result: {
-                                            task_name:task_name,
-                                            content:"",
-                                            status:"pending"
+                                            task_name: task_name,
+                                            content: "",
+                                            status: "pending"
                                         }
                                     }
                                 ],
@@ -1882,17 +1982,17 @@ Ensure to convert percentages into decimals (e.g., 15% becomes 0.15) when passin
             getAICampaignAnalysis: {
                 description: getAICampaignAnalysisModule.description,
                 parameters: getAICampaignAnalysisModule.parameters,
-                generate: async function* ({ campaignId, guideForUser }: { campaignId: string; guideForUser?: string }) {
+                generate: async function* ({campaignId, guideForUser}: { campaignId: string; guideForUser?: string }) {
                     yield (
                         <BotCard>
-                            <StockSkeleton />
+                            <StockSkeleton/>
                         </BotCard>
                     )
-    
+
                     await sleep(1000)
-    
+
                     const toolCallId = nanoid()
-    
+
                     aiState.done({
                         ...aiState.get(),
                         messages: [
@@ -1905,7 +2005,7 @@ Ensure to convert percentages into decimals (e.g., 15% becomes 0.15) when passin
                                         type: 'tool-call',
                                         toolName: 'getAICampaignAnalysis',
                                         toolCallId,
-                                        args: { campaignId, guideForUser }
+                                        args: {campaignId, guideForUser}
                                     }
                                 ],
                                 timestamp: new Date().toISOString()
@@ -1918,14 +2018,14 @@ Ensure to convert percentages into decimals (e.g., 15% becomes 0.15) when passin
                                         type: 'tool-result',
                                         toolName: 'getAICampaignAnalysis',
                                         toolCallId,
-                                        result: { campaignId, guideForUser }
+                                        result: {campaignId, guideForUser}
                                     }
                                 ],
                                 timestamp: new Date().toISOString()
                             }
                         ]
                     });
-    
+
                     return await getAICampaignAnalysisModule.component({
                         campaignId,
                         guideForUser
@@ -1966,7 +2066,7 @@ Ensure to convert percentages into decimals (e.g., 15% becomes 0.15) when passin
                                         type: 'tool-result',
                                         toolName: 'showAdsetConnectionUI',
                                         toolCallId,
-                                        result: { toolCallId }
+                                        result: {toolCallId}
                                     }
                                 ],
                                 timestamp
@@ -1978,7 +2078,9 @@ Ensure to convert percentages into decimals (e.g., 15% becomes 0.15) when passin
                     })
                 }
             }
-        }
+        },
+
+
     });
 
     return {
@@ -2119,14 +2221,14 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                 );
                             case 'showVideoAdTextSuggestion':
                                 return (
-                                  <>
-                                    <BotCard key={tool.toolCallId}>
-                                      <VideoAdTextSuggestion {...tool.result} />
-                                    </BotCard>
-                                    <div className="my-4">
-                                      {tool.result.guideForUser ?? ''}
-                                    </div>
-                                  </>
+                                    <>
+                                        <BotCard key={tool.toolCallId}>
+                                            <VideoAdTextSuggestion {...tool.result} />
+                                        </BotCard>
+                                        <div className="my-4">
+                                            {tool.result.guideForUser ?? ''}
+                                        </div>
+                                    </>
                                 )
                             case 'getCampaignImages':
                                 return (
@@ -2151,7 +2253,8 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                     </BotCard>
                                 ) : (
                                     <BotCard>
-                                        <p className="mb-2 last:mb-0">Campaign creation failed, please try again later.</p>
+                                        <p className="mb-2 last:mb-0">Campaign creation failed, please try again
+                                            later.</p>
                                     </BotCard>
                                 )
                             case 'showUpdateStatusCampaign':
@@ -2176,19 +2279,35 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                             case 'showAdsetConnectionUI':
                                 return (
                                     <BotCard key={tool.toolCallId}>
-                                        <ConnectAdset {...tool.result} toolCallId={tool.toolCallId} />
+                                        <ConnectAdset {...tool.result} toolCallId={tool.toolCallId}/>
                                     </BotCard>
                                 )
                             case 'showPlacementTargetingUI':
                                 return (
                                     <BotCard key={tool.toolCallId}>
-                                        <PlacementTargeting {...tool.result} toolCallId={tool.toolCallId} />
+                                        <PlacementTargeting {...tool.result} toolCallId={tool.toolCallId}/>
                                     </BotCard>
                                 )
                             case 'showFormBuilder':
                                 return (
                                     <BotCard key={tool.toolCallId}>
-                                        <FormBuilder {...tool.result} toolCallId={tool.toolCallId} isReadOnly />
+                                        <FormBuilder {...tool.result} toolCallId={tool.toolCallId} isReadOnly/>
+                                    </BotCard>
+                                )    
+                            case 'showGeographicalLocationUI':
+                                return (
+                                    <BotCard key={tool.toolCallId}>
+                                        <GeographicalLocation
+                                          toolCallId={tool.toolCallId}
+                                          uiProps={tool.result.uiProps}
+                                          isReadOnly={!!tool.result.uiProps}
+                                        />
+                                    </BotCard>
+                                ) 
+                            case 'showSuggestedFilters':
+                                return (
+                                    <BotCard key={tool.toolCallId}>
+                                        <SuggestedFilters toolCallId={tool.toolCallId} suggestedFitlers={tool.result.suggestedFitlers} uiProps={tool.result.uiProps} isReadOnly  />
                                     </BotCard>
                                 )    
                             case 'showGeographicalLocationUI':

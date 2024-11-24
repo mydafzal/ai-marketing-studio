@@ -36,25 +36,27 @@ export function ConnectCampaignForm({
   const { campaigns, getCampaignList } = useContext(CampaignContext)
 
   const handleCreateCampaign = async () => {
+
+
     const createData = {
       name: 'My campaign',
       status: 'PAUSED',
     }
-    const url = '/api/fasty-bot/proxy-create-campaign'
+    const url = '/api/fasty-bot/proxy-create-base'
     const responseStream = await fetch(url, {
       method: 'POST',
       body: JSON.stringify({
-        objective: 'OUTCOME_LEADS',
-        special_ad_categories: ['NONE'],
-        ...createData,
+        // objective: 'OUTCOME_LEADS',
+        // special_ad_categories: ['NONE'],
+        // ...createData,
       })
     })
     const response = await responseStream.json()
-    if (response.success && response.data.id) {
+    if (response.success && response.data.campaign.id) {
       await handleSelectCampaign({
-        ...response.data,
-        ...createData,
+        ...response.data.campaign,
         created_time: Date.toString(),
+        daily_budget:"300"  // Just to avoid error
       })
       await getCampaignList()
     }

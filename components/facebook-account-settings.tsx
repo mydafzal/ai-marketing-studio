@@ -190,11 +190,25 @@ const FacebookAccountSettings = ({
                 {facebookConnected ? "Manage Facebook Account" : "Connect Facebook Account"}
               </Dialog.Title>
               <Dialog.Description className="text-sm text-zinc-600 dark:text-zinc-400">
-                {facebookConnected 
-                  ? "You can change your active Ads account or disconnect Facebook account"
-                  : "Link your Facebook account to manage ads seamlessly from Reeply.ai."
+                {facebookConnected
+                    ? "You can change your active Ads account or disconnect Facebook account"
+                    : <>
+                      <p className="mb-2 text-zinc-500 dark:text-zinc-300">
+                        To easily create and manage campaigns, you&#39;ll need to connect with Facebook and grant Reeply AI software the following access rights:
+                      </p>
+                      <ul className="list-disc list-inside text-zinc-500 dark:text-zinc-300">
+                        <li>Receive your email address</li>
+                        <li>Manage ads for ad accounts that you have access to</li>
+                        <li>Access your Facebook ads and related stats</li>
+                        <li>Manage your business</li>
+                        <li>Access leads for your Pages</li>
+                        <li>Create and manage ads for your Page</li>
+                        <li>Show a list of the Pages you manage</li>
+                      </ul>
+                    </>
                 }
               </Dialog.Description>
+
             </div>
 
             {userDetails?.fbMarketingApiKey && (

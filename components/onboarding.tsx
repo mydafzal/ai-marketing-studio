@@ -119,15 +119,31 @@ function Onboarding({
       setOpen(false)
       setDbChangeRequested(true)
 
-      const resp = await updateOnboardingDetails(userDetails?.email, details)
-      if (resp.success) {
-        setDbChangeRequested(false)
-        setShowSuccessMessage(true)
-      } else {
-        setError(resp.message)
-      }
-    }
-  }
+
+			const resp = await updateOnboardingDetails(userDetails?.email, details);
+			if(resp.success){
+				setDbChangeRequested(false)
+				setShowSuccessMessage(true)
+
+				// To update user details in header.tsx file
+				setTimeout(() => {
+					window.location.reload();
+				}, 2000);
+			}
+			else{
+				setError(resp.message)
+			}
+		}
+	}
+
+	function handleClose(){
+		if(!userDetails?.defaultExtraDetails){
+			setError("Please complete your profile setup to proceed.")
+		}
+		else{
+			setOpen(false)
+		}
+	}
 
   React.useEffect(() => {
     setTimeout(() => {
@@ -420,73 +436,59 @@ function Onboarding({
                       </p>
                     )}
                   </div>
-
-                  <div className="space-y-2">
-                    <label htmlFor="goal" className="text-sm font-medium text-zinc-900 dark:text-zinc-200">
-                      What is your goal?
-                    </label>
-                    <select 
-                      id="goal" 
-                      value={goal}
-                      onChange={(e) => {
-                        if(e.target.value.length > 0) {
-                          setInputError({...inputError, goal: ""})
-                        } else {
-                          setInputError({...inputError, goal: "This field is required"})
-                        }
-                        setGoal(e.target.value)
-                      }}
-                      className={cn(
-                        "w-full px-3 py-2 rounded-lg text-sm transition-colors",
-                        "bg-white dark:bg-zinc-800 border",
-                        inputError?.goal
-                          ? "border-red-500 dark:border-red-500 focus:ring-red-500"
-                          : "border-zinc-200 dark:border-zinc-700 focus:border-blue-500 dark:focus:border-blue-400",
-                        "focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-zinc-900",
-                      )}
-                    >
-                      <option value="customers">I want to attract more customers</option>
-                      <option value="employees">I want to recruit employees</option>
-                    </select>
-                    {inputError?.goal && (
-                      <p className="text-sm text-red-500 flex items-center gap-1">
-                        <AlertCircle className="size-3" />
-                        {inputError.goal}
-                      </p>
-                    )}
-                  </div>
                 </div>
               </div>
 
-              <div className="flex justify-end">
-                <Button
+              <div>
+                <label htmlFor="goal"  className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">What is your goal?</label>
+                <select id="goal" value={goal} onChange={(e)=>{
+                  if(e.target.value.length>0){
+                    setInputError({...inputError,goal:""})
+                  }
+                  else{
+                    setInputError({...inputError,goal:"This field is required"})
+                  }
+                  setGoal(e.target.value)
+                }} className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+                  <option value="customers">I want to attract more customers</option>
+                  <option value="employees">I want to recruit employees</option>
+                </select>
+                {
+                  inputError?.goal &&	<p className='text-red-500'>{inputError?.goal}</p>
+                }
+              </div>
+              <div className="flex justify-between">
+                {/* <button 
+                  // onClick={unlinkFacebook}
+                  className="h-10 px-4 flex items-center justify-center bg-gray-700 hover:bg-gray-900 text-white rounded-md shadow-md transition-transform transform hover:scale-105 active:scale-100 focus:outline-none"
+                  onClick={()=>setStep(1)}
+                  >
+                  Back
+                </button> */}
+                <button 
+                  // onClick={unlinkFacebook}
+                  className="h-10 px-4 flex items-center justify-center bg-blue-700 hover:bg-blue-900 text-white rounded-md shadow-md transition-transform transform hover:scale-105 active:scale-100 focus:outline-none"
                   onClick={handleSave}
-                  className="bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-500 dark:hover:bg-blue-600"
                 >
-                  Save Changes
-                </Button>
+                  Save
+                </button>
               </div>
             </div>
 
-            <Dialog.Close asChild>
-              <button
-                onClick={() => setOpen(false)}
-                className={cn(
-                  "absolute right-4 top-4 rounded-full p-2 opacity-70 transition-all",
-                  "hover:opacity-100 hover:bg-zinc-100 dark:hover:bg-zinc-800",
-                  "focus:outline-none focus:ring-2 focus:ring-zinc-950 focus:ring-offset-2",
-                  "dark:focus:ring-zinc-200 dark:ring-offset-zinc-900",
-                )}
-              >
-                <Cross2Icon className="size-4" />
-                <span className="sr-only">Close</span>
-              </button>
-            </Dialog.Close>
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
-    </>
-  );
+				<Dialog.Close asChild>
+					<button
+						onClick={handleClose}
+						className="absolute right-2.5 top-2.5 inline-flex size-[25px] appearance-none items-center justify-center rounded-full text-violet11 hover:bg-violet4 focus:shadow-[0_0_0_2px] focus:shadow-violet7 focus:outline-none"
+						aria-label="Close"
+					>
+						<Cross2Icon />
+					</button>
+				</Dialog.Close>
+			</Dialog.Content>
+		</Dialog.Portal>
+	</Dialog.Root>
+	</>
+  )
 }
 
 export default Onboarding;

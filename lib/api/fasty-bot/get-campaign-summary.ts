@@ -55,7 +55,7 @@ export async function getCampaignSummary(campaignId?: string): Promise<CampaignS
         frequency: 0,
         impressions: 0,
         reach: 0,
-        unique_clicks: 0
+        unique_clicks: 0,
     };
 
     // If the campaign ID is '0', return immediately with default values
@@ -94,6 +94,6 @@ function getMockData(campaignId: string): CampaignSummary {
         ctr: 2,
         reach: 1500,
         frequency: 1.5,
-        unique_clicks: 800
+        unique_clicks: 800,
     };
 }
