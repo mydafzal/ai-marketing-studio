@@ -35,10 +35,15 @@ interface Creative {
   }
 }
 
+type AdsetWithCreatives = {
+  adset_id:string;
+  creatives:Creative[];
+}
+
 const AdCreativesSwitcher = () => {
   const { submitUserMessage } = useActions()
   const [_, setMessages] = useUIState<typeof AI>()
-  const [creatives, setCreatives] = useState<Creative[]>([]);
+  const [creatives, setCreatives] = useState<AdsetWithCreatives[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [editingCreative, setEditingCreative] = useState<Creative | null>(null);
@@ -81,9 +86,35 @@ const AdCreativesSwitcher = () => {
           throw new Error('Failed to fetch creatives');
         }
         const data = await response.json();
+
+       const groupedData: Record<string, Creative[]> = data?.data?.data.reduce((acc: Record<string, Creative[]>, item: any) => {
+          const { adset_id, creative } = item;
+          if (!acc[adset_id]) {
+            acc[adset_id] = [];
+          }
+          acc[adset_id].push({
+            id: creative.id,
+            name: creative.name,
+            thumbnail_url: creative.thumbnail_url,
+            object_type: creative.object_type,
+            status: creative.status,
+            object_story_spec: creative.object_story_spec,
+          });
+          return acc;
+        }, {});
+      
+        // Convert grouped data to the desired array format
+        const adsetWithCreatives: AdsetWithCreatives[] = Object.entries(groupedData).map(([adset_id, creatives]) => ({
+          adset_id,
+          creatives,
+        }));
+
+        console.log(adsetWithCreatives,"Adset group")
+
+
         console.log('adcreativesdata', data)
         let list = data?.data?.data || [];
-        setCreatives(list);
+        setCreatives(adsetWithCreatives);
       } catch (err) {
         setError('Error fetching creatives. Please try again later.');
         console.error('Error fetching creatives:', err);
@@ -97,7 +128,10 @@ const AdCreativesSwitcher = () => {
 
   const togglePublish = async (id: number) => {
     try {
-      const creative = creatives.find(creative => creative.id === id);
+      const creative = creatives
+      .flatMap(adset => adset.creatives) // Flatten all creatives from all adsets
+      .find(creative => creative.id === id);
+      console.log("Creative toggle publish", creative)
       const response = await fetch('/api/fasty-bot/proxy-update-adcreative', {
         method: 'POST',
         headers: {
@@ -124,9 +158,12 @@ const AdCreativesSwitcher = () => {
       const updatedCreative = await response.json();
 
       setCreatives(prevCreatives =>
-        prevCreatives.map(creative =>
-          creative.id === id ? { ...creative, status: updatedCreative.status } : creative
-        )
+        prevCreatives.map(adset => ({
+          ...adset,
+          creatives: adset.creatives.map(creative =>
+            creative.id === id ? { ...creative, status: updatedCreative.status } : creative
+          ),
+        }))
       );
     } catch (error) {
       console.error('Error toggling publish status:', error);
@@ -172,9 +209,12 @@ const AdCreativesSwitcher = () => {
       const updatedCreative = await response.json();
 
       setCreatives(prevCreatives =>
-        prevCreatives.map(creative =>
-          creative.id === editingCreative.id ? { ...creative, name: editName, object_story_spec: updatedCreative.object_story_spec } : creative
-        )
+        prevCreatives.map(adset => ({
+          ...adset,
+          creatives: adset.creatives.map(creative =>
+            creative.id === editingCreative.id ? { ...creative, status: updatedCreative.status } : creative
+          ),
+        }))
       );
 
       setEditingCreative(null);
@@ -211,43 +251,66 @@ const AdCreativesSwitcher = () => {
       </header>
 
       <main className="flex-grow p-4 overflow-y-auto">
-        <div className="grid md:grid-cols-2 gap-4">
-          {creatives.map(creative => (
-            <div key={creative.id} className="bg-zinc-50 dark:bg-zinc-700 p-4 rounded-md shadow-md overflow-hidden">
-              <div className="flex gap-2 justify-end">
-                <Button
-                  onClick={() => togglePublish(creative.id)}
-                  variant={creative.status === 'ACTIVE' ? 'destructive' : 'default'}
-                  size="sm"
+      <div className="grid gap-6">
+        {creatives.map(adset => (
+          <div key={adset.adset_id}>
+            {/* Adset ID Header */}
+            <h4 className="font-bold text-lg text-zinc-800 dark:text-zinc-200 mb-2">
+              Adset ID: {adset.adset_id}
+            </h4>
+
+            {/* Grid for Creatives */}
+            <div className="grid md:grid-cols-2 gap-4">
+              {adset.creatives.map(creative => (
+                <div
+                  key={creative.id}
+                  className="bg-zinc-50 dark:bg-zinc-700 p-4 rounded-md shadow-md overflow-hidden"
                 >
-                  {creative.status === 'ACTIVE' ? 'Unpublish' : 'Publish'}
-                </Button>
-                <Button size="sm" onClick={() => handleEdit(creative)}>Edit</Button>
-              </div>
-              <h5 className="font-semibold dark:text-zinc-200">{creative.name}</h5>
-              <div className="mt-4">
-                {creative.object_type === 'IMAGE' && creative.thumbnail_url ? (
-                  <img src={creative.thumbnail_url} alt={creative.name} className="object-cover rounded-md h-[200px] w-full" />
-                ) : creative.object_type === 'VIDEO' ? (
-                  <VideoPlayer
-                    className="object-cover rounded-md" height="h-[200px]"
-                    videoId={creative.object_story_spec?.video_data?.video_id}
-                  />
-                ) : (
-                  <img src={creative.thumbnail_url} alt={creative.name} className="object-cover rounded-md h-[200px] w-full" />
-                  // <div
-                  //   className="bg-zinc-300 dark:bg-zinc-600 rounded-md h-[200px] w-full"
-                  //   aria-label="Media placeholder"
-                  // ></div>
-                )}
-                <p className="mt-2 text-zinc-600 dark:text-zinc-300">
-                  {creative.object_type === 'VIDEO' && creative.object_story_spec?.video_data?.message}
-                  {creative.object_type === 'SHARE' && creative.object_story_spec?.link_data?.message}
-                </p>
-              </div>
+                  <div className="flex gap-2 justify-end">
+                    <Button
+                      onClick={() => togglePublish(creative.id)}
+                      variant={creative.status === 'ACTIVE' ? 'destructive' : 'default'}
+                      size="sm"
+                    >
+                      {creative.status === 'ACTIVE' ? 'Unpublish' : 'Publish'}
+                    </Button>
+                    <Button size="sm" onClick={() => handleEdit(creative)}>Edit</Button>
+                  </div>
+                  <h5 className="font-semibold dark:text-zinc-200">{creative.name}</h5>
+                  <div className="mt-4">
+                    {creative.object_type === 'IMAGE' && creative.thumbnail_url ? (
+                      <img
+                        src={creative.thumbnail_url}
+                        alt={creative.name}
+                        className="object-cover rounded-md h-[200px] w-full"
+                      />
+                    ) : creative.object_type === 'VIDEO' ? (
+                      <VideoPlayer
+                        className="object-cover rounded-md"
+                        height="h-[200px]"
+                        videoId={creative.object_story_spec?.video_data?.video_id}
+                      />
+                    ) : (
+                      <img
+                        src={creative.thumbnail_url}
+                        alt={creative.name}
+                        className="object-cover rounded-md h-[200px] w-full"
+                      />
+                    )}
+                    <p className="mt-2 text-zinc-600 dark:text-zinc-300">
+                      {creative.object_type === 'VIDEO' && creative.object_story_spec?.video_data?.message}
+                      {creative.object_type === 'SHARE' && creative.object_story_spec?.link_data?.message}
+                    </p>
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+            <hr className='mt-8' />
+
+          </div>
+        ))}
+      </div>
+
       </main>
 
       <Dialog open={!!editingCreative} onOpenChange={() => {

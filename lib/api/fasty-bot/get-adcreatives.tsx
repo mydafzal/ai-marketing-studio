@@ -8,7 +8,7 @@ export async function getAdCreatives(): Promise<any> {
 
     const userDetail = await getUserDetail();
 
-    const apiUrl = `${fastyEndpoint}/facebook/exec/direct/ads/get-adcreatives?fb_account_id=${userDetail?.user?.fbAccountId || '0'}`
+    const apiUrl = `${fastyEndpoint}/facebook/exec/direct/ads/get-adcreatives-with-adset?fb_account_id=${userDetail?.user?.fbAccountId || '0'}`
 
     const response = await fetch(apiUrl, {
       method: 'GET',
