@@ -613,6 +613,12 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
     
     Next action to always do after setting the budget when creating a campaign: Call \`show_geographical_location_ui\` to show the geographical area of the campaign.'
 
+    If user want to set gepgraphical location then before the show_geographical_location_ui always check below conditions one after other.
+        1. If campaign is not connected then Call: \`show_campaign_connection_ui\` and if user selected it then check next condition
+        2. If campaign is connected adset is not connected then Call: \`show_adset_connection_ui\` and if user selected it then check next condition
+        3. If campaign is connected and adset is connected and budget not set yet then Call: \`show_ad_budget_ui\` and if user selected it then check next condition
+        4. If campaign is connected and adset is connected and budget is set then Call: \`show_geographical_location\`
+        
     
     Step 3: Targeting:
     
