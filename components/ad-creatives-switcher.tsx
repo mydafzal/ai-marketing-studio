@@ -144,6 +144,8 @@ const AdCreativesSwitcher = () => {
             ...creative?.object_story_spec,
             link_data: {
               ...creative?.object_story_spec?.link_data,
+              name:creative?.object_story_spec?.link_data?.name??creative?.name
+
               // image_url: creative?.thumbnail_url
             }
           },
@@ -196,7 +198,11 @@ const AdCreativesSwitcher = () => {
               ? { ...editingCreative.object_story_spec.video_data, message: editMessage }
               : undefined,
             link_data: editingCreative.object_story_spec.link_data
-              ? { ...editingCreative.object_story_spec.link_data, message: editMessage }
+              ? { ...editingCreative.object_story_spec.link_data, 
+                message: editMessage, 
+                image_url:imagePermalinkUrl,
+                name:editName
+              }
               : undefined,
           },
         }),
@@ -316,8 +322,9 @@ const AdCreativesSwitcher = () => {
       <Dialog open={!!editingCreative} onOpenChange={() => {
         setEditingCreative(null);
         setEditError(null); 
-      }}>
-        <DialogContent>
+      }}
+      >
+        <DialogContent className='max-h-[80%] overflow-y-auto'>
           <DialogHeader>
             <DialogTitle>Edit Ad Creative</DialogTitle>
           </DialogHeader>
