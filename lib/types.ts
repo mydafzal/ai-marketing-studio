@@ -105,17 +105,36 @@ export interface FbVideo {
   source?: string
 }
 
+export interface FlexibleSpec {
+  interests: {
+    id: string
+    name: string
+  }[]
+}
+
 export interface AdsetTargeting {
   age_max: number
   age_min: number
   geo_locations: {
-    countries: string[]
-    location_types: string[]
+    countries?: string[]
+    regions?: { key: string }[]
+    cities?: { key: string; radius?: number; distance_unit?: string }[]
   }
+  genders?: number[]
+  flexible_spec?: FlexibleSpec[]
   publisher_platforms: string[]
   facebook_positions: string[]
   instagram_positions: string[]
   device_platforms: string[]
+}
+export interface ReachEstimate {
+  estimate_ready: number
+  users_lower_bound: number
+  users_upper_bound: number
+}
+export interface ReachEstimateResult {
+  result: ReachEstimate
+  targeting_spec: AdsetTargeting
 }
 
 export interface Adset {
@@ -169,4 +188,34 @@ export interface LeadgenFrom {
     style: string,
     content: string,
   }
+}
+
+export interface Country {
+  key: string
+  country_code: string
+  type: string
+  name: string
+  supports_city: boolean
+  supports_region: boolean
+}
+
+export interface Region {
+  key: string
+  country_code: string
+  country_name: string
+  type: string
+  name: string
+  supports_city: boolean
+  supports_region: boolean
+}
+export interface City {
+  key: string
+  name: string
+  type: string
+  country_code: string
+  country_name: string
+  region: string
+  region_id: string
+  supports_city: boolean
+  supports_region: boolean
 }

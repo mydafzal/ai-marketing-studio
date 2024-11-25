@@ -22,7 +22,7 @@ import { Message } from '@/lib/types'
 import { getMimeType } from '@/lib/utils'
 
 export interface PromtFormProps {
-  onSendMessage: (message: string, userContent?: (TextPart | ImagePart)[]) => Promise<void>
+  onSendMessage: (message: string, userContent?: (TextPart | ImagePart )[]) => Promise<void>
 }
 const MAX_IMAGE_SIZE = 4 * 1024 * 1024;
 const MAX_VIDEO_SIZE = 1 * 1024 * 1024 * 1024;

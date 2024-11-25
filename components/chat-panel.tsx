@@ -63,7 +63,7 @@ export function ChatPanel({
   const [shareDialogOpen, setShareDialogOpen] = React.useState(false)
   const [isTaskPaletteOpen, setIsTaskPaletteOpen] = React.useState(false)
   let isUserGuideButtonEnabled = isFeatureToggleEnabled("userGuideFloatingButton")
-  const sendMessage = React.useCallback(async (message: string, userContent?: (TextPart | ImagePart)[]) => {
+  const sendMessage = React.useCallback(async (message: string, userContent?: (TextPart | ImagePart )[]) => {
     // Optimistically add user message UI
     setMessages(currentMessages => [
       ...currentMessages,

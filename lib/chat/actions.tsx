@@ -43,8 +43,9 @@ import {sendAdminNotification} from '@/lib/api/fasty-bot/send-admin-notification
 import {ConnectCampaign} from '@/components/connect-campaign'
 import {PlacementTargeting} from '@/components/placement-targeting';
 import {ConnectAdset} from '@/components/connect-adset'
-
 import FormBuilder from '@/components/form-builder';
+import {GeographicalLocation} from '@/components/geographical-location';
+import {SuggestedFilters} from '@/components/suggested-filters';
 import {sendSupervisedTaskMail} from '@/lib/api/fasty-bot/send-supervised-task-mail';
 import SupervisedTaskMessage from '@/components/supervised-task-message'
 import {getBaseUrl} from "@/lib/helpers/vercel/get-base-url"
@@ -55,6 +56,8 @@ import getCampaignImagesModule from "@/lib/ui-magic/modules/getCampaignImagesMod
 import adBudgetModule from "@/lib/ui-magic/modules/adBudgetModule";
 import formBuilderModule from "@/lib/ui-magic/modules/formBuilderModule";
 import getEventsModule from "@/lib/ui-magic/modules/getEventsModule";
+import showGeographicalLocationUIModule from "@/lib/ui-magic/modules/showGeographicalLocationUIModule";
+import showSuggestedFiltersUIModule from "@/lib/ui-magic/modules/showSuggestedFiltersUIModule";
 import showSuggestionAdTextModule from "@/lib/ui-magic/modules/showSuggestionAdTextModule";
 import showSuggestionVideoAdTextModule from "@/lib/ui-magic/modules/showSuggestionVideoAdTextModule";
 import showUpdateStatusCampaignModule from "@/lib/ui-magic/modules/showUpdateStatusCampaignModule";
@@ -296,7 +299,7 @@ async function confirmCreateAd(campaign: any, data: any, adset: any) {
     }
     if (!campaign.daily_budget) {
         const chatId = getChatIdFromUrl()?.toString() || '';
-        const budget = await fetchChatCampaignBudget(chatId)
+        const budget = await fetchChatCampaignBudget(chatId) //TODO: remove hardcoded fallback budget setting as it will fail
         if (budget.error) {
             adsetUpdate = {...adsetUpdate, daily_budget: 100}
         }
@@ -550,23 +553,403 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
     }
     const session = (await auth()) as Session
     await checkNewChat(chatId, aiState.get().messages, session);
-    if (!isSilent) {
-        aiState.update({
-            ...aiState.get(),
-            messages: [
-                ...aiState.get().messages,
-                {
-                    id: nanoid(),
-                    role: 'user',
-                    content: contentImages?.length ? contentImages : content,
-                    timestamp: new Date().toISOString(),
-                }
-            ]
-        })
-    }
+    const messageId = nanoid();
+    let interestFilters = `
+    [Categories of interest filters]
+Business and Industry
+    Advertising 
+    Agriculture
+    Architecture
+    Aviation
+    Banking
+    Investment banking
+    Online banking
+    Retail banking
+    Investment banking
+    Online banking
+    Retail banking
+    Business
+    Construction
+    Design
+    Fashion design
+    Graphic design
+    Interior design
+    Economics
+    Engineering
+    Entrepreneurship
+    Health care
+    Higher education
+    Management
+    Marketing
+    Nursing
+    Online
+    Digital marketing
+    Display advertising
+    Email marketing
+    Online advertising
+    Search engine optimization
+    Social media
+    Social media marketing
+    Web design
+    Web development
+    Web hosting
+    Personal finance
+    Creditcards
+    Insurance
+    Investment
+    Mortgage loans
+    Real estate
+    Retail
+    Sales
+    Science
+    Small business
+
+Entertainment
+    Games
+        Action games
+        Board games
+        Browser games
+        Card games
+        Casino games
+        First-person shooter games
+        Gambling
+        Massively multiplayer online games
+        Massively multiplayer online role-playing games
+        Online games
+        Online poker
+        Puzzle video games
+        Racing games
+        Role-playing games
+        Shooter games
+        Simulation games
+        Sports games
+        Strategy games
+        Video games
+        Word games
+
+    Live events
+        Ballet
+        Bars
+        Concerts
+        Dancehalls
+        Music festivals
+        Nightclubs
+        Parties
+        Plays
+        Theatre
+
+    Movies
+        Action movies
+        Animated movies
+        Anime movies
+        Bollywood movies
+        Comedy movies
+        Documentary movies
+        Drama movies
+        Fantasy movies
+        Horror movies
+        Musical theatre
+        Science fiction movies
+        Thriller movies
+
+    Music
+        Blues music
+        Classical music
+        Country music
+        Dance music
+        Electronic music
+        Gospel music
+        Heavy metal music
+        Hip hop music
+        Jazz music
+        Music videos
+        Pop music
+        Rhythm and blues music
+        Rock musicSoul music
+
+    Reading
+        Books
+        Comics
+        E-books
+        Fiction books
+        Literature
+        Magazines
+        Manga
+        Mystery fiction
+        Newspapers
+        Non-fiction books
+        Romance novels
+
+    TV
+        TV comedies
+        TV game shows
+        TV reality shows
+        TV talkshows
+
+Family and relationships
+    Dating
+    Family
+    Fatherhood
+    Friendship
+    Marriage
+    Motherhood
+    Parenting
+    Weddings
+
+Fitness and wellness
+    Bodybuilding
+    Meditation
+    Physical exercise
+    Physical fitness
+    Running
+    Weight training
+    Yoga
+
+Food and drink
+    Alcoholic beverages
+        Beer
+        Distilled beverage
+        Wine
+
+    Beverages
+        Coffee
+        Energy drinks
+        Juice
+        Soft drinks
+        Tea
+
+    Cooking
+        Baking
+        Recipes
+
+    Cuisine
+        Chinese cuisine
+        French cuisine
+        German cuisine
+        Greek cuisine
+        Indian cuisine
+        Italian cuisine
+        Japanese cuisine
+        Korean cuisine
+        Latin American cuisine
+        Mexican cuisine
+        Middle Eastern cuisine
+        Spanish cuisine
+        Thai cuisine
+        Vietnamese cuisine
+
+    Food
+        Barbecue
+        Chocolate
+        Desserts
+        Fast food
+        Organic food
+        Pizza
+        Seafood
+        Veganism
+        Vegetarianism
+
+    Restaurants
+        Coffeehouses
+        Diners
+        Fast casual restaurants
+        Fast food restaurants
+
+Hobbies and activities
+    Arts and music
+        Acting
+        Crafts
+        Dance
+        Drawing
+        Drums
+        Fine art
+        Guitar
+        Painting
+        Performing arts
+        Photography
+        Sculpture
+        Singing
+        Writing
+
+    Current eventsHome and garden
+        Do it yourself (DIY)
+        Furniture
+        Gardening
+        Home Appliances
+        Home improvement
+
+    Pets
+        Birds
+        Cats
+        Dogs
+        Fish
+        Horses
+        Pet food
+        Rabbits
+        Reptiles
+
+    Politics and social issues
+        Charity and causes
+        Community issues
+        Environmentalism
+        Law
+        Military
+        Politics
+        Religion
+        Sustainability
+        Veterans
+        Volunteering
+
+    Travel
+        Adventure travel
+        Air travel
+        Beaches
+        Car rentals
+        Cruises
+        Ecotourism
+        Hotels
+        Lakes
+        Mountains
+        Nature
+        Theme parks
+        Tourism
+        Vacations
+
+    Vehicles
+        Automobiles
+        Boats
+        Electric vehicle
+        Hybrids
+        Minivans
+        Motorcycles
+        RVs
+        SUVs
+        Scooters
+        Trucks
+
+Shopping and fashion
+
+    Beauty
+        Beauty salons
+        Cosmetics
+        Fragrances
+        Hair products
+        Spas
+        Tattoos
+
+    Clothing
+        Children’s clothing
+            Men’s clothing
+            Shoes
+            Women’s clothing
+
+    Fashionaccessories
+        Dresses
+        Handbags
+        Jewelry
+        Sunglasses
+
+    Shopping
+        Boutiques
+        Coupons
+        Discount stores
+        Luxury goods
+        Online shopping
+        Shopping malls
+
+    Toys
+
+Sports and outdoors
+    Outdoor recreation
+        Boating
+        Camping
+        Fishing
+        Horseback riding
+        Hunting
+        Mountain biking
+        Surfing
+    Sports
+        American football
+        Association football (Soccer)
+        Auto racing
+        Baseball
+        Basketball
+        College football
+        Golf
+        Marathons
+        Skiing
+        Snowboarding
+        Swimming
+        Tennis
+        Thriathlons
+        Volleyball
+
+Technology
+    Computers
+        Computer memory
+        Computer monitors
+        Computer processors
+        Computer servers
+        Desktop computers
+        Free software
+        Hard drives
+        Network storage
+        Software
+        Tablet computers
+
+    Consumer electronics
+        Audio equipment
+        Camcorders
+        Cameras
+        E-book readers
+        GPS devices
+        Game consoles
+        Mobile phones
+        Portable media players
+        Projectors
+        Smartphones
+        Televisions
+[/Categories of interest filters]
+    `;
+
+    aiState.update({
+      ...aiState.get(),
+      messages: [
+        ...aiState.get().messages,
+        {
+          id: messageId,
+          role: 'user',
+          content: contentImages?.length ? contentImages : content,
+          timestamp: new Date().toISOString()
+        }
+      ]
+    })
 
     let textStream: undefined | ReturnType<typeof createStreamableValue<string>>
     let textNode: undefined | React.ReactNode
+
+    const pushMessages = (messages: Message[]) => {
+        aiState.done({
+            ...aiState.get(),
+            messages: [
+                ...(!isSilent ? aiState.get().messages : aiState.get().messages.filter(
+                    (message: any) => message.id !== messageId
+                )).map((message: any) => ({
+                    id: message.id,
+                    role: message.role,
+                    content: message.content,
+                    name: message.name,
+                    timestamp: message.timestamp
+                })),
+                ...messages
+              ]
+        });
+
+        if (isSilent) {
+            console.log('isSilent', isSilent, messageId)
+            console.log('messages', aiState.get().messages.map(m => [m.id, m.content]))
+        }
+    }
 
     const result = await streamUI({
         model: openai('gpt-4o'),
@@ -650,6 +1033,8 @@ Qualifying questions. Recommend keeping questions concise and relevant. Provide 
 Proceed: Ask the user if those are all the details they want to include in the lead form. If they confirm, proceed to the next step.
 Step 8: DO NOT call the lead form UI!!! Call (\`show_supervised_task_ui\`) 
 
+[ONLY PERFORM IF ACTIVELY REQUESTED :: REGION START] 
+
 Handling Special Requests:
 A/B Testing: If requested, ask about the variable they want to test and the success metrics. After the user gave his answer proceed to Call (\`show_supervised_task_ui\`) with the relevant task name.
 
@@ -660,25 +1045,50 @@ If the user requests to create or use a Custom or Lookalike Audience, ask about 
 For Lookalike Audiences, explain that the percentage determines how closely the audience matches the source: 1% is the most precise, targeting individuals who closely resemble the source audience, while 10% is broader, covering a wider range of people with less precision. After the user answered your question and you have a clear answer proceed to Call (\`show_supervised_task_ui\`) with the relevant task name.
 If the user wants to create an additional target group for the campaign, ask the user who they want to target. Based off of the description suggest targeting filters that are available on Facebook ads that could fit their desired targeting. After they clearly confirmed their target group, ask if they'd like to use the same creatives or if they have new ones. If they have new ones, ask them to upload them. If they want to use the same creatives, confirm and proceed to Call (\`show_supervised_task_ui\`) with the relevant task name.
 
-Standard Commands:
-New Images: Ask if they'd like ad text examples.
-Commands:
-For status changes: Use (\`show_update_status_campaign\`).
-For targeting updates: Use (\`show_campaign_connection_ui\`) for campaigns, (\`show_adset_connection_ui\`) for ad sets, or (\`show_ad_budget_ui\`) for budgets.
-Key Instructions:
-Communicate in the user's language.
-Present recommendations in a conversational tone without bullet points.
-Adapt examples to their industry and location.
-Frame technical requirements as helpful advice.
-Maintain a professional but friendly tone throughout.
+[START] [Geo targeting] (demographic targeting) (only if you are actively asked about it):
+If the user actively asks to do geo-targeting.
+Follow the guideline below:
+   If user want to set gepgraphical location then before the show_geographical_location_ui always check below conditions one after other.
+        1. If campaign is not connected then Call: \`show_campaign_connection_ui\` and if user selected it then check next condition
+        2. If campaign is connected adset is not connected then Call: \`show_adset_connection_ui\` and if user selected it then check next condition
+        3. If campaign is connected and adset is connected and budget not set yet then Call: \`show_ad_budget_ui\` and if user selected it then check next condition
+        4. If campaign is connected and adset is connected and budget is set then Call: \`show_geographical_location\`
+        
+    Important:
+    
     - Based on the user's description, tell them the filters you could use to target this target group. Only use filters exactly as listed in the "Facebook targeting interest list".
     
     - When choosing filters, select between 1-5 filters.
     
     - If the geographical target is an entire country or multiple countries (which you can see from the previous conversation), suggest using up to 5 filters and then narrow those with 1-5 additional filters to make the target group more precise.
     
-     
-   
+    This is the list from which you can choose:
+    ${interestFilters}
+
+    
+    Validation Step: Before suggesting filters, cross-check them with the knowledge base. Ensure the filters are from the provided list. If a user suggests a filter not in the list, inform them politely that it's not available and ask for an alternative.
+    
+[END] [Geo Targetting]    
+
+Standard Commands:
+New Images: Ask if they'd like ad text examples.
+Commands:
+For status changes: Use (\`show_update_status_campaign\`).
+
+[ONLY PERFORM IF ACTIVELY REQUESTED :: REGION END] 
+
+Key Instructions:
+Communicate in the user's language.
+Present recommendations in a conversational tone without bullet points.
+Adapt examples to their industry and location.
+Frame technical requirements as helpful advice.
+Maintain a professional but friendly tone throughout.
+
+    Reasoning: Proper ad placement optimizes budget and reach.
+    
+    Response: "I suggest we place the ad in [placements] because [reason]."
+    
+    Adjust placements based on user feedback.
     
     Additional Guidelines:
     
@@ -707,6 +1117,8 @@ Maintain a professional but friendly tone throughout.
 
     - If the user wants to pause a campaign, call \`showUpdateStatusChampaign\` to show the update status UI and let the user choose the status of the campaign.
     
+    - If you want to show suggestions-filter, then generate 5 filter suggestions using Categories of interest filters, Location, demographic targeting information, and user input - "${extraDetailsFinalText}", and then call \`show_suggested_filters\` with the suggestions.
+
     - Besides that, you can also chat with users and perform budget calculations if needed.
 
     Language:
@@ -740,12 +1152,12 @@ Maintain a professional but friendly tone throughout.
                             timestamp: message.timestamp
                         })),
                         {
-                            id: nanoid(),
-                            role: 'assistant',
-                            content,
-                            timestamp: new Date().toISOString()
+                          id: nanoid(),
+                          role: 'assistant',
+                          content,
+                          timestamp: new Date().toISOString()
                         }
-                    ]
+                      ]
                 });
             } else {
                 textStream.update(delta)
@@ -763,43 +1175,37 @@ Maintain a professional but friendly tone throughout.
                             <StockSkeleton/>
                         </BotCard>
                     )
-
                     await sleep(1000)
-
                     const toolCallId = nanoid()
+                    pushMessages([
+                        {
+                            id: nanoid(),
+                            role: 'assistant',
+                            content: [
+                                {
+                                    type: 'tool-call',
+                                    toolName: 'getCampaignResults',
+                                    toolCallId,
+                                    args: {campaignId, guideForUser}
+                                }
+                            ],
+                            timestamp: new Date().toISOString()
+                        },
+                        {
+                            id: nanoid(),
+                            role: 'tool',
+                            content: [
+                                {
+                                    type: 'tool-result',
+                                    toolName: 'getCampaignResults',
+                                    toolCallId,
+                                    result: {campaignId, guideForUser}
+                                }
+                            ],
+                            timestamp: new Date().toISOString()
+                        }
+                    ])
 
-                    aiState.done({
-                        ...aiState.get(),
-                        messages: [
-                            ...aiState.get().messages,
-                            {
-                                id: nanoid(),
-                                role: 'assistant',
-                                content: [
-                                    {
-                                        type: 'tool-call',
-                                        toolName: 'getCampaignResults',
-                                        toolCallId,
-                                        args: {campaignId, guideForUser}
-                                    }
-                                ],
-                                timestamp: new Date().toISOString()
-                            },
-                            {
-                                id: nanoid(),
-                                role: 'tool',
-                                content: [
-                                    {
-                                        type: 'tool-result',
-                                        toolName: 'getCampaignResults',
-                                        toolCallId,
-                                        result: {campaignId, guideForUser}
-                                    }
-                                ],
-                                timestamp: new Date().toISOString()
-                            }
-                        ]
-                    });
                     return await getCampaignResultsModule.component({
                         campaignId,
                         guideForUser
@@ -820,38 +1226,32 @@ Maintain a professional but friendly tone throughout.
 
                     const toolCallId = nanoid()
 
-                    aiState.done({
-                        ...aiState.get(),
-                        messages: [
-                            ...aiState.get().messages,
+                    pushMessages([{
+                        id: nanoid(),
+                        role: 'assistant',
+                        content: [
                             {
-                                id: nanoid(),
-                                role: 'assistant',
-                                content: [
-                                    {
-                                        type: 'tool-call',
-                                        toolName: 'getCampaignImages',
-                                        toolCallId,
-                                        args: {}
-                                    }
-                                ],
-                                timestamp: new Date().toISOString()
-                            },
-                            {
-                                id: nanoid(),
-                                role: 'tool',
-                                content: [
-                                    {
-                                        type: 'tool-result',
-                                        toolName: 'getCampaignImages',
-                                        toolCallId,
-                                        result: {}
-                                    }
-                                ],
-                                timestamp: new Date().toISOString()
+                                type: 'tool-call',
+                                toolName: 'getCampaignImages',
+                                toolCallId,
+                                args: {}
                             }
-                        ]
-                    });
+                        ],
+                        timestamp: new Date().toISOString()
+                    },
+                    {
+                        id: nanoid(),
+                        role: 'tool',
+                        content: [
+                            {
+                                type: 'tool-result',
+                                toolName: 'getCampaignImages',
+                                toolCallId,
+                                result: {}
+                            }
+                        ],
+                        timestamp: new Date().toISOString()
+                    }]);
 
                     return await getCampaignImagesModule.component({})
                 }
@@ -864,58 +1264,7 @@ Maintain a professional but friendly tone throughout.
                     const initialBudget = numberOfShares || price;
 
                     if (initialBudget <= 0 || initialBudget > 1000) {
-                        aiState.done({
-                            ...aiState.get(),
-                            messages: [
-                                ...aiState.get().messages,
-                                {
-                                    id: nanoid(),
-                                    role: 'assistant',
-                                    content: [
-                                        {
-                                            type: 'tool-call',
-                                            toolName: 'showAdBudgetUI',
-                                            toolCallId,
-                                            args: {symbol, price, numberOfShares: initialBudget, guideForUser}
-                                        }
-                                    ],
-                                    timestamp: new Date().toISOString()
-                                },
-                                {
-                                    id: nanoid(),
-                                    role: 'tool',
-                                    content: [
-                                        {
-                                            type: 'tool-result',
-                                            toolName: 'showAdBudgetUI',
-                                            toolCallId,
-                                            result: {
-                                                symbol,
-                                                price,
-                                                numberOfShares: initialBudget,
-                                                status: 'expired',
-                                                guideForUser
-                                            }
-                                        }
-                                    ],
-                                    timestamp: new Date().toISOString()
-                                },
-                                {
-                                    id: nanoid(),
-                                    role: 'system',
-                                    content: `[User has selected an invalid amount]`,
-                                    timestamp: new Date().toISOString()
-                                }
-                            ]
-                        });
-
-                        return await adBudgetModule.component({symbol, price, numberOfShares, guideForUser});
-                    }
-
-                    aiState.done({
-                        ...aiState.get(),
-                        messages: [
-                            ...aiState.get().messages,
+                        pushMessages([
                             {
                                 id: nanoid(),
                                 role: 'assistant',
@@ -941,14 +1290,57 @@ Maintain a professional but friendly tone throughout.
                                             symbol,
                                             price,
                                             numberOfShares: initialBudget,
+                                            status: 'expired',
                                             guideForUser
                                         }
                                     }
                                 ],
                                 timestamp: new Date().toISOString()
+                            },
+                            {
+                                id: nanoid(),
+                                role: 'system',
+                                content: `[User has selected an invalid amount]`,
+                                timestamp: new Date().toISOString()
                             }
-                        ]
-                    });
+                        ]);
+
+                        return await adBudgetModule.component({symbol, price, numberOfShares, guideForUser});
+                    }
+                    
+                    pushMessages([
+                        {
+                            id: nanoid(),
+                            role: 'assistant',
+                            content: [
+                                {
+                                    type: 'tool-call',
+                                    toolName: 'showAdBudgetUI',
+                                    toolCallId,
+                                    args: { symbol, price, numberOfShares: initialBudget, guideForUser }
+                                }
+                            ],
+                            timestamp: new Date().toISOString()
+                        },
+                        {
+                            id: nanoid(),
+                            role: 'tool',
+                            content: [
+                                {
+                                    type: 'tool-result',
+                                    toolName: 'showAdBudgetUI',
+                                    toolCallId,
+                                    result: {
+                                        symbol,
+                                        price,
+                                        numberOfShares: initialBudget,
+                                        guideForUser
+                                    }
+                                }
+                            ],
+                            timestamp: new Date().toISOString()
+                        }
+                    ]);
 
                     return await adBudgetModule.component({symbol, price, numberOfShares, guideForUser});
                 }
@@ -959,39 +1351,36 @@ Maintain a professional but friendly tone throughout.
                 parameters: formBuilderModule.parameters,
                 generate: async function* () {
                     const toolCallId = nanoid()
-                    aiState.done({
-                        ...aiState.get(),
-                        messages: [
-                            ...aiState.get().messages,
-                            {
-                                id: nanoid(),
-                                role: 'assistant',
-                                content: [
-                                    {
-                                        type: 'tool-call',
-                                        toolName: 'showFormBuilder',
-                                        toolCallId,
-                                        args: {}
-                                    }
-                                ],
-                                timestamp: new Date().toISOString()
-                            },
-                            {
-                                id: toolCallId,
-                                role: 'tool',
-                                content: [
-                                    {
-                                        type: 'tool-result',
-                                        toolName: 'showFormBuilder',
-                                        toolCallId,
-                                        result: {}
-                                    }
-                                ],
-                                timestamp: new Date().toISOString()
-                            },
-                        ]
-                    });
-                    return await formBuilderModule.component({toolCallId});
+                    pushMessages([
+                        {
+                            id: nanoid(),
+                            role: 'assistant',
+                            content: [
+                                {
+                                    type: 'tool-call',
+                                    toolName: 'showFormBuilder',
+                                    toolCallId,
+                                    args: {}
+                                }
+                            ],
+                            timestamp: new Date().toISOString()
+                        },
+                        {
+                            id: toolCallId,
+                            role: 'tool',
+                            content: [
+                                {
+                                    type: 'tool-result',
+                                    toolName: 'showFormBuilder',
+                                    toolCallId,
+                                    result: {}
+                                }
+                            ],
+                            timestamp: new Date().toISOString()
+                        },
+                    ])
+                
+                    return await formBuilderModule.component({ toolCallId });
                 }
             },
             getEvents: {
@@ -1005,42 +1394,37 @@ Maintain a professional but friendly tone throughout.
                     )
 
                     await sleep(1000)
-
                     const toolCallId = nanoid()
-
-                    aiState.done({
-                        ...aiState.get(),
-                        messages: [
-                            ...aiState.get().messages,
-                            {
-                                id: nanoid(),
-                                role: 'assistant',
-                                content: [
-                                    {
-                                        type: 'tool-call',
-                                        toolName: 'getEvents',
-                                        toolCallId,
-                                        args: {events}
-                                    }
-                                ],
-                                timestamp: new Date().toISOString()
-                            },
-                            {
-                                id: nanoid(),
-                                role: 'tool',
-                                content: [
-                                    {
-                                        type: 'tool-result',
-                                        toolName: 'getEvents',
-                                        toolCallId,
-                                        result: events
-                                    }
-                                ],
-                                timestamp: new Date().toISOString()
-                            }
-                        ]
-                    });
-                    return await getEventsModule.component({events});
+                    pushMessages([
+                        {
+                            id: nanoid(),
+                            role: 'assistant',
+                            content: [
+                                {
+                                    type: 'tool-call',
+                                    toolName: 'getEvents',
+                                    toolCallId,
+                                    args: {events}
+                                }
+                            ],
+                            timestamp: new Date().toISOString()
+                        },
+                        {
+                            id: nanoid(),
+                            role: 'tool',
+                            content: [
+                                {
+                                    type: 'tool-result',
+                                    toolName: 'getEvents',
+                                    toolCallId,
+                                    result: events
+                                }
+                            ],
+                            timestamp: new Date().toISOString()
+                        }
+                    ])
+                  
+                    return await getEventsModule.component({ events });
                 }
             },
             showSuggestionAdText: {
@@ -1054,41 +1438,36 @@ Maintain a professional but friendly tone throughout.
                     );
 
                     await sleep(1000);
-
                     const toolCallId = nanoid();
-
-                    aiState.done({
-                        ...aiState.get(),
-                        messages: [
-                            ...aiState.get().messages,
-                            {
-                                id: nanoid(),
-                                role: 'assistant',
-                                content: [
-                                    {
-                                        type: 'tool-call',
-                                        toolName: 'showSuggestionAdText',
-                                        toolCallId,
-                                        args: {campaignName, images, guideForUser}
-                                    }
-                                ],
-                                timestamp: new Date().toISOString()
-                            },
-                            {
-                                id: nanoid(),
-                                role: 'tool',
-                                content: [
-                                    {
-                                        type: 'tool-result',
-                                        toolName: 'showSuggestionAdText',
-                                        toolCallId,
-                                        result: {campaignName, images, guideForUser}
-                                    }
-                                ],
-                                timestamp: new Date().toISOString()
-                            }
-                        ]
-                    });
+                    pushMessages([
+                        {
+                            id: nanoid(),
+                            role: 'assistant',
+                            content: [
+                                {
+                                    type: 'tool-call',
+                                    toolName: 'showSuggestionAdText',
+                                    toolCallId,
+                                    args: {campaignName, images, guideForUser}
+                                }
+                            ],
+                            timestamp: new Date().toISOString()
+                        },
+                        {
+                            id: nanoid(),
+                            role: 'tool',
+                            content: [
+                                {
+                                    type: 'tool-result',
+                                    toolName: 'showSuggestionAdText',
+                                    toolCallId,
+                                    result: {campaignName, images, guideForUser}
+                                }
+                            ],
+                            timestamp: new Date().toISOString()
+                        }
+                    ])
+                
                     return await showSuggestionAdTextModule.component({images, guideForUser})
                 }
             },
@@ -1103,41 +1482,36 @@ Maintain a professional but friendly tone throughout.
                     );
 
                     await sleep(1000);
-
                     const toolCallId = nanoid();
+                    pushMessages([
+                        {
+                            id: nanoid(),
+                            role: 'assistant',
+                            content: [
+                                {
+                                    type: 'tool-call',
+                                    toolName: 'showVideoAdTextSuggestion',
+                                    toolCallId,
+                                    args: {campaignName, videos, guideForUser}
+                                }
+                            ],
+                            timestamp: new Date().toISOString()
+                        },
+                        {
+                            id: nanoid(),
+                            role: 'tool',
+                            content: [
+                                {
+                                    type: 'tool-result',
+                                    toolName: 'showVideoAdTextSuggestion',
+                                    toolCallId,
+                                    result: {campaignName, videos, guideForUser}
+                                }
+                            ],
+                            timestamp: new Date().toISOString()
+                        }
+                    ])
 
-                    aiState.done({
-                        ...aiState.get(),
-                        messages: [
-                            ...aiState.get().messages,
-                            {
-                                id: nanoid(),
-                                role: 'assistant',
-                                content: [
-                                    {
-                                        type: 'tool-call',
-                                        toolName: 'showVideoAdTextSuggestion',
-                                        toolCallId,
-                                        args: {campaignName, videos, guideForUser}
-                                    }
-                                ],
-                                timestamp: new Date().toISOString()
-                            },
-                            {
-                                id: nanoid(),
-                                role: 'tool',
-                                content: [
-                                    {
-                                        type: 'tool-result',
-                                        toolName: 'showVideoAdTextSuggestion',
-                                        toolCallId,
-                                        result: {campaignName, videos, guideForUser}
-                                    }
-                                ],
-                                timestamp: new Date().toISOString()
-                            }
-                        ]
-                    });
                     return await showSuggestionVideoAdTextModule.component({videos, guideForUser})
                 }
             },
@@ -1152,41 +1526,35 @@ Maintain a professional but friendly tone throughout.
                     );
 
                     await sleep(1000);
-
                     const toolCallId = nanoid();
-
-                    aiState.done({
-                        ...aiState.get(),
-                        messages: [
-                            ...aiState.get().messages,
-                            {
-                                id: nanoid(),
-                                role: 'assistant',
-                                content: [
-                                    {
-                                        type: 'tool-call',
-                                        toolName: 'showUpdateStatusCampaign',
-                                        toolCallId,
-                                        args: {campaignName, status}
-                                    }
-                                ],
-                                timestamp: new Date().toISOString()
-                            },
-                            {
-                                id: nanoid(),
-                                role: 'tool',
-                                content: [
-                                    {
-                                        type: 'tool-result',
-                                        toolName: 'showUpdateStatusCampaign',
-                                        toolCallId,
-                                        result: {campaignName, status}
-                                    }
-                                ],
-                                timestamp: new Date().toISOString()
-                            }
-                        ]
-                    });
+                    pushMessages([
+                        {
+                            id: nanoid(),
+                            role: 'assistant',
+                            content: [
+                                {
+                                    type: 'tool-call',
+                                    toolName: 'showUpdateStatusCampaign',
+                                    toolCallId,
+                                    args: {campaignName, status}
+                                }
+                            ],
+                            timestamp: new Date().toISOString()
+                        },
+                        {
+                            id: nanoid(),
+                            role: 'tool',
+                            content: [
+                                {
+                                    type: 'tool-result',
+                                    toolName: 'showUpdateStatusCampaign',
+                                    toolCallId,
+                                    result: {campaignName, status}
+                                }
+                            ],
+                            timestamp: new Date().toISOString()
+                        }
+                    ])
 
                     return await showUpdateStatusCampaignModule.component({toolCallId, campaignName, status})
                 }
@@ -1204,43 +1572,36 @@ Maintain a professional but friendly tone throughout.
                     await updateChatTitle(aiState.get().chatId, campaignName)
                     const timestamp: string = new Date().toISOString();
                     const toolCallId = nanoid();
-                    aiState.done({
-                        ...aiState.get(),
-                        messages: [
-                            ...aiState.get().messages,
-                            {
-                                id: nanoid(),
-                                role: 'assistant',
-                                content: [
-                                    {
-                                        type: 'tool-call',
-                                        toolName: 'showCampaignNameUpdateUI',
-                                        toolCallId,
-                                        args: {campaignName, campaignId, questionForBudget}
-                                    }
-                                ],
-                                timestamp
-                            },
-                            {
-                                id: toolCallId,
-                                role: 'tool',
-                                content: [
-                                    {
-                                        type: 'tool-result',
-                                        toolName: 'showCampaignNameUpdateUI',
-                                        toolCallId,
-                                        result: {campaignName, campaignId, questionForBudget}
-                                    }
-                                ],
-                                timestamp
-                            }
-                        ]
-                    })
-                    return await showCampaignNameUpdateUIModule.component({
-                        campaignId,
-                        campaignName,
-                        questionForBudget
-                    });
+                    pushMessages([
+                        {
+                            id: nanoid(),
+                            role: 'assistant',
+                            content: [
+                                {
+                                    type: 'tool-call',
+                                    toolName: 'showCampaignNameUpdateUI',
+                                    toolCallId,
+                                    args: {campaignName, campaignId, questionForBudget}
+                                }
+                            ],
+                            timestamp
+                        },
+                        {
+                            id: toolCallId,
+                            role: 'tool',
+                            content: [
+                                {
+                                    type: 'tool-result',
+                                    toolName: 'showCampaignNameUpdateUI',
+                                    toolCallId,
+                                    result: {campaignName, campaignId, questionForBudget}
+                                }
+                            ],
+                            timestamp
+                        }
+                    ])
+
+                    return await showCampaignNameUpdateUIModule.component({campaignId, campaignName, questionForBudget});
                 }
             },
             createCampaign: {
@@ -1268,38 +1629,35 @@ Maintain a professional but friendly tone throughout.
                     }
                     const timestamp: string = new Date().toISOString();
                     const toolCallId = nanoid();
-                    aiState.done({
-                        ...aiState.get(),
-                        messages: [
-                            ...aiState.get().messages,
-                            {
-                                id: nanoid(),
-                                role: 'assistant',
-                                content: [
-                                    {
-                                        type: 'tool-call',
-                                        toolName: 'createCampaign',
-                                        toolCallId,
-                                        args: {success, campaignName, campaignId, questionForBudget}
-                                    }
-                                ],
-                                timestamp
-                            },
-                            {
-                                id: toolCallId,
-                                role: 'tool',
-                                content: [
-                                    {
-                                        type: 'tool-result',
-                                        toolName: 'createCampaign',
-                                        toolCallId,
-                                        result: {success, campaignName, campaignId, questionForBudget}
-                                    }
-                                ],
-                                timestamp
-                            }
-                        ]
-                    })
+                    pushMessages([
+                        {
+                            id: nanoid(),
+                            role: 'assistant',
+                            content: [
+                                {
+                                    type: 'tool-call',
+                                    toolName: 'createCampaign',
+                                    toolCallId,
+                                    args: {success, campaignName, campaignId, questionForBudget}
+                                }
+                            ],
+                            timestamp
+                        },
+                        {
+                            id: toolCallId,
+                            role: 'tool',
+                            content: [
+                                {
+                                    type: 'tool-result',
+                                    toolName: 'createCampaign',
+                                    toolCallId,
+                                    result: {success, campaignName, campaignId, questionForBudget}
+                                }
+                            ],
+                            timestamp
+                        }
+                    ])
+
                     return await createCampaignModule.component({success, campaignName, campaignId, questionForBudget})
                 }
             },
@@ -1310,38 +1668,35 @@ Maintain a professional but friendly tone throughout.
                     console.log('tool call showCampaignConnectionUI')
                     const timestamp: string = new Date().toISOString();
                     const toolCallId = nanoid();
-                    aiState.done({
-                        ...aiState.get(),
-                        messages: [
-                            ...aiState.get().messages,
-                            {
-                                id: nanoid(),
-                                role: 'assistant',
-                                content: [
-                                    {
-                                        type: 'tool-call',
-                                        toolName: 'showCampaignConnectionUI',
-                                        toolCallId,
-                                        args: {}
-                                    }
-                                ],
-                                timestamp
-                            },
-                            {
-                                id: toolCallId,
-                                role: 'tool',
-                                content: [
-                                    {
-                                        type: 'tool-result',
-                                        toolName: 'showCampaignConnectionUI',
-                                        toolCallId,
-                                        result: {}
-                                    }
-                                ],
-                                timestamp
-                            }
-                        ]
-                    })
+                    pushMessages([
+                        {
+                            id: nanoid(),
+                            role: 'assistant',
+                            content: [
+                                {
+                                    type: 'tool-call',
+                                    toolName: 'showCampaignConnectionUI',
+                                    toolCallId,
+                                    args: {}
+                                }
+                            ],
+                            timestamp
+                        },
+                        {
+                            id: toolCallId,
+                            role: 'tool',
+                            content: [
+                                {
+                                    type: 'tool-result',
+                                    toolName: 'showCampaignConnectionUI',
+                                    toolCallId,
+                                    result: {}
+                                }
+                            ],
+                            timestamp
+                        }
+                    ])
+
                     return await showCampaignConnectionUIModule.component({})
                 }
             },
@@ -1352,39 +1707,118 @@ Maintain a professional but friendly tone throughout.
                     console.log('tool call showPlacementTargetingUI')
                     const timestamp: string = new Date().toISOString();
                     const toolCallId = nanoid();
-                    aiState.done({
-                        ...aiState.get(),
-                        messages: [
-                            ...aiState.get().messages,
-                            {
-                                id: nanoid(),
-                                role: 'assistant',
-                                content: [
-                                    {
-                                        type: 'tool-call',
-                                        toolName: 'showPlacementTargetingUI',
-                                        toolCallId,
-                                        args: {}
+                    pushMessages([
+                        {
+                            id: nanoid(),
+                            role: 'assistant',
+                            content: [
+                                {
+                                    type: 'tool-call',
+                                    toolName: 'showPlacementTargetingUI',
+                                    toolCallId,
+                                    args: {}
+                                }
+                            ],
+                            timestamp
+                        },
+                        {
+                            id: toolCallId,
+                            role: 'tool',
+                            content: [
+                                {
+                                    type: 'tool-result',
+                                    toolName: 'showPlacementTargetingUI',
+                                    toolCallId,
+                                    result: {}
+                                }
+                            ],
+                            timestamp
+                        }
+                    ])
+
+                    return await showPlacementTargetingUIModule.component({toolCallId})
+                }
+            },
+            showGeographicalLocationUI: {
+                description: showGeographicalLocationUIModule.description,
+                parameters: showGeographicalLocationUIModule.parameters,
+                generate: async function* ({}) {
+                    const timestamp: string = new Date().toISOString();
+                    const toolCallId = nanoid();
+                    pushMessages([
+                        {
+                            id: nanoid(),
+                            role: 'assistant',
+                            content: [
+                                {
+                                    type: 'tool-call',
+                                    toolName: 'showGeographicalLocationUI',
+                                    toolCallId,
+                                    args: {}
+                                }
+                            ],
+                            timestamp
+                        },
+                        {
+                            id: toolCallId,
+                            role: 'tool',
+                            content: [
+                                {
+                                    type: 'tool-result',
+                                    toolName: 'showGeographicalLocationUI',
+                                    toolCallId,
+                                    result: {}
+                                }
+                            ],
+                            timestamp
+                        }
+                    ])
+
+                    return await showGeographicalLocationUIModule.component({toolCallId})
+                }
+            },
+            showSuggestedFilters: {
+                description: showSuggestedFiltersUIModule.description,
+                parameters: showSuggestedFiltersUIModule.parameters,
+                generate: async function* ({suggestedFitlers}) {
+                    console.log('suggestedFitlers', suggestedFitlers)
+                    const timestamp: string = new Date().toISOString()
+                    const toolCallId = nanoid()
+                    pushMessages([
+                        {
+                            id: nanoid(),
+                            role: 'assistant',
+                            content: [
+                                {
+                                    type: 'tool-call',
+                                    toolName: 'showSuggestedFilters',
+                                    toolCallId,
+                                    args: {
+                                        suggestedFitlers,
                                     }
-                                ],
-                                timestamp
-                            },
-                            {
-                                id: toolCallId,
-                                role: 'tool',
-                                content: [
-                                    {
-                                        type: 'tool-result',
-                                        toolName: 'showPlacementTargetingUI',
-                                        toolCallId,
-                                        result: {}
+                                }
+                            ],
+                            timestamp
+                        },
+                        {
+                            id: toolCallId,
+                            role: 'tool',
+                            content: [
+                                {
+                                    type: 'tool-result',
+                                    toolName: 'showSuggestedFilters',
+                                    toolCallId,
+                                    result: {
+                                        suggestedFitlers
                                     }
-                                ],
-                                timestamp
-                            }
-                        ]
-                    })
-                    return await showPlacementTargetingUIModule.component({
+                                }
+                            ],
+                            timestamp
+                        }
+                    ])
+
+                    return await showSuggestedFiltersUIModule.component({
+                        suggestedFitlers,
                         toolCallId
                     })
                 }
@@ -1575,6 +2009,7 @@ Maintain a professional but friendly tone throughout.
 
 
     });
+
     return {
         id: nanoid(),
         display: result.value
@@ -1784,6 +2219,38 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                 return (
                                     <BotCard key={tool.toolCallId}>
                                         <FormBuilder {...tool.result} toolCallId={tool.toolCallId} isReadOnly/>
+                                    </BotCard>
+                                )    
+                            case 'showGeographicalLocationUI':
+                                return (
+                                    <BotCard key={tool.toolCallId}>
+                                        <GeographicalLocation
+                                          toolCallId={tool.toolCallId}
+                                          uiProps={tool.result.uiProps}
+                                          isReadOnly={!!tool.result.uiProps}
+                                        />
+                                    </BotCard>
+                                ) 
+                            case 'showSuggestedFilters':
+                                return (
+                                    <BotCard key={tool.toolCallId}>
+                                        <SuggestedFilters toolCallId={tool.toolCallId} suggestedFitlers={tool.result.suggestedFitlers} uiProps={tool.result.uiProps} isReadOnly  />
+                                    </BotCard>
+                                )    
+                            case 'showGeographicalLocationUI':
+                                return (
+                                    <BotCard key={tool.toolCallId}>
+                                        <GeographicalLocation
+                                          toolCallId={tool.toolCallId}
+                                          uiProps={tool.result.uiProps}
+                                          isReadOnly={!!tool.result.uiProps}
+                                        />
+                                    </BotCard>
+                                ) 
+                            case 'showSuggestedFilters':
+                                return (
+                                    <BotCard key={tool.toolCallId}>
+                                        <SuggestedFilters toolCallId={tool.toolCallId} suggestedFitlers={tool.result.suggestedFitlers} uiProps={tool.result.uiProps} isReadOnly  />
                                     </BotCard>
                                 )
                             case 'showSupervisedTaskUI':

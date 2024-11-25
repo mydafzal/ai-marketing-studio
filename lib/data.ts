@@ -64,7 +64,7 @@ export const generateAdsetTemplate = () => ({
     ],
     geo_locations: {
       countries: ['NL', 'DE'],
-      location_types: ['home', 'recent']
+      // location_types: ['home', 'recent']
     },
     publisher_platforms: ['facebook', 'instagram'],
     facebook_positions: [
