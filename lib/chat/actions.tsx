@@ -2041,7 +2041,7 @@ Maintain a professional but friendly tone throughout.
                                         type: 'tool-result',
                                         toolName: 'showAdCreativesSwitcher',
                                         toolCallId,
-                                        result: {}
+                                        result: {toolCallId}
                                     }
                                 ],
                                 timestamp

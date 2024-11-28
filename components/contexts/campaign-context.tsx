@@ -1,4 +1,4 @@
-import { useActions } from 'ai/rsc'
+import { useActions } from 'zai/rsc'
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { KvContext }  from '@/components/contexts/kv-context';
 import { CampaignSummary, getCampaignSummary } from '@/lib/api/fasty-bot/get-campaign-summary'
@@ -75,12 +75,12 @@ export const CampaignContextProvider = ({ children }: { children: React.ReactNod
             const url = `/api/fasty-bot/proxy-get-adsets?campaign_id=${id}`
             const responseStream = await fetch(url)
             const response = await responseStream.json()
-            if (response.success && response.data) {
+            if (response) {
                 // .data is due to pagination
-                setAdsets(response.data.data)
+                setAdsets(response)
                 if (chat?.fbAdsetId) {
                     setAdset(
-                        response.data.data.find(
+                        response.find(
                             (a: Adset) => a.id === chat?.fbAdsetId
                         )
                     )
@@ -91,8 +91,7 @@ export const CampaignContextProvider = ({ children }: { children: React.ReactNod
     }, [id])
     useEffect(() => {
         void fetchAdsets()
-    }, [fetchAdsets])
-
+    }, [id, fetchAdsets])
     useEffect(() => {
         if (id) {
             fetchSummary(id)
