@@ -1,4 +1,4 @@
-import { useActions } from 'zai/rsc'
+import { useActions } from 'ai/rsc'
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { KvContext }  from '@/components/contexts/kv-context';
 import { CampaignSummary, getCampaignSummary } from '@/lib/api/fasty-bot/get-campaign-summary'

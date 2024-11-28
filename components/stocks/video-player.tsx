@@ -19,7 +19,6 @@ interface VideoPlayerProps {
 const VideoPlayer: React.FC<VideoPlayerProps> = ({
   src,
   title,
-  title,
   width = 'w-full',
   height = 'h-auto',
   thumbnail,
