@@ -1,4 +1,5 @@
 import { LeadgenFrom } from '@/lib/types'
+import { getFbMarketingApiKey } from '@/app/actions';
 
 interface LeadgenFromCreateRequest extends LeadgenFrom {
   page_id: string
@@ -11,12 +12,19 @@ export async function createLeadgenForm(
     const fastyEndpoint = process.env.FASTY_API_URL
     const apiUrl = `${fastyEndpoint}/facebook/exec/direct/lead/create-leadgen-form`
     console.log('payload to create a new leadgen-form', payload)
+    const token_resp = await getFbMarketingApiKey()
+    let token=""
+    if(token_resp.success && token_resp.token){
+        token=token_resp.token
+    }
 
     const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.FASTY_API_TOKEN}`
+        Authorization: `Bearer ${process.env.FASTY_API_TOKEN}`,
+        'fb-api-key': token
+
       },
       body: JSON.stringify(payload)
     })

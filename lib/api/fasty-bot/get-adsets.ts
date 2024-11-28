@@ -1,17 +1,21 @@
-export interface AdsetResult {
-  id: string
-}
-export async function getAdsets(campaignId: string): Promise<AdsetResult[]> {
-  const apiUrl = `/api/fasty-bot/proxy-get-adsets?campaign_id=${campaignId}`
+import { getFbMarketingApiKey } from '@/app/actions';
+
+export async function getAdsets(campaignId: string): Promise<any> {
+  const token_resp = await getFbMarketingApiKey()
+  const token = token_resp.success && token_resp.token ? token_resp.token : ""
+
+  const fastyEndpoint = process.env.FASTY_API_URL
+  const apiUrl = `${fastyEndpoint}/facebook/exec/direct/dynamic-ads/get-adsets?campaign_id=${campaignId}`
+
   try {
-    const response = await fetch(apiUrl)
+    const response = await fetch(apiUrl, {
+      headers: {
+        'Authorization': `Bearer ${process.env.FASTY_API_TOKEN}`,
+        'fb-api-key': token
+      }
+    })
 
-    if (!response.ok) {
-      console.error(`HTTP error! status: ${response.status}`)
-    }
-
-    const data: AdsetResult[] = await response.json()
-    return data
+    return response
   } catch (error) {
     console.error('Error fetching adsets:', error)
   }

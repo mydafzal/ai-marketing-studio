@@ -2,12 +2,47 @@ import { Separator } from '@/components/ui/separator'
 import { UIState } from '@/lib/chat/actions'
 import { Session } from '@/lib/types'
 import Link from 'next/link'
-import { ExclamationTriangleIcon } from '@radix-ui/react-icons'
+import { AlertCircle } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { Card, CardContent } from '@/components/ui/card'
 
 export interface ChatList {
   messages: UIState
   session?: Session
   isShared: boolean
+}
+
+export function LoginPrompt() {
+  return (
+    <Card className="bg-zinc-900/50 border-zinc-800 mb-6">
+      <CardContent className="p-4">
+        <div className="flex items-start gap-3">
+          <div className="shrink-0 p-2 bg-amber-500/10 rounded-lg">
+            <AlertCircle className="size-5 text-amber-500" />
+          </div>
+          <div className="space-y-1">
+            <p className="text-zinc-300 text-sm leading-relaxed">
+              Please{' '}
+              <Link 
+                href="/login" 
+                className="text-blue-400 hover:text-blue-300 hover:underline transition-colors"
+              >
+                log in
+              </Link>
+              {' '}or{' '}
+              <Link 
+                href="/signup"
+                className="text-blue-400 hover:text-blue-300 hover:underline transition-colors"
+              >
+                sign up
+              </Link>
+              {' '}to save and revisit your chat history!
+            </p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
 }
 
 export function ChatList({ messages, session, isShared }: ChatList) {
@@ -16,37 +51,24 @@ export function ChatList({ messages, session, isShared }: ChatList) {
   }
 
   return (
-    <div className="relative mx-auto max-w-2xl px-4">
-      {!isShared && !session ? (
-        <>
-          <div className="group relative mb-4 flex items-start md:-ml-12">
-            <div className="bg-background flex size-[25px] shrink-0 select-none items-center justify-center rounded-md border shadow-sm">
-              <ExclamationTriangleIcon />
-            </div>
-            <div className="ml-4 flex-1 space-y-2 overflow-hidden px-1">
-              <p className="text-muted-foreground leading-normal">
-                Please{' '}
-                <Link href="/login" className="underline">
-                  log in
-                </Link>{' '}
-                or{' '}
-                <Link href="/signup" className="underline">
-                  sign up
-                </Link>{' '}
-                to save and revisit your chat history!
-              </p>
-            </div>
-          </div>
-          <Separator className="my-4" />
-        </>
-      ) : null}
+    <div className="relative mx-auto max-w-3xl px-4">
+      {!isShared && !session && <LoginPrompt />}
 
-      {messages.map((message, index) => (
-        <div key={message.id}>
-          {message.display}
-          {index < messages.length - 1 && <Separator className="my-4" />}
-        </div>
-      ))}
+      <div className="space-y-6">
+        {messages.map((message, index) => (
+          <div key={message.id} className="relative">
+            {message.display}
+            {index < messages.length - 1 && (
+              <Separator 
+                className={cn(
+                  "my-6",
+                  "bg-zinc-800/50" // Darker, more subtle separator
+                )} 
+              />
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

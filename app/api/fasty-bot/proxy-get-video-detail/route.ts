@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getVideoDetail } from '@/lib/api/fasty-bot/get-video-detail'
+import { getFbMarketingApiKey } from '@/app/actions';
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)

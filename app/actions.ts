@@ -5,7 +5,8 @@ import {redirect} from 'next/navigation'
 import {kv} from '@vercel/kv'
 
 import {auth} from '@/auth'
-import {AdText, VideoAdText, type Chat, User} from '@/lib/types'
+import {AdText, type Chat, User, VideoAdText} from '@/lib/types'
+import {getBaseUrl} from "@/lib/helpers/vercel/get-base-url"
 
 export async function getChats(userId?: string | null) {
     if (!userId) {
@@ -300,24 +301,24 @@ export async function fetchUserDefaultExtraDetailsForAdmin(userEmail: string) {
 export async function updateUserDefaultExtraDetailsForAdmin(userEmail: string, promptString: string) {
     const session = await auth()
     if (!session || !session.user) {
-        return { error: 'User not authenticated' }
+        return {error: 'User not authenticated'}
     }
 
     if (!userEmail) {
-        return { error: 'Missing user email' }
+        return {error: 'Missing user email'}
     }
 
     if (!promptString) {
-        return { error: 'Missing prompt string' }
+        return {error: 'Missing prompt string'}
     }
 
     try {
         const userKey = `user:${userEmail}`
-        await kv.hset(userKey, { defaultExtraDetails: promptString })
-        return { success: true, message: 'Default extra details updated successfully' }
+        await kv.hset(userKey, {defaultExtraDetails: promptString})
+        return {success: true, message: 'Default extra details updated successfully'}
     } catch (error) {
         console.error(`Error updating defaultExtraDetails for user: ${userEmail}`, error)
-        return { error: 'Failed to update default extra details' }
+        return {error: 'Failed to update default extra details'}
     }
 }
 
@@ -524,7 +525,6 @@ export async function updateChatFbCampaignId(chatSlug: string, fbCampaignId: str
     }
 }
 
-
 export async function fetchChatFbCampaignId(chatSlug: string) {
     const session = await auth()
 
@@ -561,6 +561,48 @@ export async function fetchChatFbCampaignId(chatSlug: string) {
         }
     } catch (error) {
         console.error(`Error fetching fbCampaignId for chat ${chatSlug}:`, error)
+        return {
+            error: 'Something went wrong'
+        }
+    }
+}
+
+export async function fetchChatFbAdsetId(chatSlug: string) {
+    const session = await auth()
+
+    if (!session || !session.user) {
+        return {
+            error: 'User not authenticated'
+        }
+    }
+
+    try {
+        // Construct the chat key using the chatSlug
+        const chatKey = `chat:${chatSlug}`
+
+        // Fetch the chat data
+        const chatData = await kv.hgetall(chatKey)
+
+        if (!chatData) {
+            return {
+                error: 'Chat not found'
+            }
+        }
+
+        const fbAdsetId = chatData.fbAdsetId
+
+        if (!fbAdsetId) {
+            return {
+                error: 'Facebook Ad Set ID not found for this chat'
+            }
+        }
+
+        return {
+            success: true,
+            fbAdsetId
+        }
+    } catch (error) {
+        console.error(`Error fetching fbAdsetId for chat ${chatSlug}:`, error)
         return {
             error: 'Something went wrong'
         }
@@ -724,6 +766,132 @@ export async function updateFbAccountId(email: string, fbAccountId: string) {
     }
 }
 
+export async function updateFbBusinessAcc(email: string, accountId: string) {
+    const session = await auth()
+
+    if (!session || !session.user) {
+        return {
+            success: false,
+            error: 'User not authenticated'
+        }
+    }
+
+    try {
+        // Construct the user key using the email
+        const userKey = `user:${email}`
+
+        // Check if the user exists
+        const existingUser = await kv.hgetall(userKey)
+
+        if (!existingUser) {
+            return {
+                success: false,
+                error: 'User not found'
+            }
+        }
+
+        // Update the accountId field
+        await kv.hset(userKey, {fbBusinessAccId: accountId})
+
+        return {
+            success: true,
+            message: 'Facebook Business account id updated successfully'
+        }
+    } catch (error) {
+        console.error(`Error updating Facebook Business account id for user ${email}:`, error)
+        return {
+            success: false,
+            error: 'Something went wrong'
+        }
+    }
+}
+
+
+export async function updateFbAccessToken(email: string, fbAccessToken: string) {
+    const session = await auth()
+
+    // if (!session || !session.user) {
+    //     return {
+    //         success: false,
+    //         error: 'User not authenticated'
+    //     }
+    // }
+
+    try {
+        // Construct the user key using the email
+        const userKey = `user:${email}`
+
+        // Check if the user exists
+        const existingUser = await kv.hgetall(userKey)
+
+        if (!existingUser) {
+            return {
+                success: false,
+                error: 'User not found'
+            }
+        }
+
+
+        // encrypt the fbAccessToken
+        const encryptedAccessToken = fbAccessToken // TODO: Encryption of access token
+
+        // Update the accountId field
+        await kv.hset(userKey, {fbMarketingApiKey: encryptedAccessToken})
+
+        return {
+            success: true,
+            message: 'Facebook Access token updated successfully'
+        }
+    } catch (error) {
+        console.error(`Error updating Facebook Access token for user ${email}:`, error)
+        return {
+            success: false,
+            error: 'Something went wrong'
+        }
+    }
+}
+
+export async function disconnectFacebook(email: string) {
+    const session = await auth()
+
+    if (!session || !session.user) {
+        return {
+            success: false,
+            error: 'User not authenticated'
+        }
+    }
+
+    try {
+        // Construct the user key using the email
+        const userKey = `user:${email}`
+
+        // Check if the user exists
+        const existingUser = await kv.hgetall(userKey)
+
+        if (!existingUser) {
+            return {
+                success: false,
+                error: 'User not found'
+            }
+        }
+
+        // Update the accountId field
+        await kv.hset(userKey, {fbMarketingApiKey: null, fbBusinessAccId: null, fbAccountId: null})
+
+        return {
+            success: true,
+            message: 'Facebook disconnected successfully'
+        }
+    } catch (error) {
+        console.error(`Error disconnecting facebook for user ${email}:`, error)
+        return {
+            success: false,
+            error: 'Something went wrong'
+        }
+    }
+}
+
+
 export async function fetchChatCampaignBudget(chatSlug: string) {
     const session = await auth()
 
@@ -792,69 +960,73 @@ export async function updateAdText(chatSlug: string, idx: number, adTextId: numb
             if (message.role === 'assistant') {
                 if (!Array.isArray(message.content)) return
                 message.content.forEach(tool => {
-                  if (tool.type !== 'tool-call') return
-                  if (tool.toolName !== toolName) return
-                  if (toolName === 'showSuggestionAdText') {
-                    if (!Array.isArray((tool.args as any)?.images)) return
-                    ;(tool.args as any)?.images.forEach((image: any) => {
-                      if (!Array.isArray(image.suggestedTexts)) return
-                      image.suggestedTexts.forEach(
-                        (suggestedText: AdText, index: number) => {
-                          if (suggestedText.id === adTextId && index === idx) {
-                            suggestedText.headline = newAdText.headline
-                            suggestedText.text = newAdText.text
-                          }
-                        }
-                      )
-                    })
-                  } else if (toolName === 'showVideoAdTextSuggestion') {
-                    if (!Array.isArray((tool.args as any)?.videos)) return
-                    ;(tool.args as any)?.videos.forEach((video: any) => {
-                      if (!Array.isArray(video.suggestedTexts)) return
-                      video.suggestedTexts.forEach(
-                        (suggestedText: AdText, index: number) => {
-                          if (suggestedText.id === adTextId && index === idx) {
-                            suggestedText.headline = newAdText.headline
-                            suggestedText.text = newAdText.text
-                          }
-                        }
-                      )
-                    })
-                  }
+                    if (tool.type !== 'tool-call') return
+                    if (tool.toolName !== toolName) return
+                    if (toolName === 'showSuggestionAdText') {
+                        if (!Array.isArray((tool.args as any)?.images)) return
+                            ;
+                        (tool.args as any)?.images.forEach((image: any) => {
+                            if (!Array.isArray(image.suggestedTexts)) return
+                            image.suggestedTexts.forEach(
+                                (suggestedText: AdText, index: number) => {
+                                    if (suggestedText.id === adTextId && index === idx) {
+                                        suggestedText.headline = newAdText.headline
+                                        suggestedText.text = newAdText.text
+                                    }
+                                }
+                            )
+                        })
+                    } else if (toolName === 'showVideoAdTextSuggestion') {
+                        if (!Array.isArray((tool.args as any)?.videos)) return
+                            ;
+                        (tool.args as any)?.videos.forEach((video: any) => {
+                            if (!Array.isArray(video.suggestedTexts)) return
+                            video.suggestedTexts.forEach(
+                                (suggestedText: AdText, index: number) => {
+                                    if (suggestedText.id === adTextId && index === idx) {
+                                        suggestedText.headline = newAdText.headline
+                                        suggestedText.text = newAdText.text
+                                    }
+                                }
+                            )
+                        })
+                    }
                 })
             }
             if (message.role === 'tool') {
                 if (!Array.isArray(message.content)) return
                 message.content.forEach(tool => {
-                  if (tool.type !== 'tool-result') return
-                  if (tool.toolName !== toolName) return
-                  if (toolName === 'showSuggestionAdText') {
-                    if (!Array.isArray((tool.result as any)?.images)) return
-                    ;(tool.result as any).images.forEach((image: any) => {
-                      if (!Array.isArray(image.suggestedTexts)) return
-                      image.suggestedTexts.forEach(
-                        (suggestedText: AdText, index: number) => {
-                          if (suggestedText.id === adTextId && index === idx) {
-                            suggestedText.headline = newAdText.headline
-                            suggestedText.text = newAdText.text
-                          }
-                        }
-                      )
-                    })
-                  } else if (toolName === 'showVideoAdTextSuggestion') {
-                    if (!Array.isArray((tool.result as any)?.videos)) return
-                    ;(tool.result as any).videos.forEach((video: any) => {
-                      if (!Array.isArray(video.suggestedTexts)) return
-                      video.suggestedTexts.forEach(
-                        (suggestedText: AdText, index: number) => {
-                          if (suggestedText.id === adTextId && index === idx) {
-                            suggestedText.headline = newAdText.headline
-                            suggestedText.text = newAdText.text
-                          }
-                        }
-                      )
-                    })
-                  }
+                    if (tool.type !== 'tool-result') return
+                    if (tool.toolName !== toolName) return
+                    if (toolName === 'showSuggestionAdText') {
+                        if (!Array.isArray((tool.result as any)?.images)) return
+                            ;
+                        (tool.result as any).images.forEach((image: any) => {
+                            if (!Array.isArray(image.suggestedTexts)) return
+                            image.suggestedTexts.forEach(
+                                (suggestedText: AdText, index: number) => {
+                                    if (suggestedText.id === adTextId && index === idx) {
+                                        suggestedText.headline = newAdText.headline
+                                        suggestedText.text = newAdText.text
+                                    }
+                                }
+                            )
+                        })
+                    } else if (toolName === 'showVideoAdTextSuggestion') {
+                        if (!Array.isArray((tool.result as any)?.videos)) return
+                            ;
+                        (tool.result as any).videos.forEach((video: any) => {
+                            if (!Array.isArray(video.suggestedTexts)) return
+                            video.suggestedTexts.forEach(
+                                (suggestedText: AdText, index: number) => {
+                                    if (suggestedText.id === adTextId && index === idx) {
+                                        suggestedText.headline = newAdText.headline
+                                        suggestedText.text = newAdText.text
+                                    }
+                                }
+                            )
+                        })
+                    }
                 })
             }
         })
@@ -913,7 +1085,7 @@ export async function updateAdTextWithFbId(chatSlug: string, idx: number, adText
                                 }
                             })
                         })
-                    }else if (toolName === 'showVideoAdTextSuggestion') {
+                    } else if (toolName === 'showVideoAdTextSuggestion') {
                         if (!Array.isArray((tool.args as any)?.videos)) return
                         (tool.args as any)?.videos.forEach((video: any) => {
                             if (!Array.isArray(video.suggestedTexts)) return
@@ -924,7 +1096,7 @@ export async function updateAdTextWithFbId(chatSlug: string, idx: number, adText
                             })
                         })
                     }
-                    
+
                 })
             }
             if (message.role === 'tool') {
@@ -943,7 +1115,7 @@ export async function updateAdTextWithFbId(chatSlug: string, idx: number, adText
                                 }
                             })
                         })
-                    }else if (toolName === 'showVideoAdTextSuggestion') {
+                    } else if (toolName === 'showVideoAdTextSuggestion') {
                         if (!Array.isArray((tool.result as any)?.videos)) return
                         (tool.result as any).videos.forEach((video: any) => {
                             if (!Array.isArray(video.suggestedTexts)) return
@@ -954,7 +1126,7 @@ export async function updateAdTextWithFbId(chatSlug: string, idx: number, adText
                             })
                         })
                     }
-                    
+
                 })
             }
         })
@@ -1002,6 +1174,323 @@ export async function getUserDetail() {
         console.error(`Error get current user detail:`, error)
         return {
             error: 'Something went wrong'
+        }
+    }
+}
+
+
+export async function getFbMarketingApiKey() {
+    const session = await auth()
+
+    if (!session || !session.user) {
+        return {
+            error: 'User not authenticated'
+        }
+    }
+
+    try {
+        const userKey = `user:${session.user.email}`
+
+        // Check if the chat exists
+        const user: User | null = (await kv.hgetall(userKey))
+
+        if (!user) {
+            return {
+                error: 'User not found'
+            }
+        }
+        return {
+            success: true,
+            token: user.fbMarketingApiKey
+        }
+    } catch (error) {
+        console.error(`Error get current user detail:`, error)
+        return {
+            error: 'Something went wrong'
+        }
+    }
+}
+
+
+export async function updateOnboardingDetails(email: string, details: {
+    first_name: string;
+    last_name: string,
+    company_name: string;
+    company_description: string;
+    website_link: string;
+    preferred_language: string;
+    goal: string
+}) {
+    const session = await auth()
+
+    if (!session || !session.user) {
+        return {
+            success: false,
+            error: 'User not authenticated'
+        }
+    }
+
+    try {
+        // Construct the user key using the email
+        const userKey = `user:${email}`
+
+        // Check if the user exists
+        const existingUser: User | null = (await kv.hgetall(userKey))
+
+        if (!existingUser) {
+            return {
+                success: false,
+                error: 'User not found'
+            }
+        }
+
+
+        let defaultExtraDetails = existingUser.defaultExtraDetails;
+        let website_data = "";
+
+
+        if (!(existingUser.website_link == details.website_link && existingUser.website_data)) {
+
+
+            const resp = await fetch(`${getBaseUrl()}/api/fasty-bot/proxy-get-website-data`, {
+                method: 'POST',
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    website_link: details.website_link
+                })
+            });
+
+            if (resp.ok) {
+                const resp_data = await resp.json()
+                website_data = resp_data.response
+            }
+        } else {
+            website_data = existingUser.website_data;
+        }
+
+
+        let newDetails = `First Name: ${details.first_name}\nLast Name: ${details.last_name}\nCompany Name: ${details.company_name}\nCompany Description: ${details.company_description}\nWebsite Link: ${details.website_link}\nWebsite data (scraped): ${website_data}\nPreferred Language: ${details.preferred_language}\nGoal: ${details.goal}`;
+
+
+        if (defaultExtraDetails) {
+            let splitDetails = defaultExtraDetails.split('---');
+
+            if (splitDetails.length > 1) {
+                newDetails += `\n---\n${splitDetails[1].trim()}`;
+            } else {
+                newDetails += `\n---\n`;
+            }
+        } else {
+            newDetails += `\n---\n`;
+        }
+
+
+        // Update the accountId field
+        await kv.hset(userKey, {...details, defaultExtraDetails: newDetails, website_data: website_data})
+
+        return {
+            success: true,
+            message: 'Onboarding data updated successfully'
+        }
+    } catch (error) {
+        console.error(`Error updating onboarding data for user ${email}:`, error)
+        return {
+            success: false,
+            error: 'Something went wrong'
+        }
+    }
+}
+
+
+export async function getTaskAndPreviousMessages(chat_id: string, task_id: string) {
+    const existingChat = await kv.hgetall<Chat>(`chat:${chat_id}`);
+
+    if (!existingChat) {
+        return null;
+    }
+
+
+    // Find the index of the message that contains the tool with the matching task_id
+    const taskIndex = existingChat.messages.findIndex(message => {
+        if (message.role === 'tool' && Array.isArray(message.content)) {
+            // Find the tool where toolCallId matches task_id
+            return message.content.some(tool => tool.toolCallId === task_id);
+        }
+        return false;  // Ensure we return a boolean for every message
+    });
+
+    if (taskIndex === -1) {
+        // If the task was not found, return null
+        return null;
+    }
+
+    // Get the task message at the found index
+    const taskMessage = existingChat.messages[taskIndex];
+
+    // Filter messages before the task that have the role 'user'
+    const previousUserMessages = existingChat.messages
+        .slice(0, taskIndex)  // Only consider messages before the task
+        .filter(message => message.role === 'user')  // Filter for 'user' role
+        .slice(-6);  // Get the last six messages
+
+    // Return both the taskMessage and the previous six 'user' messages
+    return {
+        task: taskMessage,
+        previousMessages: previousUserMessages,
+        user_id: existingChat.userId,
+    };
+}
+
+
+export async function updateTaskWithStatus(
+    chat_id: string,
+    task_id: string,
+    update: { comment: string; status: 'done' | 'reject' }
+) {
+    // Retrieve the chat object
+    const existingChat = await kv.hgetall<Chat>(`chat:${chat_id}`);
+
+    if (!existingChat) {
+        throw new Error("Chat not found");
+    }
+
+    // Iterate over messages and update the relevant task
+    existingChat.messages.forEach((message) => {
+        if (message.role === "tool" && Array.isArray(message.content)) {
+            message.content.forEach((tool) => {
+                if (tool.type === "tool-result" && tool.toolCallId === task_id) {
+                    // Update the tool result with the provided comment and status
+                    tool.result = {
+                        comment: update.comment,
+                        status: update.status,
+                    };
+                }
+            });
+        }
+    });
+
+
+    // Save the updated chat object back to the database
+    await kv.hset(`chat:${chat_id}`, existingChat);
+
+    return {
+        success: true,
+        message: "Task updated successfully",
+    };
+}
+
+export async function getUserByEmail(user_email: string) {
+    try {
+        const userKey = `user:${user_email}`
+
+        // Check if the chat exists
+        const user: User | null = (await kv.hgetall(userKey))
+
+        if (!user) {
+            return {
+                error: 'User not found'
+            }
+        }
+        return {
+            success: true,
+            user: user
+        }
+    } catch (error) {
+        console.error(`Error get current user detail:`, error)
+        return {
+            error: 'Something went wrong'
+        }
+    }
+}
+
+
+export async function createUserWithoutPassword(
+    email: string,
+) {
+    const resp = await getUserByEmail(email)
+
+    if (resp.success) {
+        return {
+            error: "User already exists"
+        }
+    } else {
+        const user = {
+            id: crypto.randomUUID(),
+            email,
+            provider: "facebook",
+            password: "",
+            salt: ""
+        }
+
+        await kv.hmset(`user:${email}`, user)
+
+        return {
+            success: true,
+            user: user
+        }
+    }
+}
+
+interface FbFetchedObject {
+    type: string
+    id: string
+    content: any
+    timestamp: number
+}
+
+export async function storeFbFetchedObject(type: string, id: string, content: any) {
+    try {
+        const objectKey = `fbFetchedObject:${type}:${id}`
+
+        // Create the object with current timestamp
+        const fetchedObject: FbFetchedObject = {
+            type,
+            id,
+            content,
+            timestamp: Date.now()
+        }
+
+        await kv.hset(objectKey, fetchedObject as unknown as Record<string, unknown>)
+
+        return {
+            success: true
+        }
+    } catch (error) {
+        console.error(`Error storing fetched ${type} ${id}:`, error)
+        return {
+            error: 'Failed to store fetched object'
+        }
+    }
+}
+
+export async function getFbFetchedObject(type: string, id: string): Promise<{
+    success?: boolean;
+    data?: Record<string, unknown>;  // Changed this type
+    error?: string;
+}> {
+    try {
+        const objectKey = `fbFetchedObject:${type}:${id}`
+
+        // Fetch the object from Redis
+        const fetchedObject = await kv.hgetall(objectKey)
+
+        // If no object found, return error
+        if (!fetchedObject || Object.keys(fetchedObject).length === 0) {
+            return {
+                error: 'Object not found'
+            }
+        }
+
+        return {
+            success: true,
+            data: fetchedObject
+        }
+    } catch (error) {
+        console.error(`Error fetching ${type} ${id}:`, error)
+        return {
+            error: 'Failed to fetch object'
         }
     }
 }

@@ -56,7 +56,7 @@ export default function FeatureToggles() {
             </div>
             <div className="mt-4">
                 <Link href="/feature-toggles/demo" className="text-teal-600 hover:text-teal-800 underline">
-                    View Feature Toggle Demo
+                    View Feature Toggle Demo (Health Check)
                 </Link>
             </div>
         </div>

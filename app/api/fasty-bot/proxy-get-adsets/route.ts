@@ -1,32 +1,38 @@
 import { NextResponse } from 'next/server'
+import { getAdsets } from '@/lib/api/fasty-bot/get-adsets';
+import {storeFbFetchedObject} from "@/app/actions";
 
 export async function GET(request: Request) {
+  try {
     const { searchParams } = new URL(request.url)
-    const campaign_id = searchParams.get('campaign_id')
+    const campaignId = searchParams.get('campaign_id')
 
-    if (!campaign_id) {
-        return NextResponse.json({ error: 'Campaign ID is required' }, { status: 400 })
+    if (!campaignId) {
+      return NextResponse.json({ error: 'Campaign ID is required' }, { status: 400 })
     }
 
-    const fastyEndpoint = process.env.FASTY_API_URL
-    const apiUrl = `${fastyEndpoint}/facebook/exec/direct/ads/get-adsets?campaign_id=${campaign_id}`
+    const response = await getAdsets(campaignId)
 
-    try {
-        const response = await fetch(apiUrl, {
-            headers: {
-                'Authorization': `Bearer ${process.env.FASTY_API_TOKEN}`
-            }
-        })
-
-        if (!response.ok) {
-            console.error(`HTTP error! status: ${response.status}`);
-            return NextResponse.json({ error: 'Failed to fetch adsets' }, { status: response.status });
-        }
-
-        const data = await response.json()
-        return NextResponse.json(data.data)
-    } catch (error) {
-        console.error('Error fetching adsets:', error)
-        return NextResponse.json({ error: 'Failed to fetch adsets' }, { status: 500 })
+    if (!response.ok) {
+      return NextResponse.json({ success: false }, { status: response.status })
     }
+
+    const responseData = await response.json()
+
+    // Store each adset in KV
+    if (responseData.data && Array.isArray(responseData.data)) {
+      for (const adset of responseData.data) {
+        await storeFbFetchedObject('adset', adset.id, adset)
+      }
+    }
+
+    // Just return the array directly to match what the component expects
+    return NextResponse.json(responseData.data)
+  } catch (error: unknown) {
+    console.error('Error:', error)
+    return NextResponse.json({
+      error: 'Failed to fetch adsets',
+      details: error instanceof Error ? error.message : String(error)
+    }, { status: 500 })
+  }
 }

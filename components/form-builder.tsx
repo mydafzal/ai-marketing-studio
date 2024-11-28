@@ -21,15 +21,15 @@ interface Field {
   options?: string[];
 }
 
-
 interface FormBuilderUiProps {
-  formBuilder: LeadgenFrom
-  success: boolean
+  formBuilder: LeadgenFrom;
+  success: boolean;
 }
+
 interface FormBuilderProps {
-  formBuilderUiProps?: FormBuilderUiProps
-  toolCallId: string
-  isReadOnly?: boolean
+  formBuilderUiProps?: FormBuilderUiProps;
+  toolCallId: string;
+  isReadOnly?: boolean;
 }
 
 export default function FormBuilder({
@@ -38,13 +38,12 @@ export default function FormBuilder({
   isReadOnly
 }: FormBuilderProps) {
   const [step, setStep] = useState(1);
-
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   const { formBuilder } = formBuilderUiProps || {};
-  const [formData, setFormData] = useState<LeadgenFrom | undefined>(formBuilder)
-  const { confirmCreateLeadgenForm } = useActions()
-  const [_, setMessages] = useUIState<typeof AI>()
+  const [formData, setFormData] = useState<LeadgenFrom | undefined>(formBuilder);
+  const { confirmCreateLeadgenForm } = useActions();
+  const [_, setMessages] = useUIState<typeof AI>();
 
   const [fields, setFields] = useState<Field[]>(
     formData?.questions.map(field => ({
@@ -56,7 +55,8 @@ export default function FormBuilder({
       { id: 'email', type: 'EMAIL' },
       { id: 'phone', type: 'PHONE' }
     ]
-  )
+  );
+  
   const [showModal, setShowModal] = useState(false);
   const [currentInputType, setCurrentInputType] = useState<'text' | 'select'>('text');
   const [currentFieldType, setCurrentFieldType] = useState('CUSTOM');
@@ -65,6 +65,7 @@ export default function FormBuilder({
   const [optionList, setOptionList] = useState<string[]>([]);
   const [editingFieldId, setEditingFieldId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [engagementTitle, setEngagementTitle] = useState(formData?.context_card?.title || '');
   const [engagementText, setEngagementText] = useState(formData?.context_card?.content || '');
   const [thankyouText, setThankyouText] = useState(formData?.thank_you_page?.body || '');
   const [privacyLink, setPrivacyLink] = useState(formData?.privacy_policy?.url || '');
@@ -173,7 +174,7 @@ export default function FormBuilder({
         link_text: "Privacy Policy"
       },
       context_card: {
-        title: "Engagement Card",
+        title: engagementTitle,
         style: "PARAGRAPH_STYLE",
         content: engagementText
       },
@@ -188,219 +189,308 @@ export default function FormBuilder({
       locale: locale,
       status: "ACTIVE"
     };
-    const response = await confirmCreateLeadgenForm(toolCallId, payload)
-    setMessages(currentMessages => [...currentMessages, response.newMessage])
+    const response = await confirmCreateLeadgenForm(toolCallId, payload);
+    setMessages(currentMessages => [...currentMessages, response.newMessage]);
     for await (const updatedForm of readStreamableValue<LeadgenFrom>(
       response.response
     )) {
       if (updatedForm) {
-        setFormData(updatedForm)
+        setFormData(updatedForm);
       }
     }
-    setIsSubmitting(false)
-
+    setIsSubmitting(false);
   };
 
   const renderFieldPreview = (field: Field) => (
-    <div key={field.id} className="bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 p-4 mb-4 rounded-lg relative hover:shadow-md">
+    <div 
+      key={field.id} 
+      className="bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 p-4 mb-4 rounded-lg relative hover:shadow-md transition-shadow duration-200"
+    >
       <div className="flex justify-between items-center mb-2">
-        <Label className="dark:text-zinc-200">
+        <Label className="text-zinc-800 dark:text-zinc-200 font-medium">
           {field.type === 'CUSTOM' ? field.label : leadGenFormFieldTypes.find(t => t.value === field.type)?.label}
         </Label>
         {field.type !== 'EMAIL' && (
-        <div className="flex gap-2">
+          <div className="flex gap-2">
             <Button
               disabled={isReadOnly}
               onClick={() => openFieldModal(field.options?.length ? 'select' : 'text', field.id)}
               variant="ghost"
-              className="h-8 w-8 p-0"
+              className="h-8 w-8 p-0 hover:bg-zinc-100 dark:hover:bg-zinc-700"
             >
-            <Pencil1Icon />
-          </Button>
+              <Pencil1Icon className="h-4 w-4" />
+            </Button>
             <Button
               disabled={isReadOnly}
               onClick={() => removeField(field.id)}
               variant="ghost"
-              className="h-8 w-8 p-0"
+              className="h-8 w-8 p-0 hover:bg-zinc-100 dark:hover:bg-zinc-700"
             >
-            <Cross1Icon />
-          </Button>
-        </div>
+              <Cross1Icon className="h-4 w-4" />
+            </Button>
+          </div>
         )}
       </div>
       {field.options?.length ? (
         <Select disabled>
-          <SelectTrigger className="SelectTrigger dark:bg-zinc-700 dark:text-zinc-200" aria-label="Food">
+          <SelectTrigger className="w-full bg-white dark:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-600">
             <SelectValue placeholder={field.options[0]} />
           </SelectTrigger>
         </Select>
       ) : (
-        <Input disabled placeholder={field.type === 'CUSTOM' ? field.label : leadGenFormFieldTypes.find(t => t.value === field.type)?.label} className="dark:bg-zinc-700 dark:text-zinc-200" />
+        <Input 
+          disabled 
+          placeholder={field.type === 'CUSTOM' ? field.label : leadGenFormFieldTypes.find(t => t.value === field.type)?.label} 
+          className="bg-white dark:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-600"
+        />
       )}
     </div>
   );
 
   return (
-    <>
-      <div className="mx-auto dark:bg-zinc-900">
-        {step === 1 ? (
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="w-full md:w-1/2 p-4 border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 rounded-lg">
-              <h2 className="text-xl font-bold mb-4 dark:text-white">Add Fields</h2>
-              <Button disabled={isReadOnly} onClick={() => openFieldModal('text')} className="w-full mb-2">Add Text Field</Button>
-              <Button disabled={isReadOnly} onClick={() => openFieldModal('select')} className="w-full">Add Select Field</Button>
-            </div>
-            <div className="w-full md:w-1/2 p-4 border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 rounded-lg">
-              <h2 className="text-xl font-bold mb-4 dark:text-white">Form Preview</h2>
-              <div className="space-y-4">
-                {fields.map(renderFieldPreview)}
-              </div>
+    <div className="mx-auto dark:bg-zinc-900 p-6 rounded-xl">
+      {step === 1 ? (
+        <div className="flex flex-col md:flex-row gap-6">
+          <div className="w-full md:w-1/2 p-6 border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 rounded-xl shadow-sm">
+            <h2 className="text-xl font-semibold mb-6 text-zinc-800 dark:text-white">Add Fields</h2>
+            <div className="space-y-4">
+              <Button 
+                disabled={isReadOnly} 
+                onClick={() => openFieldModal('text')} 
+                className="w-full bg-zinc-800 dark:bg-zinc-700 hover:bg-zinc-700 dark:hover:bg-zinc-600 text-white"
+              >
+                Add Text Field
+              </Button>
+              <Button 
+                disabled={isReadOnly} 
+                onClick={() => openFieldModal('select')} 
+                className="w-full bg-zinc-800 dark:bg-zinc-700 hover:bg-zinc-700 dark:hover:bg-zinc-600 text-white"
+              >
+                Add Select Field
+              </Button>
             </div>
           </div>
+          <div className="w-full md:w-1/2 p-6 border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 rounded-xl shadow-sm">
+            <h2 className="text-xl font-semibold mb-6 text-zinc-800 dark:text-white">Form Preview</h2>
+            <div className="space-y-4">
+              {fields.map(renderFieldPreview)}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="max-w-2xl mx-auto space-y-6">
+          <div className="space-y-2">
+            <Label htmlFor="engagement-title" className="text-zinc-800 dark:text-white">Form Title</Label>
+            <Input
+              id="engagement-title"
+              value={engagementTitle}
+              disabled={isReadOnly}
+              onChange={(e) => setEngagementTitle(e.target.value)}
+              placeholder="Type a relevant and captivating title for your form..."
+              className="bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="engagement-text" className="text-zinc-800 dark:text-white">Engaging Text</Label>
+            <Textarea
+              id="engagement-text"
+              value={engagementText}
+              disabled={isReadOnly}
+              onChange={(e) => setEngagementText(e.target.value)}
+              placeholder="This is the main text people will see. Capture their attention..."
+              className="bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 min-h-[100px]"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="thankyou-text" className="text-zinc-800 dark:text-white">Thank You Page Text</Label>
+            <Textarea
+              id="thankyou-text"
+              disabled={isReadOnly}
+              value={thankyouText}
+              onChange={(e) => setThankyouText(e.target.value)}
+              placeholder="Enter thank you message here..."
+              className="bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 min-h-[100px]"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="privacy-link" className="text-zinc-800 dark:text-white">Privacy Policy Link</Label>
+            <Input
+              id="privacy-link"
+              disabled={isReadOnly}
+              value={privacyLink}
+              onChange={(e) => setPrivacyLink(e.target.value)}
+              placeholder="Enter privacy policy URL"
+              className="bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="locale" className="text-zinc-800 dark:text-white">Language</Label>
+            <Select
+              value={locale}
+              onValueChange={(value) => setLocale(value)}
+              disabled={isReadOnly}
+            >
+              <SelectTrigger className="w-full bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700" id="locale">
+                <SelectValue placeholder="Select language" />
+              </SelectTrigger>
+              <SelectContent>
+                {leadGenFormLocales.map((localeOption) => (
+                  <SelectItem key={localeOption.value} value={localeOption.value}>
+                    {localeOption.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      )}
+    <div className="mt-6 flex items-center justify-end gap-4">
+        {step === 1 ? (
+          <Button 
+            onClick={() => setStep(2)}
+            className="bg-zinc-800 dark:bg-zinc-700 hover:bg-zinc-700 dark:hover:bg-zinc-600 text-white px-6"
+          >
+            Next
+          </Button>
         ) : (
           <>
-            <div className="mb-6">
-              <Label htmlFor="engagement-text">Engaging Text:</Label>
-              <Textarea
-                id="engagement-text"
-                value={engagementText}
-                disabled={isReadOnly}
-                onChange={(e) => setEngagementText(e.target.value)}
-                placeholder="Enter engaging text here..."
-              />
-            </div>
-            <div className="mb-6">
-              <Label htmlFor="thankyou-text">Thank You Page Text:</Label>
-              <Textarea
-                id="thankyou-text"
-                disabled={isReadOnly}
-                value={thankyouText}
-                onChange={(e) => setThankyouText(e.target.value)}
-                placeholder="Enter thank you message here..."
-              />
-            </div>
-            <div className="mb-6">
-              <Label htmlFor="privacy-link">Privacy Policy Link:</Label>
-              <Input
-                id="privacy-link"
-                disabled={isReadOnly}
-                value={privacyLink}
-                onChange={(e) => setPrivacyLink(e.target.value)}
-                placeholder="Enter privacy policy URL"
-              />
-            </div>
-            <div className="mb-6">
-              <Label htmlFor="locale">Language:</Label>
-              <Select
-                value={locale}
-                onValueChange={(value) => setLocale(value)}
-                disabled={isReadOnly}
-              >
-                <SelectTrigger className="w-full dark:bg-zinc-700 dark:text-zinc-200" id="locale">
-                  <SelectValue placeholder="Select language" />
-                </SelectTrigger>
-                <SelectContent>
-                  {leadGenFormLocales.map((localeOption) => (
-                    <SelectItem key={localeOption.value} value={localeOption.value}>
-                      {localeOption.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <Button 
+              onClick={() => setStep(1)} 
+              variant="outline"
+              className="border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+            >
+              Previous
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              disabled={isSubmitting || isReadOnly}
+              className="bg-zinc-800 dark:bg-zinc-700 hover:bg-zinc-700 dark:hover:bg-zinc-600 text-white px-6"
+            >
+              {isSubmitting ? (
+                <div className="flex items-center gap-2">
+                  <IconSpinner className="h-4 w-4" />
+                  <span>Submitting...</span>
+                </div>
+              ) : (
+                'Submit'
+              )}
+            </Button>
           </>
         )}
-
-        <div className="mt-6 flex items-center justify-end">
-          {step === 1 ? (
-            <Button onClick={() => setStep(2)}>Next</Button>
-          ) : (
-            <>
-              <Button aria-disabled={isSubmitting} onClick={() => setStep(1)} className="h-10 mr-2">Previous</Button>
-              <Button className="h-10" aria-disabled={isSubmitting || isReadOnly} onClick={handleSubmit} disabled={isReadOnly}>
-                {isSubmitting && <IconSpinner />}
-                {!isSubmitting && 'Submit'}
-              </Button>
-            </>
-          )}
-        </div>
       </div>
+
+      {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-          <div className="bg-white dark:bg-zinc-800 p-4 rounded-lg w-full max-w-md">
-            <h3 className="text-lg font-bold mb-4 dark:text-white">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-white dark:bg-zinc-800 p-6 rounded-xl w-full max-w-md shadow-lg">
+            <h3 className="text-xl font-semibold mb-6 text-zinc-800 dark:text-white">
               {editingFieldId ? 'Edit' : 'Add'} {currentInputType === 'select' ? 'Select' : 'Text'} Field
             </h3>
-            <div className="mb-4">
-              <Label className="dark:text-zinc-200">Field Type:</Label>
-              <Select value={currentFieldType} onValueChange={handleFieldTypeChange}>
-                <SelectTrigger className="w-full dark:bg-zinc-700 dark:text-zinc-200">
-                  <SelectValue placeholder="Select field type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {leadGenFormFieldTypes.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
-                      {type.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="mb-4">
-              <Label className="dark:text-zinc-200">Field Name:</Label>
-              <Input
-                value={modalFieldId}
-                onChange={(e) => setModalFieldId(e.target.value)}
-                placeholder="Enter field name"
-                className="dark:bg-zinc-700 dark:text-zinc-200"
-              />
-            </div>
-            {currentFieldType === 'CUSTOM' && (
-              <div className="mb-4">
-                <Label className="dark:text-zinc-200">Field Label:</Label>
+            
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-zinc-800 dark:text-zinc-200">Field Type</Label>
+                <Select value={currentFieldType} onValueChange={handleFieldTypeChange}>
+                  <SelectTrigger className="w-full bg-white dark:bg-zinc-700 border-zinc-200 dark:border-zinc-600">
+                    <SelectValue placeholder="Select field type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {leadGenFormFieldTypes.map((type) => (
+                      <SelectItem key={type.value} value={type.value}>
+                        {type.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-zinc-800 dark:text-zinc-200">Field Name</Label>
                 <Input
-                  value={modalFieldLabel}
-                  onChange={(e) => setModalFieldLabel(e.target.value)}
-                  placeholder="Enter field label"
-                  className="dark:bg-zinc-700 dark:text-zinc-200"
+                  value={modalFieldId}
+                  onChange={(e) => setModalFieldId(e.target.value)}
+                  placeholder="Enter field name"
+                  className="bg-white dark:bg-zinc-700 border-zinc-200 dark:border-zinc-600"
                 />
               </div>
-            )}
-            {currentFieldType === 'CUSTOM' && currentInputType === 'select' && (
-              <div className="mb-4">
-                <Label className="dark:text-zinc-200">Options:</Label>
-                <div className="flex mb-2">
-                  <Input ref={modalOptionInput} placeholder="Enter option" className="rounded-tr-none rounded-br-none dark:bg-zinc-700 dark:text-zinc-200" />
-                  <Button onClick={addOption} className="rounded-tl-none rounded-bl-none">+</Button>
-                </div>
-                <div className="space-y-2">
-                  {optionList.map((option, index) => (
-                    <div key={index} className="flex justify-between items-center bg-zinc-100 dark:bg-zinc-700 p-2 rounded">
-                      <span className="dark:text-zinc-200">{option}</span>
-                      <Button onClick={() => removeOption(index)} variant="ghost" className="h-8 w-8 p-0">
-                        <Cross1Icon />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            {errorMessage && (
-              <div className="mb-4 p-2 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-200 rounded">
-                {errorMessage}
-              </div>
-            )}
 
-            <div className="text-right">
-              <Button onClick={() => {
-                setShowModal(false);
-                setErrorMessage(null);
-              }} className="mr-2">Cancel</Button>
-              <Button onClick={saveField}>Save</Button>
+              {currentFieldType === 'CUSTOM' && (
+                <div className="space-y-2">
+                  <Label className="text-zinc-800 dark:text-zinc-200">Field Label</Label>
+                  <Input
+                    value={modalFieldLabel}
+                    onChange={(e) => setModalFieldLabel(e.target.value)}
+                    placeholder="Enter field label"
+                    className="bg-white dark:bg-zinc-700 border-zinc-200 dark:border-zinc-600"
+                  />
+                </div>
+              )}
+
+              {currentFieldType === 'CUSTOM' && currentInputType === 'select' && (
+                <div className="space-y-2">
+                  <Label className="text-zinc-800 dark:text-zinc-200">Options</Label>
+                  <div className="flex gap-2">
+                    <Input 
+                      ref={modalOptionInput}
+                      placeholder="Enter option"
+                      className="bg-white dark:bg-zinc-700 border-zinc-200 dark:border-zinc-600"
+                    />
+                    <Button 
+                      onClick={addOption}
+                      className="px-4 bg-zinc-800 dark:bg-zinc-700 hover:bg-zinc-700 dark:hover:bg-zinc-600 text-white"
+                    >
+                      Add
+                    </Button>
+                  </div>
+                  
+                  <div className="space-y-2 mt-2">
+                    {optionList.map((option, index) => (
+                      <div 
+                        key={index} 
+                        className="flex items-center justify-between p-2 bg-zinc-50 dark:bg-zinc-700 rounded-lg"
+                      >
+                        <span className="text-zinc-800 dark:text-zinc-200">{option}</span>
+                        <Button
+                          onClick={() => removeOption(index)}
+                          variant="ghost"
+                          className="h-8 w-8 p-0 hover:bg-zinc-200 dark:hover:bg-zinc-600"
+                        >
+                          <Cross1Icon className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {errorMessage && (
+                <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 rounded-lg text-sm">
+                  {errorMessage}
+                </div>
+              )}
+
+              <div className="flex justify-end gap-3 mt-6">
+                <Button
+                  onClick={() => {
+                    setShowModal(false);
+                    setErrorMessage(null);
+                  }}
+                  variant="outline"
+                  className="border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={saveField}
+                  className="bg-zinc-800 dark:bg-zinc-700 hover:bg-zinc-700 dark:hover:bg-zinc-600 text-white"
+                >
+                  Save
+                </Button>
+              </div>
             </div>
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }
