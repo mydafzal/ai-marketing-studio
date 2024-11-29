@@ -388,7 +388,7 @@ async function confirmUpdateAdset(toolCallId: string, adsetId: string, adset: an
     const budget = await fetchChatCampaignBudget(chatId)
     let adsetUpdate = {...adset}
     if (budget.error) {
-        adsetUpdate = {...adsetUpdate, daily_budget: 100}
+        adsetUpdate = {...adsetUpdate}
     }
 
     const systemMessage = createStreamableUI(null);

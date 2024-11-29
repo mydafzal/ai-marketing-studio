@@ -114,6 +114,7 @@ export function SuggestedFilters({
         if (!adset || filterIdxs.length === 0) return
         setIsSubmitting(true)
         const response = await confirmUpdateAdset(
+            toolCallId,
             adset.id,
             {
                 targeting: {

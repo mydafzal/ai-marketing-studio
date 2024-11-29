@@ -156,6 +156,7 @@ export function GeographicalLocation({
 
     setIsSubmitting(true)
     const response = await confirmUpdateAdset(
+      toolCallId,
       adset.id,
       {
         targeting: newTargeting
