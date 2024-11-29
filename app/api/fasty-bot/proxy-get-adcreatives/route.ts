@@ -1,0 +1,20 @@
+import { NextResponse } from 'next/server'
+import { getAdCreatives } from '@/lib/api/fasty-bot/get-adcreatives'
+
+export async function GET(request: Request) {
+  try {
+
+    const response = await getAdCreatives()
+
+    if (!response.ok) {
+      return NextResponse.json({ success: false }, { status: response.status })
+    }
+
+    const data = await response.json()
+    return NextResponse.json({ success: true, data: data })
+  } catch (error) {
+    console.error('Error get adcreatives:', error)
+    return NextResponse.json({ success: false }, { status: 500 })
+  }
+}
+

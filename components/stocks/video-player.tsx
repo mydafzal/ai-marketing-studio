@@ -1,13 +1,19 @@
+'use client'
+
+import { Button } from '@/components/ui/button';
+
 import React, { useState, useRef } from 'react';
 import { Play, Pause, Volume2, VolumeX, Maximize, Minimize, SkipBack, SkipForward } from 'lucide-react';
 
 interface VideoPlayerProps {
-  src: string;
+  src?: string;
   title?: string;
   width?: string;
   height?: string;
   thumbnail?: string;
   onError?: (error: Error) => void;
+  className?: string
+  videoId?: string
 }
 
 const VideoPlayer: React.FC<VideoPlayerProps> = ({
@@ -16,8 +22,27 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   width = 'w-full',
   height = 'h-auto',
   thumbnail,
-  onError
+  onError,
+  className,
+  videoId
 }) => {
+  const [srcUrl, setSrcUrl] = useState(src);
+
+  const handleClick = () => {
+    if (srcUrl) return;
+
+    fetch(`/api/fasty-bot/proxy-get-video-detail?video_id=${videoId}`)
+      .then(response => response.json())
+      .then(videoDetail => {
+        if (videoDetail?.source) {
+          setSrcUrl(videoDetail.source)
+        }
+      })
+      .catch(error => {
+        console.error('Error fetching video detail:', error);
+      });
+  }
+
   // ... [previous implementation remains the same]
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
@@ -73,7 +98,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   return (
     <div 
       ref={containerRef}
-      className={`relative group bg-zinc-950 rounded-xl shadow-lg overflow-hidden ${width} ${height}`}
+      className={`relative video-container group bg-zinc-950 rounded-xl shadow-lg overflow-hidden ${width} ${height} ${className}`}
     >
       {/* Video Element */}
       <video
@@ -83,9 +108,17 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         onTimeUpdate={handleTimeUpdate}
         onError={(e) => onError?.(new Error('Video playback error'))}
       >
-        <source src={src} type="video/mp4" />
+         {!!srcUrl && <source src={srcUrl} type="video/mp4" />}
         Your browser does not support the video tag.
       </video>
+
+      {!srcUrl && (
+        <Button
+          className="absolute left-[50%] top-[50%] translate-x-[-50%] translate-y-[-50%]"
+          size="sm"
+          onClick={handleClick}
+        >Show</Button>
+      )}
 
       {/* Title Bar */}
       {title && (

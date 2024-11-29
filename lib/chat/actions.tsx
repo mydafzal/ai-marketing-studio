@@ -23,6 +23,7 @@ import {
 import {differenceInHours} from 'date-fns';
 import {ChatImage} from '@/components/chat-images'
 import {ImagePart, TextPart} from 'ai'
+import {z} from 'zod'
 
 import {formatNumber, nanoid, runAsyncFnWithoutBlocking, sleep} from '@/lib/utils'
 import {SpinnerMessage, UserMessage} from '@/components/stocks/message'
@@ -45,6 +46,7 @@ import {PlacementTargeting} from '@/components/placement-targeting';
 import {ConnectAdset} from '@/components/connect-adset'
 import FormBuilder from '@/components/form-builder';
 import {GeographicalLocation} from '@/components/geographical-location';
+import AdCreativesSwitcher from '@/components/ad-creatives-switcher'
 import {SuggestedFilters} from '@/components/suggested-filters';
 import {sendSupervisedTaskMail} from '@/lib/api/fasty-bot/send-supervised-task-mail';
 import SupervisedTaskMessage from '@/components/supervised-task-message'
@@ -1075,6 +1077,9 @@ New Images: Ask if they'd like ad text examples.
 Commands:
 For status changes: Use (\`show_update_status_campaign\`).
 
+Manage Ad Creatives:
+If the user wants to manage their ad creatives , call \`showAdCreativesSwitcher\` to show the update status UI and let the user choose the status of the campaign.
+
 [ONLY PERFORM IF ACTIVELY REQUESTED :: REGION END] 
 
 Key Instructions:
@@ -2004,7 +2009,53 @@ Maintain a professional but friendly tone throughout.
                         toolCallId
                     })
                 }
-            }
+            },
+            showAdCreativesSwitcher: {
+                description: 'Show a UI to manage ad creatives of the campaign',
+                parameters: z.object({}),
+                generate: async function* ({}) {
+                    console.log('tool call showAdCreativesSwitcher')
+                    const timestamp: string = new Date().toISOString();
+                    const toolCallId = nanoid();
+                    aiState.done({
+                        ...aiState.get(),
+                        messages: [
+                            ...aiState.get().messages,
+                            {
+                                id: nanoid(),
+                                role: 'assistant',
+                                content: [
+                                    {
+                                        type: 'tool-call',
+                                        toolName: 'showAdCreativesSwitcher',
+                                        toolCallId,
+                                        args: {}
+                                    }
+                                ],
+                                timestamp
+                            },
+                            {
+                                id: toolCallId,
+                                role: 'tool',
+                                content: [
+                                    {
+                                        type: 'tool-result',
+                                        toolName: 'showAdCreativesSwitcher',
+                                        toolCallId,
+                                        result: {toolCallId}
+                                    }
+                                ],
+                                timestamp
+                            }
+                        ]
+                    })
+                    return (
+                        <BotCard>
+                            <AdCreativesSwitcher />
+                        </BotCard>
+                    )
+                }
+            },
         },
 
 
@@ -2261,6 +2312,12 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                         </BotCard>
                                     </>
                                 );
+                            case 'showAdCreativesSwitcher':
+                                return (
+                                    <BotCard key={tool.toolCallId}>
+                                        <AdCreativesSwitcher {...tool.result} toolCallId={tool.toolCallId} />
+                                    </BotCard>
+                                )
                             default:
                                 return null;
                         }
