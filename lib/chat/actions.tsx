@@ -1077,6 +1077,9 @@ New Images: Ask if they'd like ad text examples.
 Commands:
 For status changes: Use (\`show_update_status_campaign\`).
 
+Manage Ad Creatives:
+If the user wants to manage their ad creatives , call \`showAdCreativesSwitcher\` to show the update status UI and let the user choose the status of the campaign.
+
 [ONLY PERFORM IF ACTIVELY REQUESTED :: REGION END] 
 
 Key Instructions:
@@ -1119,8 +1122,6 @@ Maintain a professional but friendly tone throughout.
 
     - If the user wants to pause a campaign, call \`showUpdateStatusChampaign\` to show the update status UI and let the user choose the status of the campaign.
     
-    - If the user wants to manage their ad creatives , call \`showAdCreativesSwitcher\` to show the update status UI and let the user choose the status of the campaign.
-
     - If you want to show suggestions-filter, then generate 5 filter suggestions using Categories of interest filters, Location, demographic targeting information, and user input - "${extraDetailsFinalText}", and then call \`show_suggested_filters\` with the suggestions.
 
     - Besides that, you can also chat with users and perform budget calculations if needed.
