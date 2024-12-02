@@ -522,7 +522,7 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
     const aiState = getMutableAIState<typeof AI>();
     const chatId = getChatIdFromUrl()?.toString() || '';
 
-    let campaignId = '';
+    let campaignId = 'Not Connected';
     try {
         campaignId = (await getCampaignIdFromUrl())?.toString() || '';
     } catch (error) {
@@ -1034,6 +1034,13 @@ Contact fields needed.
 Qualifying questions. Recommend keeping questions concise and relevant. Provide industry-specific example questions.
 Proceed: Ask the user if those are all the details they want to include in the lead form. If they confirm, proceed to the next step.
 Step 8: DO NOT call the lead form UI!!! Call (\`show_supervised_task_ui\`) 
+
+
+<Campaign Connection Information>
+To know if a campaign is connected to chat or no.
+Connected Campaign ID:  ${campaignId}
+</Campaign connection Information>
+
 
 [ONLY PERFORM IF ACTIVELY REQUESTED :: REGION START] 
 
