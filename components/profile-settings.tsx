@@ -94,6 +94,20 @@ export default function ProfileSettings({
             Account Settings
           </div>
 
+
+
+          <button 
+            className="inline-flex items-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:text-accent-foreground h-9 px-4 py-2 w-full justify-start gap-2 hover:bg-zinc-100 dark:hover:bg-zinc-800" 
+            type="button"
+            onClick={() => window.location.href = '/subscription'}
+          >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M11.6667 2.91699H2.33341C1.68908 2.91699 1.16675 3.43933 1.16675 4.08366V9.91699C1.16675 10.5613 1.68908 11.0837 2.33341 11.0837H11.6667C12.3111 11.0837 12.8334 10.5613 12.8334 9.91699V4.08366C12.8334 3.43933 12.3111 2.91699 11.6667 2.91699Z" stroke="black" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M1.16675 5.83301H12.8334" stroke="black" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Billing
+          </button>
+
           <Onboarding
             userDetails={userDetails}
             open={openOnboarding}
