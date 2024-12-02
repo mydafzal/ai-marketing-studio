@@ -58,9 +58,12 @@ export async function createBase(
     } = request
 
     const userDetail = await getUserDetail();
-
+    let fbPageId = ""
+    if (userDetail.success && userDetail.user) {
+      fbPageId = String(userDetail.user.fbPageId || '')
+    }
     let company_name = ""
-      
+
     if (!fbAccountId) {
       fbAccountId = userDetail?.user?.fbAccountId || '0'
     }
@@ -68,12 +71,12 @@ export async function createBase(
     if (!company_name){
       company_name = userDetail?.user?.company_name || ''
     }
-  
 
     let payload: {
       fb_account_id: string;
       campaign_name: string;
       company_name?: string;
+      page_id?: string;
     } = {
       fb_account_id: fbAccountId,
       campaign_name,
@@ -81,6 +84,10 @@ export async function createBase(
     
     if (company_name && company_name.trim() !== "") {
       payload.company_name = company_name;
+    }
+
+    if (fbPageId) {
+      payload.page_id = fbPageId;  // Changed from fbPageId to page_id
     }
 
     const fastyEndpoint = process.env.FASTY_API_URL

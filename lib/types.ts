@@ -53,6 +53,7 @@ export interface User extends Record<string, any> {
   website_data?:string
   preferred_language?:string
   goal?:string
+  fbPageId?:string
 }
 
 export interface Campaign extends Record<string, any> {
