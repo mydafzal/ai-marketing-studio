@@ -17,6 +17,7 @@ const CustomerSearch: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedEmail, setSelectedEmail] = useState('');
     const [defaultPrompt, setDefaultPrompt] = useState('');
+    const [fbPageId, setFbPageId] = useState('');
 
 
     const fetchClients = async (email: string = '') => {
@@ -269,6 +270,7 @@ const CustomerSearch: React.FC = () => {
     const handleCustomerSelect = (customer: Customer) => {
         setSelectedCustomer(customer);
         setFbAccountId(customer.fbAccountId ?? '');
+        setFbPageId(customer.fbPageId ?? '');
         setSearchQuery(customer.email); // New line
     };
 
@@ -347,8 +349,18 @@ const CustomerSearch: React.FC = () => {
                         onChange={(e) => setFbAccountId(e.target.value)}
                         className="w-full px-3 py-2 border rounded mb-2"
                     />
+                    <input
+                        type="text"
+                        placeholder="Assign Page ID"
+                        value={fbPageId}
+                        onChange={(e) => setFbPageId(e.target.value)}
+                        className="w-full px-3 py-2 border rounded mb-2"
+                    />
                     {selectedCustomer && selectedCustomer.fbAccountId === undefined && (
                         <p className="text-red-500 text-sm mb-2">This user does not yet have a Facebook Account ID</p>
+                    )}
+                    {selectedCustomer && selectedCustomer.fbPageId === undefined && (
+                        <p className="text-red-500 text-sm mb-2">This user does not yet have a Facebook Page ID</p>
                     )}
                     <button
                         type="submit"
@@ -363,7 +375,7 @@ const CustomerSearch: React.FC = () => {
             {isModalOpen && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
                     <div className="bg-white p-6 rounded-lg w-full max-w-md">
-                        <h2 className="text-xl font-bold mb-4">Manage Default Prompt</h2>
+                    <h2 className="text-xl font-bold mb-4">Manage Default Prompt</h2>
                         <div className="mb-4">
                             <label className="block text-sm font-medium text-gray-700">Email</label>
                             <input
