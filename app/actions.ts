@@ -446,7 +446,8 @@ export async function fetchAllUsers() {
 
         const users: {
             email: string,
-            fbAccountId: string | null
+            fbAccountId: string | null,
+            fbPageId: string | null,
         }[] = []
 
         for (const key of keys) {
@@ -456,7 +457,8 @@ export async function fetchAllUsers() {
                 if (user && typeof user === 'object' && 'email' in user) {
                     users.push({
                         email: user.email as string,
-                        fbAccountId: (user.fbAccountId as string) || null
+                        fbAccountId: (user.fbAccountId as string) || null,
+                        fbPageId: (user.fbPageId as string) || null,
                     })
                 } else {
                     console.warn(`Invalid user data for key: ${key}`)

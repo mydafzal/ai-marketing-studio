@@ -55,7 +55,11 @@ const CustomerSearch: React.FC = () => {
                         fbPageId: customer.fbPageId
                     }));
                 } else if (data.data && typeof data.data === 'object') {
-                    customers = [data.data];
+                    customers = [{
+                        email: data.data.email,
+                        fbAccountId: data.data.fbAccountId,
+                        fbPageId: data.data.fbPageId
+                    }];
                 }
                 setSearchResults(customers);
                 if (customers.length === 0) {
