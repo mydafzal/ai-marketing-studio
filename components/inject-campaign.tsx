@@ -5,12 +5,13 @@ import { CampaignContext } from '@/components/contexts/campaign-context'
 
 export const InjectCampaign = ({ campaignId }: { campaignId: string}) => {
     console.log('InjectCampaign')
-    const { fetchSummary } = useContext(CampaignContext)
+    const { fetchSummary, setId } = useContext(CampaignContext)
 
     useEffect(() => {
         console.log('useEffect', campaignId)
         if (campaignId) {
             void fetchSummary(campaignId)
+            setId(campaignId)
         }
     }, [campaignId])
 
