@@ -1629,11 +1629,13 @@ Maintain a professional but friendly tone throughout.
                     })
                     let success = !!response.ok
                     if (success) {
-                        const {campaign} = await response.json()
+                        const {campaign,adset} = await response.json()
                         const id = campaign.id;
+                        const adset_id = adset.id;
                         const result = await updateChat(aiState.get().chatId, {
                             title: campaignName,
-                            fbCampaignId: id
+                            fbCampaignId: id,	
+                            fbAdsetId:adset_id
                         })
                         success = success && !!result.success
                         campaignId = id
