@@ -953,6 +953,7 @@ Technology
         }
     }
 
+
     const result = await streamUI({
         model: openai('gpt-4o'),
         initial: <SpinnerMessage/>,
@@ -1034,6 +1035,16 @@ Contact fields needed.
 Qualifying questions. Recommend keeping questions concise and relevant. Provide industry-specific example questions.
 Proceed: Ask the user if those are all the details they want to include in the lead form. If they confirm, proceed to the next step.
 Step 8: DO NOT call the lead form UI!!! Call (\`show_supervised_task_ui\`) 
+
+
+<Campaign Connection Information>
+To know if a campaign is connected to chat or no.
+Connected Campaign ID:  ${campaignId?campaignId:"No Campaign is connected"}
+</Campaign connection Information>
+
+[CURRENT STATE OF CONNECTED CAMPAIGN]
+${campaignId?"Campaign is connected and ID is : "+campaignId:"No campaign is connected to this chat at this time."}
+
 
 [ONLY PERFORM IF ACTIVELY REQUESTED :: REGION START] 
 
@@ -1618,11 +1629,13 @@ Maintain a professional but friendly tone throughout.
                     })
                     let success = !!response.ok
                     if (success) {
-                        const {campaign} = await response.json()
+                        const {campaign,adset} = await response.json()
                         const id = campaign.id;
+                        const adset_id = adset.id;
                         const result = await updateChat(aiState.get().chatId, {
                             title: campaignName,
-                            fbCampaignId: id
+                            fbCampaignId: id,	
+                            fbAdsetId:adset_id
                         })
                         success = success && !!result.success
                         campaignId = id
