@@ -13,6 +13,7 @@ import {VideoAdTextSuggestion} from '@/components/stocks/video-ad-text-suggestio
 import {CampaignStatus} from '@/components/stocks/campaign-status'
 import {
     fetchChatCampaignBudget,
+    fetchChatFbAdsetId,
     fetchFbCampaignExtraDetailsForChat,
     fetchUserDefaultExtraDetails,
     saveChat,
@@ -528,6 +529,17 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
     } catch (error) {
         // Error handling if necessary
     }
+
+    let adsetId = "";
+
+    if(chatId){
+        const adsetIDResp = await fetchChatFbAdsetId(chatId);
+        if (adsetIDResp.success){
+            adsetId=adsetIDResp.fbAdsetId as string;
+        }
+    }
+
+    console.log("CUrrent selected adset is ", adsetId)
 
     let extraDetailsFinalText = '';
 
@@ -1056,8 +1068,11 @@ To know if a campaign is connected to chat or no.
 Connected Campaign ID:  ${campaignId?campaignId:"No Campaign is connected"}
 </Campaign connection Information>
 
-[CURRENT STATE OF CONNECTED CAMPAIGN]
+IMPORTANT information to consider for each message:
+ALWAYS CHECK BELOW DETAILS ABOUT CONNECTED CAMPAIGN AND ADSET STATE BEFORE PERFORMING ANY ACTION IN WHICH YOU NEED CAMPAIGN OR ADSET ID
 ${campaignId?"Campaign is connected and ID is : "+campaignId:"No campaign is connected to this chat at this time."}
+
+${adsetId?"Adset is Connected and adset id is: "+adsetId:"No adset connceted right now to the chat"}
 
 
 [ONLY PERFORM IF ACTIVELY REQUESTED :: REGION START] 
@@ -1616,14 +1631,15 @@ Maintain a professional but friendly tone throughout.
                         campaign_name: campaignName,
                     })
                     let success = !!response.ok
+                    let adsetId;
                     if (success) {
                         const {campaign,adset} = await response.json()
                         const id = campaign.id;
-                        const adset_id = adset.id;
+                        adsetId = adset.id;
                         const result = await updateChat(aiState.get().chatId, {
                             title: campaignName,
                             fbCampaignId: id,	
-                            fbAdsetId:adset_id
+                            fbAdsetId:adsetId
                         })
                         success = success && !!result.success
                         campaignId = id
@@ -1664,7 +1680,7 @@ Maintain a professional but friendly tone throughout.
                         }
                     ])
 
-                    return await createCampaignModule.component({success, campaignName, campaignId, questionForBudget})
+                    return await createCampaignModule.component({success, campaignName, campaignId, adsetId, questionForBudget})
                 }
             },
             showCampaignConnectionUI: {
