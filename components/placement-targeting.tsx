@@ -204,7 +204,7 @@ export function PlacementTargeting({
     newTargeting.instagram_positions = newInstagramPositions
     newTargeting.publisher_platforms = publisherPlatforms
 
-    const response = await confirmUpdateAdset(adset.id, {
+    const response = await confirmUpdateAdset(toolCallId, adset.id, {
       targeting: newTargeting
     }, 'placement')
     setMessages(currentMessages => [...currentMessages, response.newMessage])
