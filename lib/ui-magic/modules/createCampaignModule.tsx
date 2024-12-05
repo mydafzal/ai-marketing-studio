@@ -22,7 +22,7 @@ export const createCampaignModule = new ModuleConfigBuilder('createCampaign')
                 .string()
                 .describe(
                     'The question for the budget with step 2, this is optional'
-                )
+                ).optional()
         })
     )
     .setComponent(
