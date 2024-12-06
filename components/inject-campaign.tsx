@@ -6,7 +6,7 @@ import { useActions, useUIState } from 'ai/rsc'
 import { useContext, useEffect } from 'react'
 import { CampaignContext } from '@/components/contexts/campaign-context'
 
-export const InjectCampaign = ({ campaignId, adsetId }: { campaignId: string,adsetId:string}) => {
+export const InjectCampaign = ({ campaignId, adsetId }: { campaignId: string,adsetId?:string}) => {
     const { fetchSummary, setId, getCampaignList, setAdsetId } = useContext(CampaignContext)
     const { submitUserMessage } = useActions()
     const [_, setMessages] = useUIState<typeof AI>()
@@ -26,7 +26,9 @@ export const InjectCampaign = ({ campaignId, adsetId }: { campaignId: string,ads
             true
           )
         setMessages(currentMessages => [...currentMessages, campaignResponseMessage, adsetResponseMessage])
-        setAdsetId(adsetId)
+        if(adsetId){
+            setAdsetId(adsetId)
+        }
     }
     
 
