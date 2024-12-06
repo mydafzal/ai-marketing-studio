@@ -512,8 +512,17 @@ export async function updateChatFbCampaignId(chatSlug: string, fbCampaignId: str
             }
         }
 
+        let update={};
+
+        if(existingChat.fbCampaignId && existingChat.fbCampaignId!=fbCampaignId){
+            update = {fbCampaignId,fbAdsetId:""}
+        }
+        else{
+            update = {fbCampaignId}
+        }
+
         // Update or insert the fbCampaignId field
-        await kv.hset(chatKey, {fbCampaignId})
+        await kv.hset(chatKey, update )
         revalidatePath('/')
 
         return {
