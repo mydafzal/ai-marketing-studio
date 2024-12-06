@@ -10,6 +10,102 @@ const BadgeIcon = () => (
     </span>
 );
 
+const PlanPopup = ({ buttonText }: { buttonText: string }) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const openPopup = () => setIsOpen(true);
+  const closePopup = () => setIsOpen(false);
+
+  return (
+    <div className="flex items-center justify-center bg-white-100">
+      {/* Button to open popup */}
+    
+      <button onClick={openPopup} className="mt-6 w-full bg-purple-100 text-purple-600 py-2 rounded-lg font-medium">
+        {buttonText}
+      </button>
+
+      {/* Popup Dialog */}
+      {isOpen && (
+        <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white w-full max-w-md p-6 rounded-lg shadow-lg relative">
+            {/* Close Button */}
+            <button
+              onClick={closePopup}
+              className="absolute top-3 right-3 text-gray-500 hover:text-gray-800"
+            >
+              &times;
+            </button>
+
+            {/* Dialog Content */}
+            <div className="text-center">
+              {/* Header Icon */}
+              <div className="mb-4">
+                <span className="inline-block bg-purple-100 text-purple-600 rounded-full p-3">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-6 w-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 8c-3.313 0-6 2.239-6 5 0 2.761 2.687 5 6 5s6-2.239 6-5c0-2.761-2.687-5-6-5zm-8 5c0-5.523 4.477-10 10-10s10 4.477 10 10c0 5.523-4.477 10-10 10S4 18.523 4 13z"
+                    />
+                  </svg>
+                </span>
+              </div>
+
+              {/* Title */}
+              <h2 className="text-xl font-bold text-gray-900 mb-2">
+                Confirm Pro Plan
+              </h2>
+
+              {/* Price */}
+              <p className="text-lg font-semibold text-purple-600 mb-4">
+                €299 / Month
+              </p>
+
+              {/* Description */}
+              <p className="text-sm text-gray-600 mb-4">
+                Your new plan starts now. You’ll pay{" "}
+                <strong>€299 monthly</strong> starting today, 11 December 2024.
+              </p>
+              <p className="text-sm text-gray-600">
+                You agree that your subscription will continue and that we will
+                charge the updated monthly fee until you cancel. You may cancel
+                at any time to avoid future charges.
+              </p>
+
+              {/* Buttons */}
+              <div className="flex justify-between items-center mt-6">
+                <button
+                  onClick={closePopup}
+                  className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    alert("Confirmed!");
+                    closePopup();
+                  }}
+                  className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition"
+                >
+                  Confirm
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+
 export function MonthlyPricing() {
 
     return (
@@ -22,6 +118,7 @@ export function MonthlyPricing() {
                 Save 10% with the Annual Subscriptions Package
             </button>
         </div>
+
   
           {/* Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-10">
@@ -36,6 +133,7 @@ export function MonthlyPricing() {
                     </div>
                     
                     {/* Text on the right */}
+                    
                     <div className="bg-purple-600 text-white px-4 py-1 text-xs font-medium rounded-full">
                         Current Plan
                     </div>
@@ -59,9 +157,8 @@ export function MonthlyPricing() {
                     €600 monthly ad budget
                 </li>
               </ul>
-              <button className="mt-6 w-full bg-purple-100 text-purple-600 py-2 rounded-lg font-medium">
-                Current Plan
-              </button>
+          
+              <PlanPopup buttonText="Buy Basic Plan"/>
             </div>
   
             {/* Pro Plan */}

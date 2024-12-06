@@ -55,7 +55,7 @@ export function YearlyPricing() {
               </div>
               <h3 className="ml-2 mb-4 font-bold text-purple-600 text-[18px]">Basic</h3>
 
-              <p className="text-4xl font-bold">€99</p>
+              <p className="text-4xl font-bold">€1,069</p>
               <p className="text-gray-500 text-sm">/ Month</p>
               <hr className="my-4" />
               <p className="font-medium mb-4">Basic Plan Supports:</p>
@@ -88,7 +88,7 @@ export function YearlyPricing() {
                
               </div>
               <h3 className="ml-2 mb-4 font-bold text-purple-600 text-[18px]">Pro</h3>
-              <p className="text-4xl font-bold">€299</p>
+              <p className="text-4xl font-bold">€3,299</p>
               <p className="text-gray-500 text-sm">/ Month</p>
               <hr className="my-4" />
               <p className="font-medium mb-4">Includes everything in the Basic Plan plus:</p>
@@ -133,7 +133,7 @@ export function YearlyPricing() {
               </div>
               <h3 className="ml-2 mb-4 font-bold text-purple-600 text-[18px]">Agency</h3>
              
-              <p className="text-4xl font-bold">€599</p>
+              <p className="text-4xl font-bold">€6,469</p>
               <p className="text-gray-500 text-sm">/ Month</p>
               <hr className="my-4" />
               <p className="font-medium mb-4">Includes all Pro Plan features, plus:</p>
