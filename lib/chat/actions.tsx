@@ -431,7 +431,7 @@ async function confirmUpdateAdset(toolCallId: string, adsetId: string, adset: an
             })
             systemMessage.done(
                 <SystemMessage>
-                    You have successfully updated placement targeting
+                    You have successfully updated your targeting
                 </SystemMessage>
             );
         } else {
