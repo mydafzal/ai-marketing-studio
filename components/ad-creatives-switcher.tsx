@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect,useContext } from 'react';
 import { useActions, useUIState } from 'ai/rsc'
 import { type AI } from '@/lib/chat/actions'
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,7 @@ import { VideoPlayer } from './stocks/video-player'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { CampaignContext } from '@/components/contexts/campaign-context'
 
 interface Creative {
   id: number;
@@ -53,6 +54,9 @@ const AdCreativesSwitcher = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
 
+  const { campaign } = useContext(CampaignContext)
+
+
   const getImageDetail = (imageHash: string) => {
     fetch(`/api/fasty-bot/proxy-get-image-detail?image_hash=${imageHash}`)
       .then(response => response.json())
@@ -81,7 +85,7 @@ const AdCreativesSwitcher = () => {
     const fetchCreatives = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch('/api/fasty-bot/proxy-get-adcreatives');
+        const response = await fetch('/api/fasty-bot/proxy-get-adcreatives?campaignId='+campaign?.id);
         if (!response.ok) {
           throw new Error('Failed to fetch creatives');
         }
