@@ -464,23 +464,24 @@ export function GeographicalLocation({
                     </Select>
 
                     <Label className="text-gray-700 dark:text-zinc-300">Cities</Label>
-                    <ComboBox
-                      disabled={!geoLocation.region || isReadOnly}
-                      selectedOptions={geoLocation.cities.map(city => ({
-                        label: city.name,
-                        value: city.key
-                      }))}
-                      onChangeKeyword={(value: string) => 
-                        geoLocation.region && handleChangeKeyword(index, geoLocation.region, value)
-                      }
-                      options={geoLocation.cityData.map(city => ({
-                        label: city.name,
-                        value: city.key
-                      }))}
-                      onSelect={(value) => handleSelectCity(index, value)}
-                      onRemove={(value) => handleRemoveCity(index, value)}
-                      className="bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
-                    />
+<div className="bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 rounded-md">
+  <ComboBox
+    disabled={!geoLocation.region || isReadOnly}
+    selectedOptions={geoLocation.cities.map(city => ({
+      label: city.name,
+      value: city.key
+    }))}
+    onChangeKeyword={(value: string) => 
+      geoLocation.region && handleChangeKeyword(index, geoLocation.region, value)
+    }
+    options={geoLocation.cityData.map(city => ({
+      label: city.name,
+      value: city.key
+    }))}
+    onSelect={(value) => handleSelectCity(index, value)}
+    onRemove={(value) => handleRemoveCity(index, value)}
+  />
+</div>
                   </div>
                 </div>
               </CardContent>
