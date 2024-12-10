@@ -26,6 +26,7 @@ import { CampaignSummary, getCampaignSummary } from '@/lib/api/fasty-bot/get-cam
 import { getCampaignHistoricalLeadsResults } from "@/lib/api/fasty-bot/get-historical-leads";
 import { IconSpinner } from '@/components/ui/icons';
 import { cn } from '@/lib/utils';
+import ReactMarkdown from 'react-markdown';
 
 interface HistoricalData {
   date: string;
@@ -67,22 +68,27 @@ const AICampaignAnalysis: React.FC<AICampaignAnalysisProps> = ({
   const [timeRange, setTimeRange] = useState<'weekly' | 'monthly'>('monthly');
   const [aiAnalysis, setAiAnalysis] = useState<AIAnalysis | null>(null);
   const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false);
-  const [hasRunAnalysis, setHasRunAnalysis] = useState(false); // Added state to prevent infinite reload
+  const [hasRunAnalysis, setHasRunAnalysis] = useState(false);
 
-  const generateAIAnalysis = useCallback(async (data: CampaignSummary, ctx: CampaignContext) => {
+  const generateAIAnalysis = useCallback(async (data: CampaignSummary) => {
     setIsLoadingAnalysis(true);
     try {
+      // Use standard assumptions if not provided by client
+      const subscriptionPrice = context.subscription_price !== undefined ? context.subscription_price : 50; 
+      const leadToCallRate = context.lead_to_call_rate !== undefined ? context.lead_to_call_rate : 0.1;
+
       // Calculate key metrics for AI analysis
       const costPerLead = data.total_leads > 0 ? (data.total_spent / data.total_leads) : 0;
       const costPerClick = data.clicks > 0 ? (data.total_spent / data.clicks) : 0;
-      const leadToCallRate = ctx.lead_to_call_rate || 0;
-      const subscriptionPrice = ctx.subscription_price || 1; // avoid division by zero
       const expectedSalesCalls = Math.round(data.total_leads * leadToCallRate);
       const costPerSalesCall = leadToCallRate > 0 ? costPerLead / leadToCallRate : 0;
       const breakevenConversionRate = ((costPerSalesCall / subscriptionPrice) * 100).toFixed(1);
       const leadConversionRate = data.clicks > 0 ? ((data.total_leads / data.clicks) * 100).toFixed(1) : '0';
 
-      const prompt = `As a Meta Ads expert, analyze this campaign data and provide insights:
+      const prompt = `As a Meta Ads expert, analyze this campaign data and provide insights and recommendations. 
+Do not use ### headings. Use simple text and bullet points. 
+Always provide all sections, even if you must assume values. 
+Provide actionable recommendations in each relevant section.
 
 Campaign Metrics:
 - CTR: ${data.ctr.toFixed(2)}%
@@ -96,19 +102,29 @@ Campaign Metrics:
 - Breakeven Conversion Rate Needed: ${breakevenConversionRate}%
 
 Context:
-${ctx.industry_average_ctr ? `- Industry Average CTR: ${ctx.industry_average_ctr}%` : ''}
-${ctx.target_cost_per_lead ? `- Target Cost per Lead: €${ctx.target_cost_per_lead}` : ''}
-${ctx.previous_period_leads ? `- Previous Period Leads: ${ctx.previous_period_leads}` : ''}
-${ctx.previous_period_cost ? `- Previous Period Cost: €${ctx.previous_period_cost}` : ''}
+${context.industry_average_ctr ? `- Industry Average CTR: ${context.industry_average_ctr}%` : '- Industry Average CTR: Assume a standard value like 2%'}
+${context.target_cost_per_lead ? `- Target Cost per Lead: €${context.target_cost_per_lead}` : '- Target Cost per Lead: Assume €10'}
+${context.previous_period_leads ? `- Previous Period Leads: ${context.previous_period_leads}` : '- Previous Period Leads: Assume previous period 30 leads'}
+${context.previous_period_cost ? `- Previous Period Cost: €${context.previous_period_cost}` : '- Previous Period Cost: Assume previous period €300'}
 
-Provide three sections:
-1. A brief overall assessment of campaign performance
-2. Specific recommendations for:
-   - Ad Performance (focus on CTR, frequency, and reach)
-   - Cost Optimization (focus on CPL, CPC, and budget efficiency)
-   - Lead Quality (focus on conversion rates and qualification)
+Format your response EXACTLY as follows (include all four sections):
+[Assessment]
+(At least one paragraph describing the current state based on the metrics above.)
 
-Keep each section concise but actionable.`;
+[Ad Performance]
+(At least one paragraph or bullet points with actionable steps, for example:
+- Create 3 new ad creatives focusing on a unique value proposition.
+- Test different headlines and images.)
+
+[Cost Optimization]
+(At least one paragraph or bullet points with actionable steps.)
+
+[Lead Quality & Conversion]
+(At least one paragraph or bullet points with actionable steps.)
+
+Do not omit any section. Even if data is lacking, assume reasonable values and provide meaningful advice.
+Do not use headings like ### or multiple #, just plain text and bullet points if needed.
+`;
 
       const response = await fetch('/api/analyze-campaign', {
         method: 'POST',
@@ -123,30 +139,54 @@ Keep each section concise but actionable.`;
       }
 
       const result = await response.json();
-      
+
       if (result.content) {
-        // Parse the response into sections
-        const sections = result.content.split('\n\n');
+        const content = result.content;
+
+        // Use [\s\S]*? to allow multiline matches without 's' flag
+        const assessmentMatch = content.match(/\[Assessment\]([\s\S]*?)\[Ad Performance\]/);
+        const adPerfMatch = content.match(/\[Ad Performance\]([\s\S]*?)\[Cost Optimization\]/);
+        const costOptMatch = content.match(/\[Cost Optimization\]([\s\S]*?)\[Lead Quality & Conversion\]/);
+        const leadQualityMatch = content.match(/\[Lead Quality & Conversion\]([\s\S]*)/);
+
+        const assessment = assessmentMatch ? assessmentMatch[1].trim() : 'No assessment provided.';
+        const adPerformance = adPerfMatch ? adPerfMatch[1].trim() : 'No ad performance recommendations provided.';
+        const costOptimization = costOptMatch ? costOptMatch[1].trim() : 'No cost optimization recommendations provided.';
+        const leadQuality = leadQualityMatch ? leadQualityMatch[1].trim() : 'No lead quality recommendations provided.';
 
         setAiAnalysis({
-          assessment: sections[0] || '',
+          assessment: assessment || 'No assessment provided.',
           recommendations: {
-            adPerformance: sections[1]?.replace('Ad Performance:', '').trim() || '',
-            costOptimization: sections[2]?.replace('Cost Optimization:', '').trim() || '',
-            leadQuality: sections[3]?.replace('Lead Quality:', '').trim() || ''
+            adPerformance: adPerformance || 'No ad performance recommendations provided.',
+            costOptimization: costOptimization || 'No cost optimization recommendations provided.',
+            leadQuality: leadQuality || 'No lead quality recommendations provided.',
           }
         });
       } else {
-        setAiAnalysis(null);
+        setAiAnalysis({
+          assessment: 'No assessment provided.',
+          recommendations: {
+            adPerformance: 'No ad performance recommendations provided.',
+            costOptimization: 'No cost optimization recommendations provided.',
+            leadQuality: 'No lead quality recommendations provided.',
+          }
+        });
       }
     } catch (error) {
       console.error('Error generating AI analysis:', error);
-      setAiAnalysis(null);
+      setAiAnalysis({
+        assessment: 'No assessment provided due to an error.',
+        recommendations: {
+          adPerformance: 'No ad performance recommendations due to an error.',
+          costOptimization: 'No cost optimization recommendations due to an error.',
+          leadQuality: 'No lead quality recommendations due to an error.',
+        }
+      });
     } finally {
       setIsLoadingAnalysis(false);
-      setHasRunAnalysis(true); // Once done, never run again
+      setHasRunAnalysis(true);
     }
-  }, [context]); // Keep context if needed, or remove if causing re-renders
+  }, [campaignId]); // Removed `context` from dependencies to fix lint warning.
 
   // Fetch campaign summary
   useEffect(() => {
@@ -157,9 +197,8 @@ Keep each section concise but actionable.`;
           console.log('campaign summary in AI analysis', result);
           setCampaignData(result);
           
-          // Once we have campaign data and haven't run analysis yet, generate AI analysis
           if (result && !hasRunAnalysis) {
-            await generateAIAnalysis(result, context);
+            await generateAIAnalysis(result);
           }
         } catch (error) {
           console.error('Error fetching campaign summary:', error);
@@ -167,7 +206,7 @@ Keep each section concise but actionable.`;
       };
       void fetchData();
     }
-  }, [campaignId, isActivated, context, generateAIAnalysis, hasRunAnalysis]);
+  }, [campaignId, isActivated, hasRunAnalysis, generateAIAnalysis]);
 
   // Fetch historical data
   useEffect(() => {
@@ -210,11 +249,13 @@ Keep each section concise but actionable.`;
     );
   }
 
+  // Use standard assumptions if not provided by client
+  const subscriptionPrice = context.subscription_price !== undefined ? context.subscription_price : 50; 
+  const leadToCallRate = context.lead_to_call_rate !== undefined ? context.lead_to_call_rate : 0.1;
+
   // Calculate metrics
   const costPerLead = campaignData.total_leads > 0 ? (campaignData.total_spent / campaignData.total_leads) : 0;
   const costPerClick = campaignData.clicks > 0 ? (campaignData.total_spent / campaignData.clicks) : 0;
-  const leadToCallRate = context.lead_to_call_rate || 0;
-  const subscriptionPrice = context.subscription_price || 1; 
   const expectedSalesCalls = Math.round(campaignData.total_leads * leadToCallRate);
   const costPerSalesCall = leadToCallRate > 0 ? costPerLead / leadToCallRate : 0;
   const breakevenConversionRate = (subscriptionPrice > 0) ? ((costPerSalesCall / subscriptionPrice) * 100).toFixed(1) : '0';
@@ -222,12 +263,10 @@ Keep each section concise but actionable.`;
   const potentialROI = (campaignData.total_spent > 0) ? (((maxMonthlyRevenue - campaignData.total_spent) / campaignData.total_spent) * 100).toFixed(1) : '0';
   const leadConversionRate = (campaignData.clicks > 0) ? ((campaignData.total_leads / campaignData.clicks) * 100).toFixed(1) : '0';
 
-  // Performance status based on target metrics
   const performanceStatus = context.target_cost_per_lead
     ? costPerLead < context.target_cost_per_lead ? 'Healthy' : 'Needs Attention'
     : costPerLead < 8 ? 'Healthy' : 'Needs Attention';
 
-  // Calculate weekly trends
   const currentData = timeRange === 'weekly' ? dailyData.slice(-7) : dailyData;
   const weeklyTrend = (currentData.length > 1 && currentData[0].leads > 0)
     ? (((currentData[currentData.length - 1].leads - currentData[0].leads) / currentData[0].leads) * 100).toFixed(1)
@@ -349,9 +388,9 @@ Keep each section concise but actionable.`;
               <p className="text-sm text-zinc-500">Generating AI analysis...</p>
             </div>
           ) : aiAnalysis ? (
-            <p className="text-sm text-zinc-700 dark:text-zinc-300">
+            <ReactMarkdown className="prose dark:prose-invert text-sm text-zinc-700 dark:text-zinc-300">
               {aiAnalysis.assessment}
-            </p>
+            </ReactMarkdown>
           ) : (
             <p className="text-sm text-zinc-500">Analysis not available</p>
           )}
@@ -361,7 +400,7 @@ Keep each section concise but actionable.`;
       {/* AI Recommendations */}
       <Card>
         <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2">
             <Brain className="size-5" />
             AI Recommendations
           </CardTitle>
@@ -376,23 +415,23 @@ Keep each section concise but actionable.`;
             <>
               <div className="rounded-lg bg-zinc-50 p-4 dark:bg-zinc-800">
                 <h3 className="font-medium text-green-600 dark:text-green-500">Ad Performance</h3>
-                <p className="mt-1 text-sm">
+                <ReactMarkdown className="prose dark:prose-invert mt-1 text-sm">
                   {aiAnalysis.recommendations.adPerformance}
-                </p>
+                </ReactMarkdown>
               </div>
               
               <div className="rounded-lg bg-zinc-50 p-4 dark:bg-zinc-800">
                 <h3 className="font-medium text-green-600 dark:text-green-500">Cost Optimization</h3>
-                <p className="mt-1 text-sm">
+                <ReactMarkdown className="prose dark:prose-invert mt-1 text-sm">
                   {aiAnalysis.recommendations.costOptimization}
-                </p>
+                </ReactMarkdown>
               </div>
               
               <div className="rounded-lg bg-zinc-50 p-4 dark:bg-zinc-800">
                 <h3 className="font-medium text-green-600 dark:text-green-500">Lead Quality & Conversion</h3>
-                <p className="mt-1 text-sm">
+                <ReactMarkdown className="prose dark:prose-invert mt-1 text-sm">
                   {aiAnalysis.recommendations.leadQuality}
-                </p>
+                </ReactMarkdown>
               </div>
             </>
           ) : (
