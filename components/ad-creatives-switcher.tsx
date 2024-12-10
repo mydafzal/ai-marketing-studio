@@ -241,15 +241,15 @@ const AdCreativesSwitcher = () => {
   }
 
   if (isLoading) {
-    return <div className="text-zinc-200">Loading creatives...</div>;
+    return <div className="text-zinc-900 dark:text-zinc-200">Loading creatives...</div>;
   }
 
   if (error) {
-    return <div className="text-zinc-200">{error}</div>;
+    return <div className="text-zinc-900 dark:text-zinc-200">{error}</div>;
   }
 
   return (
-    <div className="space-y-6 py-4 bg-zinc-900 text-zinc-200 min-h-screen">
+    <div className="space-y-6 py-4 min-h-screen bg-white text-zinc-900 dark:bg-zinc-900 dark:text-zinc-200">
       <div className="flex justify-between px-4">
         <h1 className="text-2xl font-bold">Ad Creative Selector</h1>
         <Button onClick={addNewCreative} className="bg-blue-600 hover:bg-blue-700 text-white">Create New</Button>
@@ -257,14 +257,20 @@ const AdCreativesSwitcher = () => {
 
       <div className="space-y-6 px-4">
         {creatives.map(adset => (
-          <Card key={adset.adset_id} className="border border-zinc-800 bg-zinc-900">
+          <Card 
+            key={adset.adset_id} 
+            className="border border-zinc-300 dark:border-zinc-800 bg-white dark:bg-zinc-900"
+          >
             <CardContent className="space-y-6 p-6">
               <h4 className="font-bold text-lg">
                 Adset ID: {adset.adset_id}
               </h4>
               <div className="grid md:grid-cols-2 gap-6">
                 {adset.creatives.map(creative => (
-                  <Card key={creative.id} className="border border-zinc-800 bg-zinc-900 overflow-hidden">
+                  <Card 
+                    key={creative.id} 
+                    className="border border-zinc-300 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden"
+                  >
                     <CardContent className="p-6 space-y-4">
                       <div className="flex justify-end gap-3">
                         <Button
@@ -278,14 +284,14 @@ const AdCreativesSwitcher = () => {
                         <Button
                           size="sm"
                           onClick={() => handleEdit(creative)}
-                          className="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 text-sm"
+                          className="bg-zinc-200 hover:bg-zinc-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-200 text-sm"
                         >
                           Edit
                         </Button>
                       </div>
                       <h5 className="font-semibold">{creative.name}</h5>
-                      <div className="w-full rounded-lg border border-zinc-700 bg-zinc-800 overflow-hidden">
-                        <div className="relative w-full h-64 flex items-center justify-center bg-black">
+                      <div className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
+                        <div className="relative w-full h-64 flex items-center justify-center bg-gray-300 dark:bg-black">
                           {creative.object_type === 'IMAGE' && creative.thumbnail_url ? (
                             <Image
                               src={creative.thumbnail_url}
@@ -315,7 +321,7 @@ const AdCreativesSwitcher = () => {
                           )}
                         </div>
                       </div>
-                      <p className="text-sm text-zinc-300">
+                      <p className="text-sm text-zinc-800 dark:text-zinc-300">
                         {creative.object_type === 'VIDEO' && creative.object_story_spec?.video_data?.message}
                         {creative.object_type === 'SHARE' && creative.object_story_spec?.link_data?.message}
                       </p>
@@ -332,15 +338,15 @@ const AdCreativesSwitcher = () => {
         setEditingCreative(null);
         setEditError(null);
       }}>
-        <DialogContent className='max-h-[80%] overflow-y-auto bg-zinc-900 border border-zinc-800 text-zinc-200'>
+        <DialogContent className='max-h-[80%] overflow-y-auto bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 text-zinc-900 dark:text-zinc-200'>
           <DialogHeader>
-            <DialogTitle className="text-zinc-200">Edit Ad Creative</DialogTitle>
+            <DialogTitle>Edit Ad Creative</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             {editingCreative?.object_type === 'VIDEO' ? (
               <div className="grid grid-cols-4 items-center gap-4">
                 <label htmlFor="message" className="text-right">Video</label>
-                <div className="flex-none col-span-3 border border-zinc-700 rounded-lg overflow-hidden bg-black">
+                <div className="flex-none col-span-3 border border-zinc-300 dark:border-zinc-700 rounded-lg overflow-hidden bg-gray-100 dark:bg-black">
                   <VideoPlayer
                     className="object-cover"
                     height="h-[200px]"
@@ -353,7 +359,7 @@ const AdCreativesSwitcher = () => {
             ) : (
               <div className="grid grid-cols-4 items-center gap-4">
                 <label htmlFor="message" className="text-right">Image</label>
-                <div className="flex-none col-span-3 border border-zinc-700 rounded-lg overflow-hidden relative w-full h-[200px] bg-black">
+                <div className="flex-none col-span-3 border border-zinc-300 dark:border-zinc-700 rounded-lg overflow-hidden relative w-full h-[200px] bg-gray-100 dark:bg-black">
                   <Image
                     src={imagePermalinkUrl || editingCreative?.thumbnail_url || '/placeholder.png'}
                     alt=""
@@ -370,7 +376,7 @@ const AdCreativesSwitcher = () => {
                 id="name"
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
-                className="col-span-3 bg-zinc-800 border-zinc-700 text-zinc-200"
+                className="col-span-3 bg-white dark:bg-zinc-800 dark:border-zinc-700 border border-zinc-300 text-zinc-900 dark:text-zinc-200"
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
@@ -379,7 +385,7 @@ const AdCreativesSwitcher = () => {
                 id="message"
                 value={editMessage}
                 onChange={(e) => setEditMessage(e.target.value)}
-                className="col-span-3 bg-zinc-800 border-zinc-700 text-zinc-200"
+                className="col-span-3 bg-white dark:bg-zinc-800 dark:border-zinc-700 border border-zinc-300 text-zinc-900 dark:text-zinc-200"
                 rows={8}
               />
             </div>
@@ -391,7 +397,11 @@ const AdCreativesSwitcher = () => {
             )}
           </div>
           <DialogFooter>
-            <Button onClick={handleSubmitEdit} disabled={isEditing} className="bg-blue-600 hover:bg-blue-700 text-white">
+            <Button 
+              onClick={handleSubmitEdit} 
+              disabled={isEditing} 
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
               {isEditing ? (
                 <>
                   <span className="mr-2">Saving...</span>
