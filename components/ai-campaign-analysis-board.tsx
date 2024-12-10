@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
 import {
   AreaChart,
@@ -67,24 +67,24 @@ const AICampaignAnalysis: React.FC<AICampaignAnalysisProps> = ({
   const [timeRange, setTimeRange] = useState<'weekly' | 'monthly'>('monthly');
   const [aiAnalysis, setAiAnalysis] = useState<AIAnalysis | null>(null);
   const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false);
-  const [hasRunAnalysis, setHasRunAnalysis] = useState(false);
+  const [hasRunAnalysis, setHasRunAnalysis] = useState(false); // Added state to prevent infinite reload
 
-  const generateAIAnalysis = async (data: CampaignSummary, ctx: CampaignContext) => {
+  const generateAIAnalysis = useCallback(async (data: CampaignSummary, ctx: CampaignContext) => {
     setIsLoadingAnalysis(true);
     try {
+      // Calculate key metrics for AI analysis
       const costPerLead = data.total_leads > 0 ? (data.total_spent / data.total_leads) : 0;
       const costPerClick = data.clicks > 0 ? (data.total_spent / data.clicks) : 0;
       const leadToCallRate = ctx.lead_to_call_rate || 0;
-      const subscriptionPrice = ctx.subscription_price || 1;
+      const subscriptionPrice = ctx.subscription_price || 1; // avoid division by zero
       const expectedSalesCalls = Math.round(data.total_leads * leadToCallRate);
       const costPerSalesCall = leadToCallRate > 0 ? costPerLead / leadToCallRate : 0;
       const breakevenConversionRate = ((costPerSalesCall / subscriptionPrice) * 100).toFixed(1);
       const leadConversionRate = data.clicks > 0 ? ((data.total_leads / data.clicks) * 100).toFixed(1) : '0';
 
-      // Prompt now requests a JSON structure for reliability.
-      const prompt = `You are a Meta Ads expert. Analyze the following campaign data and return a JSON object with keys "assessment", "ad_performance", "cost_optimization", and "lead_quality". Each field should contain a concise and helpful message.
+      const prompt = `As a Meta Ads expert, analyze this campaign data and provide insights:
 
-Campaign Data:
+Campaign Metrics:
 - CTR: ${data.ctr.toFixed(2)}%
 - Cost per Lead: €${costPerLead.toFixed(2)}
 - Cost per Click: €${costPerClick.toFixed(2)}
@@ -101,13 +101,14 @@ ${ctx.target_cost_per_lead ? `- Target Cost per Lead: €${ctx.target_cost_per_l
 ${ctx.previous_period_leads ? `- Previous Period Leads: ${ctx.previous_period_leads}` : ''}
 ${ctx.previous_period_cost ? `- Previous Period Cost: €${ctx.previous_period_cost}` : ''}
 
-Return a valid JSON object like this:
-{
-  "assessment": "Your overall assessment...",
-  "ad_performance": "Recommendations about ad performance...",
-  "cost_optimization": "Recommendations about cost optimization...",
-  "lead_quality": "Recommendations about lead quality..."
-}`;
+Provide three sections:
+1. A brief overall assessment of campaign performance
+2. Specific recommendations for:
+   - Ad Performance (focus on CTR, frequency, and reach)
+   - Cost Optimization (focus on CPL, CPC, and budget efficiency)
+   - Lead Quality (focus on conversion rates and qualification)
+
+Keep each section concise but actionable.`;
 
       const response = await fetch('/api/analyze-campaign', {
         method: 'POST',
@@ -122,64 +123,53 @@ Return a valid JSON object like this:
       }
 
       const result = await response.json();
-      const content = result.content || '';
-      let parsed: { 
-        assessment?: string; 
-        ad_performance?: string; 
-        cost_optimization?: string; 
-        lead_quality?: string 
-      };
+      
+      if (result.content) {
+        // Parse the response into sections
+        const sections = result.content.split('\n\n');
 
-      try {
-        parsed = JSON.parse(content);
-      } catch {
-        parsed = {};
+        setAiAnalysis({
+          assessment: sections[0] || '',
+          recommendations: {
+            adPerformance: sections[1]?.replace('Ad Performance:', '').trim() || '',
+            costOptimization: sections[2]?.replace('Cost Optimization:', '').trim() || '',
+            leadQuality: sections[3]?.replace('Lead Quality:', '').trim() || ''
+          }
+        });
+      } else {
+        setAiAnalysis(null);
       }
-
-      const assessment = parsed.assessment || 'No assessment provided by AI.';
-      const adPerformance = parsed.ad_performance || 'No ad performance recommendations.';
-      const costOptimization = parsed.cost_optimization || 'No cost optimization recommendations.';
-      const leadQuality = parsed.lead_quality || 'No lead quality recommendations.';
-
-      setAiAnalysis({
-        assessment,
-        recommendations: {
-          adPerformance,
-          costOptimization,
-          leadQuality,
-        }
-      });
     } catch (error) {
       console.error('Error generating AI analysis:', error);
-      setAiAnalysis({
-        assessment: 'No assessment available due to an error.',
-        recommendations: {
-          adPerformance: 'No recommendations available.',
-          costOptimization: 'No recommendations available.',
-          leadQuality: 'No recommendations available.',
-        }
-      });
+      setAiAnalysis(null);
     } finally {
       setIsLoadingAnalysis(false);
-      setHasRunAnalysis(true);
+      setHasRunAnalysis(true); // Once done, never run again
     }
-  };
+  }, [context]); // Keep context if needed, or remove if causing re-renders
 
+  // Fetch campaign summary
   useEffect(() => {
-    if (campaignId && isActivated) {
+    if (campaignId && isActivated && !hasRunAnalysis) {
       const fetchData = async () => {
         try {
           const result = await getCampaignSummary(campaignId);
           console.log('campaign summary in AI analysis', result);
           setCampaignData(result);
+          
+          // Once we have campaign data and haven't run analysis yet, generate AI analysis
+          if (result && !hasRunAnalysis) {
+            await generateAIAnalysis(result, context);
+          }
         } catch (error) {
           console.error('Error fetching campaign summary:', error);
         }
       };
       void fetchData();
     }
-  }, [campaignId, isActivated]); // no context, no generateAIAnalysis in deps
+  }, [campaignId, isActivated, context, generateAIAnalysis, hasRunAnalysis]);
 
+  // Fetch historical data
   useEffect(() => {
     if (campaignData && isActivated) {
       const fetchHistorical = async () => {
@@ -197,12 +187,6 @@ Return a valid JSON object like this:
       void fetchHistorical();
     }
   }, [campaignData, isActivated]);
-
-  useEffect(() => {
-    if (campaignData && dailyData.length > 0 && !hasRunAnalysis) {
-      void generateAIAnalysis(campaignData, context);
-    }
-  }, [campaignData, dailyData, hasRunAnalysis, context]);
 
   if (!isActivated) {
     return (
@@ -226,55 +210,24 @@ Return a valid JSON object like this:
     );
   }
 
+  // Calculate metrics
   const costPerLead = campaignData.total_leads > 0 ? (campaignData.total_spent / campaignData.total_leads) : 0;
   const costPerClick = campaignData.clicks > 0 ? (campaignData.total_spent / campaignData.clicks) : 0;
   const leadToCallRate = context.lead_to_call_rate || 0;
   const subscriptionPrice = context.subscription_price || 1; 
   const expectedSalesCalls = Math.round(campaignData.total_leads * leadToCallRate);
-  const costPerSalesCall = leadToCallRate > 0 ? (costPerLead / leadToCallRate) : 0;
-  const breakevenConversionRate = subscriptionPrice > 0 ? ((costPerSalesCall / subscriptionPrice) * 100).toFixed(1) : '0';
+  const costPerSalesCall = leadToCallRate > 0 ? costPerLead / leadToCallRate : 0;
+  const breakevenConversionRate = (subscriptionPrice > 0) ? ((costPerSalesCall / subscriptionPrice) * 100).toFixed(1) : '0';
   const maxMonthlyRevenue = expectedSalesCalls * subscriptionPrice;
-  const potentialROI = campaignData.total_spent > 0 ? (((maxMonthlyRevenue - campaignData.total_spent) / campaignData.total_spent) * 100).toFixed(1) : '0';
-  const leadConversionRate = campaignData.clicks > 0 ? ((campaignData.total_leads / campaignData.clicks) * 100).toFixed(1) : '0';
+  const potentialROI = (campaignData.total_spent > 0) ? (((maxMonthlyRevenue - campaignData.total_spent) / campaignData.total_spent) * 100).toFixed(1) : '0';
+  const leadConversionRate = (campaignData.clicks > 0) ? ((campaignData.total_leads / campaignData.clicks) * 100).toFixed(1) : '0';
 
-  const performanceStatus = (() => {
-    if (aiAnalysis?.assessment) {
-      const negativeIndicators = [
-        'poor',
-        'low',
-        'below average',
-        'needs improvement',
-        'concerning',
-        'underperforming',
-        'insufficient',
-        'not meeting',
-        'failing',
-        'struggle'
-      ];
-      
-      const hasNegativeIndicators = negativeIndicators.some(indicator => 
-        aiAnalysis.assessment.toLowerCase().includes(indicator)
-      );
+  // Performance status based on target metrics
+  const performanceStatus = context.target_cost_per_lead
+    ? costPerLead < context.target_cost_per_lead ? 'Healthy' : 'Needs Attention'
+    : costPerLead < 8 ? 'Healthy' : 'Needs Attention';
 
-      if (hasNegativeIndicators) {
-        return 'Needs Attention';
-      }
-    }
-    
-    if (context.target_cost_per_lead) {
-      return costPerLead < context.target_cost_per_lead ? 'Healthy' : 'Needs Attention';
-    }
-    
-    const metrics = [
-      costPerLead < 8,
-      Number(leadConversionRate) > 2,
-      campaignData.ctr > 1,
-      campaignData.frequency < 5
-    ];
-    
-    return metrics.filter(Boolean).length >= 3 ? 'Healthy' : 'Needs Attention';
-  })();
-
+  // Calculate weekly trends
   const currentData = timeRange === 'weekly' ? dailyData.slice(-7) : dailyData;
   const weeklyTrend = (currentData.length > 1 && currentData[0].leads > 0)
     ? (((currentData[currentData.length - 1].leads - currentData[0].leads) / currentData[0].leads) * 100).toFixed(1)
@@ -408,7 +361,7 @@ Return a valid JSON object like this:
       {/* AI Recommendations */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2">
             <Brain className="size-5" />
             AI Recommendations
           </CardTitle>
