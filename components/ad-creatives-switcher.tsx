@@ -8,9 +8,6 @@ import { VideoPlayer } from './stocks/video-player'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Card, CardContent } from '@/components/ui/card'
-import Image from 'next/image'
-import { Pencil, Check, X } from 'lucide-react'
 
 interface Creative {
   id: number;
@@ -65,10 +62,9 @@ const AdCreativesSwitcher = () => {
         }
       })
       .catch(error => {
-        console.error('Error fetching image detail:', error)
+        console.error('Error fetching video detail:', error)
       })
   }
-
   useEffect(() => {
     if (
       editingCreative &&
@@ -115,6 +111,9 @@ const AdCreativesSwitcher = () => {
 
         console.log(adsetWithCreatives,"Adset group")
 
+
+        console.log('adcreativesdata', data)
+        let list = data?.data?.data || [];
         setCreatives(adsetWithCreatives);
       } catch (err) {
         setError('Error fetching creatives. Please try again later.');
@@ -130,7 +129,7 @@ const AdCreativesSwitcher = () => {
   const togglePublish = async (id: number) => {
     try {
       const creative = creatives
-      .flatMap(adset => adset.creatives)
+      .flatMap(adset => adset.creatives) // Flatten all creatives from all adsets
       .find(creative => creative.id === id);
       console.log("Creative toggle publish", creative)
       const response = await fetch('/api/fasty-bot/proxy-update-adcreative', {
@@ -146,6 +145,8 @@ const AdCreativesSwitcher = () => {
             link_data: {
               ...creative?.object_story_spec?.link_data,
               name:creative?.object_story_spec?.link_data?.name??creative?.name
+
+              // image_url: creative?.thumbnail_url
             }
           },
           status: creative?.status === 'ACTIVE' ? 'ARCHIVED' : 'ACTIVE'
@@ -249,118 +250,117 @@ const AdCreativesSwitcher = () => {
   }
 
   return (
-    <div className="flex flex-col h-full bg-zinc-800">
-      <header className="flex justify-between px-4 py-6 border-b border-zinc-700">
-        <h1 className="text-2xl font-bold text-zinc-200">Ad Creative Selector</h1>
+    <div className="flex flex-col h-full bg-white dark:bg-zinc-800 shadow-lg">
+      <header className="flex justify-between px-4 py-6">
+        <h1 className="text-2xl font-bold text-zinc-800 dark:text-zinc-200">Ad Creative Selector</h1>
         <Button onClick={addNewCreative}>Create New</Button>
       </header>
 
-      <main className="flex-grow p-4 overflow-y-auto space-y-10">
+      <main className="flex-grow p-4 overflow-y-auto">
+      <div className="grid gap-6">
         {creatives.map(adset => (
-          <div key={adset.adset_id} className="space-y-6">
-            <h4 className="font-bold text-lg text-zinc-300 mb-2">
+          <div key={adset.adset_id}>
+            {/* Adset ID Header */}
+            <h4 className="font-bold text-lg text-zinc-800 dark:text-zinc-200 mb-2">
               Adset ID: {adset.adset_id}
             </h4>
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+
+            {/* Grid for Creatives */}
+            <div className="grid md:grid-cols-2 gap-4">
               {adset.creatives.map(creative => (
-                <Card key={creative.id} className="bg-zinc-900 border-zinc-800 overflow-hidden">
-                  <CardContent className="p-4 space-y-4">
-                    <div className="flex justify-between items-center">
-                      <h5 className="font-semibold text-zinc-200">{creative.name}</h5>
-                      <div className="flex gap-2">
-                        <Button
-                          onClick={() => togglePublish(creative.id)}
-                          variant={creative.status === 'ACTIVE' ? 'destructive' : 'default'}
-                          size="sm"
-                        >
-                          {creative.status === 'ACTIVE' ? 'Unpublish' : 'Publish'}
-                        </Button>
-                        <Button size="sm" onClick={() => handleEdit(creative)}>
-                          <Pencil size={14} /> Edit
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
-                      {creative.object_type === 'IMAGE' && creative.thumbnail_url ? (
-                        <Image
-                          src={creative.thumbnail_url}
-                          alt={creative.name}
-                          fill
-                          className="object-cover"
-                        />
-                      ) : creative.object_type === 'VIDEO' ? (
-                        <VideoPlayer
-                          className="object-cover"
-                          height="h-full"
-                          videoId={creative.object_story_spec?.video_data?.video_id}
-                        />
-                      ) : (
-                        <Image
-                          src={creative.thumbnail_url || ''}
-                          alt={creative.name}
-                          fill
-                          className="object-cover"
-                        />
-                      )}
-                    </div>
-                    <p className="text-zinc-400 text-sm whitespace-pre-wrap">
+                <div
+                  key={creative.id}
+                  className="bg-zinc-50 dark:bg-zinc-700 p-4 rounded-md shadow-md overflow-hidden"
+                >
+                  <div className="flex gap-2 justify-end">
+                    <Button
+                      onClick={() => togglePublish(creative.id)}
+                      variant={creative.status === 'ACTIVE' ? 'destructive' : 'default'}
+                      size="sm"
+                    >
+                      {creative.status === 'ACTIVE' ? 'Unpublish' : 'Publish'}
+                    </Button>
+                    <Button size="sm" onClick={() => handleEdit(creative)}>Edit</Button>
+                  </div>
+                  <h5 className="font-semibold dark:text-zinc-200">{creative.name}</h5>
+                  <div className="mt-4">
+                    {creative.object_type === 'IMAGE' && creative.thumbnail_url ? (
+                      <img
+                        src={creative.thumbnail_url}
+                        alt={creative.name}
+                        className="object-cover rounded-md h-[200px] w-full"
+                      />
+                    ) : creative.object_type === 'VIDEO' ? (
+                      <VideoPlayer
+                        className="object-cover rounded-md"
+                        height="h-[200px]"
+                        videoId={creative.object_story_spec?.video_data?.video_id}
+                      />
+                    ) : (
+                      <img
+                        src={creative.thumbnail_url}
+                        alt={creative.name}
+                        className="object-cover rounded-md h-[200px] w-full"
+                      />
+                    )}
+                    <p className="mt-2 text-zinc-600 dark:text-zinc-300">
                       {creative.object_type === 'VIDEO' && creative.object_story_spec?.video_data?.message}
                       {creative.object_type === 'SHARE' && creative.object_story_spec?.link_data?.message}
                     </p>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               ))}
             </div>
+            <hr className='mt-8' />
+
           </div>
         ))}
+      </div>
+
       </main>
 
       <Dialog open={!!editingCreative} onOpenChange={() => {
         setEditingCreative(null);
         setEditError(null); 
-      }}>
-        <DialogContent className='max-h-[80%] overflow-y-auto bg-zinc-900 text-zinc-200 border border-zinc-700'>
+      }}
+      >
+        <DialogContent className='max-h-[80%] overflow-y-auto'>
           <DialogHeader>
             <DialogTitle>Edit Ad Creative</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             {editingCreative?.object_type === 'VIDEO' ? (
               <div className="grid grid-cols-4 items-center gap-4">
-                <label htmlFor="message" className="text-right text-zinc-300">
+                <label htmlFor="message" className="text-right">
                   Video
                 </label>
                 <div className="flex-none col-span-3">
-                  <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
-                    <VideoPlayer
-                      className="object-cover rounded-md"
-                      height="h-[200px]"
-                      videoId={
-                        editingCreative?.object_story_spec?.video_data?.video_id
-                      }
-                    />
-                  </div>
+                  <VideoPlayer
+                    className="object-cover rounded-md"
+                    height="h-[200px]"
+                    videoId={
+                      editingCreative?.object_story_spec?.video_data?.video_id
+                    }
+                  />
                 </div>
               </div>
             ) : (
               <div className="grid grid-cols-4 items-center gap-4">
-                <label htmlFor="message" className="text-right text-zinc-300">
+                <label htmlFor="message" className="text-right">
                   Image
                 </label>
                 <div className="flex-none col-span-3">
-                  <div className="relative w-full h-[200px] bg-black rounded-lg overflow-hidden">
-                    <Image
-                      src={imagePermalinkUrl || editingCreative?.thumbnail_url || ''}
-                      alt=""
-                      fill
-                      className="object-cover"
-                      loading="lazy"
-                    />
-                  </div>
+                  <img
+                    src={imagePermalinkUrl || editingCreative?.thumbnail_url}
+                    alt=""
+                    className="inset-0  w-full object-cover h-[200px] "
+                    loading="lazy"
+                  />
                 </div>
               </div>
             )}
             <div className="grid grid-cols-4 items-center gap-4">
-              <label htmlFor="name" className="text-right text-zinc-300">
+              <label htmlFor="name" className="text-right">
                 Name
               </label>
               <Input
@@ -370,8 +370,8 @@ const AdCreativesSwitcher = () => {
                 className="col-span-3"
               />
             </div>
-            <div className="grid grid-cols-4 items-start gap-4">
-              <label htmlFor="message" className="text-right text-zinc-300">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <label htmlFor="message" className="text-right">
                 Message
               </label>
               <Textarea
