@@ -70,12 +70,12 @@ const AICampaignAnalysis: React.FC<AICampaignAnalysisProps> = ({
   const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false);
   const [hasRunAnalysis, setHasRunAnalysis] = useState(false);
 
-  const generateAIAnalysis = useCallback(async (data: CampaignSummary, ctx: CampaignContext) => {
+  const generateAIAnalysis = useCallback(async (data: CampaignSummary) => {
     setIsLoadingAnalysis(true);
     try {
       // Use standard assumptions if not provided by client
-      const subscriptionPrice = ctx.subscription_price !== undefined ? ctx.subscription_price : 50; 
-      const leadToCallRate = ctx.lead_to_call_rate !== undefined ? ctx.lead_to_call_rate : 0.1;
+      const subscriptionPrice = context.subscription_price !== undefined ? context.subscription_price : 50; 
+      const leadToCallRate = context.lead_to_call_rate !== undefined ? context.lead_to_call_rate : 0.1;
 
       // Calculate key metrics for AI analysis
       const costPerLead = data.total_leads > 0 ? (data.total_spent / data.total_leads) : 0;
@@ -85,9 +85,8 @@ const AICampaignAnalysis: React.FC<AICampaignAnalysisProps> = ({
       const breakevenConversionRate = ((costPerSalesCall / subscriptionPrice) * 100).toFixed(1);
       const leadConversionRate = data.clicks > 0 ? ((data.total_leads / data.clicks) * 100).toFixed(1) : '0';
 
-      // Update prompt: no ###, always fill out sections.
       const prompt = `As a Meta Ads expert, analyze this campaign data and provide insights and recommendations. 
-Do not use ### headings. Use simple text. 
+Do not use ### headings. Use simple text and bullet points. 
 Always provide all sections, even if you must assume values. 
 Provide actionable recommendations in each relevant section.
 
@@ -103,10 +102,10 @@ Campaign Metrics:
 - Breakeven Conversion Rate Needed: ${breakevenConversionRate}%
 
 Context:
-${ctx.industry_average_ctr ? `- Industry Average CTR: ${ctx.industry_average_ctr}%` : '- Industry Average CTR: Assume a standard value like 2%'}
-${ctx.target_cost_per_lead ? `- Target Cost per Lead: €${ctx.target_cost_per_lead}` : '- Target Cost per Lead: Assume €10'}
-${ctx.previous_period_leads ? `- Previous Period Leads: ${ctx.previous_period_leads}` : '- Previous Period Leads: Assume previous period 30 leads'}
-${ctx.previous_period_cost ? `- Previous Period Cost: €${ctx.previous_period_cost}` : '- Previous Period Cost: Assume previous period €300'}
+${context.industry_average_ctr ? `- Industry Average CTR: ${context.industry_average_ctr}%` : '- Industry Average CTR: Assume a standard value like 2%'}
+${context.target_cost_per_lead ? `- Target Cost per Lead: €${context.target_cost_per_lead}` : '- Target Cost per Lead: Assume €10'}
+${context.previous_period_leads ? `- Previous Period Leads: ${context.previous_period_leads}` : '- Previous Period Leads: Assume previous period 30 leads'}
+${context.previous_period_cost ? `- Previous Period Cost: €${context.previous_period_cost}` : '- Previous Period Cost: Assume previous period €300'}
 
 Format your response EXACTLY as follows (include all four sections):
 [Assessment]
@@ -124,7 +123,7 @@ Format your response EXACTLY as follows (include all four sections):
 (At least one paragraph or bullet points with actionable steps.)
 
 Do not omit any section. Even if data is lacking, assume reasonable values and provide meaningful advice.
-Do not use any markdown text, just plain text.
+Do not use headings like ### or multiple #, just plain text and bullet points if needed.
 `;
 
       const response = await fetch('/api/analyze-campaign', {
@@ -143,12 +142,12 @@ Do not use any markdown text, just plain text.
 
       if (result.content) {
         const content = result.content;
-        
-        // Extract sections with improved fallback
-        const assessmentMatch = content.match(/\[Assessment\](.*?)\[Ad Performance\]/s);
-        const adPerfMatch = content.match(/\[Ad Performance\](.*?)\[Cost Optimization\]/s);
-        const costOptMatch = content.match(/\[Cost Optimization\](.*?)\[Lead Quality & Conversion\]/s);
-        const leadQualityMatch = content.match(/\[Lead Quality & Conversion\](.*)$/s);
+
+        // Use [\s\S]*? to allow multiline matches without 's' flag
+        const assessmentMatch = content.match(/\[Assessment\]([\s\S]*?)\[Ad Performance\]/);
+        const adPerfMatch = content.match(/\[Ad Performance\]([\s\S]*?)\[Cost Optimization\]/);
+        const costOptMatch = content.match(/\[Cost Optimization\]([\s\S]*?)\[Lead Quality & Conversion\]/);
+        const leadQualityMatch = content.match(/\[Lead Quality & Conversion\]([\s\S]*)/);
 
         const assessment = assessmentMatch ? assessmentMatch[1].trim() : 'No assessment provided.';
         const adPerformance = adPerfMatch ? adPerfMatch[1].trim() : 'No ad performance recommendations provided.';
@@ -187,7 +186,7 @@ Do not use any markdown text, just plain text.
       setIsLoadingAnalysis(false);
       setHasRunAnalysis(true);
     }
-  }, [context]);
+  }, [campaignId]); // Removed `context` from dependencies to fix lint warning.
 
   // Fetch campaign summary
   useEffect(() => {
@@ -199,7 +198,7 @@ Do not use any markdown text, just plain text.
           setCampaignData(result);
           
           if (result && !hasRunAnalysis) {
-            await generateAIAnalysis(result, context);
+            await generateAIAnalysis(result);
           }
         } catch (error) {
           console.error('Error fetching campaign summary:', error);
@@ -207,7 +206,7 @@ Do not use any markdown text, just plain text.
       };
       void fetchData();
     }
-  }, [campaignId, isActivated, context, generateAIAnalysis, hasRunAnalysis]);
+  }, [campaignId, isActivated, hasRunAnalysis, generateAIAnalysis]);
 
   // Fetch historical data
   useEffect(() => {
