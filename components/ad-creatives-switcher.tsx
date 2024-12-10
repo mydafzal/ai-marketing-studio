@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useActions, useUIState } from 'ai/rsc'
 import { type AI } from '@/lib/chat/actions'
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,7 @@ import { sleep, cn } from '@/lib/utils'
 import { Card, CardContent } from '@/components/ui/card'
 import { Pencil, Check, X, AlertCircle, Instagram, Facebook } from 'lucide-react'
 import Image from 'next/image'
+import { CampaignContext } from '@/components/contexts/campaign-context'
 
 interface Creative {
   id: number;
@@ -333,6 +334,8 @@ const AdCreativesSwitcher = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const { campaign } = useContext(CampaignContext)
+
   const addNewCreative = async () => {
     const responseMessage = await submitUserMessage(
       'I want to create new ad creative',
@@ -345,7 +348,8 @@ const AdCreativesSwitcher = () => {
   const fetchCreatives = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/fasty-bot/proxy-get-adcreatives');
+      const url = campaign?.id ? `/api/fasty-bot/proxy-get-adcreatives?campaignId=${campaign.id}` : '/api/fasty-bot/proxy-get-adcreatives';
+      const response = await fetch(url);
       if (!response.ok) {
         throw new Error('Failed to fetch creatives');
       }
@@ -383,7 +387,7 @@ const AdCreativesSwitcher = () => {
 
   useEffect(() => {
     fetchCreatives();
-  }, []);
+  }, [campaign?.id]);
 
   const togglePublish = async (id: number) => {
     const creative = creatives
@@ -403,7 +407,6 @@ const AdCreativesSwitcher = () => {
           name: creative?.name,
           object_story_spec: {
             ...creative?.object_story_spec,
-            // Removing image_url since it's not part of type
             link_data: creative?.object_story_spec?.link_data
               ? {
                   ...creative?.object_story_spec?.link_data,
@@ -451,14 +454,12 @@ const AdCreativesSwitcher = () => {
         ...updatedObjectSpec.video_data,
         message,
         title: name
-        // no image_url because it's not in the type
       }
     } else if (creative.object_type !== 'VIDEO' && updatedObjectSpec.link_data) {
       updatedObjectSpec.link_data = {
         ...updatedObjectSpec.link_data,
         message,
         name
-        // no image_url because it's not in the type
       }
     }
 
