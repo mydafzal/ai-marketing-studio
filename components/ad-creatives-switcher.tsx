@@ -1,16 +1,16 @@
-'use client'
-
-import React, { useState, useEffect, useContext } from 'react';
-import { useActions, useUIState } from 'ai/rsc'
-import { type AI } from '@/lib/chat/actions'
+"use client"
+import React, { useState, useEffect } from 'react';
+import { useActions, useUIState } from 'ai/rsc';
+import { type AI } from '@/lib/chat/actions';
 import { Button } from '@/components/ui/button';
-import { VideoPlayer } from './stocks/video-player'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Card, CardContent } from "@/components/ui/card"
-import Image from 'next/image'
-import { CampaignContext } from '@/components/contexts/campaign-context'
+import { VideoPlayer } from './stocks/video-player';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent } from "@/components/ui/card";
+import { Pencil, Check, X, Instagram, Facebook } from 'lucide-react';
+import Image from 'next/image';
+import { cn } from '@/lib/utils';
 
 interface Creative {
   id: number;
@@ -41,11 +41,70 @@ interface Creative {
 type AdsetWithCreatives = {
   adset_id: string;
   creatives: Creative[];
-}
+};
+
+const SocialPreview = ({
+  platform,
+  image,
+  headline,
+  message,
+}: {
+  platform: 'instagram' | 'facebook'
+  image: string
+  headline: string
+  message: string
+}) => {
+  return (
+    <div className={cn(
+      "w-full rounded-lg overflow-hidden",
+      "bg-white dark:bg-zinc-800",
+      platform === 'instagram' ? "instagram-preview" : "facebook-preview"
+    )}>
+      <div className="p-3 flex items-center gap-2 border-b border-zinc-200 dark:border-zinc-700">
+        {platform === 'instagram' ? (
+          <Instagram className="size-5 text-pink-600" />
+        ) : (
+          <Facebook className="size-5 text-blue-600" />
+        )}
+        <span className="font-medium text-sm">
+          {platform === 'instagram' ? 'Instagram' : 'Facebook'} Ad Preview
+        </span>
+      </div>
+      
+      <div className="relative aspect-square">
+        {image.startsWith('data:') ? (
+          <img src={image} alt="Ad preview" className="w-full h-full object-cover" />
+        ) : (
+          <Image
+            src={image}
+            alt="Ad preview"
+            className="object-cover"
+            fill
+            sizes="(max-width: 768px) 100vw, 448px"
+          />
+        )}
+      </div>
+      
+      <div className="p-4">
+        <h4 className="font-semibold mb-2">{headline}</h4>
+        <p className="text-sm text-zinc-600 dark:text-zinc-300">{message}</p>
+        
+        <button className={cn(
+          "w-full mt-4 py-2 rounded-lg text-center text-sm font-medium",
+          platform === 'instagram' 
+            ? "bg-gradient-to-r from-pink-500 to-purple-500 text-white"
+            : "bg-blue-600 text-white"
+        )}>
+          Learn More
+        </button>
+      </div>
+    </div>
+  );
+};
 
 const AdCreativesSwitcher = () => {
-  const { submitUserMessage } = useActions()
-  const [_, setMessages] = useUIState<typeof AI>()
+  const { submitUserMessage } = useActions();
+  const [_, setMessages] = useUIState<typeof AI>();
   const [creatives, setCreatives] = useState<AdsetWithCreatives[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -55,39 +114,35 @@ const AdCreativesSwitcher = () => {
   const [editMessage, setEditMessage] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
-
-  const { campaign } = useContext(CampaignContext)
+  const [activeIndex, setActiveIndex] = useState(0);
 
   const getImageDetail = (imageHash: string) => {
     fetch(`/api/fasty-bot/proxy-get-image-detail?image_hash=${imageHash}`)
       .then(response => response.json())
       .then(imageDetail => {
-        if (editingCreative) {
-          setImagePermalinkUrl(imageDetail?.permalink_url)
+        if(editingCreative){
+          setImagePermalinkUrl(imageDetail?.permalink_url);
         }
       })
       .catch(error => {
-        console.error('Error fetching image detail:', error)
-      })
-  }
+        console.error('Error fetching image detail:', error);
+      });
+  };
 
   useEffect(() => {
-    if (
-      editingCreative &&
-      editingCreative.object_story_spec?.link_data?.image_hash
-    ) {
-      getImageDetail(editingCreative.object_story_spec?.link_data?.image_hash)
+    if (editingCreative?.object_story_spec?.link_data?.image_hash) {
+      getImageDetail(editingCreative.object_story_spec.link_data.image_hash);
     }
-    if (!editingCreative) {
+    if(!editingCreative){
       setImagePermalinkUrl('');
     }
-  }, [editingCreative])
+  }, [editingCreative]);
 
   useEffect(() => {
     const fetchCreatives = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch('/api/fasty-bot/proxy-get-adcreatives?campaignId=' + campaign?.id);
+        const response = await fetch('/api/fasty-bot/proxy-get-adcreatives');
         if (!response.ok) {
           throw new Error('Failed to fetch creatives');
         }
@@ -108,7 +163,7 @@ const AdCreativesSwitcher = () => {
           });
           return acc;
         }, {});
-
+      
         const adsetWithCreatives: AdsetWithCreatives[] = Object.entries(groupedData).map(([adset_id, creatives]) => ({
           adset_id,
           creatives,
@@ -124,7 +179,7 @@ const AdCreativesSwitcher = () => {
     };
 
     fetchCreatives();
-  }, [campaign?.id]);
+  }, []);
 
   const togglePublish = async (id: number) => {
     try {
@@ -160,8 +215,8 @@ const AdCreativesSwitcher = () => {
       setCreatives(prevCreatives =>
         prevCreatives.map(adset => ({
           ...adset,
-          creatives: adset.creatives.map(c =>
-            c.id === id ? { ...c, status: updatedCreative.status } : c
+          creatives: adset.creatives.map(creative =>
+            creative.id === id ? { ...creative, status: updatedCreative.status } : creative
           ),
         }))
       );
@@ -192,13 +247,12 @@ const AdCreativesSwitcher = () => {
           name: editName,
           object_story_spec: {
             ...editingCreative.object_story_spec,
-            video_data: editingCreative.object_story_spec.video_data
+            video_data: editingCreative.object_story_spec.video_data 
               ? { ...editingCreative.object_story_spec.video_data, message: editMessage }
               : undefined,
             link_data: editingCreative.object_story_spec.link_data
-              ? {
-                ...editingCreative.object_story_spec.link_data,
-                message: editMessage,
+              ? { ...editingCreative.object_story_spec.link_data, 
+                message: editMessage, 
                 image_url: imagePermalinkUrl,
                 name: editName
               }
@@ -216,8 +270,8 @@ const AdCreativesSwitcher = () => {
       setCreatives(prevCreatives =>
         prevCreatives.map(adset => ({
           ...adset,
-          creatives: adset.creatives.map(c =>
-            c.id === editingCreative.id ? { ...c, status: updatedCreative.status } : c
+          creatives: adset.creatives.map(creative =>
+            creative.id === editingCreative.id ? { ...creative, status: updatedCreative.status } : creative
           ),
         }))
       );
@@ -236,109 +290,88 @@ const AdCreativesSwitcher = () => {
       'I want to create new ad creative',
       [],
       true
-    )
-    setMessages(currentMessages => [...currentMessages, responseMessage])
-  }
+    );
+    setMessages(currentMessages => [...currentMessages, responseMessage]);
+  };
+
+  const allCreatives = creatives.flatMap(adset => adset.creatives);
+  const nextAd = () => setActiveIndex((activeIndex + 1) % allCreatives.length);
+  const prevAd = () => setActiveIndex(activeIndex === 0 ? allCreatives.length - 1 : activeIndex - 1);
 
   if (isLoading) {
-    return <div className="text-zinc-900 dark:text-zinc-200">Loading creatives...</div>;
+    return <div className="flex justify-center items-center h-64 text-zinc-200">Loading creatives...</div>;
   }
 
   if (error) {
-    return <div className="text-zinc-900 dark:text-zinc-200">{error}</div>;
+    return <div className="flex justify-center items-center h-64 text-zinc-200">{error}</div>;
   }
 
   return (
-    <div className="space-y-6 py-4 min-h-screen bg-white text-zinc-900 dark:bg-zinc-900 dark:text-zinc-200">
-      <div className="flex justify-between px-4">
-        <h1 className="text-2xl font-bold">Ad Creative Selector</h1>
-        <Button onClick={addNewCreative} className="bg-blue-600 hover:bg-blue-700 text-white">Create New</Button>
-      </div>
+    <div className="flex flex-col h-full bg-zinc-900">
+      <header className="flex justify-between items-center px-6 py-6 border-b border-zinc-800">
+        <h1 className="text-2xl font-bold text-zinc-200">Ad Creatives</h1>
+        <Button onClick={addNewCreative}>Create New</Button>
+      </header>
 
-      <div className="space-y-6 px-4">
-        {creatives.map(adset => (
-          <Card 
-            key={adset.adset_id} 
-            className="border border-zinc-300 dark:border-zinc-800 bg-white dark:bg-zinc-900"
-          >
-            <CardContent className="space-y-6 p-6">
-              <h4 className="font-bold text-lg">
-                Adset ID: {adset.adset_id}
-              </h4>
-              <div className="grid md:grid-cols-2 gap-6">
-                {adset.creatives.map(creative => (
-                  <Card 
-                    key={creative.id} 
-                    className="border border-zinc-300 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden"
+      <main className="flex-grow p-6 overflow-y-auto">
+        {allCreatives.length > 0 && (
+          <Card className="bg-zinc-900 border-zinc-800">
+            <CardContent className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <SocialPreview
+                  platform="instagram"
+                  image={allCreatives[activeIndex].thumbnail_url || ''}
+                  headline={allCreatives[activeIndex].name}
+                  message={allCreatives[activeIndex].object_type === 'VIDEO' 
+                    ? allCreatives[activeIndex].object_story_spec.video_data?.message || ''
+                    : allCreatives[activeIndex].object_story_spec.link_data?.message || ''}
+                />
+                <SocialPreview
+                  platform="facebook"
+                  image={allCreatives[activeIndex].thumbnail_url || ''}
+                  headline={allCreatives[activeIndex].name}
+                  message={allCreatives[activeIndex].object_type === 'VIDEO'
+                    ? allCreatives[activeIndex].object_story_spec.video_data?.message || ''
+                    : allCreatives[activeIndex].object_story_spec.link_data?.message || ''}
+                />
+              </div>
+
+              <div className="flex justify-between items-center mt-6">
+                <button
+                  onClick={prevAd}
+                  className="p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200"
+                >
+                  Previous
+                </button>
+                <div className="flex gap-3">
+                  <Button
+                    onClick={() => togglePublish(allCreatives[activeIndex].id)}
+                    variant={allCreatives[activeIndex].status === 'ACTIVE' ? 'destructive' : 'default'}
                   >
-                    <CardContent className="p-6 space-y-4">
-                      <div className="flex justify-end gap-3">
-                        <Button
-                          onClick={() => togglePublish(creative.id)}
-                          variant={creative.status === 'ACTIVE' ? 'destructive' : 'default'}
-                          size="sm"
-                          className="text-sm"
-                        >
-                          {creative.status === 'ACTIVE' ? 'Unpublish' : 'Publish'}
-                        </Button>
-                        <Button
-                          size="sm"
-                          onClick={() => handleEdit(creative)}
-                          className="bg-zinc-200 hover:bg-zinc-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-200 text-sm"
-                        >
-                          Edit
-                        </Button>
-                      </div>
-                      <h5 className="font-semibold">{creative.name}</h5>
-                      <div className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
-                        <div className="relative w-full h-64 flex items-center justify-center bg-gray-300 dark:bg-black">
-                          {creative.object_type === 'IMAGE' && creative.thumbnail_url ? (
-                            <Image
-                              src={creative.thumbnail_url}
-                              alt={creative.name}
-                              className="object-cover"
-                              fill
-                              sizes="(max-width: 768px) 100vw, 100vw"
-                              priority={false}
-                            />
-                          ) : creative.object_type === 'VIDEO' ? (
-                            <div className="w-full h-full">
-                              <VideoPlayer
-                                className="object-cover h-full w-full"
-                                height="h-full"
-                                videoId={creative.object_story_spec?.video_data?.video_id}
-                              />
-                            </div>
-                          ) : (
-                            <Image
-                              src={creative.thumbnail_url || '/placeholder.png'}
-                              alt={creative.name}
-                              className="object-cover"
-                              fill
-                              sizes="(max-width: 768px) 100vw, 100vw"
-                              priority={false}
-                            />
-                          )}
-                        </div>
-                      </div>
-                      <p className="text-sm text-zinc-800 dark:text-zinc-300">
-                        {creative.object_type === 'VIDEO' && creative.object_story_spec?.video_data?.message}
-                        {creative.object_type === 'SHARE' && creative.object_story_spec?.link_data?.message}
-                      </p>
-                    </CardContent>
-                  </Card>
-                ))}
+                    {allCreatives[activeIndex].status === 'ACTIVE' ? 'Unpublish' : 'Publish'}
+                  </Button>
+                  <Button onClick={() => handleEdit(allCreatives[activeIndex])}>Edit</Button>
+                </div>
+                <button
+                  onClick={nextAd}
+                  className="p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200"
+                >
+                  Next
+                </button>
               </div>
             </CardContent>
           </Card>
-        ))}
-      </div>
+        )}
+      </main>
 
-      <Dialog open={!!editingCreative} onOpenChange={() => {
-        setEditingCreative(null);
-        setEditError(null);
-      }}>
-        <DialogContent className='max-h-[80%] overflow-y-auto bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 text-zinc-900 dark:text-zinc-200'>
+      <Dialog 
+        open={!!editingCreative} 
+        onOpenChange={() => {
+          setEditingCreative(null);
+          setEditError(null);
+        }}
+      >
+        <DialogContent className="max-h-[80%] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Ad Creative</DialogTitle>
           </DialogHeader>
@@ -346,26 +379,22 @@ const AdCreativesSwitcher = () => {
             {editingCreative?.object_type === 'VIDEO' ? (
               <div className="grid grid-cols-4 items-center gap-4">
                 <label htmlFor="message" className="text-right">Video</label>
-                <div className="flex-none col-span-3 border border-zinc-300 dark:border-zinc-700 rounded-lg overflow-hidden bg-gray-100 dark:bg-black">
+                <div className="col-span-3">
                   <VideoPlayer
-                    className="object-cover"
+                    className="object-cover rounded-md"
                     height="h-[200px]"
-                    videoId={
-                      editingCreative?.object_story_spec?.video_data?.video_id
-                    }
+                    videoId={editingCreative?.object_story_spec?.video_data?.video_id}
                   />
                 </div>
               </div>
             ) : (
               <div className="grid grid-cols-4 items-center gap-4">
                 <label htmlFor="message" className="text-right">Image</label>
-                <div className="flex-none col-span-3 border border-zinc-300 dark:border-zinc-700 rounded-lg overflow-hidden relative w-full h-[200px] bg-gray-100 dark:bg-black">
-                  <Image
-                    src={imagePermalinkUrl || editingCreative?.thumbnail_url || '/placeholder.png'}
-                    alt=""
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 100vw, 100vw"
+                <div className="col-span-3">
+                  <img
+                    src={imagePermalinkUrl || editingCreative?.thumbnail_url}
+                    alt="Ad preview"
+                    className="w-full h-[200px] object-cover rounded-lg"
                   />
                 </div>
               </div>
@@ -376,7 +405,7 @@ const AdCreativesSwitcher = () => {
                 id="name"
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
-                className="col-span-3 bg-white dark:bg-zinc-800 dark:border-zinc-700 border border-zinc-300 text-zinc-900 dark:text-zinc-200"
+                className="col-span-3"
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
@@ -385,28 +414,24 @@ const AdCreativesSwitcher = () => {
                 id="message"
                 value={editMessage}
                 onChange={(e) => setEditMessage(e.target.value)}
-                className="col-span-3 bg-white dark:bg-zinc-800 dark:border-zinc-700 border border-zinc-300 text-zinc-900 dark:text-zinc-200"
+                className="col-span-3"
                 rows={8}
               />
             </div>
             {editError && (
               <div className="grid grid-cols-4 items-center gap-4">
-                <div className="col-span-1"></div>
+                <div className="col-span-1" />
                 <p className="col-span-3 text-red-500 text-sm">{editError}</p>
               </div>
             )}
           </div>
           <DialogFooter>
-            <Button 
-              onClick={handleSubmitEdit} 
-              disabled={isEditing} 
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-            >
+            <Button onClick={handleSubmitEdit} disabled={isEditing}>
               {isEditing ? (
-                <>
-                  <span className="mr-2">Saving...</span>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                </>
+                <div className="flex items-center gap-2">
+                  <span>Saving...</span>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+                </div>
               ) : (
                 'Save changes'
               )}
