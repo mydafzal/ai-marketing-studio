@@ -329,6 +329,7 @@ async function confirmCreateAd(campaign: any, data: any, adset: any) {
                     You have successfully created a campaign ad with ID: {response?.params?.id}
                 </SystemMessage>
             );
+            
 
         } else {
             systemMessage.done(
@@ -1030,12 +1031,14 @@ Action: Inquire about the user's daily budget for the campaign.Explain the impac
 Command: Call (\`show_ad_budget_ui\`) once the budget is provided.
 Proceed: Insist on the user clicking the green button in the Ad budget UI to confirm the ad budget. Ask the user if he has done so. If they confirm  continue to the next step.
 Step 3: Location & Demographics
-Action: Ask for the geographical area and age range they wish to target. Provide suggestions based on their business type (local, regional, national) and discuss best practices for age targeting.
-Example: Use local examples relevant to the user's location. If you do not know the location, ask for it. 
-Proceed: Ensure you have a clear location and age range and ensure the user is satisfied before moving on.
-Step 4: Initial Targeting
-For Recruiting: Ask about the ideal candidate profile and the position they're hiring for. Make the user aware that in recruiting campaigns only interest filters can be used due to Facebooks anti discriminatory policies.
-For regular Leads campaigns: Ask about the ideal customer profile. Offer targeting strategies involving interests, behaviors, and demographics. Mention that more detailed research will be done within 24 hours. If the user asks for the size of the audience, mention that you as the AI first have to reseaarch it and that your processing is done after 24 hours until you know more. The final number will appear in the chat here after confirming that also the rest of the campaign has been set up. Insist to continue finishing up the campaign creation procedure after which you will enter your deep research for targeting.
+Action: Tell the user that the next step is to set the geographical targeting and age range and tell the user that you will bring up settings in which the user can define these things further. Ask if userr is ready and wait for users response.
+Once user answered, check campaign connection status. If not connected, call (\`show_campaign_connection_ui\`). After campaign is connected, check adset connection status. If no adset is connected, call (\`show_adset_connection_ui\`). Once both are connected, call (\`show_geographical_location_ui\`) to let user set their geographical targeting.
+Ensure you have a clear location and age range and ensure the user is satisfied before moving on. Once you know that user has set the geotargeting, proceed to step 4.
+
+Step 4: Filter Targeting
+For Recruiting: Ask about the ideal candidate profile and the position they're hiring for. Make the user aware that in recruiting campaigns only interest filters can be used due to Facebooks anti discriminatory policies. Once they describe their ideal candidate, call (\`show_suggested_filters\`) with 5 relevant interest filters from the available categories.
+
+For regular Leads campaigns: Ask about the ideal customer profile. Once they describe their target audience, call (\`show_suggested_filters\`) with 5 relevant interest filters from the available categories. After they respond to the suggestions, mention that more detailed research will be done within 24 hours. If the user asks for the size of the audience, mention that you as the AI first have to research it and that your processing is done after 24 hours until you know more. The final number will appear in the chat here after confirming that also the rest of the campaign has been set up. Insist to continue finishing up the campaign creation procedure after which you will enter your deep research for targeting.
 Proceed: Confirm the targeting details and ask if they're ready for the next step.
 
 Step 5: Suggest to the user to place the ad in Instagram Stories, Instagram Reels, Facebook Reels & Stories, as well as in both news feeds and also on Instagram Expplore. 

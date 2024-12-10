@@ -209,6 +209,7 @@ export function AdTextItem({
 export function AdTextSuggestion({ props }: { props: ImageSuggestionProps[] }) {
   const { id: chatSlug } = useParams()
   const { campaign } = useContext(CampaignContext)
+  const { submitUserMessage } = useActions()
 
   const [adTexts, setAdTexts] = useState<AdText[]>(
     props.reduce((result, items) => [...result,  ...items.suggestedTexts], [] as SuggestedText[])
@@ -255,6 +256,14 @@ export function AdTextSuggestion({ props }: { props: ImageSuggestionProps[] }) {
           return adText
         })
       )
+      
+      // After successful ad creation, trigger AI message
+      const aiMessage = await submitUserMessage(
+        "Great! Now that your ad creative is set up, let's create a lead form to collect information from potential customers. Would you like me to guide you through setting up the form? 📝",
+        [],
+        true
+      )
+      setMessages(currentMessages => [...currentMessages, aiMessage])
     }
   }
 

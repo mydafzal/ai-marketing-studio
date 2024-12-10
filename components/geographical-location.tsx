@@ -182,13 +182,7 @@ export function GeographicalLocation({
             demographicData={demographicData}
           />
         )
-        await syncMessages()
-        const responseMessage = await submitUserMessage(
-          'Please suggest interest filters using the categories of interest filters for this demographic targeting',
-          [],
-          true
-        )
-        setMessages(currentMessages => [...currentMessages, responseMessage])
+        
       }
     }
     setIsSubmitting(false)
