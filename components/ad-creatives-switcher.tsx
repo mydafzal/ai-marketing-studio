@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useActions, useUIState } from 'ai/rsc'
 import { type AI } from '@/lib/chat/actions'
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent } from "@/components/ui/card"
 import Image from 'next/image'
+import { CampaignContext } from '@/components/contexts/campaign-context'
 
 interface Creative {
   id: number;
@@ -38,8 +39,8 @@ interface Creative {
 }
 
 type AdsetWithCreatives = {
-  adset_id:string;
-  creatives:Creative[];
+  adset_id: string;
+  creatives: Creative[];
 }
 
 const AdCreativesSwitcher = () => {
@@ -55,16 +56,18 @@ const AdCreativesSwitcher = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
 
+  const { campaign } = useContext(CampaignContext)
+
   const getImageDetail = (imageHash: string) => {
     fetch(`/api/fasty-bot/proxy-get-image-detail?image_hash=${imageHash}`)
       .then(response => response.json())
       .then(imageDetail => {
-        if(editingCreative){
+        if (editingCreative) {
           setImagePermalinkUrl(imageDetail?.permalink_url)
         }
       })
       .catch(error => {
-        console.error('Error fetching video detail:', error)
+        console.error('Error fetching image detail:', error)
       })
   }
 
@@ -75,7 +78,7 @@ const AdCreativesSwitcher = () => {
     ) {
       getImageDetail(editingCreative.object_story_spec?.link_data?.image_hash)
     }
-    if(!editingCreative){
+    if (!editingCreative) {
       setImagePermalinkUrl('');
     }
   }, [editingCreative])
@@ -84,7 +87,7 @@ const AdCreativesSwitcher = () => {
     const fetchCreatives = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch('/api/fasty-bot/proxy-get-adcreatives');
+        const response = await fetch('/api/fasty-bot/proxy-get-adcreatives?campaignId=' + campaign?.id);
         if (!response.ok) {
           throw new Error('Failed to fetch creatives');
         }
@@ -105,7 +108,7 @@ const AdCreativesSwitcher = () => {
           });
           return acc;
         }, {});
-      
+
         const adsetWithCreatives: AdsetWithCreatives[] = Object.entries(groupedData).map(([adset_id, creatives]) => ({
           adset_id,
           creatives,
@@ -121,7 +124,7 @@ const AdCreativesSwitcher = () => {
     };
 
     fetchCreatives();
-  }, []);
+  }, [campaign?.id]);
 
   const togglePublish = async (id: number) => {
     try {
@@ -189,12 +192,13 @@ const AdCreativesSwitcher = () => {
           name: editName,
           object_story_spec: {
             ...editingCreative.object_story_spec,
-            video_data: editingCreative.object_story_spec.video_data 
+            video_data: editingCreative.object_story_spec.video_data
               ? { ...editingCreative.object_story_spec.video_data, message: editMessage }
               : undefined,
             link_data: editingCreative.object_story_spec.link_data
-              ? { ...editingCreative.object_story_spec.link_data, 
-                message: editMessage, 
+              ? {
+                ...editingCreative.object_story_spec.link_data,
+                message: editMessage,
                 image_url: imagePermalinkUrl,
                 name: editName
               }
@@ -271,8 +275,8 @@ const AdCreativesSwitcher = () => {
                         >
                           {creative.status === 'ACTIVE' ? 'Unpublish' : 'Publish'}
                         </Button>
-                        <Button 
-                          size="sm" 
+                        <Button
+                          size="sm"
                           onClick={() => handleEdit(creative)}
                           className="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 text-sm"
                         >
@@ -326,7 +330,7 @@ const AdCreativesSwitcher = () => {
 
       <Dialog open={!!editingCreative} onOpenChange={() => {
         setEditingCreative(null);
-        setEditError(null); 
+        setEditError(null);
       }}>
         <DialogContent className='max-h-[80%] overflow-y-auto bg-zinc-900 border border-zinc-800 text-zinc-200'>
           <DialogHeader>
