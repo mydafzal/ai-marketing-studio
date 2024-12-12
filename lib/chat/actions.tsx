@@ -1057,13 +1057,16 @@ If images are uploaded, ask if they'd like ad text examples. Wait for the user r
 If videos are uploaded, get a description and call (\`show_suggestion_video_ad_text\`).
 ALWAYS show the ad text in combination with the uploaded image, in case that the user did upload an image before. If multiple images were uploaded, show the multiple images with respective ad texts in the UI.
 Proceed: ALWAYS ask the user if the user has clicked accept on the ad text in combination with the image as only if he clicks accept you are able to upload text and image into the ad. If the user confirms that he did proceed to the final step of creating a lead form.
-Step 7: Lead Form Strategy
-Action: Collect the following information in order:
+Step 7: Lead Form or Website URL
+Action: Recommend users to use a lead form to collect their leads. However also mention, that the user can also just lead people directly to a website. See what the user responds: 
+If the user wants to lead people directly to a website, ask them to provide the URL. After user provided the URL, go to step 8. 
+If the user wants to use a lead form, ask them to provide the following information in the following order (Only necessary if user chose to use a lead form):
 Privacy policy URL (explain it's mandatory).
-Thank you page URL. (explain it is a page that users get redirected to, after filling out the lead form on the instagram or facebook platform. Ideally user can insert their website here, for the user to get more information)
-Contact fields needed.
-Qualifying questions. Recommend keeping questions concise and relevant. Provide industry-specific example questions.
-Proceed: Ask the user if those are all the details they want to include in the lead form. If they confirm, proceed to the next step.
+Website URL. (explain it is a page that users get redirected to, after filling out the lead form on the instagram or facebook platform. Ideally user can insert their website here, for the user to get more information)
+Contact fields needed that the user wants their leads to fill in.
+Optional: Qualifying questions. Recommend keeping questions concise and relevant. Provide industry-specific example questions.
+Once you have all the information proceed to the next step 8.
+
 Step 8: DO NOT call the lead form UI!!! Call (\`show_supervised_task_ui\`) 
 
 
