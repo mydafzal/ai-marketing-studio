@@ -1,7 +1,7 @@
 'use client'
 
 import { CampaignContext } from '@/components/contexts/campaign-context'
-import { useContext, useState, useEffect } from 'react'
+import { useContext, useState, useEffect, useCallback } from 'react'
 import { TextPart } from 'ai'
 import { toast } from 'sonner'
 import { IconSpinner } from '@/components/ui/icons'
@@ -16,7 +16,7 @@ import { readStreamableValue } from 'ai/rsc'
 import { VideoPlayer } from './video-player'
 import { getVideoDetail } from '@/lib/api/fasty-bot/get-video-detail'
 import { Card, CardContent } from '@/components/ui/card'
-import { Pencil, Check, X, AlertCircle, Video } from 'lucide-react'
+import { Pencil, Check, X, AlertCircle, Video, Instagram, Facebook } from 'lucide-react'
 
 export interface VideoSuggestionProps {
   videos: {
@@ -24,7 +24,69 @@ export interface VideoSuggestionProps {
   }[]
 }
 
-export function VideoAdTextItem({
+const VideoPreview = ({
+  platform,
+  video,
+  headline,
+  text,
+  isProcessing,
+}: {
+  platform: 'instagram' | 'facebook'
+  video?: string
+  headline: string
+  text: string
+  isProcessing: boolean
+}) => {
+  return (
+    <div className={cn(
+      "w-full rounded-lg overflow-hidden",
+      "bg-zinc-800 border border-zinc-700",
+      platform === 'instagram' ? "instagram-preview" : "facebook-preview"
+    )}>
+      <div className="p-3 flex items-center gap-2 border-b border-zinc-700">
+        {platform === 'instagram' ? (
+          <Instagram className="size-5 text-pink-600" />
+        ) : (
+          <Facebook className="size-5 text-blue-600" />
+        )}
+        <span className="font-medium text-sm text-zinc-200">
+          {platform === 'instagram' ? 'Instagram' : 'Facebook'} Video Ad Preview
+        </span>
+      </div>
+      
+      <div className="relative aspect-video">
+        {video ? (
+          <VideoPlayer src={video} />
+        ) : (
+          <div className="size-full flex items-center justify-center bg-zinc-800">
+            <div className="text-center">
+              <Video className="size-8 text-zinc-400 mx-auto mb-2" />
+              <span className="text-sm text-zinc-500">
+                {isProcessing ? 'Processing video...' : 'No video available'}
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
+      
+      <div className="p-4">
+        <h4 className="font-semibold mb-2 text-zinc-200">{headline}</h4>
+        <p className="text-sm text-zinc-400">{text}</p>
+        
+        <button className={cn(
+          "w-full mt-4 py-2 rounded-lg text-center text-sm font-medium",
+          platform === 'instagram' 
+            ? "bg-gradient-to-r from-pink-500 to-purple-500 text-white"
+            : "bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+        )}>
+          Learn More
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function VideoAdTextItem({
   index,
   adText,
   acceptText,
@@ -68,150 +130,142 @@ export function VideoAdTextItem({
 
   return (
     <Card className="bg-zinc-900 border-zinc-800 overflow-hidden">
-      <CardContent className="p-0">
-        <div className="flex flex-col md:flex-row">
-          <div className="w-full md:w-80 relative aspect-video">
-            {adText.video ? (
-              <VideoPlayer src={adText.video} />
-            ) : (
-              <div className="size-full flex items-center justify-center bg-zinc-800">
-                <div className="text-center">
-                  <Video className="size-8 text-zinc-400 mx-auto mb-2" />
-                  <span className="text-sm text-zinc-500">Processing video...</span>
-                </div>
-              </div>
-            )}
+      <CardContent className="p-6">
+        {hasFbAd && (
+          <div className="flex items-center gap-2 mb-6 p-3 bg-blue-900/20 text-blue-200 rounded-lg border border-blue-800">
+            <AlertCircle className="size-5 shrink-0" />
+            <span className="text-sm">
+              Video ad already created with ID: {adText.fbAdId}
+            </span>
           </div>
-          
-          <div className="flex-1 p-6">
-            {hasFbAd && (
-              <div className="flex items-center gap-2 mb-4 p-3 bg-blue-900/20 text-blue-200 rounded-lg border border-blue-800">
-                <AlertCircle className="size-5 shrink-0" />
-                <span className="text-sm">
-                  Video ad already created with ID: {adText.fbAdId}
-                </span>
-              </div>
-            )}
+        )}
 
-            {!hasFbAd && isEditing ? (
-              <input
-                value={headlineEdit}
-                onChange={e => setHeadlineEdit(e.target.value)}
-                className={cn(
-                  "w-full text-center font-semibold mb-4 p-2",
-                  "bg-zinc-800 border border-zinc-700 rounded-lg",
-                  "text-zinc-200 placeholder:text-zinc-400",
-                  "focus:outline-none focus:ring-2 focus:ring-blue-500"
-                )}
-                placeholder="Enter video headline"
-              />
-            ) : (
-              <h3 className="text-xl font-semibold text-zinc-200 mb-4 text-center">
-                {adText.headline || `Suggested Video Ad ${index + 1}`}
-              </h3>
-            )}
-
-            {!hasFbAd && isEditing ? (
-              <textarea
-                className={cn(
-                  "w-full min-h-[120px] p-3",
-                  "bg-zinc-800 border border-zinc-700 rounded-lg",
-                  "text-zinc-200 placeholder:text-zinc-400 text-sm",
-                  "focus:outline-none focus:ring-2 focus:ring-blue-500"
-                )}
-                value={textEdit}
-                onChange={e => setTextEdit(e.target.value)}
-                placeholder="Enter video ad text"
-              />
-            ) : (
-              <p className="text-zinc-300 text-sm leading-relaxed">
-                {adText.text}
-              </p>
-            )}
-
-            {!hasFbAd && (
-              <div className="flex justify-end gap-3 mt-6">
-                {isEditing ? (
-                  <>
-                    <button
-                      onClick={() => {
-                        setIsEditing(false)
-                        setTextEdit(adText.text)
-                        setHeadlineEdit(adText.headline)
-                      }}
-                      className={cn(
-                        "flex items-center gap-2 px-4 h-10",
-                        "text-zinc-200 text-sm font-medium rounded-lg",
-                        "bg-zinc-800 hover:bg-zinc-700 border border-zinc-700",
-                        "transition-colors duration-200"
-                      )}
-                    >
-                      <X className="size-4" />
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleSave}
-                      disabled={isUpdating}
-                      className={cn(
-                        "flex items-center gap-2 px-4 h-10",
-                        "text-white text-sm font-medium rounded-lg",
-                        "bg-blue-600 hover:bg-blue-700",
-                        "transition-colors duration-200",
-                        "disabled:opacity-50 disabled:cursor-not-allowed"
-                      )}
-                    >
-                      {isUpdating ? (
-                        <IconSpinner className="size-4" />
-                      ) : (
-                        <Check className="size-4" />
-                      )}
-                      Save Changes
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button
-                      onClick={() => setIsEditing(true)}
-                      className={cn(
-                        "flex items-center gap-2 px-4 h-10",
-                        "text-zinc-200 text-sm font-medium rounded-lg",
-                        "bg-zinc-800 hover:bg-zinc-700 border border-zinc-700",
-                        "transition-colors duration-200"
-                      )}
-                    >
-                      <Pencil className="size-4" />
-                      Edit
-                    </button>
-                    <button
-                      onClick={handleAccept}
-                      disabled={isUpdating || !adText?.video}
-                      className={cn(
-                        "flex items-center gap-2 px-4 h-10",
-                        "text-white text-sm font-medium rounded-lg",
-                        "bg-blue-600 hover:bg-blue-700",
-                        "transition-colors duration-200",
-                        "disabled:opacity-50 disabled:cursor-not-allowed"
-                      )}
-                    >
-                      {isUpdating ? (
-                        <IconSpinner className="size-4" />
-                      ) : (
-                        <Check className="size-4" />
-                      )}
-                      Accept
-                    </button>
-                  </>
-                )}
-              </div>
-            )}
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <VideoPreview
+            platform="instagram"
+            video={adText.video}
+            headline={isEditing ? headlineEdit : adText.headline}
+            text={isEditing ? textEdit : adText.text}
+            isProcessing={!adText.video}
+          />
+          <VideoPreview
+            platform="facebook"
+            video={adText.video}
+            headline={isEditing ? headlineEdit : adText.headline}
+            text={isEditing ? textEdit : adText.text}
+            isProcessing={!adText.video}
+          />
         </div>
+
+        {!hasFbAd && isEditing && (
+          <div className="mt-6 space-y-4">
+            <input
+              value={headlineEdit}
+              onChange={e => setHeadlineEdit(e.target.value)}
+              className={cn(
+                "w-full text-center font-semibold p-2",
+                "bg-zinc-800 border border-zinc-700 rounded-lg",
+                "text-zinc-200 placeholder:text-zinc-400",
+                "focus:outline-none focus:ring-2 focus:ring-blue-500"
+              )}
+              placeholder="Enter video headline"
+            />
+            
+            <textarea
+              className={cn(
+                "w-full min-h-[120px] p-3",
+                "bg-zinc-800 border border-zinc-700 rounded-lg",
+                "text-zinc-200 placeholder:text-zinc-400 text-sm",
+                "focus:outline-none focus:ring-2 focus:ring-blue-500"
+              )}
+              value={textEdit}
+              onChange={e => setTextEdit(e.target.value)}
+              placeholder="Enter video ad text"
+            />
+          </div>
+        )}
+
+        {!hasFbAd && (
+          <div className="flex justify-end gap-3 mt-6">
+            {isEditing ? (
+              <>
+                <button
+                  onClick={() => {
+                    setIsEditing(false)
+                    setTextEdit(adText.text)
+                    setHeadlineEdit(adText.headline)
+                  }}
+                  className={cn(
+                    "flex items-center gap-2 px-4 h-10",
+                    "text-zinc-200 text-sm font-medium rounded-lg",
+                    "bg-zinc-800 hover:bg-zinc-700 border border-zinc-700",
+                    "transition-colors duration-200"
+                  )}
+                >
+                  <X className="size-4" />
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={isUpdating}
+                  className={cn(
+                    "flex items-center gap-2 px-4 h-10",
+                    "text-white text-sm font-medium rounded-lg",
+                    "bg-blue-600 hover:bg-blue-700",
+                    "transition-colors duration-200",
+                    "disabled:opacity-50 disabled:cursor-not-allowed"
+                  )}
+                >
+                  {isUpdating ? (
+                    <IconSpinner className="size-4" />
+                  ) : (
+                    <Check className="size-4" />
+                  )}
+                  Save Changes
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className={cn(
+                    "flex items-center gap-2 px-4 h-10",
+                    "text-zinc-200 text-sm font-medium rounded-lg",
+                    "bg-zinc-800 hover:bg-zinc-700 border border-zinc-700",
+                    "transition-colors duration-200"
+                  )}
+                >
+                  <Pencil className="size-4" />
+                  Edit
+                </button>
+                <button
+                  onClick={handleAccept}
+                  disabled={isUpdating || !adText?.video}
+                  className={cn(
+                    "flex items-center gap-2 px-4 h-10",
+                    "text-white text-sm font-medium rounded-lg",
+                    "bg-blue-600 hover:bg-blue-700",
+                    "transition-colors duration-200",
+                    "disabled:opacity-50 disabled:cursor-not-allowed"
+                  )}
+                >
+                  {isUpdating ? (
+                    <IconSpinner className="size-4" />
+                  ) : (
+                    <Check className="size-4" />
+                  )}
+                  Accept
+                </button>
+              </>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   )
 }
 
-export function VideoAdTextSuggestion({ videos }: VideoSuggestionProps) {
+function VideoAdTextSuggestion({ videos }: VideoSuggestionProps) {
   const { campaign } = useContext(CampaignContext)
   const { syncMessages } = useActions()
   const [aiState, setAIState] = useAIState()
@@ -244,7 +298,7 @@ export function VideoAdTextSuggestion({ videos }: VideoSuggestionProps) {
       }, [] as VideoAdText[])
   )
 
-  const checkVideoStatus = async (video_id: string) => {
+  const checkVideoStatus = useCallback(async (video_id: string) => {
     const response = await getVideoDetail(video_id);
     if (response && response?.source) {
       setAIState({
@@ -266,7 +320,11 @@ export function VideoAdTextSuggestion({ videos }: VideoSuggestionProps) {
                         ...video,
                         suggestedTexts: [
                           ...video.suggestedTexts.map((suggestedText: any) => {
-                            return { ...suggestedText, video: response?.source, thumbnail: response.thumbnails?.data[0].uri as string }
+                            return { 
+                              ...suggestedText, 
+                              video: response?.source, 
+                              thumbnail: response.thumbnails?.data[0].uri as string 
+                            }
                           })
                         ]
                       }
@@ -303,7 +361,7 @@ export function VideoAdTextSuggestion({ videos }: VideoSuggestionProps) {
       await syncMessages()
       setIsProcessing(false)
     }
-  }
+  }, [aiState, setAIState, syncMessages])
 
   useEffect(() => {
     let interval: NodeJS.Timeout | undefined
@@ -314,7 +372,7 @@ export function VideoAdTextSuggestion({ videos }: VideoSuggestionProps) {
     }
 
     return () => interval && clearInterval(interval)
-  }, [videos, isProcessing])
+  }, [videos, isProcessing, checkVideoStatus])
 
   const acceptText = async (idx: number, adText: VideoAdText) => {
     const response = await confirmCreateAd(
@@ -380,4 +438,4 @@ export function VideoAdTextSuggestion({ videos }: VideoSuggestionProps) {
   )
 }
 
-export default VideoAdTextSuggestion
+export { VideoAdTextSuggestion }
