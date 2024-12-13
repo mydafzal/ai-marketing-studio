@@ -15,7 +15,7 @@ export async function POST(request: Request) {
         role: "user", 
         content: prompt 
       }],
-      model: "gpt-4-turbo-preview",
+      model: "gpt-4o",
       temperature: 0.7,
     });
 
