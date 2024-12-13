@@ -70,7 +70,7 @@ import showCampaignConnectionUIModule from "@/lib/ui-magic/modules/showCampaignC
 import showPlacementTargetingUIModule from "@/lib/ui-magic/modules/showPlacementTargetingUIModule";
 import showSupervisedTaskUIModule from "@/lib/ui-magic/modules/showSupervisedTaskUIModule";
 import showAdsetConnectionUIModule from "@/lib/ui-magic/modules/showAdsetConnectionUIModule";
-
+import CampaignPreview from '@/components/stocks/CampaignPreviewComponent';
 interface ToolResult {
     toolName: string;
     toolCallId: string;
@@ -109,7 +109,21 @@ async function checkNewChat(chatId: string, messages: Message[], session: Sessio
         await sendAdminNotification(chatId)
     }
 }
-
+async function updateCampaignPreview(config: Partial<CampaignConfig>) {
+    'use server'
+    const aiState = getMutableAIState<typeof AI>();
+    aiState.update({
+        ...aiState.get(),
+        campaignConfig: {
+            ...aiState.get().campaignConfig,
+            ...config,
+            targeting: {
+                ...aiState.get().campaignConfig.targeting,
+                ...(config.targeting || {})
+            }
+        }
+    });
+}
 async function confirmPurchase(campaignName: string, budget: number, days: number = 30) {
     'use server'
 
@@ -522,7 +536,50 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
 
     const aiState = getMutableAIState<typeof AI>();
     const chatId = getChatIdFromUrl()?.toString() || '';
+    if (typeof content === 'string') {
+        // Check for budget information
+        if (content.toLowerCase().includes('budget')) {
+            const budgetMatch = content.match(/\d+/);  // Extract first number from message
+            if (budgetMatch) {
+                const budget = parseInt(budgetMatch[0]);
+                await updateCampaignPreview({ budget });
+            }
+        }
 
+        if (content.toLowerCase().includes('target')) {
+            // Create a complete targeting object with default values
+            const targetingUpdate: CampaignConfig['targeting'] = {
+                locations: [],     // Must provide array even if empty
+                ageRange: { min: 18, max: 65 },
+                interests: []      // Must provide array even if empty
+            };
+        
+            // Extract location if mentioned
+            const locationMatch = content.match(/in\s+([^,.]+)/i);
+            if (locationMatch) {
+                targetingUpdate.locations = [locationMatch[1].trim()];
+            }
+        
+            // Extract age range if mentioned
+            const ageMatch = content.match(/age[s]?\s+(\d+)[-\s]+to[-\s]+(\d+)/i);
+            if (ageMatch) {
+                targetingUpdate.ageRange = {
+                    min: parseInt(ageMatch[1]),
+                    max: parseInt(ageMatch[2])
+                };
+            }
+        
+            // Extract interests if mentioned
+            const interestsMatch = content.match(/interest[s]?\s+in\s+([^,.]+)/i);
+            if (interestsMatch) {
+                targetingUpdate.interests = interestsMatch[1].split(/[,\s]+/).map(i => i.trim());
+            }
+        
+            await updateCampaignPreview({ 
+                targeting: targetingUpdate 
+            });
+        }
+    }
     let campaignId = '';
     try {
         campaignId = (await getCampaignIdFromUrl())?.toString() || '';
@@ -1208,6 +1265,7 @@ Maintain a professional but friendly tone throughout.
             return textNode
         },
         tools: {
+            
             getCampaignResults: {
                 description: getCampaignResultsModule.description,
                 parameters: getCampaignResultsModule.parameters,
@@ -1254,6 +1312,55 @@ Maintain a professional but friendly tone throughout.
                     })
                 }
             },
+            showCampaignPreview: {
+                description: 'Show campaign preview in the UI',
+                parameters: z.object({}),
+                generate: async function* ({}) {
+                    const campaignConfig = aiState.get().campaignConfig;
+                    const timestamp: string = new Date().toISOString();
+                    const toolCallId = nanoid();
+                    
+                    aiState.done({
+                        ...aiState.get(),
+                        messages: [
+                            ...aiState.get().messages,
+                            {
+                                id: nanoid(),
+                                role: 'assistant',
+                                content: [
+                                    {
+                                        type: 'tool-call',
+                                        toolName: 'showCampaignPreview',
+                                        toolCallId,
+                                        args: {}
+                                    }
+                                ],
+                                timestamp
+                            },
+                            {
+                                id: toolCallId,
+                                role: 'tool',
+                                content: [
+                                    {
+                                        type: 'tool-result',
+                                        toolName: 'showCampaignPreview',
+                                        toolCallId,
+                                        result: campaignConfig
+                                    }
+                                ],
+                                timestamp
+                            }
+                        ]
+                    });
+                    
+                    return (
+                        <BotCard>
+                            <CampaignPreview {...campaignConfig} />
+                        </BotCard>
+                    );
+                }
+            },
+
             getCampaignImages: {
                 description: getCampaignImagesModule.description,
                 parameters: getCampaignImagesModule.parameters,
@@ -2106,11 +2213,32 @@ Maintain a professional but friendly tone throughout.
         display: result.value
     }
 }
-
+export type CampaignConfig = {
+    type: string
+    budget: number
+    targeting: {
+        locations: string[]
+        ageRange: { min: number, max: number }
+        interests: string[]
+    }
+    images: string[]
+    adText: string
+}
 export type AIState = {
     chatId: string
     title: string
     messages: Message[]
+    campaignConfig: {
+        type: string
+        budget: number
+        targeting: {
+            locations: string[]
+            ageRange: { min: number, max: number }
+            interests: string[]
+        }
+        images: string[]
+        adText: string
+    }
 }
 
 export type UIState = {
@@ -2121,6 +2249,7 @@ export type UIState = {
 export const AI = createAI<AIState, UIState>({
     actions: {
         submitUserMessage,
+        updateCampaignPreview,
         confirmPurchase,
         confirmUpdateStatus,
         confirmCreateAd,
@@ -2129,8 +2258,22 @@ export const AI = createAI<AIState, UIState>({
         confirmUpdateAdset,
         confirmCreateLeadgenForm,
     },
-    initialUIState: [],
-    initialAIState: {chatId: nanoid(), title: '', messages: []},
+    initialAIState: {
+        chatId: nanoid(),
+        title: '',
+        messages: [],
+        campaignConfig: {
+            type: '',
+            budget: 0,
+            targeting: {
+                locations: [],
+                ageRange: { min: 18, max: 65 },
+                interests: []
+            },
+            images: [],
+            adText: ''
+        }
+    },
     onGetUIState: async () => {
         'use server'
 
@@ -2191,12 +2334,6 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                 message.role === 'tool' && isToolResultArray(message.content) ? (
                     message.content.map((tool: ToolResult) => {
                         switch (tool.toolName) {
-                            // case 'listAds':
-                            //     return (
-                            //         <BotCard key={tool.toolCallId}>
-                            //             <Stocks props={tool.result}/>
-                            //         </BotCard>
-                            //     );
                             case 'showStockPrice':
                             case 'getCampaignResults':
                                 return (
@@ -2208,6 +2345,12 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                             {tool.result.guideForUser ?? ''}
                                         </div>
                                     </>
+                                );
+                            case 'showCampaignPreview':
+                                return (
+                                    <BotCard key={tool.toolCallId}>
+                                        <CampaignPreview {...tool.result} />
+                                    </BotCard>
                                 );
                             case 'showAdBudgetUI':
                                 return (
@@ -2247,7 +2390,7 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                             {tool.result.guideForUser ?? ''}
                                         </div>
                                     </>
-                                )
+                                );
                             case 'getCampaignImages':
                                 return (
                                     <BotCard key={tool.toolCallId}>
@@ -2261,7 +2404,7 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                         {!!tool.result.questionForBudget &&
                                             <p className="mb-2 last:mb-0">{tool.result.questionForBudget}</p>}
                                     </BotCard>
-                                )
+                                );
                             case 'createCampaign':
                                 return tool.result.success ? (
                                     <BotCard key={tool.toolCallId}>
@@ -2274,7 +2417,7 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                         <p className="mb-2 last:mb-0">Campaign creation failed, please try again
                                             later.</p>
                                     </BotCard>
-                                )
+                                );
                             case 'showUpdateStatusCampaign':
                                 return (
                                     <BotCard key={tool.toolCallId}>
@@ -2287,31 +2430,31 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                             }}
                                         />
                                     </BotCard>
-                                )
+                                );
                             case 'showCampaignConnectionUI':
                                 return (
                                     <BotCard key={tool.toolCallId}>
                                         <ConnectCampaign {...tool.result} />
                                     </BotCard>
-                                )
+                                );
                             case 'showAdsetConnectionUI':
                                 return (
                                     <BotCard key={tool.toolCallId}>
                                         <ConnectAdset {...tool.result} toolCallId={tool.toolCallId}/>
                                     </BotCard>
-                                )
+                                );
                             case 'showPlacementTargetingUI':
                                 return (
                                     <BotCard key={tool.toolCallId}>
                                         <PlacementTargeting {...tool.result} toolCallId={tool.toolCallId}/>
                                     </BotCard>
-                                )
+                                );
                             case 'showFormBuilder':
                                 return (
                                     <BotCard key={tool.toolCallId}>
                                         <FormBuilder {...tool.result} toolCallId={tool.toolCallId} isReadOnly/>
                                     </BotCard>
-                                )    
+                                );
                             case 'showGeographicalLocationUI':
                                 return (
                                     <BotCard key={tool.toolCallId}>
@@ -2321,13 +2464,13 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                           isReadOnly={!!tool.result.uiProps}
                                         />
                                     </BotCard>
-                                ) 
+                                );
                             case 'showSuggestedFilters':
                                 return (
                                     <BotCard key={tool.toolCallId}>
                                         <SuggestedFilters toolCallId={tool.toolCallId} suggestedFitlers={tool.result.suggestedFitlers} uiProps={tool.result.uiProps} isReadOnly  />
                                     </BotCard>
-                                )    
+                                );
                             case 'showGeographicalLocationUI':
                                 return (
                                     <BotCard key={tool.toolCallId}>
@@ -2337,13 +2480,13 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                           isReadOnly={!!tool.result.uiProps}
                                         />
                                     </BotCard>
-                                ) 
+                                );
                             case 'showSuggestedFilters':
                                 return (
                                     <BotCard key={tool.toolCallId}>
                                         <SuggestedFilters toolCallId={tool.toolCallId} suggestedFitlers={tool.result.suggestedFitlers} uiProps={tool.result.uiProps} isReadOnly  />
                                     </BotCard>
-                                )
+                                );
                             case 'showSupervisedTaskUI':
                                 return (
                                     <>
@@ -2357,7 +2500,7 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                     <BotCard key={tool.toolCallId}>
                                         <AdCreativesSwitcher {...tool.result} toolCallId={tool.toolCallId} />
                                     </BotCard>
-                                )
+                                );
                             default:
                                 return null;
                         }
