@@ -84,6 +84,8 @@ interface ExtractedMessage {
     timestamp?: string;
 }
 
+
+
 async function checkNewChat(chatId: string, messages: Message[], session: Session | null) {
     if (!session?.user) return false;
 
@@ -109,21 +111,52 @@ async function checkNewChat(chatId: string, messages: Message[], session: Sessio
         await sendAdminNotification(chatId)
     }
 }
+
+
 async function updateCampaignPreview(config: Partial<CampaignConfig>) {
     'use server'
     const aiState = getMutableAIState<typeof AI>();
+    const currentConfig = aiState.get().campaignConfig || {
+        type: '',
+        budget: 0,
+        targeting: {
+            locations: [],
+            ageRange: { min: 18, max: 65 },
+            interests: []
+        },
+        images: [],
+        adText: ''
+    };
+    
     aiState.update({
         ...aiState.get(),
         campaignConfig: {
-            ...aiState.get().campaignConfig,
+            ...currentConfig,
             ...config,
             targeting: {
-                ...aiState.get().campaignConfig.targeting,
+                ...currentConfig.targeting,
                 ...(config.targeting || {})
             }
         }
     });
 }
+
+export async function updateCampaignConfig(chatId: string, config: Partial<CampaignConfig>) {
+    const aiState = getMutableAIState<typeof AI>();
+    
+    aiState.update({
+      ...aiState.get(),
+      campaignConfig: {
+        ...aiState.get().campaignConfig,
+        ...config,
+        targeting: {
+          ...aiState.get().campaignConfig.targeting,
+          ...(config.targeting || {})
+        }
+      }
+    });
+  }
+  
 async function confirmPurchase(campaignName: string, budget: number, days: number = 30) {
     'use server'
 
@@ -985,18 +1018,17 @@ Technology
     `;
 
     aiState.update({
-      ...aiState.get(),
-      messages: [
-        ...aiState.get().messages,
-        {
-          id: messageId,
-          role: 'user',
-          content: contentImages?.length ? contentImages : content,
-          timestamp: new Date().toISOString()
-        }
-      ]
-    })
-
+        ...aiState.get(),
+        messages: [
+          ...aiState.get().messages,
+          {
+            id: messageId,
+            role: 'user',
+            content: contentImages?.length ? contentImages : content,  
+            timestamp: new Date().toISOString()
+          }
+        ]
+      })
     let textStream: undefined | ReturnType<typeof createStreamableValue<string>>
     let textNode: undefined | React.ReactNode
 
@@ -1358,7 +1390,19 @@ Maintain a professional but friendly tone throughout.
                     
                     return (
                         <BotCard>
-                            <CampaignPreview {...campaignConfig} />
+                            <CampaignPreview 
+                                config={campaignConfig}
+                                onConfigUpdate={(newConfig) => {
+                                    const aiState = getMutableAIState<typeof AI>();
+                                    aiState.update({
+                                        ...aiState.get(),
+                                        campaignConfig: {
+                                            ...aiState.get().campaignConfig,
+                                            ...newConfig
+                                        }
+                                    });
+                                }}
+                            />
                         </BotCard>
                     );
                 }
@@ -2252,7 +2296,6 @@ export type UIState = {
 export const AI = createAI<AIState, UIState>({
     actions: {
         submitUserMessage,
-        updateCampaignPreview,
         confirmPurchase,
         confirmUpdateStatus,
         confirmCreateAd,
@@ -2265,7 +2308,7 @@ export const AI = createAI<AIState, UIState>({
         chatId: nanoid(),
         title: '',
         messages: [],
-        campaignConfig: {
+        campaignConfig: {  // Add this
             type: '',
             budget: 0,
             targeting: {

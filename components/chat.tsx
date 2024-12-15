@@ -1,9 +1,8 @@
-// chat.tsx
 'use client'
 
-import {useActions, useAIState, useUIState} from 'ai/rsc' // Add useActions here
-import React, {useCallback, useContext, useEffect, useState} from 'react'
-import {toast} from 'sonner'
+import { useActions, useAIState, useUIState } from 'ai/rsc'
+import React, { useCallback, useContext, useEffect, useState } from 'react'
+import { toast } from 'sonner'
 
 import {
     fetchChatFbAdsetId,
@@ -12,23 +11,23 @@ import {
     updateChatFbCampaignId,
     updateChatTitle
 } from '@/app/actions'
-import {CampaignContext, CampaignContextProvider} from '@/components/contexts/campaign-context'
-import {KvContextProvider} from '@/components/contexts/kv-context'
-import {ChatList} from '@/components/chat-list'
-import {ChatPanel} from '@/components/chat-panel'
-import {EmptyScreen} from '@/components/empty-screen'
-import {useLocalStorage} from '@/lib/hooks/use-local-storage'
-import {useScrollAnchor} from '@/lib/hooks/use-scroll-anchor'
-import {Chat as ChatType, Message, Session} from '@/lib/types'
-import {cn} from '@/lib/utils'
+import { CampaignContext, CampaignContextProvider } from '@/components/contexts/campaign-context'
+import { KvContextProvider } from '@/components/contexts/kv-context'
+import { ChatList } from '@/components/chat-list'
+import { ChatPanel } from '@/components/chat-panel'
+import { EmptyScreen } from '@/components/empty-screen'
+import { useLocalStorage } from '@/lib/hooks/use-local-storage'
+import { useScrollAnchor } from '@/lib/hooks/use-scroll-anchor'
+import { Chat as ChatType, Message, Session } from '@/lib/types'
+import { cn } from '@/lib/utils'
 import CampaignOverview from "@/components/stocks/campaign-overview-basic-ui"
-import {getChatIdFromUrl} from "@/lib/api/fasty-bot/helpers/chat-id-from-url-helper"
-import {nanoid} from "nanoid";
-import {UserMessage} from "@/components/stocks/message";
-import {ImagePart, TextPart} from "ai";
-import {AI} from "@/lib/chat/actions";
-import {isFeatureToggleEnabled} from "@/lib/helpers/feature-toggle/feature-toggle-manager";
-
+import { getChatIdFromUrl } from "@/lib/api/fasty-bot/helpers/chat-id-from-url-helper"
+import { nanoid } from "nanoid"
+import { UserMessage } from "@/components/stocks/message"
+import { ImagePart, TextPart } from "ai"
+import { AI } from "@/lib/chat/actions"
+import { isFeatureToggleEnabled } from "@/lib/helpers/feature-toggle/feature-toggle-manager"
+import CampaignPreviewPanel from '@/components/stocks/CampaignPreviewComponent'
 
 interface FbFetchedObject {
     id: string;
@@ -67,19 +66,55 @@ export interface ChatProps extends React.ComponentProps<'div'> {
     missingKeys: string[]
 }
 
-function ChatCore({id, chat, className, session, missingKeys}: ChatProps) {
+// Define proper campaign config interface
+interface CampaignConfig {
+    type: string;
+    budget: number;
+    targeting: {
+        locations: string[];
+        ageRange: { min: number; max: number };
+        interests: string[];
+    };
+    images: string[];
+    adText: string;
+}
+
+function ChatCore({ id, chat, className, session, missingKeys }: ChatProps) {
     const [aiState, setAIState] = useAIState()
     const [_, setNewChatId] = useLocalStorage('newChatId', id)
-    const {id: campaignId, setId: setCampaignId, summary: campaignSummary} = useContext(CampaignContext)
+    const { id: campaignId, setId: setCampaignId, summary: campaignSummary } = useContext(CampaignContext)
     const [adsetId, setAdsetId] = useState<string | null>(null)
     const [adsetData, setAdsetData] = useState<FbFetchedObject | null>(null)
     const [isLoadingAdset, setIsLoadingAdset] = useState(false)
     const [messages, setMessages] = useUIState<typeof AI>()
-    const {submitUserMessage} = useActions()  // Get submitUserMessage from useActions
+    const { submitUserMessage } = useActions()
 
-    // Add sendMessage function
+    // Add campaign config state with proper typing
+    const [campaignConfig, setCampaignConfig] = useState<CampaignConfig>({
+        type: '',
+        budget: 0,
+        targeting: {
+            locations: [],
+            ageRange: { min: 18, max: 65 },
+            interests: []
+        },
+        images: [],
+        adText: ''
+    });
+
+    // Handle campaign config updates with proper typing
+    const handleConfigUpdate = useCallback((newConfig: Partial<CampaignConfig>) => {
+        setCampaignConfig(prev => ({
+            ...prev,
+            ...newConfig,
+            targeting: {
+                ...prev.targeting,
+                ...(newConfig.targeting || {})
+            }
+        }));
+    }, []);
+
     const sendMessage = React.useCallback(async (message: string, userContent?: (TextPart | ImagePart)[]) => {
-        // Optimistically add user message UI
         setMessages(currentMessages => [
             ...currentMessages,
             {
@@ -88,12 +123,10 @@ function ChatCore({id, chat, className, session, missingKeys}: ChatProps) {
             }
         ])
 
-        // Submit and get response message
         const responseMessage = await submitUserMessage(message, userContent);
         setMessages(currentMessages => [...currentMessages, responseMessage])
-    }, [])
+    }, [setMessages, submitUserMessage]);
 
-    // Add handleShowMe that uses sendMessage
     const handleShowMe = useCallback((message: string) => {
         sendMessage(message);
     }, [sendMessage]);
@@ -118,9 +151,8 @@ function ChatCore({id, chat, className, session, missingKeys}: ChatProps) {
                 ]
             }))
         }
-    }, [])
+    }, [aiState.messages.length, setAIState]);
 
-    // Fetch campaign ID and update title
     useEffect(() => {
         if (!campaignId && id) {
             const fetch = async () => {
@@ -131,7 +163,7 @@ function ChatCore({id, chat, className, session, missingKeys}: ChatProps) {
             }
             void fetch()
         }
-    }, [campaignId, id])
+    }, [campaignId, id, setCampaignId]);
 
     useEffect(() => {
         if (campaignSummary && campaignSummary.campaign_id !== '0') {
@@ -149,9 +181,8 @@ function ChatCore({id, chat, className, session, missingKeys}: ChatProps) {
                 void updateTitle()
             }
         }
-    }, [campaignSummary, chat])
+    }, [campaignSummary, chat, aiState.chatId]);
 
-    // Fetch adset data
     useEffect(() => {
         const initializeAdsetId = async () => {
             const chatId = getChatIdFromUrl()
@@ -164,7 +195,7 @@ function ChatCore({id, chat, className, session, missingKeys}: ChatProps) {
         }
 
         initializeAdsetId()
-    }, [])
+    }, []);
 
     const fetchAdsetData = async (id: string) => {
         setIsLoadingAdset(true)
@@ -187,31 +218,47 @@ function ChatCore({id, chat, className, session, missingKeys}: ChatProps) {
         if (adsetId) {
             fetchAdsetData(adsetId)
         }
-    }, [adsetId])
+    }, [adsetId]);
 
     useEffect(() => {
         setNewChatId(id)
-    })
+    }, [id, setNewChatId]);
 
     useEffect(() => {
         missingKeys.map(key => {
             toast.error(`Missing ${key} environment variable!`)
         })
-    }, [missingKeys])
+    }, [missingKeys]);
 
-    const {messagesRef, scrollRef, visibilityRef, isAtBottom, scrollToBottom} =
+    const { messagesRef, scrollRef, visibilityRef, isAtBottom, scrollToBottom } =
         useScrollAnchor()
 
     const handleCampaignCreated = useCallback(async (campaignId: string) => {
         setCampaignId(campaignId)
         await updateChatFbCampaignId(id, campaignId)
-    }, [id])
+    }, [id, setCampaignId]);
 
     const handleRefreshAdset = () => {
         if (adsetId) {
             fetchAdsetData(adsetId)
         }
     }
+
+    // Update campaign config based on adset data
+    useEffect(() => {
+        if (adsetData) {
+            handleConfigUpdate({
+                targeting: {
+                    locations: adsetData.targeting.geo_locations.countries || [],
+                    ageRange: {
+                        min: adsetData.targeting.age_min,
+                        max: adsetData.targeting.age_max
+                    },
+                    interests: adsetData.targeting.flexible_spec?.[0]?.interests?.map(i => i.name) || []
+                }
+            });
+        }
+    }, [adsetData, handleConfigUpdate]);
 
     return (
         <div
@@ -220,7 +267,7 @@ function ChatCore({id, chat, className, session, missingKeys}: ChatProps) {
         >
             <div className="overflow-auto h-full">
                 <div
-                    className={cn('pb-[200px] pt-4 md:pt-10 relative', className)}
+                    className={cn('pb-[200px] pt-4 md:pt-10 relative pr-[400px]', className)}
                     ref={messagesRef}
                 >
                     <div>
@@ -232,7 +279,16 @@ function ChatCore({id, chat, className, session, missingKeys}: ChatProps) {
                         <div className="w-full h-px" ref={visibilityRef}/>
                     </div>
 
-                    {isFeatureToggleEnabled('rightSideOverviewCard') &&
+                    {/* Campaign Preview Panel */}
+                    <div className="hidden lg:block fixed top-20 right-10 w-[350px]">
+                        <CampaignPreviewPanel
+                            config={campaignConfig}
+                            onConfigUpdate={handleConfigUpdate}
+                        />
+                    </div>
+
+                    {/* Existing Campaign Overview */}
+                    {isFeatureToggleEnabled('rightSideOverviewCard') && (
                         <div
                             className="hidden lg:block fixed top-20 right-10 w-[350px]"
                             style={{
@@ -257,7 +313,8 @@ function ChatCore({id, chat, className, session, missingKeys}: ChatProps) {
                                     onShowMe={sendMessage}
                                 />
                             </div>
-                        </div>}
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -279,3 +336,5 @@ export const Chat = ({...chatProps}: ChatProps) => (
         </CampaignContextProvider>
     </KvContextProvider>
 )
+
+export default Chat

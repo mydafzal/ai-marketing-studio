@@ -1,10 +1,13 @@
+'use client'
+
 import * as React from 'react'
-import Link from 'next/link'
+import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import { SidebarList } from '@/components/sidebar-list'
 import { buttonVariants } from '@/components/ui/button'
 import { IconPlus } from '@/components/ui/icons'
 import { MessageSquarePlus, History } from 'lucide-react'
+import { CampaignChoiceModal } from '@/components/campaign-choice-modal'
 
 interface ChatHistoryProps {
   userId?: string
@@ -27,6 +30,8 @@ function ChatHistorySkeleton() {
 }
 
 function ChatHistoryContent({ userId }: { userId?: string }) {
+  const [showModal, setShowModal] = useState(false);
+
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center gap-2 px-6 py-4 border-b border-zinc-200 dark:border-zinc-800">
@@ -36,8 +41,8 @@ function ChatHistoryContent({ userId }: { userId?: string }) {
         </h2>
       </div>
       <div className="p-3">
-        <Link
-          href="/"
+        <button
+          onClick={() => setShowModal(true)}
           className={cn(
             buttonVariants({ variant: 'outline' }),
             'w-full h-11 gap-2 justify-center',
@@ -51,12 +56,17 @@ function ChatHistoryContent({ userId }: { userId?: string }) {
         >
           <MessageSquarePlus className="size-4" />
           New Chat
-        </Link>
+        </button>
       </div>
       <React.Suspense fallback={<ChatHistorySkeleton />}>
         {/* @ts-ignore */}
         <SidebarList userId={userId} />
       </React.Suspense>
+
+      <CampaignChoiceModal 
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+      />
     </div>
   )
 }

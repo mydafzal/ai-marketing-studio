@@ -14,8 +14,7 @@ import type { AI } from '@/lib/chat/actions'
 import { UserMessage } from './stocks/message'
 import { FloatingButton } from './floating-button'
 import { TaskPalette } from './task-palette'
-import {isFeatureToggleEnabled} from "@/lib/helpers/feature-toggle/feature-toggle-manager";
-
+import { isFeatureToggleEnabled } from "@/lib/helpers/feature-toggle/feature-toggle-manager"
 
 const exampleMessages = [
   {
@@ -62,9 +61,9 @@ export function ChatPanel({
   const { submitUserMessage } = useActions()
   const [shareDialogOpen, setShareDialogOpen] = React.useState(false)
   const [isTaskPaletteOpen, setIsTaskPaletteOpen] = React.useState(false)
-  let isUserGuideButtonEnabled = isFeatureToggleEnabled("userGuideFloatingButton")
-  const sendMessage = React.useCallback(async (message: string, userContent?: (TextPart | ImagePart )[]) => {
-    // Optimistically add user message UI
+  const isUserGuideButtonEnabled = isFeatureToggleEnabled("userGuideFloatingButton")
+
+  const sendMessage = React.useCallback(async (message: string, userContent?: (TextPart | ImagePart)[]) => {
     setMessages(currentMessages => [
       ...currentMessages,
       {
@@ -73,10 +72,9 @@ export function ChatPanel({
       }
     ])
 
-    // Submit and get response message
     const responseMessage = await submitUserMessage(message, userContent);
     setMessages(currentMessages => [...currentMessages, responseMessage])
-  }, [])
+  }, [setMessages, submitUserMessage])
 
   const handleShowMe = (prompt: string) => {
     sendMessage(prompt)
@@ -84,73 +82,79 @@ export function ChatPanel({
 
   return (
     <>
-      <div className="fixed inset-x-0 bottom-0 w-full bg-gradient-to-b from-muted/30 from-0% to-muted/30 to-50% duration-300 ease-in-out animate-in dark:from-background/10 dark:from-10% dark:to-background/80 peer-[[data-state=open]]:group-[]:lg:pl-[250px] peer-[[data-state=open]]:group-[]:xl:pl-[300px]">
-        <ButtonScrollToBottom
-          isAtBottom={isAtBottom}
-          scrollToBottom={scrollToBottom}
-        />
+      <div className="fixed inset-x-0 bottom-0 w-full pointer-events-none">
+        <div className="relative pointer-events-auto max-w-4xl mx-auto w-full" style={{ marginLeft: '400px' }}>
+          <ButtonScrollToBottom
+            isAtBottom={isAtBottom}
+            scrollToBottom={scrollToBottom}
+          />
 
-        <div className="mx-auto sm:max-w-2xl sm:px-4">
-          <div className="mb-4 grid grid-cols-2 gap-2 px-4 sm:px-0">
-            {messages.length === 0 &&
-              exampleMessages.map((example, index: number) => (
-                <div
-                  key={example.heading}
-                  className={`cursor-pointer rounded-lg border bg-white p-4 hover:bg-zinc-50 dark:bg-zinc-950 dark:hover:bg-zinc-900 ${
-                    index > 1 && 'hidden md:block'
-                  }`}
-                  onClick={async () => {
-                    await sendMessage(example.message)
-                  }}
-                >
-                  <div className="text-sm font-semibold">{example.heading}</div>
-                  <div className="text-sm text-zinc-600">
-                    {example.subheading}
+          <div className="w-full px-4">
+            <div className="mb-4 grid grid-cols-2 gap-2">
+              {messages.length === 0 &&
+                exampleMessages.map((example, index: number) => (
+                  <div
+                    key={example.heading}
+                    className={`cursor-pointer rounded-lg border bg-white p-4 hover:bg-zinc-50 dark:bg-zinc-950 dark:hover:bg-zinc-900 ${
+                      index > 1 && 'hidden md:block'
+                    }`}
+                    onClick={async () => {
+                      await sendMessage(example.message)
+                    }}
+                  >
+                    <div className="text-sm font-semibold">{example.heading}</div>
+                    <div className="text-sm text-zinc-600">
+                      {example.subheading}
+                    </div>
                   </div>
-                </div>
-              ))}
-          </div>
-
-          {messages?.length >= 2 ? (
-            <div className={`flex ${id && title && "h-12"} items-center justify-center`}>
-              <div className="flex space-x-2">
-                {id && title ? (
-                  <>
-                    <Button
-                      variant="outline"
-                      onClick={() => setShareDialogOpen(true)}
-                    >
-                      <IconShare className="mr-2" />
-                      Share
-                    </Button>
-                    <ChatShareDialog
-                      open={shareDialogOpen}
-                      onOpenChange={setShareDialogOpen}
-                      onCopy={() => setShareDialogOpen(false)}
-                      shareChat={shareChat}
-                      chat={{
-                        id,
-                        title,
-                        messages: aiState.messages
-                      }}
-                    />
-                  </>
-                ) : null}
-              </div>
+                ))}
             </div>
-          ) : null}
 
-          <div className="space-y-4 border-t bg-background px-4 py-2 shadow-lg sm:rounded-t-xl sm:border md:py-4">
-            <PromptForm onSendMessage={sendMessage} />
-            <FooterText className="hidden sm:block" />
+            {messages?.length >= 2 ? (
+              <div className={`flex ${id && title && "h-12"} items-center justify-center mb-4`}>
+                <div className="flex space-x-2">
+                  {id && title ? (
+                    <>
+                      <Button
+                        variant="outline"
+                        onClick={() => setShareDialogOpen(true)}
+                      >
+                        <IconShare className="mr-2" />
+                        Share
+                      </Button>
+                      <ChatShareDialog
+                        open={shareDialogOpen}
+                        onOpenChange={setShareDialogOpen}
+                        onCopy={() => setShareDialogOpen(false)}
+                        shareChat={shareChat}
+                        chat={{
+                          id,
+                          title,
+                          messages: aiState.messages
+                        }}
+                      />
+                    </>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
+
+            <div className="space-y-4 border-t bg-background px-4 py-2 shadow-lg sm:rounded-t-xl sm:border md:py-4">
+              <PromptForm onSendMessage={sendMessage} />
+              <FooterText className="hidden sm:block" />
+            </div>
           </div>
+          {isUserGuideButtonEnabled && (
+            <FloatingButton onClick={() => setIsTaskPaletteOpen(true)} />
+          )}
+          {isUserGuideButtonEnabled && (
+            <TaskPalette
+              isOpen={isTaskPaletteOpen}
+              onClose={() => setIsTaskPaletteOpen(false)}
+              onShowMe={handleShowMe}
+            />
+          )}
         </div>
-        {isUserGuideButtonEnabled && <FloatingButton onClick={() => setIsTaskPaletteOpen(true)} />}
-        {isUserGuideButtonEnabled && <TaskPalette
-            isOpen={isTaskPaletteOpen}
-            onClose={() => setIsTaskPaletteOpen(false)}
-            onShowMe={handleShowMe}
-        />}
       </div>
     </>
   )

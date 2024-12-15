@@ -63,6 +63,15 @@
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
     --ring: 240 4.9% 83.9%;
+    .chat-container {
+      padding-right: 320px; /* Width of preview panel + padding */
+    }
+    
+    @media (max-width: 1024px) {
+      .chat-container {
+        padding-right: 0;
+      }
+    }
   }
 }
  
