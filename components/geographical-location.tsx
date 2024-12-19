@@ -35,7 +35,8 @@ interface GeoGraphicalLocationProps {
     }
     success: boolean
   }
-  isReadOnly?: boolean
+  isReadOnly?: boolean;
+  onDemographicDataUpdate?: (data: any) => void; // callback to update campaign preview
 }
 
 type GeoLocation = {
@@ -49,7 +50,8 @@ type GeoLocation = {
 export function GeographicalLocation({
   toolCallId,
   uiProps,
-  isReadOnly
+  isReadOnly,
+  onDemographicDataUpdate
 }: GeoGraphicalLocationProps) {
   const { adset, setAdset } = useContext(CampaignContext)
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
@@ -156,10 +158,12 @@ export function GeographicalLocation({
 
             const content = (message.content as ToolContent)[0]
             if (content.type !== 'tool-result') {
-              return console.error("Exception: content type is not tool-result in geographical-location component.", message)
+              console.error("Exception: content type is not tool-result in geographical-location component.", message)
+              return message
             }
             if (content.toolName !== 'showGeographicalLocationUI') {
-              return console.error("Exception: tool name not matching in geographical-location component.", message)
+              console.error("Exception: tool name not matching in geographical-location component.", message)
+              return message
             }
             content.result = {
               ...(content.result as Object),
@@ -182,7 +186,11 @@ export function GeographicalLocation({
             demographicData={demographicData}
           />
         )
-        
+
+        // Call the callback if provided, to immediately update CampaignPreview
+        if (onDemographicDataUpdate) {
+          onDemographicDataUpdate(demographicData);
+        }
       }
     }
     setIsSubmitting(false)
@@ -458,24 +466,24 @@ export function GeographicalLocation({
                     </Select>
 
                     <Label className="text-gray-700 dark:text-zinc-300">Cities</Label>
-<div className="bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 rounded-md">
-  <ComboBox
-    disabled={!geoLocation.region || isReadOnly}
-    selectedOptions={geoLocation.cities.map(city => ({
-      label: city.name,
-      value: city.key
-    }))}
-    onChangeKeyword={(value: string) => 
-      geoLocation.region && handleChangeKeyword(index, geoLocation.region, value)
-    }
-    options={geoLocation.cityData.map(city => ({
-      label: city.name,
-      value: city.key
-    }))}
-    onSelect={(value) => handleSelectCity(index, value)}
-    onRemove={(value) => handleRemoveCity(index, value)}
-  />
-</div>
+                    <div className="bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 rounded-md">
+                      <ComboBox
+                        disabled={!geoLocation.region || isReadOnly}
+                        selectedOptions={geoLocation.cities.map(city => ({
+                          label: city.name,
+                          value: city.key
+                        }))}
+                        onChangeKeyword={(value: string) => 
+                          geoLocation.region && handleChangeKeyword(index, geoLocation.region, value)
+                        }
+                        options={geoLocation.cityData.map(city => ({
+                          label: city.name,
+                          value: city.key
+                        }))}
+                        onSelect={(value) => handleSelectCity(index, value)}
+                        onRemove={(value) => handleRemoveCity(index, value)}
+                      />
+                    </div>
                   </div>
                 </div>
               </CardContent>

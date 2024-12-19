@@ -8,7 +8,7 @@ import {
   Upload,
   MapPin 
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -18,6 +18,7 @@ import { toast } from 'sonner';
 import { nanoid } from '@/lib/utils';
 import { saveChat } from '@/app/actions';
 import { Message, Chat } from '@/lib/types';
+import CampaignAutomation from '@/components/campaign-automation';
 
 interface CampaignChoiceModalProps {
   isOpen: boolean;
@@ -27,12 +28,18 @@ interface CampaignChoiceModalProps {
 export function CampaignChoiceModal({ isOpen, onClose }: CampaignChoiceModalProps) {
   const [step, setStep] = useState<'choice' | 'new-campaign'>("choice");
   const [isLoading, setIsLoading] = useState(false);
+  const [showAutomation, setShowAutomation] = useState(false);
   const router = useRouter();
   
   // Form states for new campaign
   const [objective, setObjective] = useState('');
   const [location, setLocation] = useState('');
   const [image, setImage] = useState<File | null>(null);
+  const [automationConfig, setAutomationConfig] = useState<{
+    objective: string;
+    location: string;
+    imageUrl: string;
+  } | null>(null);
 
   const handleExistingCampaign = () => {
     router.push('/');
@@ -62,21 +69,37 @@ export function CampaignChoiceModal({ isOpen, onClose }: CampaignChoiceModalProp
       const chatId = nanoid();
       const campaignName = `${objective.split(' ').slice(0, 3).join(' ')} - ${location}`;
 
+      console.log('Starting campaign creation:', {
+        chatId,
+        campaignName,
+        objective,
+        location
+      });
+
       // 2. Create campaign and adset via /api/fasty-bot/proxy-create-base
       const createBaseResponse = await fetch('/api/fasty-bot/proxy-create-base', {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({
           campaign_name: campaignName
         })
       });
       const createBaseData = await createBaseResponse.json();
-
-      if (!createBaseData.ok || !createBaseData.campaign?.id || !createBaseData.adset?.id) {
+      
+      if (!createBaseData.success || !createBaseData.data?.campaign?.id || !createBaseData.data?.adset?.id) {
+        console.error('Base creation failed:', createBaseData);
         throw new Error('Failed to create campaign and adset');
       }
 
-      const fbCampaignId = createBaseData.campaign.id;
-      const fbAdsetId = createBaseData.adset.id;
+      const fbCampaignId = createBaseData.data.campaign.id;
+      const fbAdsetId = createBaseData.data.adset.id;
+
+      console.log('Campaign and adset created:', {
+        fbCampaignId,
+        fbAdsetId
+      });
 
       // 3. Upload the image to the created campaign
       const formData = new FormData();
@@ -90,6 +113,7 @@ export function CampaignChoiceModal({ isOpen, onClose }: CampaignChoiceModalProp
       });
 
       if (!uploadResponse.ok) {
+        console.error('Image upload failed:', uploadResponse);
         throw new Error('Failed to upload image');
       }
 
@@ -97,71 +121,57 @@ export function CampaignChoiceModal({ isOpen, onClose }: CampaignChoiceModalProp
       const uploadedImageUrls = uploadData.urls || [];
       const imageUrl = uploadedImageUrls[0] || '';
 
-      // 4. Insert system message that instructs AI to fully configure the campaign preview
-      // We create a system message and a user message. The system message gives the AI full instructions;
-      // The user message is a simple "please do as system instructed" message to trigger the assistant.
-      
-      const now = new Date().toISOString();
-      const systemContent = `
-You are Reeply AI, the user's assistant in configuring a Facebook campaign. The user has provided:
-- Objective: ${objective}
-- Location: ${location}
-- An uploaded image: ${imageUrl}
+      console.log('Image uploaded successfully:', imageUrl);
 
-You have already created a campaign and an adset (IDs are connected to the chat).
-Now, autonomously configure the entire campaign preview as follows:
-1. Set a daily budget (e.g., €30/day) using showAdBudgetUI. Confirm when done.
-2. Configure geographical targeting and age range with showGeographicalLocationUI. Use ${location} as the primary location and choose a suitable age range (e.g., 25-45).
-3. Set relevant interest filters with showSuggestedFilters (e.g. if objective is lead gen, pick interests relevant to the user's business).
-4. Configure placements with showPlacementTargetingUI, including Instagram Stories, Reels, Facebook Feeds, Stories, and Instagram Explore.
-5. Use the uploaded image and showSuggestionAdText to generate a headline and body text. Add them to the ad preview.
-6. Set up a lead form with showFormBuilder (use a placeholder privacy policy URL like https://www.example.com/privacy).
-7. After all steps are done, the campaign preview should show everything set. The user should only need to click 'Launch Campaign' if they approve.
-
-Do not ask the user any more questions. Proceed step-by-step, calling the tools in the correct order to configure everything autonomously.
-      `;
-
-      const systemMessage: Message = {
-        id: nanoid(),
-        role: 'system',
-        content: systemContent,
-        timestamp: now
-      };
-
-      const userMessage: Message = {
-        id: nanoid(),
-        role: 'user',
-        content: "I've provided my objective, location, and image. Please follow the system instructions and fully configure the campaign preview now.",
-        timestamp: now
-      };
-
-      // 5. Save the chat with fbCampaignId and fbAdsetId
+      // 4. Save the chat with fbCampaignId and fbAdsetId
       const chat: Chat = {
         id: chatId,
         title: campaignName.substring(0, 100),
         userId: '', // handled by server
         createdAt: new Date(),
-        messages: [systemMessage, userMessage],
+        messages: [], // No system messages needed for automation
         path: `/chat/${chatId}`,
         fbCampaignId,
         fbAdsetId
       };
 
       await saveChat(chat);
+      console.log('Chat saved successfully:', chat);
 
-      // 6. Redirect to new chat
+      // 5. Set up automation config
+      setAutomationConfig({
+        objective,
+        location,
+        imageUrl
+      });
+      setShowAutomation(true);
+
+      // 6. Wait for automation to initialize
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // 7. Redirect to new chat
       router.push(`/chat/${chatId}`);
-      onClose();
+      toast.success('Campaign created! AI will now configure it automatically.');
       
-      toast.success('Campaign created successfully! The AI will now configure the preview.');
+      // 8. Close modal after successful creation
+      onClose();
     } catch (error) {
       console.error('Error creating campaign:', error);
       toast.error('Failed to create campaign. Please try again.');
+      setShowAutomation(false);
+      setAutomationConfig(null);
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Cleanup effect
+  useEffect(() => {
+    return () => {
+      setShowAutomation(false);
+      setAutomationConfig(null);
+    };
+  }, []);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -262,6 +272,14 @@ Do not ask the user any more questions. Proceed step-by-step, calling the tools 
               </Button>
             </div>
           </div>
+        )}
+
+        {showAutomation && automationConfig && (
+          <CampaignAutomation 
+            initialObjective={automationConfig.objective}
+            initialLocation={automationConfig.location}
+            uploadedImageUrl={automationConfig.imageUrl}
+          />
         )}
       </DialogContent>
     </Dialog>

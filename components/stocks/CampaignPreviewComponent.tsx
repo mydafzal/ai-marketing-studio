@@ -33,17 +33,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ComboBox } from '@/components/ui/combo-box';
-import { RangeSlider } from '@/components/range-slider';
 import { toast } from 'sonner';
-import { cn, builQueryString } from '@/lib/utils';
+import { cn, sleep } from '@/lib/utils';
 import Image from 'next/image';
 import { useActions } from 'ai/rsc';
-import { sleep } from '@/lib/utils';
-import { generateAdTemplate, generateAdsetTemplate } from '@/lib/data';
-import { Adset, Chat, LeadgenFrom, Message, Session } from '@/lib/types';
+import { Adset, LeadgenFrom } from '@/lib/types';
 import { PlacementTargeting } from '@/components/placement-targeting';
 import FormBuilder from '@/components/form-builder';
+import GeographicalLocation from '@/components/geographical-location';
 
 interface CampaignConfig {
   type: string;
@@ -59,6 +56,10 @@ interface CampaignConfig {
   };
   images: string[];
   adText: string;
+  placements?: {
+    facebook: string[];
+    instagram: string[];
+  };
 }
 
 interface FbCampaign {
@@ -76,10 +77,6 @@ interface AdsetData {
   created_time?: string;
 }
 
-type Country = { key: string; name: string; country_code: string };
-type Region = { key: string; name: string };
-type City = { key: string; name: string };
-
 interface AdText {
   headline: string;
   text: string;
@@ -88,13 +85,15 @@ interface AdText {
   date?: string;
   id?: string;
 }
+
 const specialCategories = [
-    { value: 'NONE', label: 'None' },
-    { value: 'RECRUITING', label: 'Recruiting Campaigns' },
-    { value: 'REAL_ESTATE', label: 'Real Estate Campaigns' },
-    { value: 'CREDIT', label: 'Credit Campaigns' },
-    { value: 'POLITICAL', label: 'Political Campaigns' }
-  ];
+  { value: 'NONE', label: 'None' },
+  { value: 'RECRUITING', label: 'Recruiting Campaigns' },
+  { value: 'REAL_ESTATE', label: 'Real Estate Campaigns' },
+  { value: 'CREDIT', label: 'Credit Campaigns' },
+  { value: 'POLITICAL', label: 'Political Campaigns' }
+];
+
 const defaultConfig: CampaignConfig = {
   type: '',
   budget: 0,
@@ -104,10 +103,12 @@ const defaultConfig: CampaignConfig = {
     interests: []
   },
   images: [],
-  adText: ''
+  adText: '',
+  placements: {
+    facebook: [],
+    instagram: []
+  }
 };
-
-const MAX_IMAGE_SIZE = 4 * 1024 * 1024;
 
 const SocialPreview = ({
   platform,
@@ -138,19 +139,23 @@ const SocialPreview = ({
       </div>
       
       <div className="relative aspect-square">
-        <Image
-          src={image}
-          alt="Ad preview"
-          className="object-cover"
-          fill
-          sizes="(max-width: 768px) 100vw, 448px"
-          priority
-        />
+        {image ? (
+          <Image
+            src={image}
+            alt="Ad preview"
+            className="object-cover"
+            fill
+            sizes="(max-width: 768px) 100vw, 448px"
+            priority
+          />
+        ) : (
+          <div className="bg-zinc-300 dark:bg-zinc-700 w-full h-full" />
+        )}
       </div>
       
       <div className="p-4">
-        <h4 className="font-semibold mb-2">{headline}</h4>
-        <p className="text-sm text-zinc-600 dark:text-zinc-300">{text}</p>
+        <h4 className="font-semibold mb-2">{headline || 'No Headline'}</h4>
+        <p className="text-sm text-zinc-600 dark:text-zinc-300">{text || 'No ad text set yet.'}</p>
         
         <button className={cn(
           "w-full mt-4 py-2 rounded-lg text-center text-sm font-medium",
@@ -349,7 +354,6 @@ export function CampaignPreviewPanel({
 }) {
   const [expanded, setExpanded] = useState(true);
   
-  // State for multi-slide navigation
   const [activeSlide, setActiveSlide] = useState(1); // 1 = Campaign, 2 = Ad Set, 3 = Creative & Lead Form
 
   const safeConfig = { ...defaultConfig, ...config };
@@ -365,7 +369,6 @@ export function CampaignPreviewPanel({
     fetchAdsets
   } = useContext(CampaignContext);
 
-  // Modals
   const [showBudgetModal, setShowBudgetModal] = useState(false);
   const [showTargetingModal, setShowTargetingModal] = useState(false);
   const [showCreativeModal, setShowCreativeModal] = useState(false);
@@ -374,39 +377,12 @@ export function CampaignPreviewPanel({
   const [showLeadFormModal, setShowLeadFormModal] = useState(false);
 
   const [tempBudget, setTempBudget] = useState(campaign?.daily_budget || '');
-
-  const [countryData, setCountryData] = useState<Country[]>([]);
-  const [selectedGeoLocations, setSelectedGeoLocations] = useState<{
-    country: Country | null;
-    region: Region | null;
-    cities: City[];
-    regionData: Region[];
-    cityData: City[];
-  }[]>([{
-    country: null,
-    region: null,
-    cities: [],
-    regionData: [],
-    cityData: []
-  }]);
-
-  const [ageMin, setAgeMin] = useState(safeConfig.targeting.ageRange.min);
-  const [ageMax, setAgeMax] = useState(safeConfig.targeting.ageRange.max);
-  const [isMale, setIsMale] = useState<boolean>(false);
-  const [isFemale, setIsFemale] = useState<boolean>(false);
-  const [loadingCities, setLoadingCities] = useState(false);
-
-  const [tempAdText, setTempAdText] = useState(safeConfig.adText);
-  const [tempImages, setTempImages] = useState<string[]>([...safeConfig.images]);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
-
   const [adTexts, setAdTexts] = useState<AdText[]>([]);
   const [loadingAdText, setLoadingAdText] = useState(false);
-
   const [previewAdText, setPreviewAdText] = useState<AdText | null>(null);
 
-  // Additional states for special Ad Category and A/B test
   const [specialAdCategory, setSpecialAdCategory] = useState('NONE');
   const [abTestEnabled, setAbTestEnabled] = useState(false);
 
@@ -439,16 +415,15 @@ export function CampaignPreviewPanel({
     onConfigUpdate(newConfig);
   }, [userInfo, safeConfig.targeting, onConfigUpdate]);
 
-  const handleCreateCampaign = async () => {
-    if (specialAdCategory || abTestEnabled) {
-      // Here you might want to do something with specialAdCategory & abTestEnabled
-    }
+  const [isCreatingCampaign, setCreatingCampaign] = useState(false);
+  const [isCreatingAdset, setCreatingAdset] = useState(false);
 
-    // The creation logic remains the same
+  const handleCreateCampaign = async () => {
     try {
       setCreatingCampaign(true);
       const response = await fetch('/api/fasty-bot/proxy-create-base', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({})
       });
       const data = await response.json();
@@ -462,9 +437,6 @@ export function CampaignPreviewPanel({
       setCreatingCampaign(false);
     }
   };
-
-  const [isCreatingCampaign, setCreatingCampaign] = useState(false);
-  const [isCreatingAdset, setCreatingAdset] = useState(false);
 
   const handleCreateAdset = async () => {
     if (!campaign?.id) return;
@@ -490,353 +462,51 @@ export function CampaignPreviewPanel({
     }
   };
 
-  const generateAdTextForImages = async (images: string[]) => {
-    setLoadingAdText(true);
-    try {
-      const adTemplate = generateAdTemplate(
-        "Experience Innovation Today",
-        "Please generate compelling ad text for a social media advertisement. The ad should have a catchy headline and engaging body text. Return in JSON format with headline and text properties. Make it persuasive and focused on benefits.",
-        images[images.length - 1]
-      );
-      const adsetTemplate = generateAdsetTemplate();
-      
-      const response = await confirmCreateAd(
-        campaign,
-        adTemplate,
-        adsetTemplate
-      );
-
-      let headline = "Experience Innovation Today";
-      let text = "Discover a new way to achieve your goals with our revolutionary solution.";
-
-      try {
-        const content = response.newMessage.content;
-        if (content && typeof content === 'string' && content.includes('Version')) {
-          const segments = content.split('"');
-          headline = segments[0]?.split(':')?.[1]?.trim() || headline;
-          text = segments[1] || text;
-        }
-      } catch (error) {
-        console.error('Error parsing AI response:', error);
-      }
-
-      const newAdText: AdText = {
-        headline,
-        text,
-        image: images[images.length - 1],
-        date: new Date().toISOString(),
-        id: `ad-${Date.now()}`
-      };
-
-      setAdTexts(prev => [...prev, newAdText]);
-      setPreviewAdText(newAdText);
-      setShowPreviewModal(true);
-      toast.success('Generated new ad text');
-
-    } catch (error) {
-      console.error('Failed to generate ad text:', error);
-      toast.error('Failed to generate ad text from AI');
-    } finally {
-      setLoadingAdText(false);
-    }
-  }
-
-  const handleImageFileChange = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const files = event.target.files;
-    if (!files || files.length === 0) return;
-    
-    if (files.length > 1) {
-      toast.error('You can select only 1 image at a time.');
-      return;
-    }
-
-    const file = files[0];
-    if (file.size >= MAX_IMAGE_SIZE) {
-      toast.error('This image is too big. Please use an image smaller than 4MB.');
-      return;
-    }
-
-    if (!campaign?.id) {
-      toast.error('Please have a campaign selected before uploading images.');
-      return;
-    }
-
-    setUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append('id', campaign.id);
-      formData.append('type', 'image');
-      formData.append('files', file);
-
-      toast.info('Uploading your image, please wait...');
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData
-      });
-
-      if (!response.ok) throw new Error('Upload failed');
-
-      const data = await response.json();
-
-      if (data?.urls?.[0]) {
-        const newImages = [...tempImages, data.urls[0]];
-        setTempImages(newImages);
-        toast.success('Image uploaded successfully!');
-
-        // Generate ad text immediately after upload
-        await generateAdTextForImages(newImages);
-      } else {
-        throw new Error('No URL returned from upload');
-      }
-    } catch (error) {
-      console.error('Upload failed:', error);
-      toast.error('Failed to upload the image. Please try again.');
-    } finally {
-      setUploading(false);
-    }
-  }
-
-  const handleSaveCreative = () => {
-    if (adTexts.length > 0) {
-      const [firstAdText] = adTexts;
-      onConfigUpdate({
-        images: tempImages,
-        adText: firstAdText.text
-      });
-    } else {
-      onConfigUpdate({
-        images: tempImages,
-        adText: tempAdText
-      })
-    }
-    setShowCreativeModal(false)
-  }
-
   const handleShowPreview = () => {
     if (adTexts.length > 0) {
       setPreviewAdText(adTexts[adTexts.length - 1]);
+      toast.info('Previewing last ad text & image');
       setShowPreviewModal(true);
     } else {
       toast.error('No ad creative available to preview');
     }
   };
 
-  const getCountryList = () => {
-    const params = {
-      type: 'adgeolocation',
-      location_types: "['country']",
-      limit: 300
-    };
-    fetch(`/api/fasty-bot/proxy-search${builQueryString(params)}`)
-      .then(response => response.json())
-      .then(data => {
-        setCountryData((data?.data as Country[]) || [])
-      })
-      .catch(error => {
-        console.error('Error fetching countries:', error)
-      })
-  }
-
-  const getRegionList = async (countryCode: string): Promise<Region[]> => {
-    const params = {
-      type: 'adgeolocation',
-      location_types: "['region']",
-      country_code: countryCode,
-      limit: 300,
+  // Callback when demographic data updates from geolocation
+  const handleDemographicDataUpdate = (demographicData: any) => {
+    let locations: string[] = [];
+    if (demographicData.cities && demographicData.cities.length > 0) {
+      locations = demographicData.cities.map((city: { name: string }) => city.name);
+    } else if (demographicData.regions && demographicData.regions.length > 0) {
+      locations = demographicData.regions.map((region: { name: string }) => region.name);
+    } else if (demographicData.countries && demographicData.countries.length > 0) {
+      locations = demographicData.countries.map((country: { name: string }) => country.name);
     }
-    try {
-      const response = await fetch(`/api/fasty-bot/proxy-search${builQueryString(params)}`)
-      const data = await response.json()
-      return (data.data as Region[]) || []
-    } catch (error) {
-      console.error('Error fetching regions:', error)
-      return []
-    }
-  }
 
-  const getCityList = async (regionId: string, q: string) => {
-    const params = {
-      type: 'adgeolocation',
-      location_types: "['city']",
-      region_id: regionId,
-      q,
-      limit: 10
-    }
-    try {
-      const response = await fetch(`/api/fasty-bot/proxy-search${builQueryString(params)}`)
-      const data = await response.json()
-      const cities = data.data?.filter((e: any) => e?.type === 'city') as City[]
-      return cities
-    } catch (error) {
-      console.error('Error fetching cities:', error)
-    }
-    return []
-  }
-
-  const handleAddCountry = () => {
-    setSelectedGeoLocations((prev) => [...prev, {
-      country: null,
-      region: null,
-      cities: [],
-      regionData: [],
-      cityData: []
-    }])
-  }
-
-  const handleRemoveCountry = (index: number) => {
-    setSelectedGeoLocations((prev) => prev.filter((_, i) => i !== index))
-  }
-
-  const handleCountrySelect = async (index: number, country: Country | null) => {
-    let regionData: Region[] = []
-    if (country) {
-      regionData = await getRegionList(country.country_code)
-    }
-    setSelectedGeoLocations((prev) =>
-      prev.map((item, i) =>
-        i === index
-          ? {
-              ...item,
-              country,
-              region: null,
-              cities: [],
-              regionData: regionData,
-              cityData: []
-            }
-          : item
-      )
-    )
-  }
-
-  const handleRegionSelect = (index: number, region: Region | null) => {
-    setSelectedGeoLocations((prev) =>
-      prev.map((item, i) =>
-        i === index
-          ? {
-              ...item,
-              region,
-              cities: [],
-              cityData: []
-            }
-          : item
-      )
-    )
-  }
-
-  const handleChangeKeyword = async (index: number, regionSelected: Region | null, value: string) => {
-    if (regionSelected && value.length > 0) {
-      setLoadingCities(true)
-      const cities = await getCityList(regionSelected.key, value)
-      setSelectedGeoLocations((prev) =>
-        prev.map((item, i) =>
-          i === index
-            ? {
-                ...item,
-                cityData: cities || []
-              }
-            : item
-        )
-      )
-      setLoadingCities(false)
-    } else {
-      setSelectedGeoLocations((prev) =>
-        prev.map((item, i) =>
-          i === index
-            ? {
-                ...item,
-                cityData: []
-              }
-            : item
-        )
-      )
-    }
-  }
-
-  const handleSelectCity = (index: number, value: string) => {
-    const city = selectedGeoLocations[index]?.cityData?.find((e) => e.key === value)
-    const exist = selectedGeoLocations[index]?.cities?.find((e) => e.key === value)
-    if (city && !exist) {
-      setSelectedGeoLocations((prev) =>
-        prev.map((item, i) =>
-          i === index
-            ? {
-                ...item,
-                cities: [...item.cities, city],
-                cityData: []
-              }
-            : item
-        )
-      )
-    } else {
-      setSelectedGeoLocations((prev) =>
-        prev.map((item, i) =>
-          i === index
-            ? {
-                ...item,
-                cityData: []
-              }
-            : item
-        )
-      )
-    }
-  }
-
-  const handleRemoveCity = (index: number, value: string) => {
-    setSelectedGeoLocations((prev) =>
-      prev.map((item, i) =>
-        i === index
-          ? {
-              ...item,
-              cities: item.cities.filter(city => city.key !== value)
-            }
-          : item
-      )
-    )
-  }
-
-  const handleChangeAge = (min: number, max: number) => {
-    setAgeMax(max)
-    setAgeMin(min)
-  }
-
-  useEffect(() => {
-    if (showTargetingModal) {
-      getCountryList()
-    }
-  }, [showTargetingModal])
-
-  const handleSaveTargeting = () => {
-    const countries = selectedGeoLocations
-      .map(l => l.country?.country_code)
-      .filter((c): c is string => !!c)
-    const regions = selectedGeoLocations
-      .map(l => l.region?.key)
-      .filter((r): r is string => !!r)
-    const cities = selectedGeoLocations
-      .flatMap(l => l.cities)
-      .map(c => c.key)
-
-    const genders = []
-    if (isMale) genders.push(1)
-    if (isFemale) genders.push(2)
+    const age_min = demographicData.age_min ?? safeConfig.targeting.ageRange.min;
+    const age_max = demographicData.age_max ?? safeConfig.targeting.ageRange.max;
+    const genders = demographicData.genders ?? safeConfig.targeting.genders ?? [];
 
     onConfigUpdate({
       targeting: {
         ...safeConfig.targeting,
-        ageRange: { min: ageMin, max: ageMax },
-        interests: safeConfig.targeting.interests || [],
-        countries,
-        regions,
-        cities,
+        locations: locations.length > 0 ? locations : safeConfig.targeting.locations,
+        ageRange: { min: age_min, max: age_max },
         genders
       }
-    })
-    setShowTargetingModal(false)
-  }
+    });
+  };
 
-  // Handle Lead Form submit or integration would be done via form builder modal
+  // Callback when placement updates from placement-targeting
+  const handlePlacementUpdate = (placementData: { facebook_positions: string[], instagram_positions: string[] }) => {
+    // Update config with new placements based on updatedAdset in placement-targeting
+    onConfigUpdate({
+      placements: {
+        facebook: placementData.facebook_positions || [],
+        instagram: placementData.instagram_positions || []
+      }
+    });
+  };
 
   return (
     <div className="fixed right-4 top-20 w-96 z-50 transition-all duration-300 ease-in-out">
@@ -883,7 +553,6 @@ export function CampaignPreviewPanel({
 
             {activeSlide === 1 && (
               <>
-                {/* Campaign Selection & Budget & Special Ad Category & A/B Test */}
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
@@ -937,6 +606,7 @@ export function CampaignPreviewPanel({
                     <button
                       onClick={() => {
                         setTempBudget(campaign?.daily_budget || '');
+                        toast.info('Open budget modal');
                         setShowBudgetModal(true);
                       }}
                       className="text-muted-foreground hover:text-foreground p-0 focus:outline-none"
@@ -950,26 +620,26 @@ export function CampaignPreviewPanel({
                 </div>
 
                 {/* Special Ad Category */}
-<div className="space-y-2">
-  <Label className="text-sm font-medium">
-    Special Ad Category
-  </Label>
-  <Select
-    value={specialAdCategory || 'NONE'}
-    onValueChange={val => setSpecialAdCategory(val)}
-  >
-    <SelectTrigger className="w-full bg-secondary border-border text-foreground">
-      <SelectValue placeholder="Select Category" />
-    </SelectTrigger>
-    <SelectContent className="bg-secondary border-border">
-      {specialCategories.map(category => (
-        <SelectItem key={category.value} value={category.value}>
-          {category.label}
-        </SelectItem>
-      ))}
-    </SelectContent>
-  </Select>
-</div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">
+                    Special Ad Category
+                  </Label>
+                  <Select
+                    value={specialAdCategory || 'NONE'}
+                    onValueChange={val => setSpecialAdCategory(val)}
+                  >
+                    <SelectTrigger className="w-full bg-secondary border-border text-foreground">
+                      <SelectValue placeholder="Select Category" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-secondary border-border">
+                      {specialCategories.map(category => (
+                        <SelectItem key={category.value} value={category.value}>
+                          {category.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
                 {/* A/B Test Toggle */}
                 <div className="flex items-center space-x-2">
@@ -987,7 +657,6 @@ export function CampaignPreviewPanel({
 
             {activeSlide === 2 && (
               <>
-                {/* Ad Set */}
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
@@ -1056,7 +725,9 @@ export function CampaignPreviewPanel({
                     </button>
                   </div>
                   <div className="space-y-1 text-muted-foreground text-sm">
-                    <p>📍 {safeConfig.targeting.countries?.length ? safeConfig.targeting.countries.join(', ') : (safeConfig.targeting.locations?.join(', ') || 'Location not set')}</p>
+                    <p>📍 {safeConfig.targeting.locations?.length
+                      ? safeConfig.targeting.locations.join(', ')
+                      : 'Location not set'}</p>
                     <p>👥 Age {safeConfig.targeting.ageRange.min}-{safeConfig.targeting.ageRange.max}</p>
                     {safeConfig.targeting.interests.length > 0 ? (
                       <p>🎯 Interests: {safeConfig.targeting.interests.join(', ')}</p>
@@ -1082,7 +753,9 @@ export function CampaignPreviewPanel({
                     </button>
                   </div>
                   <p className="text-muted-foreground text-sm">
-                    Configure where your ads will appear across platforms.
+                    {safeConfig.placements
+                      ? `Facebook: ${safeConfig.placements.facebook?.join(', ') || 'None'} | Instagram: ${safeConfig.placements.instagram?.join(', ') || 'None'}`
+                      : 'No placements selected'}
                   </p>
                 </div>
               </>
@@ -1090,7 +763,6 @@ export function CampaignPreviewPanel({
 
             {activeSlide === 3 && (
               <>
-                {/* Creative & Lead Form */}
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
@@ -1146,7 +818,6 @@ export function CampaignPreviewPanel({
               </>
             )}
 
-            {/* Action Button (only appear if all steps done) */}
             {activeSlide === 3 && (
               <Button 
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white mt-4"
@@ -1175,12 +846,30 @@ export function CampaignPreviewPanel({
               onChange={(e) => setTempBudget(e.target.value)}
               placeholder="Enter daily budget in EUR"
             />
-            <Button onClick={() => {
-              if (tempBudget) {
-                toast.success('Budget updated (please refresh data).')
-                setShowBudgetModal(false)
-              } else {
-                toast.error('Please enter a valid budget.')
+            <Button onClick={async () => {
+              if (!tempBudget || !campaign?.id) {
+                toast.error('Please enter a valid budget.');
+                return;
+              }
+
+              try {
+                const updateSuccess = await (await fetch(`/api/fasty-bot/set-daily-budget`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json'},
+                  body: JSON.stringify({ campaignId: campaign.id, budget: Number(tempBudget) })
+                })).json();
+
+                if (updateSuccess.success) {
+                  onConfigUpdate({ budget: Number(tempBudget) });
+                  await getCampaignList();
+                  toast.success('Budget updated successfully');
+                  setShowBudgetModal(false);
+                } else {
+                  toast.error('Failed to update budget');
+                }
+              } catch (error) {
+                console.error('Error updating budget:', error);
+                toast.error('Failed to update budget');
               }
             }}>Save</Button>
           </div>
@@ -1199,153 +888,12 @@ export function CampaignPreviewPanel({
               Update locations, age range, and other demographic targeting.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-6 mt-4">
-            {selectedGeoLocations.map((geoLocation, index) => (
-              <Card key={index} className="bg-secondary border-border">
-                <CardContent className="pt-6 space-y-4">
-                  <div className="flex justify-between items-center">
-                    <Label>Location {index + 1}</Label>
-                    {selectedGeoLocations.length > 1 && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleRemoveCountry(index)}
-                        className="size-8 text-muted-foreground hover:text-foreground"
-                      >
-                        X
-                      </Button>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Country</Label>
-                    <Select
-                      value={geoLocation.country?.country_code}
-                      onValueChange={value => {
-                        const country = countryData.find(e => e.key === value) ?? null
-                        handleCountrySelect(index, country)
-                      }}
-                    >
-                      <SelectTrigger className="bg-secondary border-border text-foreground">
-                        <SelectValue placeholder="Select a country" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-secondary border-border">
-                        {countryData.map((country: Country) => (
-                          <SelectItem key={country.key} value={country.key}>
-                            {country.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-
-                    <Label>Region</Label>
-                    <Select
-                      value={geoLocation.region?.key}
-                      onValueChange={value => {
-                        const region = geoLocation.regionData.find(e => e.key === value) ?? null
-                        handleRegionSelect(index, region)
-                      }}
-                      disabled={!geoLocation.country}
-                    >
-                      <SelectTrigger className="bg-secondary border-border text-foreground">
-                        <SelectValue placeholder="Select a region" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-secondary border-border">
-                        {geoLocation.regionData.map((region: Region) => (
-                          <SelectItem key={region.key} value={region.key}>
-                            {region.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-
-                    <Label>Cities</Label>
-                    <div className="bg-secondary text-foreground rounded-md p-2 space-y-2">
-                      <ComboBox
-                        disabled={!geoLocation.region}
-                        selectedOptions={geoLocation.cities.map(city => ({
-                          label: city.name,
-                          value: city.key
-                        }))}
-                        onChangeKeyword={(val: string) => handleChangeKeyword(index, geoLocation.region, val)}
-                        options={geoLocation.cityData.map(city => ({
-                          label: city.name,
-                          value: city.key
-                        }))}
-                        onSelect={(value) => handleSelectCity(index, value)}
-                        onRemove={(value) => handleRemoveCity(index, value)}
-                      />
-                      {loadingCities && <IconSpinner className="size-4 animate-spin text-muted-foreground" />}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-
-            <Button
-              variant="outline"
-              onClick={handleAddCountry}
-              className="w-full bg-secondary hover:bg-secondary/90 border-border text-foreground"
-            >
-              <Plus className="size-4 mr-2" />
-              Add Location
-            </Button>
-
-            <Card className="bg-secondary border-border">
-              <CardContent className="pt-6 space-y-6">
-                <div>
-                  <Label className="block mb-3">Age Range</Label>
-                  <RangeSlider
-                    min={18}
-                    max={65}
-                    step={1}
-                    priceCap={2}
-                    onChange={handleChangeAge}
-                  />
-                </div>
-
-                <div>
-                  <Label className="block mb-3">Gender</Label>
-                  <div className="space-y-3">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="male"
-                        checked={isMale}
-                        onCheckedChange={() => setIsMale(!isMale)}
-                        className="border-border data-[state=checked]:bg-blue-600"
-                      />
-                      <label
-                        htmlFor="male"
-                        className="text-sm text-foreground"
-                      >
-                        Male
-                      </label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="female"
-                        checked={isFemale}
-                        onCheckedChange={() => setIsFemale(!isFemale)}
-                        className="border-border data-[state=checked]:bg-blue-600"
-                      />
-                      <label
-                        htmlFor="female"
-                        className="text-sm text-foreground"
-                      >
-                        Female
-                      </label>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Button
-              onClick={handleSaveTargeting}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              Save
-            </Button>
+          <div className="mt-4">
+            <GeographicalLocation 
+              toolCallId="toolCallId-location" 
+              isReadOnly={false}
+              onDemographicDataUpdate={handleDemographicDataUpdate}
+            />
           </div>
           <DialogClose asChild>
             <Button variant="outline" className="absolute top-3 right-3 size-4">X</Button>
@@ -1382,7 +930,9 @@ export function CampaignPreviewPanel({
                 style={{ display: 'none' }}
                 type="file"
                 accept="image/png, image/jpeg"
-                onChange={handleImageFileChange}
+                onChange={() => {
+                  toast.info('Image upload logic goes here.');
+                }}
               />
 
               {loadingAdText && (
@@ -1405,6 +955,7 @@ export function CampaignPreviewPanel({
                             i === idx ? newText : text
                           )
                         );
+                        onConfigUpdate({ adText: newText.text });
                       }}
                     />
                   ))}
@@ -1413,7 +964,10 @@ export function CampaignPreviewPanel({
             </div>
 
             <Button 
-              onClick={handleSaveCreative} 
+              onClick={() => {
+                toast.info('Saving changes to creative...');
+                setShowCreativeModal(false);
+              }} 
               className="w-full bg-blue-600 hover:bg-blue-700 text-white"
             >
               Save
@@ -1472,7 +1026,10 @@ export function CampaignPreviewPanel({
             </DialogDescription>
           </DialogHeader>
           <div className="mt-4">
-            <PlacementTargeting toolCallId={'toolCallId-placement'} />
+            <PlacementTargeting 
+              toolCallId={'toolCallId-placement'}
+              onPlacementUpdate={handlePlacementUpdate} 
+            />
           </div>
           <DialogClose asChild>
             <Button variant="outline" className="absolute top-3 right-3 size-4">
