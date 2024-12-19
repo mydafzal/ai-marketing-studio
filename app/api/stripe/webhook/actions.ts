@@ -18,6 +18,7 @@ export async function updateSubscriptionDetails(sub: SubPayload) {
     sub_offer: sub.sub_offer,
     sub_interval: sub.sub_interval,
     sub_product_id: sub.sub_product_id,
-    sub_interval_count: sub.sub_interval_count
+    sub_interval_count: sub.sub_interval_count,
+    sub_stripe_customer_id: sub.sub_stripe_customer_id
   })
 }

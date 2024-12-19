@@ -40,7 +40,8 @@ const persistSubscription = async subscription => {
       sub_offer: stripeProduct.metadata.offer,
       sub_interval: subscription.plan.interval,
       sub_product_id: subscription.plan.product,
-      sub_interval_count: subscription.plan.interval_count
+      sub_interval_count: subscription.plan.interval_count,
+      sub_customer_id: subscription.customer
     }
 
     // Create or update subscription in Supabase

@@ -6,9 +6,15 @@ import { YearlyPricing } from '@/components/subscription/yearly-pricing'
 
 import { Card } from '@/components/subscription/card'
 
-import { PaymentHistory } from './payment-history'
+import { InvoiceItem, PaymentHistory } from './payment-history'
+import { User } from '@/lib/types'
 
-export function Subscription() {
+export interface SubscriptionProps {
+  user: User
+  invoices: InvoiceItem[]
+}
+
+export function Subscription({ user, invoices }: SubscriptionProps) {
   const [isMonthly, setIsMonthly] = useState(true)
 
   return (
@@ -50,7 +56,7 @@ export function Subscription() {
         {isMonthly ? <MonthlyPricing /> : <YearlyPricing />}
 
         <Card />
-        <PaymentHistory />
+        <PaymentHistory invoices={invoices} />
       </div>
     </div>
   )

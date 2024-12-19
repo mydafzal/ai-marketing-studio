@@ -9,4 +9,5 @@ export type SubPayload = {
   sub_interval: string
   sub_product_id: string
   sub_interval_count: string
+  sub_stripe_customer_id: string
 }
