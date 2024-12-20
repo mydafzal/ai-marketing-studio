@@ -22,6 +22,7 @@ interface TargetingUiProps {
 interface PlacementTargetingProps {
   targetingUiProps?: TargetingUiProps
   toolCallId: string
+  onPlacementUpdate?: (placementData: { facebook_positions: string[], instagram_positions: string[] }) => void
 }
 
 export function PlacementTargetingResult({
@@ -103,7 +104,8 @@ interface TargetPosition {
 
 export function PlacementTargeting({
   targetingUiProps,
-  toolCallId
+  toolCallId,
+  onPlacementUpdate
 }: PlacementTargetingProps) {
   const { adset, setAdset } = useContext(CampaignContext)
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
@@ -264,6 +266,13 @@ export function PlacementTargeting({
           />
         )
         await syncMessages();
+        
+        if (onPlacementUpdate) {
+          onPlacementUpdate({
+            facebook_positions: updatedAdset.targeting.facebook_positions || [],
+            instagram_positions: updatedAdset.targeting.instagram_positions || []
+          })
+        }
       }
     }
     setIsSubmitting(false)
@@ -355,7 +364,11 @@ function PlacementTargetingTemplate({
 }: PlacementTargetingTemplateProps) {
   return adset ? (
     <div className="relative">
-      <div className="rounded-xl">{children}</div>
+      <div className="rounded-xl">
+        {children}
+      </div>
     </div>
   ) : null
 }
+
+export default PlacementTargeting;

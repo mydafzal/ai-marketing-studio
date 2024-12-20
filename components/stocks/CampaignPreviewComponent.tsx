@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useEffect, useContext, useState, useRef } from 'react';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
   ChevronDown, 
@@ -17,7 +17,8 @@ import {
   X,
   Instagram,
   Facebook,
-  Eye
+  Eye,
+  Info
 } from 'lucide-react';
 import { CampaignContext } from '@/components/contexts/campaign-context';
 import {
@@ -36,11 +37,16 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { cn, sleep } from '@/lib/utils';
 import Image from 'next/image';
-import { useActions } from 'ai/rsc';
-import { Adset, LeadgenFrom } from '@/lib/types';
-import { PlacementTargeting } from '@/components/placement-targeting';
+import { useActions, useAIState, useUIState } from 'ai/rsc';
+import { Adset, AdsetTargeting } from '@/lib/types';
 import FormBuilder from '@/components/form-builder';
 import GeographicalLocation from '@/components/geographical-location';
+import { Switch } from '@/components/ui/switch';
+import { type AI } from '@/lib/chat/actions';
+
+// Ensure targetPositions is imported from its original data source with all available options
+// Here we assume it is imported from '@/lib/data'
+import { targetPositions } from '@/lib/data';
 
 interface CampaignConfig {
   type: string;
@@ -110,6 +116,7 @@ const defaultConfig: CampaignConfig = {
   }
 };
 
+// Preview component for Facebook and Instagram Ads
 const SocialPreview = ({
   platform,
   image,
@@ -343,6 +350,306 @@ function AdTextItem({
   )
 }
 
+interface TargetingUiProps {
+  targeting: any
+  success: boolean
+}
+
+interface PlacementTargetingProps {
+  targetingUiProps?: TargetingUiProps
+  toolCallId: string
+  onPlacementUpdate: (placementData: { facebook_positions: string[], instagram_positions: string[] }) => void
+}
+
+export function PlacementTargetingResult({
+  targeting,
+  success
+}: TargetingUiProps) {
+  const { submitUserMessage } = useActions()
+  const [aiState] = useAIState()
+  const [_, setMessages] = useUIState<typeof AI>()
+  const hasTriggeredMessage = useRef(false)
+  
+  useEffect(() => {
+    async function sendFollowUpMessage() {
+      if (success && !hasTriggeredMessage.current) {
+        hasTriggeredMessage.current = true
+        
+        const message = "Perfect! Now that we have set up where your ads will be shown, let's add your creative assets. 🎨 Could you please upload the images or videos you'd like to use for your ad? I can help you optimize them for the best performance across these placements."
+
+        const responseMessage = await submitUserMessage(message, [], true)
+        setMessages((currentMessages:any) => [...currentMessages, responseMessage])
+      }
+    }
+
+    sendFollowUpMessage()
+  }, [success, submitUserMessage, setMessages])
+
+  if (!success) return null
+  
+  return (
+    <Card className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
+      <CardContent className="p-6">
+        <div className="flex items-center gap-3 mb-4">
+          {success ? (
+            <Check className="size-6 text-green-600 dark:text-green-500 shrink-0" />
+          ) : (
+            <X className="size-6 text-red-600 dark:text-red-500 shrink-0" />
+          )}
+          <span className="text-lg font-semibold text-zinc-900 dark:text-zinc-200">
+            {success ? 'Placement targeting updated successfully!' : 'Failed to update placement targeting'}
+          </span>
+        </div>
+        
+        {targeting.facebook_positions?.length > 0 && (
+          <div className="flex items-start gap-3 mb-3">
+            <Facebook className="size-5 text-blue-600 dark:text-blue-500 shrink-0 mt-1" />
+            <div>
+              <span className="font-medium text-zinc-800 dark:text-zinc-300">Facebook Placements:</span>{' '}
+              <span className="text-zinc-600 dark:text-zinc-400">{targeting.facebook_positions?.join(', ')}</span>
+            </div>
+          </div>
+        )}
+        
+        {targeting.instagram_positions?.length > 0 && (
+          <div className="flex items-start gap-3">
+            <Instagram className="size-5 text-pink-600 dark:text-pink-500 shrink-0 mt-1" />
+            <div>
+              <span className="font-medium text-zinc-800 dark:text-zinc-300">Instagram Placements:</span>{' '}
+              <span className="text-zinc-600 dark:text-zinc-400">{targeting.instagram_positions?.join(', ')}</span>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+interface PlacementTargetingTemplateProps {
+  children: React.ReactNode
+  adset?: Adset
+}
+
+function PlacementTargetingTemplate({
+  children,
+  adset,
+}: PlacementTargetingTemplateProps) {
+  return adset ? (
+    <div className="relative">
+      <div className="rounded-xl">{children}</div>
+    </div>
+  ) : null
+}
+
+export function PlacementTargeting({
+  targetingUiProps,
+  toolCallId,
+  onPlacementUpdate
+}: PlacementTargetingProps) {
+  const { adset, setAdset } = useContext(CampaignContext)
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
+  const [aiState, setAIState] = useAIState()
+  const { confirmUpdateAdset, syncMessages } = useActions()
+  const [_, setMessages] = useUIState<typeof AI>()
+  const [selectedPositions, setSelectedPositions] = useState<string[]>([])
+  const [targetingUI, setTargetingUI] = useState<null | React.ReactNode>(
+    targetingUiProps ? <PlacementTargetingResult {...targetingUiProps} /> : null
+  )
+
+  useEffect(() => {
+    if (adset?.targeting) {
+      const fbPositions = adset?.targeting?.facebook_positions || []
+      const igPositions = adset?.targeting?.instagram_positions || []
+      setSelectedPositions([...fbPositions, ...igPositions])
+    }
+  }, [adset])
+
+  const renderSwitch = (target: { platform: string; value: string; label: string; parent?: string }) => (
+    <div
+      key={target.value}
+      className={cn(
+        'flex items-center p-2 rounded-lg transition-colors',
+        target?.parent ? 'ml-4' : '',
+        'hover:bg-zinc-100 dark:hover:bg-zinc-800'
+      )}
+    >
+      <Switch
+        checked={selectedPositions.includes(target.value)}
+        onCheckedChange={checked => {
+          if (checked) {
+            // add position
+            setSelectedPositions(prev => {
+              let newPositions = [...prev, target.value]
+              // ensure parent is included if exists
+              if (target.parent && !newPositions.includes(target.parent)) {
+                newPositions.push(target.parent)
+              }
+              return newPositions
+            })
+          } else {
+            // remove position and children if parent
+            setSelectedPositions(prev => {
+              let newPositions = prev.filter(p => p !== target.value)
+              // If unchecking parent, remove children too
+              if (!target.parent) {
+                const children = targetPositions.filter(tp => tp.parent === target.value).map(tp => tp.value)
+                newPositions = newPositions.filter(pos => !children.includes(pos))
+              }
+              return newPositions
+            })
+          }
+        }}
+        className="bg-zinc-200 dark:bg-zinc-700 data-[state=checked]:bg-blue-600 dark:data-[state=checked]:bg-blue-500"
+      />
+      <span className="text-zinc-800 dark:text-zinc-300 pl-3 font-medium">{target.label}</span>
+    </div>
+  )
+
+  async function handleUpdateAdset() {
+    if (!adset) return
+    setIsSubmitting(true)
+    
+    // derive facebook and instagram positions from selectedPositions
+    const fbPositions = targetPositions
+      .filter(tp => tp.platform === 'facebook' && selectedPositions.includes(tp.value))
+      .map(tp => tp.value)
+    const igPositions = targetPositions
+      .filter(tp => tp.platform === 'instagram' && selectedPositions.includes(tp.value))
+      .map(tp => tp.value)
+
+    let newTargeting: AdsetTargeting = { ...adset.targeting }
+    newTargeting.facebook_positions = fbPositions
+    newTargeting.instagram_positions = igPositions
+    newTargeting.publisher_platforms = []
+    if (fbPositions.length > 0) newTargeting.publisher_platforms.push('facebook')
+    if (igPositions.length > 0) newTargeting.publisher_platforms.push('instagram')
+
+    const response = await confirmUpdateAdset(toolCallId, adset.id, {
+      targeting: newTargeting
+    }, 'placement')
+    setMessages((currentMessages: any) => [...currentMessages, response.newMessage])
+
+    // Assuming response.response is a direct updatedAdset and not a stream
+    const updatedAdset = await response.response
+    if (updatedAdset) {
+      const messages = aiState.messages;
+      const lastMessage = messages.slice(-1)[0];
+      if (!lastMessage || lastMessage.id !== toolCallId) {
+        console.error('Exception: last message mismatch', lastMessage);
+      } else {
+        const content = (lastMessage.content as any)[0];
+        if (content.type !== 'tool-result') {
+          console.error("Exception: content type is not tool-result");
+        } else if (content.toolName !== 'showPlacementTargetingUI') {
+          console.error("Exception: tool name not matching");
+        } else {
+          content.result = {
+            ...(content.result as Object),
+            uiProps: {
+              success: true,
+              targeting: updatedAdset.targeting
+            }
+          }
+          setAIState({
+            ...aiState,
+            messages: [...messages]
+          })
+          setAdset(updatedAdset)
+          setTargetingUI(
+            <PlacementTargetingResult
+              targeting={updatedAdset.targeting}
+              success={true}
+            />
+          )
+          await syncMessages();
+        }
+      }
+    }
+
+    // Trigger the callback to update the CampaignPreviewPanel and show toast
+    onPlacementUpdate({
+      facebook_positions: newTargeting.facebook_positions || [],
+      instagram_positions: newTargeting.instagram_positions || []
+    })
+
+    setIsSubmitting(false)
+  }
+
+  return (
+    <PlacementTargetingTemplate adset={targetingUiProps ? ({} as Adset) : adset}>
+      {targetingUI ? (
+        targetingUI
+      ) : (
+        <div className="space-y-4">
+          <Card className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
+            <CardHeader>
+              <CardTitle className="text-xl font-bold text-zinc-900 dark:text-zinc-200">
+                Placement Targeting
+              </CardTitle>
+              <div className="flex items-center gap-2 mt-2 text-sm text-blue-800 dark:text-blue-200 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
+                <Info className="size-4 shrink-0" />
+                <p>Choose where your ads will appear across Facebook and Instagram platforms</p>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">              
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Facebook Section */}
+                <Card className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center gap-2">
+                      <Facebook className="size-5 text-blue-600 dark:text-blue-500" />
+                      <h3 className="font-semibold text-zinc-900 dark:text-zinc-200">Facebook Placements</h3>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-1">
+                    {targetPositions
+                      .filter(e => e.platform === 'facebook')
+                      .map(target => renderSwitch(target))}
+                  </CardContent>
+                </Card>
+
+                {/* Instagram Section */}
+                <Card className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center gap-2">
+                      <Instagram className="size-5 text-pink-600 dark:text-pink-500" />
+                      <h3 className="font-semibold text-zinc-900 dark:text-zinc-200">Instagram Placements</h3>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-1">
+                    {targetPositions
+                      .filter(e => e.platform === 'instagram')
+                      .map(target => renderSwitch(target))}
+                  </CardContent>
+                </Card>
+              </div>
+              
+              <button
+                disabled={isSubmitting}
+                className={cn(
+                  'flex justify-center items-center w-full h-12 px-6',
+                  'text-white font-semibold rounded-lg',
+                  'bg-blue-600 hover:bg-blue-700 transition-colors',
+                  'disabled:opacity-50 disabled:cursor-not-allowed',
+                  'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2',
+                  'dark:focus:ring-offset-zinc-900 focus:ring-offset-white'
+                )}
+                onClick={handleUpdateAdset}
+              >
+                {isSubmitting ? (
+                  <IconSpinner className="size-5 animate-spin" />
+                ) : (
+                  'Confirm Placements'
+                )}
+              </button>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+    </PlacementTargetingTemplate>
+  )
+}
+
 export function CampaignPreviewPanel({ 
   userInfo,
   config = defaultConfig,
@@ -472,7 +779,6 @@ export function CampaignPreviewPanel({
     }
   };
 
-  // Callback when demographic data updates from geolocation
   const handleDemographicDataUpdate = (demographicData: any) => {
     let locations: string[] = [];
     if (demographicData.cities && demographicData.cities.length > 0) {
@@ -495,17 +801,19 @@ export function CampaignPreviewPanel({
         genders
       }
     });
+    toast.success('Targeting updated successfully!');
   };
 
-  // Callback when placement updates from placement-targeting
   const handlePlacementUpdate = (placementData: { facebook_positions: string[], instagram_positions: string[] }) => {
-    // Update config with new placements based on updatedAdset in placement-targeting
     onConfigUpdate({
       placements: {
         facebook: placementData.facebook_positions || [],
         instagram: placementData.instagram_positions || []
       }
     });
+    // Show success message and close modal
+    toast.success('Placement targeting updated successfully!');
+    setShowPlacementModal(false);
   };
 
   return (
