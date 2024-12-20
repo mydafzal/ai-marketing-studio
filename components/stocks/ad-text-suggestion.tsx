@@ -15,6 +15,7 @@ import { readStreamableValue } from 'ai/rsc'
 import { Card, CardContent } from '@/components/ui/card'
 import { Pencil, Check, X, AlertCircle, Instagram, Facebook } from 'lucide-react'
 import Image from 'next/image'
+import { getUserDetail } from '@/app/actions'
 
 interface SuggestedText extends Omit<AdText, 'headline'> {
   headline?: string;
@@ -281,14 +282,22 @@ export function AdTextSuggestion({ props }: { props: ImageSuggestionProps[] }) {
   const [, setMessages] = useUIState<typeof AI>()
 
   const acceptText = async (idx: number, adText: AdText) => {
+    const userDetail = await getUserDetail();
+    let pageId = null;
+
+    if (userDetail?.user?.fbPageId){
+         pageId = parseInt(userDetail?.user?.fbPageId)
+    }
+  
     const response = await confirmCreateAd(
       campaign,
       generateAdTemplate(
         adText.headline,
         adText.text,
-        adText.image
+        adText.image,
+        pageId
       ),
-      generateAdsetTemplate()
+      generateAdsetTemplate(pageId)
     )
     setMessages(currentMessages => [...currentMessages, response.newMessage])
 

@@ -18,11 +18,6 @@ async function createCampaignAd(campaignId: string, data: any, adset: any): Prom
             token=token_resp.token
         }
 
-        if (userDetail?.user?.fbPageId){
-            if(data?.object_story_spec?.page_id){
-                data['object_story_spec']['page_id'] = userDetail?.user?.fbPageId
-            }
-        }
 
         // Make the direct API call
         const response = await fetch(apiUrl, {

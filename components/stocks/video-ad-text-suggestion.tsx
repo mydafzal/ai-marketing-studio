@@ -17,6 +17,7 @@ import { VideoPlayer } from './video-player'
 import { getVideoDetail } from '@/lib/api/fasty-bot/get-video-detail'
 import { Card, CardContent } from '@/components/ui/card'
 import { Pencil, Check, X, AlertCircle, Video, Instagram, Facebook } from 'lucide-react'
+import { getUserDetail } from '@/app/actions'
 
 export interface VideoSuggestionProps {
   videos: {
@@ -375,10 +376,17 @@ function VideoAdTextSuggestion({ videos }: VideoSuggestionProps) {
   }, [videos, isProcessing, checkVideoStatus])
 
   const acceptText = async (idx: number, adText: VideoAdText) => {
+    const userDetail = await getUserDetail();
+    let pageId = null;
+
+    if (userDetail?.user?.fbPageId){
+         pageId = parseInt(userDetail?.user?.fbPageId)
+    }
+
     const response = await confirmCreateAd(
       campaign,
-      generateVideoAdTemplate(adText.headline, adText.text, adText),
-      generateAdsetTemplate()
+      generateVideoAdTemplate(adText.headline, adText.text, adText,pageId),
+      generateAdsetTemplate(pageId)
     )
     setMessages(currentMessages => [...currentMessages, response.newMessage])
 

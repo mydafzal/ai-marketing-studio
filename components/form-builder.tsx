@@ -13,6 +13,7 @@ import { useActions, useUIState } from 'ai/rsc'
 import { type AI } from '@/lib/chat/actions'
 import { IconSpinner } from '@/components/ui/icons'
 import { leadGenFormFieldTypes, leadGenFormLocales } from '@/data'
+import { getUserDetail } from '@/app/actions'
 
 interface Field {
   id: string;
@@ -158,10 +159,13 @@ export default function FormBuilder({
   };
 
   const handleSubmit = async () => {
+
+    const userDetail = await getUserDetail();
+    
     setIsSubmitting(true);
     const id = Date.now();
     const payload = {
-      page_id: "119021011189054",
+      page_id: userDetail?.user?.fbPageId || "119021011189054",
       name: "Lead Form " + id,
       questions: fields.map(field => ({
         key: field.id,

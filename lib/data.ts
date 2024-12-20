@@ -3,11 +3,12 @@ import { VideoAdText } from '@/lib/types'
 export const generateAdTemplate = (
   headline: string,
   text: string,
-  image: string
+  image: string,
+  pageId: number|null = null
 ) => ({
   name: 'New Link Ad Creative',
   object_story_spec: {
-    page_id: 119021011189054,
+    page_id:pageId || 119021011189054,
     link_data: {
       link: 'https://www.example.com',
       name: headline,
@@ -22,10 +23,15 @@ export const generateAdTemplate = (
     }
   }
 })
-export const generateVideoAdTemplate = (headline: string, text: string, video: VideoAdText) => ({
+export const generateVideoAdTemplate = (
+  headline: string, 
+  text: string, 
+  video: VideoAdText,
+  pageId: number|null = null
+) => ({
   name: 'New Video Ad Creative',
   object_story_spec: {
-    page_id: 119021011189054,
+    page_id: pageId || 119021011189054,
     video_data: {
       video_id: video.video_id,
       image_url: video.thumbnail,
@@ -40,7 +46,7 @@ export const generateVideoAdTemplate = (headline: string, text: string, video: V
     }
   }
 })
-export const generateAdsetTemplate = () => ({
+export const generateAdsetTemplate = (pageId: number|null = null) => ({
   name: 'My Ad Set',
   bid_amount: 2,
   billing_event: 'IMPRESSIONS',
@@ -79,7 +85,7 @@ export const generateAdsetTemplate = () => ({
     device_platforms: ['mobile', 'desktop']
   },
   promoted_object: {
-    page_id: 119021011189054
+    page_id: pageId || 119021011189054
   },
   status: 'PAUSED'
 })
