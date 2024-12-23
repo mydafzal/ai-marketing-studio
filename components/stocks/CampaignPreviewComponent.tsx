@@ -1,6 +1,6 @@
-"use client"
+'use client'
 
-import React, { useEffect, useContext, useState, useRef } from 'react';
+import React, { useEffect, useContext, useState, useRef, Fragment } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
@@ -38,15 +38,16 @@ import { toast } from 'sonner';
 import { cn, sleep } from '@/lib/utils';
 import Image from 'next/image';
 import { useActions, useAIState, useUIState } from 'ai/rsc';
-import { Adset, AdsetTargeting } from '@/lib/types';
+import { Adset, AdsetTargeting, AdText } from '@/lib/types';
 import FormBuilder from '@/components/form-builder';
 import GeographicalLocation from '@/components/geographical-location';
 import { Switch } from '@/components/ui/switch';
+import { useParams } from 'next/navigation';
+import { updateAdText, updateAdTextWithFbId } from '@/app/actions';
+import { readStreamableValue } from 'ai/rsc';
+import { generateAdTemplate, generateAdsetTemplate, targetPositions } from '@/lib/data';
 import { type AI } from '@/lib/chat/actions';
 
-// Ensure targetPositions is imported from its original data source with all available options
-// Here we assume it is imported from '@/lib/data'
-import { targetPositions } from '@/lib/data';
 
 interface CampaignConfig {
   type: string;
@@ -83,15 +84,6 @@ interface AdsetData {
   created_time?: string;
 }
 
-interface AdText {
-  headline: string;
-  text: string;
-  image: string;
-  fbAdId?: string;
-  date?: string;
-  id?: string;
-}
-
 const specialCategories = [
   { value: 'NONE', label: 'None' },
   { value: 'RECRUITING', label: 'Recruiting Campaigns' },
@@ -116,7 +108,6 @@ const defaultConfig: CampaignConfig = {
   }
 };
 
-// Preview component for Facebook and Instagram Ads
 const SocialPreview = ({
   platform,
   image,
@@ -156,7 +147,7 @@ const SocialPreview = ({
             priority
           />
         ) : (
-          <div className="bg-zinc-300 dark:bg-zinc-700 w-full h-full" />
+          <div className="bg-zinc-300 dark:bg-zinc-700 size-full" />
         )}
       </div>
       
@@ -273,7 +264,7 @@ function AdTextItem({
         {!hasFbAd && (
           <div className="flex justify-end gap-3 mt-6">
             {isEditing ? (
-              <>
+              <Fragment>
                 <button
                   onClick={() => {
                     setIsEditing(false)
@@ -308,9 +299,9 @@ function AdTextItem({
                   )}
                   Save Changes
                 </button>
-              </>
+              </Fragment>
             ) : (
-              <>
+              <Fragment>
                 <button
                   onClick={() => setIsEditing(true)}
                   className={cn(
@@ -341,7 +332,7 @@ function AdTextItem({
                   )}
                   Accept
                 </button>
-              </>
+              </Fragment>
             )}
           </div>
         )}
@@ -378,7 +369,7 @@ export function PlacementTargetingResult({
         const message = "Perfect! Now that we have set up where your ads will be shown, let's add your creative assets. 🎨 Could you please upload the images or videos you'd like to use for your ad? I can help you optimize them for the best performance across these placements."
 
         const responseMessage = await submitUserMessage(message, [], true)
-        setMessages((currentMessages:any) => [...currentMessages, responseMessage])
+        setMessages((currentMessages: any[]) => [...currentMessages, responseMessage])
       }
     }
 
@@ -477,20 +468,16 @@ export function PlacementTargeting({
         checked={selectedPositions.includes(target.value)}
         onCheckedChange={checked => {
           if (checked) {
-            // add position
             setSelectedPositions(prev => {
               let newPositions = [...prev, target.value]
-              // ensure parent is included if exists
               if (target.parent && !newPositions.includes(target.parent)) {
                 newPositions.push(target.parent)
               }
               return newPositions
             })
           } else {
-            // remove position and children if parent
             setSelectedPositions(prev => {
               let newPositions = prev.filter(p => p !== target.value)
-              // If unchecking parent, remove children too
               if (!target.parent) {
                 const children = targetPositions.filter(tp => tp.parent === target.value).map(tp => tp.value)
                 newPositions = newPositions.filter(pos => !children.includes(pos))
@@ -509,7 +496,6 @@ export function PlacementTargeting({
     if (!adset) return
     setIsSubmitting(true)
     
-    // derive facebook and instagram positions from selectedPositions
     const fbPositions = targetPositions
       .filter(tp => tp.platform === 'facebook' && selectedPositions.includes(tp.value))
       .map(tp => tp.value)
@@ -527,9 +513,8 @@ export function PlacementTargeting({
     const response = await confirmUpdateAdset(toolCallId, adset.id, {
       targeting: newTargeting
     }, 'placement')
-    setMessages((currentMessages: any) => [...currentMessages, response.newMessage])
+    setMessages((currentMessages: any[]) => [...currentMessages, response.newMessage])
 
-    // Assuming response.response is a direct updatedAdset and not a stream
     const updatedAdset = await response.response
     if (updatedAdset) {
       const messages = aiState.messages;
@@ -566,7 +551,6 @@ export function PlacementTargeting({
       }
     }
 
-    // Trigger the callback to update the CampaignPreviewPanel and show toast
     onPlacementUpdate({
       facebook_positions: newTargeting.facebook_positions || [],
       instagram_positions: newTargeting.instagram_positions || []
@@ -593,7 +577,6 @@ export function PlacementTargeting({
             </CardHeader>
             <CardContent className="space-y-6">              
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Facebook Section */}
                 <Card className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
                   <CardHeader className="pb-3">
                     <div className="flex items-center gap-2">
@@ -608,7 +591,6 @@ export function PlacementTargeting({
                   </CardContent>
                 </Card>
 
-                {/* Instagram Section */}
                 <Card className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
                   <CardHeader className="pb-3">
                     <div className="flex items-center gap-2">
@@ -659,9 +641,9 @@ export function CampaignPreviewPanel({
   config?: CampaignConfig;
   onConfigUpdate: (config: Partial<CampaignConfig>) => void;
 }) {
+  const { id: chatSlug } = useParams();
   const [expanded, setExpanded] = useState(true);
-  
-  const [activeSlide, setActiveSlide] = useState(1); // 1 = Campaign, 2 = Ad Set, 3 = Creative & Lead Form
+  const [activeSlide, setActiveSlide] = useState(1);
 
   const safeConfig = { ...defaultConfig, ...config };
 
@@ -693,7 +675,20 @@ export function CampaignPreviewPanel({
   const [specialAdCategory, setSpecialAdCategory] = useState('NONE');
   const [abTestEnabled, setAbTestEnabled] = useState(false);
 
-  const { confirmCreateAd } = useActions();
+  const { confirmCreateAd, submitUserMessage } = useActions();
+  const [aiState, setAIState] = useAIState()
+  const [_, setMessages] = useUIState<typeof AI>()
+
+  const handlePlacementUpdate = (placementData: { facebook_positions: string[], instagram_positions: string[] }) => {
+    onConfigUpdate({
+      placements: {
+        facebook: placementData.facebook_positions || [],
+        instagram: placementData.instagram_positions || []
+      }
+    });
+    toast.success('Placement targeting updated successfully!');
+    setShowPlacementModal(false);
+  };
 
   useEffect(() => {
     if (!userInfo) return;
@@ -747,7 +742,6 @@ export function CampaignPreviewPanel({
 
   const handleCreateAdset = async () => {
     if (!campaign?.id) return;
-    
     setCreatingAdset(true);
     try {
       const response = await fetch('/api/fasty-bot/create-adset', {
@@ -804,17 +798,137 @@ export function CampaignPreviewPanel({
     toast.success('Targeting updated successfully!');
   };
 
-  const handlePlacementUpdate = (placementData: { facebook_positions: string[], instagram_positions: string[] }) => {
-    onConfigUpdate({
-      placements: {
-        facebook: placementData.facebook_positions || [],
-        instagram: placementData.instagram_positions || []
+  async function handleImageUpload(file: File) {
+    try {
+      setUploading(true);
+      setLoadingAdText(true);
+
+      const formData = new FormData();
+      const campaignId = campaign?.id || chatSlug; 
+      formData.append('id', campaignId as string);
+      formData.append('type', "image");
+      formData.append('files', file);
+
+      const uploadRes = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      });
+
+      const uploadData = await uploadRes.json();
+      
+      if (!uploadRes.ok) {
+        toast.error('Failed to upload the image. Please try again.');
+        setUploading(false);
+        setLoadingAdText(false);
+        return;
       }
-    });
-    // Show success message and close modal
-    toast.success('Placement targeting updated successfully!');
-    setShowPlacementModal(false);
-  };
+
+      const imageUrl = uploadData.urls[0];
+
+      const message = `I have an image that I'd like to use for my ad: ${imageUrl}. Please generate a few variations of ad text and headlines that would pair well with this image. I need a couple of different versions.`;
+      const responseMessage = await submitUserMessage(message, [], true);
+      setMessages((currentMessages: any[]) => [...currentMessages, responseMessage]);
+
+      await sleep(2000);
+      
+      const updatedMessages = aiState.messages;
+      const aiLastMessage = updatedMessages[updatedMessages.length - 1];
+      const aiText = aiLastMessage?.content || "";
+      const versions = aiText.toString().split('Version').slice(1);
+
+      let suggestedTexts: AdText[] = [];
+
+      versions.forEach((ver: string, idx: number) => {
+        const segments = ver.split('"');
+        const headline = segments[1] || 'Your Ad Headline';
+        const text = segments[3] || 'Your ad text goes here.';
+        
+        suggestedTexts.push({
+          id: Date.now() + idx,
+          headline,
+          text,
+          image: imageUrl,
+          date: new Date().toISOString(),
+          fbAdId: undefined
+        });
+      });
+
+      if (suggestedTexts.length === 0) {
+        suggestedTexts = [{
+          id: Date.now(),
+          headline: 'Your Headline Here',
+          text: 'Your ad text here, describing the product or service shown in the image.',
+          image: imageUrl,
+          date: new Date().toISOString(),
+          fbAdId: undefined
+        }];
+      }
+
+      setAdTexts(prev => [...prev, ...suggestedTexts]);
+      onConfigUpdate({ 
+        images: [...safeConfig.images, imageUrl], 
+        adText: suggestedTexts[0].text 
+      });
+
+      setUploading(false);
+      setLoadingAdText(false);
+      toast.success('Image uploaded and ad text generated!');
+
+    } catch (error) {
+      console.error('Error uploading image and generating ad text:', error);
+      toast.error('Failed to upload image or generate ad text');
+      setUploading(false);
+      setLoadingAdText(false);
+    }
+  }
+
+  const acceptText = async (idx: number, adText: AdText) => {
+    if (!campaign || !adset) {
+      toast.error('Please ensure campaign and ad set are created before accepting text.');
+      return;
+    }
+
+    const response = await confirmCreateAd(
+      campaign,
+      generateAdTemplate(
+        adText.headline,
+        adText.text,
+        adText.image
+      ),
+      generateAdsetTemplate()
+    )
+    setMessages((currentMessages: any[]) => [...currentMessages, response.newMessage])
+
+    for await (const fbAdId of readStreamableValue(response.fbAdIdStream)) {
+      await updateAdTextWithFbId(chatSlug as string, idx, adText.id, fbAdId as string)
+      setAdTexts(
+        adTexts.map((a: AdText, index: number) => {
+          if (index === idx) return {
+            ...a,
+            fbAdId: fbAdId as string
+          }
+          return a
+        })
+      )
+      const aiMessage = await submitUserMessage(
+        "Great! Now that your ad creative is set up, let's create a lead form to collect information from potential customers. Would you like me to guide you through setting up the form? 📝",
+        [],
+        true
+      )
+      setMessages((currentMessages: any[]) => [...currentMessages, aiMessage])
+    }
+  }
+
+  const handleUpdateAdText = async (idx: number, oldAdText: AdText, newAdText: AdText) => {
+    setAdTexts(
+      adTexts.map((a: AdText, index: number) => {
+        if (index === idx) return newAdText
+        return a
+      })
+    )
+    await updateAdText(chatSlug as string, idx, oldAdText.id, newAdText)
+    onConfigUpdate({ adText: newAdText.text });
+  }
 
   return (
     <div className="fixed right-4 top-20 w-96 z-50 transition-all duration-300 ease-in-out">
@@ -835,7 +949,6 @@ export function CampaignPreviewPanel({
         {expanded && (
           <CardContent className="space-y-6">
 
-            {/* Slide Navigation */}
             <div className="flex items-center justify-center gap-2 mb-4">
               <Button 
                 variant={activeSlide === 1 ? "default" : "outline"}
@@ -860,7 +973,7 @@ export function CampaignPreviewPanel({
             </div>
 
             {activeSlide === 1 && (
-              <>
+              <Fragment>
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
@@ -927,7 +1040,6 @@ export function CampaignPreviewPanel({
                   </p>
                 </div>
 
-                {/* Special Ad Category */}
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">
                     Special Ad Category
@@ -949,7 +1061,6 @@ export function CampaignPreviewPanel({
                   </Select>
                 </div>
 
-                {/* A/B Test Toggle */}
                 <div className="flex items-center space-x-2">
                   <Checkbox
                     id="abTest"
@@ -960,11 +1071,11 @@ export function CampaignPreviewPanel({
                     Enable A/B Testing
                   </Label>
                 </div>
-              </>
+              </Fragment>
             )}
 
             {activeSlide === 2 && (
-              <>
+              <Fragment>
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
@@ -973,7 +1084,7 @@ export function CampaignPreviewPanel({
                     </div>
                   </div>
                   {campaign ? (
-                    <>
+                    <Fragment>
                       <Select
                         value={adset?.id}
                         onValueChange={(value) => {
@@ -1012,13 +1123,12 @@ export function CampaignPreviewPanel({
                         )}
                         Create New Ad Set
                       </Button>
-                    </>
+                    </Fragment>
                   ) : (
                     <p className="text-muted-foreground text-sm">Please select a campaign first</p>
                   )}
                 </div>
 
-                {/* Targeting */}
                 <div className="space-y-2 mt-4">
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
@@ -1045,7 +1155,6 @@ export function CampaignPreviewPanel({
                   </div>
                 </div>
 
-                {/* Placement Targeting */}
                 <div className="space-y-2 mt-4">
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
@@ -1066,11 +1175,11 @@ export function CampaignPreviewPanel({
                       : 'No placements selected'}
                   </p>
                 </div>
-              </>
+              </Fragment>
             )}
 
             {activeSlide === 3 && (
-              <>
+              <Fragment>
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
@@ -1105,7 +1214,6 @@ export function CampaignPreviewPanel({
                   </div>
                 </div>
 
-                {/* Lead Form */}
                 <div className="space-y-2 mt-4">
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
@@ -1123,22 +1231,19 @@ export function CampaignPreviewPanel({
                     Configure the lead form to capture user information.
                   </p>
                 </div>
-              </>
-            )}
 
-            {activeSlide === 3 && (
-              <Button 
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white mt-4"
-                disabled={!campaign || !adset}
-              >
-                <Check className="size-4 mr-2" /> Launch Campaign
-              </Button>
+                <Button 
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white mt-4"
+                  disabled={!campaign || !adset}
+                >
+                  <Check className="size-4 mr-2" /> Launch Campaign
+                </Button>
+              </Fragment>
             )}
           </CardContent>
         )}
       </Card>
 
-      {/* Budget Modal */}
       <Dialog open={showBudgetModal} onOpenChange={setShowBudgetModal}>
         <DialogContent className="bg-background text-foreground border-border max-w-sm">
           <DialogHeader>
@@ -1187,7 +1292,6 @@ export function CampaignPreviewPanel({
         </DialogContent>
       </Dialog>
 
-      {/* Targeting Modal */}
       <Dialog open={showTargetingModal} onOpenChange={setShowTargetingModal}>
         <DialogContent className="bg-background text-foreground border-border max-w-2xl max-h-[90vh] overflow-auto">
           <DialogHeader>
@@ -1209,7 +1313,6 @@ export function CampaignPreviewPanel({
         </DialogContent>
       </Dialog>
 
-      {/* Creative Modal */}
       <Dialog open={showCreativeModal} onOpenChange={setShowCreativeModal}>
         <DialogContent className="bg-background text-foreground border-border max-w-4xl">
           <DialogHeader>
@@ -1234,14 +1337,97 @@ export function CampaignPreviewPanel({
                 Upload Image
               </Button>
               <input
-                ref={imageInputRef}
-                style={{ display: 'none' }}
-                type="file"
-                accept="image/png, image/jpeg"
-                onChange={() => {
-                  toast.info('Image upload logic goes here.');
-                }}
-              />
+  ref={imageInputRef}
+  style={{ display: 'none' }}
+  type="file"
+  accept="image/png, image/jpeg"
+  onChange={async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    setLoadingAdText(true);
+
+    try {
+      const formData = new FormData();
+      const campaignId = campaign?.id || chatSlug;
+      formData.append('id', campaignId as string);
+      formData.append('type', 'image');
+      formData.append('files', file);
+
+      // Upload image
+      const uploadRes = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      const uploadData = await uploadRes.json();
+
+      if (!uploadRes.ok || !uploadData.urls?.[0]) {
+        toast.error('Failed to upload the image. Please try again.');
+        setUploading(false);
+        setLoadingAdText(false);
+        return;
+      }
+
+      const imageUrl = uploadData.urls[0];
+
+      // Generate ad text using AI
+      const message = `I have an image that I'd like to use for my ad: ${imageUrl}. Please generate a few variations of ad text and headlines that would pair well with this image.`;
+      const responseMessage = await submitUserMessage(message, [], true);
+      setMessages((currentMessages: any[]) => [...currentMessages, responseMessage]);
+
+      // Simulate AI response
+      await sleep(2000);
+
+      const updatedMessages = aiState.messages;
+      const aiLastMessage = updatedMessages[updatedMessages.length - 1];
+      const aiText = aiLastMessage?.content?.toString() || '';
+      const versions = aiText.split('Version').slice(1);
+
+      const generatedAdTexts = versions.map((ver: string, idx: number) => {
+  const segments = ver.split('"');
+  const headline = segments[1] || 'Your Ad Headline';
+  const text = segments[3] || 'Your ad text goes here.';
+  return {
+    id: Date.now() + idx,
+    headline,
+    text,
+    image: imageUrl,
+    date: new Date().toISOString(),
+    fbAdId: undefined,
+  };
+});
+
+
+      if (generatedAdTexts.length === 0) {
+        generatedAdTexts.push({
+          id: Date.now(),
+          headline: 'Your Headline Here',
+          text: 'Your ad text here, describing the product or service shown in the image.',
+          image: imageUrl,
+          date: new Date().toISOString(),
+          fbAdId: undefined,
+        });
+      }
+
+      setAdTexts((prev) => [...prev, ...generatedAdTexts]);
+      onConfigUpdate({
+        images: [...safeConfig.images, imageUrl],
+        adText: generatedAdTexts[0].text,
+      });
+
+      setUploading(false);
+      setLoadingAdText(false);
+      toast.success('Image uploaded and ad text generated!');
+    } catch (error) {
+      console.error('Error uploading image and generating ad text:', error);
+      toast.error('Failed to upload image or generate ad text');
+      setUploading(false);
+      setLoadingAdText(false);
+    }
+  }}
+/>
+
 
               {loadingAdText && (
                 <div className="flex items-center justify-center p-4 text-muted-foreground space-x-2">
@@ -1250,25 +1436,46 @@ export function CampaignPreviewPanel({
                 </div>
               )}
 
-              {adTexts.length > 0 && (
-                <div className="space-y-6">
-                  {adTexts.map((adText, index) => (
-                    <AdTextItem
-                      key={`${adText.date}-${index}`}
-                      index={index}
-                      adText={adText}
-                      updateText={(idx, oldText, newText) => {
-                        setAdTexts(prev => 
-                          prev.map((text, i) => 
-                            i === idx ? newText : text
-                          )
-                        );
-                        onConfigUpdate({ adText: newText.text });
-                      }}
-                    />
-                  ))}
-                </div>
-              )}
+{adTexts.length > 0 && (
+  <div className="space-y-6">
+    {adTexts.map((adText, index) => (
+      <AdTextItem
+        key={`${adText.id}-${index}`}
+        index={index}
+        adText={adText}
+        acceptText={async (idx, text) => {
+          if (!campaign || !adset) {
+            toast.error('Please create a campaign and adset first.');
+            return;
+          }
+
+          const response = await confirmCreateAd(
+            campaign,
+            generateAdTemplate(text.headline, text.text, text.image),
+            generateAdsetTemplate()
+          );
+          setMessages((prev) => [...prev, response.newMessage]);
+
+          for await (const fbAdId of readStreamableValue(response.fbAdIdStream)) {
+            await updateAdTextWithFbId(chatSlug as string, idx, text.id, fbAdId as string);
+            setAdTexts((prev) =>
+              prev.map((a, i) => (i === idx ? { ...a, fbAdId: fbAdId as string } : a))
+            );
+            toast.success('Ad text added to your campaign successfully!');
+          }
+        }}
+        updateText={async (idx, oldText, newText) => {
+          setAdTexts((prev) =>
+            prev.map((a, i) => (i === idx ? newText : a))
+          );
+          await updateAdText(chatSlug as string, idx, oldText.id, newText);
+          onConfigUpdate({ adText: newText.text });
+        }}
+      />
+    ))}
+  </div>
+)}
+
             </div>
 
             <Button 
@@ -1289,7 +1496,6 @@ export function CampaignPreviewPanel({
         </DialogContent>
       </Dialog>
 
-      {/* Preview Modal */}
       <Dialog open={showPreviewModal} onOpenChange={setShowPreviewModal}>
         <DialogContent className="bg-background text-foreground border-border max-w-4xl">
           <DialogHeader>
@@ -1324,7 +1530,6 @@ export function CampaignPreviewPanel({
         </DialogContent>
       </Dialog>
 
-      {/* Placement Modal */}
       <Dialog open={showPlacementModal} onOpenChange={setShowPlacementModal}>
         <DialogContent className="bg-background text-foreground border-border max-w-4xl">
           <DialogHeader>
@@ -1336,7 +1541,7 @@ export function CampaignPreviewPanel({
           <div className="mt-4">
             <PlacementTargeting 
               toolCallId={'toolCallId-placement'}
-              onPlacementUpdate={handlePlacementUpdate} 
+              onPlacementUpdate={handlePlacementUpdate}
             />
           </div>
           <DialogClose asChild>
@@ -1347,7 +1552,6 @@ export function CampaignPreviewPanel({
         </DialogContent>
       </Dialog>
 
-      {/* Lead Form Modal */}
       <Dialog open={showLeadFormModal} onOpenChange={setShowLeadFormModal}>
         <DialogContent className="bg-background text-foreground border-border max-w-4xl">
           <DialogHeader>
