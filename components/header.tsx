@@ -20,7 +20,9 @@ import {type User} from '@/lib/types';
 import FacebookConnect from '@/components/facebook-connect';
 import FacebookAccountSettings from '@/components/facebook-account-settings';
 import {isFeatureToggleEnabled} from "@/lib/helpers/feature-toggle/feature-toggle-manager";
-import ProfileSettings from "@/components/profile-settings"
+import ProfileSettings from "@/components/profile-settings";
+import { Monitor } from 'lucide-react';
+
 async function UserOrLogin() {
   const session = (await auth()) as Session;
 
@@ -70,6 +72,13 @@ async function UserOrLogin() {
               </Link>
               <Link href="/ai-content" className={cn(buttonVariants({ variant: 'ghost' }), "ml-8")}>
                 AI Content
+              </Link>
+              <Link 
+                href="/ai-copilot" 
+                className={cn(buttonVariants({ variant: 'ghost' }), "ml-8")}
+              >
+                <Monitor className="mr-2 size-4" />
+                AI Copilot
               </Link>
               <ProfileSettings
                 userDetails={userDetails}

@@ -150,10 +150,13 @@ const CampaignAutomation: React.FC<CampaignAutomationProps> = ({
               ageRange: { min: 25, max: 45 },
               interests: ['Online advertising', 'Digital marketing']
             },
-            placements: ['Facebook Feed', 'Facebook Story', 'Facebook Reels', 'Instagram Feed', 'Instagram Stories', 'Instagram Explore', 'Instagram Reels']
+            placements: {
+              facebook: ['Facebook Feed', 'Facebook Story', 'Facebook Reels'],
+              instagram: ['Instagram Feed', 'Instagram Stories', 'Instagram Explore', 'Instagram Reels']
+            }
           });
 
-          // Create ad with uploaded image
+          // Automatically create ad with uploaded image
           const adTemplate = generateAdTemplate(
             `${initialObjective.split(' ').slice(0, 3).join(' ')}`,
             `Discover ${initialObjective}. Connect with us today to learn more about opportunities in ${initialLocation}.`,
@@ -177,7 +180,7 @@ const CampaignAutomation: React.FC<CampaignAutomationProps> = ({
               adText: `Discover ${initialObjective}. Connect with us today!`
             });
 
-            // Create lead form
+            // Automatically create lead form
             const leadFormPayload = {
               page_id: "119021011189054",
               name: `Lead Form ${Date.now()}`,
@@ -213,6 +216,15 @@ const CampaignAutomation: React.FC<CampaignAutomationProps> = ({
               setAutomationStatus('complete');
               toast.success('Campaign setup completed successfully!');
               setAutomationComplete(true);
+
+              // Final preview update
+              dispatchConfigUpdate({
+                status: 'complete',
+                leadForm: {
+                  created: true,
+                  fields: ['Full Name', 'Email', 'Phone']
+                }
+              });
             }
           }
         } else {

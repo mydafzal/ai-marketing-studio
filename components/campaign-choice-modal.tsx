@@ -138,13 +138,15 @@ export function CampaignChoiceModal({ isOpen, onClose }: CampaignChoiceModalProp
       await saveChat(chat);
       console.log('Chat saved successfully:', chat);
 
-      // 5. Set up automation config
-      setAutomationConfig({
-        objective,
-        location,
-        imageUrl
-      });
-      setShowAutomation(true);
+            // 5. Set up automation config
+            setAutomationConfig({
+              objective,
+              location,
+              imageUrl
+            });
+            setShowAutomation(true);
+      
+      
 
       // 6. Wait for automation to initialize
       await new Promise(resolve => setTimeout(resolve, 1000));
