@@ -35,6 +35,7 @@ import { SidebarDesktop } from '@/components/sidebar-desktop'
 import { Subscription } from '@/components/subscription/subscription'
 import Stripe from 'stripe'
 import { InvoiceItem } from '@/components/subscription/payment-history'
+import CancelSubscriptionDialog from '@/components/CancelSubscriptionDialog'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '')
 
@@ -56,6 +57,15 @@ const fetchInvoices = async (
       amount: i.amount_due
     }
   })
+}
+
+const handleCancelSubscription = async () => {
+  'use server'
+  const userDetail = await getUserDetail()
+  const user = userDetail.user
+  if (user && user.sub_id) {
+    await stripe.subscriptions.cancel(user.sub_id)
+  }
 }
 
 const unixTimeStampToDateTime = (unixTimeStamp: number) => {
@@ -81,7 +91,11 @@ export default async function IndexPage() {
   return (
     <div className="relative flex h-[calc(100vh_-_theme(spacing.16))] overflow-hidden">
       <SidebarDesktop />
-      <Subscription user={user} invoices={invoices} />
+      <Subscription
+        user={user}
+        invoices={invoices}
+        handleCancelSubscription={handleCancelSubscription}
+      />
     </div>
   )
 }

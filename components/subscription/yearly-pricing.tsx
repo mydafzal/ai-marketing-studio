@@ -3,6 +3,10 @@
 'use client'
 import { useState } from 'react'
 
+export interface YearlyPricingProps {
+  currentPlanTag: string
+}
+
 const yearlyBasicPlanLookupKey =
   process.env.NEXT_PUBLIC_STRIPE_YEARLY_BASIC_PLAN_LOOKUP_KEY || ''
 const yearlyProPlanLookupKey =
@@ -17,7 +21,7 @@ const BadgeIcon = () => (
   </span>
 )
 
-export function YearlyPricing() {
+export function YearlyPricing({ currentPlanTag }: YearlyPricingProps) {
   return (
     <div className="mt-10  p-6">
       <p className="text-black-600 font-medium flex items-center justify-center text-center">
@@ -52,9 +56,11 @@ export function YearlyPricing() {
                   </div>
 
                   {/* Text on the right */}
-                  <div className="bg-purple-600 text-white px-4 py-1 text-xs font-medium rounded-full">
-                    Current Plan
-                  </div>
+                  {currentPlanTag === 'year_basic' && (
+                    <div className="bg-purple-600 text-white px-4 py-1 text-xs font-medium rounded-full">
+                      Current Plan
+                    </div>
+                  )}
                 </div>
               </div>
               <h3 className="ml-2 mb-4 font-bold text-purple-600 text-[18px]">
@@ -62,7 +68,7 @@ export function YearlyPricing() {
               </h3>
 
               <p className="text-4xl font-bold">€1,069</p>
-              <p className="text-gray-500 text-sm">/ Month</p>
+              <p className="text-gray-500 text-sm">/ Year</p>
               <hr className="my-4" />
               <p className="font-medium mb-4">Basic Plan Supports:</p>
               <ul className="text-sm space-y-2 grow">
@@ -76,21 +82,33 @@ export function YearlyPricing() {
                   €600 monthly ad budget
                 </li>
               </ul>
-              <form action="/api/stripe/create-checkout-session" method="POST">
-                {/* Add a hidden field with the lookup_key of your Price */}
-                <input
-                  type="hidden"
-                  name="lookup_key"
-                  value={yearlyBasicPlanLookupKey}
-                />
+              {currentPlanTag === 'year_basic' ? (
                 <button
                   className="mt-6 w-full bg-purple-100 text-purple-600 py-2 rounded-lg font-medium"
                   id="basic-plan-button"
-                  type="submit"
                 >
                   Current Plan
                 </button>
-              </form>
+              ) : (
+                <form
+                  action="/api/stripe/create-checkout-session"
+                  method="POST"
+                >
+                  {/* Add a hidden field with the lookup_key of your Price */}
+                  <input
+                    type="hidden"
+                    name="lookup_key"
+                    value={yearlyBasicPlanLookupKey}
+                  />
+                  <button
+                    className="mt-6 w-full bg-purple-100 text-purple-600 py-2 rounded-lg font-medium"
+                    id="basic-plan-button"
+                    type="submit"
+                  >
+                    Buy Basic Plan
+                  </button>
+                </form>
+              )}
             </div>
 
             {/* Pro Plan */}
@@ -101,13 +119,20 @@ export function YearlyPricing() {
                   <div className="bg-purple-100 text-purple-600 rounded-full p-2">
                     <img src="/pro.png" alt="basic" />
                   </div>
+
+                  {/* Text on the right */}
+                  {currentPlanTag === 'year_pro' && (
+                    <div className="bg-purple-600 text-white px-4 py-1 text-xs font-medium rounded-full">
+                      Current Plan
+                    </div>
+                  )}
                 </div>
               </div>
               <h3 className="ml-2 mb-4 font-bold text-purple-600 text-[18px]">
                 Pro
               </h3>
               <p className="text-4xl font-bold">€3,229</p>
-              <p className="text-gray-500 text-sm">/ Month</p>
+              <p className="text-gray-500 text-sm">/ Year</p>
               <hr className="my-4" />
               <p className="font-medium mb-4">
                 Includes everything in the Basic Plan plus:
@@ -134,21 +159,33 @@ export function YearlyPricing() {
                   Future access to UGC Video AI content
                 </li>
               </ul>
-              <form action="/api/stripe/create-checkout-session" method="POST">
-                {/* Add a hidden field with the lookup_key of your Price */}
-                <input
-                  type="hidden"
-                  name="lookup_key"
-                  value={yearlyProPlanLookupKey}
-                />
+              {currentPlanTag === 'year_pro' ? (
                 <button
                   className="mt-6 w-full bg-purple-600 text-white py-2 rounded-lg font-medium"
                   id="pro-plan-button"
-                  type="submit"
                 >
-                  Buy Pro Plan
+                  Current Plan
                 </button>
-              </form>
+              ) : (
+                <form
+                  action="/api/stripe/create-checkout-session"
+                  method="POST"
+                >
+                  {/* Add a hidden field with the lookup_key of your Price */}
+                  <input
+                    type="hidden"
+                    name="lookup_key"
+                    value={yearlyProPlanLookupKey}
+                  />
+                  <button
+                    className="mt-6 w-full bg-purple-600 text-white py-2 rounded-lg font-medium"
+                    id="pro-plan-button"
+                    type="submit"
+                  >
+                    Buy Pro Plan
+                  </button>
+                </form>
+              )}
             </div>
 
             {/* Agency Plan */}
@@ -160,13 +197,20 @@ export function YearlyPricing() {
                     <img src="/agency.png" alt="basic" />
                   </div>
                 </div>
+
+                {/* Text on the right */}
+                {currentPlanTag === 'year_agency' && (
+                  <div className="bg-purple-600 text-white px-4 py-1 text-xs font-medium rounded-full">
+                    Current Plan
+                  </div>
+                )}
               </div>
               <h3 className="ml-2 mb-4 font-bold text-purple-600 text-[18px]">
                 Agency
               </h3>
 
               <p className="text-4xl font-bold">€6,469</p>
-              <p className="text-gray-500 text-sm">/ Month</p>
+              <p className="text-gray-500 text-sm">/ Year</p>
               <hr className="my-4" />
               <p className="font-medium mb-4">
                 Includes all Pro Plan features, plus:
@@ -189,21 +233,33 @@ export function YearlyPricing() {
                   White-labeled AI analytics reports
                 </li>
               </ul>
-              <form action="/api/stripe/create-checkout-session" method="POST">
-                {/* Add a hidden field with the lookup_key of your Price */}
-                <input
-                  type="hidden"
-                  name="lookup_key"
-                  value={yearlyAgencyPlanLookupKey}
-                />
+              {currentPlanTag === 'year_agency' ? (
                 <button
                   className="mt-6 w-full border-2 border-purple-600 text-purple-600 py-2 rounded-lg font-medium"
                   id="agency-plan-button"
-                  type="submit"
                 >
-                  Buy Agency Plan
+                  Current Plan
                 </button>
-              </form>
+              ) : (
+                <form
+                  action="/api/stripe/create-checkout-session"
+                  method="POST"
+                >
+                  {/* Add a hidden field with the lookup_key of your Price */}
+                  <input
+                    type="hidden"
+                    name="lookup_key"
+                    value={yearlyAgencyPlanLookupKey}
+                  />
+                  <button
+                    className="mt-6 w-full border-2 border-purple-600 text-purple-600 py-2 rounded-lg font-medium"
+                    id="agency-plan-button"
+                    type="submit"
+                  >
+                    Buy Agency Plan
+                  </button>
+                </form>
+              )}
             </div>
           </div>
         </div>

@@ -26,31 +26,6 @@ export function PaymentHistory({ invoices }: PaymentHistoryProps) {
                 </tr>
               </thead>
               <tbody>
-                {/* <tr className="border-t border-gray-200">
-                  <td className="py-3 px-4">15/10/2024</td>
-                  <td className="py-3 px-4 text-green-600 underline cursor-pointer">
-                    TYGGH-98HHS
-                  </td>
-                  <td className="py-3 px-4">€99.00</td>
-                  <td className="py-3 px-4 text-gray-500">
-                    <button className="p-2 bg-gray-100 rounded hover:bg-gray-200">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        strokeWidth="2"
-                        stroke="currentColor"
-                        className="w-5 h-5"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M7 10l5 5m0 0l5-5m-5 5V3"
-                        />
-                      </svg>
-                    </button>
-                  </td>
-                </tr> */}
                 {invoices.map((invoice, index) => (
                   <tr
                     key={index}
@@ -63,7 +38,9 @@ export function PaymentHistory({ invoices }: PaymentHistoryProps) {
                     <td className="py-3 px-4 text-green-600 underline cursor-pointer">
                       {invoice.invoiceNumber}
                     </td>
-                    <td className="py-3 px-4">€{invoice.amount.toFixed(2)}</td>
+                    <td className="py-3 px-4">
+                      €{(invoice.amount / 100).toFixed(2)}
+                    </td>
                     <td className="py-3 px-4 text-gray-500">
                       <button className="p-2 bg-gray-100 rounded hover:bg-gray-200">
                         <svg

@@ -63,6 +63,7 @@ export interface User extends Record<string, any> {
   sub_product_id?: string
   sub_interval_count?: string
   sub_stripe_customer_id?: string
+  sub_id?: string
 }
 
 export interface Campaign extends Record<string, any> {

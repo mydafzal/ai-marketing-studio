@@ -1,6 +1,6 @@
 import Stripe from 'stripe'
 import { Mutex } from 'async-mutex'
-import { updateSubscriptionDetails } from './actions'
+import { deleteSubscriptionDetails, updateSubscriptionDetails } from './actions'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '')
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET || ''
@@ -17,10 +17,6 @@ const fetchStripeProduct = async productId => {
   return product
 }
 
-// const persistSubscription = async subscription => {
-//   console.log('persist subscription')
-// }
-
 const persistSubscription = async subscription => {
   await subscriptionMutex.runExclusive(async () => {
     const stripeCustomer = await fetchStripeCustomer(subscription.customer)
@@ -28,8 +24,8 @@ const persistSubscription = async subscription => {
 
     const subscriptionPayload = {
       sub_email: stripeCustomer.email,
-      sub_trial_start: unixTimeStampToDateTime(subscription.trial_start),
-      sub_trial_end: unixTimeStampToDateTime(subscription.trial_end),
+      //sub_trial_start: unixTimeStampToDateTime(subscription.trial_start),
+      //sub_trial_end: unixTimeStampToDateTime(subscription.trial_end),
       sub_status: subscription.status,
       sub_current_period_start: unixTimeStampToDateTime(
         subscription.current_period_start
@@ -41,8 +37,11 @@ const persistSubscription = async subscription => {
       sub_interval: subscription.plan.interval,
       sub_product_id: subscription.plan.product,
       sub_interval_count: subscription.plan.interval_count,
-      sub_customer_id: subscription.customer
+      sub_stripe_customer_id: subscription.customer,
+      sub_id: subscription.id
     }
+
+    // console.log('Pesisting: ', subscriptionPayload)
 
     // Create or update subscription in Supabase
     await updateSubscriptionDetails(subscriptionPayload)
@@ -52,6 +51,13 @@ const persistSubscription = async subscription => {
 const unixTimeStampToDateTime = unixTimeStamp => {
   // convert timestamp to milliseconds and construct Date object
   return unixTimeStamp ? new Date(unixTimeStamp * 1000) : null
+}
+
+const deleteSubscription = async subscription => {
+  const stripeCustomer = await fetchStripeCustomer(subscription.customer)
+  const email = stripeCustomer.email
+  // remove subscription properties from user
+  await deleteSubscriptionDetails(email)
 }
 
 export async function POST(req) {
@@ -97,14 +103,19 @@ export async function POST(req) {
 }
 
 const handleTrialWillEnd = async event => {}
-const handleSubscriptionDeleted = async event => {}
+
+const handleSubscriptionDeleted = async event => {
+  // console.log(`Subsription deleted.`, subscription)
+  const subscription = event.data.object
+  deleteSubscription(subscription)
+}
 const handleSubscriptionCreated = async event => {
-  console.log('in subscription creaated', event.data.object)
+  // console.log('in subscription creaated', event.data.object)
   const subscription = event.data.object
   persistSubscription(subscription)
 }
 const handleSubscriptionUpdated = async event => {
-  console.log('in subscription updated', event.data.object)
+  // console.log('in subscription updated', event.data.object)
   const subscription = event.data.object
   persistSubscription(subscription)
 }

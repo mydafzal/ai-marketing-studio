@@ -2,6 +2,10 @@
 'use client'
 import { useState } from 'react'
 
+export interface MonthlyPricingProps {
+  currentPlanTag: string
+}
+
 const monthlyBasicPlanLookupKey =
   process.env.NEXT_PUBLIC_STRIPE_MONTHLY_BASIC_PLAN_LOOKUP_KEY || ''
 const monthlyProPlanLookupKey =
@@ -16,7 +20,7 @@ const BadgeIcon = () => (
   </span>
 )
 
-export function MonthlyPricing() {
+export function MonthlyPricing({ currentPlanTag }: MonthlyPricingProps) {
   return (
     <div className="bg-gray-50 py-12">
       <div className="max-w-7xl mx-auto px-4">
@@ -40,9 +44,11 @@ export function MonthlyPricing() {
                 </div>
 
                 {/* Text on the right */}
-                <div className="bg-purple-600 text-white px-4 py-1 text-xs font-medium rounded-full">
-                  Current Plan
-                </div>
+                {currentPlanTag === 'month_basic' && (
+                  <div className="bg-purple-600 text-white px-4 py-1 text-xs font-medium rounded-full">
+                    Current Plan
+                  </div>
+                )}
               </div>
             </div>
             <h3 className="ml-2 mb-4 font-bold text-purple-600 text-[18px]">
@@ -64,21 +70,31 @@ export function MonthlyPricing() {
                 €600 monthly ad budget
               </li>
             </ul>
-            <form action="/api/stripe/create-checkout-session" method="POST">
-              {/* Add a hidden field with the lookup_key of your Price */}
-              <input
-                type="hidden"
-                name="lookup_key"
-                value={monthlyBasicPlanLookupKey}
-              />
+
+            {currentPlanTag === 'month_basic' ? (
               <button
                 className="mt-6 w-full bg-purple-100 text-purple-600 py-2 rounded-lg font-medium"
                 id="basic-plan-button"
-                type="submit"
               >
                 Current Plan
               </button>
-            </form>
+            ) : (
+              <form action="/api/stripe/create-checkout-session" method="POST">
+                {/* Add a hidden field with the lookup_key of your Price */}
+                <input
+                  type="hidden"
+                  name="lookup_key"
+                  value={monthlyBasicPlanLookupKey}
+                />
+                <button
+                  className="mt-6 w-full bg-purple-100 text-purple-600 py-2 rounded-lg font-medium"
+                  id="basic-plan-button"
+                  type="submit"
+                >
+                  Buy Basic Plan
+                </button>
+              </form>
+            )}
           </div>
 
           {/* Pro Plan */}
@@ -89,6 +105,13 @@ export function MonthlyPricing() {
                 <div className="bg-purple-100 text-purple-600 rounded-full p-2">
                   <img src="/pro.png" alt="basic" />
                 </div>
+
+                {/* Text on the right */}
+                {currentPlanTag === 'month_pro' && (
+                  <div className="bg-purple-600 text-white px-4 py-1 text-xs font-medium rounded-full">
+                    Current Plan
+                  </div>
+                )}
               </div>
             </div>
             <h3 className="ml-2 mb-4 font-bold text-purple-600 text-[18px]">
@@ -122,21 +145,30 @@ export function MonthlyPricing() {
                 Future access to UGC Video AI content
               </li>
             </ul>
-            <form action="/api/stripe/create-checkout-session" method="POST">
-              {/* Add a hidden field with the lookup_key of your Price */}
-              <input
-                type="hidden"
-                name="lookup_key"
-                value={monthlyProPlanLookupKey}
-              />
+            {currentPlanTag === 'month_pro' ? (
               <button
                 className="mt-6 w-full bg-purple-600 text-white py-2 rounded-lg font-medium"
                 id="pro-plan-button"
-                type="submit"
               >
-                Buy Pro Plan
+                Current Plan
               </button>
-            </form>
+            ) : (
+              <form action="/api/stripe/create-checkout-session" method="POST">
+                {/* Add a hidden field with the lookup_key of your Price */}
+                <input
+                  type="hidden"
+                  name="lookup_key"
+                  value={monthlyProPlanLookupKey}
+                />
+                <button
+                  className="mt-6 w-full bg-purple-600 text-white py-2 rounded-lg font-medium"
+                  id="pro-plan-button"
+                  type="submit"
+                >
+                  Buy Pro Plan
+                </button>
+              </form>
+            )}
           </div>
 
           {/* Agency Plan */}
@@ -147,6 +179,13 @@ export function MonthlyPricing() {
                 <div className="bg-purple-100 text-purple-600 rounded-full p-2">
                   <img src="/agency.png" alt="basic" />
                 </div>
+
+                {/* Text on the right */}
+                {currentPlanTag === 'month_agency' && (
+                  <div className="bg-purple-600 text-white px-4 py-1 text-xs font-medium rounded-full">
+                    Current Plan
+                  </div>
+                )}
               </div>
             </div>
             <h3 className="ml-2 mb-4 font-bold text-purple-600 text-[18px]">
@@ -177,21 +216,30 @@ export function MonthlyPricing() {
                 White-labeled AI analytics reports
               </li>
             </ul>
-            <form action="/api/stripe/create-checkout-session" method="POST">
-              {/* Add a hidden field with the lookup_key of your Price */}
-              <input
-                type="hidden"
-                name="lookup_key"
-                value={monthlyAgencyPlanLookupKey}
-              />
+            {currentPlanTag === 'month_agency' ? (
               <button
                 className="mt-6 w-full border-2 border-purple-600 text-purple-600 py-2 rounded-lg font-medium"
                 id="agency-plan-button"
-                type="submit"
               >
-                Buy Agency Plan
+                Current Plan
               </button>
-            </form>
+            ) : (
+              <form action="/api/stripe/create-checkout-session" method="POST">
+                {/* Add a hidden field with the lookup_key of your Price */}
+                <input
+                  type="hidden"
+                  name="lookup_key"
+                  value={monthlyAgencyPlanLookupKey}
+                />
+                <button
+                  className="mt-6 w-full border-2 border-purple-600 text-purple-600 py-2 rounded-lg font-medium"
+                  id="agency-plan-button"
+                  type="submit"
+                >
+                  Buy Agency Plan
+                </button>
+              </form>
+            )}
           </div>
         </div>
       </div>
