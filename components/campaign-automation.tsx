@@ -237,7 +237,11 @@ const CampaignAutomation: React.FC<CampaignAutomationProps> = ({
           adsetId: adset?.id,
           campaignId: campaign?.id
         });
-        toast.error(error.message || 'Failed to complete campaign setup');
+        if (error instanceof Error) {
+          toast.error(error.message || 'Failed to complete campaign setup');
+        } else {
+          toast.error('Failed to complete campaign setup');
+        }
       }
     };
 

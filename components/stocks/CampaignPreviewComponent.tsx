@@ -1,15 +1,21 @@
 'use client'
 
-import React, { useEffect, useContext, useState, useRef, Fragment } from 'react';
+import React, {
+  useEffect,
+  useContext,
+  useState,
+  useRef,
+  Fragment
+} from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { 
-  ChevronDown, 
-  ChevronUp, 
-  Edit2, 
-  Target, 
-  DollarSign, 
-  Image as ImageIcon, 
+import {
+  ChevronDown,
+  ChevronUp,
+  Edit2,
+  Target,
+  DollarSign,
+  Image as ImageIcon,
   Check,
   Plus,
   AlertCircle,
@@ -18,7 +24,10 @@ import {
   Instagram,
   Facebook,
   Eye,
-  Info
+  Info,
+  Calendar,
+  ArrowRight,
+  Coins
 } from 'lucide-react';
 import { CampaignContext } from '@/components/contexts/campaign-context';
 import {
@@ -30,12 +39,19 @@ import {
 } from '@/components/ui/select';
 import { IconSpinner } from '@/components/ui/icons';
 import { format } from 'date-fns';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogClose
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
-import { cn, sleep } from '@/lib/utils';
+import { cn, sleep, formatNumber } from '@/lib/utils';
 import Image from 'next/image';
 import { useActions, useAIState, useUIState } from 'ai/rsc';
 import { Adset, AdsetTargeting, AdText } from '@/lib/types';
@@ -48,7 +64,16 @@ import { readStreamableValue } from 'ai/rsc';
 import { generateAdTemplate, generateAdsetTemplate, targetPositions } from '@/lib/data';
 import { type AI } from '@/lib/chat/actions';
 
+/*
+----------------------------------------------------------------------------------
+In this version, the budget modal is similar to the “stock-purchase” approach:
+1) We keep local budget state for the slider
+2) We only make the API call to update the budget on "Save" button click
+3) We fix the grey overlay by applying appropriate z-index on DialogContent
+----------------------------------------------------------------------------------
+*/
 
+// Updated CampaignConfig interface with dailyBudget and duration
 interface CampaignConfig {
   type: string;
   budget: number;
@@ -67,6 +92,8 @@ interface CampaignConfig {
     facebook: string[];
     instagram: string[];
   };
+  dailyBudget?: number; // new property
+  duration?: number;    // new property
 }
 
 interface FbCampaign {
@@ -105,26 +132,35 @@ const defaultConfig: CampaignConfig = {
   placements: {
     facebook: [],
     instagram: []
-  }
+  },
+  dailyBudget: undefined,
+  duration: undefined
 };
 
+
+//
+// --------------------------------------------------------------------------------
+// SocialPreview COMPONENT (unchanged logic)
+// --------------------------------------------------------------------------------
 const SocialPreview = ({
   platform,
   image,
   headline,
-  text,
+  text
 }: {
-  platform: 'instagram' | 'facebook'
-  image: string
-  headline: string
-  text: string
+  platform: 'instagram' | 'facebook';
+  image: string;
+  headline: string;
+  text: string;
 }) => {
   return (
-    <div className={cn(
-      "w-full rounded-lg overflow-hidden",
-      "bg-white dark:bg-zinc-800",
-      platform === 'instagram' ? "instagram-preview" : "facebook-preview"
-    )}>
+    <div
+      className={cn(
+        'w-full rounded-lg overflow-hidden',
+        'bg-white dark:bg-zinc-800',
+        platform === 'instagram' ? 'instagram-preview' : 'facebook-preview'
+      )}
+    >
       <div className="p-3 flex items-center gap-2 border-b border-zinc-200 dark:border-zinc-700">
         {platform === 'instagram' ? (
           <Instagram className="size-5 text-pink-600" />
@@ -135,7 +171,7 @@ const SocialPreview = ({
           {platform === 'instagram' ? 'Instagram' : 'Facebook'} Ad Preview
         </span>
       </div>
-      
+
       <div className="relative aspect-square">
         {image ? (
           <Image
@@ -150,61 +186,73 @@ const SocialPreview = ({
           <div className="bg-zinc-300 dark:bg-zinc-700 size-full" />
         )}
       </div>
-      
+
       <div className="p-4">
         <h4 className="font-semibold mb-2">{headline || 'No Headline'}</h4>
-        <p className="text-sm text-zinc-600 dark:text-zinc-300">{text || 'No ad text set yet.'}</p>
-        
-        <button className={cn(
-          "w-full mt-4 py-2 rounded-lg text-center text-sm font-medium",
-          platform === 'instagram' 
-            ? "bg-gradient-to-r from-pink-500 to-purple-500 text-white"
-            : "bg-blue-600 text-white"
-        )}>
+        <p className="text-sm text-zinc-600 dark:text-zinc-300">
+          {text || 'No ad text set yet.'}
+        </p>
+
+        <button
+          className={cn(
+            'w-full mt-4 py-2 rounded-lg text-center text-sm font-medium',
+            platform === 'instagram'
+              ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white'
+              : 'bg-blue-600 text-white'
+          )}
+        >
           Learn More
         </button>
       </div>
     </div>
-  )
-}
+  );
+};
 
+//
+// --------------------------------------------------------------------------------
+// AdTextItem COMPONENT (unchanged logic)
+// --------------------------------------------------------------------------------
 function AdTextItem({
   index,
   adText,
   acceptText,
   updateText
 }: {
-  index: number
-  adText: AdText
-  acceptText?: (idx: number, adText: AdText) => Promise<void>
-  updateText?: (idx: number, adText: AdText, newAdText: AdText) => void
+  index: number;
+  adText: AdText;
+  acceptText?: (idx: number, adText: AdText) => Promise<void>;
+  updateText?: (idx: number, adText: AdText, newAdText: AdText) => void;
 }) {
-  const [isUpdating, setIsUpdating] = useState(false)
-  const [isEditing, setIsEditing] = useState(false)
-  const [textEdit, setTextEdit] = useState(adText.text)
-  const [headlineEdit, setHeadlineEdit] = useState(adText.headline)
-  const hasFbAd = !!adText.fbAdId
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [textEdit, setTextEdit] = useState(adText.text);
+  const [headlineEdit, setHeadlineEdit] = useState(adText.headline);
+  const hasFbAd = !!adText.fbAdId;
 
   const handleAccept = async () => {
-    setIsUpdating(true)
-    await sleep(1000)
+    setIsUpdating(true);
+    await sleep(1000);
     if (acceptText) {
-      await acceptText(index, adText)
+      await acceptText(index, adText);
     }
-    setIsUpdating(false)
-    toast.success('Ad text added to your campaign successfully!')
-  }
+    setIsUpdating(false);
+    toast.success('Ad text added to your campaign successfully!');
+  };
 
   const handleSave = async () => {
-    setIsUpdating(true)
-    await sleep(1000)
+    setIsUpdating(true);
+    await sleep(1000);
     if (updateText) {
-      updateText(index, adText, { ...adText, text: textEdit, headline: headlineEdit })
+      updateText(index, adText, {
+        ...adText,
+        text: textEdit,
+        headline: headlineEdit
+      });
     }
-    setIsEditing(false)
-    setIsUpdating(false)
-    toast.success('Ad text updated successfully!')
-  }
+    setIsEditing(false);
+    setIsUpdating(false);
+    toast.success('Ad text updated successfully!');
+  };
 
   return (
     <Card className="bg-zinc-900 border-zinc-800 overflow-hidden">
@@ -237,25 +285,25 @@ function AdTextItem({
           <div className="mt-6 space-y-4">
             <input
               value={headlineEdit}
-              onChange={e => setHeadlineEdit(e.target.value)}
+              onChange={(e) => setHeadlineEdit(e.target.value)}
               className={cn(
-                "w-full text-center font-semibold p-2",
-                "bg-zinc-800 border border-zinc-700 rounded-lg",
-                "text-zinc-200 placeholder:text-zinc-400",
-                "focus:outline-none focus:ring-2 focus:ring-blue-500"
+                'w-full text-center font-semibold p-2',
+                'bg-zinc-800 border border-zinc-700 rounded-lg',
+                'text-zinc-200 placeholder:text-zinc-400',
+                'focus:outline-none focus:ring-2 focus:ring-blue-500'
               )}
               placeholder="Enter headline"
             />
-            
+
             <textarea
               className={cn(
-                "w-full min-h-[120px] p-3",
-                "bg-zinc-800 border border-zinc-700 rounded-lg",
-                "text-zinc-200 placeholder:text-zinc-400 text-sm",
-                "focus:outline-none focus:ring-2 focus:ring-blue-500"
+                'w-full min-h-[120px] p-3',
+                'bg-zinc-800 border border-zinc-700 rounded-lg',
+                'text-zinc-200 placeholder:text-zinc-400 text-sm',
+                'focus:outline-none focus:ring-2 focus:ring-blue-500'
               )}
               value={textEdit}
-              onChange={e => setTextEdit(e.target.value)}
+              onChange={(e) => setTextEdit(e.target.value)}
               placeholder="Enter ad text"
             />
           </div>
@@ -267,15 +315,15 @@ function AdTextItem({
               <Fragment>
                 <button
                   onClick={() => {
-                    setIsEditing(false)
-                    setTextEdit(adText.text)
-                    setHeadlineEdit(adText.headline)
+                    setIsEditing(false);
+                    setTextEdit(adText.text);
+                    setHeadlineEdit(adText.headline);
                   }}
                   className={cn(
-                    "flex items-center gap-2 px-4 h-10",
-                    "text-zinc-200 text-sm font-medium rounded-lg",
-                    "bg-zinc-800 hover:bg-zinc-700 border border-zinc-700",
-                    "transition-colors duration-200"
+                    'flex items-center gap-2 px-4 h-10',
+                    'text-zinc-200 text-sm font-medium rounded-lg',
+                    'bg-zinc-800 hover:bg-zinc-700 border border-zinc-700',
+                    'transition-colors duration-200'
                   )}
                 >
                   <X className="size-4" />
@@ -285,11 +333,11 @@ function AdTextItem({
                   onClick={handleSave}
                   disabled={isUpdating}
                   className={cn(
-                    "flex items-center gap-2 px-4 h-10",
-                    "text-white text-sm font-medium rounded-lg",
-                    "bg-blue-600 hover:bg-blue-700",
-                    "transition-colors duration-200",
-                    "disabled:opacity-50 disabled:cursor-not-allowed"
+                    'flex items-center gap-2 px-4 h-10',
+                    'text-white text-sm font-medium rounded-lg',
+                    'bg-blue-600 hover:bg-blue-700',
+                    'transition-colors duration-200',
+                    'disabled:opacity-50 disabled:cursor-not-allowed'
                   )}
                 >
                   {isUpdating ? (
@@ -305,10 +353,10 @@ function AdTextItem({
                 <button
                   onClick={() => setIsEditing(true)}
                   className={cn(
-                    "flex items-center gap-2 px-4 h-10",
-                    "text-zinc-200 text-sm font-medium rounded-lg",
-                    "bg-zinc-800 hover:bg-zinc-700 border border-zinc-700",
-                    "transition-colors duration-200"
+                    'flex items-center gap-2 px-4 h-10',
+                    'text-zinc-200 text-sm font-medium rounded-lg',
+                    'bg-zinc-800 hover:bg-zinc-700 border border-zinc-700',
+                    'transition-colors duration-200'
                   )}
                 >
                   <Pencil className="size-4" />
@@ -318,11 +366,11 @@ function AdTextItem({
                   onClick={handleAccept}
                   disabled={isUpdating}
                   className={cn(
-                    "flex items-center gap-2 px-4 h-10",
-                    "text-white text-sm font-medium rounded-lg",
-                    "bg-blue-600 hover:bg-blue-700",
-                    "transition-colors duration-200",
-                    "disabled:opacity-50 disabled:cursor-not-allowed"
+                    'flex items-center gap-2 px-4 h-10',
+                    'text-white text-sm font-medium rounded-lg',
+                    'bg-blue-600 hover:bg-blue-700',
+                    'transition-colors duration-200',
+                    'disabled:opacity-50 disabled:cursor-not-allowed'
                   )}
                 >
                   {isUpdating ? (
@@ -338,46 +386,57 @@ function AdTextItem({
         )}
       </CardContent>
     </Card>
-  )
+  );
 }
 
+//
+// --------------------------------------------------------------------------------
+// PLACEMENT TARGETING & UI
+// --------------------------------------------------------------------------------
 interface TargetingUiProps {
-  targeting: any
-  success: boolean
+  targeting: any;
+  success: boolean;
 }
 
 interface PlacementTargetingProps {
-  targetingUiProps?: TargetingUiProps
-  toolCallId: string
-  onPlacementUpdate: (placementData: { facebook_positions: string[], instagram_positions: string[] }) => void
+  targetingUiProps?: TargetingUiProps;
+  toolCallId: string;
+  onPlacementUpdate: (placementData: {
+    facebook_positions: string[];
+    instagram_positions: string[];
+  }) => void;
 }
 
 export function PlacementTargetingResult({
   targeting,
   success
 }: TargetingUiProps) {
-  const { submitUserMessage } = useActions()
-  const [aiState] = useAIState()
-  const [_, setMessages] = useUIState<typeof AI>()
-  const hasTriggeredMessage = useRef(false)
-  
+  const { submitUserMessage } = useActions();
+  const [aiState] = useAIState();
+  const [_, setMessages] = useUIState<typeof AI>();
+  const hasTriggeredMessage = useRef(false);
+
   useEffect(() => {
     async function sendFollowUpMessage() {
       if (success && !hasTriggeredMessage.current) {
-        hasTriggeredMessage.current = true
-        
-        const message = "Perfect! Now that we have set up where your ads will be shown, let's add your creative assets. 🎨 Could you please upload the images or videos you'd like to use for your ad? I can help you optimize them for the best performance across these placements."
+        hasTriggeredMessage.current = true;
 
-        const responseMessage = await submitUserMessage(message, [], true)
-        setMessages((currentMessages: any[]) => [...currentMessages, responseMessage])
+        const message =
+          "Perfect! Now that we have set up where your ads will be shown, let's add your creative assets. 🎨 Could you please upload the images or videos you'd like to use for your ad? I can help you optimize them for the best performance across these placements.";
+
+        const responseMessage = await submitUserMessage(message, [], true);
+        setMessages((currentMessages: any[]) => [
+          ...currentMessages,
+          responseMessage
+        ]);
       }
     }
 
-    sendFollowUpMessage()
-  }, [success, submitUserMessage, setMessages])
+    sendFollowUpMessage();
+  }, [success, submitUserMessage, setMessages]);
 
-  if (!success) return null
-  
+  if (!success) return null;
+
   return (
     <Card className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
       <CardContent className="p-6">
@@ -388,48 +447,58 @@ export function PlacementTargetingResult({
             <X className="size-6 text-red-600 dark:text-red-500 shrink-0" />
           )}
           <span className="text-lg font-semibold text-zinc-900 dark:text-zinc-200">
-            {success ? 'Placement targeting updated successfully!' : 'Failed to update placement targeting'}
+            {success
+              ? 'Placement targeting updated successfully!'
+              : 'Failed to update placement targeting'}
           </span>
         </div>
-        
+
         {targeting.facebook_positions?.length > 0 && (
           <div className="flex items-start gap-3 mb-3">
             <Facebook className="size-5 text-blue-600 dark:text-blue-500 shrink-0 mt-1" />
             <div>
-              <span className="font-medium text-zinc-800 dark:text-zinc-300">Facebook Placements:</span>{' '}
-              <span className="text-zinc-600 dark:text-zinc-400">{targeting.facebook_positions?.join(', ')}</span>
+              <span className="font-medium text-zinc-800 dark:text-zinc-300">
+                Facebook Placements:
+              </span>{' '}
+              <span className="text-zinc-600 dark:text-zinc-400">
+                {targeting.facebook_positions?.join(', ')}
+              </span>
             </div>
           </div>
         )}
-        
+
         {targeting.instagram_positions?.length > 0 && (
           <div className="flex items-start gap-3">
             <Instagram className="size-5 text-pink-600 dark:text-pink-500 shrink-0 mt-1" />
             <div>
-              <span className="font-medium text-zinc-800 dark:text-zinc-300">Instagram Placements:</span>{' '}
-              <span className="text-zinc-600 dark:text-zinc-400">{targeting.instagram_positions?.join(', ')}</span>
+              <span className="font-medium text-zinc-800 dark:text-zinc-300">
+                Instagram Placements:
+              </span>{' '}
+              <span className="text-zinc-600 dark:text-zinc-400">
+                {targeting.instagram_positions?.join(', ')}
+              </span>
             </div>
           </div>
         )}
       </CardContent>
     </Card>
-  )
+  );
 }
 
 interface PlacementTargetingTemplateProps {
-  children: React.ReactNode
-  adset?: Adset
+  children: React.ReactNode;
+  adset?: Adset;
 }
 
 function PlacementTargetingTemplate({
   children,
-  adset,
+  adset
 }: PlacementTargetingTemplateProps) {
   return adset ? (
     <div className="relative">
       <div className="rounded-xl">{children}</div>
     </div>
-  ) : null
+  ) : null;
 }
 
 export function PlacementTargeting({
@@ -437,25 +506,35 @@ export function PlacementTargeting({
   toolCallId,
   onPlacementUpdate
 }: PlacementTargetingProps) {
-  const { adset, setAdset } = useContext(CampaignContext)
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
-  const [aiState, setAIState] = useAIState()
-  const { confirmUpdateAdset, syncMessages } = useActions()
-  const [_, setMessages] = useUIState<typeof AI>()
-  const [selectedPositions, setSelectedPositions] = useState<string[]>([])
+  const { adset, setAdset } = useContext(CampaignContext);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [aiState, setAIState] = useAIState();
+  const { confirmUpdateAdset, syncMessages } = useActions();
+  const [_, setMessages] = useUIState<typeof AI>();
+  const [selectedPositions, setSelectedPositions] = useState<string[]>([]);
   const [targetingUI, setTargetingUI] = useState<null | React.ReactNode>(
-    targetingUiProps ? <PlacementTargetingResult {...targetingUiProps} /> : null
-  )
+    
+    targetingUiProps ? (
+      <PlacementTargetingResult {...targetingUiProps} />
+    ) : null
+  );
 
   useEffect(() => {
     if (adset?.targeting) {
-      const fbPositions = adset?.targeting?.facebook_positions || []
-      const igPositions = adset?.targeting?.instagram_positions || []
-      setSelectedPositions([...fbPositions, ...igPositions])
+      const fbPositions = adset?.targeting?.facebook_positions || [];
+      const igPositions = adset?.targeting?.instagram_positions || [];
+      setSelectedPositions([...fbPositions, ...igPositions]);
     }
-  }, [adset])
+  }, [adset]);
 
-  const renderSwitch = (target: { platform: string; value: string; label: string; parent?: string }) => (
+  
+
+  const renderSwitch = (target: {
+    platform: string;
+    value: string;
+    label: string;
+    parent?: string;
+  }) => (
     <div
       key={target.value}
       className={cn(
@@ -466,56 +545,63 @@ export function PlacementTargeting({
     >
       <Switch
         checked={selectedPositions.includes(target.value)}
-        onCheckedChange={checked => {
+        onCheckedChange={(checked) => {
           if (checked) {
-            setSelectedPositions(prev => {
-              let newPositions = [...prev, target.value]
+            setSelectedPositions((prev) => {
+              let newPositions = [...prev, target.value];
               if (target.parent && !newPositions.includes(target.parent)) {
-                newPositions.push(target.parent)
+                newPositions.push(target.parent);
               }
-              return newPositions
-            })
+              return newPositions;
+            });
           } else {
-            setSelectedPositions(prev => {
-              let newPositions = prev.filter(p => p !== target.value)
+            setSelectedPositions((prev) => {
+              let newPositions = prev.filter((p) => p !== target.value);
               if (!target.parent) {
-                const children = targetPositions.filter(tp => tp.parent === target.value).map(tp => tp.value)
-                newPositions = newPositions.filter(pos => !children.includes(pos))
+                const children = targetPositions
+                  .filter((tp) => tp.parent === target.value)
+                  .map((tp) => tp.value);
+                newPositions = newPositions.filter((pos) => !children.includes(pos));
               }
-              return newPositions
-            })
+              return newPositions;
+            });
           }
         }}
         className="bg-zinc-200 dark:bg-zinc-700 data-[state=checked]:bg-blue-600 dark:data-[state=checked]:bg-blue-500"
       />
-      <span className="text-zinc-800 dark:text-zinc-300 pl-3 font-medium">{target.label}</span>
+      <span className="text-zinc-800 dark:text-zinc-300 pl-3 font-medium">
+        {target.label}
+      </span>
     </div>
-  )
+  );
 
   async function handleUpdateAdset() {
-    if (!adset) return
-    setIsSubmitting(true)
-    
+    if (!adset) return;
+    setIsSubmitting(true);
+
     const fbPositions = targetPositions
-      .filter(tp => tp.platform === 'facebook' && selectedPositions.includes(tp.value))
-      .map(tp => tp.value)
+      .filter((tp) => tp.platform === 'facebook' && selectedPositions.includes(tp.value))
+      .map((tp) => tp.value);
     const igPositions = targetPositions
-      .filter(tp => tp.platform === 'instagram' && selectedPositions.includes(tp.value))
-      .map(tp => tp.value)
+      .filter((tp) => tp.platform === 'instagram' && selectedPositions.includes(tp.value))
+      .map((tp) => tp.value);
 
-    let newTargeting: AdsetTargeting = { ...adset.targeting }
-    newTargeting.facebook_positions = fbPositions
-    newTargeting.instagram_positions = igPositions
-    newTargeting.publisher_platforms = []
-    if (fbPositions.length > 0) newTargeting.publisher_platforms.push('facebook')
-    if (igPositions.length > 0) newTargeting.publisher_platforms.push('instagram')
+    let newTargeting: AdsetTargeting = { ...adset.targeting };
+    newTargeting.facebook_positions = fbPositions;
+    newTargeting.instagram_positions = igPositions;
+    newTargeting.publisher_platforms = [];
+    if (fbPositions.length > 0) newTargeting.publisher_platforms.push('facebook');
+    if (igPositions.length > 0) newTargeting.publisher_platforms.push('instagram');
 
-    const response = await confirmUpdateAdset(toolCallId, adset.id, {
-      targeting: newTargeting
-    }, 'placement')
-    setMessages((currentMessages: any[]) => [...currentMessages, response.newMessage])
+    const response = await confirmUpdateAdset(
+      toolCallId,
+      adset.id,
+      { targeting: newTargeting },
+      'placement'
+    );
+    setMessages((currentMessages: any[]) => [...currentMessages, response.newMessage]);
 
-    const updatedAdset = await response.response
+    const updatedAdset = await response.response;
     if (updatedAdset) {
       const messages = aiState.messages;
       const lastMessage = messages.slice(-1)[0];
@@ -524,9 +610,9 @@ export function PlacementTargeting({
       } else {
         const content = (lastMessage.content as any)[0];
         if (content.type !== 'tool-result') {
-          console.error("Exception: content type is not tool-result");
+          console.error('Exception: content type is not tool-result');
         } else if (content.toolName !== 'showPlacementTargetingUI') {
-          console.error("Exception: tool name not matching");
+          console.error('Exception: tool name not matching');
         } else {
           content.result = {
             ...(content.result as Object),
@@ -534,18 +620,18 @@ export function PlacementTargeting({
               success: true,
               targeting: updatedAdset.targeting
             }
-          }
+          };
           setAIState({
             ...aiState,
             messages: [...messages]
-          })
-          setAdset(updatedAdset)
+          });
+          setAdset(updatedAdset);
           setTargetingUI(
             <PlacementTargetingResult
               targeting={updatedAdset.targeting}
               success={true}
             />
-          )
+          );
           await syncMessages();
         }
       }
@@ -554,9 +640,9 @@ export function PlacementTargeting({
     onPlacementUpdate({
       facebook_positions: newTargeting.facebook_positions || [],
       instagram_positions: newTargeting.instagram_positions || []
-    })
+    });
 
-    setIsSubmitting(false)
+    setIsSubmitting(false);
   }
 
   return (
@@ -572,22 +658,27 @@ export function PlacementTargeting({
               </CardTitle>
               <div className="flex items-center gap-2 mt-2 text-sm text-blue-800 dark:text-blue-200 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
                 <Info className="size-4 shrink-0" />
-                <p>Choose where your ads will appear across Facebook and Instagram platforms</p>
+                <p>
+                  Choose where your ads will appear across Facebook and Instagram
+                  platforms
+                </p>
               </div>
             </CardHeader>
-            <CardContent className="space-y-6">              
+            <CardContent className="space-y-6">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <Card className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
                   <CardHeader className="pb-3">
                     <div className="flex items-center gap-2">
                       <Facebook className="size-5 text-blue-600 dark:text-blue-500" />
-                      <h3 className="font-semibold text-zinc-900 dark:text-zinc-200">Facebook Placements</h3>
+                      <h3 className="font-semibold text-zinc-900 dark:text-zinc-200">
+                        Facebook Placements
+                      </h3>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-1">
                     {targetPositions
-                      .filter(e => e.platform === 'facebook')
-                      .map(target => renderSwitch(target))}
+                      .filter((e) => e.platform === 'facebook')
+                      .map((target) => renderSwitch(target))}
                   </CardContent>
                 </Card>
 
@@ -595,17 +686,19 @@ export function PlacementTargeting({
                   <CardHeader className="pb-3">
                     <div className="flex items-center gap-2">
                       <Instagram className="size-5 text-pink-600 dark:text-pink-500" />
-                      <h3 className="font-semibold text-zinc-900 dark:text-zinc-200">Instagram Placements</h3>
+                      <h3 className="font-semibold text-zinc-900 dark:text-zinc-200">
+                        Instagram Placements
+                      </h3>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-1">
                     {targetPositions
-                      .filter(e => e.platform === 'instagram')
-                      .map(target => renderSwitch(target))}
+                      .filter((e) => e.platform === 'instagram')
+                      .map((target) => renderSwitch(target))}
                   </CardContent>
                 </Card>
               </div>
-              
+
               <button
                 disabled={isSubmitting}
                 className={cn(
@@ -629,14 +722,43 @@ export function PlacementTargeting({
         </div>
       )}
     </PlacementTargetingTemplate>
-  )
+  );
 }
 
-export function CampaignPreviewPanel({ 
+//
+// --------------------------------------------------------------------------------
+// CampaignPreview COMPONENT (displays budget info as part of the final preview)
+// --------------------------------------------------------------------------------
+const CampaignPreview = ({ config }: { config: CampaignConfig }) => {
+  return (
+    <div className="space-y-4">
+      {config.dailyBudget && (
+        <div className="flex items-center gap-3 p-4 bg-zinc-900/50 border border-zinc-800 rounded-lg">
+          <DollarSign className="size-5 text-green-400" />
+          <div>
+            <h4 className="font-medium text-zinc-200">Campaign Budget</h4>
+            <div className="flex items-center gap-2 text-zinc-400">
+              <span>€{formatNumber(config.dailyBudget)}/day</span>
+              <span>•</span>
+              <span>€{formatNumber(config.dailyBudget * 30)}/month</span>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Additional preview details can be added below */}
+    </div>
+  );
+};
+
+//
+// --------------------------------------------------------------------------------
+// MAIN: CampaignPreviewPanel COMPONENT
+// --------------------------------------------------------------------------------
+export function CampaignPreviewPanel({
   userInfo,
   config = defaultConfig,
-  onConfigUpdate 
-}: { 
+  onConfigUpdate
+}: {
   userInfo?: string;
   config?: CampaignConfig;
   onConfigUpdate: (config: Partial<CampaignConfig>) => void;
@@ -647,7 +769,7 @@ export function CampaignPreviewPanel({
 
   const safeConfig = { ...defaultConfig, ...config };
 
-  const { 
+  const {
     campaign,
     campaigns,
     adset,
@@ -658,6 +780,7 @@ export function CampaignPreviewPanel({
     fetchAdsets
   } = useContext(CampaignContext);
 
+  // Modals
   const [showBudgetModal, setShowBudgetModal] = useState(false);
   const [showTargetingModal, setShowTargetingModal] = useState(false);
   const [showCreativeModal, setShowCreativeModal] = useState(false);
@@ -665,7 +788,10 @@ export function CampaignPreviewPanel({
   const [showPlacementModal, setShowPlacementModal] = useState(false);
   const [showLeadFormModal, setShowLeadFormModal] = useState(false);
 
-  const [tempBudget, setTempBudget] = useState(campaign?.daily_budget || '');
+  // Local slider / budget state used in the modal
+  const [tempBudget, setTempBudget] = useState<number>(safeConfig.dailyBudget || 10);
+
+  // For the creative tab
   const imageInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [adTexts, setAdTexts] = useState<AdText[]>([]);
@@ -674,12 +800,17 @@ export function CampaignPreviewPanel({
 
   const [specialAdCategory, setSpecialAdCategory] = useState('NONE');
   const [abTestEnabled, setAbTestEnabled] = useState(false);
+  
 
   const { confirmCreateAd, submitUserMessage } = useActions();
-  const [aiState, setAIState] = useAIState()
-  const [_, setMessages] = useUIState<typeof AI>()
+  const [aiState, setAIState] = useAIState();
+  const [_, setMessages] = useUIState<typeof AI>();
 
-  const handlePlacementUpdate = (placementData: { facebook_positions: string[], instagram_positions: string[] }) => {
+  // Called after user picks placements
+  const handlePlacementUpdate = (placementData: {
+    facebook_positions: string[];
+    instagram_positions: string[];
+  }) => {
     onConfigUpdate({
       placements: {
         facebook: placementData.facebook_positions || [],
@@ -690,6 +821,7 @@ export function CampaignPreviewPanel({
     setShowPlacementModal(false);
   };
 
+  // If user info is found, parse & update targeting config
   useEffect(() => {
     if (!userInfo) return;
     const newConfig: Partial<CampaignConfig> = {
@@ -703,7 +835,9 @@ export function CampaignPreviewPanel({
 
     const interestsMatch = userInfo?.match(/interests:\s*([^,.]+)/i);
     if (interestsMatch) {
-      newConfig.targeting!.interests = interestsMatch[1].split(',').map(i => i.trim());
+      newConfig.targeting!.interests = interestsMatch[1]
+        .split(',')
+        .map((i) => i.trim());
     }
 
     const ageMatch = userInfo?.match(/age range:\s*(\d+)-(\d+)/i);
@@ -720,6 +854,7 @@ export function CampaignPreviewPanel({
   const [isCreatingCampaign, setCreatingCampaign] = useState(false);
   const [isCreatingAdset, setCreatingAdset] = useState(false);
 
+  // Creates a new FB campaign
   const handleCreateCampaign = async () => {
     try {
       setCreatingCampaign(true);
@@ -740,6 +875,7 @@ export function CampaignPreviewPanel({
     }
   };
 
+  // Creates a new FB adset
   const handleCreateAdset = async () => {
     if (!campaign?.id) return;
     setCreatingAdset(true);
@@ -763,6 +899,7 @@ export function CampaignPreviewPanel({
     }
   };
 
+  // Show preview of the last ad text
   const handleShowPreview = () => {
     if (adTexts.length > 0) {
       setPreviewAdText(adTexts[adTexts.length - 1]);
@@ -773,14 +910,19 @@ export function CampaignPreviewPanel({
     }
   };
 
+  // Called once user updates location/age/interests in the targeting modal
   const handleDemographicDataUpdate = (demographicData: any) => {
     let locations: string[] = [];
     if (demographicData.cities && demographicData.cities.length > 0) {
       locations = demographicData.cities.map((city: { name: string }) => city.name);
     } else if (demographicData.regions && demographicData.regions.length > 0) {
-      locations = demographicData.regions.map((region: { name: string }) => region.name);
+      locations = demographicData.regions.map(
+        (region: { name: string }) => region.name
+      );
     } else if (demographicData.countries && demographicData.countries.length > 0) {
-      locations = demographicData.countries.map((country: { name: string }) => country.name);
+      locations = demographicData.countries.map(
+        (country: { name: string }) => country.name
+      );
     }
 
     const age_min = demographicData.age_min ?? safeConfig.targeting.ageRange.min;
@@ -798,24 +940,24 @@ export function CampaignPreviewPanel({
     toast.success('Targeting updated successfully!');
   };
 
+  // Helper function to upload an image and generate AI text
   async function handleImageUpload(file: File) {
     try {
       setUploading(true);
       setLoadingAdText(true);
 
       const formData = new FormData();
-      const campaignId = campaign?.id || chatSlug; 
+      const campaignId = campaign?.id || chatSlug;
       formData.append('id', campaignId as string);
-      formData.append('type', "image");
+      formData.append('type', 'image');
       formData.append('files', file);
 
       const uploadRes = await fetch('/api/upload', {
         method: 'POST',
         body: formData
       });
-
       const uploadData = await uploadRes.json();
-      
+
       if (!uploadRes.ok) {
         toast.error('Failed to upload the image. Please try again.');
         setUploading(false);
@@ -830,10 +972,10 @@ export function CampaignPreviewPanel({
       setMessages((currentMessages: any[]) => [...currentMessages, responseMessage]);
 
       await sleep(2000);
-      
+
       const updatedMessages = aiState.messages;
       const aiLastMessage = updatedMessages[updatedMessages.length - 1];
-      const aiText = aiLastMessage?.content || "";
+      const aiText = aiLastMessage?.content || '';
       const versions = aiText.toString().split('Version').slice(1);
 
       let suggestedTexts: AdText[] = [];
@@ -842,7 +984,6 @@ export function CampaignPreviewPanel({
         const segments = ver.split('"');
         const headline = segments[1] || 'Your Ad Headline';
         const text = segments[3] || 'Your ad text goes here.';
-        
         suggestedTexts.push({
           id: Date.now() + idx,
           headline,
@@ -854,26 +995,27 @@ export function CampaignPreviewPanel({
       });
 
       if (suggestedTexts.length === 0) {
-        suggestedTexts = [{
-          id: Date.now(),
-          headline: 'Your Headline Here',
-          text: 'Your ad text here, describing the product or service shown in the image.',
-          image: imageUrl,
-          date: new Date().toISOString(),
-          fbAdId: undefined
-        }];
+        suggestedTexts = [
+          {
+            id: Date.now(),
+            headline: 'Your Headline Here',
+            text: 'Your ad text here, describing the product or service shown in the image.',
+            image: imageUrl,
+            date: new Date().toISOString(),
+            fbAdId: undefined
+          }
+        ];
       }
 
-      setAdTexts(prev => [...prev, ...suggestedTexts]);
-      onConfigUpdate({ 
-        images: [...safeConfig.images, imageUrl], 
-        adText: suggestedTexts[0].text 
+      setAdTexts((prev) => [...prev, ...suggestedTexts]);
+      onConfigUpdate({
+        images: [...safeConfig.images, imageUrl],
+        adText: suggestedTexts[0].text
       });
 
       setUploading(false);
       setLoadingAdText(false);
       toast.success('Image uploaded and ad text generated!');
-
     } catch (error) {
       console.error('Error uploading image and generating ad text:', error);
       toast.error('Failed to upload image or generate ad text');
@@ -882,6 +1024,7 @@ export function CampaignPreviewPanel({
     }
   }
 
+  // Called when user Accepts an ad text
   const acceptText = async (idx: number, adText: AdText) => {
     if (!campaign || !adset) {
       toast.error('Please ensure campaign and ad set are created before accepting text.');
@@ -890,45 +1033,107 @@ export function CampaignPreviewPanel({
 
     const response = await confirmCreateAd(
       campaign,
-      generateAdTemplate(
-        adText.headline,
-        adText.text,
-        adText.image
-      ),
+      generateAdTemplate(adText.headline, adText.text, adText.image),
       generateAdsetTemplate()
-    )
-    setMessages((currentMessages: any[]) => [...currentMessages, response.newMessage])
+    );
+    setMessages((currentMessages: any[]) => [...currentMessages, response.newMessage]);
 
     for await (const fbAdId of readStreamableValue(response.fbAdIdStream)) {
-      await updateAdTextWithFbId(chatSlug as string, idx, adText.id, fbAdId as string)
+      await updateAdTextWithFbId(chatSlug as string, idx, adText.id, fbAdId as string);
       setAdTexts(
         adTexts.map((a: AdText, index: number) => {
-          if (index === idx) return {
-            ...a,
-            fbAdId: fbAdId as string
-          }
-          return a
+          if (index === idx) return { ...a, fbAdId: fbAdId as string };
+          return a;
         })
-      )
+      );
       const aiMessage = await submitUserMessage(
         "Great! Now that your ad creative is set up, let's create a lead form to collect information from potential customers. Would you like me to guide you through setting up the form? 📝",
         [],
         true
-      )
-      setMessages((currentMessages: any[]) => [...currentMessages, aiMessage])
+      );
+      setMessages((currentMessages: any[]) => [...currentMessages, aiMessage]);
     }
-  }
+  };
 
+  // Called when user saves changes to existing ad text
   const handleUpdateAdText = async (idx: number, oldAdText: AdText, newAdText: AdText) => {
     setAdTexts(
       adTexts.map((a: AdText, index: number) => {
-        if (index === idx) return newAdText
-        return a
+        if (index === idx) return newAdText;
+        return a;
       })
-    )
-    await updateAdText(chatSlug as string, idx, oldAdText.id, newAdText)
+    );
+    await updateAdText(chatSlug as string, idx, oldAdText.id, newAdText);
     onConfigUpdate({ adText: newAdText.text });
-  }
+  };
+
+  // Called when user hits "Save" in the budget modal
+  const handleBudgetUpdate = async (newBudget: number) => {
+    try {
+      // Update local state first
+      onConfigUpdate({ dailyBudget: newBudget });
+      
+      // If we have a campaign, update it through the API
+      if (campaign?.id) {
+        const response = await fetch('/api/fasty-bot/set-daily-budget', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            campaignId: campaign.id,
+            budget: Math.round(Number(newBudget) * 100) // Convert to cents for Facebook API
+          })
+        });
+        
+        const result = await response.json();
+        console.log('Budget update response:', result); // For debugging
+        
+        if (!response.ok) {
+          throw new Error(`API error: ${result.message || 'Unknown error'}`);
+        }
+        
+        if (result.success) {
+          // Update AI state to reflect the change
+          setAIState({
+            ...aiState,
+            messages: [
+              ...aiState.messages.filter((message: { id: string }) => message.id !== 'budget-change'),
+              {
+                id: 'budget-change',
+                role: 'system',
+                content: `Budget updated to ${newBudget}. Total cost for 30 days: ${formatNumber(newBudget * 30)}.`,
+                timestamp: new Date().toISOString(),
+              }
+            ]
+          });
+  
+          // Send confirmation message
+          const message = `Great! I've set your daily budget to €${formatNumber(newBudget)}. This means your monthly investment will be €${formatNumber(newBudget * 30)}. Would you like to proceed with setting up the targeting for your campaign?`;
+          const responseMessage = await submitUserMessage(message, [], true);
+          setMessages((currentMessages) => [...currentMessages, responseMessage]);
+  
+          // Refresh campaign list and close modal
+          await getCampaignList();
+          setShowBudgetModal(false);
+          toast.success('Budget updated successfully!');
+        } else {
+          throw new Error(result.message || 'Failed to update budget on Facebook');
+        }
+      } else {
+        // No campaign yet - just update local state
+        setShowBudgetModal(false);
+        toast.success('Budget set successfully');
+        
+        // Send message about budget setting
+        const message = `I've noted your preferred daily budget of €${formatNumber(newBudget)}. This would mean a monthly investment of €${formatNumber(newBudget * 30)}. Would you like to create a campaign with this budget?`;
+        const responseMessage = await submitUserMessage(message, [], true);
+        setMessages((currentMessages) => [...currentMessages, responseMessage]);
+      }
+    } catch (error: unknown) {
+      console.error('Detailed error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      toast.error(`Failed to update budget: ${errorMessage}`);
+    }
+  };
 
   return (
     <div className="fixed right-4 top-20 w-96 z-50 transition-all duration-300 ease-in-out">
@@ -948,23 +1153,23 @@ export function CampaignPreviewPanel({
 
         {expanded && (
           <CardContent className="space-y-6">
-
+            {/* Nav Buttons */}
             <div className="flex items-center justify-center gap-2 mb-4">
-              <Button 
-                variant={activeSlide === 1 ? "default" : "outline"}
+              <Button
+                variant={activeSlide === 1 ? 'default' : 'outline'}
                 onClick={() => setActiveSlide(1)}
               >
                 Campaign
               </Button>
-              <Button 
-                variant={activeSlide === 2 ? "default" : "outline"}
+              <Button
+                variant={activeSlide === 2 ? 'default' : 'outline'}
                 onClick={() => setActiveSlide(2)}
                 disabled={!campaign}
               >
                 Ad Set
               </Button>
-              <Button 
-                variant={activeSlide === 3 ? "default" : "outline"}
+              <Button
+                variant={activeSlide === 3 ? 'default' : 'outline'}
                 onClick={() => setActiveSlide(3)}
                 disabled={!adset}
               >
@@ -972,8 +1177,10 @@ export function CampaignPreviewPanel({
               </Button>
             </div>
 
+            {/* Slide #1: Campaign */}
             {activeSlide === 1 && (
               <Fragment>
+                {/* Campaign selection */}
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
@@ -1001,7 +1208,7 @@ export function CampaignPreviewPanel({
                       ))}
                     </SelectContent>
                   </Select>
-                  
+
                   <Button
                     variant="outline"
                     size="sm"
@@ -1018,41 +1225,44 @@ export function CampaignPreviewPanel({
                   </Button>
                 </div>
 
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="size-5 text-green-400" />
-                      <h3 className="font-medium">Daily Budget</h3>
-                    </div>
-                    <button
-                      onClick={() => {
-                        setTempBudget(campaign?.daily_budget || '');
-                        toast.info('Open budget modal');
-                        setShowBudgetModal(true);
-                      }}
-                      className="text-muted-foreground hover:text-foreground p-0 focus:outline-none"
-                    >
-                      <Edit2 className="size-4" />
-                    </button>
-                  </div>
-                  <p className="text-muted-foreground">
-                    {campaign?.daily_budget ? `€${campaign.daily_budget}/day` : 'Not set yet'}
-                  </p>
-                </div>
+               {/* Daily Budget Display */}
+<div className="space-y-2">
+  <div className="flex justify-between items-center">
+    <div className="flex items-center gap-2">
+      <DollarSign className="size-5 text-green-400" />
+      <h3 className="font-medium">Daily Budget</h3>
+    </div>
+    <button
+      onClick={() => {
+        setTempBudget(Number(campaign?.daily_budget) || safeConfig.dailyBudget || 10);
+        setShowBudgetModal(true);
+      }}
+      className="text-muted-foreground hover:text-foreground p-0 focus:outline-none"
+    >
+      <Edit2 className="size-4" />
+    </button>
+  </div>
+  <p className="text-muted-foreground">
+    {campaign?.daily_budget 
+      ? `€${formatNumber(Number(campaign.daily_budget))}/day (€${formatNumber(Number(campaign.daily_budget) * 30)}/month)`
+      : safeConfig.dailyBudget 
+        ? `€${formatNumber(safeConfig.dailyBudget)}/day (€${formatNumber(safeConfig.dailyBudget * 30)}/month)`
+        : 'Not set yet'}
+  </p>
+</div>
 
+                {/* Special Ad Category */}
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium">
-                    Special Ad Category
-                  </Label>
+                  <Label className="text-sm font-medium">Special Ad Category</Label>
                   <Select
                     value={specialAdCategory || 'NONE'}
-                    onValueChange={val => setSpecialAdCategory(val)}
+                    onValueChange={(val) => setSpecialAdCategory(val)}
                   >
                     <SelectTrigger className="w-full bg-secondary border-border text-foreground">
                       <SelectValue placeholder="Select Category" />
                     </SelectTrigger>
                     <SelectContent className="bg-secondary border-border">
-                      {specialCategories.map(category => (
+                      {specialCategories.map((category) => (
                         <SelectItem key={category.value} value={category.value}>
                           {category.label}
                         </SelectItem>
@@ -1061,6 +1271,7 @@ export function CampaignPreviewPanel({
                   </Select>
                 </div>
 
+                {/* A/B Testing */}
                 <div className="flex items-center space-x-2">
                   <Checkbox
                     id="abTest"
@@ -1074,6 +1285,7 @@ export function CampaignPreviewPanel({
               </Fragment>
             )}
 
+            {/* Slide #2: Ad Set */}
             {activeSlide === 2 && (
               <Fragment>
                 <div className="space-y-2">
@@ -1088,7 +1300,7 @@ export function CampaignPreviewPanel({
                       <Select
                         value={adset?.id}
                         onValueChange={(value) => {
-                          const selectedAdset = adsets.find(a => a.id === value);
+                          const selectedAdset = adsets.find((a) => a.id === value);
                           if (selectedAdset) setAdset(selectedAdset);
                         }}
                       >
@@ -1101,14 +1313,16 @@ export function CampaignPreviewPanel({
                               <div className="flex flex-col">
                                 <span>{as.name}</span>
                                 <span className="text-xs text-muted-foreground">
-                                  {as.status} {as.created_time && ` • ${format(new Date(as.created_time), 'MMM d, yyyy')}`}
+                                  {as.status}{' '}
+                                  {as.created_time &&
+                                    ` • ${format(new Date(as.created_time), 'MMM d, yyyy')}`}
                                 </span>
                               </div>
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
-                      
+
                       <Button
                         variant="outline"
                         size="sm"
@@ -1125,10 +1339,13 @@ export function CampaignPreviewPanel({
                       </Button>
                     </Fragment>
                   ) : (
-                    <p className="text-muted-foreground text-sm">Please select a campaign first</p>
+                    <p className="text-muted-foreground text-sm">
+                      Please select a campaign first
+                    </p>
                   )}
                 </div>
 
+                {/* Targeting */}
                 <div className="space-y-2 mt-4">
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
@@ -1143,10 +1360,16 @@ export function CampaignPreviewPanel({
                     </button>
                   </div>
                   <div className="space-y-1 text-muted-foreground text-sm">
-                    <p>📍 {safeConfig.targeting.locations?.length
-                      ? safeConfig.targeting.locations.join(', ')
-                      : 'Location not set'}</p>
-                    <p>👥 Age {safeConfig.targeting.ageRange.min}-{safeConfig.targeting.ageRange.max}</p>
+                    <p>
+                      📍{' '}
+                      {safeConfig.targeting.locations?.length
+                        ? safeConfig.targeting.locations.join(', ')
+                        : 'Location not set'}
+                    </p>
+                    <p>
+                      👥 Age {safeConfig.targeting.ageRange.min}-
+                      {safeConfig.targeting.ageRange.max}
+                    </p>
                     {safeConfig.targeting.interests.length > 0 ? (
                       <p>🎯 Interests: {safeConfig.targeting.interests.join(', ')}</p>
                     ) : (
@@ -1155,6 +1378,7 @@ export function CampaignPreviewPanel({
                   </div>
                 </div>
 
+                {/* Placements */}
                 <div className="space-y-2 mt-4">
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
@@ -1171,13 +1395,18 @@ export function CampaignPreviewPanel({
                   </div>
                   <p className="text-muted-foreground text-sm">
                     {safeConfig.placements
-                      ? `Facebook: ${safeConfig.placements.facebook?.join(', ') || 'None'} | Instagram: ${safeConfig.placements.instagram?.join(', ') || 'None'}`
+                      ? `Facebook: ${
+                          safeConfig.placements.facebook?.join(', ') || 'None'
+                        } | Instagram: ${
+                          safeConfig.placements.instagram?.join(', ') || 'None'
+                        }`
                       : 'No placements selected'}
                   </p>
                 </div>
               </Fragment>
             )}
 
+            {/* Slide #3: Creative & Lead Form */}
             {activeSlide === 3 && (
               <Fragment>
                 <div className="space-y-2">
@@ -1204,13 +1433,11 @@ export function CampaignPreviewPanel({
                   </div>
                   <div className="space-y-2 text-sm text-muted-foreground">
                     <p>
-                      {safeConfig.images.length > 0 ? `${safeConfig.images.length} images selected` : 'No images uploaded'}
+                      {safeConfig.images.length > 0
+                        ? `${safeConfig.images.length} images selected`
+                        : 'No images uploaded'}
                     </p>
-                    {safeConfig.adText && (
-                      <p>
-                        Ad Text: {safeConfig.adText}
-                      </p>
-                    )}
+                    {safeConfig.adText && <p>Ad Text: {safeConfig.adText}</p>}
                   </div>
                 </div>
 
@@ -1232,7 +1459,7 @@ export function CampaignPreviewPanel({
                   </p>
                 </div>
 
-                <Button 
+                <Button
                   className="w-full bg-blue-600 hover:bg-blue-700 text-white mt-4"
                   disabled={!campaign || !adset}
                 >
@@ -1244,56 +1471,101 @@ export function CampaignPreviewPanel({
         )}
       </Card>
 
-      <Dialog open={showBudgetModal} onOpenChange={setShowBudgetModal}>
-        <DialogContent className="bg-background text-foreground border-border max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Update Daily Budget</DialogTitle>
-            <DialogDescription className="text-muted-foreground">
-              Set your desired daily spend for this campaign.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 mt-4">
-            <Input
-              type="number"
-              value={tempBudget}
-              onChange={(e) => setTempBudget(e.target.value)}
-              placeholder="Enter daily budget in EUR"
-            />
-            <Button onClick={async () => {
-              if (!tempBudget || !campaign?.id) {
-                toast.error('Please enter a valid budget.');
-                return;
-              }
+      {/* Budget Modal */}
+<Dialog open={showBudgetModal} onOpenChange={setShowBudgetModal}>
+<DialogContent className="bg-zinc-950 text-white border-zinc-800 max-w-xl">
+  <DialogHeader>
+    <DialogTitle className="text-zinc-200">Campaign Budget</DialogTitle>
+    <DialogDescription className="text-zinc-400">
+      Set your daily budget and review your total investment
+    </DialogDescription>
+  </DialogHeader>
 
-              try {
-                const updateSuccess = await (await fetch(`/api/fasty-bot/set-daily-budget`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json'},
-                  body: JSON.stringify({ campaignId: campaign.id, budget: Number(tempBudget) })
-                })).json();
+  <div className="space-y-6 p-2">
+    {/* Budget Slider Section */}
+    <div className="p-4 rounded-lg bg-zinc-900/50 border border-zinc-800">
+      <div className="flex items-center gap-2 mb-4">
+        <DollarSign className="size-5 text-green-400" />
+        <h4 className="font-medium text-zinc-200">Daily Budget</h4>
+      </div>
+      <div className="text-3xl font-bold text-green-400 mb-4">
+        {formatNumber(tempBudget)}
+      </div>
+      <div className="relative">
+        <input
+          type="range"
+          min="10"
+          max="1000"
+          value={tempBudget}
+          onChange={(e) => setTempBudget(Number(e.target.value))}
+          className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-zinc-700 accent-green-500"
+        />
+        <div className="absolute w-full flex justify-between text-xs text-zinc-400 mt-2">
+          <span>€10</span>
+          <span>€500</span>
+          <span>€1000</span>
+        </div>
+      </div>
+    </div>
 
-                if (updateSuccess.success) {
-                  onConfigUpdate({ budget: Number(tempBudget) });
-                  await getCampaignList();
-                  toast.success('Budget updated successfully');
-                  setShowBudgetModal(false);
-                } else {
-                  toast.error('Failed to update budget');
-                }
-              } catch (error) {
-                console.error('Error updating budget:', error);
-                toast.error('Failed to update budget');
-              }
-            }}>Save</Button>
-          </div>
-          <DialogClose asChild>
-            <Button variant="outline" className="absolute top-3 right-3 size-4">X</Button>
-          </DialogClose>
-        </DialogContent>
-      </Dialog>
+    {/* Duration Section */}
+    <div className="p-4 rounded-lg bg-zinc-900/50 border border-zinc-800">
+      <div className="flex items-center gap-2 mb-2">
+        <Calendar className="size-5 text-blue-400" />
+        <h4 className="font-medium text-zinc-200">
+          Ad Budget calculation based on one Month
+        </h4>
+      </div>
+      <div className="text-2xl font-semibold text-blue-400">
+        30 Days
+      </div>
+    </div>
 
+    {/* Total Section */}
+    <div className="p-4 rounded-lg bg-zinc-900/50 border border-zinc-800">
+      <div className="flex items-center gap-2 mb-2">
+        <Coins className="size-5 text-purple-400" />
+        <h4 className="font-medium text-zinc-200">Total Investment</h4>
+      </div>
+      <div className="flex items-center gap-3 text-zinc-400">
+        <span>30 Days</span>
+        <ArrowRight className="size-4" />
+        <span>{formatNumber(tempBudget)} daily</span>
+        <ArrowRight className="size-4" />
+        <span className="text-2xl font-bold text-purple-400">
+          {formatNumber(30 * tempBudget)}
+        </span>
+      </div>
+    </div>
+
+    {/* Save Button */}
+    <button
+      onClick={() => handleBudgetUpdate(tempBudget)}
+      className="w-full px-6 py-3 font-semibold text-zinc-900 bg-green-400 rounded-lg hover:bg-green-500 transition-colors duration-200 flex items-center justify-center gap-2"
+    >
+      <DollarSign className="size-5" />
+      Set Campaign Budget
+    </button>
+  </div>
+
+  <DialogClose asChild>
+    <Button 
+      variant="outline" 
+      className="absolute top-3 right-3 size-4 bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-300 border-zinc-700"
+    >
+      X
+    </Button>
+  </DialogClose>
+</DialogContent>
+</Dialog>
+
+      {/* 
+      --------------------------------------------------------------------
+      Targeting Modal
+      --------------------------------------------------------------------
+      */}
       <Dialog open={showTargetingModal} onOpenChange={setShowTargetingModal}>
-        <DialogContent className="bg-background text-foreground border-border max-w-2xl max-h-[90vh] overflow-auto">
+        <DialogContent className="bg-background text-foreground border-border max-w-2xl max-h-[90vh] overflow-auto z-50">
           <DialogHeader>
             <DialogTitle>Edit Targeting</DialogTitle>
             <DialogDescription className="text-muted-foreground">
@@ -1301,20 +1573,27 @@ export function CampaignPreviewPanel({
             </DialogDescription>
           </DialogHeader>
           <div className="mt-4">
-            <GeographicalLocation 
-              toolCallId="toolCallId-location" 
+            <GeographicalLocation
+              toolCallId="toolCallId-location"
               isReadOnly={false}
               onDemographicDataUpdate={handleDemographicDataUpdate}
             />
           </div>
           <DialogClose asChild>
-            <Button variant="outline" className="absolute top-3 right-3 size-4">X</Button>
+            <Button variant="outline" className="absolute top-3 right-3 size-4">
+              X
+            </Button>
           </DialogClose>
         </DialogContent>
       </Dialog>
 
+      {/* 
+      --------------------------------------------------------------------
+      Creative Modal
+      --------------------------------------------------------------------
+      */}
       <Dialog open={showCreativeModal} onOpenChange={setShowCreativeModal}>
-        <DialogContent className="bg-background text-foreground border-border max-w-4xl">
+        <DialogContent className="bg-background text-foreground border-border max-w-4xl z-50">
           <DialogHeader>
             <DialogTitle>Edit Creative</DialogTitle>
             <DialogDescription className="text-muted-foreground">
@@ -1337,98 +1616,100 @@ export function CampaignPreviewPanel({
                 Upload Image
               </Button>
               <input
-  ref={imageInputRef}
-  style={{ display: 'none' }}
-  type="file"
-  accept="image/png, image/jpeg"
-  onChange={async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+                ref={imageInputRef}
+                style={{ display: 'none' }}
+                type="file"
+                accept="image/png, image/jpeg"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
 
-    setUploading(true);
-    setLoadingAdText(true);
+                  setUploading(true);
+                  setLoadingAdText(true);
 
-    try {
-      const formData = new FormData();
-      const campaignId = campaign?.id || chatSlug;
-      formData.append('id', campaignId as string);
-      formData.append('type', 'image');
-      formData.append('files', file);
+                  try {
+                    const formData = new FormData();
+                    const campaignId = campaign?.id || chatSlug;
+                    formData.append('id', campaignId as string);
+                    formData.append('type', 'image');
+                    formData.append('files', file);
 
-      // Upload image
-      const uploadRes = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-      });
-      const uploadData = await uploadRes.json();
+                    // Upload image
+                    const uploadRes = await fetch('/api/upload', {
+                      method: 'POST',
+                      body: formData
+                    });
+                    const uploadData = await uploadRes.json();
 
-      if (!uploadRes.ok || !uploadData.urls?.[0]) {
-        toast.error('Failed to upload the image. Please try again.');
-        setUploading(false);
-        setLoadingAdText(false);
-        return;
-      }
+                    if (!uploadRes.ok || !uploadData.urls?.[0]) {
+                      toast.error('Failed to upload the image. Please try again.');
+                      setUploading(false);
+                      setLoadingAdText(false);
+                      return;
+                    }
 
-      const imageUrl = uploadData.urls[0];
+                    const imageUrl = uploadData.urls[0];
 
-      // Generate ad text using AI
-      const message = `I have an image that I'd like to use for my ad: ${imageUrl}. Please generate a few variations of ad text and headlines that would pair well with this image.`;
-      const responseMessage = await submitUserMessage(message, [], true);
-      setMessages((currentMessages: any[]) => [...currentMessages, responseMessage]);
+                    // Generate ad text using AI
+                    const message = `I have an image that I'd like to use for my ad: ${imageUrl}. Please generate a few variations of ad text and headlines that would pair well with this image.`;
+                    const responseMessage = await submitUserMessage(message, [], true);
+                    setMessages((currentMessages: any[]) => [
+                      ...currentMessages,
+                      responseMessage
+                    ]);
 
-      // Simulate AI response
-      await sleep(2000);
+                    // Simulate AI response
+                    await sleep(2000);
 
-      const updatedMessages = aiState.messages;
-      const aiLastMessage = updatedMessages[updatedMessages.length - 1];
-      const aiText = aiLastMessage?.content?.toString() || '';
-      const versions = aiText.split('Version').slice(1);
+                    const updatedMessages = aiState.messages;
+                    const aiLastMessage = updatedMessages[updatedMessages.length - 1];
+                    const aiText = aiLastMessage?.content?.toString() || '';
+                    const versions = aiText.split('Version').slice(1);
 
-      const generatedAdTexts = versions.map((ver: string, idx: number) => {
-  const segments = ver.split('"');
-  const headline = segments[1] || 'Your Ad Headline';
-  const text = segments[3] || 'Your ad text goes here.';
-  return {
-    id: Date.now() + idx,
-    headline,
-    text,
-    image: imageUrl,
-    date: new Date().toISOString(),
-    fbAdId: undefined,
-  };
-});
+                    const generatedAdTexts: AdText[] = versions.map(
+                      (ver: string, idx: number) => {
+                        const segments = ver.split('"');
+                        const headline = segments[1] || 'Your Ad Headline';
+                        const text = segments[3] || 'Your ad text goes here.';
+                        return {
+                          id: Date.now() + idx,
+                          headline,
+                          text,
+                          image: imageUrl,
+                          date: new Date().toISOString(),
+                          fbAdId: undefined
+                        };
+                      }
+                    );
 
+                    if (generatedAdTexts.length === 0) {
+                      generatedAdTexts.push({
+                        id: Date.now(),
+                        headline: 'Your Headline Here',
+                        text: 'Your ad text here, describing the product or service shown in the image.',
+                        image: imageUrl,
+                        date: new Date().toISOString(),
+                        fbAdId: undefined
+                      });
+                    }
 
-      if (generatedAdTexts.length === 0) {
-        generatedAdTexts.push({
-          id: Date.now(),
-          headline: 'Your Headline Here',
-          text: 'Your ad text here, describing the product or service shown in the image.',
-          image: imageUrl,
-          date: new Date().toISOString(),
-          fbAdId: undefined,
-        });
-      }
+                    setAdTexts((prev) => [...prev, ...generatedAdTexts]);
+                    onConfigUpdate({
+                      images: [...safeConfig.images, imageUrl],
+                      adText: generatedAdTexts[0].text
+                    });
 
-      setAdTexts((prev) => [...prev, ...generatedAdTexts]);
-      onConfigUpdate({
-        images: [...safeConfig.images, imageUrl],
-        adText: generatedAdTexts[0].text,
-      });
-
-      setUploading(false);
-      setLoadingAdText(false);
-      toast.success('Image uploaded and ad text generated!');
-    } catch (error) {
-      console.error('Error uploading image and generating ad text:', error);
-      toast.error('Failed to upload image or generate ad text');
-      setUploading(false);
-      setLoadingAdText(false);
-    }
-  }}
-/>
-
-
+                    setUploading(false);
+                    setLoadingAdText(false);
+                    toast.success('Image uploaded and ad text generated!');
+                  } catch (error) {
+                    console.error('Error uploading image and generating ad text:', error);
+                    toast.error('Failed to upload image or generate ad text');
+                    setUploading(false);
+                    setLoadingAdText(false);
+                  }
+                }}
+              />
               {loadingAdText && (
                 <div className="flex items-center justify-center p-4 text-muted-foreground space-x-2">
                   <IconSpinner className="size-4 animate-spin" />
@@ -1436,53 +1717,63 @@ export function CampaignPreviewPanel({
                 </div>
               )}
 
-{adTexts.length > 0 && (
-  <div className="space-y-6">
-    {adTexts.map((adText, index) => (
-      <AdTextItem
-        key={`${adText.id}-${index}`}
-        index={index}
-        adText={adText}
-        acceptText={async (idx, text) => {
-          if (!campaign || !adset) {
-            toast.error('Please create a campaign and adset first.');
-            return;
-          }
+              {adTexts.length > 0 && (
+                <div className="space-y-6">
+                  {adTexts.map((adText, index) => (
+                    <AdTextItem
+                      key={`${adText.id}-${index}`}
+                      index={index}
+                      adText={adText}
+                      acceptText={async (idx, text) => {
+                        if (!campaign || !adset) {
+                          toast.error('Please create a campaign and adset first.');
+                          return;
+                        }
 
-          const response = await confirmCreateAd(
-            campaign,
-            generateAdTemplate(text.headline, text.text, text.image),
-            generateAdsetTemplate()
-          );
-          setMessages((prev) => [...prev, response.newMessage]);
+                        const response = await confirmCreateAd(
+                          campaign,
+                          generateAdTemplate(text.headline, text.text, text.image),
+                          generateAdsetTemplate()
+                        );
+                        setMessages((prev) => [...prev, response.newMessage]);
 
-          for await (const fbAdId of readStreamableValue(response.fbAdIdStream)) {
-            await updateAdTextWithFbId(chatSlug as string, idx, text.id, fbAdId as string);
-            setAdTexts((prev) =>
-              prev.map((a, i) => (i === idx ? { ...a, fbAdId: fbAdId as string } : a))
-            );
-            toast.success('Ad text added to your campaign successfully!');
-          }
-        }}
-        updateText={async (idx, oldText, newText) => {
-          setAdTexts((prev) =>
-            prev.map((a, i) => (i === idx ? newText : a))
-          );
-          await updateAdText(chatSlug as string, idx, oldText.id, newText);
-          onConfigUpdate({ adText: newText.text });
-        }}
-      />
-    ))}
-  </div>
-)}
-
+                        for await (const fbAdId of readStreamableValue(
+                          response.fbAdIdStream
+                        )) {
+                          await updateAdTextWithFbId(
+                            chatSlug as string,
+                            idx,
+                            text.id,
+                            fbAdId as string
+                          );
+                          setAdTexts((prev) =>
+                            prev.map((a, i) =>
+                              i === idx ? { ...a, fbAdId: fbAdId as string } : a
+                            )
+                          );
+                          toast.success(
+                            'Ad text added to your campaign successfully!'
+                          );
+                        }
+                      }}
+                      updateText={async (idx, oldText, newText) => {
+                        setAdTexts((prev) =>
+                          prev.map((a, i) => (i === idx ? newText : a))
+                        );
+                        await updateAdText(chatSlug as string, idx, oldText.id, newText);
+                        onConfigUpdate({ adText: newText.text });
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
 
-            <Button 
+            <Button
               onClick={() => {
                 toast.info('Saving changes to creative...');
                 setShowCreativeModal(false);
-              }} 
+              }}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white"
             >
               Save
@@ -1496,15 +1787,20 @@ export function CampaignPreviewPanel({
         </DialogContent>
       </Dialog>
 
+      {/* 
+      --------------------------------------------------------------------
+      Preview Modal
+      --------------------------------------------------------------------
+      */}
       <Dialog open={showPreviewModal} onOpenChange={setShowPreviewModal}>
-        <DialogContent className="bg-background text-foreground border-border max-w-4xl">
+        <DialogContent className="bg-background text-foreground border-border max-w-4xl z-50">
           <DialogHeader>
             <DialogTitle>Ad Preview</DialogTitle>
             <DialogDescription className="text-muted-foreground">
               Preview how your ad will look on different platforms
             </DialogDescription>
           </DialogHeader>
-          
+
           {previewAdText && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
               <SocialPreview
@@ -1521,7 +1817,7 @@ export function CampaignPreviewPanel({
               />
             </div>
           )}
-          
+
           <DialogClose asChild>
             <Button variant="outline" className="absolute top-3 right-3 size-4">
               X
@@ -1530,8 +1826,13 @@ export function CampaignPreviewPanel({
         </DialogContent>
       </Dialog>
 
+      {/* 
+      --------------------------------------------------------------------
+      Placement Modal
+      --------------------------------------------------------------------
+      */}
       <Dialog open={showPlacementModal} onOpenChange={setShowPlacementModal}>
-        <DialogContent className="bg-background text-foreground border-border max-w-4xl">
+        <DialogContent className="bg-background text-foreground border-border max-w-4xl z-50">
           <DialogHeader>
             <DialogTitle>Ad Placement</DialogTitle>
             <DialogDescription className="text-muted-foreground">
@@ -1539,7 +1840,7 @@ export function CampaignPreviewPanel({
             </DialogDescription>
           </DialogHeader>
           <div className="mt-4">
-            <PlacementTargeting 
+            <PlacementTargeting
               toolCallId={'toolCallId-placement'}
               onPlacementUpdate={handlePlacementUpdate}
             />
@@ -1552,8 +1853,13 @@ export function CampaignPreviewPanel({
         </DialogContent>
       </Dialog>
 
+      {/* 
+      --------------------------------------------------------------------
+      Lead Form Modal
+      --------------------------------------------------------------------
+      */}
       <Dialog open={showLeadFormModal} onOpenChange={setShowLeadFormModal}>
-        <DialogContent className="bg-background text-foreground border-border max-w-4xl">
+        <DialogContent className="bg-background text-foreground border-border max-w-4xl z-50">
           <DialogHeader>
             <DialogTitle>Lead Form</DialogTitle>
             <DialogDescription className="text-muted-foreground">
