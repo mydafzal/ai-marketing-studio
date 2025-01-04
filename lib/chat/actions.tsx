@@ -141,6 +141,15 @@ async function updateCampaignPreview(config: Partial<CampaignConfig>) {
     });
 }
 
+
+export async function confirmBudget(campaignId: string, budget: number, days: number) {
+    return {
+      id: 'budget-confirmation',
+      role: 'assistant',
+      content: `Great! I've set your campaign budget to €${budget} per day for ${days} days.`,
+    };
+  }
+
 export async function updateCampaignConfig(chatId: string, config: Partial<CampaignConfig>) {
     const aiState = getMutableAIState<typeof AI>();
     

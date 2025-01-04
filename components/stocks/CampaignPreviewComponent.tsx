@@ -63,15 +63,9 @@ import { updateAdText, updateAdTextWithFbId } from '@/app/actions';
 import { readStreamableValue } from 'ai/rsc';
 import { generateAdTemplate, generateAdsetTemplate, targetPositions } from '@/lib/data';
 import { type AI } from '@/lib/chat/actions';
+import { PurchasingUi, type IPurchasingUiProp } from '@/components/stocks/purchasing-ui';
 
-/*
-----------------------------------------------------------------------------------
-In this version, the budget modal is similar to the “stock-purchase” approach:
-1) We keep local budget state for the slider
-2) We only make the API call to update the budget on "Save" button click
-3) We fix the grey overlay by applying appropriate z-index on DialogContent
-----------------------------------------------------------------------------------
-*/
+
 
 // Updated CampaignConfig interface with dailyBudget and duration
 interface CampaignConfig {
@@ -228,6 +222,7 @@ function AdTextItem({
   const [textEdit, setTextEdit] = useState(adText.text);
   const [headlineEdit, setHeadlineEdit] = useState(adText.headline);
   const hasFbAd = !!adText.fbAdId;
+  const [purchasingUI, setPurchasingUI] = useState<null | React.ReactNode>(null);
 
   const handleAccept = async () => {
     setIsUpdating(true);
@@ -411,7 +406,7 @@ export function PlacementTargetingResult({
   targeting,
   success
 }: TargetingUiProps) {
-  const { submitUserMessage } = useActions();
+  const { submitUserMessage, confirmBudget } = useActions();
   const [aiState] = useAIState();
   const [_, setMessages] = useUIState<typeof AI>();
   const hasTriggeredMessage = useRef(false);
@@ -508,10 +503,12 @@ export function PlacementTargeting({
 }: PlacementTargetingProps) {
   const { adset, setAdset } = useContext(CampaignContext);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [aiState, setAIState] = useAIState();
+const [aiState, setAIState] = useAIState<typeof AI>();
   const { confirmUpdateAdset, syncMessages } = useActions();
-  const [_, setMessages] = useUIState<typeof AI>();
+  
+const [messages, setMessages] = useUIState<typeof AI>();
   const [selectedPositions, setSelectedPositions] = useState<string[]>([]);
+  const { confirmPurchase } = useActions();
   const [targetingUI, setTargetingUI] = useState<null | React.ReactNode>(
     
     targetingUiProps ? (
@@ -787,6 +784,11 @@ export function CampaignPreviewPanel({
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [showPlacementModal, setShowPlacementModal] = useState(false);
   const [showLeadFormModal, setShowLeadFormModal] = useState(false);
+const [purchasingUI, setPurchasingUI] = useState<null | React.ReactNode>(null);
+const [budgetConfirmMessage, setBudgetConfirmMessage] = useState<string | null>(null);
+const [showBudgetSuccessModal, setShowBudgetSuccessModal] = useState(false);
+const [budgetSuccessMessage, setBudgetSuccessMessage] = useState<string | null>(null);
+const { confirmPurchase } = useActions();
 
   // Local slider / budget state used in the modal
   const [tempBudget, setTempBudget] = useState<number>(safeConfig.dailyBudget || 10);
@@ -1071,7 +1073,7 @@ export function CampaignPreviewPanel({
   const handleBudgetUpdate = async (newBudget: number) => {
     try {
       // Update local state first
-      onConfigUpdate({ dailyBudget: newBudget });
+      onConfigUpdate({ dailyBudget: tempBudget });
       
       // If we have a campaign, update it through the API
       if (campaign?.id) {
@@ -1472,92 +1474,210 @@ export function CampaignPreviewPanel({
       </Card>
 
       {/* Budget Modal */}
-<Dialog open={showBudgetModal} onOpenChange={setShowBudgetModal}>
-<DialogContent className="bg-zinc-950 text-white border-zinc-800 max-w-xl">
-  <DialogHeader>
-    <DialogTitle className="text-zinc-200">Campaign Budget</DialogTitle>
-    <DialogDescription className="text-zinc-400">
-      Set your daily budget and review your total investment
-    </DialogDescription>
-  </DialogHeader>
+      <Dialog open={showBudgetModal} onOpenChange={setShowBudgetModal}>
+  <DialogContent className="bg-zinc-950 text-white border-zinc-800 max-w-xl">
+    <DialogHeader>
+      <DialogTitle className="text-zinc-200">Campaign Budget</DialogTitle>
+      <DialogDescription className="text-zinc-400">
+        Set your daily budget and review your total investment
+      </DialogDescription>
+    </DialogHeader>
 
-  <div className="space-y-6 p-2">
-    {/* Budget Slider Section */}
-    <div className="p-4 rounded-lg bg-zinc-900/50 border border-zinc-800">
-      <div className="flex items-center gap-2 mb-4">
-        <DollarSign className="size-5 text-green-400" />
-        <h4 className="font-medium text-zinc-200">Daily Budget</h4>
-      </div>
-      <div className="text-3xl font-bold text-green-400 mb-4">
-        {formatNumber(tempBudget)}
-      </div>
-      <div className="relative">
-        <input
-          type="range"
-          min="10"
-          max="1000"
-          value={tempBudget}
-          onChange={(e) => setTempBudget(Number(e.target.value))}
-          className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-zinc-700 accent-green-500"
-        />
-        <div className="absolute w-full flex justify-between text-xs text-zinc-400 mt-2">
-          <span>€10</span>
-          <span>€500</span>
-          <span>€1000</span>
+    <div className="space-y-6 p-2">
+      {/* Budget Slider Section */}
+      <div className="p-4 rounded-lg bg-zinc-900/50 border border-zinc-800">
+        <div className="flex items-center gap-2 mb-4">
+          <DollarSign className="size-5 text-green-400" />
+          <h4 className="font-medium text-zinc-200">Daily Budget</h4>
+        </div>
+
+        <div className="text-3xl font-bold text-green-400 mb-4">
+          €{formatNumber(tempBudget)}
+        </div>
+
+        <div className="relative">
+          <input
+            type="range"
+            min="10"
+            max="1000"
+            value={tempBudget}
+            onChange={(e) => {
+              const newBudget = Number(e.target.value);
+              setTempBudget(newBudget);
+              // optional system message about budget changes
+              setAIState({
+                ...aiState,
+                messages: [
+                  ...aiState.messages.filter((m: { id: string }) => m.id !== 'budget-change'),
+                  {
+                    id: 'budget-change',
+                    role: 'system',
+                    content: `Budget updated to ${newBudget}. Total cost for 30 days: €${formatNumber(newBudget * 30)}.`,
+                    timestamp: new Date().toISOString(),
+                  },
+                ],
+              });
+            }}
+            className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-zinc-700 accent-green-500"
+          />
+          <div className="absolute w-full flex justify-between text-xs text-zinc-400 mt-2">
+            <span>€10</span>
+            <span>€500</span>
+            <span>€1000</span>
+          </div>
         </div>
       </div>
+
+      {/* Duration Section */}
+      <div className="p-4 rounded-lg bg-zinc-900/50 border border-zinc-800">
+        <div className="flex items-center gap-2 mb-2">
+          <Calendar className="size-5 text-blue-400" />
+          <h4 className="font-medium text-zinc-200">
+            Ad Budget calculation based on one Month
+          </h4>
+        </div>
+        <div className="text-2xl font-semibold text-blue-400">30 Days</div>
+      </div>
+
+      {/* Total Section */}
+      <div className="p-4 rounded-lg bg-zinc-900/50 border border-zinc-800">
+        <div className="flex items-center gap-2 mb-2">
+          <Coins className="size-5 text-purple-400" />
+          <h4 className="font-medium text-zinc-200">Total Investment</h4>
+        </div>
+        <div className="flex items-center gap-3 text-zinc-400">
+          <span>30 Days</span>
+          <ArrowRight className="size-4" />
+          <span>€{formatNumber(tempBudget)} daily</span>
+          <ArrowRight className="size-4" />
+          <span className="text-2xl font-bold text-purple-400">
+            €{formatNumber(30 * tempBudget)}
+          </span>
+        </div>
+      </div>
+
+      {/* No more budgetConfirmMessage usage here. We'll use a separate success modal. */}
+
+      <button
+        className="w-full px-6 py-3 font-semibold text-zinc-900 bg-green-400 
+                   rounded-lg hover:bg-green-500 transition-colors duration-200 
+                   flex items-center justify-center gap-2"
+        onClick={async () => {
+          // 1) Confirm purchase
+          const response = await confirmPurchase(
+            campaign?.name || 'Campaign',
+            tempBudget,
+            30
+          );
+
+          // 2) Update your local campaign so the UI sees the new budget
+          if (campaign) {
+            campaign.daily_budget = tempBudget.toString();
+          }
+          onConfigUpdate({ dailyBudget: tempBudget });
+
+          // 3) Close this Budget Modal
+          setShowBudgetModal(false);
+
+          // 4) Show success in a new modal
+          //    you can use the returned message, or your own text
+          setBudgetSuccessMessage(
+            response.newMessage.content || "Budget successfully set!"
+          );
+          setShowBudgetSuccessModal(true);
+
+          // (Optional) If you do NOT want a global chat message, 
+          // then do NOT call setMessages here.
+          // setMessages((prev) => [...prev, response.newMessage]);
+        }}
+      >
+        <DollarSign className="size-5" />
+        Set Campaign Budget
+      </button>
     </div>
 
-    {/* Duration Section */}
-    <div className="p-4 rounded-lg bg-zinc-900/50 border border-zinc-800">
-      <div className="flex items-center gap-2 mb-2">
-        <Calendar className="size-5 text-blue-400" />
-        <h4 className="font-medium text-zinc-200">
-          Ad Budget calculation based on one Month
-        </h4>
-      </div>
-      <div className="text-2xl font-semibold text-blue-400">
-        30 Days
-      </div>
-    </div>
-
-    {/* Total Section */}
-    <div className="p-4 rounded-lg bg-zinc-900/50 border border-zinc-800">
-      <div className="flex items-center gap-2 mb-2">
-        <Coins className="size-5 text-purple-400" />
-        <h4 className="font-medium text-zinc-200">Total Investment</h4>
-      </div>
-      <div className="flex items-center gap-3 text-zinc-400">
-        <span>30 Days</span>
-        <ArrowRight className="size-4" />
-        <span>{formatNumber(tempBudget)} daily</span>
-        <ArrowRight className="size-4" />
-        <span className="text-2xl font-bold text-purple-400">
-          {formatNumber(30 * tempBudget)}
-        </span>
-      </div>
-    </div>
-
-    {/* Save Button */}
-    <button
-      onClick={() => handleBudgetUpdate(tempBudget)}
-      className="w-full px-6 py-3 font-semibold text-zinc-900 bg-green-400 rounded-lg hover:bg-green-500 transition-colors duration-200 flex items-center justify-center gap-2"
-    >
-      <DollarSign className="size-5" />
-      Set Campaign Budget
-    </button>
-  </div>
-
-  <DialogClose asChild>
-    <Button 
-      variant="outline" 
-      className="absolute top-3 right-3 size-4 bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-300 border-zinc-700"
-    >
-      X
-    </Button>
-  </DialogClose>
-</DialogContent>
+    <DialogClose asChild>
+      <button className="absolute top-3 right-3 text-zinc-400 hover:text-zinc-300">
+        X
+      </button>
+    </DialogClose>
+  </DialogContent>
 </Dialog>
+
+{/*Budget Success Modal */}
+
+<Dialog open={showBudgetSuccessModal} onOpenChange={setShowBudgetSuccessModal}>
+  <DialogContent className="bg-zinc-950 text-white border border-zinc-800 max-w-xl shadow-lg rounded-xl">
+    {/* Header */}
+    <div className="flex items-center justify-between mb-6">
+      <div>
+        <h3 className="text-xl font-semibold text-zinc-200">Test - test</h3>
+        <p className="text-sm text-zinc-400">Campaign Budget Configuration</p>
+      </div>
+      {/* If you want a status chip, uncomment & adjust: */}
+      {/* <div className="px-3 py-1 text-sm rounded-full bg-zinc-900 text-zinc-400 border border-zinc-800">
+        requires_action
+      </div> */}
+    </div>
+
+    {/* Body */}
+    <div className="space-y-6">
+      {/* Success Box */}
+      <div className="p-4 rounded-lg bg-zinc-900/50 border border-zinc-800">
+        <div className="flex items-center gap-2 mb-4">
+          <DollarSign className="size-5 text-green-400" />
+          <h4 className="font-medium text-green-400 text-lg">
+            Budget Successfully Set
+          </h4>
+        </div>
+        <div className="space-y-2 text-sm text-zinc-400">
+          {/* Example fields – you can change or remove. */}
+          <div className="flex items-center gap-1">
+            <span className="text-zinc-500">Campaign:</span>
+            <span className="font-medium text-zinc-300">Test - test</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="text-zinc-500">Daily Budget:</span>
+            <span className="font-medium text-zinc-300">€20.00</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="text-zinc-500">One Month:</span>
+            <span className="font-medium text-zinc-300">30 days</span>
+          </div>
+          <hr className="my-3 border-zinc-800" />
+          <div className="flex items-center gap-1">
+            <span className="text-zinc-500">Total Budget in One Month:</span>
+            <span className="font-medium text-zinc-300">€600.00</span>
+          </div>
+        </div>
+      </div>
+
+      {/* (Optional) If you want to replicate the separate sections (Duration, 
+          Total Investment, etc.), you can do so here. 
+          But the snippet above already covers the "success card" design. */}
+      
+      {/* Action Button (Close/Ok) */}
+      <button
+        className="w-full px-6 py-3 font-semibold text-zinc-900 bg-green-400
+                   rounded-lg hover:bg-green-500 transition-colors duration-200
+                   flex items-center justify-center gap-2"
+        onClick={() => setShowBudgetSuccessModal(false)}
+      >
+        <DollarSign className="size-5" />
+        Ok
+      </button>
+    </div>
+
+    {/* 'X' close in top-right */}
+    <DialogClose asChild>
+      <button className="absolute top-3 right-3 text-zinc-400 hover:text-zinc-300">
+        X
+      </button>
+    </DialogClose>
+  </DialogContent>
+</Dialog>
+
+
 
       {/* 
       --------------------------------------------------------------------
