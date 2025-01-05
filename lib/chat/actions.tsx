@@ -2,7 +2,7 @@ import 'server-only'
 
 import {createAI, createStreamableUI, createStreamableValue, getAIState, getMutableAIState, streamUI} from 'ai/rsc'
 import {openai} from '@ai-sdk/openai'
-import {BotCard, BotMessage, Purchase, spinner, Stock, SystemErrorMessage, SystemMessage} from '@/components/stocks'
+import {BotCard, BotMessage, Purchase, spinner, SystemErrorMessage, SystemMessage} from '@/components/stocks'
 import {AdTextSelectionSkeleton} from '@/components/stocks/ad-text-selection-skeleton'
 import {EventsSkeleton} from '@/components/stocks/events-skeleton'
 import {Events} from '@/components/stocks/events'
@@ -25,6 +25,7 @@ import {differenceInHours} from 'date-fns';
 import {ChatImage} from '@/components/chat-images'
 import {ImagePart, TextPart} from 'ai'
 import {z} from 'zod'
+import { Stock } from '@/components/stocks/campaignresultsnew'
 
 import {formatNumber, nanoid, runAsyncFnWithoutBlocking, sleep} from '@/lib/utils'
 import {SpinnerMessage, UserMessage} from '@/components/stocks/message'
@@ -2201,17 +2202,18 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                             //         </BotCard>
                             //     );
                             case 'showStockPrice':
-                            case 'getCampaignResults':
-                                return (
-                                    <>
-                                        <BotCard key={tool.toolCallId}>
-                                            <Stock campaignId={tool.result.campaignId}/>
-                                        </BotCard>
-                                        <div className="my-4">
-                                            {tool.result.guideForUser ?? ''}
-                                        </div>
-                                    </>
-                                );
+                                case 'getCampaignResults':
+                                    return (
+                                        <>
+                                            <BotCard key={tool.toolCallId}>
+                                                <Stock campaignId={tool.result.campaignId} isActive />
+                                            </BotCard>
+                                            <div className="my-4">
+                                                {tool.result.guideForUser ?? ''}
+                                            </div>
+                                        </>
+                                    );
+                                
                             case 'showAdBudgetUI':
                                 return (
                                     <>
