@@ -3,7 +3,7 @@
 import { ToolContent } from 'ai';
 import { readStreamableValue, useActions, useAIState, useUIState } from 'ai/rsc'
 import * as React from 'react'
-import { useState, useCallback, useContext, useEffect, useRef } from 'react'
+import { useState, useCallback, useContext, useEffect } from 'react'
 import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
 import { IconSpinner } from '@/components/ui/icons'
@@ -28,26 +28,6 @@ export function PlacementTargetingResult({
   targeting,
   success
 }: TargetingUiProps) {
-  const { submitUserMessage } = useActions()
-  const [aiState] = useAIState()
-  const [_, setMessages] = useUIState<typeof AI>()
-  const hasTriggeredMessage = useRef(false)
-  
-  useEffect(() => {
-    async function sendFollowUpMessage() {
-      if (success && !hasTriggeredMessage.current) {
-        hasTriggeredMessage.current = true
-        
-        const message = "Perfect! Now that we have set up where your ads will be shown, let's add your creative assets. 🎨 Could you please upload the images or videos you'd like to use for your ad? I can help you optimize them for the best performance across these placements."
-
-        const responseMessage = await submitUserMessage(message, [], true)
-        setMessages(currentMessages => [...currentMessages, responseMessage])
-      }
-    }
-
-    sendFollowUpMessage()
-  }, [success, submitUserMessage, setMessages])
-
   if (!success) return null
   
   return (
@@ -224,7 +204,7 @@ export function PlacementTargeting({
     newTargeting.instagram_positions = newInstagramPositions
     newTargeting.publisher_platforms = publisherPlatforms
 
-    const response = await confirmUpdateAdset(toolCallId, adset.id, {
+    const response = await confirmUpdateAdset(adset.id, {
       targeting: newTargeting
     }, 'placement')
     setMessages(currentMessages => [...currentMessages, response.newMessage])

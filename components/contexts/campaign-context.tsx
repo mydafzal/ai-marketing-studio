@@ -18,7 +18,6 @@ interface ICampaignContext {
     adset?: Adset;
     setAdset: (adset: Adset) => void;
     fetchAdsets: () => Promise<void>;
-    setAdsetId:(adsetId:string)=>void;
 }
 
 export const CampaignContext = createContext<ICampaignContext>({
@@ -32,7 +31,6 @@ export const CampaignContext = createContext<ICampaignContext>({
     adsets: [],
     setAdset: () => {},
     fetchAdsets: async () => {},
-    setAdsetId:async()=>{}
 });
 
 const oneHour = 60 * 60 * 1000
@@ -46,7 +44,6 @@ export const CampaignContextProvider = ({ children }: { children: React.ReactNod
     const { chat } = useContext(KvContext);
     const [adsets, setAdsets] = useState<Adset[]>([]);
     const [adset, setAdset] = useState<Adset>();
-    const [adsetId, setAdsetId] = useState<string>();
     const getCampaignList = useCallback(async () => {
         const data = await getCampaigns()
         setCampaigns(data || [])
@@ -92,29 +89,9 @@ export const CampaignContextProvider = ({ children }: { children: React.ReactNod
             }
         }
     }, [id])
-
-    useEffect(()=>{
-        console.log("change detected in adset",new Date().getTime(), adset)
-    },[adset])
-
     useEffect(() => {
         void fetchAdsets()
     }, [id, fetchAdsets])
-
-    useEffect(()=>{
-        if(adsets && adsetId){
-            const found_adset = adsets.find(
-                (a: Adset) => a.id === adsetId
-            )
-            console.log("Found adset", found_adset)
-            if(found_adset){
-                setAdset(
-                    found_adset
-                )
-            }
-        }
-
-    },[adsetId, adsets])
     useEffect(() => {
         if (id) {
             fetchSummary(id)
@@ -156,8 +133,7 @@ export const CampaignContextProvider = ({ children }: { children: React.ReactNod
         adset,
         setAdset,
         fetchAdsets,
-        setAdsetId
-    }), [id, setId, campaign, campaigns, summary, adsets, adset, setAdset, fetchAdsets, setAdsetId])
+    }), [id, setId, campaign, campaigns, summary, adsets, adset, setAdset, fetchAdsets])
 
     return (
         <CampaignContext.Provider value={value}>

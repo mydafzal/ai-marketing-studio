@@ -2,7 +2,7 @@ import 'server-only'
 
 import {createAI, createStreamableUI, createStreamableValue, getAIState, getMutableAIState, streamUI} from 'ai/rsc'
 import {openai} from '@ai-sdk/openai'
-import {BotCard, BotMessage, Purchase, spinner, SystemErrorMessage, SystemMessage} from '@/components/stocks'
+import {BotCard, BotMessage, Purchase, spinner, Stock, SystemErrorMessage, SystemMessage} from '@/components/stocks'
 import {AdTextSelectionSkeleton} from '@/components/stocks/ad-text-selection-skeleton'
 import {EventsSkeleton} from '@/components/stocks/events-skeleton'
 import {Events} from '@/components/stocks/events'
@@ -13,7 +13,6 @@ import {VideoAdTextSuggestion} from '@/components/stocks/video-ad-text-suggestio
 import {CampaignStatus} from '@/components/stocks/campaign-status'
 import {
     fetchChatCampaignBudget,
-    fetchChatFbAdsetId,
     fetchFbCampaignExtraDetailsForChat,
     fetchUserDefaultExtraDetails,
     saveChat,
@@ -25,7 +24,6 @@ import {differenceInHours} from 'date-fns';
 import {ChatImage} from '@/components/chat-images'
 import {ImagePart, TextPart} from 'ai'
 import {z} from 'zod'
-import { Stock } from '@/components/stocks/campaignresultsnew'
 
 import {formatNumber, nanoid, runAsyncFnWithoutBlocking, sleep} from '@/lib/utils'
 import {SpinnerMessage, UserMessage} from '@/components/stocks/message'
@@ -330,7 +328,6 @@ async function confirmCreateAd(campaign: any, data: any, adset: any) {
                     You have successfully created a campaign ad with ID: {response?.params?.id}
                 </SystemMessage>
             );
-            
 
         } else {
             systemMessage.done(
@@ -433,7 +430,7 @@ async function confirmUpdateAdset(toolCallId: string, adsetId: string, adset: an
             })
             systemMessage.done(
                 <SystemMessage>
-                    You have successfully updated your targeting
+                    You have successfully updated placement targeting
                 </SystemMessage>
             );
         } else {
@@ -531,17 +528,6 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
     } catch (error) {
         // Error handling if necessary
     }
-
-    let adsetId = "";
-
-    if(chatId){
-        const adsetIDResp = await fetchChatFbAdsetId(chatId);
-        if (adsetIDResp.success){
-            adsetId=adsetIDResp.fbAdsetId as string;
-        }
-    }
-
-    console.log("CUrrent selected adset is ", adsetId)
 
     let extraDetailsFinalText = '';
 
@@ -967,7 +953,6 @@ Technology
         }
     }
 
-
     const result = await streamUI({
         model: openai('gpt-4o'),
         initial: <SpinnerMessage/>,
@@ -1010,15 +995,6 @@ Use emojis in most of your messages to make your conversational style a bit more
 Before proceeding to the next step, acknowledge with checkmark emojis, what you concluded for each step. For example, if you have set the budget, you can say "Budget set to €10/day ✅" and then ask the user if they are ready to proceed to the next step.
 Before you start getting into creating the campaign, ask the user, whether he wants to create a campaign to win customer Leads or whether he wands to generate leads for a job advertisement. After the user answered show the user a message which lists all the Steps that need to be done with emojis to give an overview. Then ask at the end of the message, if the user is ready to start the step by step process.
 
-
-IMPORTANT information to consider for each message:
-ALWAYS CHECK BELOW DETAILS ABOUT CONNECTED CAMPAIGN AND ADSET STATE BEFORE PERFORMING ANY ACTION IN WHICH YOU NEED CAMPAIGN OR ADSET ID
-${campaignId?"Campaign is connected and ID is : "+campaignId:"No campaign is connected to this chat at this time."}
-
-${adsetId?"Adset is Connected and adset id is: "+adsetId:"No adset connceted right now to the chat"}
-
-
-
 Step-by-Step Process:
 
 
@@ -1032,24 +1008,16 @@ Action: Inquire about the user's daily budget for the campaign.Explain the impac
 Command: Call (\`show_ad_budget_ui\`) once the budget is provided.
 Proceed: Insist on the user clicking the green button in the Ad budget UI to confirm the ad budget. Ask the user if he has done so. If they confirm  continue to the next step.
 Step 3: Location & Demographics
-Action: Tell the user that the next step is to set the geographical targeting and age range and tell the user that you will bring up settings in which the user can define these things further. Ask if userr is ready and wait for users response.
-Once user answered, check campaign connection status. If not connected, call (\`show_campaign_connection_ui\`). After campaign is connected, check adset connection status. If no adset is connected, call (\`show_adset_connection_ui\`). Once both are connected, call (\`show_geographical_location_ui\`) to let user set their geographical targeting.
-Ensure you have a clear location and age range and ensure the user is satisfied before moving on. Once you know that user has set the geotargeting, proceed to step 4.
-
-Step 4: Filter Targeting
-For Recruiting: Ask about the ideal candidate profile and the position they're hiring for. Make the user aware that in recruiting campaigns only interest filters can be used due to Facebooks anti discriminatory policies. Once they describe their ideal candidate, call (\`show_suggested_filters\`) with 5 relevant interest filters from the available categories.
-
-For regular Leads campaigns: Ask about the ideal customer profile. Once they describe their target audience, call (\`show_suggested_filters\`) with 5 relevant interest filters from the available categories. After they respond to the suggestions, mention that more detailed research will be done within 24 hours. If the user asks for the size of the audience, mention that you as the AI first have to research it and that your processing is done after 24 hours until you know more. The final number will appear in the chat here after confirming that also the rest of the campaign has been set up. Insist to continue finishing up the campaign creation procedure after which you will enter your deep research for targeting.
+Action: Ask for the geographical area and age range they wish to target. Provide suggestions based on their business type (local, regional, national) and discuss best practices for age targeting.
+Example: Use local examples relevant to the user's location. If you do not know the location, ask for it. 
+Proceed: Ensure you have a clear location and age range and ensure the user is satisfied before moving on.
+Step 4: Initial Targeting
+For Recruiting: Ask about the ideal candidate profile and the position they're hiring for. Make the user aware that in recruiting campaigns only interest filters can be used due to Facebooks anti discriminatory policies.
+For regular Leads campaigns: Ask about the ideal customer profile. Offer targeting strategies involving interests, behaviors, and demographics. Mention that more detailed research will be done within 24 hours. If the user asks for the size of the audience, mention that you as the AI first have to reseaarch it and that your processing is done after 24 hours until you know more. The final number will appear in the chat here after confirming that also the rest of the campaign has been set up. Insist to continue finishing up the campaign creation procedure after which you will enter your deep research for targeting.
 Proceed: Confirm the targeting details and ask if they're ready for the next step.
 
 Step 5: Suggest to the user to place the ad in Instagram Stories, Instagram Reels, Facebook Reels & Stories, as well as in both news feeds and also on Instagram Expplore. 
 
- Tell them that you will show an interface and they have to select and adset to setup the ad placement for it afterwards.
- very briefly explain what an adset is (very short and consise so they know why they need to select one).
- Ask them to confirm moving to this step. 
- Once confirmed if adset is not connected to chat then call showAdsetConnectionUI. otherwise move show placement targeting UI.
- Once the adset is connected you have to call showPlacementTargetingUI
- Once ad placement is finished and they have submitted via the ui go to step 6.
 
 Step 6: Creative Assets
 Action: Request the user to upload their ad creatives (images or videos).While asking for the images, Share best practices for images and videos, including format requirements and engagement tips.
@@ -1058,23 +1026,14 @@ If images are uploaded, ask if they'd like ad text examples. Wait for the user r
 If videos are uploaded, get a description and call (\`show_suggestion_video_ad_text\`).
 ALWAYS show the ad text in combination with the uploaded image, in case that the user did upload an image before. If multiple images were uploaded, show the multiple images with respective ad texts in the UI.
 Proceed: ALWAYS ask the user if the user has clicked accept on the ad text in combination with the image as only if he clicks accept you are able to upload text and image into the ad. If the user confirms that he did proceed to the final step of creating a lead form.
-Step 7: Lead Form or Website URL
-Action: Recommend users to use a lead form to collect their leads. However also mention, that the user can also just lead people directly to a website. See what the user responds: 
-If the user wants to lead people directly to a website, ask them to provide the URL. After user provided the URL, go to step 8. 
-If the user wants to use a lead form, ask them to provide the following information in the following order (Only necessary if user chose to use a lead form):
+Step 7: Lead Form Strategy
+Action: Collect the following information in order:
 Privacy policy URL (explain it's mandatory).
-Website URL. (explain it is a page that users get redirected to, after filling out the lead form on the instagram or facebook platform. Ideally user can insert their website here, for the user to get more information)
-Contact fields needed that the user wants their leads to fill in.
-Optional: Qualifying questions. Recommend keeping questions concise and relevant. Provide industry-specific example questions.
-Once you have all the information proceed to the next step 8.
-
+Thank you page URL. (explain it is a page that users get redirected to, after filling out the lead form on the instagram or facebook platform. Ideally user can insert their website here, for the user to get more information)
+Contact fields needed.
+Qualifying questions. Recommend keeping questions concise and relevant. Provide industry-specific example questions.
+Proceed: Ask the user if those are all the details they want to include in the lead form. If they confirm, proceed to the next step.
 Step 8: DO NOT call the lead form UI!!! Call (\`show_supervised_task_ui\`) 
-
-
-<Campaign Connection Information>
-To know if a campaign is connected to chat or no.
-Connected Campaign ID:  ${campaignId?campaignId:"No Campaign is connected"}
-</Campaign connection Information>
 
 [ONLY PERFORM IF ACTIVELY REQUESTED :: REGION START] 
 
@@ -1658,15 +1617,12 @@ Maintain a professional but friendly tone throughout.
                         campaign_name: campaignName,
                     })
                     let success = !!response.ok
-                    let adsetId;
                     if (success) {
-                        const {campaign,adset} = await response.json()
+                        const {campaign} = await response.json()
                         const id = campaign.id;
-                        adsetId = adset.id;
                         const result = await updateChat(aiState.get().chatId, {
                             title: campaignName,
-                            fbCampaignId: id,	
-                            fbAdsetId:adsetId
+                            fbCampaignId: id
                         })
                         success = success && !!result.success
                         campaignId = id
@@ -1707,7 +1663,7 @@ Maintain a professional but friendly tone throughout.
                         }
                     ])
 
-                    return await createCampaignModule.component({success, campaignName, campaignId, adsetId, questionForBudget})
+                    return await createCampaignModule.component({success, campaignName, campaignId, questionForBudget})
                 }
             },
             showCampaignConnectionUI: {
@@ -2202,18 +2158,17 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                             //         </BotCard>
                             //     );
                             case 'showStockPrice':
-                                case 'getCampaignResults':
-                                    return (
-                                        <>
-                                            <BotCard key={tool.toolCallId}>
-                                                <Stock campaignId={tool.result.campaignId} isActive />
-                                            </BotCard>
-                                            <div className="my-4">
-                                                {tool.result.guideForUser ?? ''}
-                                            </div>
-                                        </>
-                                    );
-                                
+                            case 'getCampaignResults':
+                                return (
+                                    <>
+                                        <BotCard key={tool.toolCallId}>
+                                            <Stock campaignId={tool.result.campaignId}/>
+                                        </BotCard>
+                                        <div className="my-4">
+                                            {tool.result.guideForUser ?? ''}
+                                        </div>
+                                    </>
+                                );
                             case 'showAdBudgetUI':
                                 return (
                                     <>

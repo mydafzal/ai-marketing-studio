@@ -1,112 +1,79 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-interface ScrollDivElement extends HTMLDivElement {
-  _scrollTimeout?: number;
-}
-
 export const useScrollAnchor = () => {
   const messagesRef = useRef<HTMLDivElement>(null)
-  const scrollRef = useRef<ScrollDivElement>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
   const visibilityRef = useRef<HTMLDivElement>(null)
+
   const [isAtBottom, setIsAtBottom] = useState(true)
   const [isVisible, setIsVisible] = useState(false)
-  const [isScrolling, setIsScrolling] = useState(false)
 
   const scrollToBottom = useCallback(() => {
-    if (scrollRef.current) {
-      requestAnimationFrame(() => {
-        const container = scrollRef.current;
-        if (container) {
-          const targetPosition = container.scrollHeight - container.clientHeight - 100;
-          container.scrollTo({
-            top: targetPosition,
-            behavior: 'smooth'
-          });
-        }
-      });
+    if (messagesRef.current) {
+      messagesRef.current.scrollIntoView({
+        block: 'end',
+        behavior: 'smooth'
+      })
     }
   }, [])
 
-  // Monitor messages changes
   useEffect(() => {
-    if (isAtBottom) {
-      const timeoutId = setTimeout(scrollToBottom, 100);
-      return () => clearTimeout(timeoutId);
+    if (messagesRef.current) {
+      if (isAtBottom && !isVisible) {
+        messagesRef.current.scrollIntoView({
+          block: 'end'
+        })
+      }
     }
-  }, [messagesRef.current?.childNodes.length, isAtBottom, scrollToBottom]);
+  }, [isAtBottom, isVisible])
 
-  // Handle scroll events
   useEffect(() => {
-    const { current: scrollContainer } = scrollRef;
-    if (!scrollContainer) return;
+    const { current } = scrollRef
 
-    const handleScroll = () => {
-      const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
-      const paddingBottom = 150; // Increased threshold for bottom detection
-      const distanceFromBottom = scrollHeight - (scrollTop + clientHeight + 100);
-      const atBottom = distanceFromBottom < paddingBottom;
+    if (current) {
+      const handleScroll = (event: Event) => {
+        const target = event.target as HTMLDivElement
+        const offset = 25
+        const isAtBottom =
+          target.scrollTop + target.clientHeight >= target.scrollHeight - offset
 
-      setIsAtBottom(atBottom);
-      setIsScrolling(true);
-
-      if (scrollContainer._scrollTimeout) {
-        window.clearTimeout(scrollContainer._scrollTimeout);
+        setIsAtBottom(isAtBottom)
       }
 
-      scrollContainer._scrollTimeout = window.setTimeout(() => {
-        setIsScrolling(false);
-        // Check if we should snap to bottom
-        if (distanceFromBottom < 20) {
-          scrollToBottom();
+      current.addEventListener('scroll', handleScroll, {
+        passive: true
+      })
+
+      return () => {
+        current.removeEventListener('scroll', handleScroll)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    if (visibilityRef.current) {
+      let observer = new IntersectionObserver(
+        entries => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              setIsVisible(true)
+            } else {
+              setIsVisible(false)
+            }
+          })
+        },
+        {
+          rootMargin: '0px 0px -150px 0px'
         }
-      }, 150);
-    };
+      )
 
-    scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
-    return () => {
-      if (scrollContainer._scrollTimeout) {
-        window.clearTimeout(scrollContainer._scrollTimeout);
+      observer.observe(visibilityRef.current)
+
+      return () => {
+        observer.disconnect()
       }
-      scrollContainer.removeEventListener('scroll', handleScroll);
-    };
-  }, [scrollToBottom]);
-
-  // Visibility observer
-  useEffect(() => {
-    if (!visibilityRef.current) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach(entry => {
-          const isNowVisible = entry.isIntersecting;
-          setIsVisible(isNowVisible);
-          
-          // If becoming visible and should be at bottom, scroll
-          if (isNowVisible && isAtBottom) {
-            scrollToBottom();
-          }
-        });
-      },
-      {
-        root: scrollRef.current,
-        rootMargin: '0px 0px -150px 0px', // Increased bottom margin
-        threshold: 0
-      }
-    );
-
-    observer.observe(visibilityRef.current);
-    return () => observer.disconnect();
-  }, [isAtBottom, scrollToBottom]);
-
-  // Initial scroll
-  useEffect(() => {
-    // Initial scroll with a delay to ensure content is loaded
-    const initialScrollTimeout = setTimeout(() => {
-      scrollToBottom();
-    }, 100);
-
-    return () => clearTimeout(initialScrollTimeout);
-  }, []);
+    }
+  })
 
   return {
     messagesRef,
