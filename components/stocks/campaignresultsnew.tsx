@@ -27,17 +27,15 @@ import {
 import { Clock as LucideClock } from 'lucide-react'
 import { useActions, useAIState, useUIState } from 'ai/rsc'
 
-// ----------------------------------------------------------------
-// 1) Imports for Data
-// ----------------------------------------------------------------
 import { CampaignSummary, getCampaignSummary } from '@/lib/api/fasty-bot/get-campaign-summary'
 import { getCampaignHistoricalMetrics } from '@/lib/api/fasty-bot/helpers/get-campaign-historical-metrics'
 
 // ----------------------------------------------------------------
-// 2) Type Definitions
+// 1) Type Definitions
 // ----------------------------------------------------------------
 interface IStockProps {
   campaignId: string
+  /** Fix for the TS error: add this optional prop */
   isActive?: boolean
 }
 
@@ -97,12 +95,8 @@ interface IHistoricalResponse {
 }
 
 // ----------------------------------------------------------------
-// 3) Utility / Rolling Change
+// 2) Utility: Rolling 14-day Change
 // ----------------------------------------------------------------
-/**
- * Compares the average of the last 7 days vs. the previous 7 days,
- * returning a percentage difference (like +12.5 or -3.4).
- */
 function calcPercentageChange(values: number[]): number {
   if (values.length < 14) return 0
   const last7 = values.slice(values.length - 7)
@@ -124,7 +118,7 @@ function parseDemographics(demoObj: Record<string, any>) {
       gender,
       impressions: val.impressions,
       spend: val.spend,
-      leads: val.actions // or "actions" if that stands for leads
+      leads: val.actions
     }
   })
 }
@@ -146,18 +140,20 @@ function parseTimeOfDay(tObj: Record<string, any>) {
 }
 
 // ----------------------------------------------------------------
-// 4) The Stock Component
+// 3) The Stock Component
 // ----------------------------------------------------------------
 export function Stock({ campaignId, isActive }: IStockProps) {
-  // 4A) AI Tools
+  // 3A) AI Tools
   const { submitUserMessage } = useActions()
   const [aiState] = useAIState()
   const [_, setMessages] = useUIState<any>()
 
-  // Activation
-  const [activated, setActivated] = useState(!!isActive)
-  const handleActivate = useCallback(() => {
-    setActivated(true)
+  // 3B) “loaded” state => by default, DO NOT load data
+  // If you have a reason to use isActive from outside, you can do:
+  // const [loaded, setLoaded] = useState(isActive ?? false)
+  const [loaded, setLoaded] = useState<boolean>(false)
+  const handleLoadData = useCallback(() => {
+    setLoaded(true)
   }, [])
 
   // aggregator => correct top-level metrics
@@ -171,23 +167,18 @@ export function Stock({ campaignId, isActive }: IStockProps) {
   const [platformData, setPlatformData] = useState<any[]>([])
   const [timingData, setTimingData] = useState<any[]>([])
 
-  /**
-   * topView now has 3 states:
-   * - 'overview' => Key Stats
-   * - 'extended' => Extended Stats
-   * - 'dailytable' => Daily Table
-   */
+  // We have 3 top-level “tabs”
   const [topView, setTopView] = useState<'overview' | 'extended' | 'dailytable'>('overview')
-
   // Chart sub-tabs
   const [chartView, setChartView] = useState<'overview' | 'demographics' | 'platforms' | 'timing'>('overview')
 
+  // for chart sizing
   const chartRef = useRef<HTMLDivElement>(null)
   useResizeObserver({ ref: chartRef, box: 'border-box' })
 
-  // 4B) Load aggregator (the single campaign summary with correct data)
+  // 3C) aggregator fetch => only if loaded===true & we have a campaignId
   useEffect(() => {
-    if (!activated || !campaignId) return
+    if (!loaded || !campaignId) return
     const loadAggregator = async () => {
       try {
         const data = await getCampaignSummary(campaignId)
@@ -195,7 +186,9 @@ export function Stock({ campaignId, isActive }: IStockProps) {
         console.log('Aggregator =>', data)
 
         if (data && data.campaign_id !== '0') {
-          const msg = `System: aggregator loaded for campaign '${data.campaign_name}'. It has ${data.total_leads} leads, €${data.total_spent.toFixed(2)} spent.`
+          const msg = `System: aggregator loaded for campaign '${data.campaign_name}'. It has ${data.total_leads} leads, €${data.total_spent.toFixed(
+            2
+          )} spent.`
           const resp = await submitUserMessage(msg, [], true)
           setMessages((old: any[]) => [...old, resp])
         }
@@ -204,11 +197,11 @@ export function Stock({ campaignId, isActive }: IStockProps) {
       }
     }
     void loadAggregator()
-  }, [activated, campaignId, submitUserMessage, setMessages])
+  }, [loaded, campaignId, submitUserMessage, setMessages])
 
-  // 4C) Load advanced historical data
+  // 3D) historical fetch => only if loaded===true & campaignId
   useEffect(() => {
-    if (!activated || !campaignId) return
+    if (!loaded || !campaignId) return
     const loadHistorical = async () => {
       try {
         const histData = await getCampaignHistoricalMetrics(campaignId, 'last_year', true)
@@ -234,23 +227,23 @@ export function Stock({ campaignId, isActive }: IStockProps) {
       }
     }
     void loadHistorical()
-  }, [activated, campaignId])
+  }, [loaded, campaignId])
 
-  // If not activated => big "Show Results" button
-  if (!activated) {
+  // 3E) If not loaded => show “Load Data” button
+  if (!loaded) {
     return (
       <div className="flex h-96 items-center justify-center bg-zinc-950">
         <button
-          onClick={handleActivate}
+          onClick={handleLoadData}
           className="flex items-center gap-2 rounded-lg bg-green-600 px-6 py-3 font-medium text-white hover:bg-green-700"
         >
-          Show Results
+          Load Data
         </button>
       </div>
     )
   }
 
-  // aggregator not loaded => spinner
+  // 3F) aggregator not loaded => spinner
   if (!aggregator) {
     return (
       <div className="flex h-96 items-center justify-center bg-zinc-950">
@@ -259,7 +252,7 @@ export function Stock({ campaignId, isActive }: IStockProps) {
     )
   }
 
-  // historical not loaded => spinner
+  // 3G) historical not loaded => spinner
   if (!historical) {
     return (
       <div className="flex h-96 items-center justify-center bg-zinc-950">
@@ -275,33 +268,32 @@ export function Stock({ campaignId, isActive }: IStockProps) {
   const creationDate = aggregator.creation_date
   const status = aggregator.status
   const clicks = aggregator.clicks
-  const ctr = aggregator.ctr // e.g. 2.10
+  const ctr = aggregator.ctr
   const frequency = aggregator.frequency
   const impressions = aggregator.impressions
   const reach = aggregator.reach
   const uniqueClicks = aggregator.unique_clicks
 
-  // aggregator might say daily_budget=1000 => user wants 10 EUR
-  const aggregatorDailyBudget = aggregator.daily_budget
-    ? aggregator.daily_budget / 100
+  // aggregator might say daily_budget=1000 => user wants 10 EUR (factor 100)
+  const aggregatorDailyBudget = (aggregator as any).daily_budget
+    ? (aggregator as any).daily_budget / 100
     : 0
 
-  // leads/spend rolling changes from daily
+  // leads/spend rolling changes
   const leadsArray = dailyMetrics.map((d) => d.leads ?? 0)
   const spendArray = dailyMetrics.map((d) => d.spend ?? 0)
   const leadsChange = calcPercentageChange(leadsArray)
   const spendChange = calcPercentageChange(spendArray)
 
-  // Chart data => daily leads
+  // daily leads chart data
   const chartData = dailyMetrics.map((d) => ({
     date: format(new Date(d.date), 'MMM d, yyyy'),
     leads: d.leads
   }))
 
-  // For top-level slides: we have 3 => overview, extended, dailytable
+  // 3H) top-level display => 3 tabs => overview, extended, dailytable
   let topViewContent: React.ReactNode
   if (topView === 'overview') {
-    // Key Stats
     topViewContent = (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <MetricCard
@@ -335,7 +327,6 @@ export function Stock({ campaignId, isActive }: IStockProps) {
       </div>
     )
   } else if (topView === 'extended') {
-    // Extended Stats
     topViewContent = (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-zinc-900 p-4 rounded-lg">
@@ -476,7 +467,6 @@ export function Stock({ campaignId, isActive }: IStockProps) {
     )
   }
 
-  // Chart data => daily leads chart
   return (
     <div className="relative min-h-[600px] bg-zinc-950 p-6 text-white space-y-6">
       {/* Header: Campaign Name, date, status, AI button */}
@@ -654,7 +644,7 @@ export function Stock({ campaignId, isActive }: IStockProps) {
 }
 
 // ----------------------------------------------------------------
-// 5) Helper Sub-Components
+// 4) Helper Sub-Components
 // ----------------------------------------------------------------
 const ThCell = ({ children }: { children: React.ReactNode }) => (
   <th className="sticky top-0 border-b border-zinc-800 px-3 py-2 text-zinc-300">
@@ -677,11 +667,11 @@ const MetricCard = ({ title, value, change, icon, subLabel }: MetricCardProps) =
   const negative = change.startsWith('-')
   return (
     <div className="bg-zinc-900 p-4 rounded-lg">
-      <div className="flex justify-between items-start mb-2">
+      <div className="mb-2 flex items-start justify-between">
         <div className="text-sm text-zinc-400">{title}</div>
         {icon}
       </div>
-      <div className="text-xl font-bold mb-1">{value}</div>
+      <div className="mb-1 text-xl font-bold">{value}</div>
       <div className={cn('text-sm', negative ? 'text-red-400' : 'text-green-400')}>
         {change}% {subLabel ?? ''}
       </div>
