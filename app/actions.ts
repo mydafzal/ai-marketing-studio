@@ -414,7 +414,8 @@ export async function searchUser(email: string) {
             success: true,
             data: {
                 email: user.email as string,
-                fbAccountId: (user.fbAccountId as string) || null
+                fbAccountId: (user.fbAccountId as string) || null,
+                fbPageId: (user.fbPageId as string) || null,
             }
         }
     } catch (error) {
@@ -445,7 +446,8 @@ export async function fetchAllUsers() {
 
         const users: {
             email: string,
-            fbAccountId: string | null
+            fbAccountId: string | null,
+            fbPageId: string | null,
         }[] = []
 
         for (const key of keys) {
@@ -455,7 +457,8 @@ export async function fetchAllUsers() {
                 if (user && typeof user === 'object' && 'email' in user) {
                     users.push({
                         email: user.email as string,
-                        fbAccountId: (user.fbAccountId as string) || null
+                        fbAccountId: (user.fbAccountId as string) || null,
+                        fbPageId: (user.fbPageId as string) || null,
                     })
                 } else {
                     console.warn(`Invalid user data for key: ${key}`)
@@ -509,8 +512,17 @@ export async function updateChatFbCampaignId(chatSlug: string, fbCampaignId: str
             }
         }
 
+        let update={};
+
+        if(existingChat.fbCampaignId && existingChat.fbCampaignId!=fbCampaignId){
+            update = {fbCampaignId,fbAdsetId:""}
+        }
+        else{
+            update = {fbCampaignId}
+        }
+
         // Update or insert the fbCampaignId field
-        await kv.hset(chatKey, {fbCampaignId})
+        await kv.hset(chatKey, update )
         revalidatePath('/')
 
         return {
@@ -759,6 +771,48 @@ export async function updateFbAccountId(email: string, fbAccountId: string) {
         }
     } catch (error) {
         console.error(`Error updating accountId for user ${email}:`, error)
+        return {
+            success: false,
+            error: 'Something went wrong'
+        }
+    }
+}
+
+
+export async function updateFbPageId(email: string, fbPageId: string) {
+    const session = await auth()
+
+    if (!session || !session.user) {
+        return {
+            success: false,
+            error: 'User not authenticated'
+        }
+    }
+
+    try {
+        // Construct the user key using the email
+        const userKey = `user:${email}`
+
+        // Check if the user exists
+        const existingUser = await kv.hgetall(userKey)
+
+        if (!existingUser) {
+            return {
+                success: false,
+                error: 'User not found'
+            }
+        }
+
+
+        // Update the pageId field
+        await kv.hset(userKey, {fbPageId})
+
+        return {
+            success: true,
+            message: 'Facebook Account ID updated successfully'
+        }
+    } catch (error) {
+        console.error(`Error updating pageId for user ${email}:`, error)
         return {
             success: false,
             error: 'Something went wrong'

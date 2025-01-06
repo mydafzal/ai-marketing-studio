@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { ModuleConfigBuilder } from '@/lib/ui-magic/moduleConfigBuilder'
-import { BotCard, Stock } from '@/components/stocks'
+import { BotCard } from '@/components/stocks'
+import { Stock } from '@/components/stocks/campaignresultsnew'
 
 export interface GetCampaignResultsParams {
     campaignId: string

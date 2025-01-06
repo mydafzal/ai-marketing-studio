@@ -8,6 +8,7 @@ export interface CreateCampaignParams {
     questionForBudget: string
     campaignName: string
     campaignId: string
+    adsetId:string
     success: boolean
 }
 
@@ -22,13 +23,14 @@ export const createCampaignModule = new ModuleConfigBuilder('createCampaign')
                 .string()
                 .describe(
                     'The question for the budget with step 2, this is optional'
-                )
+                ).optional()
         })
     )
     .setComponent(
         async ({
             success,
             campaignId,
+            adsetId,
             campaignName,
             questionForBudget
         }: CreateCampaignParams) => {
@@ -38,7 +40,7 @@ export const createCampaignModule = new ModuleConfigBuilder('createCampaign')
                     {!!questionForBudget && (
                         <p className="mb-2 last:mb-0">{questionForBudget}</p>
                     )}
-                    <InjectCampaign campaignId={campaignId} />
+                    <InjectCampaign campaignId={campaignId} adsetId={adsetId} />
                     <RefreshChatTitle
                         campaignName={campaignName}
                         campaignId={campaignId}

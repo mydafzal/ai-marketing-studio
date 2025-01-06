@@ -4,6 +4,7 @@ import React, {useState} from 'react';
 interface Customer {
     email: string;
     fbAccountId?: string | null;
+    fbPageId?: string | null;
 }
 
 const CustomerSearch: React.FC = () => {
@@ -17,6 +18,8 @@ const CustomerSearch: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedEmail, setSelectedEmail] = useState('');
     const [defaultPrompt, setDefaultPrompt] = useState('');
+    const [fbPageId, setFbPageId] = useState('');
+    const [pageIdSuccessMessage, setPageIdSuccessMessage] = useState<string | null>(null);
 
 
     const fetchClients = async (email: string = '') => {
@@ -48,10 +51,15 @@ const CustomerSearch: React.FC = () => {
                 if (Array.isArray(data.data)) {
                     customers = data.data.map((customer: any) => ({
                         email: customer.email,
-                        fbAccountId: customer.fbAccountId
+                        fbAccountId: customer.fbAccountId,
+                        fbPageId: customer.fbPageId
                     }));
                 } else if (data.data && typeof data.data === 'object') {
-                    customers = [data.data];
+                    customers = [{
+                        email: data.data.email,
+                        fbAccountId: data.data.fbAccountId,
+                        fbPageId: data.data.fbPageId
+                    }];
                 }
                 setSearchResults(customers);
                 if (customers.length === 0) {
@@ -106,7 +114,8 @@ const CustomerSearch: React.FC = () => {
             if (data.success && Array.isArray(data.data)) {
                 const customers: Customer[] = data.data.map((client: any) => ({
                     email: client.email,
-                    fbAccountId: client.fbAccountId
+                    fbAccountId: client.fbAccountId,
+                    fbPageId: client.fbPageId
                 }));
                 setSearchResults(customers);
                 if (customers.length === 0) {
@@ -179,6 +188,53 @@ const CustomerSearch: React.FC = () => {
             );
         } catch (err) {
             console.error('Error updating Account ID:', err);
+            setError(err instanceof Error ? err.message : String(err));
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+
+    const handlePageIdSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        setIsLoading(true);
+        setError(null);
+        setPageIdSuccessMessage(null);
+
+        if (!selectedCustomer) {
+            setError('Please select a customer first');
+            setIsLoading(false);
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/admin/update-fb-page-id', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email: selectedCustomer.email, pageId: fbPageId }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to update Page ID');
+            }
+
+            setPageIdSuccessMessage('Page ID updated successfully');
+
+            // Update the selected customer and search results with the new page ID
+            setSelectedCustomer({ ...selectedCustomer, fbPageId: fbPageId });
+            setSearchResults(prevResults =>
+                prevResults.map(customer =>
+                    customer.email === selectedCustomer.email
+                        ? { ...customer, fbPageId: fbPageId }
+                        : customer
+                )
+            );
+        } catch (err) {
+            console.error('Error updating Page ID:', err);
             setError(err instanceof Error ? err.message : String(err));
         } finally {
             setIsLoading(false);
@@ -269,7 +325,8 @@ const CustomerSearch: React.FC = () => {
     const handleCustomerSelect = (customer: Customer) => {
         setSelectedCustomer(customer);
         setFbAccountId(customer.fbAccountId ?? '');
-        setSearchQuery(customer.email); // New line
+        setFbPageId(customer.fbPageId ?? '');
+        setSearchQuery(customer.email);
     };
 
     return (
@@ -338,25 +395,53 @@ const CustomerSearch: React.FC = () => {
                         </ul>
                     </div>
                 )}
+                <div className="mt-6 space-y-4">
+                    <form onSubmit={handleSubmit} className="space-y-2">
+                        <input
+                            type="text"
+                            placeholder="Assign Account ID"
+                            value={fbAccountId}
+                            onChange={(e) => setFbAccountId(e.target.value)}
+                            className="w-full px-3 py-2 border rounded"
+                        />
+                        {selectedCustomer && selectedCustomer.fbAccountId === undefined && (
+                            <p className="text-red-500 text-sm">This user does not yet have a Facebook Account ID</p>
+                        )}
+                        <button
+                            type="submit"
+                            className="w-full px-4 py-2 text-white rounded bg-teal-600 hover:bg-teal-700"
+                            disabled={isLoading}
+                        >
+                            Assign Account ID
+                        </button>
+                        {successMessage && (
+                            <p className="text-green-500 text-sm">{successMessage}</p>
+                        )}
+                    </form>
 
-                <form onSubmit={handleSubmit} className="mt-6">
-                    <input
-                        type="text"
-                        placeholder="Assign Account ID"
-                        value={fbAccountId}
-                        onChange={(e) => setFbAccountId(e.target.value)}
-                        className="w-full px-3 py-2 border rounded mb-2"
-                    />
-                    {selectedCustomer && selectedCustomer.fbAccountId === undefined && (
-                        <p className="text-red-500 text-sm mb-2">This user does not yet have a Facebook Account ID</p>
-                    )}
-                    <button
-                        type="submit"
-                        className="w-full px-4 py-2 text-white rounded bg-teal-600 hover:bg-teal-700"
-                    >
-                        Assign Account ID
-                    </button>
-                </form>
+                    <form onSubmit={handlePageIdSubmit} className="space-y-2">
+                        <input
+                            type="text"
+                            placeholder="Assign Page ID"
+                            value={fbPageId}
+                            onChange={(e) => setFbPageId(e.target.value)}
+                            className="w-full px-3 py-2 border rounded"
+                        />
+                        {selectedCustomer && selectedCustomer.fbPageId === undefined && (
+                            <p className="text-red-500 text-sm">This user does not yet have a Facebook Page ID</p>
+                        )}
+                        <button
+                            type="submit"
+                            className="w-full px-4 py-2 text-white rounded bg-blue-600 hover:bg-blue-700"
+                            disabled={isLoading}
+                        >
+                            Assign Page ID
+                        </button>
+                        {pageIdSuccessMessage && (
+                            <p className="text-green-500 text-sm">{pageIdSuccessMessage}</p>
+                        )}
+                    </form>
+                </div>
             </div>
 
             {/* Modal */}

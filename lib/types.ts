@@ -44,26 +44,27 @@ export interface User extends Record<string, any> {
   defaultExtraDetails?: string
   fbAccountId?: string
   fbMarketingApiKey?: string
-  fbBusinessAccId?: string
-  first_name?: string
-  last_name?: string
-  company_name?: string
-  company_description?: string
-  website_link?: string
-  website_data?: string
-  preferred_language?: string
-  goal?: string
-  sub_trial_start?: Date
-  sub_trial_end?: Date
-  sub_status?: string
-  sub_current_period_start?: Date
-  sub_current_period_end?: Date
-  sub_offer?: string
-  sub_interval?: string
-  sub_product_id?: string
-  sub_interval_count?: string
-  sub_stripe_customer_id?: string
-  sub_id?: string
+    fbBusinessAccId?:string
+    first_name?:string
+    last_name?:string
+    company_name?:string
+    company_description?:string
+    website_link?:string
+    website_data?:string
+    preferred_language?:string
+    goal?:string
+    fbPageId?:string
+    sub_trial_start?: Date
+    sub_trial_end?: Date
+    sub_status?: string
+    sub_current_period_start?: Date
+    sub_current_period_end?: Date
+    sub_offer?: string
+    sub_interval?: string
+    sub_product_id?: string
+    sub_interval_count?: string
+    sub_stripe_customer_id?: string
+    sub_id?: string
 }
 
 export interface Campaign extends Record<string, any> {
