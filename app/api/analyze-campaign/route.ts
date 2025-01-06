@@ -8,14 +8,22 @@ const openai = new OpenAI({
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { prompt } = body;
+    const { prompt, language = 'en' } = body;
 
+    // We add a system message ensuring GPT responds in the user's preferred language.
+    const messages = [
+      {
+        role: 'system',
+        content: `The user prefers the language "${language}". Always respond in "${language}" (avoid other languages).`
+      },
+      {
+        role: 'user',
+        content: prompt
+      }
+    ];
     const completion = await openai.chat.completions.create({
-      messages: [{ 
-        role: "user", 
-        content: prompt 
-      }],
-      model: "gpt-4o",
+      messages: messages as OpenAI.Chat.ChatCompletionMessageParam[],
+      model: 'gpt-4',
       temperature: 0.7,
     });
 

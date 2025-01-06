@@ -1,570 +1,469 @@
-'use client';
-
-import React, { useState, useEffect, useCallback } from 'react';
-import { format } from 'date-fns';
+"use client";
+import React, { useState, useEffect } from "react";
 import {
-  AreaChart,
-  Area,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer,
-  LineChart,
-  Line
-} from 'recharts';
-import {
-  Users,
-  Brain,
-  DollarSign,
-  Target,
-  Eye,
-  TrendingUp,
-} from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CampaignSummary, getCampaignSummary } from '@/lib/api/fasty-bot/get-campaign-summary';
-import { getCampaignHistoricalLeadsResults } from "@/lib/api/fasty-bot/get-historical-leads";
-import { IconSpinner } from '@/components/ui/icons';
-import { cn } from '@/lib/utils';
-import ReactMarkdown from 'react-markdown';
+  ResponsiveContainer
+} from "recharts";
 
-interface HistoricalData {
-  date: string;
-  leads: number;
+import { IconSpinner } from "@/components/ui/icons";
+import { getCampaignSummary } from "@/lib/api/fasty-bot/get-campaign-summary";
+import { getCampaignHistoricalMetrics } from "@/lib/api/fasty-bot/helpers/get-campaign-historical-metrics";
+import { format } from "date-fns";
+import ReactMarkdown from "react-markdown";
+import { Brain, BarChart2, AlertTriangle, ChevronRight } from "lucide-react";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+
+// The user’s session info for retrieving the language
+interface UserSession {
+  preferred_language?: string;
 }
 
-interface CampaignContext {
-  subscription_price?: number;
-  lead_to_call_rate?: number;
-  target_cost_per_lead?: number;
-  industry_average_ctr?: number;
-  previous_period_leads?: number;
-  previous_period_cost?: number;
-}
-
-interface AICampaignAnalysisProps {
+// Props for your AI campaign analysis board
+interface IAICampaignAnalysisProps {
   campaignId: string;
   isActive?: boolean;
-  context?: CampaignContext;
+  userSession?: UserSession; // <— important
 }
 
-interface AIAnalysis {
-  assessment: string;
-  recommendations: {
-    adPerformance: string;
-    costOptimization: string;
-    leadQuality: string;
+interface ICampaignSummary {
+  campaign_id: string;
+  campaign_name: string;
+  total_leads: number;
+  total_spent: number;
+  creation_date: string;
+  status: string;
+  clicks: number;
+  ctr: number;
+  frequency: number;
+  impressions: number;
+  reach: number;
+  unique_clicks: number;
+}
+
+interface IHistoricalMetrics {
+  campaign_id: string;
+  timeline: string;
+  summary: {
+    total_leads: number;
+    total_spend: number;
+    total_impressions: number;
+    total_clicks: number;
+    total_reach: number;
+    average_ctr: number;
+    average_cpc: number;
+    average_cpm: number;
+    average_cpa: number;
+    average_frequency: number;
+    days_count: number;
+  };
+  advanced_metrics?: {
+    time_of_day?: Record<
+      string,
+      { impressions?: number; spend?: number; actions?: number }
+    >;
+    platforms?: Record<
+      string,
+      { impressions?: number; spend?: number; actions?: number }
+    >;
+    demographics?: Record<
+      string,
+      { impressions?: number; spend?: number; actions?: number }
+    >;
   };
 }
 
-const AICampaignAnalysis: React.FC<AICampaignAnalysisProps> = ({ 
+interface IAIAnalysis {
+  shortText: string;
+}
+
+// Helper to get top segments
+function getTopSegments(
+  segments: Record<string, { actions?: number }> | undefined,
+  topN: number
+) {
+  if (!segments) return [];
+  const arr = Object.entries(segments).map(([key, val]) => ({
+    segmentKey: key,
+    actions: val.actions || 0
+  }));
+  arr.sort((a, b) => b.actions - a.actions);
+  return arr.slice(0, topN);
+}
+
+export default function AICampaignAnalysisBoard({
   campaignId,
-  context = {},
-  isActive
-}) => {
-  const [isActivated, setIsActivated] = useState(!!isActive);
-  const [campaignData, setCampaignData] = useState<CampaignSummary | null>(null);
-  const [dailyData, setDailyData] = useState<HistoricalData[]>([]);
-  const [timeRange, setTimeRange] = useState<'weekly' | 'monthly'>('monthly');
-  const [aiAnalysis, setAiAnalysis] = useState<AIAnalysis | null>(null);
-  const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false);
-  const [hasRunAnalysis, setHasRunAnalysis] = useState(false);
+  isActive,
+  userSession
+}: IAICampaignAnalysisProps) {
+  const [isActivated, setIsActivated] = useState<boolean>(!!isActive);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [campaignSummary, setCampaignSummary] = useState<ICampaignSummary | null>(null);
+  const [historicalMetrics, setHistoricalMetrics] = useState<IHistoricalMetrics | null>(null);
 
-  const generateAIAnalysis = useCallback(async (data: CampaignSummary) => {
-    setIsLoadingAnalysis(true);
+  const [aiAnalysis, setAiAnalysis] = useState<IAIAnalysis | null>(null);
+  const [aiLoading, setAiLoading] = useState<boolean>(false);
+
+  // Tab for advanced metrics
+  const [segmentTab, setSegmentTab] = useState<"timeOfDay"|"platforms"|"demographics">("timeOfDay");
+
+  // 1) The user’s chosen language, from the session or fallback to "en"
+  const userLang = userSession?.preferred_language || "en";
+
+  // 2) Activate data fetching
+  const handleActivate = () => setIsActivated(true);
+
+  useEffect(() => {
+    if (!campaignId || !isActivated) return;
+
+    const fetchAllData = async () => {
+      setIsLoading(true);
+      try {
+        // 1) Basic campaign summary
+        const summaryData = await getCampaignSummary(campaignId);
+        setCampaignSummary(summaryData);
+
+        // 2) Historical with advanced metrics
+        const histData = await getCampaignHistoricalMetrics(
+          campaignId,
+          "last_year",
+          true
+        );
+        setHistoricalMetrics(histData);
+
+        // 3) Real AI analysis (using userLang!)
+        setAiLoading(true);
+        const analysisText = await getRealAIAnalysis(summaryData, histData, userLang);
+        setAiAnalysis({ shortText: analysisText });
+      } catch (err) {
+        console.error("Error loading campaign data:", err);
+      } finally {
+        setIsLoading(false);
+        setAiLoading(false);
+      }
+    };
+
+    void fetchAllData();
+  }, [campaignId, isActivated, userLang]);
+
+  /**
+   * Actually call your backend AI endpoint, e.g. `/api/analyze-campaign`,
+   * passing both the data and the desired language.
+   */
+  async function getRealAIAnalysis(
+    summary: ICampaignSummary,
+    hist: IHistoricalMetrics,
+    language: string
+  ): Promise<string> {
+    const prompt = `
+Please respond in ${language}, analyzing these campaign metrics:
+
+Campaign name: ${summary.campaign_name}
+Total leads: ${summary.total_leads}
+Total spent: ${summary.total_spent.toFixed(2)}
+CTR: ${summary.ctr.toFixed(2)}%
+Reach: ${summary.reach}
+Frequency: ${summary.frequency.toFixed(2)}
+
+We also have advanced data on time-of-day, platforms, and demographics.
+Write a concise analysis, referencing key numbers, and giving actionable suggestions in ${language}.
+    `.trim();
+
     try {
-      // Use standard assumptions if not provided by client
-      const subscriptionPrice = context.subscription_price !== undefined ? context.subscription_price : 50; 
-      const leadToCallRate = context.lead_to_call_rate !== undefined ? context.lead_to_call_rate : 0.1;
-
-      // Calculate key metrics for AI analysis
-      const costPerLead = data.total_leads > 0 ? (data.total_spent / data.total_leads) : 0;
-      const costPerClick = data.clicks > 0 ? (data.total_spent / data.clicks) : 0;
-      const expectedSalesCalls = Math.round(data.total_leads * leadToCallRate);
-      const costPerSalesCall = leadToCallRate > 0 ? costPerLead / leadToCallRate : 0;
-      const breakevenConversionRate = ((costPerSalesCall / subscriptionPrice) * 100).toFixed(1);
-      const leadConversionRate = data.clicks > 0 ? ((data.total_leads / data.clicks) * 100).toFixed(1) : '0';
-
-      const prompt = `As a Meta Ads expert, analyze this campaign data and provide insights and recommendations. 
-Do not use ### headings. Use simple text and bullet points. 
-Always provide all sections, even if you must assume values. 
-Provide actionable recommendations in each relevant section.
-
-Campaign Metrics:
-- CTR: ${data.ctr.toFixed(2)}%
-- Cost per Lead: €${costPerLead.toFixed(2)}
-- Cost per Click: €${costPerClick.toFixed(2)}
-- Lead Conversion Rate: ${leadConversionRate}%
-- Frequency: ${data.frequency.toFixed(1)}
-- Total Reach: ${data.reach.toLocaleString()}
-- Total Leads: ${data.total_leads}
-- Total Spend: €${data.total_spent}
-- Breakeven Conversion Rate Needed: ${breakevenConversionRate}%
-
-Context:
-${context.industry_average_ctr ? `- Industry Average CTR: ${context.industry_average_ctr}%` : '- Industry Average CTR: Assume a standard value like 2%'}
-${context.target_cost_per_lead ? `- Target Cost per Lead: €${context.target_cost_per_lead}` : '- Target Cost per Lead: Assume €10'}
-${context.previous_period_leads ? `- Previous Period Leads: ${context.previous_period_leads}` : '- Previous Period Leads: Assume previous period 30 leads'}
-${context.previous_period_cost ? `- Previous Period Cost: €${context.previous_period_cost}` : '- Previous Period Cost: Assume previous period €300'}
-
-Format your response EXACTLY as follows (include all four sections):
-[Assessment]
-(At least one paragraph describing the current state based on the metrics above.)
-
-[Ad Performance]
-(At least one paragraph or bullet points with actionable steps, for example:
-- Create 3 new ad creatives focusing on a unique value proposition.
-- Test different headlines and images.)
-
-[Cost Optimization]
-(At least one paragraph or bullet points with actionable steps.)
-
-[Lead Quality & Conversion]
-(At least one paragraph or bullet points with actionable steps.)
-
-Do not omit any section. Even if data is lacking, assume reasonable values and provide meaningful advice.
-Do not use headings like ### or multiple #, just plain text and bullet points if needed.
-`;
-
-      const response = await fetch('/api/analyze-campaign', {
-        method: 'POST',
+      const resp = await fetch("/api/analyze-campaign", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json"
         },
-        body: JSON.stringify({ prompt }),
+        // <-- pass the user's chosen language in the body
+        body: JSON.stringify({ prompt, language })
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to generate analysis');
+      if (!resp.ok) {
+        throw new Error("AI endpoint returned an error: " + resp.status);
       }
 
-      const result = await response.json();
-
-      if (result.content) {
-        const content = result.content;
-
-        // Use [\s\S]*? to allow multiline matches without 's' flag
-        const assessmentMatch = content.match(/\[Assessment\]([\s\S]*?)\[Ad Performance\]/);
-        const adPerfMatch = content.match(/\[Ad Performance\]([\s\S]*?)\[Cost Optimization\]/);
-        const costOptMatch = content.match(/\[Cost Optimization\]([\s\S]*?)\[Lead Quality & Conversion\]/);
-        const leadQualityMatch = content.match(/\[Lead Quality & Conversion\]([\s\S]*)/);
-
-        const assessment = assessmentMatch ? assessmentMatch[1].trim() : 'No assessment provided.';
-        const adPerformance = adPerfMatch ? adPerfMatch[1].trim() : 'No ad performance recommendations provided.';
-        const costOptimization = costOptMatch ? costOptMatch[1].trim() : 'No cost optimization recommendations provided.';
-        const leadQuality = leadQualityMatch ? leadQualityMatch[1].trim() : 'No lead quality recommendations provided.';
-
-        setAiAnalysis({
-          assessment: assessment || 'No assessment provided.',
-          recommendations: {
-            adPerformance: adPerformance || 'No ad performance recommendations provided.',
-            costOptimization: costOptimization || 'No cost optimization recommendations provided.',
-            leadQuality: leadQuality || 'No lead quality recommendations provided.',
-          }
-        });
-      } else {
-        setAiAnalysis({
-          assessment: 'No assessment provided.',
-          recommendations: {
-            adPerformance: 'No ad performance recommendations provided.',
-            costOptimization: 'No cost optimization recommendations provided.',
-            leadQuality: 'No lead quality recommendations provided.',
-          }
-        });
-      }
+      const data = await resp.json();
+      return data.content || "No AI content returned.";
     } catch (error) {
-      console.error('Error generating AI analysis:', error);
-      setAiAnalysis({
-        assessment: 'No assessment provided due to an error.',
-        recommendations: {
-          adPerformance: 'No ad performance recommendations due to an error.',
-          costOptimization: 'No cost optimization recommendations due to an error.',
-          leadQuality: 'No lead quality recommendations due to an error.',
-        }
-      });
-    } finally {
-      setIsLoadingAnalysis(false);
-      setHasRunAnalysis(true);
+      console.error("Error calling AI analysis endpoint:", error);
+      return "Failed to retrieve AI analysis.";
     }
-  }, [campaignId]); // Removed `context` from dependencies to fix lint warning.
+  }
 
-  // Fetch campaign summary
-  useEffect(() => {
-    if (campaignId && isActivated && !hasRunAnalysis) {
-      const fetchData = async () => {
-        try {
-          const result = await getCampaignSummary(campaignId);
-          console.log('campaign summary in AI analysis', result);
-          setCampaignData(result);
-          
-          if (result && !hasRunAnalysis) {
-            await generateAIAnalysis(result);
-          }
-        } catch (error) {
-          console.error('Error fetching campaign summary:', error);
-        }
-      };
-      void fetchData();
+  function renderSegmentData() {
+    if (!historicalMetrics?.advanced_metrics) {
+      return (
+        <div className="flex items-center justify-center h-64 bg-zinc-800/50 rounded-lg border border-zinc-700">
+          <p className="text-sm text-zinc-400">No advanced metrics available</p>
+        </div>
+      );
     }
-  }, [campaignId, isActivated, hasRunAnalysis, generateAIAnalysis]);
 
-  // Fetch historical data
-  useEffect(() => {
-    if (campaignData && isActivated) {
-      const fetchHistorical = async () => {
-        try {
-          const results = await getCampaignHistoricalLeadsResults(campaignData.campaign_id, 'last_month');
-          const formattedData = results.lead_results.map(item => ({
-            date: format(new Date(item.date), 'MMM d'),
-            leads: item.leads
-          }));
-          setDailyData(formattedData);
-        } catch (error) {
-          console.error('Error fetching campaign data:', error);
-        }
-      };
-      void fetchHistorical();
+    let data: Array<{ segmentKey: string; actions: number }> = [];
+    let title = "";
+
+    if (segmentTab === "timeOfDay") {
+      const segments = historicalMetrics.advanced_metrics.time_of_day || {};
+      data = getTopSegments(segments, 5);
+      title = "Time of Day";
+    } else if (segmentTab === "platforms") {
+      const segments = historicalMetrics.advanced_metrics.platforms || {};
+      data = getTopSegments(segments, 5);
+      title = "Platforms";
+    } else {
+      // "demographics"
+      const segments = historicalMetrics.advanced_metrics.demographics || {};
+      data = getTopSegments(segments, 5);
+      title = "Demographics";
     }
-  }, [campaignData, isActivated]);
 
+    if (data.length === 0) {
+      return (
+        <div className="flex items-center justify-center h-64 bg-zinc-800/50 rounded-lg border border-zinc-700">
+          <p className="text-sm text-zinc-400">No data available for {title}</p>
+        </div>
+      );
+    }
+
+    const chartData = data.map((item) => ({
+      name: item.segmentKey,
+      leads: item.actions
+    }));
+
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-medium text-zinc-300">
+            Top {title} Performance
+          </p>
+          <span className="text-xs text-zinc-500">Showing top 5 segments</span>
+        </div>
+        <div className="h-64 bg-zinc-800/50 p-4 rounded-lg border border-zinc-700">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#333" opacity={0.5} />
+              <XAxis
+                dataKey="name"
+                stroke="#666"
+                fontSize={12}
+                tickLine={false}
+                axisLine={{ stroke: "#666" }}
+              />
+              <YAxis
+                stroke="#666"
+                fontSize={12}
+                tickLine={false}
+                axisLine={{ stroke: "#666" }}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "#18181b",
+                  border: "1px solid #27272a",
+                  borderRadius: "8px",
+                  boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)"
+                }}
+                labelStyle={{ color: "#a1a1aa", marginBottom: "4px" }}
+                itemStyle={{ color: "#e4e4e7", padding: "2px 0" }}
+              />
+              <Bar dataKey="leads" fill="#22c55e" radius={[4,4,0,0]} maxBarSize={50} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    );
+  }
+
+  // *** RENDER-LOGIC ***
   if (!isActivated) {
     return (
-      <div className="flex h-96 items-center justify-center">
+      <div className="flex h-96 items-center justify-center bg-zinc-950">
         <button
-          onClick={() => setIsActivated(true)}
-          className="flex items-center gap-2 rounded-lg bg-green-500 px-6 py-3 font-medium text-white transition-colors hover:bg-green-600"
+          onClick={handleActivate}
+          className="flex items-center gap-2 rounded-lg bg-emerald-600 px-6 py-3 font-medium text-white hover:bg-emerald-700 transition-all hover:scale-105"
         >
           <Brain className="size-5" />
-          Run AI Analysis
+          Analyze Campaign
         </button>
       </div>
     );
   }
 
-  if (!campaignData) {
+  if (isLoading) {
     return (
-      <div className="flex h-96 items-center justify-center">
-        <IconSpinner className="size-8 animate-spin text-green-500" />
+      <div className="flex h-96 items-center justify-center bg-zinc-950">
+        <div className="flex flex-col items-center gap-3">
+          <IconSpinner className="size-8 animate-spin text-emerald-500" />
+          <p className="text-sm text-zinc-400">Loading campaign data...</p>
+        </div>
       </div>
     );
   }
 
-  // Use standard assumptions if not provided by client
-  const subscriptionPrice = context.subscription_price !== undefined ? context.subscription_price : 50; 
-  const leadToCallRate = context.lead_to_call_rate !== undefined ? context.lead_to_call_rate : 0.1;
-
-  // Calculate metrics
-  const costPerLead = campaignData.total_leads > 0 ? (campaignData.total_spent / campaignData.total_leads) : 0;
-  const costPerClick = campaignData.clicks > 0 ? (campaignData.total_spent / campaignData.clicks) : 0;
-  const expectedSalesCalls = Math.round(campaignData.total_leads * leadToCallRate);
-  const costPerSalesCall = leadToCallRate > 0 ? costPerLead / leadToCallRate : 0;
-  const breakevenConversionRate = (subscriptionPrice > 0) ? ((costPerSalesCall / subscriptionPrice) * 100).toFixed(1) : '0';
-  const maxMonthlyRevenue = expectedSalesCalls * subscriptionPrice;
-  const potentialROI = (campaignData.total_spent > 0) ? (((maxMonthlyRevenue - campaignData.total_spent) / campaignData.total_spent) * 100).toFixed(1) : '0';
-  const leadConversionRate = (campaignData.clicks > 0) ? ((campaignData.total_leads / campaignData.clicks) * 100).toFixed(1) : '0';
-
-  const performanceStatus = context.target_cost_per_lead
-    ? costPerLead < context.target_cost_per_lead ? 'Healthy' : 'Needs Attention'
-    : costPerLead < 8 ? 'Healthy' : 'Needs Attention';
-
-  const currentData = timeRange === 'weekly' ? dailyData.slice(-7) : dailyData;
-  const weeklyTrend = (currentData.length > 1 && currentData[0].leads > 0)
-    ? (((currentData[currentData.length - 1].leads - currentData[0].leads) / currentData[0].leads) * 100).toFixed(1)
-    : '0';
-
-  return (
-    <div className="space-y-6 p-6">
-      {/* Header with AI Status */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-200">
-            AI Analysis: {campaignData.campaign_name}
-          </h1>
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">
-            Campaign Status: {campaignData.status} • Last updated {format(new Date(), 'MMM d, yyyy HH:mm')}
-          </p>
-        </div>
+  if (!campaignSummary) {
+    return (
+      <div className="flex h-96 items-center justify-center bg-zinc-950 text-zinc-400">
         <div className="flex items-center gap-2">
-          <Brain className="size-5 text-green-500" />
-          <span className={cn(
-            "rounded-full px-3 py-1 text-sm font-medium",
-            performanceStatus === 'Healthy'
-              ? "bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-500"
-              : "bg-yellow-100 text-yellow-700 dark:bg-yellow-500/10 dark:text-yellow-500"
-          )}>
-            {performanceStatus}
-          </span>
+          <AlertTriangle className="size-5 text-amber-500" />
+          <p>No campaign data available</p>
         </div>
       </div>
+    );
+  }
 
-      {/* Key Metrics Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Lead Generation</CardTitle>
-            <Users className="size-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {campaignData.total_leads}
+  // *** MAIN UI ***
+  return (
+    <div className="space-y-6 p-6 bg-zinc-950 text-zinc-100 rounded-lg">
+      {/* 1) Campaign Info Card */}
+      <Card className="border-zinc-800/50 bg-gradient-to-b from-zinc-900 to-zinc-900/95 shadow-xl rounded-lg">
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-xl font-bold text-zinc-100">
+              {campaignSummary.campaign_name}
+            </CardTitle>
+            <div
+              className={cn(
+                "px-3 py-1 rounded-full text-xs font-medium",
+                campaignSummary.status === "ACTIVE"
+                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                  : "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+              )}
+            >
+              {campaignSummary.status}
             </div>
-            <div className="mt-1 flex items-center text-xs text-zinc-500">
-              <TrendingUp className="mr-1 size-3" />
-              {weeklyTrend}% weekly trend
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="space-y-1">
+              <p className="text-xs uppercase text-zinc-500">Created</p>
+              <p className="text-sm text-zinc-300">
+                {format(new Date(campaignSummary.creation_date), "MMM d, yyyy HH:mm")}
+              </p>
             </div>
-            <p className="mt-1 text-xs text-zinc-500">
-              {leadConversionRate}% conversion rate
-            </p>
-          </CardContent>
-        </Card>
+            <div className="space-y-1">
+              <p className="text-xs uppercase text-zinc-500">Performance</p>
+              <p className="text-sm">
+                <span className="text-emerald-400 font-medium">
+                  {campaignSummary.total_leads} leads
+                </span>
+                <span className="text-zinc-600 mx-2">|</span>
+                <span className="text-blue-400 font-medium">
+                  €{campaignSummary.total_spent.toFixed(2)}
+                </span>
+              </p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs uppercase text-zinc-500">Reach & CTR</p>
+              <p className="text-sm">
+                <span className="text-zinc-300">
+                  {campaignSummary.reach.toLocaleString()}
+                </span>
+                <span className="text-zinc-600 mx-2">|</span>
+                <span className="text-purple-300">
+                  {campaignSummary.ctr.toFixed(2)}%
+                </span>
+              </p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs uppercase text-zinc-500">Frequency</p>
+              <p className="text-sm text-zinc-300">
+                {campaignSummary.frequency.toFixed(1)} impressions per user
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Cost Analysis</CardTitle>
-            <DollarSign className="size-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              €{costPerLead.toFixed(2)}
-            </div>
-            <p className="mt-1 text-xs text-zinc-500">
-              Cost per Lead
-            </p>
-            <p className="mt-1 text-xs text-zinc-500">
-              €{costPerClick.toFixed(2)} per click
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Campaign Reach</CardTitle>
-            <Eye className="size-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {campaignData.reach.toLocaleString()}
-            </div>
-            <p className="mt-1 text-xs text-zinc-500">
-              Frequency: {campaignData.frequency.toFixed(1)}
-            </p>
-            <p className="mt-1 text-xs text-zinc-500">
-              CTR: {campaignData.ctr.toFixed(2)}%
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">ROI Potential</CardTitle>
-            <Target className="size-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {expectedSalesCalls}
-            </div>
-            <p className="mt-1 text-xs text-zinc-500">
-              Expected sales calls
-            </p>
-            <p className="mt-1 text-xs text-zinc-500">
-              {breakevenConversionRate}% to break even
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* AI Insights Card */}
-      <Card>
+      {/* 2) Segments Card */}
+      <Card className="border-zinc-800/50 bg-zinc-900 shadow-xl rounded-lg">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Brain className="size-5" />
-            AI Campaign Assessment
+          <CardTitle className="flex items-center gap-2 text-zinc-100">
+            <BarChart2 className="size-5 text-zinc-400" />
+            Segment Analysis
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {isLoadingAnalysis ? (
-            <div className="flex items-center gap-2">
-              <IconSpinner className="size-4 animate-spin" />
-              <p className="text-sm text-zinc-500">Generating AI analysis...</p>
-            </div>
-          ) : aiAnalysis ? (
-            <ReactMarkdown className="prose dark:prose-invert text-sm text-zinc-700 dark:text-zinc-300">
-              {aiAnalysis.assessment}
-            </ReactMarkdown>
-          ) : (
-            <p className="text-sm text-zinc-500">Analysis not available</p>
-          )}
+          <div className="flex gap-2 mb-6">
+            {[
+              { id: "timeOfDay", label: "Time of Day" },
+              { id: "platforms", label: "Platforms" },
+              { id: "demographics", label: "Demographics" }
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                className={cn(
+                  "px-4 py-2 rounded-lg text-sm font-medium transition-all",
+                  segmentTab === tab.id
+                    ? "bg-zinc-800 text-zinc-100 shadow-lg shadow-zinc-950/50"
+                    : "text-zinc-400 hover:bg-zinc-800/50"
+                )}
+                onClick={() =>
+                  setSegmentTab(tab.id as "timeOfDay" | "platforms" | "demographics")
+                }
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+          {renderSegmentData()}
         </CardContent>
       </Card>
 
-      {/* AI Recommendations */}
-      <Card>
+      {/* 3) AI Analysis Card */}
+      <Card className="border-zinc-800/50 bg-zinc-900 shadow-xl rounded-lg">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Brain className="size-5" />
-            AI Recommendations
+          <CardTitle className="flex items-center gap-2 text-zinc-100">
+            <Brain className="size-5 text-blue-400" />
+            AI Campaign Analysis
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {isLoadingAnalysis ? (
-            <div className="flex items-center gap-2">
-              <IconSpinner className="size-4 animate-spin" />
-              <p className="text-sm text-zinc-500">Generating recommendations...</p>
+        <CardContent>
+          {aiLoading ? (
+            <div className="flex items-center gap-3 p-4">
+              <IconSpinner className="size-4 animate-spin text-blue-500" />
+              <p className="text-sm text-zinc-400">Analyzing campaign data...</p>
             </div>
           ) : aiAnalysis ? (
-            <>
-              <div className="rounded-lg bg-zinc-50 p-4 dark:bg-zinc-800">
-                <h3 className="font-medium text-green-600 dark:text-green-500">Ad Performance</h3>
-                <ReactMarkdown className="prose dark:prose-invert mt-1 text-sm">
-                  {aiAnalysis.recommendations.adPerformance}
-                </ReactMarkdown>
-              </div>
-              
-              <div className="rounded-lg bg-zinc-50 p-4 dark:bg-zinc-800">
-                <h3 className="font-medium text-green-600 dark:text-green-500">Cost Optimization</h3>
-                <ReactMarkdown className="prose dark:prose-invert mt-1 text-sm">
-                  {aiAnalysis.recommendations.costOptimization}
-                </ReactMarkdown>
-              </div>
-              
-              <div className="rounded-lg bg-zinc-50 p-4 dark:bg-zinc-800">
-                <h3 className="font-medium text-green-600 dark:text-green-500">Lead Quality & Conversion</h3>
-                <ReactMarkdown className="prose dark:prose-invert mt-1 text-sm">
-                  {aiAnalysis.recommendations.leadQuality}
-                </ReactMarkdown>
-              </div>
-            </>
-          ) : (
-            <div className="rounded-lg bg-zinc-50 p-4 dark:bg-zinc-800">
-              <p className="text-sm text-zinc-500">Recommendations not available</p>
+            <div className="prose prose-invert max-w-none">
+              <ReactMarkdown
+                components={{
+                  h3: ({ children }) => (
+                    <h3 className="flex items-center gap-2 text-lg font-semibold mb-3 mt-6 first:mt-0">
+                      {children}
+                    </h3>
+                  ),
+                  ul: ({ children }) => (
+                    <ul className="space-y-2 mb-6">{children}</ul>
+                  ),
+                  li: ({ children }) => (
+                    <li className="flex items-start gap-2">
+                      <ChevronRight className="size-4 mt-1 shrink-0 text-zinc-500" />
+                      <span>{children}</span>
+                    </li>
+                  ),
+                  strong: ({ children }) => (
+                    <strong className="font-semibold text-emerald-400">{children}</strong>
+                  ),
+                  p: ({ children }) => (
+                    <p className="text-sm leading-relaxed text-zinc-300 mb-4">{children}</p>
+                  )
+                }}
+                className="text-sm leading-relaxed [&>h3:first-child]:mt-0"
+              >
+                {aiAnalysis.shortText}
+              </ReactMarkdown>
             </div>
+          ) : (
+            <p className="text-sm text-zinc-400 p-4">No AI insights available yet.</p>
           )}
         </CardContent>
       </Card>
-
-      {/* Performance Trends */}
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Lead Generation Trends</CardTitle>
-              <div className="space-x-2">
-                <button
-                  onClick={() => setTimeRange('weekly')}
-                  className={cn(
-                    "rounded-lg px-3 py-1 text-sm transition-colors",
-                    timeRange === 'weekly'
-                      ? "bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-500"
-                      : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700"
-                  )}
-                >
-                  Weekly
-                </button>
-                <button
-                  onClick={() => setTimeRange('monthly')}
-                  className={cn(
-                    "rounded-lg px-3 py-1 text-sm transition-colors",
-                    timeRange === 'monthly'
-                      ? "bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-500"
-                      : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700"
-                  )}
-                >
-                  Monthly
-                </button>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={timeRange === 'weekly' ? dailyData.slice(-7) : dailyData}>
-                  <defs>
-                    <linearGradient id="colorLeads" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#22c55e" stopOpacity={0.2}/>
-                      <stop offset="95%" stopColor="#22c55e" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid 
-                    strokeDasharray="3 3" 
-                    className="stroke-zinc-200 dark:stroke-zinc-700"
-                  />
-                  <XAxis 
-                    dataKey="date"
-                    className="text-xs text-zinc-600 dark:text-zinc-400"
-                  />
-                  <YAxis 
-                    className="text-xs text-zinc-600 dark:text-zinc-400"
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'var(--background)',
-                      borderColor: 'var(--border)',
-                      borderRadius: '8px'
-                    }}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="leads"
-                    stroke="#16a34a"
-                    strokeWidth={2}
-                    fillOpacity={1}
-                    fill="url(#colorLeads)"
-                    className="dark:stroke-green-500"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Cost Efficiency Trends */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Cost Efficiency Analysis</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={dailyData}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-zinc-200 dark:stroke-zinc-700" />
-                  <XAxis
-                    dataKey="date"
-                    className="text-xs text-zinc-600 dark:text-zinc-400"
-                  />
-                  <YAxis
-                    className="text-xs text-zinc-600 dark:text-zinc-400"
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'var(--background)',
-                      borderColor: 'var(--border)',
-                      borderRadius: '8px'
-                    }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="leads"
-                    stroke="#16a34a"
-                    strokeWidth={2}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="mt-4 grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm font-medium text-zinc-500">Average CPL</p>
-                <p className="text-lg font-bold">€{costPerLead.toFixed(2)}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-zinc-500">Potential ROI</p>
-                <p className="text-lg font-bold">{potentialROI}%</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
     </div>
   );
-};
-
-export default AICampaignAnalysis;
+}
