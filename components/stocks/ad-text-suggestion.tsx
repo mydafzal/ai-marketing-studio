@@ -291,7 +291,7 @@ export function AdTextSuggestion({ props }: { props: ImageSuggestionProps[] }) {
   
     const response = await confirmCreateAd(
       campaign,
-      generateAdTemplate(
+      generateAdTemplate( // TODO: pass lead form id from chat in kv if not found fallback!
         adText.headline,
         adText.text,
         adText.image,

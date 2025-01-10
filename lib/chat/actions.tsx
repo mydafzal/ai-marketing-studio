@@ -1657,16 +1657,20 @@ Maintain a professional but friendly tone throughout.
                     const response = await createBaseLeadCampaign({
                         campaign_name: campaignName,
                     })
+
                     let success = !!response.ok
                     let adsetId;
+                    let leadFormId;
                     if (success) {
-                        const {campaign,adset} = await response.json()
+                        const {campaign,adset,lead_form} = await response.json()
                         const id = campaign.id;
                         adsetId = adset.id;
+                        leadFormId = lead_form.id;
                         const result = await updateChat(aiState.get().chatId, {
                             title: campaignName,
                             fbCampaignId: id,	
-                            fbAdsetId:adsetId
+                            fbAdsetId:adsetId,
+                            fbLeadFormId: leadFormId
                         })
                         success = success && !!result.success
                         campaignId = id

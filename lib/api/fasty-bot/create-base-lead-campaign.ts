@@ -70,8 +70,8 @@ export async function createBaseLeadCampaign(
             headers: {
                 'Content-Type': 'application/json',
                 Authorization: `Bearer ${process.env.FASTY_API_TOKEN}`,
-                'fb-api-key': token
-
+                'fb-api-key': token,
+                'x-api-key': `${process.env.OPENAI_API_KEY}`
             },
             body: JSON.stringify(payload)
         })

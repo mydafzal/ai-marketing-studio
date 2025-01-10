@@ -29,8 +29,6 @@ export function ConnectCampaignForm({
   const { campaigns, getCampaignList } = useContext(CampaignContext)
 
   const handleCreateCampaign = async () => {
-
-
     const createData = {
       name: 'Lead Campaign',
       status: 'PAUSED',
@@ -43,6 +41,7 @@ export function ConnectCampaignForm({
     })
     const response = await responseStream.json()
     if (response.success && response.data.campaign.id) {
+      // TODO: UPDATE CHAT IN KV HERE IS WELL TO HAVE LEAD FORM ID
       await handleSelectCampaign({
         ...response.data.campaign,
         created_time: Date.toString(),

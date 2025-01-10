@@ -16,7 +16,7 @@ export const generateAdTemplate = (
       call_to_action: {
         type: 'SIGN_UP',
         value: {
-          lead_gen_form_id: 8902951086385726
+          lead_gen_form_id: 8902951086385726 //TODO: it has to be fetched from chat first if not found then fallback!
         }
       },
       image_url: image
