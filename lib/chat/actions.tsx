@@ -70,7 +70,7 @@ import showCampaignConnectionUIModule from "@/lib/ui-magic/modules/showCampaignC
 import showPlacementTargetingUIModule from "@/lib/ui-magic/modules/showPlacementTargetingUIModule";
 import showSupervisedTaskUIModule from "@/lib/ui-magic/modules/showSupervisedTaskUIModule";
 import showAdsetConnectionUIModule from "@/lib/ui-magic/modules/showAdsetConnectionUIModule";
-import {createBaseLeadCampaign} from "@/lib/api/fasty-bot/create-base-lead-campaign";
+import {createBaseLeadOrRecruitmentCampaign} from "@/lib/api/fasty-bot/create-base-lead-or-recruitment-campaign";
 
 interface ToolResult {
     toolName: string;
@@ -1654,7 +1654,7 @@ Maintain a professional but friendly tone throughout.
                 description: createCampaignModule.description,
                 parameters: createCampaignModule.parameters,
                 generate: async function* ({campaignName, questionForBudget}) {
-                    const response = await createBaseLeadCampaign({
+                    const response = await createBaseLeadOrRecruitmentCampaign({
                         campaign_name: campaignName,
                     })
 

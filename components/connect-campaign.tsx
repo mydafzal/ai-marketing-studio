@@ -4,9 +4,7 @@ import {useActions, useAIState, useUIState} from 'ai/rsc'
 import {format} from 'date-fns'
 import {useContext, useEffect, useRef, useState} from 'react'
 import {cn} from '@/lib/utils'
-
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select'
-
 import {updateChatFbCampaignId} from '@/app/actions'
 import {ConnectCampaignResult} from '@/components/connect-campaign-result'
 import {CampaignContext} from '@/components/contexts/campaign-context'
@@ -33,7 +31,7 @@ export function ConnectCampaignForm({
       name: 'Lead Campaign',
       status: 'PAUSED',
     }
-    const url = '/api/fasty-bot/proxy-create-base-lead-campaign'
+    const url = '/api/fasty-bot/proxy-create-base-lead-or-recruitment-campaign'
     const responseStream = await fetch(url, {
       method: 'POST',
       body: JSON.stringify({

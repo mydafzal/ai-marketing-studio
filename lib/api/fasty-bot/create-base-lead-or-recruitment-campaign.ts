@@ -5,7 +5,7 @@ interface CampaignCreateRequest {
     campaign_name: string
 }
 
-export async function createBaseLeadCampaign(
+export async function createBaseLeadOrRecruitmentCampaign(
     request: CampaignCreateRequest
 ): Promise<any> {
     try {

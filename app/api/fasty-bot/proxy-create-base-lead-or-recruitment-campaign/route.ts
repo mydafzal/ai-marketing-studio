@@ -1,5 +1,5 @@
 import {NextResponse} from 'next/server'
-import {createBaseLeadCampaign} from "@/lib/api/fasty-bot/create-base-lead-campaign";
+import {createBaseLeadOrRecruitmentCampaign} from "@/lib/api/fasty-bot/create-base-lead-or-recruitment-campaign";
 
 export async function POST(request: Request) {
   try {
@@ -7,7 +7,7 @@ export async function POST(request: Request) {
       campaign_name="",
     } = await request.json()
 
-    const response = await createBaseLeadCampaign({campaign_name})
+    const response = await createBaseLeadOrRecruitmentCampaign({campaign_name})
 
     if (!response.ok) {
       return NextResponse.json({ success: false }, { status: response.status })
