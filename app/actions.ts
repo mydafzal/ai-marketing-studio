@@ -512,17 +512,16 @@ export async function updateChatFbCampaignId(chatSlug: string, fbCampaignId: str
             }
         }
 
-        let update={};
+        let update = {};
 
-        if(existingChat.fbCampaignId && existingChat.fbCampaignId!=fbCampaignId){
-            update = {fbCampaignId,fbAdsetId:""}
-        }
-        else{
+        if (existingChat.fbCampaignId && existingChat.fbCampaignId != fbCampaignId) {
+            update = {fbCampaignId, fbAdsetId: ""}
+        } else {
             update = {fbCampaignId}
         }
 
         // Update or insert the fbCampaignId field
-        await kv.hset(chatKey, update )
+        await kv.hset(chatKey, update)
         revalidatePath('/')
 
         return {
@@ -1272,6 +1271,7 @@ export async function updateOnboardingDetails(email: string, details: {
     company_name: string;
     company_description: string;
     website_link: string;
+    privacy_policy_link: string;
     preferred_language: string;
     goal: string
 }) {
@@ -1325,8 +1325,15 @@ export async function updateOnboardingDetails(email: string, details: {
         }
 
 
-        let newDetails = `First Name: ${details.first_name}\nLast Name: ${details.last_name}\nCompany Name: ${details.company_name}\nCompany Description: ${details.company_description}\nWebsite Link: ${details.website_link}\nWebsite data (scraped): ${website_data}\nPreferred Language: ${details.preferred_language}\nGoal: ${details.goal}`;
-
+        let newDetails = `First Name: ${details.first_name}
+        Last Name: ${details.last_name}
+        Company Name: ${details.company_name}
+        Company Description: ${details.company_description}
+        Website Link: ${details.website_link}
+        Privacy Policy Link: ${details.privacy_policy_link}
+        Website data (scraped): ${website_data}
+        Preferred Language: ${details.preferred_language}
+        Goal: ${details.goal}`;
 
         if (defaultExtraDetails) {
             let splitDetails = defaultExtraDetails.split('---');
