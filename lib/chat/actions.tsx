@@ -25,7 +25,7 @@ import {differenceInHours} from 'date-fns';
 import {ChatImage} from '@/components/chat-images'
 import {ImagePart, TextPart} from 'ai'
 import {z} from 'zod'
-import { Stock } from '@/components/stocks/campaignresultsnew'
+import {Stock} from '@/components/stocks/campaignresultsnew'
 
 import {formatNumber, nanoid, runAsyncFnWithoutBlocking, sleep} from '@/lib/utils'
 import {SpinnerMessage, UserMessage} from '@/components/stocks/message'
@@ -35,7 +35,6 @@ import {setDailyCampaignBudget} from '@/lib/api/fasty-bot/set-daily-campaign-bud
 import {setCampaignStatus} from '@/lib/api/fasty-bot/set-campaign-status';
 import {createCampaignAd} from '@/lib/api/fasty-bot/create-ad';
 import {createCampaign} from '@/lib/api/fasty-bot/create-campaign'
-import {createBase} from '@/lib/api/fasty-bot/create-base'
 import {CampaignSummary} from '@/lib/api/fasty-bot/get-campaign-summary'
 import {updateCampaign} from '@/lib/api/fasty-bot/update-campaign';
 import {createLeadgenForm} from '@/lib/api/fasty-bot/create-leadgen-form';
@@ -71,6 +70,7 @@ import showCampaignConnectionUIModule from "@/lib/ui-magic/modules/showCampaignC
 import showPlacementTargetingUIModule from "@/lib/ui-magic/modules/showPlacementTargetingUIModule";
 import showSupervisedTaskUIModule from "@/lib/ui-magic/modules/showSupervisedTaskUIModule";
 import showAdsetConnectionUIModule from "@/lib/ui-magic/modules/showAdsetConnectionUIModule";
+import {createBaseLeadCampaign} from "@/lib/api/fasty-bot/create-base-lead-campaign";
 
 interface ToolResult {
     toolName: string;
@@ -1654,7 +1654,7 @@ Maintain a professional but friendly tone throughout.
                 description: createCampaignModule.description,
                 parameters: createCampaignModule.parameters,
                 generate: async function* ({campaignName, questionForBudget}) {
-                    const response = await createBase({
+                    const response = await createBaseLeadCampaign({
                         campaign_name: campaignName,
                     })
                     let success = !!response.ok
