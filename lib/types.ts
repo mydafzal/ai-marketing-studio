@@ -50,6 +50,7 @@ export interface User extends Record<string, any> {
   company_name?:string
   company_description?:string
   website_link?:string
+  privacy_policy_link?:string
   website_data?:string
   preferred_language?:string
   goal?:string
