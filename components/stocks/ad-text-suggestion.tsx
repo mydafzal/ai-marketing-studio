@@ -9,7 +9,7 @@ import { sleep, cn } from '@/lib/utils'
 import type { AI } from '@/lib/chat/actions'
 import { AdText } from '@/lib/types'
 import { generateAdTemplate, generateAdsetTemplate } from '@/lib/data'
-import { updateAdText, updateAdTextWithFbId } from '@/app/actions'
+import { fetchFbCampaignStructure, updateAdText, updateAdTextWithFbId } from '@/app/actions'
 import { useParams } from 'next/navigation'
 import { readStreamableValue } from 'ai/rsc'
 import { Card, CardContent } from '@/components/ui/card'
@@ -288,14 +288,18 @@ export function AdTextSuggestion({ props }: { props: ImageSuggestionProps[] }) {
     if (userDetail?.user?.fbPageId){
          pageId = parseInt(userDetail?.user?.fbPageId)
     }
-  
+
+    let leadGenFormId = null;
+    // Get campaign structure to find lead form ID
+    //TODO implement proxy to get leadGenFormId from kv
     const response = await confirmCreateAd(
       campaign,
       generateAdTemplate( // TODO: pass lead form id from chat in kv if not found fallback!
         adText.headline,
         adText.text,
         adText.image,
-        pageId
+        pageId,
+        leadGenFormId
       ),
       generateAdsetTemplate(pageId)
     )

@@ -57,7 +57,7 @@ export async function createBaseLeadOrRecruitmentCampaign(
         }
 
         const fastyEndpoint = process.env.FASTY_API_URL
-        const apiUrl = `${fastyEndpoint}/facebook/exec/direct/campaign/create-lead-campaign-base`
+        const apiUrl = `${fastyEndpoint}/facebook/exec/direct/campaign/create-lead-or-recruiting-from-subprompt`
         console.log('payload to create a base lead campaign', payload)
         const token_resp = await getFbMarketingApiKey()
         let token = ""

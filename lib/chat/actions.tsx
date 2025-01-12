@@ -19,7 +19,8 @@ import {
     saveChat,
     updateChat,
     updateChatCampaignBudget,
-    updateChatTitle
+    updateChatTitle,
+    saveFbCampaignStructure
 } from '@/app/actions'
 import {differenceInHours} from 'date-fns';
 import {ChatImage} from '@/components/chat-images'
@@ -1672,6 +1673,8 @@ Maintain a professional but friendly tone throughout.
                             fbAdsetId:adsetId,
                             fbLeadFormId: leadFormId
                         })
+                        await saveFbCampaignStructure({campaign,adset,lead_form})
+
                         success = success && !!result.success
                         campaignId = id
                     } else {
