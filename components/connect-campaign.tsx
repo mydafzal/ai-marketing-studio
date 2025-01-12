@@ -1,27 +1,18 @@
 'use client'
 
-import { useActions, useAIState, useUIState } from 'ai/rsc'
-import { format } from 'date-fns'
-import { useContext, useEffect, useRef, useState } from 'react'
-import { spinner, SystemMessage } from '@/components/stocks'
-import { cn } from '@/lib/utils'
-
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem
-} from '@/components/ui/select'
-
-import { updateChatFbCampaignId } from '@/app/actions'
-import { ConnectCampaignResult } from '@/components/connect-campaign-result'
-import { CampaignContext } from '@/components/contexts/campaign-context'
-import { IconSpinner } from '@/components/ui/icons'
-import { FbCampaign, Message } from '@/lib/types'
-import { type AI } from '@/lib/chat/actions'
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { CheckCircle, Plus, Link as LinkIcon } from 'lucide-react'
+import {useActions, useAIState, useUIState} from 'ai/rsc'
+import {format} from 'date-fns'
+import {useContext, useEffect, useRef, useState} from 'react'
+import {cn} from '@/lib/utils'
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select'
+import {updateChatFbCampaignId} from '@/app/actions'
+import {ConnectCampaignResult} from '@/components/connect-campaign-result'
+import {CampaignContext} from '@/components/contexts/campaign-context'
+import {IconSpinner} from '@/components/ui/icons'
+import {FbCampaign, Message} from '@/lib/types'
+import {type AI} from '@/lib/chat/actions'
+import {Card, CardContent} from '@/components/ui/card'
+import {CheckCircle, Link as LinkIcon, Plus} from 'lucide-react'
 
 interface ConnectCampaignFormProps {
   handleSelectCampaign: (campaign: FbCampaign) => Promise<void>;
@@ -36,23 +27,19 @@ export function ConnectCampaignForm({
   const { campaigns, getCampaignList } = useContext(CampaignContext)
 
   const handleCreateCampaign = async () => {
-
-
     const createData = {
-      name: 'My campaign',
+      name: 'Lead Campaign',
       status: 'PAUSED',
     }
-    const url = '/api/fasty-bot/proxy-create-base'
+    const url = '/api/fasty-bot/proxy-create-base-lead-or-recruitment-campaign'
     const responseStream = await fetch(url, {
       method: 'POST',
       body: JSON.stringify({
-        // objective: 'OUTCOME_LEADS',
-        // special_ad_categories: ['NONE'],
-        // ...createData,
       })
     })
     const response = await responseStream.json()
     if (response.success && response.data.campaign.id) {
+      // TODO: UPDATE CHAT IN KV HERE IS WELL TO HAVE LEAD FORM ID
       await handleSelectCampaign({
         ...response.data.campaign,
         created_time: Date.toString(),

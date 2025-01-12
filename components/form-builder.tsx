@@ -13,6 +13,7 @@ import { useActions, useUIState } from 'ai/rsc'
 import { type AI } from '@/lib/chat/actions'
 import { IconSpinner } from '@/components/ui/icons'
 import { leadGenFormFieldTypes, leadGenFormLocales } from '@/data'
+import { getUserDetail } from '@/app/actions'
 
 interface Field {
   id: string;
@@ -158,10 +159,17 @@ export default function FormBuilder({
   };
 
   const handleSubmit = async () => {
+
+    const userDetail = await getUserDetail();
+    
     setIsSubmitting(true);
     const id = Date.now();
+    let pageId = userDetail?.user?.fbPageId || "119021011189054";
+    if (typeof pageId !== "string") {
+        pageId = String(pageId);
+    }
     const payload = {
-      page_id: "119021011189054",
+      page_id: pageId as string,
       name: "Lead Form " + id,
       questions: fields.map(field => ({
         key: field.id,
@@ -170,7 +178,7 @@ export default function FormBuilder({
         ...(field.options?.length && { options: field.options?.map((option, idx) => ({ key: idx, label: option, value: option })) as QuestionOption[] })
       })),
       privacy_policy: {
-        url: privacyLink,
+        url: privacyLink, // Make this required in UI. sometime get passed to backend as ""
         link_text: "Privacy Policy"
       },
       context_card: {
@@ -178,7 +186,7 @@ export default function FormBuilder({
         style: "PARAGRAPH_STYLE",
         content: engagementText
       },
-      follow_up_action_url: "https://www.example.com",
+      follow_up_action_url: "https://www.example.com", // TODO need to investigate this
       thank_you_page: {
         title: "Thank You",
         button_type: 'NONE',
@@ -321,6 +329,7 @@ export default function FormBuilder({
               onChange={(e) => setPrivacyLink(e.target.value)}
               placeholder="Enter privacy policy URL"
               className="bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700"
+              required={true}
             />
           </div>
           <div className="space-y-2">
