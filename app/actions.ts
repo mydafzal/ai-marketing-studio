@@ -267,8 +267,8 @@ export async function fetchFbCampaignStructure(campaignId: string, adSetId: stri
                 error: 'Campaign not found or has no adset'
             };
         }
-
-        const adsetIds = JSON.parse(campaign.adsetIds as string) as string[];
+        const adsetIds = typeof campaign.adsetIds === 'string' ? JSON.parse(campaign.adsetIds) : campaign.adsetIds;
+        
         if (!adsetIds.includes(adSetId)) {
             return {
                 success: false,

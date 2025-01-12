@@ -293,7 +293,7 @@ export function AdTextSuggestion({props}: { props: ImageSuggestionProps[] }) {
 
         let fbCampaignId = campaign?.id;
         let chatSlug = getChatIdFromUrl();
-        let campaignStructureResponse = await fetch(`/kv/fetch-campaign-structure/?fbCampaignId=${fbCampaignId}&chatSlug=${chatSlug}`, {
+        let campaignStructureResponse = await fetch(`/api/kv/fetch-campaign-structure/?fbCampaignId=${fbCampaignId}&chatSlug=${chatSlug}`, {
             method: 'GET',
         });
 
