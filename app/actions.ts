@@ -246,6 +246,32 @@ export async function createFbCampaignStructure(
     }
 }
 
+export async function updateLeadFormInAdset(adSetId:string, leadFormId:string){
+    const session = await auth();
+
+    if (!session || !session.user) {
+        return { 
+            error: 'User not authenticated'
+        };
+    }
+
+    try {
+        
+        const adsetKey = `fbAdset:${adSetId}`;
+        await kv.hset(adsetKey, {leadformId:leadFormId});
+
+        return {
+            success: true,
+            message: 'Adset structure created successfully'
+        };
+    } catch (error) {
+        console.error(`Error updating structure for adSetId ${adSetId}:`, error);
+        return {
+            error: 'Something went wrong'
+        };
+    }
+}
+
 export async function fetchFbCampaignStructure(campaignId: string, adSetId: string) {
     const session = await auth();
 

@@ -20,7 +20,8 @@ import {
     updateChat,
     updateChatCampaignBudget,
     updateChatTitle,
-    saveFbCampaignStructure
+    saveFbCampaignStructure,
+    updateLeadFormInAdset
 } from '@/app/actions'
 import {differenceInHours} from 'date-fns';
 import {ChatImage} from '@/components/chat-images'
@@ -466,6 +467,14 @@ async function confirmCreateLeadgenForm(toolCallId: string, data: any) {
         await sleep(1000);
 
         const response = await createLeadgenForm(data);
+        let chatSlug = getChatIdFromUrl();
+        if(chatSlug){
+            let fbAdsetIdResponse = await fetchChatFbAdsetId(chatSlug);
+            if(fbAdsetIdResponse.success){
+                const adSetId = fbAdsetIdResponse.fbAdsetId as string;
+                updateLeadFormInAdset(adSetId, response.id)
+            }
+        }
         if (response) {
             const messages = aiState.get().messages;
             const lastMessage = messages.slice(-1)[0];
