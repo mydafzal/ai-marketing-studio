@@ -246,7 +246,7 @@ export async function createFbCampaignStructure(
     }
 }
 
-export async function fetchFbCampaignStructure(campaignId: string) {
+export async function fetchFbCampaignStructure(campaignId: string, adSetId: string) {
     const session = await auth();
 
     if (!session || !session.user) {
@@ -268,12 +268,15 @@ export async function fetchFbCampaignStructure(campaignId: string) {
             };
         }
 
-        // Get adset ID with type safety
         const adsetIds = JSON.parse(campaign.adsetIds as string) as string[];
-        const adsetId = adsetIds[0]; // We only have one adset
+        if (!adsetIds.includes(adSetId)) {
+            return {
+                success: false,
+                error: 'Adset id is missing in the adset list'
+            };
+        }
 
-        // Fetch details for the adset
-        const adsetKey = `fbAdset:${adsetId}`;
+        const adsetKey = `fbAdset:${adSetId}`;
         const adset = await kv.hgetall<{
             adsetId: string,
             pageId: string,
@@ -290,7 +293,7 @@ export async function fetchFbCampaignStructure(campaignId: string) {
         const adsetData = {
             adsetId: adset.adsetId,
             pageId: adset.pageId,
-            ...(adset.leadformId && { leadformId: adset.leadformId })
+            ...(adset.leadformId && {leadformId: adset.leadformId})
         };
 
         return {
@@ -304,7 +307,7 @@ export async function fetchFbCampaignStructure(campaignId: string) {
     } catch (error) {
         console.error(`Error fetching structure for fbCampaign ${campaignId}:`, error);
         return {
-            success: false, 
+            success: false,
             error: 'Something went wrong'
         };
     }
