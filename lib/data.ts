@@ -5,13 +5,14 @@ export const generateAdTemplate = (
   text: string,
   image: string,
   pageId: number|null = null,
-  leadGenFormId: number|null = null
+  leadGenFormId: number|null = null,
+  destinationLink: string|null = null
 ) => ({
   name: 'New Link Ad Creative',
   object_story_spec: {
     page_id:pageId || 119021011189054,
     link_data: {
-      link: 'https://www.example.com',
+      link: destinationLink || 'https://www.example.com',
       name: headline,
       message: text,
       call_to_action: {

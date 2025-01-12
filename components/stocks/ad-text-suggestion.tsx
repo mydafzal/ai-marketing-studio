@@ -309,7 +309,8 @@ export function AdTextSuggestion({props}: { props: ImageSuggestionProps[] }) {
                 adText.text,
                 adText.image,
                 pageId,
-                leadGenFormId // TODO: VERIFY
+                leadGenFormId, // TODO: VERIFY
+                userDetail?.user?.website_link
             ),
             generateAdsetTemplate(pageId)
         )
