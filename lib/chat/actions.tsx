@@ -1666,12 +1666,12 @@ Maintain a professional but friendly tone throughout.
                         const {campaign,adset,lead_form} = await response.json()
                         const id = campaign.id;
                         adsetId = adset.id;
-                        leadFormId = lead_form.id;
+                        leadFormId = lead_form?.id; // in case of conversion campaign it will be null.
                         const result = await updateChat(aiState.get().chatId, {
                             title: campaignName,
                             fbCampaignId: id,	
-                            fbAdsetId:adsetId,
-                            fbLeadFormId: leadFormId
+                            fbAdsetId: adsetId,
+                            ...(leadFormId&&{fbLeadFormId: leadFormId})
                         })
                         await saveFbCampaignStructure({campaign,adset,lead_form})
 
