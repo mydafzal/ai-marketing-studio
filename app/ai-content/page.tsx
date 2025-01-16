@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/use-toast"
-import Image from "next/image"
+import Image, { ImageProps } from "next/image"
 import { Twitter, Linkedin, Instagram, Copy, Check, Download } from "lucide-react"
 import { generateContent } from "@/app/actions/generate"
 import { generateImages } from "@/app/actions/generate-image"
@@ -15,6 +15,10 @@ import { generateImages } from "@/app/actions/generate-image"
 export default function AiContentPage() {
   const [textPrompt, setTextPrompt] = React.useState("")
   const [imagePrompt, setImagePrompt] = React.useState("")
+
+  const [logoPrompt, setLogoPrompt] = React.useState<string | null>(null);
+  const [logoPosition, setLogoPosition] = React.useState("top-left");
+
   const [isGenerating, setIsGenerating] = React.useState(false)
   const [isGeneratingImages, setIsGeneratingImages] = React.useState(false)
   const [generatedImages, setGeneratedImages] = React.useState<string[]>([])
@@ -86,12 +90,14 @@ export default function AiContentPage() {
   
     setIsGeneratingImages(true)
     try {
-      const result = await generateImages(imagePrompt)
+      const result = await generateImages(imagePrompt,logoPrompt)
       console.log('Generation result:', JSON.stringify(result));
       
       if (result.success && result.images && result.images.length > 0) {
         const validUrls = result.images.filter(url => typeof url === 'string');
         setGeneratedImages(validUrls);
+
+        drawImages()
         
         toast({
           title: "Success",
@@ -138,6 +144,107 @@ export default function AiContentPage() {
       })
     }
   }
+
+
+
+  const [logoFile, setLogoFile] = React.useState<File | null>(null);
+  const [imageUrls, setImageUrls] = React.useState([]); // Array of background image URLs
+  const [combinedImages, setCombinedImages] = React.useState([]); // Array of data URLs for combined images
+
+
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    // console.log(file)
+    if (file) {
+      setLogoFile(file);
+
+    }
+  }
+
+
+  const drawImages = () => {
+    console.log("Drawing Image->", logoPosition);
+    
+    const images = generatedImages.map((backgroundImageUrl) => {
+      return new Promise((resolve) => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+  
+        const background = new window.Image();
+        background.crossOrigin = "anonymous";
+        background.src = backgroundImageUrl;
+  
+        background.onload = () => {
+          // Set canvas dimensions to match background
+          canvas.width = background.width;
+          canvas.height = background.height;
+          ctx?.drawImage(background, 0, 0);
+  
+          // If logo is uploaded, overlay it
+          if (logoFile) {
+            const logo = new window.Image();
+            logo.src = URL.createObjectURL(logoFile);
+  
+            logo.onload = () => {
+              // Get the original size of the logo
+              const logoWidth = logo.width;
+              const logoHeight = logo.height;
+  
+              // Set the x and y coordinates based on the logo position
+              let x = 0;
+              let y = 0;
+  
+              // Define positions based on the selected logoPosition
+              switch (logoPosition) {
+                case 'top-left':
+                  x = 0;
+                  y = 0;
+                  break;
+                case 'top-right':
+                  x = canvas.width - logoWidth;
+                  y = 0;
+                  break;
+                case 'bottom-left':
+                  x = 0;
+                  y = canvas.height - logoHeight;
+                  break;
+                case 'bottom-right':
+                  x = canvas.width - logoWidth;
+                  y = canvas.height - logoHeight;
+                  break;
+                case 'center':
+                default:
+                  x = (canvas.width - logoWidth) / 2;
+                  y = (canvas.height - logoHeight) / 2;
+                  break;
+              }
+  
+              // Draw the logo at the calculated position
+              ctx?.drawImage(logo, x, y, logoWidth, logoHeight);
+  
+              // Convert the canvas to a data URL and resolve it
+              const combinedImageUrl = canvas.toDataURL();
+              resolve(combinedImageUrl);
+            };
+          } else {
+            console.log("logo not found");
+            
+            // If no logo is uploaded, just resolve the background image as is
+            const combinedImageUrl = canvas.toDataURL();
+            resolve(combinedImageUrl);
+          }
+        };
+      });
+    });
+  
+    // Wait for all promises (for each image URL) to resolve
+    Promise.all(images).then((result) => {
+      // console.log(result);
+      setCombinedImages(result);
+    });
+  };
+  
+ 
 
   return (
     <div className="container mx-auto p-6">
@@ -197,6 +304,37 @@ export default function AiContentPage() {
                         placeholder="Describe the images you want to generate..."
                         className="min-h-[100px]"
                       />
+                       <label htmlFor="logo" className="text-sm font-medium">
+                        Select your logo
+                      </label>
+                      <Input 
+                        id="logo"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        // className="min-h-[100px]"
+
+                      />
+
+                      {logoPrompt && (
+                                <div className="mt-4">
+                                  <p className="text-sm text-gray-600">Preview:</p>
+                                  <img src={logoPrompt} alt="Logo preview" className="w-32 h-32 object-contain border rounded-lg" />
+                                </div>
+                              )}
+
+                      <label htmlFor="logoPostition" className="text-sm font-medium">
+                        Select your logo position
+                      </label>
+                      <select name="logoPosition" 
+                        onChange={(e) => setLogoPosition(e.target.value)}
+                      className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50">
+                        <option value="top-left">Top Left</option>
+                        <option value="top-right">Top Right</option>
+                        <option value="bottom-left">Bottom Left</option>
+                        <option value="bottom-right">Bottom Right</option>
+                        <option value="center">Center</option>
+                      </select>
                     </div>
                     <Button 
                       className="w-full" 
@@ -209,8 +347,8 @@ export default function AiContentPage() {
 
                 {/* Right side - Image Previews */}
 <div className="grid grid-cols-2 gap-4">
-  {generatedImages.length > 0 ? (
-    generatedImages.map((imageUrl, index) => (
+  {combinedImages.length > 0 ? (
+    combinedImages.map((imageUrl, index) => (
       <div 
         key={index}
         className="aspect-square relative rounded-lg overflow-hidden border border-gray-200 dark:border-gray-800 group"

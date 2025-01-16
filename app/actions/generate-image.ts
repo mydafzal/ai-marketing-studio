@@ -7,6 +7,8 @@ const replicate = new Replicate({
   auth: process.env.REPLICATE_API_TOKEN as string,
 });
 
+
+
 export async function generateImages(prompt: string): Promise<{ 
   success: boolean; 
   images?: string[]; 
@@ -17,6 +19,8 @@ export async function generateImages(prompt: string): Promise<{
       throw new Error('REPLICATE_API_TOKEN is not configured');
     }
 
+    // console.log("Starting image generation with logo:", logoPrompt);
+
     console.log("Starting image generation with prompt:", prompt);
 
     // Generate 4 separate predictions in parallel for better performance
@@ -26,6 +30,7 @@ export async function generateImages(prompt: string): Promise<{
         {
           input: {
             prompt: prompt,
+            // image_prompt: logoPrompt,
             num_outputs: 1,  // Generate 1 image per prediction
             prompt_upsampling: true,
             aspect_ratio: "1:1",
@@ -34,48 +39,48 @@ export async function generateImages(prompt: string): Promise<{
           },
         }
       ),
-      replicate.run(
-        "black-forest-labs/flux-1.1-pro",
-        {
-          input: {
-            prompt: prompt,
-            num_outputs: 1,
-            prompt_upsampling: true,
-            aspect_ratio: "1:1",
-            guidance_scale: 7.5,
-            num_inference_steps: 50
-          },
-        }
-      ),
-      replicate.run(
-        "black-forest-labs/flux-1.1-pro",
-        {
-          input: {
-            prompt: prompt,
-            num_outputs: 1,
-            prompt_upsampling: true,
-            aspect_ratio: "1:1",
-            guidance_scale: 7.5,
-            num_inference_steps: 50
-          },
-        }
-      ),
-      replicate.run(
-        "black-forest-labs/flux-1.1-pro",
-        {
-          input: {
-            prompt: prompt,
-            num_outputs: 1,
-            prompt_upsampling: true,
-            aspect_ratio: "1:1",
-            guidance_scale: 7.5,
-            num_inference_steps: 50
-          },
-        }
-      )
+      // replicate.run(
+      //   "black-forest-labs/flux-1.1-pro",
+      //   {
+      //     input: {
+      //       prompt: prompt,
+      //       num_outputs: 1,
+      //       prompt_upsampling: true,
+      //       aspect_ratio: "1:1",
+      //       guidance_scale: 7.5,
+      //       num_inference_steps: 50
+      //     },
+      //   }
+      // ),
+      // replicate.run(
+      //   "black-forest-labs/flux-1.1-pro",
+      //   {
+      //     input: {
+      //       prompt: prompt,
+      //       num_outputs: 1,
+      //       prompt_upsampling: true,
+      //       aspect_ratio: "1:1",
+      //       guidance_scale: 7.5,
+      //       num_inference_steps: 50
+      //     },
+      //   }
+      // ),
+      // replicate.run(
+      //   "black-forest-labs/flux-1.1-pro",
+      //   {
+      //     input: {
+      //       prompt: prompt,
+      //       num_outputs: 1,
+      //       prompt_upsampling: true,
+      //       aspect_ratio: "1:1",
+      //       guidance_scale: 7.5,
+      //       num_inference_steps: 50
+      //     },
+      //   }
+      // )
     ]);
 
-    console.log('Generation outputs:', predictions);
+    // console.log('Generation outputs:', predictions);
 
     // Flatten the array of results and ensure they're strings
     const imageUrls = predictions
