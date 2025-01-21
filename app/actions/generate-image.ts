@@ -9,7 +9,7 @@ const replicate = new Replicate({
 
 
 
-export async function generateImages(prompt: string): Promise<{ 
+export async function generateImages(prompt: string,additionalPrompt: string): Promise<{ 
   success: boolean; 
   images?: string[]; 
   error?: string;
@@ -19,9 +19,9 @@ export async function generateImages(prompt: string): Promise<{
       throw new Error('REPLICATE_API_TOKEN is not configured');
     }
 
-    // console.log("Starting image generation with logo:", logoPrompt);
+    console.log("Starting image generation with additional:", additionalPrompt);
 
-    console.log("Starting image generation with prompt:", prompt);
+    // console.log("Starting image generation with prompt:", prompt);
 
     // Generate 4 separate predictions in parallel for better performance
     const predictions = await Promise.all([
@@ -29,8 +29,7 @@ export async function generateImages(prompt: string): Promise<{
         "black-forest-labs/flux-1.1-pro",
         {
           input: {
-            prompt: prompt,
-            // image_prompt: logoPrompt,
+            prompt: prompt+". Also follow this instructions: "+additionalPrompt,
             num_outputs: 1,  // Generate 1 image per prediction
             prompt_upsampling: true,
             aspect_ratio: "1:1",
@@ -39,45 +38,45 @@ export async function generateImages(prompt: string): Promise<{
           },
         }
       ),
-      // replicate.run(
-      //   "black-forest-labs/flux-1.1-pro",
-      //   {
-      //     input: {
-      //       prompt: prompt,
-      //       num_outputs: 1,
-      //       prompt_upsampling: true,
-      //       aspect_ratio: "1:1",
-      //       guidance_scale: 7.5,
-      //       num_inference_steps: 50
-      //     },
-      //   }
-      // ),
-      // replicate.run(
-      //   "black-forest-labs/flux-1.1-pro",
-      //   {
-      //     input: {
-      //       prompt: prompt,
-      //       num_outputs: 1,
-      //       prompt_upsampling: true,
-      //       aspect_ratio: "1:1",
-      //       guidance_scale: 7.5,
-      //       num_inference_steps: 50
-      //     },
-      //   }
-      // ),
-      // replicate.run(
-      //   "black-forest-labs/flux-1.1-pro",
-      //   {
-      //     input: {
-      //       prompt: prompt,
-      //       num_outputs: 1,
-      //       prompt_upsampling: true,
-      //       aspect_ratio: "1:1",
-      //       guidance_scale: 7.5,
-      //       num_inference_steps: 50
-      //     },
-      //   }
-      // )
+      replicate.run(
+        "black-forest-labs/flux-1.1-pro",
+        {
+          input: {
+            prompt: prompt,
+            num_outputs: 1,
+            prompt_upsampling: true,
+            aspect_ratio: "1:1",
+            guidance_scale: 7.5,
+            num_inference_steps: 50
+          },
+        }
+      ),
+      replicate.run(
+        "black-forest-labs/flux-1.1-pro",
+        {
+          input: {
+            prompt: prompt,
+            num_outputs: 1,
+            prompt_upsampling: true,
+            aspect_ratio: "1:1",
+            guidance_scale: 7.5,
+            num_inference_steps: 50
+          },
+        }
+      ),
+      replicate.run(
+        "black-forest-labs/flux-1.1-pro",
+        {
+          input: {
+            prompt: prompt,
+            num_outputs: 1,
+            prompt_upsampling: true,
+            aspect_ratio: "1:1",
+            guidance_scale: 7.5,
+            num_inference_steps: 50
+          },
+        }
+      )
     ]);
 
     // console.log('Generation outputs:', predictions);

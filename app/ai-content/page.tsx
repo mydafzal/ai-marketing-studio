@@ -15,6 +15,8 @@ import { generateImages } from "@/app/actions/generate-image"
 export default function AiContentPage() {
   const [textPrompt, setTextPrompt] = React.useState("")
   const [imagePrompt, setImagePrompt] = React.useState("")
+  const [additionalPrompt, SetAdditionalPrompt] = React.useState("")
+  
 
   const [logoPrompt, setLogoPrompt] = React.useState<string | null>(null);
   const [logoPosition, setLogoPosition] = React.useState("top-left");
@@ -32,6 +34,14 @@ export default function AiContentPage() {
     linkedin: "Here you can see how your LinkedIn post will look like",
     instagram: "Here you can see how your Instagram post will look like"
   })
+
+
+  const [logoFile, setLogoFile] = React.useState<File | null>(null);
+  const [imageUrls, setImageUrls] = React.useState([]); // Array of background image URLs
+  const [combinedImages, setCombinedImages] = React.useState<string[]>([]) // Array of data URLs for combined images
+
+
+
   const { toast } = useToast()
 
   const handleCopy = async (platform: 'twitter' | 'linkedin' | 'instagram') => {
@@ -90,14 +100,21 @@ export default function AiContentPage() {
   
     setIsGeneratingImages(true)
     try {
-      const result = await generateImages(imagePrompt,logoPrompt)
+      const result = await generateImages(imagePrompt,additionalPrompt)
       console.log('Generation result:', JSON.stringify(result));
       
       if (result.success && result.images && result.images.length > 0) {
         const validUrls = result.images.filter(url => typeof url === 'string');
         setGeneratedImages(validUrls);
 
-        drawImages()
+        if(logoFile != null){
+           drawImages(logoPosition);
+
+        }else{
+          //no logo just do normal uploads
+          setCombinedImages(validUrls);
+
+        }
         
         toast({
           title: "Success",
@@ -147,10 +164,6 @@ export default function AiContentPage() {
 
 
 
-  const [logoFile, setLogoFile] = React.useState<File | null>(null);
-  const [imageUrls, setImageUrls] = React.useState([]); // Array of background image URLs
-  const [combinedImages, setCombinedImages] = React.useState([]); // Array of data URLs for combined images
-
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -161,8 +174,28 @@ export default function AiContentPage() {
     }
   }
 
+  const removeLogo = () => {
+    setLogoFile(null);
+     // Get the file input element
+     const fileInput = document.getElementById('logo');
+     // Reset the value of the file input
+     (fileInput as HTMLInputElement).value = ''; // This clears the selected file
 
-  const drawImages = () => {
+     //now set the images to show without the logo
+     if(generatedImages.length > 0){
+      setCombinedImages(generatedImages);
+
+     }
+
+    const logoPositionSelect = document.getElementById('logoPosition') as HTMLSelectElement;
+    if (logoPositionSelect) {
+      logoPositionSelect.value = '-';
+    }
+
+  };
+
+
+  const drawImages = async (logoPosition: string) => {
     console.log("Drawing Image->", logoPosition);
     
     const images = generatedImages.map((backgroundImageUrl) => {
@@ -238,8 +271,8 @@ export default function AiContentPage() {
     });
   
     // Wait for all promises (for each image URL) to resolve
-    Promise.all(images).then((result) => {
-      // console.log(result);
+    Promise.all(images).then((result:any) => {
+      console.log("prompt=>",result);
       setCombinedImages(result);
     });
   };
@@ -304,8 +337,31 @@ export default function AiContentPage() {
                         placeholder="Describe the images you want to generate..."
                         className="min-h-[100px]"
                       />
-                       <label htmlFor="logo" className="text-sm font-medium">
-                        Select your logo
+
+                    <div className="space-y-2">
+                      <label htmlFor="additionalPrompt" className="text-sm font-medium">
+                        Add any more details
+                      </label>
+                      <Textarea
+                        id="additionalPrompt"
+                        value={additionalPrompt}
+                        onChange={(e) => SetAdditionalPrompt(e.target.value)}
+                        placeholder="add more details about the image"
+                        className="min-h-[100px]"
+                      />
+                      </div>
+
+                  <Button 
+                      className="w-full mb-4" 
+                      onClick={handleImageGenerate}
+                      disabled={isGeneratingImages}
+                    >
+                      {isGeneratingImages ? "Generating..." : "Generate Images"}
+                    </Button>
+                      <br/>
+                      <br/>
+                       <label htmlFor="logo" className="text-sm mt-6 font-medium">
+                        Add your logo (Optional)
                       </label>
                       <Input 
                         id="logo"
@@ -315,20 +371,46 @@ export default function AiContentPage() {
                         // className="min-h-[100px]"
 
                       />
+                      
 
-                      {logoPrompt && (
+                      {/* {logoFile && (
                                 <div className="mt-4">
                                   <p className="text-sm text-gray-600">Preview:</p>
-                                  <img src={logoPrompt} alt="Logo preview" className="w-32 h-32 object-contain border rounded-lg" />
+                                  <img
+                                   src={logoFile} alt="Logo preview" className="size-32 object-contain border rounded-lg" />
                                 </div>
-                              )}
+                              )} */}
+
+                      {logoFile &&
+                                          <Button 
+                                            className="w-full mb-4 bg-red-500 text-white" 
+                                            onClick={removeLogo}
+                                          >
+                                            Remove Logo
+                                          </Button>
+                      }
 
                       <label htmlFor="logoPostition" className="text-sm font-medium">
                         Select your logo position
                       </label>
-                      <select name="logoPosition" 
-                        onChange={(e) => setLogoPosition(e.target.value)}
+
+                     
+                    
+                      <select name="logoPosition"  id="logoPosition"
+                        onChange={(e) => {
+                          if(e.target.value != "-"){
+                            setLogoPosition(e.target.value); 
+                            if(generatedImages.length > 0) {
+                              // alert(e.target.value)
+                              drawImages(e.target.value);
+  
+                            }
+                          }
+                         
+
+                        } }
                       className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50">
+                        <option value="-">Please select a location</option>
                         <option value="top-left">Top Left</option>
                         <option value="top-right">Top Right</option>
                         <option value="bottom-left">Bottom Left</option>
@@ -336,38 +418,32 @@ export default function AiContentPage() {
                         <option value="center">Center</option>
                       </select>
                     </div>
-                    <Button 
-                      className="w-full" 
-                      onClick={handleImageGenerate}
-                      disabled={isGeneratingImages}
-                    >
-                      {isGeneratingImages ? "Generating..." : "Generate Images"}
-                    </Button>
+                  
                   </div>
 
                 {/* Right side - Image Previews */}
-<div className="grid grid-cols-2 gap-4">
-  {combinedImages.length > 0 ? (
-    combinedImages.map((imageUrl, index) => (
-      <div 
-        key={index}
-        className="aspect-square relative rounded-lg overflow-hidden border border-gray-200 dark:border-gray-800 group"
-      >
-        <Image
-          src={imageUrl}
-          alt={`Generated image ${index + 1}`}
-          fill
-          className="object-cover"
-        />
-        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-opacity duration-200" />
-        <Button
-          className="absolute bottom-2 right-2 w-8 h-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-white hover:bg-white/80"
-          onClick={() => handleDownload(imageUrl, index)}
-        >
-          <Download className="h-4 w-4 text-black" />
-        </Button>
-      </div>
-    ))
+              <div className="grid grid-cols-2 gap-4">
+                {combinedImages.length > 0 ? (
+                  combinedImages.map((imageUrl, index) => (
+                    <div 
+                      key={index}
+                      className="aspect-square relative rounded-lg overflow-hidden border border-gray-200 dark:border-gray-800 group"
+                    >
+                      <Image
+                        src={imageUrl}
+                        alt={`Generated image ${index + 1}`}
+                        fill
+                        className="object-cover"
+                      />
+                      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-opacity duration-200" />
+                      <Button
+                        className="absolute bottom-2 right-2 w-8 h-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-white hover:bg-white/80"
+                        onClick={() => handleDownload(imageUrl, index)}
+                      >
+                        <Download className="h-4 w-4 text-black" />
+                      </Button>
+                    </div>
+                  ))
                     ) : (
                       Array.from({ length: 4 }).map((_, index) => (
                         <div 
