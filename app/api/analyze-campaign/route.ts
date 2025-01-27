@@ -41,8 +41,8 @@ export async function POST(request: Request) {
     // 5) Call OpenAI
     const completion = await openai.chat.completions.create({
       messages: messages as OpenAI.Chat.ChatCompletionMessageParam[],
-      model: 'gpt-4',
-      temperature: 0.7
+      model: 'gpt-4o',
+      temperature: 0.1
     })
 
     // 6) Return the GPT response
