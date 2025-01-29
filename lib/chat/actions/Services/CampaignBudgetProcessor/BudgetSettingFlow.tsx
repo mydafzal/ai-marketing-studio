@@ -41,8 +41,7 @@ export class BudgetSettingFlow {
     public async confirmBudget() {
         // Immediately return placeholders so UI can display while we process in background
         const placeholders = {
-            // In the old code, you used "purchasingUI"
-            purchasingUI: this.budgetUI.value,   // Just rename from budgetUI => purchasingUI
+            purchasingUI: this.budgetUI.value,
             newMessage: {
                 id: nanoid(),
                 display: this.newMessageUI.value,
