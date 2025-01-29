@@ -71,7 +71,7 @@ import showPlacementTargetingUIModule from "@/lib/ui-magic/modules/showPlacement
 import showSupervisedTaskUIModule from "@/lib/ui-magic/modules/showSupervisedTaskUIModule";
 import showAdsetConnectionUIModule from "@/lib/ui-magic/modules/showAdsetConnectionUIModule";
 import {createBaseLeadOrRecruitmentCampaign} from "@/lib/api/fasty-bot/create-base-lead-or-recruitment-campaign";
-import MessageActivityValidator from "@/lib/chat/actions/check-new-chat/check-new-chat";
+import MessageActivityValidator from "@/lib/chat/actions/Services/MessageActivityValidator/MessageActivityValidator";
 
 interface ToolResult {
     toolName: string;

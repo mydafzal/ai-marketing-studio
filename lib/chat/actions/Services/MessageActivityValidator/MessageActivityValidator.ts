@@ -17,7 +17,7 @@ class MessageActivityValidator{
 
         const userMessages = this.getUserMessages(messages);
 
-        if(!this.hadNoMessagesInTheLastNHours(16, userMessages))
+        if(this.hadMessagesInTheLastNHours(16, userMessages))
         {
             return false;
         }
@@ -44,7 +44,7 @@ class MessageActivityValidator{
         )
     }
 
-    private hadNoMessagesInTheLastNHours(hours: number, messages: Message[]): boolean {
+    private hadMessagesInTheLastNHours(hours: number, messages: Message[]): boolean {
         return messages.some(
             message => {
                 if(message === null || message.timestamp === undefined) {
