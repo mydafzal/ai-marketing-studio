@@ -44,7 +44,7 @@ export function GeographicalLocationResult({
           ? "Great! Now that we have the geographical targeting set up, let me help you with interest targeting and filters to reach your ideal audience. I can suggest some filters based on your business and target demographics. Would you like me to do that? 🎯"
           : "I've updated the geographical targeting. Would you like to make any other changes to your campaign?"
 
-        const responseMessage = await submitUserMessage(message, [], true)
+        const responseMessage = await submitUserMessage(message, [], true) // Should be AI message.
         setMessages(currentMessages => [...currentMessages, responseMessage])
       }
     }

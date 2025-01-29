@@ -17,13 +17,12 @@ import {
     fetchFbCampaignExtraDetailsForChat,
     fetchUserDefaultExtraDetails,
     saveChat,
+    saveFbCampaignStructure,
     updateChat,
     updateChatCampaignBudget,
     updateChatTitle,
-    saveFbCampaignStructure,
     updateLeadFormInAdset
 } from '@/app/actions'
-import {differenceInHours} from 'date-fns';
 import {ChatImage} from '@/components/chat-images'
 import {ImagePart, TextPart} from 'ai'
 import {z} from 'zod'
@@ -43,7 +42,6 @@ import {createLeadgenForm} from '@/lib/api/fasty-bot/create-leadgen-form';
 import {updateAdset} from '@/lib/api/fasty-bot/update-adset';
 import {getCampaignIdFromUrl} from "@/lib/api/fasty-bot/helpers/campaign-id-from-url-helper";
 import {getChatIdFromUrl} from "@/lib/api/fasty-bot/helpers/chat-id-from-url-helper";
-import {sendAdminNotification} from '@/lib/api/fasty-bot/send-admin-notification'
 import {ConnectCampaign} from '@/components/connect-campaign'
 import {PlacementTargeting} from '@/components/placement-targeting';
 import {ConnectAdset} from '@/components/connect-adset'
@@ -73,6 +71,7 @@ import showPlacementTargetingUIModule from "@/lib/ui-magic/modules/showPlacement
 import showSupervisedTaskUIModule from "@/lib/ui-magic/modules/showSupervisedTaskUIModule";
 import showAdsetConnectionUIModule from "@/lib/ui-magic/modules/showAdsetConnectionUIModule";
 import {createBaseLeadOrRecruitmentCampaign} from "@/lib/api/fasty-bot/create-base-lead-or-recruitment-campaign";
+import MessageActivityValidator from "@/lib/chat/actions/Services/MessageActivityValidator/MessageActivityValidator";
 
 interface ToolResult {
     toolName: string;
@@ -85,32 +84,6 @@ interface ExtractedMessage {
     role: 'user' | 'system' | 'assistant' | 'tool';
     content: string | { [key: string]: any };  // content can be string or object
     timestamp?: string;
-}
-
-async function checkNewChat(chatId: string, messages: Message[], session: Session | null) {
-    if (!session?.user) return false;
-
-    const disabledEmails = [
-        'teo.kostelac@outlook.com',
-        'contact@reeply.net',
-        'themadnoise@gmail.com',
-        'maxnols@reeply.net',
-        'vinayak@reeply.ai',
-        'madani.farzam@gmail.com'
-    ];
-
-    if (disabledEmails.includes(session.user.email)) return false;
-
-    const userMessages = messages.filter(message => message.role === 'user')
-    const now = new Date()
-    const hasNewMessage = userMessages.some(message => {
-        if (!message?.timestamp) return false
-        const hoursDiff = differenceInHours(now, message.timestamp)
-        return hoursDiff < 16
-    })
-    if (!hasNewMessage) {
-        await sendAdminNotification(chatId)
-    }
 }
 
 async function confirmPurchase(campaignName: string, budget: number, days: number = 30) {
@@ -578,7 +551,9 @@ async function submitUserMessage(content: string, contentImages?: Array<TextPart
         console.error('Error fetching extra details:', error);
     }
     const session = (await auth()) as Session
-    await checkNewChat(chatId, aiState.get().messages, session);
+    const messageActivityValidator = new MessageActivityValidator();
+    await messageActivityValidator.informAdminIfThisIsNewActivity(chatId, aiState.get().messages, session)
+
     const messageId = nanoid();
     let interestFilters = `
     [Categories of interest filters]

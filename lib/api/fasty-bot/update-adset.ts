@@ -29,7 +29,6 @@ export async function updateAdset(
         'Content-Type': 'application/json',
         Authorization: `Bearer ${process.env.FASTY_API_TOKEN}`,
         'fb-api-key': token
-
       },
       body: JSON.stringify(dataSubmit)
     })
