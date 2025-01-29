@@ -15,16 +15,12 @@ describe('MessageActivityValidator - Ignored Users', () => {
 
     const ignoredUserCases: IgnoredUserTestCase[] = [
         {
-            email: 'teo.kostelac@outlook.com',
-            description: 'should ignore team lead email'
-        },
-        {
             email: 'contact@reeply.net',
-            description: 'should ignore contact email'
+            description: 'should ignore email'
         },
         {
             email: 'themadnoise@gmail.com',
-            description: 'should ignore developer email'
+            description: 'should ignore email'
         }
     ]
 
