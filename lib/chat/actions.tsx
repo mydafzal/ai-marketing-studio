@@ -2,11 +2,10 @@ import 'server-only'
 
 import {createAI, createStreamableUI, createStreamableValue, getAIState, getMutableAIState, streamUI} from 'ai/rsc'
 import {openai} from '@ai-sdk/openai'
-import {BotCard, BotMessage, Purchase, spinner, SystemErrorMessage, SystemMessage} from '@/components/stocks'
+import {BotCard, BotMessage, Purchase, SystemErrorMessage, SystemMessage} from '@/components/stocks'
 import {AdTextSelectionSkeleton} from '@/components/stocks/ad-text-selection-skeleton'
 import {EventsSkeleton} from '@/components/stocks/events-skeleton'
 import {Events} from '@/components/stocks/events'
-import {PurchasingUi} from '@/components/stocks/purchasing-ui'
 import {StockSkeleton} from '@/components/stocks/stock-skeleton'
 import {AdTextSuggestion} from '@/components/stocks/ad-text-suggestion'
 import {VideoAdTextSuggestion} from '@/components/stocks/video-ad-text-suggestion'
@@ -19,7 +18,6 @@ import {
     saveChat,
     saveFbCampaignStructure,
     updateChat,
-    updateChatCampaignBudget,
     updateChatTitle,
     updateLeadFormInAdset
 } from '@/app/actions'
@@ -28,12 +26,10 @@ import {ImagePart, TextPart} from 'ai'
 import {z} from 'zod'
 import {Stock} from '@/components/stocks/campaignresultsnew'
 
-import {formatNumber, nanoid, runAsyncFnWithoutBlocking, sleep} from '@/lib/utils'
+import {nanoid, runAsyncFnWithoutBlocking, sleep} from '@/lib/utils'
 import {SpinnerMessage, UserMessage} from '@/components/stocks/message'
 import {Adset, Chat, LeadgenFrom, Message, Session} from '@/lib/types';
 import {auth} from '@/auth'
-import {setDailyCampaignBudget} from '@/lib/api/fasty-bot/set-daily-campaign-budget';
-import {setCampaignStatus} from '@/lib/api/fasty-bot/set-campaign-status';
 import {createCampaignAd} from '@/lib/api/fasty-bot/create-ad';
 import {createCampaign} from '@/lib/api/fasty-bot/create-campaign'
 import {CampaignSummary} from '@/lib/api/fasty-bot/get-campaign-summary'
@@ -75,6 +71,9 @@ import MessageActivityValidator from "@/lib/chat/actions/Services/MessageActivit
 import {
     confirmCampaignBudgetAction
 } from "@/lib/chat/actions/Services/CampaignBudgetProcessor/confirmCampaignBudgetAction";
+import {
+    confirmCampaignStatusChange
+} from "@/lib/chat/actions/Services/CampaignStatusUpdateProcessor/CampaignStatusUpdateProcessor";
 
 interface ToolResult {
     toolName: string;
@@ -87,69 +86,6 @@ interface ExtractedMessage {
     role: 'user' | 'system' | 'assistant' | 'tool';
     content: string | { [key: string]: any };  // content can be string or object
     timestamp?: string;
-}
-
-async function confirmUpdateStatus(campaignName: string, status: string) {
-    'use server'
-    const aiState = getMutableAIState<typeof AI>();
-    let campaignId = await getCampaignIdFromUrl() || '0'; // for now just say you are updating even if no campaign id in place
-    if (process.env.NEXT_PUBLIC_HARDCODED_MODE === '1') {
-        campaignId = process.env.NEXT_PUBLIC_HARDCODED_CAMPAIGN_ID || '0'
-    }
-
-    const updateStatus = createStreamableUI(
-        <div className="inline-flex items-start gap-1 md:items-center">
-            {spinner}
-            <p className="mb-2">
-                Setting the status for {campaignName} to {status}...
-            </p>
-        </div>
-    );
-    const systemMessage = createStreamableUI(null);
-    runAsyncFnWithoutBlocking(async () => {
-        await sleep(1000);
-
-        const updateSuccess = await setCampaignStatus(
-            campaignId,
-            status
-        )
-        if (updateSuccess) {
-            updateStatus.done(
-                <div>
-                    <p className="mb-2">
-                        You have successfully set status for {campaignName}: {status}.
-                    </p>
-                </div>
-            );
-            systemMessage.done(
-                <SystemMessage>
-                    You have successfully set status for {campaignName}: {status}.
-                </SystemMessage>
-            );
-        } else {
-            updateStatus.done(
-                <div>
-                    <p className="mb-2 text-red-500">
-                        Error: Failed to set the status for {campaignName}. Please try again later.
-                    </p>
-                </div>
-            );
-            systemMessage.done(
-                <SystemMessage>
-                    Error: Failed to set the status for {campaignName}. Please try again later.
-                </SystemMessage>
-            );
-        }
-
-
-    });
-    return {
-        updateStatusUI: updateStatus.value,
-        newMessage: {
-            id: nanoid(),
-            display: systemMessage.value
-        }
-    }
 }
 
 async function confirmCreateAd(campaign: any, data: any, adset: any) {
@@ -2002,7 +1938,7 @@ export const AI = createAI<AIState, UIState>({
     actions: {
         submitUserMessage,
         confirmCampaignBudgetAction,
-        confirmUpdateStatus,
+        confirmCampaignStatusChange,
         confirmCreateAd,
         updateCampaignInfo,
         syncMessages,
