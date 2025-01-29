@@ -7,6 +7,7 @@ import { formatNumber } from '@/lib/utils';
 import { DollarSign, Calendar, ArrowRight, Coins } from 'lucide-react';
 
 import type { AI } from '@/lib/chat/actions';
+import {spinner} from "./spinner";
 
 interface Purchase {
   symbol: string;
@@ -32,8 +33,11 @@ export function Purchase({
   const [aiState, setAIState] = useAIState<typeof AI>();
   const [, setMessages] = useUIState<typeof AI>();
 
-  // 1) Destructure the *new* function name from useActions():
+  // 1) Destructure our server action from useActions:
   const { confirmCampaignBudgetAction } = useActions();
+
+  // 2) Add local "isLoading" for the spinner
+  const [isLoading, setIsLoading] = useState(false);
 
   function onBudgetChange(e: React.ChangeEvent<HTMLInputElement>) {
     const newBudget = Number(e.target.value);
@@ -51,6 +55,21 @@ export function Purchase({
         }
       ]
     });
+  }
+
+  async function handleSetBudget() {
+    setIsLoading(true);
+    try {
+      // Call the server action
+      const response = await confirmCampaignBudgetAction(symbol, budget, days);
+
+      // Replace with placeholders from the server if needed
+      setPurchasingUI(response.purchasingUI);
+      setMessages(currentMessages => [...currentMessages, response.newMessage]);
+    } finally {
+      // Always stop showing the spinner
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -71,8 +90,8 @@ export function Purchase({
             <div className="mt-4">{purchasingUI}</div>
         ) : (
             <>
-              {/* Daily Budget */}
               <div className="space-y-6">
+                {/* Daily Budget */}
                 <div className="p-4 rounded-lg bg-zinc-900/50 border border-zinc-800">
                   <div className="flex items-center gap-2 mb-4">
                     <DollarSign className="size-5 text-green-400" />
@@ -131,18 +150,22 @@ export function Purchase({
                 {/* Action Button */}
                 <button
                     className="w-full px-6 py-3 font-semibold text-zinc-900 bg-green-400 rounded-lg hover:bg-green-500 transition-colors duration-200 flex items-center justify-center gap-2"
-                    onClick={async () => {
-                      const response = await confirmCampaignBudgetAction(symbol, budget, days);
-
-                      setPurchasingUI(response.purchasingUI);
-                      setMessages((currentMessages) => [...currentMessages, response.newMessage]);
-                    }}
+                    onClick={handleSetBudget}
+                    disabled={isLoading} // disable button if loading
                 >
                   <DollarSign className="size-5" />
-                  Set Campaign Budget
+                  {isLoading ? 'Processing...' : 'Set Campaign Budget'}
                 </button>
               </div>
             </>
+        )}
+
+        {/* The client-side spinner UI (optional overlay or inline) */}
+        {isLoading && (
+            <div className="mt-4 flex items-center gap-2">
+              {spinner}
+              <span>Updating budget...</span>
+            </div>
         )}
       </div>
   );

@@ -1,14 +1,14 @@
-import { createStreamableUI, getMutableAIState } from 'ai/rsc';
-import { nanoid, runAsyncFnWithoutBlocking, sleep, formatNumber } from '@/lib/utils';
+import {createStreamableUI, getMutableAIState} from 'ai/rsc';
+import {formatNumber, nanoid} from '@/lib/utils';
 
-import { spinner, SystemMessage } from '@/components/stocks';
-import { PurchasingUi } from '@/components/stocks/purchasing-ui';
+import {SystemMessage} from '@/components/stocks';
+import {PurchasingUi} from '@/components/stocks/purchasing-ui';
 
-import { setDailyCampaignBudget } from '@/lib/api/fasty-bot/set-daily-campaign-budget';
-import { updateChatCampaignBudget } from '@/app/actions';
-import { getCampaignIdFromUrl } from '@/lib/api/fasty-bot/helpers/campaign-id-from-url-helper';
-import { getChatIdFromUrl } from '@/lib/api/fasty-bot/helpers/chat-id-from-url-helper';
-import { AI } from '@/lib/chat/actions';
+import {setDailyCampaignBudget} from '@/lib/api/fasty-bot/set-daily-campaign-budget';
+import {updateChatCampaignBudget} from '@/app/actions';
+import {getCampaignIdFromUrl} from '@/lib/api/fasty-bot/helpers/campaign-id-from-url-helper';
+import {getChatIdFromUrl} from '@/lib/api/fasty-bot/helpers/chat-id-from-url-helper';
+import {AI} from '@/lib/chat/actions';
 
 /**
  * Responsible for setting a daily budget for a given campaign.
@@ -49,9 +49,7 @@ export class BudgetSettingFlow {
             },
         };
 
-        runAsyncFnWithoutBlocking(async () => {
-            await this.handleBudgetProcess();
-        });
+        await this.handleBudgetProcess();
 
         return placeholders;
     }
@@ -64,11 +62,8 @@ export class BudgetSettingFlow {
      * Encapsulates the entire flow of updating the budget and returning final UI.
      */
     private async handleBudgetProcess() {
-        // Show an "in-progress" spinner
-        this.budgetUI.update(this.renderIntermediateSpinner());
-
         // Update budget on Facebook & DB
-        const { success, totalBudget } = await this.updateBudgetOnFacebook();
+        const {success, totalBudget} = await this.updateBudgetOnFacebook();
 
         // Render final system message
         this.renderFinalSystemMessage(success, totalBudget);
@@ -93,20 +88,6 @@ export class BudgetSettingFlow {
     }
 
     /**
-     * Shows a second-stage "Almost there..." spinner in the chat.
-     */
-    private renderIntermediateSpinner() {
-        return (
-            <div className="inline-flex items-start gap-1 md:items-center">
-                {spinner}
-                <p className="mb-2">
-                    Almost there, configuring the budget for {this.campaignName}...
-                </p>
-            </div>
-        );
-    }
-
-    /**
      * Actually updates the budget in Facebook and DB, returning success status & total budget.
      */
     private async updateBudgetOnFacebook() {
@@ -127,7 +108,7 @@ export class BudgetSettingFlow {
         }
 
         const totalBudget = this.budget * this.days;
-        return { success, totalBudget };
+        return {success, totalBudget};
     }
 
     /**
