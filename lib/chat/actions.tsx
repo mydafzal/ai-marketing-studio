@@ -72,6 +72,9 @@ import showSupervisedTaskUIModule from "@/lib/ui-magic/modules/showSupervisedTas
 import showAdsetConnectionUIModule from "@/lib/ui-magic/modules/showAdsetConnectionUIModule";
 import {createBaseLeadOrRecruitmentCampaign} from "@/lib/api/fasty-bot/create-base-lead-or-recruitment-campaign";
 import MessageActivityValidator from "@/lib/chat/actions/Services/MessageActivityValidator/MessageActivityValidator";
+import {
+    confirmCampaignBudgetAction
+} from "@/lib/chat/actions/Services/CampaignBudgetProcessor/confirmCampaignBudgetAction";
 
 interface ToolResult {
     toolName: string;
@@ -84,123 +87,6 @@ interface ExtractedMessage {
     role: 'user' | 'system' | 'assistant' | 'tool';
     content: string | { [key: string]: any };  // content can be string or object
     timestamp?: string;
-}
-
-async function confirmPurchase(campaignName: string, budget: number, days: number = 30) {
-    'use server'
-
-    const aiState = getMutableAIState<typeof AI>();
-    const totalBudget = budget * days;
-    let campaignId = await getCampaignIdFromUrl() || '0'; // for now just say you are updating even if no campaign id in place
-    if (process.env.NEXT_PUBLIC_HARDCODED_MODE === '1') {
-        campaignId = process.env.NEXT_PUBLIC_HARDCODED_CAMPAIGN_ID || '0'
-    }
-    const chatId = getChatIdFromUrl()?.toString() || '';
-
-    const purchasing = createStreamableUI(
-        <div className="inline-flex items-start gap-1 md:items-center">
-            {spinner}
-            <p className="mb-2">
-                Setting the ad budget for {campaignName} to {formatNumber(budget)} per day...
-            </p>
-        </div>
-    );
-
-    const systemMessage = createStreamableUI(null);
-    const newMessageStream = createStreamableUI(null);
-
-    runAsyncFnWithoutBlocking(async () => {
-        await sleep(1000);
-
-        purchasing.update(
-            <div className="inline-flex items-start gap-1 md:items-center">
-                {spinner}
-                <p className="mb-2">
-                    Almost there, configuring the budget for {campaignName}...
-                </p>
-            </div>
-        );
-
-        const updateSuccess = await setDailyCampaignBudget(campaignId, budget);
-
-        if (updateSuccess) {
-            await updateChatCampaignBudget(chatId, budget);
-
-            systemMessage.done(
-                <SystemMessage>
-                    Your ad campaign &apos;{campaignName}&apos; is now set to run for {days} days with a daily budget of
-                    {formatNumber(budget)}. Total budget: {formatNumber(totalBudget)}. The budget has been updated on
-                    Facebook.
-                </SystemMessage>
-            );
-        } else {
-            systemMessage.done(
-                <SystemMessage>
-                    There was an error updating the budget for campaign &apos;{campaignName}&apos; on Facebook. Please
-                    check your connection and try again.
-                </SystemMessage>
-            );
-        }
-
-        purchasing.done(
-            <PurchasingUi
-                success={updateSuccess}
-                budget={budget}
-                campaignName={campaignName}
-                days={days}
-                totalBudget={totalBudget}
-            />
-        );
-
-        const newMessage = 'Would you like to continue?';
-
-        newMessageStream.done(
-            <div>
-                {newMessage}
-            </div>
-        );
-
-        // Prompting AI to ask a follow-up question or make a suggestion
-        aiState.done({
-            ...aiState.get(),
-            messages: [
-                ...aiState.get().messages.map(message => {
-                    if (message.role === 'tool') {
-                        const content = message.content[0];
-                        if (content.type === 'tool-result' && content.toolName === 'showAdBudgetUI') {
-                            content.result = {
-                                ...(content.result as Object),
-                                purchasingUiProps: (content.result as {
-                                    purchasingUiProps: string
-                                }).purchasingUiProps ?? {
-                                    success: updateSuccess,
-                                    budget,
-                                    campaignName,
-                                    days,
-                                    totalBudget,
-                                }
-                            };
-                        }
-                    }
-                    return message;
-                }),
-                {
-                    id: nanoid(),
-                    role: 'assistant',
-                    content: newMessage,
-                    timestamp: new Date().toISOString()
-                }
-            ]
-        });
-    });
-
-    return {
-        purchasingUI: purchasing.value,
-        newMessage: {
-            id: nanoid(),
-            display: newMessageStream.value,
-        }
-    }
 }
 
 async function confirmUpdateStatus(campaignName: string, status: string) {
@@ -2113,7 +1999,7 @@ export type UIState = {
 export const AI = createAI<AIState, UIState>({
     actions: {
         submitUserMessage,
-        confirmPurchase,
+        confirmCampaignBudgetAction,
         confirmUpdateStatus,
         confirmCreateAd,
         updateCampaignInfo,
