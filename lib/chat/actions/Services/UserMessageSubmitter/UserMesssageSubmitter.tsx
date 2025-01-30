@@ -108,6 +108,7 @@ export async function submitUserMessage(content: string, contentImages?: Array<T
 
     const messageId = nanoid();
 
+    // Todo: Refactor. Make a function out of this: appendUserMessageToConversation()
     aiState.update({
         ...aiState.get(),
         messages: [
@@ -124,6 +125,9 @@ export async function submitUserMessage(content: string, contentImages?: Array<T
     let textStream: undefined | ReturnType<typeof createStreamableValue<string>>
     let textNode: undefined | React.ReactNode
 
+    // Todo: Refactor PushMessages to 2 functions ->
+    //  1) removePreviousMessageFromConversationIfApplicableForFollowUp(messageId: string)
+    //  2) appendNewMessagesToConversationForForFollowUp(newMessages: Message[])
     const pushMessages = (messages: Message[]) => {
         aiState.done({
             ...aiState.get(),
@@ -149,6 +153,7 @@ export async function submitUserMessage(content: string, contentImages?: Array<T
 
 
     let systemMessage = getDefaultChatPrompt(campaignId, adsetId, extraDetailsFinalText);
+    // TODO: Tool builder factory (for each tool we should have a factory),
     const result = await streamUI({
         model: openai('gpt-4o'),
         initial: <SpinnerMessage/>,
@@ -159,13 +164,13 @@ export async function submitUserMessage(content: string, contentImages?: Array<T
                 content: message.content,
                 name: message.name
             }))
-        ],
+        ], // Todo: Create a function to getAllMessagesFromAiState
         text: ({content, done, delta}) => {
             if (!textStream) {
                 textStream = createStreamableValue('')
                 textNode = <BotMessage content={textStream.value}/>
             }
-            if (done) {
+            if (done) { // Todo: Make this logic into 3 functions: startTextStream(), updateTextStream(), finishTextStream()
                 textStream.done();
                 aiState.done({
                     ...aiState.get(),
