@@ -19,35 +19,8 @@ import {getUIStateFromAIState} from "@/lib/chat/actions/Services/FetchApplicable
 import {confirmUpdateAdset} from "@/lib/chat/actions/Services/AdPlacementProcessor/AdPlacementProcessor";
 import {confirmCreateAd} from "@/lib/chat/actions/Services/AdCreator/AdCreator";
 import {confirmCreateLeadgenForm} from "@/lib/chat/actions/Services/LeadGenFormProcessor/LeadGenFormProcessor";
-
-async function updateCampaignInfo(campaignSummary: CampaignSummary) {
-    'use server'
-
-    const aiState = getMutableAIState<typeof AI>();
-
-    aiState.done({
-        ...aiState.get(),
-        messages: [
-            {
-                id: 'campaign-info-data',
-                role: 'system',
-                content: `Campaign is connected, the knowledge base about current campaign information: ${JSON.stringify(campaignSummary)}`,
-                timestamp: new Date().toISOString()
-            },
-            ...aiState.get().messages.filter((message: Message) => message.id !== 'campaign-info-data' || message.role !== 'system'), //TODO: only pass last 50 messages or so. (enforce a limit)
-        ]
-    });
-}
-
-async function syncMessages() {
-    'use server'
-
-    const aiState = getMutableAIState<typeof AI>();
-    console.log('syncMessages', aiState.get().messages[0])
-    aiState.done({
-        ...aiState.get(),
-    });
-}
+import {syncMessages} from "@/lib/chat/actions/Services/AIDoneStateMessageSyncer/AIDoneStateMessageSyncer";
+import {updateCampaignInfo} from "@/lib/chat/actions/Services/AIDoneStateCampaignStatsEnricher/AIDoneStateCampaignStatsEnricher";
 
 export type AIState = {
     chatId: string
