@@ -1,35 +1,19 @@
 import 'server-only'
 
 import {createAI, createStreamableUI, createStreamableValue, getAIState, getMutableAIState} from 'ai/rsc'
-import {BotCard, BotMessage, Purchase, SystemErrorMessage, SystemMessage} from '@/components/stocks'
-import {Events} from '@/components/stocks/events'
-import {AdTextSuggestion} from '@/components/stocks/ad-text-suggestion'
-import {VideoAdTextSuggestion} from '@/components/stocks/video-ad-text-suggestion'
-import {CampaignStatus} from '@/components/stocks/campaign-status'
+import {SystemErrorMessage, SystemMessage} from '@/components/stocks'
 import {fetchChatCampaignBudget, fetchChatFbAdsetId, saveChat, updateLeadFormInAdset} from '@/app/actions'
-import {ChatImage} from '@/components/chat-images'
 import {TextPart} from 'ai'
-import {Stock} from '@/components/stocks/campaignresultsnew'
 
 import {nanoid, runAsyncFnWithoutBlocking, sleep} from '@/lib/utils'
-import {UserMessage} from '@/components/stocks/message'
 import {Adset, Chat, LeadgenFrom, Message} from '@/lib/types';
 import {auth} from '@/auth'
 import {createCampaignAd} from '@/lib/api/fasty-bot/create-ad';
-import {createCampaign} from '@/lib/api/fasty-bot/create-campaign'
 import {CampaignSummary} from '@/lib/api/fasty-bot/get-campaign-summary'
 import {createLeadgenForm} from '@/lib/api/fasty-bot/create-leadgen-form';
 import {updateAdset} from '@/lib/api/fasty-bot/update-adset';
 import {getCampaignIdFromUrl} from "@/lib/api/fasty-bot/helpers/campaign-id-from-url-helper";
 import {getChatIdFromUrl} from "@/lib/api/fasty-bot/helpers/chat-id-from-url-helper";
-import {ConnectCampaign} from '@/components/connect-campaign'
-import {PlacementTargeting} from '@/components/placement-targeting';
-import {ConnectAdset} from '@/components/connect-adset'
-import FormBuilder from '@/components/form-builder';
-import {GeographicalLocation} from '@/components/geographical-location';
-import AdCreativesSwitcher from '@/components/ad-creatives-switcher'
-import {SuggestedFilters} from '@/components/suggested-filters';
-import SupervisedTaskMessage from '@/components/supervised-task-message'
 import {
     confirmCampaignBudgetAction
 } from "@/lib/chat/actions/Services/CampaignBudgetProcessor/confirmCampaignBudgetAction";
@@ -37,6 +21,7 @@ import {
     confirmCampaignStatusChange
 } from "@/lib/chat/actions/Services/CampaignStatusUpdateProcessor/CampaignStatusUpdateProcessor";
 import {submitUserMessage} from "@/lib/chat/actions/Services/UserMessageSubmitter/UserMesssageSubmitter";
+import {getUIStateFromAIState} from "@/lib/chat/actions/Services/FetchApplicableUI/FetchApplicableUI";
 
 interface ToolResult {
     toolName: string;
@@ -350,199 +335,3 @@ export const AI = createAI<AIState, UIState>({
         }
     }
 })
-
-function isToolResultArray(content: string | ToolResult[]): content is ToolResult[] {
-    return Array.isArray(content);
-}
-
-export const getUIStateFromAIState = (aiState: Chat) => {
-    return aiState.messages
-        .filter((message: Message) => message.role !== 'system')
-        .map((message: Message, index: number) => ({
-            id: `${aiState.chatId}-${index}`,
-            display:
-                message.role === 'tool' && isToolResultArray(message.content) ? (
-                    message.content.map((tool: ToolResult) => {
-                        switch (tool.toolName) {
-                            // case 'listAds':
-                            //     return (
-                            //         <BotCard key={tool.toolCallId}>
-                            //             <Stocks props={tool.result}/>
-                            //         </BotCard>
-                            //     );
-                            case 'showStockPrice':
-                                case 'getCampaignResults':
-                                    return (
-                                        <>
-                                            <BotCard key={tool.toolCallId}>
-                                                <Stock campaignId={tool.result.campaignId} isActive />
-                                            </BotCard>
-                                            <div className="my-4">
-                                                {tool.result.guideForUser ?? ''}
-                                            </div>
-                                        </>
-                                    );
-                                
-                            case 'showAdBudgetUI':
-                                return (
-                                    <>
-                                        <BotCard key={tool.toolCallId}>
-                                            <Purchase props={tool.result}/>
-                                        </BotCard>
-                                        <div className="my-4">
-                                            {tool.result.guideForUser ?? ''}
-                                        </div>
-                                    </>
-                                );
-                            case 'getEvents':
-                                return (
-                                    <BotCard key={tool.toolCallId}>
-                                        <Events props={tool.result}/>
-                                    </BotCard>
-                                );
-                            case 'showSuggestionAdText':
-                                return (
-                                    <>
-                                        <BotCard key={tool.toolCallId}>
-                                            <AdTextSuggestion props={tool.result.images}/>
-                                        </BotCard>
-                                        <div className="my-4">
-                                            {tool.result.guideForUser ?? ''}
-                                        </div>
-                                    </>
-                                );
-                            case 'showVideoAdTextSuggestion':
-                                return (
-                                    <>
-                                        <BotCard key={tool.toolCallId}>
-                                            <VideoAdTextSuggestion {...tool.result} />
-                                        </BotCard>
-                                        <div className="my-4">
-                                            {tool.result.guideForUser ?? ''}
-                                        </div>
-                                    </>
-                                )
-                            case 'getCampaignImages':
-                                return (
-                                    <BotCard key={tool.toolCallId}>
-                                        <ChatImage/>
-                                    </BotCard>
-                                );
-                            case 'showCampaignNameUpdateUI':
-                                return (
-                                    <BotCard key={tool.toolCallId}>
-                                        <p className="mb-2 last:mb-0">{`Alright, I will update campaign name as "${tool.result.campaignName}".`}</p>
-                                        {!!tool.result.questionForBudget &&
-                                            <p className="mb-2 last:mb-0">{tool.result.questionForBudget}</p>}
-                                    </BotCard>
-                                )
-                            case 'createCampaign':
-                                return tool.result.success ? (
-                                    <BotCard key={tool.toolCallId}>
-                                        <p className="mb-2 last:mb-0">{`I created a campaign named "${tool.result.campaignName}".`}</p>
-                                        {!!tool.result.questionForBudget &&
-                                            <p className="mb-2 last:mb-0">{tool.result.questionForBudget}</p>}
-                                    </BotCard>
-                                ) : (
-                                    <BotCard>
-                                        <p className="mb-2 last:mb-0">Campaign creation failed, please try again
-                                            later.</p>
-                                    </BotCard>
-                                )
-                            case 'showUpdateStatusCampaign':
-                                return (
-                                    <BotCard key={tool.toolCallId}>
-                                        <CampaignStatus
-                                            props={{
-                                                toolCallId: tool.toolCallId,
-                                                campaignName:
-                                                tool.result.campaignName,
-                                                status: tool.result.status
-                                            }}
-                                        />
-                                    </BotCard>
-                                )
-                            case 'showCampaignConnectionUI':
-                                return (
-                                    <BotCard key={tool.toolCallId}>
-                                        <ConnectCampaign {...tool.result} />
-                                    </BotCard>
-                                )
-                            case 'showAdsetConnectionUI':
-                                return (
-                                    <BotCard key={tool.toolCallId}>
-                                        <ConnectAdset {...tool.result} toolCallId={tool.toolCallId}/>
-                                    </BotCard>
-                                )
-                            case 'showPlacementTargetingUI':
-                                return (
-                                    <BotCard key={tool.toolCallId}>
-                                        <PlacementTargeting {...tool.result} toolCallId={tool.toolCallId}/>
-                                    </BotCard>
-                                )
-                            case 'showFormBuilder':
-                                return (
-                                    <BotCard key={tool.toolCallId}>
-                                        <FormBuilder {...tool.result} toolCallId={tool.toolCallId} isReadOnly/>
-                                    </BotCard>
-                                )    
-                            case 'showGeographicalLocationUI':
-                                return (
-                                    <BotCard key={tool.toolCallId}>
-                                        <GeographicalLocation
-                                          toolCallId={tool.toolCallId}
-                                          uiProps={tool.result.uiProps}
-                                          isReadOnly={!!tool.result.uiProps}
-                                        />
-                                    </BotCard>
-                                ) 
-                            case 'showSuggestedFilters':
-                                return (
-                                    <BotCard key={tool.toolCallId}>
-                                        <SuggestedFilters toolCallId={tool.toolCallId} suggestedFitlers={tool.result.suggestedFitlers} uiProps={tool.result.uiProps} isReadOnly  />
-                                    </BotCard>
-                                )    
-                            case 'showGeographicalLocationUI':
-                                return (
-                                    <BotCard key={tool.toolCallId}>
-                                        <GeographicalLocation
-                                          toolCallId={tool.toolCallId}
-                                          uiProps={tool.result.uiProps}
-                                          isReadOnly={!!tool.result.uiProps}
-                                        />
-                                    </BotCard>
-                                ) 
-                            case 'showSuggestedFilters':
-                                return (
-                                    <BotCard key={tool.toolCallId}>
-                                        <SuggestedFilters toolCallId={tool.toolCallId} suggestedFitlers={tool.result.suggestedFitlers} uiProps={tool.result.uiProps} isReadOnly  />
-                                    </BotCard>
-                                )
-                            case 'showSupervisedTaskUI':
-                                return (
-                                    <>
-                                        <BotCard>
-                                            <SupervisedTaskMessage result={tool.result}/>
-                                        </BotCard>
-                                    </>
-                                );
-                            case 'showAdCreativesSwitcher':
-                                return (
-                                    <BotCard key={tool.toolCallId}>
-                                        <AdCreativesSwitcher {...tool.result} toolCallId={tool.toolCallId} />
-                                    </BotCard>
-                                )
-                            default:
-                                return null;
-                        }
-                    })
-                ) : message.role === 'user' ? (
-                    <UserMessage
-                        userContent={message.content}>{(Array.isArray(message.content) ? (message.content[0] as TextPart).text : message.content) as string}</UserMessage>
-                ) : message.role === 'assistant' &&
-                typeof message.content === 'string' ? (
-                    <BotMessage content={message.content}/>
-                ) : null
-        }))
-        .filter((message: { id: string, display: any }) => Boolean(message.display))
-}
