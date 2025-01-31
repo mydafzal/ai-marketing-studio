@@ -19,7 +19,7 @@ import {submitUserMessage} from "@/lib/chat/actions/Services/UserMessageSubmitte
 
 import {getUIStateFromAIState} from "@/lib/chat/actions/Services/FetchApplicableUI/FetchApplicableUI"
 
-import {confirmUpdateAdset} from "@/lib/chat/actions/Services/AdPlacementProcessor/AdPlacementProcessor"
+import {confirmUpdateAdset} from "@/lib/chat/actions/Services/AdSetUpdateProcessor/AdSetUpdateProcessor"
 import {confirmCreateAd} from "@/lib/chat/actions/Services/AdCreator/AdCreator"
 import {confirmCreateLeadgenForm} from "@/lib/chat/actions/Services/LeadGenFormProcessor/LeadGenFormProcessor"
 
