@@ -18,7 +18,6 @@ import {
     AlertDialogTrigger
 } from '@/components/ui/alert-dialog'
 import {IconSpinner} from '@/components/ui/icons'
-import {isFeatureToggleEnabled} from "@/lib/helpers/feature-toggle/feature-toggle-manager";
 
 interface ClearHistoryProps {
     isEnabled: boolean
@@ -33,45 +32,43 @@ export function ClearHistory({
     const [isPending, startTransition] = React.useTransition()
     const router = useRouter()
 
-    if (isFeatureToggleEnabled('adminFeatures')) {
-        return (
-            <AlertDialog open={open} onOpenChange={setOpen}>
-                <AlertDialogTrigger asChild>
-                    <Button variant="ghost" disabled={!isEnabled || isPending}>
-                        {isPending && <IconSpinner className="mr-2"/>}
-                        Clear history
-                    </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This will permanently delete your chat history and remove your data
-                            from our servers.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                            disabled={isPending}
-                            onClick={event => {
-                                event.preventDefault()
-                                startTransition(async () => {
-                                    const result = await clearChats()
-                                    if (result && 'error' in result) {
-                                        toast.error(result.error)
-                                        return
-                                    }
+    return (
+        <AlertDialog open={open} onOpenChange={setOpen}>
+            <AlertDialogTrigger asChild>
+                <Button variant="ghost" disabled={!isEnabled || isPending}>
+                    {isPending && <IconSpinner className="mr-2"/>}
+                    Clear history
+                </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        This will permanently delete your chat history and remove your data
+                        from our servers.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                        disabled={isPending}
+                        onClick={event => {
+                            event.preventDefault()
+                            startTransition(async () => {
+                                const result = await clearChats()
+                                if (result && 'error' in result) {
+                                    toast.error(result.error)
+                                    return
+                                }
 
-                                    setOpen(false)
-                                })
-                            }}
-                        >
-                            {isPending && <IconSpinner className="mr-2 animate-spin"/>}
-                            Delete
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>)
-    }
+                                setOpen(false)
+                            })
+                        }}
+                    >
+                        {isPending && <IconSpinner className="mr-2 animate-spin"/>}
+                        Delete
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>)
 }
