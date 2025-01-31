@@ -2,16 +2,14 @@ import 'server-only'
 
 import {createAI, createStreamableUI, createStreamableValue, getAIState, getMutableAIState} from 'ai/rsc'
 import {SystemErrorMessage, SystemMessage} from '@/components/stocks'
-import {fetchChatCampaignBudget, fetchChatFbAdsetId, saveChat, updateLeadFormInAdset} from '@/app/actions'
+import {fetchChatFbAdsetId, saveChat, updateLeadFormInAdset} from '@/app/actions'
 import {TextPart} from 'ai'
 
 import {nanoid, runAsyncFnWithoutBlocking, sleep} from '@/lib/utils'
 import {Chat, LeadgenFrom, Message} from '@/lib/types';
 import {auth} from '@/auth'
-import {createCampaignAd} from '@/lib/api/fasty-bot/create-ad';
 import {CampaignSummary} from '@/lib/api/fasty-bot/get-campaign-summary'
 import {createLeadgenForm} from '@/lib/api/fasty-bot/create-leadgen-form';
-import {getCampaignIdFromUrl} from "@/lib/api/fasty-bot/helpers/campaign-id-from-url-helper";
 import {getChatIdFromUrl} from "@/lib/api/fasty-bot/helpers/chat-id-from-url-helper";
 import {
     confirmCampaignBudgetAction
@@ -22,69 +20,7 @@ import {
 import {submitUserMessage} from "@/lib/chat/actions/Services/UserMessageSubmitter/UserMesssageSubmitter";
 import {getUIStateFromAIState} from "@/lib/chat/actions/Services/FetchApplicableUI/FetchApplicableUI";
 import {confirmUpdateAdset} from "@/lib/chat/actions/Services/AdPlacementProcessor/AdPlacementProcessor";
-
-async function confirmCreateAd(campaign: any, data: any, adset: any) {
-    'use server'
-    const aiState = getMutableAIState<typeof AI>();
-    let campaignId = await getCampaignIdFromUrl() || '0'; // for now just say you are updating even if no campaign id in place
-    if (process.env.NEXT_PUBLIC_HARDCODED_MODE === '1') {
-        campaignId = process.env.NEXT_PUBLIC_HARDCODED_CAMPAIGN_ID || '0'
-    }
-    let adsetUpdate = {
-        ...adset
-    }
-    if (!campaign.daily_budget) {
-        const chatId = getChatIdFromUrl()?.toString() || '';
-        const budget = await fetchChatCampaignBudget(chatId) //TODO: remove hardcoded fallback budget setting as it will fail
-        if (budget.error) {
-            adsetUpdate = {...adsetUpdate, daily_budget: 100}
-        }
-    }
-
-    const systemMessage = createStreamableUI(null)
-    const fbAdIdStream: undefined | ReturnType<typeof createStreamableValue<string>> = createStreamableValue()
-
-    runAsyncFnWithoutBlocking(async () => {
-        await sleep(1000);
-
-        const response = await createCampaignAd(
-            campaignId,
-            data,
-            adsetUpdate
-        );
-
-        if (response) {
-            const id = response?.params?.id
-            fbAdIdStream?.done(`${id}`)
-
-            systemMessage.done(
-                <SystemMessage>
-                    You have successfully created a campaign ad with ID: {response?.params?.id}
-                </SystemMessage>
-            );
-            
-
-        } else {
-            systemMessage.done(
-                <SystemMessage>
-                    Error: Failed to create campaign ad. Please try again later.
-                </SystemMessage>
-            );
-        }
-
-        aiState.done({
-            ...aiState.get(),
-        });
-    });
-
-    return {
-        newMessage: {
-            id: nanoid(),
-            display: systemMessage.value
-        },
-        fbAdIdStream: fbAdIdStream.value
-    }
-}
+import {confirmCreateAd} from "@/lib/chat/actions/Services/AdCreator/AdCreator";
 
 async function updateCampaignInfo(campaignSummary: CampaignSummary) {
     'use server'
