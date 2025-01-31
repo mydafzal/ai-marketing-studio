@@ -10,7 +10,7 @@ import { IconSpinner } from '@/components/ui/icons'
 import { CampaignContext } from '@/components/contexts/campaign-context'
 import { Adset, AdsetTargeting } from '@/lib/types'
 import { targetPositions } from '@/lib/data'
-import { type AI } from '@/lib/chat/actions'
+import { type AI } from '@/lib/chat/AIManager'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { CheckCircle, XCircle, Facebook, Instagram, Info } from 'lucide-react'
 

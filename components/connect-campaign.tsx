@@ -10,7 +10,7 @@ import {ConnectCampaignResult} from '@/components/connect-campaign-result'
 import {CampaignContext} from '@/components/contexts/campaign-context'
 import {IconSpinner} from '@/components/ui/icons'
 import {FbCampaign, Message} from '@/lib/types'
-import {type AI} from '@/lib/chat/actions'
+import {type AI} from '@/lib/chat/AIManager'
 import {Card, CardContent} from '@/components/ui/card'
 import {CheckCircle, Link as LinkIcon, Plus} from 'lucide-react'
 

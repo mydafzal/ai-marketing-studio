@@ -10,7 +10,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@
 import { Cross1Icon, Pencil1Icon } from '@radix-ui/react-icons';
 import { QuestionOption, LeadgenFrom } from '@/lib/types';
 import { useActions, useUIState } from 'ai/rsc'
-import { type AI } from '@/lib/chat/actions'
+import { type AI } from '@/lib/chat/AIManager'
 import { IconSpinner } from '@/components/ui/icons'
 import { leadGenFormFieldTypes, leadGenFormLocales } from '@/data'
 import { getUserDetail } from '@/app/actions'

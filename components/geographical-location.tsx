@@ -24,7 +24,7 @@ import {
   SelectItem
 } from '@/components/ui/select'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { type AI } from '@/lib/chat/actions'
+import { type AI } from '@/lib/chat/AIManager'
 import { Adset, AdsetTargeting, Country, Region, City, Message } from '@/lib/types'
 
 interface GeoGraphicalLocationProps {

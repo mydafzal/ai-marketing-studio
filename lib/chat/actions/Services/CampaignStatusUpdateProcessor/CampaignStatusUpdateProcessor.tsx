@@ -4,7 +4,7 @@ import {spinner, SystemMessage} from '@/components/stocks'
 import {nanoid, runAsyncFnWithoutBlocking, sleep} from '@/lib/utils'
 import {setCampaignStatus} from '@/lib/api/fasty-bot/set-campaign-status';
 import {getCampaignIdFromUrl} from "@/lib/api/fasty-bot/helpers/campaign-id-from-url-helper";
-import {AI} from "@/lib/chat/actions";
+import {AI} from "@/lib/chat/AIManager";
 
 // #Usage: Search for `confirmCampaignStatusChange`
 export async function confirmCampaignStatusChange(campaignName: string, status: string) {
