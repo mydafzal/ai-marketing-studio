@@ -6,7 +6,7 @@ import { Country, Region, City, Message } from '@/lib/types'
 import { Card, CardContent } from '@/components/ui/card'
 import { CheckCircle, X, MapPin, Users, Calendar } from 'lucide-react'
 import { useActions, useAIState, useUIState } from 'ai/rsc'
-import { type AI } from '@/lib/chat/actions'
+import { type AI } from '@/lib/chat/AIManager'
 import { cn } from '@/lib/utils'
 
 interface GeographicalLocationProps {

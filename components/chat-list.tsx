@@ -1,5 +1,5 @@
 import { Separator } from '@/components/ui/separator'
-import { UIState } from '@/lib/chat/actions'
+import { UIState } from '@/lib/chat/AIManager'
 import { Session } from '@/lib/types'
 import Link from 'next/link'
 import { AlertCircle } from 'lucide-react'

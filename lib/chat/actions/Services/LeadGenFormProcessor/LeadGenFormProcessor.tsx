@@ -4,7 +4,7 @@ import {createLeadgenForm} from "@/lib/api/fasty-bot/create-leadgen-form";
 import {getChatIdFromUrl} from "@/lib/api/fasty-bot/helpers/chat-id-from-url-helper";
 import {fetchChatFbAdsetId, updateLeadFormInAdset} from "@/app/actions";
 import {SystemErrorMessage, SystemMessage} from "@/components/stocks";
-import {AI} from "@/lib/chat/actions";
+import {AI} from "@/lib/chat/AIManager";
 import {createStreamableUI, createStreamableValue, getMutableAIState} from "ai/rsc";
 
 

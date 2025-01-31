@@ -1,6 +1,6 @@
 import {CampaignSummary} from "@/lib/api/fasty-bot/get-campaign-summary";
 import {Message} from "@/lib/types";
-import {AI} from "@/lib/chat/actions";
+import {AI} from "@/lib/chat/AIManager";
 import {getMutableAIState} from "ai/rsc";
 
 

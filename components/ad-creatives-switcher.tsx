@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useContext } from 'react';
 import { useActions, useUIState } from 'ai/rsc'
-import { type AI } from '@/lib/chat/actions'
+import { type AI } from '@/lib/chat/AIManager'
 import { Button } from '@/components/ui/button';
 import { VideoPlayer } from './stocks/video-player'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"

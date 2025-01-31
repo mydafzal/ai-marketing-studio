@@ -4,7 +4,7 @@ import {ToolContent} from 'ai'
 import {useEffect, useMemo, useState} from 'react'
 import {AdTextSelectionSkeleton} from '@/components/stocks/ad-text-selection-skeleton'
 import {useActions, useAIState, useUIState} from 'ai/rsc'
-import type {AI} from '@/lib/chat/actions'
+import type {AI} from '@/lib/chat/AIManager'
 import {Switch} from '@/components/ui/switch'
 import {getCampaignSummary} from '@/lib/api/fasty-bot/get-campaign-summary'
 import {

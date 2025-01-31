@@ -39,7 +39,7 @@ import getAICampaignAnalysisModule from "@/lib/ui-magic/modules/getAICampaignAna
 import showAdsetConnectionUIModule from "@/lib/ui-magic/modules/showAdsetConnectionUIModule";
 import {z} from "zod";
 import AdCreativesSwitcher from "@/components/ad-creatives-switcher";
-import {AI} from "@/lib/chat/actions";
+import {AI} from "@/lib/chat/AIManager";
 import {AdTextSelectionSkeleton} from '@/components/stocks/ad-text-selection-skeleton'
 import {createCampaign} from '@/lib/api/fasty-bot/create-campaign'
 import {EventsSkeleton} from "@/components/stocks";

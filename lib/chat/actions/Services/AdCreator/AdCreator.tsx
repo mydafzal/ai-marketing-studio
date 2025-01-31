@@ -4,7 +4,7 @@ import {fetchChatCampaignBudget} from "@/app/actions";
 import {nanoid, runAsyncFnWithoutBlocking, sleep} from "@/lib/utils";
 import {createCampaignAd} from "@/lib/api/fasty-bot/create-ad";
 import {SystemMessage} from "@/components/stocks";
-import {AI} from "@/lib/chat/actions";
+import {AI} from "@/lib/chat/AIManager";
 import {createStreamableUI, createStreamableValue, getMutableAIState} from "ai/rsc";
 
 export async function confirmCreateAd(campaign: any, data: any, adset: any) {

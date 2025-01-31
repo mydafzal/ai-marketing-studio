@@ -4,7 +4,7 @@ import {Adset} from "@/lib/types";
 import {nanoid, runAsyncFnWithoutBlocking, sleep} from "@/lib/utils";
 import {updateAdset} from "@/lib/api/fasty-bot/update-adset";
 import {SystemErrorMessage, SystemMessage} from "@/components/stocks";
-import {AI} from "@/lib/chat/actions";
+import {AI} from "@/lib/chat/AIManager";
 import {createStreamableUI, createStreamableValue, getMutableAIState} from "ai/rsc";
 
 export async function confirmUpdateAdset(toolCallId: string, adsetId: string, adset: any) {

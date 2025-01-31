@@ -6,7 +6,7 @@ import { PurchasingUi, type IPurchasingUiProp } from '@/components/stocks/purcha
 import { formatNumber } from '@/lib/utils';
 import { DollarSign, Calendar, ArrowRight, Coins } from 'lucide-react';
 
-import type { AI } from '@/lib/chat/actions';
+import type { AI } from '@/lib/chat/AIManager';
 import {spinner} from "./spinner";
 
 interface Purchase {

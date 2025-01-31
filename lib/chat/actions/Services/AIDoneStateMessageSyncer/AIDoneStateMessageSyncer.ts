@@ -1,4 +1,4 @@
-import {AI} from "@/lib/chat/actions";
+import {AI} from "@/lib/chat/AIManager";
 import {getMutableAIState} from "ai/rsc";
 
 export async function syncMessages() {

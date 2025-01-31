@@ -26,7 +26,7 @@ import {getChatIdFromUrl} from "@/lib/api/fasty-bot/helpers/chat-id-from-url-hel
 import {nanoid} from "nanoid";
 import {UserMessage} from "@/components/stocks/message";
 import {ImagePart, TextPart} from "ai";
-import {AI} from "@/lib/chat/actions";
+import {AI} from "@/lib/chat/AIManager";
 import {isFeatureToggleEnabled} from "@/lib/helpers/feature-toggle/feature-toggle-manager";
 
 

@@ -8,7 +8,7 @@ import {setDailyCampaignBudget} from '@/lib/api/fasty-bot/set-daily-campaign-bud
 import {updateChatCampaignBudget} from '@/app/actions';
 import {getCampaignIdFromUrl} from '@/lib/api/fasty-bot/helpers/campaign-id-from-url-helper';
 import {getChatIdFromUrl} from '@/lib/api/fasty-bot/helpers/chat-id-from-url-helper';
-import {AI} from '@/lib/chat/actions';
+import {AI} from '@/lib/chat/AIManager';
 
 /**
  * Responsible for setting a daily budget for a given campaign.
