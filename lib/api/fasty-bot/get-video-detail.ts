@@ -1,9 +1,11 @@
+"use server"
+
 import { getUserDetail } from '@/app/actions'
 import { FbVideo } from '@/lib/types'
 import { getFbMarketingApiKey } from '@/app/actions';
 
 export async function getVideoDetail(video_id: string) {
-  const fastyEndpoint = process.env.FASTY_API_URL
+  const fastyEndpoint = process.env.FASTY_API_URL;
   const apiUrl = `${fastyEndpoint}/facebook/exec/direct/upload/video-detail?video_id=${video_id}`
   
   const token_resp = await getFbMarketingApiKey()
