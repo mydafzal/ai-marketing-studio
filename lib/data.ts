@@ -29,7 +29,9 @@ export const generateVideoAdTemplate = (
   headline: string, 
   text: string, 
   video: VideoAdText,
-  pageId: number|null = null
+  pageId: number|null = null,
+  leadGenFormId: number|null = null,
+  destinationLink: string|null = null
 ) => ({
   name: 'New Video Ad Creative',
   object_story_spec: {
@@ -37,10 +39,15 @@ export const generateVideoAdTemplate = (
     video_data: {
       video_id: video.video_id,
       image_url: video.thumbnail,
-      call_to_action: {
+      call_to_action: leadGenFormId?{
+        type: 'SIGN_UP',
+        value: {
+          lead_gen_form_id: leadGenFormId || 8902951086385726 //TODO: it has to be fetched from chat first if not found then fallback!
+        }
+      }:{
         type: 'LEARN_MORE',
         value: {
-          link: 'https://www.example.com',
+          link: destinationLink || 'https://www.example.com',
         }
       },
       title: headline,

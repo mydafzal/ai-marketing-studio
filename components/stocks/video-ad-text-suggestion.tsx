@@ -18,6 +18,7 @@ import { getVideoDetail } from '@/lib/api/fasty-bot/get-video-detail'
 import { Card, CardContent } from '@/components/ui/card'
 import { Pencil, Check, X, AlertCircle, Video, Instagram, Facebook } from 'lucide-react'
 import { getUserDetail } from '@/app/actions'
+import {getChatIdFromUrl} from "@/lib/api/fasty-bot/helpers/chat-id-from-url-helper";
 
 export interface VideoSuggestionProps {
   videos: {
@@ -383,9 +384,29 @@ function VideoAdTextSuggestion({ videos }: VideoSuggestionProps) {
          pageId = parseInt(userDetail?.user?.fbPageId)
     }
 
+    let leadGenFormId = null;
+
+    let fbCampaignId = campaign?.id;
+    let chatSlug = getChatIdFromUrl();
+    let campaignStructureResponse = await fetch(`/api/kv/fetch-campaign-structure/?fbCampaignId=${fbCampaignId}&chatSlug=${chatSlug}`, {
+        method: 'GET',
+    });
+
+    if (campaignStructureResponse.status === 200) {
+        let campaignStructureData = await campaignStructureResponse.json();
+        leadGenFormId = campaignStructureData?.leadformId;
+    }
+
     const response = await confirmCreateAd(
       campaign,
-      generateVideoAdTemplate(adText.headline, adText.text, adText,pageId),
+      generateVideoAdTemplate(
+        adText.headline, 
+        adText.text, 
+        adText,
+        pageId, 
+        leadGenFormId,
+        userDetail?.user?.website_link
+      ),
       generateAdsetTemplate(pageId)
     )
     setMessages(currentMessages => [...currentMessages, response.newMessage])
