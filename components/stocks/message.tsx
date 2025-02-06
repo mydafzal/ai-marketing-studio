@@ -13,14 +13,31 @@ import { StreamableValue, useStreamableValue } from 'ai/rsc'
 import { useStreamableText } from '@/lib/hooks/use-streamable-text'
 import { VideoPlayer } from './video-player'
 import { Brain } from 'lucide-react'
+import React from "react";
+import { format } from 'date-fns'
+
+function humanizeTimestamp(timestamp: string|undefined): string
+{
+  if(timestamp === undefined)
+    {
+      timestamp = new Date().toISOString() // they message has just been sent
+    }
+
+  return format(new Date(timestamp), 'PPpp');
+}
+
 
 export function UserMessage({
-  userContent,
-  children
-}: {
-  userContent?: UserContent
-  children: React.ReactNode
+                                userContent,
+                                children,
+                                timestamp
+                            }: {
+    userContent?: UserContent,
+    children: React.ReactNode,
+    timestamp?: string
 }) {
+
+
   return (
     <div className="group relative flex items-start space-x-3 py-4 transition-colors">
       <div className="flex size-8 shrink-0 select-none items-center justify-center rounded-full bg-blue-500/10 border border-blue-500/20 shadow-sm dark:bg-blue-500/10 dark:border-blue-500/20">
@@ -69,6 +86,9 @@ export function UserMessage({
           <div className="inline-block rounded-2xl rounded-tl-sm bg-blue-500/10 px-4 py-3 text-zinc-900 shadow-sm dark:bg-blue-500/10 dark:text-zinc-200">
             {children}
           </div>
+          <div className='"text-xs text-zinc-500 dark:text-zinc-400 mt-1'>
+            {humanizeTimestamp(timestamp)}
+          </div>
         </div>
       )}
     </div>
@@ -76,10 +96,10 @@ export function UserMessage({
 }
 
 export function BotMessage({
-  content,
-  className
+  content, timestamp, className
 }: {
   content: string | StreamableValue<string>
+  timestamp?: string
   className?: string
 }) {
   const text = useStreamableText(content)
@@ -131,6 +151,9 @@ export function BotMessage({
           >
             {text}
           </MemoizedReactMarkdown>
+        </div>
+        <div className='text-s text-zinc-500 dark:text-zinc-400 mt-1'>
+            {humanizeTimestamp(timestamp)}
         </div>
       </div>
     </div>

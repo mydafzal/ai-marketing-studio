@@ -206,10 +206,12 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                     })
                 ) : message.role === 'user' ? (
                     <UserMessage
-                        userContent={message.content}>{(Array.isArray(message.content) ? (message.content[0] as TextPart).text : message.content) as string}</UserMessage>
+                        userContent={message.content} timestamp={message.timestamp}>{(Array.isArray(message.content) ? (message.content[0] as TextPart).text : message.content) as string}
+                        </UserMessage>
+
                 ) : message.role === 'assistant' &&
                 typeof message.content === 'string' ? (
-                    <BotMessage content={message.content}/>
+                    <BotMessage content={message.content} timestamp={message.timestamp}/>
                 ) : null
         }))
         .filter((message: { id: string, display: any }) => Boolean(message.display))
