@@ -20,7 +20,7 @@ function humanizeTimestamp(timestamp: string|undefined): string
 {
   if(timestamp === undefined)
     {
-      return '';
+      timestamp = new Date().toISOString() // they message has just been sent
     }
 
   return format(new Date(timestamp), 'PPpp');
