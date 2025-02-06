@@ -45,6 +45,7 @@ import {createCampaign} from '@/lib/api/fasty-bot/create-campaign'
 import {EventsSkeleton} from "@/components/stocks";
 import {getDefaultChatPrompt} from "@/lib/chat/actions/Providers/FbMarketingDefaultPromptProvider";
 import {createStreamableValue, getMutableAIState, streamUI} from "ai/rsc";
+import { useEffect } from "react";
 
 interface ExtractedMessage {
     id?: string;
