@@ -34,7 +34,7 @@ export function UserMessage({
                             }: {
     userContent?: UserContent,
     children: React.ReactNode,
-    timestamp?: string | undefined
+    timestamp?: string
 }) {
 
 
@@ -99,7 +99,7 @@ export function BotMessage({
   content, timestamp, className
 }: {
   content: string | StreamableValue<string>
-  timestamp: string | undefined
+  timestamp?: string
   className?: string
 }) {
   const text = useStreamableText(content)
