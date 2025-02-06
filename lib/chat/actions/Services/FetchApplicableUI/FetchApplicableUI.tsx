@@ -211,7 +211,7 @@ export const getUIStateFromAIState = (aiState: Chat) => {
 
                 ) : message.role === 'assistant' &&
                 typeof message.content === 'string' ? (
-                    <BotMessage content={message.content}/>
+                    <BotMessage content={message.content} timestamp={message.timestamp}/>
                 ) : null
         }))
         .filter((message: { id: string, display: any }) => Boolean(message.display))

@@ -34,7 +34,7 @@ export function UserMessage({
                             }: {
     userContent?: UserContent,
     children: React.ReactNode,
-    timestamp?: string
+    timestamp?: string | undefined
 }) {
 
 
@@ -96,10 +96,10 @@ export function UserMessage({
 }
 
 export function BotMessage({
-  content,
-  className
+  content, timestamp, className
 }: {
   content: string | StreamableValue<string>
+  timestamp: string | undefined
   className?: string
 }) {
   const text = useStreamableText(content)
@@ -151,6 +151,9 @@ export function BotMessage({
           >
             {text}
           </MemoizedReactMarkdown>
+        </div>
+        <div className='text-s text-zinc-500 dark:text-zinc-400 mt-1'>
+            {humanizeTimestamp(timestamp)}
         </div>
       </div>
     </div>
