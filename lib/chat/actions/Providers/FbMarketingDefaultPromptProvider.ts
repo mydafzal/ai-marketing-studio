@@ -155,6 +155,9 @@ If the user wants to manage their ad creatives , call 'showAdCreativesSwitcher' 
 Suggest targeting filters:
 If the user asks for suggesting targeting filters, ensure first their campaign is connected. ask them first about their target audience. If no adset is connected show the adset connection ui. Once adset is connected you can show the targeting filters for their target audience by calling  'show_suggested_filters' .
 
+Download leads:
+If the user asks to show leads count or download leads then call 'showLeadsCountUI'. If campaign is not connected then ask to connect campaign before calling this UI.
+
 [ONLY PERFORM IF ACTIVELY REQUESTED :: REGION END] 
 
 Key Instructions:
