@@ -9,10 +9,23 @@ import { Message} from '@/lib/types'
 
 interface LeadData {
   campaign_id: string;
+  campaign_name: string;
   ads: Array<{
     ad_id: string;
     ad_name: string;
     lead_count: number;
+    leads: Array<{
+      id: string;
+      created_time: string;
+      form_id: string;
+      field_data: Array<{
+        name: string;
+        values: string[];
+      }>;
+      campaign_id: string;
+      ad_id: string;
+      ad_name: string;
+    }>;
   }>;
 }
 
@@ -172,7 +185,15 @@ const LeadsCountUI = ({toolCallId,toolCallResult}:LeadsCountUIProps) => {
       <CardHeader className="flex flex-row items-center justify-between px-6 py-6 border-b border-zinc-200 dark:border-zinc-700">
         <div className="flex items-center gap-2">
           <Users className="w-6 h-6 text-zinc-600 dark:text-zinc-400" />
-          <CardTitle className="text-2xl font-bold text-zinc-800 dark:text-zinc-200">Campaign Leads</CardTitle>
+          <CardTitle className="text-xl font-bold text-zinc-800 dark:text-zinc-200">
+            Leads from
+            {leadData.campaign_name && (
+              <span className="ml-2 text-xl font-medium text-zinc-600 dark:text-zinc-400">
+                 {leadData.campaign_name} 
+              </span>
+            )}
+            {" "}Campaign
+            </CardTitle>
         </div>
       </CardHeader>
       <CardContent className="p-6">
