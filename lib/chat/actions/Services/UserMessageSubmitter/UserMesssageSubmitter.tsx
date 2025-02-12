@@ -37,6 +37,7 @@ import {sendSupervisedTaskMail} from "@/lib/api/fasty-bot/send-supervised-task-m
 import {getBaseUrl} from "@/lib/helpers/vercel/get-base-url";
 import getAICampaignAnalysisModule from "@/lib/ui-magic/modules/getAICampaignAnalysisModule";
 import showAdsetConnectionUIModule from "@/lib/ui-magic/modules/showAdsetConnectionUIModule";
+import showLeadsCountModule from "@/lib/ui-magic/modules/showLeadsCountModule";
 import {z} from "zod";
 import AdCreativesSwitcher from "@/components/ad-creatives-switcher";
 import {AI} from "@/lib/chat/AIManager";
@@ -46,6 +47,7 @@ import {EventsSkeleton} from "@/components/stocks";
 import {getDefaultChatPrompt} from "@/lib/chat/actions/Providers/FbMarketingDefaultPromptProvider";
 import {createStreamableValue, getMutableAIState, streamUI} from "ai/rsc";
 import { useEffect } from "react";
+import LeadsCountUI from "@/components/campaign-leads-count";
 
 interface ExtractedMessage {
     id?: string;
@@ -1102,6 +1104,50 @@ export async function submitUserMessage(content: string, contentImages?: Array<T
                     )
                 }
             },
+            showLeadsCountUI: {
+                description: showLeadsCountModule.description,
+                parameters: showLeadsCountModule.parameters,
+                generate: async function* ({}) {
+                    console.log('tool call showLeadsCountUI')
+                    const timestamp: string = new Date().toISOString();
+                    const toolCallId = nanoid();
+                    aiState.done({
+                        ...aiState.get(),
+                        messages: [
+                            ...aiState.get().messages,
+                            {
+                                id: nanoid(),
+                                role: 'assistant',
+                                content: [
+                                    {
+                                        type: 'tool-call',
+                                        toolName: 'showLeadsCountUI',
+                                        toolCallId,
+                                        args: {}
+                                    }
+                                ],
+                                timestamp
+                            },
+                            {
+                                id: toolCallId,
+                                role: 'tool',
+                                content: [
+                                    {
+                                        type: 'tool-result',
+                                        toolName: 'showLeadsCountUI',
+                                        toolCallId,
+                                        result: {toolCallId}
+                                    }
+                                ],
+                                timestamp
+                            }
+                        ]
+                    })
+                    return await showLeadsCountModule.component({
+                        toolCallId
+                    })
+                }
+            }
         },
 
 
