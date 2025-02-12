@@ -17,6 +17,7 @@ import {CampaignStatus} from '@/components/stocks/campaign-status'
 import {createCampaign} from '@/lib/api/fasty-bot/create-campaign'
 import {GeographicalLocation} from '@/components/geographical-location';
 import {SuggestedFilters} from '@/components/suggested-filters';
+import LeadsCountUI from '@/components/campaign-leads-count'
 
 interface ToolResult {
     toolName: string;
@@ -198,6 +199,12 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                 return (
                                     <BotCard key={tool.toolCallId}>
                                         <AdCreativesSwitcher {...tool.result} toolCallId={tool.toolCallId}/>
+                                    </BotCard>
+                                )
+                            case 'showLeadsCountUI':
+                                return (
+                                    <BotCard key={tool.toolCallId}>
+                                        <LeadsCountUI toolCallId={tool.result.toolCallId} toolCallResult={tool.result?.toolCallResult}/>
                                     </BotCard>
                                 )
                             default:
