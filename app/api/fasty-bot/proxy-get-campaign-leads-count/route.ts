@@ -4,13 +4,11 @@ import { getCampaignLeadsCount } from '@/lib/api/fasty-bot/get-campaign-leads-co
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
-    // const campaignId = searchParams.get('campaign_id')
+    const campaignId = searchParams.get('campaign_id')
 
-    // if (!campaignId) {
-    //   return NextResponse.json({ error: 'Campaign ID is required' }, { status: 400 })
-    // }
-
-    let campaignId = "120210937692770208";
+    if (!campaignId) {
+      return NextResponse.json({ error: 'Campaign ID is required' }, { status: 400 })
+    }
 
     const data = await getCampaignLeadsCount(campaignId)
 

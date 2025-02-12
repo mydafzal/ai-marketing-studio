@@ -6,6 +6,7 @@ import { Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAIState } from 'ai/rsc'
 import { Message} from '@/lib/types'
+import {getCampaignIdFromUrl} from "@/lib/api/fasty-bot/helpers/campaign-id-from-url-helper";
 
 interface LeadData {
   campaign_id: string;
@@ -47,8 +48,15 @@ const LeadsCountUI = ({toolCallId,toolCallResult}:LeadsCountUIProps) => {
 
   useEffect(() => {
     const fetchLeadData = async () => {
+      let fetchedCampaignId;
       try {
-        const response = await fetch(`/api/fasty-bot/proxy-get-campaign-leads-count`);
+        fetchedCampaignId = await getCampaignIdFromUrl();
+            console.log("Fetched Campaign ID:", fetchedCampaignId);
+        } catch (error) {
+            console.error("Error fetching campaign ID:", error);
+        }
+      try {
+        const response = await fetch(`/api/fasty-bot/proxy-get-campaign-leads-count?campaign_id=${fetchedCampaignId}`);
         
         if (!response.ok) {
           throw new Error('Failed to fetch lead data');

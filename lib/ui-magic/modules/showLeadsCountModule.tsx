@@ -7,12 +7,26 @@ import { ModuleConfigBuilder } from '@/lib/ui-magic/moduleConfigBuilder'
 
 interface LeadData {
     campaign_id: string;
+    campaign_name: string;
     ads: Array<{
+      ad_id: string;
+      ad_name: string;
+      lead_count: number;
+      leads: Array<{
+        id: string;
+        created_time: string;
+        form_id: string;
+        field_data: Array<{
+          name: string;
+          values: string[];
+        }>;
+        campaign_id: string;
         ad_id: string;
         ad_name: string;
-        lead_count: number;
+      }>;
     }>;
-}
+  }
+  
 
 
 export interface ShowLeadsCountUIParams {
@@ -32,7 +46,6 @@ export const showLeadsCountModule = new ModuleConfigBuilder(
     .setComponent(async ({ toolCallId,toolCallResult }: ShowLeadsCountUIParams) => {
         return (
             <BotCard>
-                {/* <>Hi</> */}
                 <LeadsCountUI toolCallId={toolCallId} toolCallResult={toolCallResult}/>
             </BotCard>
         )
