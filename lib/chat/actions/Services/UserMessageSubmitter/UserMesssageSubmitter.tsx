@@ -37,7 +37,7 @@ import {sendSupervisedTaskMail} from "@/lib/api/fasty-bot/send-supervised-task-m
 import {getBaseUrl} from "@/lib/helpers/vercel/get-base-url";
 import getAICampaignAnalysisModule from "@/lib/ui-magic/modules/getAICampaignAnalysisModule";
 import showAdsetConnectionUIModule from "@/lib/ui-magic/modules/showAdsetConnectionUIModule";
-import showLeadsCountModule from "@/lib/ui-magic/modules/showLeadsCountModule";
+import DownloadLeadsModule from "@/lib/ui-magic/modules/downloadLeadsModule";
 import {z} from "zod";
 import AdCreativesSwitcher from "@/components/ad-creatives-switcher";
 import {AI} from "@/lib/chat/AIManager";
@@ -1105,8 +1105,8 @@ export async function submitUserMessage(content: string, contentImages?: Array<T
                 }
             },
             showLeadsCountUI: {
-                description: showLeadsCountModule.description,
-                parameters: showLeadsCountModule.parameters,
+                description: DownloadLeadsModule.description,
+                parameters: DownloadLeadsModule.parameters,
                 generate: async function* ({}) {
                     console.log('tool call showLeadsCountUI')
                     const timestamp: string = new Date().toISOString();
@@ -1143,7 +1143,7 @@ export async function submitUserMessage(content: string, contentImages?: Array<T
                             }
                         ]
                     })
-                    return await showLeadsCountModule.component({
+                    return await DownloadLeadsModule.component({
                         toolCallId
                     })
                 }

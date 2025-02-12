@@ -17,7 +17,6 @@ import {CampaignStatus} from '@/components/stocks/campaign-status'
 import {createCampaign} from '@/lib/api/fasty-bot/create-campaign'
 import {GeographicalLocation} from '@/components/geographical-location';
 import {SuggestedFilters} from '@/components/suggested-filters';
-import showLeadsCountModule from "@/lib/ui-magic/modules/showLeadsCountModule";
 import LeadsCountUI from '@/components/campaign-leads-count'
 
 interface ToolResult {

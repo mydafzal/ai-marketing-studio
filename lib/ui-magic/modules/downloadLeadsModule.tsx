@@ -29,7 +29,7 @@ interface LeadData {
   
 
 
-export interface ShowLeadsCountUIParams {
+export interface DownloadLeadsModuleParams {
     toolCallId: string
     toolCallResult?:{
         data?:LeadData;
@@ -38,12 +38,12 @@ export interface ShowLeadsCountUIParams {
 }
 
 
-export const showLeadsCountModule = new ModuleConfigBuilder(
+export const DownloadLeadsModule = new ModuleConfigBuilder(
     'showLeadsCountUI'
 )
-    .setDescription('Show a UI to display leads count for the campaign.')
+    .setDescription('Show a UI to allow downloading leads of the campaign.')
     .setParameters(z.object({}))
-    .setComponent(async ({ toolCallId,toolCallResult }: ShowLeadsCountUIParams) => {
+    .setComponent(async ({ toolCallId,toolCallResult }: DownloadLeadsModuleParams) => {
         return (
             <BotCard>
                 <LeadsCountUI toolCallId={toolCallId} toolCallResult={toolCallResult}/>
@@ -52,4 +52,4 @@ export const showLeadsCountModule = new ModuleConfigBuilder(
     })
     .build()
 
-export default showLeadsCountModule
+export default DownloadLeadsModule
