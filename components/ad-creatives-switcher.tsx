@@ -13,6 +13,7 @@ import { CampaignContext } from '@/components/contexts/campaign-context'
 
 import * as Collapsible from '@radix-ui/react-collapsible';
 import { ChevronDown, ChevronRight, Settings2 } from 'lucide-react';
+import {getCampaignIdFromUrl} from "@/lib/api/fasty-bot/helpers/campaign-id-from-url-helper";
 
 
 interface Creative {
@@ -104,7 +105,14 @@ const AdCreativesSwitcher = () => {
     const fetchCreatives = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch('/api/fasty-bot/proxy-get-adcreatives?campaignId='+campaign?.id);
+        let fetchedCampaignId;
+        try {
+            fetchedCampaignId = await getCampaignIdFromUrl();
+            console.log("Fetched Campaign ID:", fetchedCampaignId);
+          } catch (error) {
+              console.error("Error fetching campaign ID:", error);
+          }
+        const response = await fetch('/api/fasty-bot/proxy-get-adcreatives?campaignId='+fetchedCampaignId);
         if (!response.ok) {
           throw new Error('Failed to fetch creatives');
         }
