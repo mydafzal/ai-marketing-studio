@@ -31,8 +31,6 @@ import { UserMessage } from '@/components/stocks/message'
 import { ImagePart, TextPart } from 'ai'
 import { AI } from '@/lib/chat/AIManager'
 import { isFeatureToggleEnabled } from '@/lib/helpers/feature-toggle/feature-toggle-manager'
-import { CampaignCreationForm } from './stocks/campaign-creation-form'
-import { CampaignCreationFeedDisplay } from './stocks/campaign-creation-feed-display'
 
 interface FbFetchedObject {
   id: string
@@ -84,12 +82,6 @@ function ChatCore({ id, chat, className, session, missingKeys }: ChatProps) {
   const [isLoadingAdset, setIsLoadingAdset] = useState(false)
   const [messages, setMessages] = useUIState<typeof AI>()
   const { submitUserMessage } = useActions() // Get submitUserMessage from useActions
-  const [showSteps, setShowSteps] = useState(false)
-
-  // statically show campign initiator card
-  let showCampaignInitiatorCard = true
-  const isCampaignInitiatorCardEnabled =
-    isFeatureToggleEnabled('campaignInitiatorCard') && showCampaignInitiatorCard
 
   // Add sendMessage function
   const sendMessage = React.useCallback(
@@ -244,10 +236,10 @@ function ChatCore({ id, chat, className, session, missingKeys }: ChatProps) {
 
   return (
     <div
-      className={`group w-full pl-0 peer-[[data-state=open]]:lg:pl-[250px] peer-[[data-state=open]]:xl:pl-[300px] relative ${isCampaignInitiatorCardEnabled ? 'flex' : ''}`}
+      className="group w-full pl-0 peer-[[data-state=open]]:lg:pl-[250px] peer-[[data-state=open]]:xl:pl-[300px] relative"
       ref={scrollRef}
     >
-      <div className="overflow-auto h-full w-full flex flex-col items-center">
+      <div className="overflow-auto h-full">
         <div
           className={cn('pb-[200px] pt-4 md:pt-10 relative', className)}
           ref={messagesRef}
@@ -296,28 +288,15 @@ function ChatCore({ id, chat, className, session, missingKeys }: ChatProps) {
             </div>
           )}
         </div>
-
-        <div className="fixed bottom-0">
-          <ChatPanel
-            id={id}
-            isAtBottom={isAtBottom}
-            scrollToBottom={scrollToBottom}
-            onCampaignCreate={handleCampaignCreated}
-            campaignId={campaignId}
-            isCampaignInitiatorCardEnabled={isCampaignInitiatorCardEnabled}
-          />
-        </div>
       </div>
 
-      {isCampaignInitiatorCardEnabled && (
-        <div className="w-[80%] border-l border-gray-200 dark:border-gray-800">
-          {showSteps ? (
-            <CampaignCreationFeedDisplay />
-          ) : (
-            <CampaignCreationForm onSubmit={() => setShowSteps(true)} />
-          )}
-        </div>
-      )}
+      <ChatPanel
+        id={id}
+        isAtBottom={isAtBottom}
+        scrollToBottom={scrollToBottom}
+        onCampaignCreate={handleCampaignCreated}
+        campaignId={campaignId}
+      />
     </div>
   )
 }
