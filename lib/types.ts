@@ -1,7 +1,7 @@
-import { CoreMessage  } from 'ai'
+import { CoreMessage } from 'ai'
 
 export type Message = CoreMessage & {
-  id: string,
+  id: string
   timestamp: string
 }
 
@@ -41,20 +41,20 @@ export interface User extends Record<string, any> {
   email: string
   password: string
   salt: string
-  defaultExtraDetails?:string
+  defaultExtraDetails?: string
   fbAccountId?: string
   fbMarketingApiKey?: string
-  fbBusinessAccId?:string
-  first_name?:string
-  last_name?:string
-  company_name?:string
-  company_description?:string
-  website_link?:string
-  privacy_policy_link?:string
-  website_data?:string
-  preferred_language?:string
-  goal?:string
-  fbPageId?:string
+  fbBusinessAccId?: string
+  first_name?: string
+  last_name?: string
+  company_name?: string
+  company_description?: string
+  website_link?: string
+  privacy_policy_link?: string
+  website_data?: string
+  preferred_language?: string
+  goal?: string
+  fbPageId?: string
 }
 
 export interface Campaign extends Record<string, any> {
@@ -188,7 +188,7 @@ export interface AdCreative {
     }
   }
 }
- 
+
 export interface QuestionOption {
   value: string
   label: string
@@ -207,7 +207,7 @@ export interface LeadgenFrom {
   privacy_policy?: {
     url: string
     link_text: string
-  },
+  }
   questions: Question[]
   thank_you_page?: {
     title: string
@@ -218,11 +218,11 @@ export interface LeadgenFrom {
     button_text?: string
     button_description?: string
     country_code?: string
-  },
+  }
   context_card?: {
-    title: string,
-    style: string,
-    content: string,
+    title: string
+    style: string
+    content: string
   }
 }
 
@@ -254,4 +254,44 @@ export interface City {
   region_id: string
   supports_city: boolean
   supports_region: boolean
+}
+
+export interface CampaignFormData {
+  objective:
+    | 'lead-generation'
+    | 'recruitment'
+    | 'conversions'
+    | 'brand-awareness'
+  audiences: Audience[]
+  leadForm: LeadForm
+  preview: PreviewData
+}
+
+export interface Audience {
+  location: string
+  ageRange: [number, number]
+  targeting?: string[]
+  advantage?: boolean
+  placements: {
+    facebookFeed: boolean
+    instagramFeed: boolean
+    facebookStories: boolean
+    instagramStories: boolean
+  }
+  budget: string
+  isExpanded?: boolean
+}
+
+export interface LeadForm {
+  template: 'basic' | 'standard'
+  title: string
+  description: string
+  thankYouText: string
+  customQuestions: string[]
+}
+
+export interface PreviewData {
+  description: string
+  heading: string
+  image?: string
 }

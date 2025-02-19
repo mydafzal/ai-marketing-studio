@@ -14,8 +14,7 @@ import type { AI } from '@/lib/chat/AIManager'
 import { UserMessage } from './stocks/message'
 import { FloatingButton } from './floating-button'
 import { TaskPalette } from './task-palette'
-import {isFeatureToggleEnabled} from "@/lib/helpers/feature-toggle/feature-toggle-manager";
-
+import { isFeatureToggleEnabled } from '@/lib/helpers/feature-toggle/feature-toggle-manager'
 
 const exampleMessages = [
   {
@@ -47,6 +46,7 @@ export interface ChatPanelProps {
   scrollToBottom: () => void
   onCampaignCreate: (campaignId: string) => Promise<void>
   campaignId: string | null
+  isCampaignInitiatorCardEnabled?: boolean
 }
 
 export function ChatPanel({
@@ -56,27 +56,35 @@ export function ChatPanel({
   scrollToBottom,
   onCampaignCreate,
   campaignId,
+  isCampaignInitiatorCardEnabled
 }: ChatPanelProps) {
   const [aiState] = useAIState()
   const [messages, setMessages] = useUIState<typeof AI>()
   const { submitUserMessage } = useActions()
   const [shareDialogOpen, setShareDialogOpen] = React.useState(false)
   const [isTaskPaletteOpen, setIsTaskPaletteOpen] = React.useState(false)
-  let isUserGuideButtonEnabled = isFeatureToggleEnabled("userGuideFloatingButton")
-  const sendMessage = React.useCallback(async (message: string, userContent?: (TextPart | ImagePart )[]) => {
-    // Optimistically add user message UI
-    setMessages(currentMessages => [
-      ...currentMessages,
-      {
-        id: nanoid(),
-        display: <UserMessage userContent={userContent}>{message}</UserMessage>
-      }
-    ])
+  let isUserGuideButtonEnabled = isFeatureToggleEnabled(
+    'userGuideFloatingButton'
+  )
+  const sendMessage = React.useCallback(
+    async (message: string, userContent?: (TextPart | ImagePart)[]) => {
+      // Optimistically add user message UI
+      setMessages(currentMessages => [
+        ...currentMessages,
+        {
+          id: nanoid(),
+          display: (
+            <UserMessage userContent={userContent}>{message}</UserMessage>
+          )
+        }
+      ])
 
-    // Submit and get response message
-    const responseMessage = await submitUserMessage(message, userContent);
-    setMessages(currentMessages => [...currentMessages, responseMessage])
-  }, [])
+      // Submit and get response message
+      const responseMessage = await submitUserMessage(message, userContent)
+      setMessages(currentMessages => [...currentMessages, responseMessage])
+    },
+    []
+  )
 
   const handleShowMe = (prompt: string) => {
     sendMessage(prompt)
@@ -84,7 +92,9 @@ export function ChatPanel({
 
   return (
     <>
-      <div className="fixed inset-x-0 bottom-0 w-full bg-gradient-to-b from-muted/30 from-0% to-muted/30 to-50% duration-300 ease-in-out animate-in dark:from-background/10 dark:from-10% dark:to-background/80 peer-[[data-state=open]]:group-[]:lg:pl-[250px] peer-[[data-state=open]]:group-[]:xl:pl-[300px]">
+      <div
+        className={`duration-300 ease-in-out animate-in dark:from-background/10 dark:from-10% dark:to-background/80 `}
+      >
         <ButtonScrollToBottom
           isAtBottom={isAtBottom}
           scrollToBottom={scrollToBottom}
@@ -112,7 +122,9 @@ export function ChatPanel({
           </div>
 
           {messages?.length >= 2 ? (
-            <div className={`flex ${id && title && "h-12"} items-center justify-center`}>
+            <div
+              className={`flex ${id && title && 'h-12'} items-center justify-center`}
+            >
               <div className="flex space-x-2">
                 {id && title ? (
                   <>
@@ -145,12 +157,16 @@ export function ChatPanel({
             <FooterText className="hidden sm:block" />
           </div>
         </div>
-        {isUserGuideButtonEnabled && <FloatingButton onClick={() => setIsTaskPaletteOpen(true)} />}
-        {isUserGuideButtonEnabled && <TaskPalette
+        {isUserGuideButtonEnabled && (
+          <FloatingButton onClick={() => setIsTaskPaletteOpen(true)} />
+        )}
+        {isUserGuideButtonEnabled && (
+          <TaskPalette
             isOpen={isTaskPaletteOpen}
             onClose={() => setIsTaskPaletteOpen(false)}
             onShowMe={handleShowMe}
-        />}
+          />
+        )}
       </div>
     </>
   )
