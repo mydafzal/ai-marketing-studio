@@ -1,4 +1,3 @@
-/** @type {import('next').NextConfig} */
 module.exports = {
   images: {
     remotePatterns: [
@@ -15,13 +14,19 @@ module.exports = {
         pathname: '**'
       },
       {
-      protocol: 'https',
+        protocol: 'https',
         hostname: 'replicate.delivery',
         port: '',
-        pathname: '/**',
+        pathname: '/**'
       },
-    ]
+      // Add a pattern for the Facebook CDN(s)
+      {
+        protocol: 'https',
+        hostname: '*.xx.fbcdn.net',
+        port: '',
+        pathname: '/**'
+      }
+    ],
   },
-  // https://stackoverflow.com/questions/72238175/why-useeffect-running-twice-and-how-to-handle-it-well-in-react/72238236#72238236
   reactStrictMode: false,
 }

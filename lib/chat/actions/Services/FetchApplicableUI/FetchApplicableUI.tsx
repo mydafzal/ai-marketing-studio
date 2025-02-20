@@ -18,13 +18,13 @@ import {createCampaign} from '@/lib/api/fasty-bot/create-campaign'
 import {GeographicalLocation} from '@/components/geographical-location';
 import {SuggestedFilters} from '@/components/suggested-filters';
 import LeadsCountUI from '@/components/campaign-leads-count'
+import AdCreativesComparison from '@/components/stocks/campaignresults-creatives';
 
 interface ToolResult {
     toolName: string;
     toolCallId: string;
     result: any; // You might want to make this more specific based on your data
 }
-
 
 export const getUIStateFromAIState = (aiState: Chat) => {
     return aiState.messages
@@ -47,7 +47,17 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                         </div>
                                     </>
                                 );
-
+                            case 'getCampaignCreativeResults':
+                                return (
+                                    <>
+                                        <BotCard key={tool.toolCallId}>
+                                            <AdCreativesComparison campaignId={tool.result.campaignId} />
+                                        </BotCard>
+                                        <div className="my-4">
+                                            {tool.result.guideForUser ?? ''}
+                                        </div>
+                                    </>
+                                );
                             case 'showAdBudgetUI':
                                 return (
                                     <>

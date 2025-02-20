@@ -1,4 +1,5 @@
 import {ImagePart, TextPart} from "ai";
+import AdCreativesComparison from '@/components/stocks/campaignresults-creatives';
 import {getChatIdFromUrl} from "@/lib/api/fasty-bot/helpers/chat-id-from-url-helper";
 import {getCampaignIdFromUrl} from "@/lib/api/fasty-bot/helpers/campaign-id-from-url-helper";
 import {
@@ -48,6 +49,8 @@ import {getDefaultChatPrompt} from "@/lib/chat/actions/Providers/FbMarketingDefa
 import {createStreamableValue, getMutableAIState, streamUI} from "ai/rsc";
 import { useEffect } from "react";
 import LeadsCountUI from "@/components/campaign-leads-count";
+import showAiVideoGenerator from "@/components/stocks/ai-video-generator/server"
+
 
 interface ExtractedMessage {
     id?: string;
@@ -379,6 +382,73 @@ export async function submitUserMessage(content: string, contentImages?: Array<T
                     return await adBudgetModule.component({symbol, price, numberOfShares, guideForUser});
                 }
             },
+
+            /*getCampaignCreativeResults: {
+    description: "Show detailed performance metrics for campaign ad creatives",
+    parameters: z.object({
+        campaignId: z.string(),
+        guideForUser: z.string().optional()
+    }),
+    generate: async function* ({campaignId, guideForUser}) {
+        yield (
+            <BotCard>
+                <StockSkeleton/>
+            </BotCard>
+        )
+        await sleep(1000)
+        const toolCallId = nanoid()
+        pushMessages([
+            {
+                id: nanoid(),
+                role: 'assistant',
+                content: [
+                    {
+                        type: 'tool-call',
+                        toolName: 'getCampaignCreativeResults',
+                        toolCallId,
+                        args: {campaignId, guideForUser}
+                    }
+                ],
+                timestamp: new Date().toISOString()
+            },
+            {
+                id: nanoid(),
+                role: 'tool',
+                content: [
+                    {
+                        type: 'tool-result',
+                        toolName: 'getCampaignCreativeResults',
+                        toolCallId,
+                        result: {campaignId, guideForUser}
+                    }
+                ],
+                timestamp: new Date().toISOString()
+            }
+        ])
+
+        return (
+            <BotCard>
+                <AdCreativesComparison campaignId={campaignId} />
+            </BotCard>
+        )
+    }
+},
+*/
+showAiVideoGenerator: {
+    description: "Show the UI for generating an AI UGC video.",
+    parameters: z.object({}), // must be valid for streamUI
+    generate: async function* () {
+      // Optional: yield a loading placeholder
+      yield (
+        <BotCard>
+          <p>Loading AI Video Generator...</p>
+        </BotCard>
+      )
+
+      // We can optionally push tool-call messages, then just return:
+      return showAiVideoGenerator()
+    }
+  },
 
             showFormBuilder: {
                 description: formBuilderModule.description,
