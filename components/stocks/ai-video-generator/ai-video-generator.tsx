@@ -426,7 +426,7 @@ export function AiVideoGenerator() {
       <Card className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 overflow-hidden shadow-sm">
         <CardHeader>
           <CardTitle className="text-gray-900 dark:text-gray-100">
-            AI UGC Video Generation
+            AI Video Generation
           </CardTitle>
           <CardDescription className="text-gray-700 dark:text-gray-400">
             Create engaging user-generated style videos using AI
