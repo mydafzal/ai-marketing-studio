@@ -161,7 +161,6 @@ If the user asks for suggesting targeting filters, ensure first their campaign i
 
 Download leads:
 If the user asks to show leads count or download leads then call 'showLeadsCountUI'. If campaign is not connected then ask to connect campaign before calling this UI.
-You can let users download their leads but you cant analyse individual leads information. If the user asks for information related to the leads for instance certain items in the lead list say you are not allowed to do this and refer to EU AI act.
 
 
 [ONLY PERFORM IF ACTIVELY REQUESTED :: REGION END] 
