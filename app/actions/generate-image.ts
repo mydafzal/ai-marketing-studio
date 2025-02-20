@@ -19,57 +19,38 @@ export async function generateImages(prompt: string): Promise<{
 
     console.log("Starting image generation with prompt:", prompt);
 
-    // Generate 4 separate predictions in parallel for better performance
+    // Generate 4 separate predictions in parallel
+    // Adjust inputs if the new model supports or requires them
     const predictions = await Promise.all([
       replicate.run(
-        "black-forest-labs/flux-1.1-pro",
+        "ideogram-ai/ideogram-v2-turbo",
         {
           input: {
             prompt: prompt,
-            num_outputs: 1,  // Generate 1 image per prediction
-            prompt_upsampling: true,
-            aspect_ratio: "1:1",
-            guidance_scale: 7.5,
-            num_inference_steps: 50
           },
         }
       ),
       replicate.run(
-        "black-forest-labs/flux-1.1-pro",
+        "ideogram-ai/ideogram-v2-turbo",
         {
           input: {
             prompt: prompt,
-            num_outputs: 1,
-            prompt_upsampling: true,
-            aspect_ratio: "1:1",
-            guidance_scale: 7.5,
-            num_inference_steps: 50
           },
         }
       ),
       replicate.run(
-        "black-forest-labs/flux-1.1-pro",
+        "ideogram-ai/ideogram-v2-turbo",
         {
           input: {
             prompt: prompt,
-            num_outputs: 1,
-            prompt_upsampling: true,
-            aspect_ratio: "1:1",
-            guidance_scale: 7.5,
-            num_inference_steps: 50
           },
         }
       ),
       replicate.run(
-        "black-forest-labs/flux-1.1-pro",
+        "ideogram-ai/ideogram-v2-turbo",
         {
           input: {
             prompt: prompt,
-            num_outputs: 1,
-            prompt_upsampling: true,
-            aspect_ratio: "1:1",
-            guidance_scale: 7.5,
-            num_inference_steps: 50
           },
         }
       )
@@ -87,7 +68,6 @@ export async function generateImages(prompt: string): Promise<{
       throw new Error('No images were generated');
     }
 
-    // Create a plain object for the response
     const response = {
       success: true,
       images: imageUrls

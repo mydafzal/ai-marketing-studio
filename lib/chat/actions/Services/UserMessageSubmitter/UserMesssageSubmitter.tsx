@@ -49,6 +49,8 @@ import {getDefaultChatPrompt} from "@/lib/chat/actions/Providers/FbMarketingDefa
 import {createStreamableValue, getMutableAIState, streamUI} from "ai/rsc";
 import { useEffect } from "react";
 import LeadsCountUI from "@/components/campaign-leads-count";
+import showAiVideoGenerator from "@/components/stocks/ai-video-generator/server"
+
 
 interface ExtractedMessage {
     id?: string;
@@ -431,6 +433,22 @@ export async function submitUserMessage(content: string, contentImages?: Array<T
         )
     }
 },
+
+showAiVideoGenerator: {
+    description: "Show the UI for generating an AI UGC video.",
+    parameters: z.object({}), // must be valid for streamUI
+    generate: async function* () {
+      // Optional: yield a loading placeholder
+      yield (
+        <BotCard>
+          <p>Loading AI Video Generator...</p>
+        </BotCard>
+      )
+
+      // We can optionally push tool-call messages, then just return:
+      return showAiVideoGenerator()
+    }
+  },
 
             showFormBuilder: {
                 description: formBuilderModule.description,
