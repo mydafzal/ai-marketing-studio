@@ -1,4 +1,5 @@
 import {ImagePart, TextPart} from "ai";
+import AdCreativesComparison from '@/components/stocks/campaignresults-creatives';
 import {getChatIdFromUrl} from "@/lib/api/fasty-bot/helpers/chat-id-from-url-helper";
 import {getCampaignIdFromUrl} from "@/lib/api/fasty-bot/helpers/campaign-id-from-url-helper";
 import {
@@ -379,6 +380,57 @@ export async function submitUserMessage(content: string, contentImages?: Array<T
                     return await adBudgetModule.component({symbol, price, numberOfShares, guideForUser});
                 }
             },
+
+            getCampaignCreativeResults: {
+    description: "Show detailed performance metrics for campaign ad creatives",
+    parameters: z.object({
+        campaignId: z.string(),
+        guideForUser: z.string().optional()
+    }),
+    generate: async function* ({campaignId, guideForUser}) {
+        yield (
+            <BotCard>
+                <StockSkeleton/>
+            </BotCard>
+        )
+        await sleep(1000)
+        const toolCallId = nanoid()
+        pushMessages([
+            {
+                id: nanoid(),
+                role: 'assistant',
+                content: [
+                    {
+                        type: 'tool-call',
+                        toolName: 'getCampaignCreativeResults',
+                        toolCallId,
+                        args: {campaignId, guideForUser}
+                    }
+                ],
+                timestamp: new Date().toISOString()
+            },
+            {
+                id: nanoid(),
+                role: 'tool',
+                content: [
+                    {
+                        type: 'tool-result',
+                        toolName: 'getCampaignCreativeResults',
+                        toolCallId,
+                        result: {campaignId, guideForUser}
+                    }
+                ],
+                timestamp: new Date().toISOString()
+            }
+        ])
+
+        return (
+            <BotCard>
+                <AdCreativesComparison campaignId={campaignId} />
+            </BotCard>
+        )
+    }
+},
 
             showFormBuilder: {
                 description: formBuilderModule.description,

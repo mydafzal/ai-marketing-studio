@@ -28,6 +28,7 @@ import {
     updateCampaignInfo
 } from "@/lib/chat/actions/Services/AIDoneStateCampaignStatsEnricher/AIDoneStateCampaignStatsEnricher"
 import {buildChatObject} from "@/lib/chat/actions/Services/ChatObjectBuilder/ChatObjectBuilder";
+import showAdCreativesSwitcher from "@/components/ad-creatives-switcher"
 
 export type AIState = {
     chatId: string
@@ -72,6 +73,7 @@ function defineChatActions() {
         syncMessages,
         confirmUpdateAdset,
         confirmCreateLeadgenForm,
+        showAdCreativesSwitcher,
     }
 }
 

@@ -40,6 +40,7 @@
     "add": "^2.0.6",
     "ai": "^3.2.16",
     "aws-sdk": "^2.1480.0",
+    "canvas-confetti": "^1.9.3",
     "card": "^2.5.4",
     "chart.js": "^4.4.4",
     "class-variance-authority": "^0.7.0",
@@ -78,6 +79,7 @@
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.13",
     "@testing-library/react": "^16.2.0",
+    "@types/canvas-confetti": "^1.9.0",
     "@types/d3-scale": "^4.0.8",
     "@types/lodash": "^4.17.12",
     "@types/next-auth": "^3.13.0",

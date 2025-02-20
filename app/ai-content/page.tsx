@@ -1,6 +1,6 @@
-'use client'
+"use client"
 
-import * as React from "react"
+import React, { useState, useMemo } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -8,35 +8,54 @@ import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/use-toast"
 import Image from "next/image"
-import { Twitter, Linkedin, Instagram, Copy, Check, Download } from "lucide-react"
+import {
+  Twitter,
+  Linkedin,
+  Instagram,
+  Copy,
+  Check,
+  Download,
+  Brain,
+  Sparkles
+} from "lucide-react"
+import confetti from "canvas-confetti"
+
+// Keep your client-friendly actions for text & images
 import { generateContent } from "@/app/actions/generate"
 import { generateImages } from "@/app/actions/generate-image"
 
 export default function AiContentPage() {
-  const [textPrompt, setTextPrompt] = React.useState("")
-  const [imagePrompt, setImagePrompt] = React.useState("")
-  const [isGenerating, setIsGenerating] = React.useState(false)
-  const [isGeneratingImages, setIsGeneratingImages] = React.useState(false)
-  const [generatedImages, setGeneratedImages] = React.useState<string[]>([])
-  const [copiedStates, setCopiedStates] = React.useState({
+  // -------------------------
+  // SHARED STATES
+  // -------------------------
+  const [textPrompt, setTextPrompt] = useState("")
+  const [imagePrompt, setImagePrompt] = useState("")
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [isGeneratingImages, setIsGeneratingImages] = useState(false)
+  const [generatedImages, setGeneratedImages] = useState<string[]>([])
+  const [copiedStates, setCopiedStates] = useState({
     twitter: false,
     linkedin: false,
-    instagram: false
+    instagram: false,
   })
-  const [content, setContent] = React.useState({
+  const [content, setContent] = useState({
     twitter: "Here you can see how your Twitter post will look like",
     linkedin: "Here you can see how your LinkedIn post will look like",
-    instagram: "Here you can see how your Instagram post will look like"
+    instagram: "Here you can see how your Instagram post will look like",
   })
+
   const { toast } = useToast()
 
+  // -------------------------
+  // AI TEXT CONTENT LOGIC
+  // -------------------------
   const handleCopy = async (platform: 'twitter' | 'linkedin' | 'instagram') => {
     await navigator.clipboard.writeText(content[platform])
     setCopiedStates(prev => ({ ...prev, [platform]: true }))
-    
+
     toast({
       title: "Copied!",
-      description: `${platform.charAt(0).toUpperCase() + platform.slice(1)} content copied to clipboard`,
+      description: `${platform[0].toUpperCase() + platform.slice(1)} content copied to clipboard`,
     })
 
     setTimeout(() => {
@@ -63,7 +82,7 @@ export default function AiContentPage() {
         description: "Generated social media content successfully",
       })
     } catch (error) {
-      console.error('Error generating content:', error)
+      console.error("Error generating content:", error)
       toast({
         title: "Error",
         description: "Failed to generate content. Please try again.",
@@ -74,6 +93,9 @@ export default function AiContentPage() {
     }
   }
 
+  // -------------------------
+  // AI IMAGE GENERATION LOGIC
+  // -------------------------
   const handleImageGenerate = async () => {
     if (!imagePrompt.trim()) {
       toast({
@@ -83,25 +105,25 @@ export default function AiContentPage() {
       })
       return
     }
-  
+
     setIsGeneratingImages(true)
     try {
       const result = await generateImages(imagePrompt)
-      console.log('Generation result:', JSON.stringify(result));
-      
+      console.log("Generation result:", JSON.stringify(result))
+
       if (result.success && result.images && result.images.length > 0) {
-        const validUrls = result.images.filter(url => typeof url === 'string');
-        setGeneratedImages(validUrls);
-        
+        const validUrls = result.images.filter((url: unknown) => typeof url === "string")
+        setGeneratedImages(validUrls)
+
         toast({
           title: "Success",
           description: `Generated ${validUrls.length} image(s) successfully`,
         })
       } else {
-        throw new Error(result.error || 'Failed to generate images')
+        throw new Error(result.error || "Failed to generate images")
       }
     } catch (error) {
-      console.error('Error in handleImageGenerate:', error);
+      console.error("Error in handleImageGenerate:", error)
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to generate images. Please try again.",
@@ -117,7 +139,7 @@ export default function AiContentPage() {
       const response = await fetch(imageUrl)
       const blob = await response.blob()
       const url = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
+      const link = document.createElement("a")
       link.href = url
       link.download = `generated-image-${index + 1}.png`
       document.body.appendChild(link)
@@ -130,13 +152,232 @@ export default function AiContentPage() {
         description: "Image downloaded successfully",
       })
     } catch (error) {
-      console.error('Error downloading image:', error)
+      console.error("Error downloading image:", error)
       toast({
         title: "Error",
         description: "Failed to download image. Please try again.",
         variant: "destructive"
       })
     }
+  }
+
+  // -------------------------
+  // AI VIDEO CREATOR LOGIC
+  // -------------------------
+  const [videoPrompt, setVideoPrompt] = useState("")
+  const [videoImageFile, setVideoImageFile] = useState<File | null>(null)
+  const [videoDuration, setVideoDuration] = useState<number>(5)
+  const [aspectRatio, setAspectRatio] = useState<"16:9" | "9:16">("16:9")
+  const [isVideoGenerating, setIsVideoGenerating] = useState(false)
+  const [videoGenerated, setVideoGenerated] = useState(false)
+  const [videoUrl, setVideoUrl] = useState("")
+
+  // 3 minutes total => 4 steps => 45s each
+  const generationSteps = useMemo(() => [
+    "Understanding your video concept...",
+    "Analyzing your uploaded image for style...",
+    "Synthesizing transitions and animations...",
+    "Almost ready!"
+  ], [])
+
+  const [currentStepIndex, setCurrentStepIndex] = useState(0)
+
+  // Convert file -> dataURL
+  async function fileToDataURL(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        if (e.target?.result) {
+          resolve(e.target.result as string)
+        } else {
+          reject(new Error("Failed to convert file to data URL"))
+        }
+      }
+      reader.onerror = (err) => reject(err)
+      reader.readAsDataURL(file)
+    })
+  }
+
+  const handleVideoImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setVideoImageFile(e.target.files[0])
+    }
+  }
+
+  const handleGenerateVideo = async () => {
+    if (!videoPrompt.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a prompt first",
+        variant: "destructive"
+      })
+      return
+    }
+    if (!videoImageFile) {
+      toast({
+        title: "Error",
+        description: "Please upload an image first",
+        variant: "destructive"
+      })
+      return
+    }
+
+    setIsVideoGenerating(true)
+    setVideoGenerated(false)
+    setVideoUrl("")
+    setCurrentStepIndex(0)
+
+    try {
+      // Step time = 45s each => 3min total
+      const STEP_DURATION = 45000
+      let step = 0
+      const intervalId = setInterval(() => {
+        if (step < generationSteps.length) {
+          setCurrentStepIndex(step + 1)
+          step++
+        } else {
+          clearInterval(intervalId)
+        }
+      }, STEP_DURATION)
+
+      // Convert file to dataURL
+      const dataUrl = await fileToDataURL(videoImageFile)
+
+      // Actually call your route /api/generate-video
+      const res = await fetch("/api/generate-video", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: videoPrompt,
+          duration: videoDuration,
+          startImageDataUrl: dataUrl,
+          aspectRatio
+        })
+      })
+
+      if (!res.ok) {
+        const errData = await res.json()
+        throw new Error(errData.error || "Failed to generate video.")
+      }
+
+      const json = await res.json()
+      if (!json.success) {
+        throw new Error(json.error || "No success from replicate.")
+      }
+
+      setVideoUrl(json.videoUrl)
+      setIsVideoGenerating(false)
+      setVideoGenerated(true)
+
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 }
+      })
+
+      toast({
+        title: "Success",
+        description: "Your AI video has been generated!",
+      })
+    } catch (err: any) {
+      console.error("Error generating video:", err)
+      toast({
+        title: "Error",
+        description: err.message || "Failed to generate video. Please try again.",
+        variant: "destructive"
+      })
+      setIsVideoGenerating(false)
+    }
+  }
+
+  function renderSteps() {
+    return (
+      <div className="flex flex-col space-y-3 mt-4 text-gray-100">
+        {generationSteps.map((step, index) => {
+          const isCompleted = index < currentStepIndex - 1
+          const isActive = index === currentStepIndex - 1
+          const isUpcoming = index > currentStepIndex - 1
+
+          return (
+            <div key={index} className="flex items-center space-x-2">
+              {isCompleted && <Check className="size-4 text-green-500" />}
+              {isActive && <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />}
+              {isUpcoming && !isActive && <div className="w-2 h-2 rounded-full bg-gray-400" />}
+              <span
+                className={
+                  isActive
+                    ? "text-sm text-green-300"
+                    : isCompleted
+                    ? "text-sm text-gray-400 line-through"
+                    : "text-sm text-gray-500"
+                }
+              >
+                {step}
+              </span>
+            </div>
+          )
+        })}
+      </div>
+    )
+  }
+
+  // The container will be bigger => h-[700px] for example
+  // We'll do a conditional aspect ratio when video is ready
+  // If aspectRatio is 9:16 => we do aspect-[9/16] else aspect-[16/9]
+  function renderVideoOrPlaceholder() {
+    if (isVideoGenerating) {
+      return (
+        <div className="text-center space-y-4">
+          <div className="relative">
+            <Brain className="size-12 mx-auto text-primary animate-pulse" />
+            <Sparkles className="size-6 text-yellow-500 absolute -top-2 -right-2 animate-bounce" />
+            <Sparkles className="size-6 text-blue-500 absolute -bottom-2 -left-2 animate-bounce delay-150" />
+          </div>
+          <div className="space-y-2">
+            <p className="text-lg font-semibold text-primary">
+              AI Brain is Processing
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Creating your custom video...
+            </p>
+          </div>
+          <div className="flex justify-center space-x-2">
+            <div className="size-2 bg-primary rounded-full animate-bounce"></div>
+            <div className="size-2 bg-primary rounded-full animate-bounce delay-100"></div>
+            <div className="size-2 bg-primary rounded-full animate-bounce delay-200"></div>
+          </div>
+          {renderSteps()}
+        </div>
+      )
+    }
+
+    if (videoGenerated) {
+      // We set object-contain so a 9:16 won't get cut off
+      const ratioClass = aspectRatio === "9:16" ? "aspect-[9/16]" : "aspect-[16/9]"
+      return (
+        <div className={`relative w-full ${ratioClass}`}>
+          <video
+            className="absolute inset-0 w-full h-full rounded-lg object-contain"
+            controls
+            autoPlay
+            muted
+          >
+            <source src={videoUrl || "/aiclothing.mp4"} type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
+        </div>
+      )
+    }
+
+    // If neither generating nor generated
+    return (
+      <div className="text-center space-y-2">
+        <Brain className="size-8 mx-auto text-muted-foreground mb-2" />
+        <span className="text-muted-foreground text-sm">
+          Enter a prompt, pick an aspect ratio, and upload an image to generate your AI video
+        </span>
+      </div>
+    )
   }
 
   return (
@@ -156,6 +397,7 @@ export default function AiContentPage() {
             <TabsTrigger value="text">AI Text Content</TabsTrigger>
           </TabsList>
 
+          {/* =============== VIDEO TAB =============== */}
           <TabsContent value="ugc">
             <Card>
               <CardHeader>
@@ -165,15 +407,92 @@ export default function AiContentPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="h-96 rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-800 flex items-center justify-center">
-                  <span className="text-muted-foreground">
-                    UGC Video Generation Interface Coming Soon
-                  </span>
+                {/* We'll make the container for the video bigger => h-[700px] */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Left side for prompt & image */}
+                  <div className="space-y-4">
+                    <div>
+                      <label htmlFor="videoPrompt" className="text-sm font-medium">
+                        Video Prompt
+                      </label>
+                      <Textarea
+                        id="videoPrompt"
+                        value={videoPrompt}
+                        onChange={(e) => setVideoPrompt(e.target.value)}
+                        placeholder="Describe how you'd like the video to appear..."
+                        className="mt-2"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-medium">Video Duration</label>
+                      <div className="flex space-x-4 mt-2">
+                        <Button
+                          variant={videoDuration === 5 ? "default" : "outline"}
+                          onClick={() => setVideoDuration(5)}
+                        >
+                          5 sec
+                        </Button>
+                        <Button
+                          variant={videoDuration === 10 ? "default" : "outline"}
+                          onClick={() => setVideoDuration(10)}
+                        >
+                          10 sec
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-medium">Aspect Ratio</label>
+                      <div className="flex space-x-4 mt-2">
+                        <Button
+                          variant={aspectRatio === "16:9" ? "default" : "outline"}
+                          onClick={() => setAspectRatio("16:9")}
+                        >
+                          16:9
+                        </Button>
+                        <Button
+                          variant={aspectRatio === "9:16" ? "default" : "outline"}
+                          onClick={() => setAspectRatio("9:16")}
+                        >
+                          9:16
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label htmlFor="videoImage" className="text-sm font-medium">
+                        Upload an Image
+                      </label>
+                      <Input
+                        id="videoImage"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleVideoImageUpload}
+                        className="mt-2"
+                      />
+                    </div>
+                    <Button 
+                      onClick={handleGenerateVideo}
+                      disabled={isVideoGenerating}
+                      className="w-full"
+                    >
+                      {isVideoGenerating ? "AI is thinking..." : "Generate Video"}
+                    </Button>
+                  </div>
+
+                  {/* Right side for output, bigger height => h-[700px] */}
+                  <div className="space-y-4">
+                    <div className="relative w-full h-[700px] border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-lg flex items-center justify-center bg-gray-50 dark:bg-gray-900 overflow-hidden">
+                      {renderVideoOrPlaceholder()}
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
 
+          {/* =============== IMAGE TAB =============== */}
           <TabsContent value="image">
             <Card>
               <CardHeader>
@@ -198,8 +517,8 @@ export default function AiContentPage() {
                         className="min-h-[100px]"
                       />
                     </div>
-                    <Button 
-                      className="w-full" 
+                    <Button
+                      className="w-full"
                       onClick={handleImageGenerate}
                       disabled={isGeneratingImages}
                     >
@@ -207,32 +526,32 @@ export default function AiContentPage() {
                     </Button>
                   </div>
 
-                {/* Right side - Image Previews */}
-<div className="grid grid-cols-2 gap-4">
-  {generatedImages.length > 0 ? (
-    generatedImages.map((imageUrl, index) => (
-      <div 
-        key={index}
-        className="aspect-square relative rounded-lg overflow-hidden border border-gray-200 dark:border-gray-800 group"
-      >
-        <Image
-          src={imageUrl}
-          alt={`Generated image ${index + 1}`}
-          fill
-          className="object-cover"
-        />
-        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-opacity duration-200" />
-        <Button
-          className="absolute bottom-2 right-2 w-8 h-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-white hover:bg-white/80"
-          onClick={() => handleDownload(imageUrl, index)}
-        >
-          <Download className="h-4 w-4 text-black" />
-        </Button>
-      </div>
-    ))
+                  {/* Right side - Image Previews */}
+                  <div className="grid grid-cols-2 gap-4">
+                    {generatedImages.length > 0 ? (
+                      generatedImages.map((imageUrl, index) => (
+                        <div
+                          key={index}
+                          className="aspect-square relative rounded-lg overflow-hidden border border-gray-200 dark:border-gray-800 group"
+                        >
+                          <Image
+                            src={imageUrl}
+                            alt={`Generated image ${index + 1}`}
+                            fill
+                            className="object-cover"
+                          />
+                          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-opacity duration-200" />
+                          <Button
+                            className="absolute bottom-2 right-2 w-8 h-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-white hover:bg-white/80"
+                            onClick={() => handleDownload(imageUrl, index)}
+                          >
+                            <Download className="h-4 w-4 text-black" />
+                          </Button>
+                        </div>
+                      ))
                     ) : (
                       Array.from({ length: 4 }).map((_, index) => (
-                        <div 
+                        <div
                           key={index}
                           className="aspect-square rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-800 flex items-center justify-center"
                         >
@@ -248,6 +567,7 @@ export default function AiContentPage() {
             </Card>
           </TabsContent>
 
+          {/* =============== TEXT TAB =============== */}
           <TabsContent value="text">
             <Card>
               <CardHeader>
@@ -272,8 +592,8 @@ export default function AiContentPage() {
                         className="min-h-[100px]"
                       />
                     </div>
-                    <Button 
-                      className="w-full" 
+                    <Button
+                      className="w-full"
                       onClick={handleGenerate}
                       disabled={isGenerating}
                     >
@@ -381,8 +701,7 @@ export default function AiContentPage() {
                           </div>
                           <div className="font-bold">reeplyai</div>
                         </div>
-                        <div className="text-gray-900 dark:text-gray-100
-                        whitespace-pre-line">
+                        <div className="text-gray-900 dark:text-gray-100 whitespace-pre-line">
                           {content.instagram}
                         </div>
                       </div>
