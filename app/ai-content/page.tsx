@@ -589,7 +589,7 @@ export default function AiContentPage() {
 
         <Tabs defaultValue="text" className="w-full">
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="ugc">AI UGC Video</TabsTrigger>
+            <TabsTrigger value="ugc">AI Video</TabsTrigger>
             <TabsTrigger value="image">AI Image Creatives</TabsTrigger>
             <TabsTrigger value="text">AI Text Content</TabsTrigger>
           </TabsList>
@@ -598,7 +598,7 @@ export default function AiContentPage() {
           <TabsContent value="ugc">
             <Card>
               <CardHeader>
-                <CardTitle>AI B-Roll Video Generation</CardTitle>
+                <CardTitle>AI Video Generation</CardTitle>
                 <CardDescription>Create engaging user-generated style videos using AI</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
