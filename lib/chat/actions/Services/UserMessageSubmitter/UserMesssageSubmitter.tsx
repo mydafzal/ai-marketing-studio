@@ -435,7 +435,7 @@ export async function submitUserMessage(content: string, contentImages?: Array<T
 },
 */
 showAiVideoGenerator: {
-    description: "Show the UI for generating an AI UGC video.",
+    description: "Show the UI for generating an AI video.",
     parameters: z.object({}), // must be valid for streamUI
     generate: async function* () {
       // Optional: yield a loading placeholder

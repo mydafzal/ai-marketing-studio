@@ -598,7 +598,7 @@ export default function AiContentPage() {
           <TabsContent value="ugc">
             <Card>
               <CardHeader>
-                <CardTitle>AI UGC Video Generation</CardTitle>
+                <CardTitle>AI B-Roll Video Generation</CardTitle>
                 <CardDescription>Create engaging user-generated style videos using AI</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
