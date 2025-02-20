@@ -222,7 +222,7 @@ export function ConnectCampaign({ connectingUiProps }: ConnectCampaignProps) {
   useEffect(() => {
     async function refresh() {
       const responseMessage = await submitUserMessage(
-        'Okay, I connected campaign',
+        'Okay, I connected campaign. Ask me whether I like to analyze the campaign. dont ask me to create a campaign.',
         [],
         true
       )
