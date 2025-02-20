@@ -1,7 +1,7 @@
 "use client"
 
-import React, { useState, useEffect, useContext, useMemo } from 'react'
-import Image from 'next/image'
+import React, { useState, useEffect, useContext, useMemo } from "react"
+import Image from "next/image"
 import {
   RadarChart,
   PolarGrid,
@@ -16,50 +16,28 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-} from 'recharts'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { Award, Clock, ThumbsUp, DollarSign, Eye } from 'lucide-react'
-import { CampaignContext } from '@/components/contexts/campaign-context'
-import { VideoPlayer } from '@/components/stocks/video-player'
-import { Button } from '@/components/ui/button'
+} from "recharts"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+import { Award, Clock, ThumbsUp, DollarSign, Eye } from "lucide-react"
+import { CampaignContext } from "@/components/contexts/campaign-context"
+import { VideoPlayer } from "@/components/stocks/video-player"
+import { Button } from "@/components/ui/button"
+
+// Import your real data helper from the updated file:
+import {
+  getAllAdMetricsByCampaignId,
+  AdMetricsResponse,
+  AdInsight,
+} from "@/lib/api/fasty-bot/get-all-ad-metrics-by-campaign-id"
 
 // ==================
 // TYPES + INTERFACES
 // ==================
 
-interface FetchedCreative {
-  id: number
-  name: string
-  status: string
-  object_type: 'VIDEO' | 'IMAGE' | 'SHARE'
-  thumbnail_url?: string
-  object_story_spec: {
-    page_id: string
-    video_data?: {
-      video_id: string
-      title: string
-      message: string
-      image_url: string
-      image_hash: string
-    }
-    link_data?: {
-      name: string
-      message: string
-      link: string
-      image_hash: string
-    }
-  }
-}
-
-interface AdsetWithCreatives {
-  adset_id: string
-  creatives: FetchedCreative[]
-}
-
 interface AdCreative {
   id: string
   name: string
-  type: 'image' | 'video'
+  type: "image" | "video"
   videoId?: string | null
   url?: string
   metrics: {
@@ -76,6 +54,7 @@ interface AdCreative {
   thumbnailPlaceholder: string
 }
 
+// (Optional) If you prefer removing this entirely if you're not using it
 interface AdCreativesComparisonProps {
   campaignId?: string
 }
@@ -85,7 +64,7 @@ interface MetricItemProps {
   icon: React.ReactNode
   label: string
   value: string | number
-  format?: 'number' | 'currency' | 'percentage' | 'duration'
+  format?: "number" | "currency" | "percentage" | "duration"
   color: string
 }
 
@@ -94,23 +73,23 @@ interface MetricItemProps {
 // ======================================
 const formatMetricValue = (
   value: number,
-  format: 'number' | 'currency' | 'percentage' | 'duration' = 'number'
+  format: "number" | "currency" | "percentage" | "duration" = "number"
 ): string => {
   switch (format) {
-    case 'number':
-      return new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(value)
-    case 'currency':
-      return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
+    case "number":
+      return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(value)
+    case "currency":
+      return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD",
         minimumFractionDigits: 2,
       }).format(value)
-    case 'percentage':
-      return new Intl.NumberFormat('en-US', {
-        style: 'percent',
+    case "percentage":
+      return new Intl.NumberFormat("en-US", {
+        style: "percent",
         minimumFractionDigits: 1,
       }).format(value / 100)
-    case 'duration': {
+    case "duration": {
       const hours = Math.floor(value / 60)
       const minutes = Math.floor(value % 60)
       return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`
@@ -120,20 +99,26 @@ const formatMetricValue = (
   }
 }
 
-// Small helper to remove trailing 32-char ID (like in the switcher)
-const removeTrailingId = (name: string) => name.replace(/-[a-z0-9]{32}$/, '')
+// Small helper to remove trailing 32-char ID
+const removeTrailingId = (name: string) => name.replace(/-[a-z0-9]{32}$/, "")
 
 // =================
 // METRIC ITEM
 // =================
-const MetricItem: React.FC<MetricItemProps> = ({ icon, label, value, format = 'number', color }) => (
+const MetricItem: React.FC<MetricItemProps> = ({
+  icon,
+  label,
+  value,
+  format = "number",
+  color,
+}) => (
   <div className="bg-zinc-50 dark:bg-zinc-700 p-2 rounded-lg transition-all hover:shadow-md">
     <div className="flex items-center space-x-2 mb-1">
       <span className={color}>{icon}</span>
       <span className="text-sm text-zinc-600 dark:text-zinc-300">{label}</span>
     </div>
     <div className="text-zinc-800 dark:text-white font-medium">
-      {typeof value === 'number' ? formatMetricValue(value, format) : value}
+      {typeof value === "number" ? formatMetricValue(value, format) : value}
     </div>
   </div>
 )
@@ -153,18 +138,22 @@ const CreativeDisplay: React.FC<CreativeDisplayProps> = ({
   isSecondBest,
 }) => {
   // Decide aspect ratio for 9:16 if it's a video
-  const aspectRatioClass = creative.type === 'video' ? 'aspect-[9/16]' : 'aspect-square'
+  const aspectRatioClass = creative.type === "video" ? "aspect-[9/16]" : "aspect-square"
 
   return (
     <div
       className={`border border-zinc-200 dark:border-zinc-600 group bg-zinc-50 dark:bg-zinc-700 rounded-lg overflow-hidden transition-all hover:shadow-md relative ${
-        isTopPerformer ? 'border-2 border-yellow-400' : isSecondBest ? 'border-2 border-slate-300' : ''
+        isTopPerformer
+          ? "border-2 border-yellow-400"
+          : isSecondBest
+          ? "border-2 border-slate-300"
+          : ""
       }`}
-      style={{ minWidth: '250px' }} // to ensure consistent width for slider
+      style={{ minWidth: "250px" }} // to ensure consistent width for slider
     >
       {/* Media Section */}
       <div className={`relative bg-black w-full ${aspectRatioClass}`}>
-        {creative.type === 'video' && creative.videoId ? (
+        {creative.type === "video" && creative.videoId ? (
           <VideoPlayer
             videoId={creative.videoId}
             className="w-full h-full object-contain"
@@ -172,7 +161,7 @@ const CreativeDisplay: React.FC<CreativeDisplayProps> = ({
           />
         ) : (
           <Image
-            src={creative.url ?? '/placeholder.jpg'}
+            src={creative.url ?? "/placeholder.jpg"}
             alt={creative.name}
             fill
             className="object-cover"
@@ -236,7 +225,8 @@ const CreativeDisplay: React.FC<CreativeDisplayProps> = ({
 // =================
 // MAIN COMPONENT
 // =================
-const AdCreativesComparison: React.FC<AdCreativesComparisonProps> = ({ campaignId }) => {
+const AdCreativesComparison: React.FC<AdCreativesComparisonProps> = () => {
+  // Using the "CampaignContext" to get the campaign
   const { campaign } = useContext(CampaignContext)
 
   const [adCreatives, setAdCreatives] = useState<AdCreative[]>([])
@@ -267,92 +257,70 @@ const AdCreativesComparison: React.FC<AdCreativesComparisonProps> = ({ campaignI
   }, [adCreatives])
 
   // ==============================================
-  // FETCH REAL AD CREATIVES (similar to switcher)
+  // FETCH AD METRICS USING THE campaign.id
   // ==============================================
   useEffect(() => {
-    const fetchCreatives = async () => {
+    const fetchAdMetrics = async () => {
       if (!campaign?.id) return
+
       setIsLoading(true)
       setError(null)
 
       try {
-        const response = await fetch(
-          `/api/fasty-bot/proxy-get-adcreatives?campaignId=${campaign.id}`
-        )
-        if (!response.ok) {
-          throw new Error('Failed to fetch creatives')
+        // 1) Call our helper, which hits the real FastAPI endpoint
+        const data = await getAllAdMetricsByCampaignId(campaign.id)
+
+        if (!data?.ads_insights || data.ads_insights.length === 0) {
+          setAdCreatives([])
+          return
         }
 
-        const data = await response.json()
-        // data?.data?.data is an array of { adset_id, creative }
-        // We'll group them by adset, then flatten into a single list of FetchedCreative
-        const groupedData: AdsetWithCreatives[] = (() => {
-          const rawList: any[] = data?.data?.data || []
-          const groupObj: Record<string, FetchedCreative[]> = rawList.reduce(
-            (acc: Record<string, FetchedCreative[]>, item: any) => {
-              const { adset_id, creative } = item
-              if (!acc[adset_id]) {
-                acc[adset_id] = []
-              }
-              acc[adset_id].push(creative)
-              return acc
-            },
-            {}
-          )
-          // convert groupObj to an array
-          return Object.entries(groupObj).map(([adsetId, creatives]) => ({
-            adset_id: adsetId,
-            creatives,
-          }))
-        })()
+        // 2) Transform each insight into an AdCreative shape
+        const finalAdCreatives: AdCreative[] = data.ads_insights.map((insight: AdInsight) => {
+          // We'll default to "image" type unless you have logic to detect if it's a video
+          const type: "image" | "video" = "image"
 
-        // Now flatten all adsets into one array of FetchedCreative
-        const flattened = groupedData.flatMap((group) => group.creatives)
-
-        // Then transform them into the shape AdCreative for analysis (with mock metrics placeholders)
-        const finalAdCreatives: AdCreative[] = flattened.map((c) => {
-          const isVideo = c.object_type === 'VIDEO'
-          const videoId = isVideo ? c.object_story_spec?.video_data?.video_id || null : null
           return {
-            id: c.id.toString(),
-            name: c.name,
-            type: isVideo ? 'video' : 'image',
-            videoId,
-            url: c.thumbnail_url || '',
+            id: insight.ad_id,
+            name: insight.ad_name,
+            type,
+            videoId: null, // set if you have a real videoId
+            url: "",       // if you have a thumbnail or image URL
             metrics: {
-              impressions: 4000, // placeholder
-              engagement: 250, // placeholder
-              watchTime: 300, // in minutes (placeholder)
-              conversionRate: 10, // placeholder
-              clickThroughRate: 15, // placeholder
-              costPerClick: 1.25, // placeholder
+              impressions: parseInt(insight.impressions) || 0,
+              // "Engagement" = clicks for a simple approach
+              engagement: parseInt(insight.clicks) || 0,
+              watchTime: 0, // parse from insight if you want
+              conversionRate: 0,
+              clickThroughRate: parseFloat(insight.ctr) || 0,
+              costPerClick: parseFloat(insight.cpc) || 0,
             },
             performance: {
+              // Example watchTime data for the line chart
               weeklyWatchTime: [
-                { date: '2025-01-01', minutes: 120 },
-                { date: '2025-01-08', minutes: 80 },
-                { date: '2025-01-15', minutes: 100 },
+                { date: "2025-01-01", minutes: 120 },
+                { date: "2025-01-08", minutes: 80 },
+                { date: "2025-01-15", minutes: 100 },
               ],
             },
-            thumbnailPlaceholder: isVideo ? 'bg-purple-500' : 'bg-blue-500',
+            thumbnailPlaceholder: "bg-blue-500",
           }
         })
 
         setAdCreatives(finalAdCreatives)
       } catch (err) {
-        console.error('Error fetching creatives:', err)
-        setError('Error fetching creatives. Please try again later.')
+        console.error("Error fetching ad metrics:", err)
+        setError("Error fetching ad metrics. Please try again later.")
       } finally {
         setIsLoading(false)
       }
     }
 
-    fetchCreatives()
-  }, [campaign, campaignId])
+    fetchAdMetrics()
+  }, [campaign?.id]) // only re-fetch when campaign.id changes
 
   // =============================
-  // DETERMINE TOP & 2ND BEST
-  // (Placeholder: picks by highest engagement)
+  // DETERMINE TOP & 2ND BEST (Placeholder logic by highest engagement)
   // =============================
   const sortedAdCreatives = [...adCreatives].sort(
     (a, b) => b.metrics.engagement - a.metrics.engagement
@@ -363,28 +331,37 @@ const AdCreativesComparison: React.FC<AdCreativesComparisonProps> = ({ campaignI
   // ==============
   // RADAR CHART
   // ==============
-  const metrics = ['Impressions', 'Engagement', 'Watch Time', 'Conv. Rate', 'CTR', 'CPC Efficiency']
+  const metrics = [
+    "Impressions",
+    "Engagement",
+    "Watch Time",
+    "Conv. Rate",
+    "CTR",
+    "CPC Efficiency",
+  ]
+
   const radarData = metrics.map((metric) => {
     const dataPoint: { [key: string]: string | number } = { metric }
     adCreatives.forEach((creative) => {
       let value = 0
       switch (metric) {
-        case 'Impressions':
+        case "Impressions":
           value = creative.metrics.impressions / 1000
           break
-        case 'Engagement':
+        case "Engagement":
           value = creative.metrics.engagement / 100
           break
-        case 'Watch Time':
+        case "Watch Time":
           value = creative.metrics.watchTime / 100
           break
-        case 'Conv. Rate':
+        case "Conv. Rate":
           value = creative.metrics.conversionRate / 2
           break
-        case 'CTR':
+        case "CTR":
           value = creative.metrics.clickThroughRate / 2
           break
-        case 'CPC Efficiency':
+        case "CPC Efficiency":
+          // Example: (1 - (CPC / 5)) * 100
           value = (1 - creative.metrics.costPerClick / 5) * 100
           break
       }
@@ -395,7 +372,7 @@ const AdCreativesComparison: React.FC<AdCreativesComparisonProps> = ({ campaignI
 
   return (
     <div className="flex flex-col h-full bg-white dark:bg-zinc-800 shadow-lg">
-      {/* Header (matching switcher style) */}
+      {/* Header */}
       <header className="flex items-center justify-between px-6 py-6 border-b border-zinc-200 dark:border-zinc-700">
         <div className="flex items-center gap-2">
           <h1 className="text-2xl font-bold text-zinc-800 dark:text-zinc-200">
@@ -405,7 +382,7 @@ const AdCreativesComparison: React.FC<AdCreativesComparisonProps> = ({ campaignI
       </header>
 
       <main className="flex-grow p-6 overflow-y-auto bg-zinc-50 dark:bg-zinc-900">
-        {isLoading && <p className="dark:text-zinc-200">Loading creatives...</p>}
+        {isLoading && <p className="dark:text-zinc-200">Loading ad metrics...</p>}
         {error && <p className="text-red-500">{error}</p>}
 
         {adCreatives.length > 0 && !isLoading && !error && (
@@ -472,12 +449,12 @@ const AdCreativesComparison: React.FC<AdCreativesComparisonProps> = ({ campaignI
                         <XAxis dataKey="date" stroke="#666" allowDuplicatedCategory={false} />
                         <YAxis
                           stroke="#666"
-                          tickFormatter={(value) => formatMetricValue(value, 'duration')}
+                          tickFormatter={(value) => formatMetricValue(value, "duration")}
                         />
                         <Tooltip
-                          contentStyle={{ backgroundColor: '#18181b', border: 'none' }}
-                          labelStyle={{ color: '#a1a1aa' }}
-                          formatter={(value: any) => formatMetricValue(Number(value), 'duration')}
+                          contentStyle={{ backgroundColor: "#18181b", border: "none" }}
+                          labelStyle={{ color: "#a1a1aa" }}
+                          formatter={(value: any) => formatMetricValue(Number(value), "duration")}
                         />
                         <Legend />
                         {/* Each ad creative gets its own line, referencing its own data array */}
@@ -490,10 +467,10 @@ const AdCreativesComparison: React.FC<AdCreativesComparisonProps> = ({ campaignI
                             name={removeTrailingId(creative.name)}
                             stroke={
                               index === 0
-                                ? '#3b82f6'
+                                ? "#3b82f6"
                                 : index === 1
-                                ? '#8b5cf6'
-                                : '#22c55e'
+                                ? "#8b5cf6"
+                                : "#22c55e"
                             }
                             strokeWidth={2}
                           />
@@ -514,8 +491,8 @@ const AdCreativesComparison: React.FC<AdCreativesComparisonProps> = ({ campaignI
                     <ResponsiveContainer width="100%" height="100%">
                       <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
                         <PolarGrid stroke="#444" />
-                        <PolarAngleAxis dataKey="metric" stroke="#666" tick={{ fill: '#fff' }} />
-                        <PolarRadiusAxis stroke="#444" tick={{ fill: '#fff' }} />
+                        <PolarAngleAxis dataKey="metric" stroke="#666" tick={{ fill: "#fff" }} />
+                        <PolarRadiusAxis stroke="#444" tick={{ fill: "#fff" }} />
                         {adCreatives.map((creative, index) => (
                           <Radar
                             key={creative.id}
@@ -523,25 +500,25 @@ const AdCreativesComparison: React.FC<AdCreativesComparisonProps> = ({ campaignI
                             dataKey={removeTrailingId(creative.name)}
                             stroke={
                               index === 0
-                                ? '#3b82f6'
+                                ? "#3b82f6"
                                 : index === 1
-                                ? '#8b5cf6'
-                                : '#22c55e'
+                                ? "#8b5cf6"
+                                : "#22c55e"
                             }
                             fill={
                               index === 0
-                                ? '#3b82f6'
+                                ? "#3b82f6"
                                 : index === 1
-                                ? '#8b5cf6'
-                                : '#22c55e'
+                                ? "#8b5cf6"
+                                : "#22c55e"
                             }
                             fillOpacity={0.3}
                           />
                         ))}
                         <Legend />
                         <Tooltip
-                          contentStyle={{ backgroundColor: '#18181b', border: 'none' }}
-                          labelStyle={{ color: '#a1a1aa' }}
+                          contentStyle={{ backgroundColor: "#18181b", border: "none" }}
+                          labelStyle={{ color: "#a1a1aa" }}
                         />
                       </RadarChart>
                     </ResponsiveContainer>

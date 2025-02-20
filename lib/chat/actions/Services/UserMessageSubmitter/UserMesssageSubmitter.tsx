@@ -383,7 +383,7 @@ export async function submitUserMessage(content: string, contentImages?: Array<T
                 }
             },
 
-            getCampaignCreativeResults: {
+            /*getCampaignCreativeResults: {
     description: "Show detailed performance metrics for campaign ad creatives",
     parameters: z.object({
         campaignId: z.string(),
@@ -433,7 +433,7 @@ export async function submitUserMessage(content: string, contentImages?: Array<T
         )
     }
 },
-
+*/
 showAiVideoGenerator: {
     description: "Show the UI for generating an AI UGC video.",
     parameters: z.object({}), // must be valid for streamUI
