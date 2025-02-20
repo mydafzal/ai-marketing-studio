@@ -12,7 +12,7 @@ export function FooterText({ className, ...props }: React.ComponentProps<'p'>) {
       )}
       {...props}
     >
-        Reeply AI&apos;s decisions on marketing campaigns are thoroughly reviewed and overseen by marketing experts to ensure high-quality results.
+        Reeply AI&apos;s decisions on marketing campaigns are reviewed and overseen by marketing experts to ensure high-quality results.
     </p>
   )
 }
