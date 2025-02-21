@@ -31,8 +31,8 @@ async function fetchCampaignId(chatId: string, isServer: boolean): Promise<strin
             const result: CampaignIdResult = await response.json();
             console.log('chatId', chatId)
             console.log('result', result)
-            if (result.success && typeof result.fbCampaignId === 'string') {
-                return result.fbCampaignId;
+            if (result.success && (typeof result.fbCampaignId === 'string' || typeof result.fbCampaignId === 'number')) {
+                return String(result.fbCampaignId);
             } else {
                 console.warn(`No valid campaign ID found for chat ID: ${chatId}`);
                 return undefined;
@@ -81,5 +81,6 @@ export async function getCampaignIdFromUrl(): Promise<string | undefined> {
         return undefined;
     }
 
+    console.log("Chat Id Fetched", chatId)
     return fetchCampaignId(chatId, isServer);
 }
