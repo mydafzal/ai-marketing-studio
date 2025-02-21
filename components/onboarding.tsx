@@ -44,6 +44,12 @@ type OnboardingProps = {
     }) => Promise<any>
 }
 
+const GOAL_OPTIONS = {
+        GENERATE_LEADS: "I want to generate more leads",
+        RECRUIT_EMPLOYEES: "I want to recruit employees",
+        INCREASE_CONVERSIONS: "I want to increase conversions",
+    } as const;
+
 function Onboarding({
                         userDetails,
                         open,
@@ -69,7 +75,7 @@ function Onboarding({
     const [websiteLink, setWebsiteLink] = React.useState<string>(userDetails?.website_link || "")
     const [privacyPolicyLink, setPrivacyPolicyLink] = React.useState<string>(userDetails?.privacy_policy_link || "")
     const [preferredLanguage, setPreferredLanguage] = React.useState<string>(userDetails?.preferred_language || "en")
-    const [goal, setGoal] = React.useState<string>(userDetails?.goal || "customers")
+    const [goal, setGoal] = React.useState<string>(userDetails?.goal || GOAL_OPTIONS.GENERATE_LEADS)
 
     const [dbChangeRequested, setDbChangeRequested] = React.useState(false)
     const [showSuccessMessage, setShowSuccessMessage] = React.useState(false)
@@ -84,7 +90,7 @@ function Onboarding({
             setWebsiteLink(userDetails.website_link || "")
             setPrivacyPolicyLink(userDetails.privacy_policy_link || "")
             setPreferredLanguage(userDetails.preferred_language || "en")
-            setGoal(userDetails.goal || "customers")
+            setGoal(userDetails.goal || GOAL_OPTIONS.GENERATE_LEADS)
         }
     }, [userDetails])
 
@@ -511,11 +517,10 @@ function Onboarding({
                                         setInputError({...inputError, goal: "This field is required"})
                                     }
                                     setGoal(e.target.value)
-                                }}
-                                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
-                                    <option value="I want to generate more leads">I want to generate more leads</option>
-                                    <option value="I want to recruit employees">I want to recruit employees</option>
-                                    <option value="I want to increase conversions">I want to increase conversions</option>
+                                }} className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+                                    {Object.values(GOAL_OPTIONS).map((option) => (
+                                        <option key={option} value={option}>{option}</option>
+                                    ))}
                                 </select>
                                 {
                                     inputError?.goal && <p className='text-red-500'>{inputError?.goal}</p>
