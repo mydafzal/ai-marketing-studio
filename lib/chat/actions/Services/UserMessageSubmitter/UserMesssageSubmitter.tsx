@@ -160,6 +160,7 @@ export async function submitUserMessage(content: string, contentImages?: Array<T
 
     let systemMessage = getDefaultChatPrompt(campaignId, adsetId, extraDetailsFinalText);
     // TODO: Tool builder factory (for each tool we should have a factory),
+    // ** Important Note: After adding a new tool entry here make sure to also add an entry to FetchApplicableUI.tsx **
     const result = await streamUI({
         model: openai('gpt-4o'),
         initial: <SpinnerMessage/>,
