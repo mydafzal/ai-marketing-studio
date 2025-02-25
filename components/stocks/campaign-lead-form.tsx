@@ -96,6 +96,18 @@ function CampaignLeadForm({ formData, updateFormData }: CampaignLeadFormProps) {
       </div>
 
       <div>
+        <Label className="font-semibold">
+          Inform your clients how you will use this lead data
+        </Label>
+        <Textarea
+          value={formData.leadForm.dataUsePolicy}
+          className="resize-none"
+          onChange={e => updateLeadForm({ dataUsePolicy: e.target.value })}
+          placeholder="We will process this information based on our privacy policy seen on next page."
+        />
+      </div>
+
+      <div>
         <Label className="font-semibold">Custom Questions</Label>
         <div className="space-y-2 mt-2">
           {formData.leadForm.customQuestions.map((question, index) => (

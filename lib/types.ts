@@ -293,6 +293,13 @@ export interface Audience {
     instagramFeed: boolean
     facebookStories: boolean
     instagramStories: boolean
+    instagramExplore: boolean
+    instagramExploreHome: boolean
+    instagramReels: boolean
+  }
+  gender: {
+    male: boolean
+    female: boolean
   }
   budget: string
   isExpanded?: boolean
@@ -303,6 +310,7 @@ export interface LeadForm {
   title: string
   description: string
   thankYouText: string
+  dataUsePolicy: string
   customQuestions: string[]
 }
 

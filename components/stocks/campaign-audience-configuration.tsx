@@ -111,6 +111,33 @@ function CampaignAudienceConfiguration({
             )}
 
             <div>
+              <Label className="font-semibold">Gender</Label>
+              <div className="space-y-2 mt-2">
+                {Object.entries(audience.gender).map(([key, value]) => (
+                  <div key={key} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`${index}-${key}`}
+                      checked={value}
+                      onCheckedChange={checked =>
+                        updateAudience(index, {
+                          gender: {
+                            ...audience.gender,
+                            [key]: checked as boolean
+                          }
+                        })
+                      }
+                    />
+                    <Label htmlFor={`${index}-${key}`}>
+                      {key
+                        .replace(/([A-Z])/g, ' $1')
+                        .replace(/^./, str => str.toUpperCase())}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div>
               <Label className="font-semibold">Ad Placements</Label>
               <div className="space-y-2 mt-2">
                 {Object.entries(audience.placements).map(([key, value]) => (

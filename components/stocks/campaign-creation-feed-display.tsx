@@ -7,14 +7,13 @@ import CampaignObjective from './campaign-objective'
 import CampaignAudienceConfiguration from './campaign-audience-configuration'
 import CampaignLeadForm from './campaign-lead-form'
 
-const steps = [
+const allSteps = [
   { number: 1, title: 'Campaign Objective' },
   { number: 2, title: 'Audience' },
   { number: 3, title: 'Lead Form' }
 ]
 
 export function CampaignCreationFeedDisplay() {
-  const [selectedTab, setSelectedTab] = useState('facebook')
   const [isEditingSettings, setIsEditingSettings] = useState(false)
 
   const [step, setStep] = useState<number>(1)
@@ -29,7 +28,14 @@ export function CampaignCreationFeedDisplay() {
           facebookFeed: true,
           instagramFeed: true,
           facebookStories: false,
-          instagramStories: false
+          instagramStories: false,
+          instagramExplore: false,
+          instagramExploreHome: false,
+          instagramReels: false
+        },
+        gender: {
+          male: true,
+          female: true
         },
         budget: '15'
       },
@@ -41,7 +47,14 @@ export function CampaignCreationFeedDisplay() {
           facebookFeed: true,
           instagramFeed: true,
           facebookStories: false,
-          instagramStories: false
+          instagramStories: false,
+          instagramExplore: false,
+          instagramExploreHome: false,
+          instagramReels: false
+        },
+        gender: {
+          male: true,
+          female: true
         },
         budget: '15'
       }
@@ -51,6 +64,7 @@ export function CampaignCreationFeedDisplay() {
       title: '',
       description: '',
       thankYouText: '',
+      dataUsePolicy: '',
       customQuestions: []
     },
     preview: {
@@ -59,10 +73,6 @@ export function CampaignCreationFeedDisplay() {
       heading: 'Experience the Future of Tech'
     }
   })
-
-  const handleTabChange = (value: string) => {
-    setSelectedTab(value)
-  }
 
   const handleEditSettings = () => {
     setIsEditingSettings(prev => !prev)
@@ -83,14 +93,20 @@ export function CampaignCreationFeedDisplay() {
     }))
   }
 
+  const filteredSteps = allSteps.filter(step => {
+    if (step.number === 3) {
+      return (
+        formData.objective === 'lead-generation' ||
+        formData.objective === 'recruitment'
+      )
+    }
+    return true
+  })
+
   return (
     <div className="h-full p-6 overflow-y-auto space-y-2">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-bold">
-          {selectedTab === 'facebook'
-            ? 'Create Facebook Campaign'
-            : 'Create Instagram Campaign'}
-        </h3>
+        <h3 className="text-lg font-bold">Create Facebook Campaign</h3>
         <Button
           size={'sm'}
           onClick={handleEditSettings}
@@ -102,7 +118,7 @@ export function CampaignCreationFeedDisplay() {
 
       {isEditingSettings ? (
         <div>
-          <CampaignSettingsSteps currentStep={step} steps={steps} />
+          <CampaignSettingsSteps currentStep={step} steps={filteredSteps} />
 
           <div className="">
             {step === 1 && (
@@ -136,7 +152,7 @@ export function CampaignCreationFeedDisplay() {
             </Button>
             <Button
               onClick={() => {
-                if (step === steps.length) {
+                if (step === filteredSteps.length) {
                   console.log('Form submitted:', formData)
                   handleSaveSettings()
                 } else {
@@ -144,7 +160,7 @@ export function CampaignCreationFeedDisplay() {
                 }
               }}
             >
-              {step === steps.length ? 'Finish' : 'Next'}
+              {step === filteredSteps.length ? 'Finish' : 'Next'}
             </Button>
           </div>
         </div>
@@ -154,7 +170,6 @@ export function CampaignCreationFeedDisplay() {
           description={formData.preview.description}
           setHeading={heading => updatePreview({ heading })}
           setDescription={description => updatePreview({ description })}
-          handleTabChange={handleTabChange}
         />
       )}
     </div>
