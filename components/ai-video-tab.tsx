@@ -372,9 +372,10 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
             className="absolute inset-0 size-full rounded-lg object-contain"
             controls
             autoPlay
-            muted
+            playsInline
+            loop
+            src={videoUrl}
           >
-            <source src={videoUrl} type="video/mp4" />
             Your browser does not support the video tag.
           </video>
         </div>
@@ -772,8 +773,11 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
                                 className="absolute inset-0 size-full object-cover"
                                 controls
                                 muted
+                                autoPlay
+                                playsInline
+                                loop
+                                src={videoUrl}
                               >
-                                <source src={videoUrl} type="video/mp4" />
                                 Your browser does not support the video tag.
                               </video>
                               
