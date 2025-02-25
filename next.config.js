@@ -15,13 +15,19 @@ module.exports = {
         pathname: '**'
       },
       {
-      protocol: 'https',
+        protocol: 'https',
         hostname: 'replicate.delivery',
         port: '',
-        pathname: '/**',
+        pathname: '/**'
       },
+      {
+        protocol: 'https',
+        hostname: 'wallpapers.com',
+        port: '',
+        pathname: '/**'
+      }
     ]
   },
   // https://stackoverflow.com/questions/72238175/why-useeffect-running-twice-and-how-to-handle-it-well-in-react/72238236#72238236
-  reactStrictMode: false,
+  reactStrictMode: false
 }
