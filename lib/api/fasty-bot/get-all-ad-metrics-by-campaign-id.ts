@@ -42,6 +42,10 @@ export interface AdInsight {
   cost_per_action_type?: ActionType[]
   actions?: ActionType[]
   website_ctr?: VideoAction[]
+  conversions?: ActionType[]
+  conversion_values?: ActionType[]
+  objective?: string
+  optimization_goal?: string
 }
 
 export interface AdMetricsResponse {
@@ -57,6 +61,43 @@ const metricsCache = new Map<string, {
 
 // Request tracking to prevent duplicate in-flight requests
 const pendingRequests = new Map<string, Promise<TransformedAdMetricsResponse>>();
+
+/**
+ * Extracts all unique action_types from your Facebook Ads insights data
+ * This is useful for debugging and finding conversion metrics
+ */
+const analyzeActionTypes = (insights: AdInsight[]): void => {
+  const actionTypes = new Set<string>();
+  const conversionTypes = new Set<string>();
+  const costPerActionTypes = new Set<string>();
+  
+  insights.forEach(insight => {
+    // Collect action types
+    if (insight.actions) {
+      insight.actions.forEach(action => {
+        actionTypes.add(action.action_type);
+      });
+    }
+    
+    // Collect conversion types
+    if (insight.conversions) {
+      insight.conversions.forEach(conversion => {
+        conversionTypes.add(conversion.action_type);
+      });
+    }
+    
+    // Collect cost per action types
+    if (insight.cost_per_action_type) {
+      insight.cost_per_action_type.forEach(costAction => {
+        costPerActionTypes.add(costAction.action_type);
+      });
+    }
+  });
+  
+  console.log("Available action types:", Array.from(actionTypes));
+  console.log("Available conversion types:", Array.from(conversionTypes));
+  console.log("Available cost per action types:", Array.from(costPerActionTypes));
+};
 
 // Helper function to extract video metrics safely
 const getVideoMetric = (actions: VideoAction[] | undefined): number => {
@@ -91,6 +132,15 @@ export interface TransformedMetrics {
   uniqueClicks: number
   uniqueClickRate: number
   websiteCtr: number
+  // New fields for leads and conversions
+  leads: number
+  conversions: number
+  costPerLead: number
+  costPerConversion: number
+  conversionValue: number
+  roi: number
+  objective: string
+  optimizationGoal: string
   videoMetrics?: {
     p25: number
     p50: number
@@ -115,41 +165,72 @@ export interface TransformedAdMetricsResponse {
 
 // Main function to transform the data
 const transformMetricsData = (insights: AdInsight[]): TransformedAdCreative[] => {
-  return insights.map(insight => ({
-    id: insight.ad_id,
-    name: insight.ad_name,
-    type: insight.video_avg_time_watched_actions ? "video" : "image",
-    metrics: {
-      impressions: parseInt(insight.impressions) || 0,
-      reach: parseInt(insight.reach) || 0,
-      spend: parseFloat(insight.spend) || 0,
-      engagement: parseInt(insight.clicks) || 0,
-      watchTime: getVideoMetric(insight.video_avg_time_watched_actions),
-      conversionRate: getActionValue(insight.actions, 'complete_registration'),
-      clickThroughRate: parseFloat(insight.ctr) || 0,
-      costPerClick: parseFloat(insight.cpc) || 0,
-      frequency: parseFloat(insight.frequency) || 0,
-      cpp: parseFloat(insight.cpp) || 0,
-      cpm: parseFloat(insight.cpm) || 0,
-      inlineLinkClicks: parseInt(insight.inline_link_clicks || '0'),
-      inlineLinkClickRate: parseFloat(insight.inline_link_click_ctr || '0'),
-      outboundClicks: getVideoMetric(insight.outbound_clicks),
-      outboundClickRate: getVideoMetric(insight.outbound_clicks_ctr),
-      uniqueClicks: parseInt(insight.unique_clicks || '0'),
-      uniqueClickRate: parseFloat(insight.unique_ctr || '0'),
-      websiteCtr: getVideoMetric(insight.website_ctr),
-      ...(insight.video_avg_time_watched_actions && {
-        videoMetrics: {
-          p25: getVideoMetric(insight.video_p25_watched_actions),
-          p50: getVideoMetric(insight.video_p50_watched_actions),
-          p75: getVideoMetric(insight.video_p75_watched_actions),
-          p95: getVideoMetric(insight.video_p95_watched_actions),
-          p100: getVideoMetric(insight.video_p100_watched_actions),
-          avgTimeWatched: getVideoMetric(insight.video_avg_time_watched_actions)
-        }
-      })
-    }
-  }));
+  return insights.map(insight => {
+    // Extract important conversion metrics
+    const leads = getActionValue(insight.actions, 'lead') || getActionValue(insight.actions, 'lead_generation');
+    const completeRegistrations = getActionValue(insight.actions, 'complete_registration');
+    const purchases = getActionValue(insight.actions, 'purchase') || getActionValue(insight.actions, 'offsite_conversion.fb_pixel_purchase');
+    
+    // Determine total conversions based on actions data
+    const conversions = leads + completeRegistrations + purchases;
+    
+    // Calculate cost per conversion metrics
+    const spend = parseFloat(insight.spend) || 0;
+    const costPerLead = leads > 0 ? spend / leads : 0;
+    const costPerConversion = conversions > 0 ? spend / conversions : 0;
+    
+    // Get conversion value if available
+    const conversionValue = getActionValue(insight.conversion_values, 'purchase') || 
+                           getActionValue(insight.conversion_values, 'offsite_conversion.fb_pixel_purchase') || 0;
+    
+    // Calculate ROI if we have conversion value
+    const roi = spend > 0 ? (conversionValue - spend) / spend : 0;
+
+    return {
+      id: insight.ad_id,
+      name: insight.ad_name,
+      type: insight.video_avg_time_watched_actions ? "video" : "image",
+      metrics: {
+        impressions: parseInt(insight.impressions) || 0,
+        reach: parseInt(insight.reach) || 0,
+        spend: spend,
+        engagement: parseInt(insight.clicks) || 0,
+        watchTime: getVideoMetric(insight.video_avg_time_watched_actions),
+        conversionRate: conversions > 0 ? conversions / (parseInt(insight.impressions) || 1) : 0,
+        clickThroughRate: parseFloat(insight.ctr) || 0,
+        costPerClick: parseFloat(insight.cpc) || 0,
+        frequency: parseFloat(insight.frequency) || 0,
+        cpp: parseFloat(insight.cpp) || 0,
+        cpm: parseFloat(insight.cpm) || 0,
+        inlineLinkClicks: parseInt(insight.inline_link_clicks || '0'),
+        inlineLinkClickRate: parseFloat(insight.inline_link_click_ctr || '0'),
+        outboundClicks: getVideoMetric(insight.outbound_clicks),
+        outboundClickRate: getVideoMetric(insight.outbound_clicks_ctr),
+        uniqueClicks: parseInt(insight.unique_clicks || '0'),
+        uniqueClickRate: parseFloat(insight.unique_ctr || '0'),
+        websiteCtr: getVideoMetric(insight.website_ctr),
+        // New metrics
+        leads: leads,
+        conversions: conversions,
+        costPerLead: costPerLead,
+        costPerConversion: costPerConversion,
+        conversionValue: conversionValue,
+        roi: roi,
+        objective: insight.objective || '',
+        optimizationGoal: insight.optimization_goal || '',
+        ...(insight.video_avg_time_watched_actions && {
+          videoMetrics: {
+            p25: getVideoMetric(insight.video_p25_watched_actions),
+            p50: getVideoMetric(insight.video_p50_watched_actions),
+            p75: getVideoMetric(insight.video_p75_watched_actions),
+            p95: getVideoMetric(insight.video_p95_watched_actions),
+            p100: getVideoMetric(insight.video_p100_watched_actions),
+            avgTimeWatched: getVideoMetric(insight.video_avg_time_watched_actions)
+          }
+        })
+      }
+    };
+  });
 };
 
 // Main function to fetch and transform ad metrics
@@ -198,6 +279,12 @@ export async function getAllAdMetricsByCampaignId(campaignId?: string): Promise<
       if (!data?.ads_insights) {
         console.warn("No ads_insights in response");
         return { adCreatives: [] };
+      }
+
+      // Log the first ad insight to help with debugging
+      if (data.ads_insights.length > 0) {
+        console.log("Sample ad insight data:", JSON.stringify(data.ads_insights[0], null, 2));
+        analyzeActionTypes(data.ads_insights);
       }
 
       const transformedData: TransformedAdMetricsResponse = {

@@ -5,13 +5,17 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const campaignId = searchParams.get("campaignId")
+    
+    // Use the Facebook account ID from query params or use a default
+    // Ideally, this should come from your application context/state
+    const fbAccountId = searchParams.get("fb_account_id") || "act_1020650316366490"
 
     if (!campaignId) {
       return NextResponse.json({ error: "campaignId is required" }, { status: 400 })
     }
 
     const fastyEndpoint = process.env.FASTY_API_URL
-    const apiUrl = `${fastyEndpoint}/facebook/read/ad-insights/get-all-ad-metrics-by-campaign-id?campaign_id=${campaignId}`
+    const apiUrl = `${fastyEndpoint}/facebook/read/ad-insights/get-all-ad-metrics-by-campaign-id?fb_account_id=${fbAccountId}&campaign_id=${campaignId}`
 
     const tokenResponse = await getFbMarketingApiKey()
     let token = ""
