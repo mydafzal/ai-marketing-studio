@@ -2,268 +2,117 @@
 
 import React, { useState } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Textarea } from "@/components/ui/textarea"
-import { Button } from "@/components/ui/button"
-import { useToast } from "@/components/ui/use-toast"
-import NextImage from "next/image"
-import { Twitter, Linkedin, Instagram, Copy, Check } from "lucide-react"
-
-// Server actions or client helpers
-import { generateContent } from "@/app/actions/generate"
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { InfoIcon, SparklesIcon } from "lucide-react"
 import { improvePrompt } from "@/app/actions/generate-prompt"
 
-// Import your new separated tabs
+// Import your separated tabs
 import AiVideoTab from "@/components/ai-video-tab"
 import AiImageTab from "@/components/ai-image-tab"
 
+// Platform options for social media content
+const PLATFORMS = [
+  { value: "instagram", label: "Instagram" },
+  { value: "tiktok", label: "TikTok" },
+  { value: "youtube", label: "YouTube Shorts" },
+  { value: "facebook", label: "Facebook" },
+  { value: "linkedin", label: "LinkedIn" }
+]
+
 export default function AiContentPage() {
-  const { toast } = useToast()
+  // Track the current platform for prompt optimization
+  const [platform, setPlatform] = useState("instagram")
+  const [activeTab, setActiveTab] = useState("video")
 
-  // ------------------ TEXT CONTENT STATES & LOGIC ------------------
-  const [textPrompt, setTextPrompt] = useState("")
-  const [isGeneratingText, setIsGeneratingText] = useState(false)
-  const [content, setContent] = useState({
-    twitter: "Here you can see how your Twitter post will look like",
-    linkedin: "Here you can see how your LinkedIn post will look like",
-    instagram: "Here you can see how your Instagram post will look like",
-  })
-  const [copiedStates, setCopiedStates] = useState({
-    twitter: false,
-    linkedin: false,
-    instagram: false,
-  })
-
-  async function handleGenerateText() {
-    if (!textPrompt.trim()) {
-      toast({
-        title: "Error",
-        description: "Please enter a prompt first",
-        variant: "destructive",
-      })
-      return
-    }
-    setIsGeneratingText(true)
-    try {
-      const generatedContent = await generateContent(textPrompt)
-      setContent(generatedContent)
-      toast({
-        title: "Success",
-        description: "Generated social media content successfully!",
-      })
-    } catch (err) {
-      console.error("Error generating content:", err)
-      toast({
-        title: "Error",
-        description: "Failed to generate text content. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsGeneratingText(false)
-    }
+  // Enhanced prompt improver that passes platform context
+  const enhancedImprovePrompt = async (promptText: string): Promise<string> => {
+    const contentType = activeTab === "video" ? "video" : "image"
+    return improvePrompt(promptText, platform, contentType)
   }
-
-  async function handleCopy(platform: "twitter" | "linkedin" | "instagram") {
-    await navigator.clipboard.writeText(content[platform])
-    setCopiedStates((prev) => ({ ...prev, [platform]: true }))
-
-    toast({
-      title: "Copied!",
-      description: `Copied ${platform.toUpperCase()} content to clipboard.`,
-    })
-
-    setTimeout(() => {
-      setCopiedStates((prev) => ({ ...prev, [platform]: false }))
-    }, 2000)
-  }
-
-  // We'll pass `improvePrompt` into our child tabs so they can call it if needed
+  
   return (
     <div className="container mx-auto p-6">
       <div className="flex flex-col space-y-6">
-        <div className="flex flex-col space-y-2">
-          <h1 className="text-3xl font-bold">AI Content Generation</h1>
-          <p className="text-muted-foreground">
-            Create various types of AI-generated content for your campaigns
-          </p>
+        <div className="flex flex-col space-y-3">
+          <div className="flex items-center justify-between">
+            <h1 className="text-3xl font-bold">Social Media Content Studio</h1>
+          </div>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <p className="text-muted-foreground md:max-w-lg">
+              Create professional AI-generated content optimized for social media engagement and conversions
+            </p>
+            
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Optimize for:</span>
+              <Select value={platform} onValueChange={setPlatform}>
+                <SelectTrigger className="w-[160px]">
+                  <SelectValue placeholder="Platform" />
+                </SelectTrigger>
+                <SelectContent>
+                  {PLATFORMS.map(platform => (
+                    <SelectItem key={platform.value} value={platform.value}>
+                      {platform.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <InfoIcon className="h-4 w-4 text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-sm">
+                    <p>Content will be optimized for this platform's audience, algorithm preferences, and engagement patterns.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          </div>
         </div>
 
-        <Tabs defaultValue="text" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="video">AI Video</TabsTrigger>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="video">AI Video Creation</TabsTrigger>
             <TabsTrigger value="image">AI Image Creatives</TabsTrigger>
-            <TabsTrigger value="text">AI Text Content</TabsTrigger>
           </TabsList>
 
           {/* VIDEO TAB */}
           <TabsContent value="video">
-            <AiVideoTab improvePrompt={improvePrompt} />
+            <AiVideoTab 
+              improvePrompt={enhancedImprovePrompt} 
+              platform={platform}
+            />
           </TabsContent>
 
           {/* IMAGE TAB */}
           <TabsContent value="image">
-            <AiImageTab improvePrompt={improvePrompt} />
-          </TabsContent>
-
-          {/* TEXT TAB */}
-          <TabsContent value="text">
-            <Card>
-              <CardHeader>
-                <CardTitle>AI Text Content</CardTitle>
-                <CardDescription>
-                  Generate engaging social media posts using AI
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Left side - Input */}
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">
-                        Enter your content prompt
-                      </label>
-                      <Textarea
-                        value={textPrompt}
-                        onChange={(e) => setTextPrompt(e.target.value)}
-                        placeholder="Describe what kind of content you want to generate..."
-                        className="min-h-[100px]"
-                      />
-                    </div>
-                    <Button
-                      className="w-full"
-                      onClick={handleGenerateText}
-                      disabled={isGeneratingText}
-                    >
-                      {isGeneratingText ? "Generating..." : "Generate Content"}
-                    </Button>
-                  </div>
-
-                  {/* Right side - Previews */}
-                  <div className="space-y-6">
-                    {/* Twitter Preview */}
-                    <div className="relative border rounded-xl p-4 space-y-3 bg-white dark:bg-gray-800">
-                      <div className="absolute top-4 right-4">
-                        <Twitter className="size-5 text-[#1DA1F2]" />
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <div className="size-10 rounded-full overflow-hidden">
-                          <NextImage
-                            src="/Reeplylogoicon.png"
-                            alt="Reeply Logo"
-                            width={40}
-                            height={40}
-                            className="object-cover"
-                          />
-                        </div>
-                        <div>
-                          <div className="font-bold">Reeply AI</div>
-                          <div className="text-gray-500">@reeplyai</div>
-                        </div>
-                      </div>
-                      <div className="text-gray-900 dark:text-gray-100">{content.twitter}</div>
-                      <div className="text-gray-500 text-sm">12:00 PM · Jan 1, 2024</div>
-                      <button
-                        onClick={() => handleCopy("twitter")}
-                        className="absolute bottom-4 right-4 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
-                        title="Copy content"
-                      >
-                        {copiedStates.twitter ? (
-                          <Check className="size-4 text-green-500" />
-                        ) : (
-                          <Copy className="size-4 text-gray-500" />
-                        )}
-                      </button>
-                    </div>
-
-                    {/* LinkedIn Preview */}
-                    <div className="relative border rounded-xl p-4 space-y-3 bg-white dark:bg-gray-800">
-                      <div className="absolute top-4 right-4">
-                        <Linkedin className="size-5 text-[#0A66C2]" />
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <div className="size-12 rounded-full overflow-hidden">
-                          <NextImage
-                            src="/Reeplylogoicon.png"
-                            alt="Reeply Logo"
-                            width={48}
-                            height={48}
-                            className="object-cover"
-                          />
-                        </div>
-                        <div>
-                          <div className="font-bold">Reeply AI</div>
-                          <div className="text-gray-500 text-sm">
-                            AI-Powered Marketing Solutions
-                          </div>
-                        </div>
-                      </div>
-                      <div className="text-gray-900 dark:text-gray-100 whitespace-pre-line">
-                        {content.linkedin}
-                      </div>
-                      <div className="flex items-center space-x-4 text-gray-500 text-sm">
-                        <span>1,234 reactions</span>
-                        <span>·</span>
-                        <span>100 comments</span>
-                      </div>
-                      <button
-                        onClick={() => handleCopy("linkedin")}
-                        className="absolute bottom-4 right-4 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
-                        title="Copy content"
-                      >
-                        {copiedStates.linkedin ? (
-                          <Check className="size-4 text-green-500" />
-                        ) : (
-                          <Copy className="size-4 text-gray-500" />
-                        )}
-                      </button>
-                    </div>
-
-                    {/* Instagram Preview */}
-                    <div className="relative border rounded-xl overflow-hidden bg-white dark:bg-gray-800">
-                      <div className="absolute top-4 right-4">
-                        <Instagram className="size-5 text-[#E4405F]" />
-                      </div>
-                      <div className="p-4">
-                        <div className="flex items-center space-x-3 mb-4">
-                          <div className="size-8 rounded-full overflow-hidden">
-                            <NextImage
-                              src="/Reeplylogoicon.png"
-                              alt="Reeply Logo"
-                              width={32}
-                              height={32}
-                              className="object-cover"
-                            />
-                          </div>
-                          <div className="font-bold">reeplyai</div>
-                        </div>
-                        <div className="text-gray-900 dark:text-gray-100 whitespace-pre-line">
-                          {content.instagram}
-                        </div>
-                      </div>
-                      <div className="border-t p-4 space-y-2">
-                        <div className="flex space-x-4">
-                          <span>❤️ 1,234 likes</span>
-                        </div>
-                        <div className="text-gray-500 text-sm">2 HOURS AGO</div>
-                      </div>
-                      <button
-                        onClick={() => handleCopy("instagram")}
-                        className="absolute bottom-4 right-4 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
-                        title="Copy content"
-                      >
-                        {copiedStates.instagram ? (
-                          <Check className="size-4 text-green-500" />
-                        ) : (
-                          <Copy className="size-4 text-gray-500" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <AiImageTab 
+              improvePrompt={enhancedImprovePrompt}
+              platform={platform}
+            />
           </TabsContent>
         </Tabs>
+
+        <div className="rounded-lg border bg-card text-card-foreground p-5 mt-3 text-sm text-muted-foreground">
+          <h3 className="font-medium text-foreground mb-2 flex items-center gap-1.5">
+            <SparklesIcon className="h-4 w-4 text-blue-500" />
+            About Content Optimization
+          </h3>
+          <p>
+            Our AI content studio enhances your prompts for maximum engagement on {PLATFORMS.find(p => p.value === platform)?.label || platform}. 
+            The system analyzes platform-specific trends, audience preferences, and content algorithms to help create material more likely to perform well. 
+            For best results, start with a clear idea and let our AI enhance it with platform-specific details.
+          </p>
+        </div>
       </div>
     </div>
   )
