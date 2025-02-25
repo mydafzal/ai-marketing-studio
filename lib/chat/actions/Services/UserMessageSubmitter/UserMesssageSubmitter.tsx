@@ -383,7 +383,7 @@ export async function submitUserMessage(content: string, contentImages?: Array<T
                 }
             },
 
-            /*getCampaignCreativeResults: {
+            getCampaignCreativeResults: {
     description: "Show detailed performance metrics for campaign ad creatives",
     parameters: z.object({
         campaignId: z.string(),
@@ -433,22 +433,22 @@ export async function submitUserMessage(content: string, contentImages?: Array<T
         )
     }
 },
-*/
+
+// Updated tool definition in your actions.ts file
 showAiVideoGenerator: {
     description: "Show the UI for generating an AI video.",
-    parameters: z.object({}), // must be valid for streamUI
+    parameters: z.object({}),
     generate: async function* () {
-      // Optional: yield a loading placeholder
       yield (
         <BotCard>
           <p>Loading AI Video Generator...</p>
         </BotCard>
       )
 
-      // We can optionally push tool-call messages, then just return:
+      // Return the component from the server file
       return showAiVideoGenerator()
     }
-  },
+},
 
             showFormBuilder: {
                 description: formBuilderModule.description,

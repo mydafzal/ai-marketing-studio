@@ -1,36 +1,16 @@
-import { getCampaignIdFromUrl } from "@/lib/api/fasty-bot/helpers/campaign-id-from-url-helper"
+import { getCampaignIdFromUrl } from "./helpers/campaign-id-from-url-helper"
 
-// =====================
-// Types for Facebook Ad Insights
-// =====================
-
-// Action type interfaces
-export interface ActionType {
+// Define base types for actions
+interface ActionType {
   action_type: string
   value: string
 }
 
-export interface CostPerActionType {
-  action_type: string
+interface VideoAction {
   value: string
 }
 
-export interface OutboundClick {
-  action_type: string
-  value: string
-}
-
-export interface OutboundClickCTR {
-  action_type: string
-  value: string
-}
-
-export interface WebsiteCTR {
-  action_type: string
-  value: string
-}
-
-// Main Ad Insight interface
+// Main AdInsight interface with all possible fields from the API
 export interface AdInsight {
   ad_id: string
   ad_name: string
@@ -43,219 +23,210 @@ export interface AdInsight {
   spend: string
   clicks: string
   ctr: string
-  cost_per_unique_click: string
-  cost_per_inline_link_click?: string
+  cpc: string
   frequency: string
-  inline_link_clicks?: string
-  inline_link_click_ctr?: string
-
-  // Video metrics
-  video_p25_watched_actions?: ActionType[]
-  video_p50_watched_actions?: ActionType[]
-  video_p75_watched_actions?: ActionType[]
-  video_p95_watched_actions?: ActionType[]
-  video_p100_watched_actions?: ActionType[]
-  video_avg_time_watched_actions?: ActionType[]
-  video_play_actions?: ActionType[]
-
-  // Engagement metrics
-  actions: ActionType[]
-  cost_per_action_type: CostPerActionType[]
-  outbound_clicks?: OutboundClick[]
-  outbound_clicks_ctr?: OutboundClickCTR[]
-  website_ctr: WebsiteCTR[]
-
-  // Additional metrics
-  unique_clicks: string
-  unique_ctr: string
   cpp: string
   cpm: string
-  cpc: string
-  objective: string
-  optimization_goal: string
-  date_start: string
-  date_stop: string
+  inline_link_clicks?: string
+  inline_link_click_ctr?: string
+  video_p25_watched_actions?: VideoAction[]
+  video_p50_watched_actions?: VideoAction[]
+  video_p75_watched_actions?: VideoAction[]
+  video_p95_watched_actions?: VideoAction[]
+  video_p100_watched_actions?: VideoAction[]
+  video_avg_time_watched_actions?: VideoAction[]
+  outbound_clicks?: VideoAction[]
+  outbound_clicks_ctr?: VideoAction[]
+  unique_clicks?: string
+  unique_ctr?: string
+  cost_per_action_type?: ActionType[]
+  actions?: ActionType[]
+  website_ctr?: VideoAction[]
 }
 
-// Response interface
 export interface AdMetricsResponse {
-  campaign_id: string
   ads_insights: AdInsight[]
 }
 
-// ======================================
-// Main function to get ad metrics
-// ======================================
-export async function getAllAdMetricsByCampaignId(
-  campaignId?: string
-): Promise<AdMetricsResponse> {
-  let fetchedCampaignId: string | undefined
+// Cache configuration
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const metricsCache = new Map<string, {
+  data: TransformedAdMetricsResponse;
+  timestamp: number;
+}>();
 
-  // 1) Try reading campaignId from parameter; otherwise from the URL
-  if (!campaignId) {
-    try {
-      fetchedCampaignId = await getCampaignIdFromUrl()
-      console.log("Fetched Campaign ID:", fetchedCampaignId)
-    } catch (error) {
-      console.error("Error fetching campaign ID:", error)
-    }
-  } else {
-    fetchedCampaignId = campaignId
-  }
+// Request tracking to prevent duplicate in-flight requests
+const pendingRequests = new Map<string, Promise<TransformedAdMetricsResponse>>();
 
-  if (!fetchedCampaignId) {
-    console.warn("No campaign ID fetched, using default '0'")
-    fetchedCampaignId = "0"
-  }
-
-  // 2) Return mock data if environment variable is set
-  if (process.env.NEXT_PUBLIC_MOCK_CHART_DATA === "1") {
-    return getMockAdMetrics(fetchedCampaignId)
-  }
-
-  // 3) Check for hardcoded mode
-  if (
-    process.env.NEXT_PUBLIC_HARDCODED_MODE === "1" &&
-    process.env.NEXT_PUBLIC_HARDCODED_CAMPAIGN_ID
-  ) {
-    fetchedCampaignId = process.env.NEXT_PUBLIC_HARDCODED_CAMPAIGN_ID
-  }
-
-  // 4) Default empty response
-  const defaultResponse: AdMetricsResponse = {
-    campaign_id: fetchedCampaignId,
-    ads_insights: [],
-  }
-
-  // If the campaign ID is '0', return immediately with default values
-  if (fetchedCampaignId === "0") {
-    return defaultResponse
-  }
-
-  // 5) Build the URL to call your Next.js API proxy route
-  //    Must have ?campaign_id=... to match the Pydantic model in Fasty.
-  const apiUrl = `/api/fasty-bot/proxy-get-all-ad-metrics-by-campaign-id?campaign_id=${fetchedCampaignId}`
-
-  try {
-    // 6) Fetch data via the Next.js proxy route
-    const response = await fetch(apiUrl)
-
-    if (!response.ok) {
-      console.error(`HTTP error! status: ${response.status}`)
-      return defaultResponse
-    }
-
-    // 7) Parse and return data from server
-    const data: AdMetricsResponse = await response.json()
-    return { ...data, campaign_id: fetchedCampaignId }
-  } catch (error) {
-    console.error("Error fetching ad metrics:", error)
-    return defaultResponse
-  }
+// Helper function to extract video metrics safely
+const getVideoMetric = (actions: VideoAction[] | undefined): number => {
+  if (!actions || !actions[0]) return 0
+  return parseFloat(actions[0].value) || 0
 }
 
-// ======================================
-// Mock data function
-// ======================================
-function getMockAdMetrics(campaignId: string): AdMetricsResponse {
-  const mockAd: AdInsight = {
-    ad_id: "120210938073670208",
-    ad_name: "Reeply AI Engagement Ad for Max 3",
-    adset_id: "120210937692790208",
-    adset_name: "Group for Reeply AI Engagement Ad",
-    campaign_id: campaignId,
-    campaign_name: "Reeply AI Lead Ad September to October",
-    impressions: "375",
-    reach: "372",
-    spend: "3.67",
-    clicks: "5",
-    ctr: "1.333333",
-    cost_per_unique_click: "0.9175",
-    cost_per_inline_link_click: "1.223333",
-    frequency: "1.008065",
-    inline_link_clicks: "3",
-    inline_link_click_ctr: "0.8",
-
-    video_p25_watched_actions: [
-      { action_type: "video_view", value: "13" },
-    ],
-    video_p50_watched_actions: [
-      { action_type: "video_view", value: "8" },
-    ],
-    video_p75_watched_actions: [
-      { action_type: "video_view", value: "5" },
-    ],
-    video_p95_watched_actions: [
-      { action_type: "video_view", value: "4" },
-    ],
-    video_p100_watched_actions: [
-      { action_type: "video_view", value: "3" },
-    ],
-    video_avg_time_watched_actions: [
-      { action_type: "video_view", value: "3" },
-    ],
-    video_play_actions: [
-      { action_type: "video_view", value: "369" },
-    ],
-
-    actions: [
-      { action_type: "page_engagement", value: "45" },
-      { action_type: "post_engagement", value: "45" },
-      { action_type: "video_view", value: "42" },
-      { action_type: "link_click", value: "3" },
-    ],
-    cost_per_action_type: [
-      { action_type: "video_view", value: "0.087381" },
-      { action_type: "link_click", value: "1.223333" },
-      { action_type: "post_engagement", value: "0.081556" },
-      { action_type: "page_engagement", value: "0.081556" },
-    ],
-    website_ctr: [
-      { action_type: "link_click", value: "0.8" },
-    ],
-    unique_clicks: "4",
-    unique_ctr: "1.075269",
-    cpp: "9.865591",
-    cpm: "9.786667",
-    cpc: "0.734",
-    objective: "OUTCOME_LEADS",
-    optimization_goal: "LEAD_GENERATION",
-    date_start: "2024-09-26",
-    date_stop: "2025-02-17",
-  }
-
-  // Create a second mock ad with different metrics
-  const mockAd2: AdInsight = {
-    ...mockAd,
-    ad_id: "120210937902760208",
-    ad_name: "Reeply AI Engagement Ad for Marc",
-    impressions: "322",
-    reach: "292",
-    spend: "6.01",
-    actions: [
-      ...mockAd.actions,
-      { action_type: "lead", value: "1" },
-    ],
-  }
-
-  return {
-    campaign_id: campaignId,
-    ads_insights: [mockAd, mockAd2],
-  }
-}
-
-// ======================================
-// Helper functions for data processing
-// ======================================
-export const getActionValue = (
-  actions: ActionType[] | undefined,
-  actionType: string
-): number => {
+// Helper to get action value safely
+const getActionValue = (actions: ActionType[] | undefined, type: string): number => {
   if (!actions) return 0
-  const action = actions.find((a) => a.action_type === actionType)
+  const action = actions.find(a => a.action_type === type)
   return action ? parseFloat(action.value) : 0
 }
 
-export const parseMetricValue = (value: string): number => {
-  return parseFloat(value) || 0
+// Define the transformed metrics interface
+export interface TransformedMetrics {
+  impressions: number
+  reach: number
+  spend: number
+  engagement: number
+  watchTime: number
+  conversionRate: number
+  clickThroughRate: number
+  costPerClick: number
+  frequency: number
+  cpp: number
+  cpm: number
+  inlineLinkClicks: number
+  inlineLinkClickRate: number
+  outboundClicks: number
+  outboundClickRate: number
+  uniqueClicks: number
+  uniqueClickRate: number
+  websiteCtr: number
+  videoMetrics?: {
+    p25: number
+    p50: number
+    p75: number
+    p95: number
+    p100: number
+    avgTimeWatched: number
+  }
+}
+
+// Define the transformed creative interface
+export interface TransformedAdCreative {
+  id: string
+  name: string
+  type: "video" | "image"
+  metrics: TransformedMetrics
+}
+
+export interface TransformedAdMetricsResponse {
+  adCreatives: TransformedAdCreative[]
+}
+
+// Main function to transform the data
+const transformMetricsData = (insights: AdInsight[]): TransformedAdCreative[] => {
+  return insights.map(insight => ({
+    id: insight.ad_id,
+    name: insight.ad_name,
+    type: insight.video_avg_time_watched_actions ? "video" : "image",
+    metrics: {
+      impressions: parseInt(insight.impressions) || 0,
+      reach: parseInt(insight.reach) || 0,
+      spend: parseFloat(insight.spend) || 0,
+      engagement: parseInt(insight.clicks) || 0,
+      watchTime: getVideoMetric(insight.video_avg_time_watched_actions),
+      conversionRate: getActionValue(insight.actions, 'complete_registration'),
+      clickThroughRate: parseFloat(insight.ctr) || 0,
+      costPerClick: parseFloat(insight.cpc) || 0,
+      frequency: parseFloat(insight.frequency) || 0,
+      cpp: parseFloat(insight.cpp) || 0,
+      cpm: parseFloat(insight.cpm) || 0,
+      inlineLinkClicks: parseInt(insight.inline_link_clicks || '0'),
+      inlineLinkClickRate: parseFloat(insight.inline_link_click_ctr || '0'),
+      outboundClicks: getVideoMetric(insight.outbound_clicks),
+      outboundClickRate: getVideoMetric(insight.outbound_clicks_ctr),
+      uniqueClicks: parseInt(insight.unique_clicks || '0'),
+      uniqueClickRate: parseFloat(insight.unique_ctr || '0'),
+      websiteCtr: getVideoMetric(insight.website_ctr),
+      ...(insight.video_avg_time_watched_actions && {
+        videoMetrics: {
+          p25: getVideoMetric(insight.video_p25_watched_actions),
+          p50: getVideoMetric(insight.video_p50_watched_actions),
+          p75: getVideoMetric(insight.video_p75_watched_actions),
+          p95: getVideoMetric(insight.video_p95_watched_actions),
+          p100: getVideoMetric(insight.video_p100_watched_actions),
+          avgTimeWatched: getVideoMetric(insight.video_avg_time_watched_actions)
+        }
+      })
+    }
+  }));
+};
+
+// Main function to fetch and transform ad metrics
+export async function getAllAdMetricsByCampaignId(campaignId?: string): Promise<TransformedAdMetricsResponse> {
+  if (!campaignId) {
+    console.error("No campaign ID provided");
+    return { adCreatives: [] };
+  }
+
+  // Check if there's already a request in flight for this campaign
+  if (pendingRequests.has(campaignId)) {
+    console.log("Request already in flight, reusing promise");
+    return pendingRequests.get(campaignId)!;
+  }
+
+  // Check cache first
+  const cachedData = metricsCache.get(campaignId);
+  const now = Date.now();
+  
+  if (cachedData && (now - cachedData.timestamp) < CACHE_DURATION) {
+    console.log("Using cached metrics data");
+    return cachedData.data;
+  }
+
+  // Create new request promise
+  const requestPromise = (async () => {
+    try {
+      console.log("Fetching fresh metrics data");
+      const response = await fetch(`/api/fasty-bot/proxy-get-all-ad-metrics-by-campaign-id?campaignId=${campaignId}`, {
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (!response.ok) {
+        // If we have cached data, return it even if expired
+        if (cachedData) {
+          console.log("Request failed, using stale cache");
+          return cachedData.data;
+        }
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch metrics');
+      }
+
+      const data = await response.json();
+      if (!data?.ads_insights) {
+        console.warn("No ads_insights in response");
+        return { adCreatives: [] };
+      }
+
+      const transformedData: TransformedAdMetricsResponse = {
+        adCreatives: transformMetricsData(data.ads_insights)
+      };
+
+      // Update cache
+      metricsCache.set(campaignId, {
+        data: transformedData,
+        timestamp: now
+      });
+
+      return transformedData;
+    } catch (error) {
+      console.error("Error fetching ad metrics:", error);
+      // If we have cached data, return it even if expired
+      if (cachedData) {
+        console.log("Error occurred, using stale cache");
+        return cachedData.data;
+      }
+      throw error;
+    } finally {
+      // Clean up pending request
+      pendingRequests.delete(campaignId);
+    }
+  })();
+
+  // Store the promise
+  pendingRequests.set(campaignId, requestPromise);
+  
+  return requestPromise;
 }
