@@ -19,6 +19,7 @@ import {GeographicalLocation} from '@/components/geographical-location';
 import {SuggestedFilters} from '@/components/suggested-filters';
 import LeadsCountUI from '@/components/campaign-leads-count'
 import AdCreativesComparison from '@/components/stocks/campaignresults-creatives';
+import AICampaignAnalysisBoard from "@/components/ai-campaign-analysis-board";
 
 interface ToolResult {
     toolName: string;
@@ -179,24 +180,6 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                                           uiProps={tool.result.uiProps} isReadOnly/>
                                     </BotCard>
                                 )
-                            case 'showGeographicalLocationUI':
-                                return (
-                                    <BotCard key={tool.toolCallId}>
-                                        <GeographicalLocation
-                                            toolCallId={tool.toolCallId}
-                                            uiProps={tool.result.uiProps}
-                                            isReadOnly={!!tool.result.uiProps}
-                                        />
-                                    </BotCard>
-                                )
-                            case 'showSuggestedFilters':
-                                return (
-                                    <BotCard key={tool.toolCallId}>
-                                        <SuggestedFilters toolCallId={tool.toolCallId}
-                                                          suggestedFitlers={tool.result.suggestedFitlers}
-                                                          uiProps={tool.result.uiProps} isReadOnly/>
-                                    </BotCard>
-                                )
                             case 'showSupervisedTaskUI':
                                 return (
                                     <>
@@ -215,6 +198,12 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                 return (
                                     <BotCard key={tool.toolCallId}>
                                         <LeadsCountUI toolCallId={tool.result.toolCallId} toolCallResult={tool.result?.toolCallResult}/>
+                                    </BotCard>
+                                )
+                            case 'getAICampaignAnalysis':
+                                return (
+                                    <BotCard key={tool.toolCallId}>
+                                        <AICampaignAnalysisBoard campaignId={tool.result.campaignId} isActive={false} />
                                     </BotCard>
                                 )
                             default:
