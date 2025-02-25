@@ -1,37 +1,37 @@
-import * as React from 'react';
-import Link from 'next/link';
-import { cn } from '@/lib/utils';
-import { auth } from '@/auth';
-import { Button, buttonVariants } from '@/components/ui/button';
+import * as React from 'react'
+import Link from 'next/link'
+import { cn } from '@/lib/utils'
+import { auth } from '@/auth'
+import { Button, buttonVariants } from '@/components/ui/button'
 import {
   IconGitHub,
   IconSeparator,
   IconUser,
   IconVercel
-} from '@/components/ui/icons';
-import { UserMenu } from '@/components/user-menu';
-import { SidebarMobile } from './sidebar-mobile';
-import { SidebarToggle } from './sidebar-toggle';
-import { ChatHistory } from './chat-history';
-import { Session } from '@/lib/types';
-import {getUserDetail, updateFbBusinessAcc, updateFbAccountId, disconnectFacebook, updateOnboardingDetails} from '@/app/actions';
-import {getFacebookBusinessAccounts, getFacebookAdAccounts} from "@/app/facebook-actions";
-import {type User} from '@/lib/types';
-import FacebookConnect from '@/components/facebook-connect';
-import FacebookAccountSettings from '@/components/facebook-account-settings';
-import {isFeatureToggleEnabled} from "@/lib/helpers/feature-toggle/feature-toggle-manager";
-import ProfileSettings from "@/components/profile-settings"
+} from '@/components/ui/icons'
+import { UserMenu } from '@/components/user-menu'
+import { SidebarMobile } from './sidebar-mobile'
+import { SidebarToggle } from './sidebar-toggle'
+import { ChatHistory } from './chat-history'
+import { Session } from '@/lib/types'
+import { getUserDetail, updateFbBusinessAcc, updateFbAccountId, disconnectFacebook, updateOnboardingDetails } from '@/app/actions'
+import { getFacebookBusinessAccounts, getFacebookAdAccounts } from '@/app/facebook-actions'
+import { type User } from '@/lib/types'
+import FacebookConnect from '@/components/facebook-connect'
+import FacebookAccountSettings from '@/components/facebook-account-settings'
+import { isFeatureToggleEnabled } from '@/lib/helpers/feature-toggle/feature-toggle-manager'
+import ProfileSettings from '@/components/profile-settings'
+
 async function UserOrLogin() {
-  const session = (await auth()) as Session;
+  const session = (await auth()) as Session
 
-  let userDetails;
+  let userDetails
 
-  const response = await getUserDetail();
+  const response = await getUserDetail()
   if (response.success) {
-    userDetails = response.user;
-  }
-  else {
-    console.log(response.error);
+    userDetails = response.user
+  } else {
+    console.log(response.error)
   }
 
   return (
@@ -62,15 +62,27 @@ async function UserOrLogin() {
       <div className="flex items-center w-full">
         <IconSeparator className="size-6 text-muted-foreground/50" />
         {session?.user ? (
-          <div className='flex justify-between w-full'>
+          <div className="flex justify-between w-full">
             <UserMenu user={session.user} />
             <div className="flex items-center">
-              <Link href="/" className={cn(buttonVariants({ variant: 'ghost' }), "ml-8")}>
+              <Link href="/" className={cn(buttonVariants({ variant: 'ghost' }), 'ml-8')}>
                 AI Marketer
               </Link>
-              <Link href="/ai-content" className={cn(buttonVariants({ variant: 'ghost' }), "ml-8")}>
-                AI Content
+              <Link
+                href="/ai-content"
+                className={cn(buttonVariants({ variant: 'ghost' }), 'ml-8')}
+              >
+                AI Creatives Generator
               </Link>
+
+              {/* <Link
+                href="/content-folder"
+                className={cn(buttonVariants({ variant: 'ghost' }), 'ml-8')}
+              >
+                Content Library
+              </Link>*/}
+              
+
               <ProfileSettings
                 userDetails={userDetails}
                 getFacebookBusinessAccounts={getFacebookBusinessAccounts}
@@ -83,13 +95,13 @@ async function UserOrLogin() {
             </div>
           </div>
         ) : (
-          <Link href="/login" className={cn(buttonVariants({ variant: 'link' }), "-ml-2")}>
+          <Link href="/login" className={cn(buttonVariants({ variant: 'link' }), '-ml-2')}>
             Login
           </Link>
         )}
       </div>
     </>
-  );
+  )
 }
 
 export async function Header() {
@@ -122,5 +134,5 @@ export async function Header() {
         </a>
       </div>
     </header>
-  );
+  )
 }
