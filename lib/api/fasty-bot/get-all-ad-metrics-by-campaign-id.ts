@@ -259,7 +259,8 @@ export async function getAllAdMetricsByCampaignId(campaignId?: string): Promise<
   const requestPromise = (async () => {
     try {
       console.log("Fetching fresh metrics data");
-      const response = await fetch(`/api/fasty-bot/proxy-get-all-ad-metrics-by-campaign-id?campaignId=${campaignId}`, {
+      // Using campaign_id parameter to match server expectations
+      const response = await fetch(`/api/fasty-bot/proxy-get-all-ad-metrics-by-campaign-id?campaign_id=${campaignId}`, {
         headers: {
           'Content-Type': 'application/json',
         }

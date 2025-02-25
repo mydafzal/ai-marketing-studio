@@ -4,7 +4,9 @@ import { getFbMarketingApiKey } from "@/app/actions"
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
-    const campaignId = searchParams.get("campaignId")
+    
+    // Accept both parameter formats for backward compatibility
+    const campaignId = searchParams.get("campaignId") || searchParams.get("campaign_id")
     
     // Use the Facebook account ID 
     const fbAccountId = searchParams.get("fb_account_id")
