@@ -19,6 +19,7 @@ import {
 import { CampaignCreationFormData, FileInfo } from '@/lib/types'
 import { Button } from './ui/button'
 import { Control, useController } from 'react-hook-form'
+import { Badge } from './ui/badge'
 
 interface FileInputModalProps {
   trigger: React.ReactNode
@@ -156,7 +157,16 @@ function FileInputModal({
         </div>
 
         {files.length > 0 && (
-          <div className="max-h-[20vh] overflow-y-auto scrollbar-style space-y-2 bg-foreground/10 rounded-md p-3">
+          <div
+            className={`${
+              files.every(
+                file =>
+                  file.dimensions === '1:1' && file.type.startsWith('video/')
+              )
+                ? 'max-h-[12vh]'
+                : 'max-h-[20vh]'
+            } overflow-y-auto scrollbar-style space-y-2 bg-foreground/10 rounded-md p-3`}
+          >
             {files.map((file, index) => (
               <>
                 <div key={index} className="relative flex justify-between">
@@ -186,6 +196,37 @@ function FileInputModal({
             ))}
           </div>
         )}
+
+        {files.length > 0 &&
+          files.every(
+            file => file.dimensions === '1:1' && file.type.startsWith('video/')
+          ) && (
+            <>
+              <h3 className="text-sm text-foreground font-semibold">
+                Can be used as:
+              </h3>
+              <div className="flex flex-wrap gap-y-2 ">
+                {[
+                  'Facebook Post',
+                  'Facebook Story',
+                  'Facebook Reels',
+                  'Instagram Post',
+                  'Instagram Story',
+                  'Instagram Reels',
+                  'Instagram Explore',
+                  'Instagram Explore: Home'
+                ].map((badge, index) => (
+                  <Badge
+                    key={index}
+                    variant="outline"
+                    className="mr-2 bg-foreground/10 text-foreground hover:bg-none font-medium text-sm"
+                  >
+                    {badge}
+                  </Badge>
+                ))}
+              </div>
+            </>
+          )}
 
         {files.length > 0 && files.every(file => file.dimensions === '1:1') && (
           <div className="bg-foreground/10 px-3 py-2 rounded-md flex items-start">

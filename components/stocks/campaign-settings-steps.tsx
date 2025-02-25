@@ -10,7 +10,9 @@ export function CampaignSettingsSteps({
   steps
 }: CampaignStepsProps) {
   return (
-    <div className="flex justify-between mb-6">
+    <div
+      className={`flex ${steps.length > 2 ? 'justify-between' : 'justify-center'} mb-6`}
+    >
       {steps.map((step, i) => (
         <div key={step.number} className="flex">
           <div className="flex flex-col items-center">
