@@ -75,13 +75,13 @@ async function UserOrLogin() {
                 AI Creatives Generator
               </Link>
 
-              {/* NEW Link for the 'content-folder' page */}
-              <Link
+              {/* <Link
                 href="/content-folder"
                 className={cn(buttonVariants({ variant: 'ghost' }), 'ml-8')}
               >
                 Content Library
-              </Link>
+              </Link>*/}
+              
 
               <ProfileSettings
                 userDetails={userDetails}
