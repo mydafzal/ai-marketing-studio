@@ -10,9 +10,7 @@ import {
   Send,
   Share2,
   ThumbsUp,
-  User,
-  User2,
-  UserCircle
+  User
 } from 'lucide-react'
 import { Textarea } from '../ui/textarea'
 import Image from 'next/image'
@@ -186,7 +184,7 @@ function CampaignAdPreview({
               alt="Ad preview"
               width={400}
               height={225}
-              className="h-52 w-full bg-zinc-200"
+              className="w-full bg-zinc-200"
             />
             <div className="flex items-center justify-between pt-3 px-4 pb-4">
               <div className="flex items-center space-x-4">
@@ -211,30 +209,30 @@ function CampaignAdPreview({
           value="instagram-story"
           className="mt-4 flex flex-col items-center"
         >
-          <div className="bg-white rounded-md border border-white overflow-hidden w-[390px] h-[640px] self-center">
-            <div className="h-full flex flex-col">
-              <div className="flex-1 flex items-center justify-center w-full h-full relative">
-                <Image
-                  src="/Reeply-logo-schwarz.png"
-                  alt="Story preview"
-                  layout="fill"
-                  // objectFit="cover"
-                />
-              </div>
-
-              <div className="p-6 bg-gradient-to-b from-white to-black h-[50%] items-end justify-end flex flex-col">
-                <div className="space-y-3">
-                  <h3 className="text-lg font-semibold text-white">
-                    {heading}
-                  </h3>
-                  <p className="text-sm text-white/90">{description}</p>
-                  <Button
-                    size="sm"
-                    className="bg-white text-black hover:bg-white/90 rounded-md px-4 py-1.5 text-sm font-medium"
-                  >
-                    Learn More
-                  </Button>
-                </div>
+          <div className="bg-white rounded-md border border-white overflow-hidden w-[390px] h-[640px] self-center relative">
+            {/* <Image
+              src="https://wallpapers.com/images/hd/1080x1920-ugd930ckdcujq44s.jpg"
+              alt="Story preview"
+              layout="fill"
+              objectFit="cover"
+              className="w-full h-full"
+            /> */}
+            <video
+              src="/dummy-1080x1920-video.mp4"
+              className="w-full h-full object-cover"
+              loop
+              autoPlay
+            />
+            <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-b from-transparent to-black/70 p-6">
+              <div className="space-y-3">
+                <h3 className="text-lg font-semibold text-white">{heading}</h3>
+                <p className="text-sm text-white/90">{description}</p>
+                <Button
+                  size="sm"
+                  className="bg-white text-black hover:bg-white/90 rounded-md px-4 py-1.5 text-sm font-medium"
+                >
+                  Learn More
+                </Button>
               </div>
             </div>
           </div>

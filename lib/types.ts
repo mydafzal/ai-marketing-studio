@@ -256,6 +256,22 @@ export interface City {
   supports_region: boolean
 }
 
+export interface CampaignCreationFormData {
+  mediaFiles: FileInfo[]
+  url: string
+  budget: string
+  description?: string
+}
+
+export interface FileInfo {
+  file: File
+  type: string
+  url: string
+  name: string
+  dimensions: string
+  size: number
+}
+
 export interface CampaignFormData {
   objective:
     | 'lead-generation'
