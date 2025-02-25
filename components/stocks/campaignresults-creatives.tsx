@@ -11,8 +11,12 @@ import React, {
 import Image from "next/image"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { CampaignContext } from "@/components/contexts/campaign-context"
 import { VideoPlayer } from "@/components/stocks/video-player"
+import { Badge } from "@/components/ui/badge"
 
 import {
   Award,
@@ -27,20 +31,9 @@ import {
   ThumbsUp,
   Eye,
   Clock,
+  EyeOff,
+  Edit2,
 } from "lucide-react"
-
-// For Recharts-based charts in the DetailedMetrics tab
-import {
-  BarChart,
-  Bar,
-  CartesianGrid,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts"
 
 // AI hooking (for forwarding metrics to AI) - silent mode
 import { useActions, useAIState, useUIState } from "ai/rsc"
@@ -52,14 +45,25 @@ import type {
   TransformedAdCreative,
 } from "@/lib/api/fasty-bot/get-all-ad-metrics-by-campaign-id"
 
-//
 // 1) No mention of Campaign ID in the header => we simply omit it
-//
 const FB_API_KEY = process.env.NEXT_PUBLIC_FB_API_KEY || ""
 
 /**
- * RawCreative represents the shape of the data from /api/fasty-bot/proxy-get-adcreatives
+ * Cleans up creative names by removing date codes and IDs
+ * Example format: "Join our Waitlist! 2024-09-26-abcdef"
  */
+function formatCreativeName(name: string): string {
+  const pattern = /^(.*?)(\s\d{4}-\d{2}-\d{2}-[a-z0-9]+)$/i
+  const match = name.match(pattern)
+  return match ? match[1] : name
+}
+
+/**
+ * Update your TransformedMetrics interface to have optional videoMetrics
+ * if you haven't already
+ */
+
+// RawCreative from your /proxy-get-adcreatives endpoint
 interface RawCreative {
   id: string
   name: string
@@ -85,15 +89,15 @@ interface RawCreative {
   }
 }
 
-/**
- * Our final "merged" creative, storing all metrics from TransformedMetrics
- */
+// Our final merged creative
 interface AdCreative {
   id: string
   name: string
+  status: string
   type: "image" | "video"
   url?: string
   videoId?: string
+  object_story_spec: any
   metrics: TransformedMetrics
 }
 
@@ -103,43 +107,85 @@ interface AdCreative {
  */
 function getPerformanceScore(creative: AdCreative): number {
   const m = creative.metrics
-  // watchTime is in seconds, so we can scale it however we like
+  // watchTime is in seconds
   return (
     m.engagement * 2 +
     m.impressions * 0.3 +
-    m.watchTime * 0.03 + // factor in watchTime
+    m.watchTime * 0.03 +
     m.reach * 0.1 -
     m.costPerClick * 5
   )
 }
 
 /**
- * The main dashboard component
+ * Gets the best performer ID for a specific metric
+ * (For cost metrics, lower is better; for others, higher is better)
  */
+function getBestPerformerIdForMetric(creatives: AdCreative[], metric: MetricKey): string {
+  if (!creatives.length) return ""
+  const costMetrics = ["costPerClick", "cpp", "cpm", "spend"]
+  const isLowerBetter = costMetrics.includes(metric)
+  return [...creatives].sort((a, b) => {
+    return isLowerBetter
+      ? a.metrics[metric] - b.metrics[metric]
+      : b.metrics[metric] - a.metrics[metric]
+  })[0]?.id || ""
+}
+
+// Main Dashboard
 const AdCreativesComparison: React.FC<{ campaignId?: string }> = ({ campaignId }) => {
   const { campaign } = useContext(CampaignContext)
   const effectiveCampaignId = campaignId || campaign?.id
 
-  // We'll store raw creatives in one state
   const [rawCreatives, setRawCreatives] = useState<RawCreative[]>([])
-  // We'll store final merged adCreatives in another state
   const [adCreatives, setAdCreatives] = useState<AdCreative[]>([])
-
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Refs/constants
+  // State for editing creative
+  const [editingCreative, setEditingCreative] = useState<AdCreative | null>(null)
+  const [editName, setEditName] = useState('')
+  const [editMessage, setEditMessage] = useState('')
+  const [isEditing, setIsEditing] = useState(false)
+  const [editError, setEditError] = useState<string | null>(null)
+  const [imagePermalinkUrl, setImagePermalinkUrl] = useState<string>('')
+
   const initialFetchDone = useRef(false)
   const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
 
-  // AI hooking for silent notifications
   const { submitUserMessage } = useActions()
   const [aiState] = useAIState()
   const [, setMessages] = useUIState<any>()
 
-  //
+  // Get image details when editing a creative
+  const getImageDetail = (imageHash: string) => {
+    fetch(`/api/fasty-bot/proxy-get-image-detail?image_hash=${imageHash}`)
+      .then(response => response.json())
+      .then(imageDetail => {
+        if(editingCreative){
+          setImagePermalinkUrl(imageDetail?.permalink_url)
+        }
+      })
+      .catch(error => {
+        console.error('Error fetching image detail:', error)
+      })
+  }
+
+  // Get image when editing
+  useEffect(() => {
+    if (
+      editingCreative &&
+      editingCreative.type === 'image' &&
+      editingCreative.object_story_spec?.link_data?.image_hash
+    ) {
+      getImageDetail(editingCreative.object_story_spec.link_data.image_hash)
+    }
+    if(!editingCreative){
+      setImagePermalinkUrl('')
+    }
+  }, [editingCreative])
+
   // 1) Fetch raw creatives
-  //
   useEffect(() => {
     if (!effectiveCampaignId) {
       setError("No campaign ID available")
@@ -164,7 +210,6 @@ const AdCreativesComparison: React.FC<{ campaignId?: string }> = ({ campaignId }
         }
         const data = await res.json()
 
-        // Flatten
         const items = data?.data?.data ?? []
         const flattened = items.map((item: any) => ({
           id: item.id,
@@ -188,44 +233,42 @@ const AdCreativesComparison: React.FC<{ campaignId?: string }> = ({ campaignId }
     fetchRawCreatives()
   }, [effectiveCampaignId])
 
-  //
   // 2) Fetch metrics & merge
-  //
   const fetchMetrics = useCallback(async () => {
     if (!effectiveCampaignId) return
     try {
       const { adCreatives: metricsArray } = await getAllAdMetricsByCampaignId(effectiveCampaignId)
 
-      // Merge them
-      const merged: AdCreative[] = rawCreatives.map((rc) => {
+      const merged = rawCreatives.map((rc) => {
         const match = metricsArray.find((m: TransformedAdCreative) => m.id === rc.id)
-
         if (match) {
-          // match.type should already be "video" | "image" from your TransformedAdCreative
           return {
             id: rc.id,
             name: rc.name,
+            status: rc.status,
             type: match.type,
             url: rc.thumbnail_url,
             videoId: rc.object_story_spec?.video_data?.video_id,
+            object_story_spec: rc.object_story_spec,
             metrics: match.metrics,
           }
         } else {
-          // Fallback: if raw creative is VIDEO => 'video', otherwise => 'image'
           const fallbackType: "video" | "image" =
             rc.object_type === "VIDEO" ? "video" : "image"
           return {
             id: rc.id,
             name: rc.name,
+            status: rc.status,
             type: fallbackType,
             url: rc.thumbnail_url,
             videoId: rc.object_story_spec?.video_data?.video_id,
+            object_story_spec: rc.object_story_spec,
             metrics: {
               impressions: 0,
               reach: 0,
               spend: 0,
               engagement: 0,
-              watchTime: 0, // seconds
+              watchTime: 0,
               conversionRate: 0,
               clickThroughRate: 0,
               costPerClick: 0,
@@ -243,10 +286,8 @@ const AdCreativesComparison: React.FC<{ campaignId?: string }> = ({ campaignId }
           }
         }
       })
-
       setAdCreatives(merged)
 
-      // AI: silent notifications => pass { silent: true }
       if (merged.length > 0) {
         let msg = `System: We just loaded ${merged.length} ad creatives.`
         merged.forEach((cr, idx) => {
@@ -260,9 +301,7 @@ const AdCreativesComparison: React.FC<{ campaignId?: string }> = ({ campaignId }
     }
   }, [effectiveCampaignId, rawCreatives, submitUserMessage])
 
-  //
-  // 3) Trigger initial fetch metrics
-  //
+  // 3) Initial fetch
   useEffect(() => {
     if (!initialFetchDone.current && effectiveCampaignId && rawCreatives.length > 0) {
       initialFetchDone.current = true
@@ -270,18 +309,14 @@ const AdCreativesComparison: React.FC<{ campaignId?: string }> = ({ campaignId }
     }
   }, [effectiveCampaignId, rawCreatives, fetchMetrics])
 
-  //
-  // 4) Periodic refresh (include CACHE_DURATION in deps to satisfy ESLint)
-  //
+  // 4) Periodic refresh
   useEffect(() => {
     if (!effectiveCampaignId) return
     const intervalId = setInterval(fetchMetrics, CACHE_DURATION)
     return () => clearInterval(intervalId)
   }, [effectiveCampaignId, fetchMetrics, CACHE_DURATION])
 
-  //
-  // 5) Slider logic => one creative per chunk
-  //
+  // 5) Slider logic
   const [sliderIndex, setSliderIndex] = useState(0)
   const chunkedCreatives = useMemo(() => {
     const sorted = [...adCreatives].sort((a, b) => getPerformanceScore(b) - getPerformanceScore(a))
@@ -296,12 +331,138 @@ const AdCreativesComparison: React.FC<{ campaignId?: string }> = ({ campaignId }
     setSliderIndex((prev) => (prev < maxIndex ? prev + 1 : prev))
   }
 
-  //
-  // Render
-  //
+  // Handle editing a creative
+  const handleEdit = (creative: AdCreative) => {
+    setEditingCreative(creative)
+    setEditName(creative.name)
+    setEditMessage(
+      creative.type === "video" 
+        ? creative.object_story_spec.video_data?.message || ''
+        : creative.object_story_spec.link_data?.message || ''
+    )
+  }
+
+  // Submit edited creative
+  const handleSubmitEdit = async () => {
+    if (!editingCreative) return
+    setIsEditing(true)
+    setEditError(null)
+
+    try {
+      const response = await fetch('/api/fasty-bot/proxy-update-adcreative', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: editingCreative.id,
+          name: editName,
+          object_story_spec: {
+            ...editingCreative.object_story_spec,
+            video_data: editingCreative.type === 'video' && editingCreative.object_story_spec.video_data 
+              ? { ...editingCreative.object_story_spec.video_data, message: editMessage }
+              : undefined,
+            link_data: editingCreative.type === 'image' && editingCreative.object_story_spec.link_data
+              ? { 
+                  ...editingCreative.object_story_spec.link_data, 
+                  message: editMessage, 
+                  image_url: imagePermalinkUrl,
+                  name: editName
+                }
+              : undefined,
+          },
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to update creative')
+      }
+
+      const updatedCreative = await response.json()
+
+      // Update the creative in the state
+      setAdCreatives(prev => 
+        prev.map(creative => 
+          creative.id === editingCreative.id 
+            ? { 
+                ...creative, 
+                name: editName,
+                object_story_spec: {
+                  ...creative.object_story_spec,
+                  video_data: creative.type === 'video' && creative.object_story_spec.video_data
+                    ? { ...creative.object_story_spec.video_data, message: editMessage }
+                    : undefined,
+                  link_data: creative.type === 'image' && creative.object_story_spec.link_data
+                    ? { 
+                        ...creative.object_story_spec.link_data, 
+                        message: editMessage, 
+                        name: editName 
+                      }
+                    : undefined,
+                }
+              } 
+            : creative
+        )
+      )
+
+      setEditingCreative(null)
+    } catch (error) {
+      console.error('Error updating creative:', error)
+      setEditError('Failed to update creative. Please try again.')
+    } finally {
+      setIsEditing(false)
+    }
+  }
+
+  // Toggle active/inactive status of creative
+  const togglePublish = async (id: string) => {
+    try {
+      const creative = adCreatives.find(c => c.id === id)
+      if (!creative) return
+
+      const response = await fetch('/api/fasty-bot/proxy-update-adcreative', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id,
+          name: creative.name,
+          object_story_spec: creative.object_story_spec,
+          status: creative.status === 'ACTIVE' ? 'ARCHIVED' : 'ACTIVE'
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to update creative status')
+      }
+
+      const updatedCreative = await response.json()
+
+      // Update creative status in state
+      setAdCreatives(prevCreatives =>
+        prevCreatives.map(c =>
+          c.id === id ? { ...c, status: updatedCreative.status } : c
+        )
+      )
+    } catch (error) {
+      console.error('Error toggling publish status:', error)
+    }
+  }
+
+  // Create new creative handler
+  const addNewCreative = async () => {
+    const responseMessage = await submitUserMessage(
+      'I want to create new ad creative',
+      [],
+      true
+    )
+    setMessages(currentMessages => [...currentMessages, responseMessage])
+  }
+
   return (
     <div className="flex h-full flex-col bg-white shadow-lg dark:bg-zinc-800">
-      {/* Header - WITHOUT CAMPAIGN ID */}
+      {/* Header */}
       <header className="relative flex items-center justify-between overflow-hidden bg-gradient-to-r from-blue-600 to-indigo-700 p-6 text-white">
         <div className="pointer-events-none absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-10" />
 
@@ -310,14 +471,21 @@ const AdCreativesComparison: React.FC<{ campaignId?: string }> = ({ campaignId }
             <Award className="size-6 text-yellow-300" />
           </div>
           <div>
-            {/* No ID shown here */}
             <h1 className="text-2xl font-bold">Ad Creative Performance</h1>
             <p className="text-sm text-blue-100">Compare and analyze your ad performance metrics</p>
           </div>
         </div>
 
-        {/* Refresh button */}
         <div className="z-10 flex items-center gap-2">
+          <Button
+            onClick={addNewCreative}
+            variant="outline" 
+            size="sm"
+            className="border-white/20 bg-white/10 text-white hover:bg-white/20 mr-2"
+          >
+            <span className="mr-2">+</span>
+            New Creative
+          </Button>
           <Button
             onClick={fetchMetrics}
             variant="outline"
@@ -351,17 +519,16 @@ const AdCreativesComparison: React.FC<{ campaignId?: string }> = ({ campaignId }
         {adCreatives.length > 0 && !error && (
           <Tabs defaultValue="overview" className="w-full">
             <TabsList className="flex w-full justify-start border bg-white dark:border-zinc-700 dark:bg-zinc-800">
-              <TabsTrigger value="overview" className="dark:text-zinc-300 text-zinc-700">
+              <TabsTrigger value="overview" className="text-zinc-700 dark:text-zinc-300">
                 Overview
               </TabsTrigger>
-              <TabsTrigger value="detailed" className="dark:text-zinc-300 text-zinc-700">
+              <TabsTrigger value="detailed" className="text-zinc-700 dark:text-zinc-300">
                 Detailed Metrics
               </TabsTrigger>
             </TabsList>
 
             {/* OVERVIEW TAB */}
             <TabsContent value="overview">
-              {/* Slider Controls */}
               <div className="mb-6 flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <Button
@@ -412,7 +579,6 @@ const AdCreativesComparison: React.FC<{ campaignId?: string }> = ({ campaignId }
                   {chunkedCreatives.map((single, idx) => (
                     <div key={idx} className="flex w-full shrink-0 grow-0 justify-center">
                       {single.map((creative) => {
-                        // single array has exactly 1 creative
                         const sortedOverall = [...adCreatives].sort(
                           (a, b) => getPerformanceScore(b) - getPerformanceScore(a)
                         )
@@ -424,6 +590,8 @@ const AdCreativesComparison: React.FC<{ campaignId?: string }> = ({ campaignId }
                             creative={creative}
                             isTopPerformer={creative.id === topPerformer}
                             isSecondBest={creative.id === secondBest}
+                            onEdit={() => handleEdit(creative)}
+                            onTogglePublish={() => togglePublish(creative.id)}
                           />
                         )
                       })}
@@ -435,27 +603,142 @@ const AdCreativesComparison: React.FC<{ campaignId?: string }> = ({ campaignId }
 
             {/* DETAILED TAB */}
             <TabsContent value="detailed">
-              <DetailedMetrics creatives={adCreatives} />
+              <DetailedMetrics 
+                creatives={adCreatives} 
+                onEdit={handleEdit}
+                onTogglePublish={togglePublish}
+              />
             </TabsContent>
           </Tabs>
         )}
       </main>
+
+      {/* Edit Dialog */}
+      <Dialog 
+        open={!!editingCreative} 
+        onOpenChange={(open) => {
+          if (!open) {
+            setEditingCreative(null)
+            setEditError(null)
+          }
+        }}
+      >
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl">Edit Ad Creative</DialogTitle>
+          </DialogHeader>
+          
+          <div className="grid md:grid-cols-5 gap-6 py-4">
+            <div className="md:col-span-2 space-y-4">
+              {editingCreative?.type === 'video' ? (
+                <div className="bg-zinc-50 dark:bg-zinc-800 rounded-lg overflow-hidden">
+                  <VideoPlayer
+                    videoId={editingCreative?.videoId || ''}
+                    autoPlay={true}
+                    className="w-full"
+                  />
+                </div>
+              ) : (
+                <div className="aspect-square bg-zinc-50 dark:bg-zinc-800 rounded-lg overflow-hidden flex items-center justify-center">
+                  <img
+                    src={imagePermalinkUrl || editingCreative?.url}
+                    alt=""
+                    className="max-h-full max-w-full object-contain"
+                  />
+                </div>
+              )}
+              
+              <div className="px-1">
+                <Badge className="mb-2">
+                  {editingCreative?.type.toUpperCase()} Ad
+                </Badge>
+                
+                <div className="text-sm text-zinc-500 dark:text-zinc-400">
+                  <p className="mb-1">
+                    <span className="font-medium">Status:</span> {editingCreative?.status}
+                  </p>
+                  <p>
+                    <span className="font-medium">Creative ID:</span> {editingCreative?.id}
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="md:col-span-3 space-y-6">
+              <div className="space-y-2">
+                <label htmlFor="name" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                  Creative Name
+                </label>
+                <Input
+                  id="name"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="w-full"
+                  placeholder="Enter creative name"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label htmlFor="message" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                  Ad Message
+                </label>
+                <Textarea
+                  id="message"
+                  value={editMessage}
+                  onChange={(e) => setEditMessage(e.target.value)}
+                  className="w-full min-h-[150px]"
+                  placeholder="Enter your ad copy here..."
+                />
+              </div>
+              
+              {editError && (
+                <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md text-red-600 dark:text-red-400 text-sm">
+                  {editError}
+                </div>
+              )}
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setEditingCreative(null)}
+              disabled={isEditing}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleSubmitEdit} disabled={isEditing} className="ml-2">
+              {isEditing ? (
+                <div className="flex items-center gap-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                  <span>Saving...</span>
+                </div>
+              ) : (
+                'Save Changes'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
 
-//
 // The "CreativeDisplay" with two-column layout
-//
 interface CreativeDisplayProps {
   creative: AdCreative
   isTopPerformer: boolean
   isSecondBest: boolean
+  onEdit: () => void
+  onTogglePublish: () => void
 }
+
 const CreativeDisplay: React.FC<CreativeDisplayProps> = ({
   creative,
   isTopPerformer,
   isSecondBest,
+  onEdit,
+  onTogglePublish
 }) => {
   const aspectRatioClass = creative.type === "video" ? "aspect-[9/16]" : "aspect-square"
 
@@ -467,12 +750,12 @@ const CreativeDisplay: React.FC<CreativeDisplayProps> = ({
         overflow-hidden rounded-xl
         border transition-all duration-300 hover:shadow-xl
         dark:border-zinc-600
-        hover:scale-105
+        hover:scale-[1.02]
         ${
           isTopPerformer
             ? "bg-gradient-to-r from-zinc-50 to-yellow-50 dark:from-zinc-700 dark:to-zinc-600 ring-4 ring-yellow-300/50"
             : isSecondBest
-            ? "bg-gradient-to-r from-zinc-50 to-blue-50 dark:from-zinc-700 dark:to-zinc-600 ring-4 ring-yellow-300/50"
+            ? "bg-gradient-to-r from-zinc-50 to-blue-50 dark:from-zinc-700 dark:to-zinc-600 ring-4 ring-blue-300/50"
             : "bg-white shadow-md dark:bg-zinc-700"
         }
       `}
@@ -506,6 +789,20 @@ const CreativeDisplay: React.FC<CreativeDisplayProps> = ({
           )}
         </div>
 
+        {/* Status badge */}
+        <div className="absolute top-3 left-3">
+          <Badge 
+            className={`
+              text-xs font-medium
+              ${creative.status === 'ACTIVE' 
+                ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" 
+                : "bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300"}
+            `}
+          >
+            {creative.status === 'ACTIVE' ? 'Active' : 'Inactive'}
+          </Badge>
+        </div>
+
         {/* Performance badges */}
         {isTopPerformer && (
           <div className="absolute top-3 right-3 flex items-center space-x-2 rounded-full bg-gradient-to-r from-yellow-500 to-amber-500 px-3 py-1 text-black shadow-lg">
@@ -524,7 +821,7 @@ const CreativeDisplay: React.FC<CreativeDisplayProps> = ({
       {/* RIGHT SIDE: Title & stacked metrics */}
       <div className="flex w-1/2 flex-col space-y-4 p-5">
         <h5 className="truncate text-lg font-semibold text-zinc-800 dark:text-zinc-200">
-          {creative.name}
+          {formatCreativeName(creative.name)}
         </h5>
 
         <EnhancedMetricItem
@@ -558,14 +855,46 @@ const CreativeDisplay: React.FC<CreativeDisplayProps> = ({
           miniChart="line"
           isPositive
         />
+
+        {/* Action buttons */}
+        <div className="flex pt-2 space-x-2 mt-2 border-t border-zinc-100 dark:border-zinc-600">
+          <Button
+            onClick={onEdit}
+            variant="outline"
+            size="sm"
+            className="flex-1"
+          >
+            <Edit2 className="size-4 mr-1.5" />
+            Edit
+          </Button>
+          <Button
+            onClick={onTogglePublish}
+            variant={creative.status === 'ACTIVE' ? 'destructive' : 'default'}
+            size="sm"
+            className={`
+              flex-1
+              ${creative.status !== 'ACTIVE' && "bg-green-600 hover:bg-green-700"}
+            `}
+          >
+            {creative.status === 'ACTIVE' ? (
+              <>
+                <EyeOff className="size-4 mr-1.5" />
+                Pause
+              </>
+            ) : (
+              <>
+                <Eye className="size-4 mr-1.5" />
+                Activate
+              </>
+            )}
+          </Button>
+        </div>
       </div>
     </div>
   )
 }
 
-//
 // The EnhancedMetricItem component
-//
 interface EnhancedMetricItemProps {
   icon: React.ReactNode
   label: string
@@ -583,7 +912,6 @@ const EnhancedMetricItem: React.FC<EnhancedMetricItemProps> = ({
   isPositive = true,
 }) => {
   const isUp = percent > 0
-  // Decide pill color
   const pillClasses = isUp
     ? isPositive
       ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
@@ -599,7 +927,6 @@ const EnhancedMetricItem: React.FC<EnhancedMetricItemProps> = ({
           <span className="text-blue-500 dark:text-blue-400">{icon}</span>
           <span className="text-sm text-zinc-600 dark:text-zinc-300">{label}</span>
         </div>
-        {/* % change pill */}
         <div
           className={`flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${pillClasses}`}
         >
@@ -608,7 +935,7 @@ const EnhancedMetricItem: React.FC<EnhancedMetricItemProps> = ({
       </div>
       <div className="mb-2 text-xl font-semibold text-zinc-800 dark:text-white">{value}</div>
 
-      {/* Mini chart placeholders */}
+      {/* Mini chart placeholders (no actual chart) */}
       <div className="flex h-8 w-full items-end overflow-hidden rounded-md bg-slate-100 dark:bg-zinc-700">
         {miniChart === "sparkline" && (
           <div className="flex h-full w-full items-end">
@@ -644,20 +971,43 @@ const EnhancedMetricItem: React.FC<EnhancedMetricItemProps> = ({
   )
 }
 
-// -------------- DETAILED METRICS --------------
+// For table row thumbnails
+const CreativeThumbnail: React.FC<{ creative?: AdCreative }> = ({ creative }) => {
+  const thumbnailSize = 50
+  if (!creative) return null
 
-/**
- * Define a union of possible metric keys in TransformedMetrics
- */
-type MetricKey = keyof TransformedMetrics
-/**
- * A union for categories
- */
-type MetricCategory = "engagement" | "costs" | "conversion" | "clicks" | "video"
+  return (
+    <div
+      className="relative mr-3 inline-block align-middle overflow-hidden rounded-md border border-zinc-300 dark:border-zinc-600"
+      style={{ width: thumbnailSize, height: thumbnailSize }}
+    >
+      {creative.type === "video" ? (
+        <VideoPlayer
+          videoId={creative.videoId}
+          className="size-full object-cover"
+          autoPlay
+          muted
+          loop
+          hideControls
+        />
+      ) : (
+        <Image
+          src={creative.url ?? "/placeholder.jpg"}
+          alt=""
+          width={thumbnailSize}
+          height={thumbnailSize}
+          className="object-cover"
+        />
+      )}
+    </div>
+  )
+}
 
 /**
  * The possible categories must map to actual keys from TransformedMetrics
  */
+type MetricKey = keyof TransformedMetrics
+type MetricCategory = "engagement" | "costs" | "conversion" | "clicks" | "video"
 const metricCategories: Record<MetricCategory, MetricKey[]> = {
   engagement: ["engagement", "impressions", "reach", "frequency"],
   costs: ["spend", "costPerClick", "cpp", "cpm"],
@@ -666,30 +1016,32 @@ const metricCategories: Record<MetricCategory, MetricKey[]> = {
   video: ["watchTime", "websiteCtr"],
 }
 
-const DetailedMetrics: React.FC<{ creatives: AdCreative[] }> = ({ creatives }) => {
+interface DetailedMetricsProps {
+  creatives: AdCreative[]
+  onEdit: (creative: AdCreative) => void
+  onTogglePublish: (id: string) => void
+}
+
+const DetailedMetrics: React.FC<DetailedMetricsProps> = ({ creatives, onEdit, onTogglePublish }) => {
   const [metricCategory, setMetricCategory] = useState<MetricCategory>("engagement")
-  // selectedMetric must be one of the keys of TransformedMetrics
   const [selectedMetric, setSelectedMetric] = useState<MetricKey>("engagement")
 
-  // If user picks a different category, auto-pick the first metric in that category
+  // Auto-pick the first metric if category changes
   useEffect(() => {
     const firstMetric = metricCategories[metricCategory][0]
     setSelectedMetric(firstMetric)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [metricCategory])
 
-  // Prepare data for the charts
-  const chartData = useMemo(() => {
-    if (!selectedMetric || !creatives.length) return []
-    return creatives.map((cr) => ({
-      name: cr.name,
-      value: cr.metrics[selectedMetric],
-    }))
-  }, [selectedMetric, creatives])
-
-  // Decide which chart to show
-  const isLineChart =
-    metricCategory === "video" || selectedMetric === "watchTime"
+  // Identify best performer
+  const bestPerformerId = useMemo(
+    () => getBestPerformerIdForMetric(creatives, selectedMetric),
+    [creatives, selectedMetric]
+  )
+  const bestPerformerCreative = useMemo(
+    () => creatives.find((cr) => cr.id === bestPerformerId) || null,
+    [creatives, bestPerformerId]
+  )
 
   return (
     <div className="mt-4">
@@ -741,102 +1093,154 @@ const DetailedMetrics: React.FC<{ creatives: AdCreative[] }> = ({ creatives }) =
         </Button>
       </div>
 
-      {/* Metric selection */}
-      <div className="mb-4 flex items-center">
-        <span className="mr-2 text-sm text-zinc-600 dark:text-zinc-300">Metric:</span>
-        <select
-          className="rounded bg-white p-1 text-sm text-zinc-700 dark:bg-zinc-700 dark:text-zinc-300"
-          value={selectedMetric}
-          onChange={(e) => setSelectedMetric(e.target.value as MetricKey)}
-        >
-          {metricCategories[metricCategory].map((m) => (
-            <option key={m} value={m}>
-              {m.replace(/([A-Z])/g, " $1").trim()}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* Dynamic chart */}
-      <div className="mb-6 rounded-xl bg-white p-6 shadow-md dark:bg-zinc-800">
-        <h3 className="mb-4 text-lg font-medium text-zinc-800 dark:text-zinc-100">
-          {selectedMetric.replace(/([A-Z])/g, " $1").trim()} Comparison
-        </h3>
-        <div style={{ width: "100%", height: 300 }}>
-          <ResponsiveContainer>
-            {isLineChart ? (
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#888" />
-                <XAxis dataKey="name" stroke="#444" />
-                <YAxis stroke="#444" />
-                <Tooltip
-                  wrapperStyle={{ backgroundColor: "#1e293b", border: "none" }}
-                  labelStyle={{ color: "#cbd5e1" }}
-                  contentStyle={{ color: "#fff" }}
-                  formatter={(val: number) => val.toLocaleString()}
+      {/* Best performer highlight card */}
+      {bestPerformerCreative && (
+        <div className="mb-6 rounded-xl bg-gradient-to-r from-yellow-50 to-amber-50 p-4 shadow-md dark:from-yellow-900/20 dark:to-amber-900/20">
+          <div className="flex items-center">
+            <div className="mr-4 h-20 w-20 overflow-hidden rounded-lg border border-yellow-300 shadow-md">
+              {bestPerformerCreative.type === "video" ? (
+                <VideoPlayer
+                  videoId={bestPerformerCreative.videoId}
+                  className="h-full w-full object-cover"
+                  autoPlay
+                  muted
+                  loop
+                  hideControls
                 />
-                <Line
-                  type="monotone"
-                  dataKey="value"
-                  stroke="#8884d8"
-                  strokeWidth={2}
-                  dot={{ r: 4 }}
-                  activeDot={{ r: 8 }}
+              ) : (
+                <Image
+                  src={bestPerformerCreative.url ?? "/placeholder.jpg"}
+                  alt=""
+                  width={80}
+                  height={80}
+                  className="h-full w-full object-cover"
                 />
-              </LineChart>
-            ) : (
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#888" />
-                <XAxis dataKey="name" stroke="#444" />
-                <YAxis stroke="#444" />
-                <Tooltip
-                  wrapperStyle={{ backgroundColor: "#1e293b", border: "none" }}
-                  labelStyle={{ color: "#cbd5e1" }}
-                  contentStyle={{ color: "#fff" }}
-                  formatter={(val: number) => val.toLocaleString()}
-                />
-                <Bar dataKey="value" fill="#6366f1" />
-              </BarChart>
-            )}
-          </ResponsiveContainer>
+              )}
+            </div>
+            <div>
+              <div className="flex items-center">
+                <Award className="mr-2 size-5 text-amber-500" />
+                <h3 className="text-lg font-semibold text-zinc-800 dark:text-zinc-200">
+                  Top Performer: {formatCreativeName(bestPerformerCreative.name)}
+                </h3>
+              </div>
+              <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                This creative is the top performer for{" "}
+                {selectedMetric.replace(/([A-Z])/g, " $1").trim()}:{" "}
+                {bestPerformerCreative.metrics[selectedMetric]?.toLocaleString(undefined, {
+                  minimumFractionDigits: 0,
+                  maximumFractionDigits: 2,
+                })}
+              </p>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Data table */}
+      {/* Data table - Wider rows */}
       <div className="overflow-x-auto rounded-xl bg-white shadow-md dark:bg-zinc-800">
         <table className="min-w-full text-sm">
-          <thead className="dark:bg-zinc-700 bg-zinc-100">
+          <thead className="bg-zinc-100 dark:bg-zinc-700">
             <tr>
-              <th className="p-3 text-left font-medium text-zinc-700 dark:text-zinc-300">
+              <th className="p-5 text-left font-medium text-zinc-700 dark:text-zinc-300 w-[300px]">
                 Creative
               </th>
               {metricCategories[metricCategory].map((metric) => (
                 <th
                   key={metric}
-                  className="p-3 text-left font-medium text-zinc-700 dark:text-zinc-300"
+                  className="p-5 text-left font-medium text-zinc-700 dark:text-zinc-300"
                 >
                   {metric.replace(/([A-Z])/g, " $1").trim()}
                 </th>
               ))}
+              <th className="p-5 text-center font-medium text-zinc-700 dark:text-zinc-300">
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody>
-            {creatives.map((cr) => (
-              <tr
-                key={cr.id}
-                className="border-b border-zinc-200 dark:border-zinc-700"
-              >
-                <td className="p-3 font-medium text-zinc-800 dark:text-zinc-200">{cr.name}</td>
-                {metricCategories[metricCategory].map((metric) => (
-                  <td key={metric} className="p-3 text-zinc-600 dark:text-zinc-300">
-                    {cr.metrics[metric]?.toLocaleString(undefined, {
-                      minimumFractionDigits: 0,
-                      maximumFractionDigits: 2,
-                    })}
+            {creatives.map((cr) => {
+              const isBestPerformer = cr.id === bestPerformerId
+              return (
+                <tr
+                  key={cr.id}
+                  className={`border-b border-zinc-200 dark:border-zinc-700 ${
+                    isBestPerformer ? "bg-yellow-50 dark:bg-yellow-900/20" : ""
+                  }`}
+                >
+                  <td className="p-5 font-medium text-zinc-800 dark:text-zinc-200">
+                    <div className="flex items-center">
+                      <CreativeThumbnail creative={cr} />
+                      <div className="flex flex-col">
+                        <div className="flex items-center">
+                          <span className="truncate max-w-[200px]">
+                            {formatCreativeName(cr.name)}
+                          </span>
+                          {isBestPerformer && (
+                            <span className="ml-2 inline-flex items-center rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300">
+                              <Award className="mr-1 size-3" />
+                              Best
+                            </span>
+                          )}
+                        </div>
+                        <Badge 
+                          className={`
+                            mt-1 text-xs w-fit
+                            ${cr.status === 'ACTIVE' 
+                              ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" 
+                              : "bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300"}
+                          `}
+                        >
+                          {cr.status === 'ACTIVE' ? 'Active' : 'Inactive'}
+                        </Badge>
+                      </div>
+                    </div>
                   </td>
-                ))}
-              </tr>
-            ))}
+                  {metricCategories[metricCategory].map((metricKey) => (
+                    <td
+                      key={metricKey}
+                      className={`p-5 text-zinc-600 dark:text-zinc-300 ${
+                        metricKey === selectedMetric && isBestPerformer
+                          ? "font-bold text-green-600 dark:text-green-400"
+                          : ""
+                      }`}
+                    >
+                      {cr.metrics[metricKey]?.toLocaleString(undefined, {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 2,
+                      })}
+                    </td>
+                  ))}
+                  <td className="p-5 text-center">
+                    <div className="flex justify-center space-x-2">
+                      <Button
+                        onClick={() => onEdit(cr)}
+                        variant="outline"
+                        size="sm"
+                        className="h-9 px-2.5"
+                      >
+                        <Edit2 className="size-4" />
+                      </Button>
+                      <Button
+                        onClick={() => onTogglePublish(cr.id)}
+                        variant={cr.status === 'ACTIVE' ? 'destructive' : 'default'}
+                        size="sm"
+                        className={`
+                          h-9 px-2.5
+                          ${cr.status !== 'ACTIVE' && "bg-green-600 hover:bg-green-700"}
+                        `}
+                      >
+                        {cr.status === 'ACTIVE' ? (
+                          <EyeOff className="size-4" />
+                        ) : (
+                          <Eye className="size-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>
