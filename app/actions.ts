@@ -909,67 +909,6 @@ export async function updateChatTitle(chatSlug: string, title: string) {
     }
 }
 
-export async function updateUserSubscription(subscriptionId: string, amount: string) {
-    const session = await auth();
-
-    // Check if the user is authenticated
-    if (!session || !session.user) {
-        return { error: "User not authenticated" };
-    }
-
-    const userEmail = session.user.email; // Get the logged-in user's email
-    if (!userEmail) {
-        return { error: "User email not found" };
-    }
-
-    try {
-        const userKey = `user:${userEmail}`;
-        const currentDate = new Date().toISOString(); // Get current date in ISO format
-
-        // Update subscription fields in Redis
-        await kv.hset(userKey, { 
-            isSubscribed: "true",
-            subscriptionId: subscriptionId,
-            subscriptionDate: currentDate, // Store the subscription date
-            subscriptionAmount: amount // Store the subscription amount
-        });
-
-        return { success: true, message: "Subscription updated successfully" };
-    } catch (error) {
-        console.error(`Error updating subscription for user: ${userEmail}`, error);
-        return { error: "Failed to update subscription" };
-    }
-}
-
-
-export async function cancelUserSubscription() {
-    const session = await auth();
-
-    // Check if the user is authenticated
-    if (!session || !session.user) {
-        return { error: "User not authenticated" };
-    }
-
-    const userEmail = session.user.email; // Get the logged-in user's email
-    if (!userEmail) {
-        return { error: "User email not found" };
-    }
-
-    try {
-        const userKey = `user:${userEmail}`;
-
-        // Remove subscription fields in Redis
-        await kv.hset(userKey, { 
-            isSubscribed: "false",
-            subscriptionId: ""
-        });
-
-        return { success: true, message: "Subscription cancelled successfully" };
-    } catch (error) {
-        console.error(`Error cancelling subscription for user: ${userEmail}`, error);
-        return { error: "Failed to cancel subscription" };
-    }
-}
 
 export async function updateFbAccountId(email: string, fbAccountId: string) {
     const session = await auth()
