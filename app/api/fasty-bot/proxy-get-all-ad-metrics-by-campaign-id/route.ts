@@ -6,9 +6,8 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const campaignId = searchParams.get("campaignId")
     
-    // Use the Facebook account ID from query params or use a default
-    // Ideally, this should come from your application context/state
-    const fbAccountId = searchParams.get("fb_account_id") || "act_1020650316366490"
+    // Use the Facebook account ID 
+    const fbAccountId = searchParams.get("fb_account_id")
 
     if (!campaignId) {
       return NextResponse.json({ error: "campaignId is required" }, { status: 400 })
