@@ -71,7 +71,7 @@ export default function AiContentPage() {
                     <InfoIcon className="h-4 w-4 text-muted-foreground cursor-help" />
                   </TooltipTrigger>
                   <TooltipContent className="max-w-sm">
-                    <p>Content will be optimized for this platform's audience, algorithm preferences, and engagement patterns.</p>
+                    <p>Content will be optimized for this platform&apos;s audience, algorithm preferences, and engagement patterns.</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -88,8 +88,7 @@ export default function AiContentPage() {
           {/* VIDEO TAB */}
           <TabsContent value="video">
             <AiVideoTab 
-              improvePrompt={enhancedImprovePrompt} 
-              platform={platform}
+              improvePrompt={enhancedImprovePrompt}
             />
           </TabsContent>
 
@@ -97,7 +96,6 @@ export default function AiContentPage() {
           <TabsContent value="image">
             <AiImageTab 
               improvePrompt={enhancedImprovePrompt}
-              platform={platform}
             />
           </TabsContent>
         </Tabs>
