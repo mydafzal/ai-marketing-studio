@@ -20,8 +20,20 @@ export async function createUser(
       resultCode: ResultCode.UserAlreadyExists
     }
   } else {
+
+    const id = crypto.randomUUID()
+
+    const user_at_fasty = await createUserToDb(id)
+
+    if (!user_at_fasty) {
+      return {
+        type: 'error',
+        resultCode: ResultCode.UnknownError
+      }
+    }
+
     const user = {
-      id: crypto.randomUUID(),
+      id,
       email,
       password: hashedPassword,
       salt
@@ -40,6 +52,35 @@ interface Result {
   type: string
   resultCode: ResultCode
 }
+
+async function createUserToDb(user_id: string) {
+  const url = `${process.env.NEXT_PUBLIC_FASTY_API_URL}/facebook/flows/auth/signup`
+
+  const token = process.env.FASTY_API_TOKEN
+  const user_data = {
+    user_id
+  }
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(user_data)
+  })
+
+  if (!response.ok) {
+    console.error('Error creating user:', {
+      status: response.status,
+      statusText: response.statusText
+    })
+    return false
+  }
+
+  const data = await response.json()
+  return true
+}
+
 
 export async function signup(
   _prevState: Result | undefined,
