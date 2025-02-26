@@ -44,7 +44,7 @@ import {
 
 // AI hooking (for forwarding metrics to AI) - silent mode
 import { useActions, useAIState, useUIState } from "ai/rsc"
-import { Message } from "ai" // Added missing import
+import { Message } from "ai"
 
 // Import your existing metrics function & types
 import { getAllAdMetricsByCampaignId } from "@/lib/api/fasty-bot/get-all-ad-metrics-by-campaign-id"
@@ -53,23 +53,17 @@ import type {
   TransformedAdCreative,
 } from "@/lib/api/fasty-bot/get-all-ad-metrics-by-campaign-id"
 
-// 1) No mention of Campaign ID in the header => we simply omit it
 const FB_API_KEY = process.env.NEXT_PUBLIC_FB_API_KEY || ""
 
 /**
- * Cleans up creative names by removing date codes and IDs
- * Example format: "Join our Waitlist! 2024-09-26-abcdef"
+ * Cleans up ad names if needed
  */
-function formatCreativeName(name: string): string {
+function formatAdName(name: string): string {
+  // Customize this pattern based on your ad name format
   const pattern = /^(.*?)(\s\d{4}-\d{2}-\d{2}-[a-z0-9]+)$/i
   const match = name.match(pattern)
   return match ? match[1] : name
 }
-
-/**
- * Update your TransformedMetrics interface to have optional videoMetrics
- * if you haven't already
- */
 
 // RawCreative from your /proxy-get-adcreatives endpoint
 interface RawCreative {
@@ -100,7 +94,8 @@ interface RawCreative {
 // Our final merged creative
 interface AdCreative {
   id: string
-  name: string
+  name: string             // Ad name from metrics
+  creativeName: string     // Original creative name from raw data
   status: string
   type: "image" | "video"
   url?: string
@@ -255,7 +250,7 @@ const AdCreativesComparison: React.FC<{ campaignId?: string }> = ({
     fetchRawCreatives()
   }, [effectiveCampaignId])
 
-  // 2) Fetch metrics & merge
+  // 2) Fetch metrics & merge - UPDATED to use ad name from metrics
   const fetchMetrics = useCallback(async () => {
     if (!effectiveCampaignId) return
     try {
@@ -268,7 +263,8 @@ const AdCreativesComparison: React.FC<{ campaignId?: string }> = ({
         if (match) {
           return {
             id: rc.id,
-            name: rc.name,
+            name: match.name, // Use ad name from metrics
+            creativeName: rc.name, // Store original creative name
             status: rc.status,
             type: match.type,
             url: rc.thumbnail_url,
@@ -281,7 +277,8 @@ const AdCreativesComparison: React.FC<{ campaignId?: string }> = ({
             rc.object_type === "VIDEO" ? "video" : "image"
           return {
             id: rc.id,
-            name: rc.name,
+            name: rc.name, // Fallback to creative name if no metrics match
+            creativeName: rc.name,
             status: rc.status,
             type: fallbackType,
             url: rc.thumbnail_url,
@@ -374,10 +371,10 @@ const AdCreativesComparison: React.FC<{ campaignId?: string }> = ({
     setViewingCreative(creative)
   }
 
-  // Handle editing a creative
+  // Handle editing a creative - UPDATED to use ad name
   const handleEdit = (creative: AdCreative) => {
     setEditingCreative(creative)
-    setEditName(creative.name)
+    setEditName(creative.name) // Now using ad name
     setEditMessage(
       creative.type === "video"
         ? creative.object_story_spec.video_data?.message || ""
@@ -889,7 +886,7 @@ const AdCreativesComparison: React.FC<{ campaignId?: string }> = ({
   )
 }
 
-// The "CreativeDisplay" with two-column layout
+// The "CreativeDisplay" with two-column layout - UPDATED to use ad name
 interface CreativeDisplayProps {
   creative: AdCreative
   isTopPerformer: boolean
@@ -989,7 +986,7 @@ const CreativeDisplay: React.FC<CreativeDisplayProps> = ({
       {/* RIGHT SIDE: Title & stacked metrics */}
       <div className="flex w-1/2 flex-col space-y-4 p-5">
         <h5 className="truncate text-lg font-semibold text-zinc-800 dark:text-zinc-200">
-          {formatCreativeName(creative.name)}
+          {formatAdName(creative.name)}
         </h5>
 
         <EnhancedMetricItem
@@ -1168,7 +1165,6 @@ const CreativeThumbnail: React.FC<{ creative?: AdCreative }> = ({ creative }) =>
           className="size-full object-cover"
           autoPlay
           muted
-
         />
       ) : (
         <Image
@@ -1308,7 +1304,6 @@ const DetailedMetrics: React.FC<DetailedMetricsProps> = ({
                   className="size-full object-cover"
                   autoPlay
                   muted
-
                 />
               ) : (
                 <Image
@@ -1324,7 +1319,7 @@ const DetailedMetrics: React.FC<DetailedMetricsProps> = ({
               <div className="flex items-center">
                 <Award className="mr-2 size-5 text-amber-500" />
                 <h3 className="text-lg font-semibold text-zinc-800 dark:text-zinc-200">
-                  Top Performer: {formatCreativeName(bestPerformerCreative.name)}
+                  Top Performer: {formatAdName(bestPerformerCreative.name)}
                 </h3>
               </div>
               <p className="text-sm text-zinc-600 dark:text-zinc-400">
@@ -1377,7 +1372,7 @@ const DetailedMetrics: React.FC<DetailedMetricsProps> = ({
                       <div className="flex flex-col">
                         <div className="flex items-center">
                           <span className="max-w-[200px] truncate">
-                            {formatCreativeName(cr.name)}
+                            {formatAdName(cr.name)}
                           </span>
                           {isBestPerformer && (
                             <span className="ml-2 inline-flex items-center rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300">
@@ -1456,23 +1451,5 @@ const DetailedMetrics: React.FC<DetailedMetricsProps> = ({
     </div>
   )
 }
-
-// (Optional) A separate "ConversionMetrics" component below if you ever need it
-// but not currently used by the main code.
-// Just updated to show only the requested metrics:
-// ["conversions", "leads", "costPerLead", "costPerConversion", "conversionRate", "spend"]
-//
-// const ConversionMetrics: React.FC<DetailedMetricsProps> = ({ creatives, onViewDetails, onTogglePublish }) => {
-//   const conversionMetrics: MetricKey[] = [
-//     "conversions",
-//     "leads",
-//     "costPerLead",
-//     "costPerConversion",
-//     "conversionRate",
-//     "spend",
-//   ]
-//   // ... (Implementation similar to DetailedMetrics above, if needed)
-//   return <div>...</div>
-// }
 
 export default AdCreativesComparison
