@@ -39,7 +39,7 @@ export async function createPortalSession(customerId: string) {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
-				"Authorization": `Bearer ${process.env.NEXT_PUBLIC_PADDLE_API_KEY}`, // Replace with your Paddle API Key
+				"Authorization": `Bearer ${process.env.PADDLE_API_KEY}`, // Replace with your Paddle API Key
 			},
 			body: JSON.stringify({}),
 		})
