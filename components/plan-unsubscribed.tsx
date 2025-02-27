@@ -10,13 +10,12 @@ type PlansProps = {
 };
 
 export default function PlanUnsubscribed({ fetchUser, userDetails }: PlansProps) {
-	console.log(userDetails)
 	const plans = [
 		{ title: "Monthly", price: "10", priceId: "pri_01jmyrw114cmzq0bqt27bagajf" },
 		{ title: "Annually", price: "100", priceId: "pri_01jmyw2ybnvbxcwfm0msczgre8" },
 	];
 
-	const handlePayment = (priceId: string, amount: any) => {
+	const handlePayment = (priceId: string) => {
 		if (typeof window !== "undefined" && window.Paddle) {
 			window.Paddle.Checkout.open({
 				items: [{ priceId, quantity: 1 }],
@@ -53,13 +52,13 @@ export default function PlanUnsubscribed({ fetchUser, userDetails }: PlansProps)
 	}, []);
 
 	const savePayment = async (event: any) => {
-		console.log("Completed Event:", event);
 
 		if (event.name === "checkout.completed") {
 			const customer_id = event.data.customer.id; // Paddle Order ID
+			const package_name = event.data.items[0].price_name
 
 			try {
-				const response = await subscribeCustomer(customer_id);
+				const response = await subscribeCustomer(customer_id, package_name);
 				if (response.success) {
 					alert("Subscribed successfully");
 					fetchUser();
@@ -79,7 +78,7 @@ export default function PlanUnsubscribed({ fetchUser, userDetails }: PlansProps)
 					<h2 className="text-2xl font-semibold text-gray-800">{plan.title}</h2>
 					<p className="text-lg text-gray-500 mt-2">${plan.price}</p>
 					<button
-						onClick={() => handlePayment(plan.priceId, plan.price)}
+						onClick={() => handlePayment(plan.priceId)}
 						className="mt-4 w-full bg-black hover:bg-blue-700 text-white font-medium py-2 rounded-lg transition-all duration-300"
 					>
 						Subscribe Now

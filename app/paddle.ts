@@ -1,9 +1,8 @@
 'use server'
-
 import { kv } from '@vercel/kv'
-
 import { auth } from '@/auth'
-export async function subscribeCustomer(customer_id: string) {
+
+export async function subscribeCustomer(customer_id: string, planName: string) {
 	const session = await auth();
 
 	// Check if the user is authenticated
@@ -23,6 +22,7 @@ export async function subscribeCustomer(customer_id: string) {
 		await kv.hset(userKey, {
 			subscription_status: "Active",
 			subscription_customer_id: customer_id,
+			subscription_package_name: planName
 		});
 
 		return { success: true, message: "Subscription updated successfully" };
