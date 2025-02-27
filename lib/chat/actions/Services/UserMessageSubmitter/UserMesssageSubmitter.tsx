@@ -434,7 +434,51 @@ export async function submitUserMessage(content: string, contentImages?: Array<T
         )
     }
 },
+showCreateCampaignScreen: {
+    description: "Show UI for creating a new advertising campaign with options to upload media, set links, budgets, and descriptions.",
+    parameters: z.object({}),
+    generate: async function* () {
+      yield (
+        <BotCard>
+          <p>Loading campaign creation form...</p>
+        </BotCard>
+      )
 
+      const toolCallId = nanoid()
+      pushMessages([
+        {
+          id: nanoid(),
+          role: 'assistant',
+          content: [
+            {
+              type: 'tool-call',
+              toolName: 'showCreateCampaignScreen',
+              toolCallId,
+              args: {}
+            }
+          ],
+          timestamp: new Date().toISOString()
+        },
+        {
+          id: toolCallId,
+          role: 'tool',
+          content: [
+            {
+              type: 'tool-result',
+              toolName: 'showCreateCampaignScreen',
+              toolCallId,
+              result: {}
+            }
+          ],
+          timestamp: new Date().toISOString()
+        }
+      ])
+
+      // Import and use the server component
+      const showCreateCampaignScreen = (await import('@/components/stocks/create-campaign-screen/server')).default
+      return showCreateCampaignScreen()
+    }
+},
 // Updated tool definition in your actions.ts file
 showAiVideoGenerator: {
     description: "Show the UI for generating an AI video.",
