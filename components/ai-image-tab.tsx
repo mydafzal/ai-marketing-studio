@@ -4,9 +4,11 @@ import React, { useState, useEffect, useRef, useCallback } from "react"
 import NextImage from "next/image"
 import { AlertCircle, Download, ImagePlus, Save, Upload, Info, CheckCircle2 } from "lucide-react"
 import { useTheme } from "next-themes" // You'll need to install next-themes
-
-// ----- Server Actions (or adjust your imports as needed) -----
+// Import the AspectRatio type along with the server action
 import { generateImages } from "@/app/actions/generate-image"
+// Import the AspectRatio type - add this to your file
+import type { AspectRatio } from "@/app/actions/generate-image"
+// ----- Server Actions (or adjust your imports as needed) -----
 
 // Simple Magic Icon component
 const Magic = ({ className }: { className?: string }) => (
@@ -66,6 +68,19 @@ async function urlToFile(url: string, fileName: string): Promise<File> {
   const blob = await response.blob()
   const type = blob.type || "image/png"
   return new File([blob], fileName, { type })
+}
+
+// Function to map aspect ratios to CSS classes
+function getAspectRatioClass(format: string): string {
+  switch(format) {
+    case "16:9": return "aspect-video"; // 16:9 is represented by aspect-video in Tailwind
+    case "9:16": return "aspect-[9/16]";
+    case "4:3": return "aspect-[4/3]";
+    case "3:4": return "aspect-[3/4]";
+    case "2:3": return "aspect-[2/3]";
+    case "3:2": return "aspect-[3/2]";
+    default: return "aspect-square"; // 1:1 as default
+  }
 }
 
 export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
@@ -133,7 +148,8 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
     try {
       savePromptToHistory(imagePrompt)
       
-      const result = await generateImages(imagePrompt)
+      // Pass the imageFormat as the second parameter
+      const result = await generateImages(imagePrompt, imageFormat as AspectRatio)
       if (result.success && result.images) {
         const validUrls = result.images.filter((url: unknown) => typeof url === "string") as string[]
         setGeneratedImages(validUrls)
@@ -817,13 +833,17 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
                       
                     <div className="mt-3">
                       {activeTab === "original" && (
-                        <div className="grid grid-cols-2 md:grid-cols-2 gap-3">
+                        <div className={`grid grid-cols-2 md:grid-cols-2 gap-3 ${
+                          imageFormat === "9:16" || imageFormat === "2:3" || imageFormat === "3:4" 
+                            ? "md:grid-cols-3" // More columns for portrait images
+                            : "md:grid-cols-2" // Fewer columns for landscape images
+                        }`}>
                           {generatedImages.map((imgUrl, i) => {
                             const isSelected = selectedImages.includes(i)
                             return (
                               <div
                                 key={i}
-                                className={`relative aspect-square rounded-md overflow-hidden group cursor-pointer ${
+                                className={`relative ${getAspectRatioClass(imageFormat)} rounded-md overflow-hidden group cursor-pointer ${
                                   isSelected 
                                     ? "ring-2 ring-blue-500 ring-offset-2" 
                                     : isDarkMode ? "border-gray-700 border" : "border-gray-300 border"
@@ -835,7 +855,7 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
                                   alt={`Generated image ${i+1}`}
                                   fill
                                   sizes="(max-width: 768px) 100vw, 448px"
-                                  className="object-cover"
+                                  className="object-contain"
                                 />
                                 
                                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
@@ -864,13 +884,17 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
                       )}
                       
                       {activeTab === "withLogo" && logoUrl && combinedPreviews.length > 0 && (
-                        <div className="grid grid-cols-2 md:grid-cols-2 gap-3">
+                        <div className={`grid grid-cols-2 md:grid-cols-2 gap-3 ${
+                          imageFormat === "9:16" || imageFormat === "2:3" || imageFormat === "3:4" 
+                            ? "md:grid-cols-3" // More columns for portrait images
+                            : "md:grid-cols-2" // Fewer columns for landscape images
+                        }`}>
                           {combinedPreviews.map((previewUrl, i) => {
                             const isSelected = selectedImages.includes(i)
                             return (
                               <div
                                 key={i}
-                                className={`relative aspect-square rounded-md overflow-hidden group cursor-pointer ${
+                                className={`relative ${getAspectRatioClass(imageFormat)} rounded-md overflow-hidden group cursor-pointer ${
                                   isSelected 
                                     ? "ring-2 ring-blue-500 ring-offset-2" 
                                     : isDarkMode ? "border-gray-700 border" : "border-gray-300 border"
@@ -882,7 +906,7 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
                                   alt={`Branded image ${i+1}`}
                                   fill
                                   sizes="(max-width: 768px) 100vw, 448px"
-                                  className="object-cover"
+                                  className="object-contain"
                                 />
                                 
                                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">

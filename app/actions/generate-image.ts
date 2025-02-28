@@ -17,7 +17,8 @@ const aspectRatios = {
   "3:2": { width: 1216, height: 832 }
 };
 
-type AspectRatio = keyof typeof aspectRatios;
+// Export the AspectRatio type so it can be imported in the client component
+export type AspectRatio = keyof typeof aspectRatios;
 
 /**
  * Generate multiple images in parallel using the 'ideogram-ai/ideogram-v2-turbo' model.
@@ -39,16 +40,12 @@ export async function generateImages(
 
     console.log(`Starting image generation with prompt: "${prompt}" and aspect ratio: ${aspectRatio}`)
     
-    // Get dimensions for the selected aspect ratio
-    const dimensions = aspectRatios[aspectRatio] || aspectRatios["1:1"];
-    
     // Generate predictions in parallel (up to the requested number)
     const predictionPromises = Array(Math.min(numberOfImages, 4)).fill(null).map(() => 
       replicate.run("ideogram-ai/ideogram-v2-turbo", {
         input: {
           prompt: prompt,
-          width: dimensions.width,
-          height: dimensions.height,
+          aspect_ratio: aspectRatio, // Use aspect_ratio directly as per the documentation
           negative_prompt: "low quality, bad anatomy, blurry, pixelated"
         },
       })
@@ -115,9 +112,6 @@ export async function inpaintImage(
       throw new Error("Invalid mask format: must be a data URL")
     }
 
-    // Get dimensions for the selected aspect ratio
-    const dimensions = aspectRatios[aspectRatio] || aspectRatios["1:1"];
-
     try {
       // Create the prediction with the full prediction API
       const prediction = await replicate.predictions.create({
@@ -126,10 +120,9 @@ export async function inpaintImage(
           prompt: prompt,
           image: base64Image,
           mask: maskImage,
+          aspect_ratio: aspectRatio, // Use aspect_ratio directly as per the documentation
           negative_prompt: "low quality, bad anatomy, blurry, pixelated",
-          style_type: "General",
-          width: dimensions.width,
-          height: dimensions.height
+          style_type: "General"
         },
       });
 
