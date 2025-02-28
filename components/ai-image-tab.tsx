@@ -86,6 +86,7 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
   const [promptHistory, setPromptHistory] = useState<string[]>([])
   const [logoSize, setLogoSize] = useState(20) // As percentage of image width
   const [toastMessage, setToastMessage] = useState<{title: string, description: string, type: 'success' | 'error'} | null>(null)
+  const [imageFormat, setImageFormat] = useState("1:1") // Default to square
 
   // Show toast notification
   const showToast = (title: string, description: string, type: 'success' | 'error') => {
@@ -514,6 +515,32 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
                     : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
                 }`}
               />
+
+              <div className="flex flex-col gap-3">
+                <div className={`space-y-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
+                  <label htmlFor="imageFormat" className="block text-sm font-medium">
+                    Image Format
+                  </label>
+                  <select
+                    id="imageFormat"
+                    value={imageFormat}
+                    onChange={(e) => setImageFormat(e.target.value)}
+                    className={`w-full p-2 text-sm rounded-md ${
+                      isDarkMode
+                        ? 'bg-gray-700 border-gray-600 text-gray-200'
+                        : 'bg-white border-gray-300 text-gray-700'
+                    }`}
+                  >
+                    <option value="1:1">Square (1:1)</option>
+                    <option value="16:9">Landscape (16:9)</option>
+                    <option value="9:16">Portrait (9:16)</option>
+                    <option value="4:3">Landscape (4:3)</option>
+                    <option value="3:4">Portrait (3:4)</option>
+                    <option value="2:3">Portrait (2:3)</option>
+                    <option value="3:2">Landscape (3:2)</option>
+                  </select>
+                </div>
+              </div>
               
               {promptHistory.length > 0 && (
                 <div className="pt-1">

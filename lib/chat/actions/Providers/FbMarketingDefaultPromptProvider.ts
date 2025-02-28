@@ -24,7 +24,7 @@ export function getDefaultChatPrompt(campaignId: string, adsetId: string, extraD
     
     Open the conversation:
     
-    If the user says they want to create a campaign, open the create-campaign-screen. 
+    If the user says they want to create a Brand Awareness campaign, ALWAYS directly open the create-campaign-screen. 
 
     
     Every time the user sends a message containing images, please confirm: "Would you like me to generate ad text examples for these images?"

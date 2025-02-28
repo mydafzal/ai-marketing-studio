@@ -6,12 +6,27 @@ const replicate = new Replicate({
   auth: process.env.REPLICATE_API_TOKEN as string,
 })
 
+// Available aspect ratios with their corresponding dimensions
+const aspectRatios = {
+  "1:1": { width: 1024, height: 1024 },
+  "16:9": { width: 1536, height: 864 },
+  "9:16": { width: 864, height: 1536 },
+  "3:4": { width: 896, height: 1152 },
+  "4:3": { width: 1152, height: 896 },
+  "2:3": { width: 832, height: 1216 },
+  "3:2": { width: 1216, height: 832 }
+};
+
+type AspectRatio = keyof typeof aspectRatios;
+
 /**
  * Generate multiple images in parallel using the 'ideogram-ai/ideogram-v2-turbo' model.
- * This function expects only a text prompt and returns up to 4 generated images.
+ * This function accepts a text prompt and an aspect ratio, returning up to 4 generated images.
  */
 export async function generateImages(
-  prompt: string
+  prompt: string,
+  aspectRatio: AspectRatio = "1:1",
+  numberOfImages: number = 4
 ): Promise<{ 
   success: boolean 
   images?: string[] 
@@ -22,40 +37,31 @@ export async function generateImages(
       throw new Error("REPLICATE_API_TOKEN is not configured")
     }
 
-    console.log("Starting image generation with prompt:", prompt)
+    console.log(`Starting image generation with prompt: "${prompt}" and aspect ratio: ${aspectRatio}`)
+    
+    // Get dimensions for the selected aspect ratio
+    const dimensions = aspectRatios[aspectRatio] || aspectRatios["1:1"];
+    
+    // Generate predictions in parallel (up to the requested number)
+    const predictionPromises = Array(Math.min(numberOfImages, 4)).fill(null).map(() => 
+      replicate.run("ideogram-ai/ideogram-v2-turbo", {
+        input: {
+          prompt: prompt,
+          width: dimensions.width,
+          height: dimensions.height,
+          negative_prompt: "low quality, bad anatomy, blurry, pixelated"
+        },
+      })
+    );
 
-    // Generate 4 separate predictions in parallel
-    // (Adjust the model or # of images as needed)
-    const predictions = await Promise.all([
-      replicate.run("ideogram-ai/ideogram-v2-turbo", {
-        input: {
-          prompt: prompt,
-        },
-      }),
-      replicate.run("ideogram-ai/ideogram-v2-turbo", {
-        input: {
-          prompt: prompt,
-        },
-      }),
-      replicate.run("ideogram-ai/ideogram-v2-turbo", {
-        input: {
-          prompt: prompt,
-        },
-      }),
-      replicate.run("ideogram-ai/ideogram-v2-turbo", {
-        input: {
-          prompt: prompt,
-        },
-      }),
-    ])
-
+    const predictions = await Promise.all(predictionPromises);
     console.log("Generation outputs:", predictions)
 
     // Flatten the array of results and ensure they're strings
     const imageUrls = predictions
       .flat()
       .filter(Boolean)
-      .map((url) => String(url))
+      .map((url) => String(url));
 
     if (imageUrls.length === 0) {
       throw new Error("No images were generated")
@@ -87,7 +93,8 @@ export async function generateImages(
 export async function inpaintImage(
   prompt: string,
   base64Image: string,
-  maskImage: string
+  maskImage: string,
+  aspectRatio: AspectRatio = "1:1"
 ): Promise<{
   success: boolean
   image?: string
@@ -98,7 +105,7 @@ export async function inpaintImage(
       throw new Error("REPLICATE_API_TOKEN is not configured")
     }
 
-    console.log("Starting inpainting with prompt:", prompt)
+    console.log(`Starting inpainting with prompt: "${prompt}" and aspect ratio: ${aspectRatio}`)
 
     // Verify we have valid data URLs
     if (!base64Image.startsWith('data:image/')) {
@@ -108,7 +115,9 @@ export async function inpaintImage(
       throw new Error("Invalid mask format: must be a data URL")
     }
 
-    // The safer way is to upload these images first, then use the URLs
+    // Get dimensions for the selected aspect ratio
+    const dimensions = aspectRatios[aspectRatio] || aspectRatios["1:1"];
+
     try {
       // Create the prediction with the full prediction API
       const prediction = await replicate.predictions.create({
@@ -118,7 +127,9 @@ export async function inpaintImage(
           image: base64Image,
           mask: maskImage,
           negative_prompt: "low quality, bad anatomy, blurry, pixelated",
-          style_type: "General"
+          style_type: "General",
+          width: dimensions.width,
+          height: dimensions.height
         },
       });
 

@@ -12,7 +12,7 @@ export function EmptyScreen() {
           Welcome to Reeply AI
         </h1>
         <p className="leading-normal text-muted-foreground">
-          This AI can help your marketing and create Facebook and Google Ads together with you, helping you run Campaigns efficiently while having more time for your business!{' '}
+          This AI can help your marketing, helping you run Campaigns efficiently while having more time for your business!{' '}
           <ExternalLink href="https://reeply.ai"> Click here for more Infos on Reeply AI</ExternalLink>, the{' '}
           <ExternalLink href="https://reeply.ai">
             AI for your Marketing

@@ -49,13 +49,19 @@ function CreateCampaignForm() {
   const [currentEditSection, setCurrentEditSection] = useState<string | null>(null);
 
   // Objective
-  const [campaignObjective, setCampaignObjective] = useState('Lead Generation');
+  const [campaignObjective, setCampaignObjective] = useState('Brand Awareness');
 
   // Creative text
   const [adText, setAdText] = useState(
-    "Discover cutting-edge products that can transform your daily life."
+    "Struggling to manage your ad campaigns? Let AI do the heavy lifting! Reeply AI automates, optimizes, and scales your marketing—so you get better results with less effort. \n\n" +
+    "✅ Automate your ads effortlessly\n" +
+    "✅ Optimize campaigns with AI-driven precision\n" +
+    "✅ Save time & scale your marketing\n" +
+    "✅ Boost ROI with data-backed decisions\n\n" +
+    "🚀 Elevate your business with Reeply AI today!"
   );
-  const [adHeadline, setAdHeadline] = useState('Try Our Latest Release');
+  const [adHeadline, setAdHeadline] = useState('Revolutionize Your Ads with AI!');
+  
 
   // Audience settings
   const [ageRange, setAgeRange] = useState<[number, number]>([25, 45]);
@@ -67,10 +73,9 @@ function CreateCampaignForm() {
   const [newInterest, setNewInterest] = useState('');
   const [gender, setGender] = useState<'All' | 'Male' | 'Female'>('All');
 
-  // Additional filters
-  const [engagedShoppers, setEngagedShoppers] = useState(false);
-  const [smallBusinessOwner, setSmallBusinessOwner] = useState(false);
-  const [frequentTravelers, setFrequentTravelers] = useState(false);
+  // Additional filters - changed to string arrays instead of booleans
+  const [behavioralFilters, setBehavioralFilters] = useState<string[]>(['Engaged Shoppers']);
+  const [demographicFilters, setDemographicFilters] = useState<string[]>(['Small Business Owner']);
 
   // AI Guidance
   const [aiGuidance, setAiGuidance] = useState('');
@@ -149,6 +154,16 @@ function CreateCampaignForm() {
   };
   const removeFilter = (f: string) => {
     setTargetedInterests(prev => prev.filter(fl => fl !== f));
+  };
+
+  // Manage behavioral filters
+  const removeBehavioralFilter = (filter: string) => {
+    setBehavioralFilters(prev => prev.filter(f => f !== filter));
+  };
+
+  // Manage demographic filters
+  const removeDemographicFilter = (filter: string) => {
+    setDemographicFilters(prev => prev.filter(f => f !== filter));
   };
 
   // Open the edit modal for a section
@@ -248,10 +263,10 @@ function CreateCampaignForm() {
             <input
               type="radio"
               className="h-4 w-4 mr-2 accent-blue-500"
-              checked={campaignObjective === 'Lead Generation'}
-              onChange={() => setCampaignObjective('Lead Generation')}
+              checked={campaignObjective === 'Brand Awareness'}
+              onChange={() => setCampaignObjective('Brand Awareness')}
             />
-            <span className="text-sm">Lead Generation</span>
+            <span className="text-sm">Brand Awareness</span>
           </label>
           <label className="flex items-center p-2 border border-gray-700 rounded-md cursor-pointer bg-gray-800 hover:bg-gray-750 transition-colors">
             <input
@@ -275,10 +290,10 @@ function CreateCampaignForm() {
             <input
               type="radio"
               className="h-4 w-4 mr-2 accent-blue-500"
-              checked={campaignObjective === 'Brand Awareness'}
-              onChange={() => setCampaignObjective('Brand Awareness')}
+              checked={campaignObjective === 'Lead Generation'}
+              onChange={() => setCampaignObjective('Lead Generation')}
             />
-            <span className="text-sm">Brand Awareness</span>
+            <span className="text-sm">Lead Generation</span>
           </label>
         </div>
       </div>
@@ -465,23 +480,19 @@ function CreateCampaignForm() {
             </p>
             <p className="text-sm text-gray-300">
               Filters: {targetedInterests.join(', ')}
+              {behavioralFilters.length > 0 && ', '}
+              {behavioralFilters.map((filter, idx) => (
+                <span key={`behavioral-${idx}`} className="text-blue-400">
+                  {filter}{idx < behavioralFilters.length - 1 ? ', ' : ''}
+                </span>
+              ))}
+              {demographicFilters.length > 0 && ', '}
+              {demographicFilters.map((filter, idx) => (
+                <span key={`demographic-${idx}`} className="text-green-400">
+                  {filter}{idx < demographicFilters.length - 1 ? ', ' : ''}
+                </span>
+              ))}
             </p>
-            {/* Additional filters color-coded */}
-            <div className="text-sm text-gray-300 mt-2">
-              <div className="border-l-4 border-blue-500 pl-2 mb-2">
-                <span className="text-blue-400 font-medium text-xs">Behavioral Filters</span>
-                <div>
-                  {engagedShoppers && <li>Engaged Shoppers</li>}
-                  {frequentTravelers && <li>Frequent Travelers</li>}
-                </div>
-              </div>
-              <div className="border-l-4 border-green-500 pl-2">
-                <span className="text-green-400 font-medium text-xs">Demographic Filters</span>
-                <div>
-                  {smallBusinessOwner && <li>Small Business Owner</li>}
-                </div>
-              </div>
-            </div>
           </div>
         </div>
         <Pencil
@@ -566,10 +577,10 @@ function CreateCampaignForm() {
           <input
             type="radio"
             className="h-4 w-4 mr-2 accent-blue-500"
-            checked={campaignObjective === 'Lead Generation'}
-            onChange={() => setCampaignObjective('Lead Generation')}
+            checked={campaignObjective === 'Brand Awareness'}
+            onChange={() => setCampaignObjective('Brand Awareness')}
           />
-          <span>Lead Generation</span>
+          <span>Brand Awareness</span>
         </label>
         <label className="flex items-center p-2 border border-gray-700 rounded-md cursor-pointer bg-gray-800 hover:bg-gray-750 transition-colors">
           <input
@@ -704,12 +715,13 @@ function CreateCampaignForm() {
         </div>
       </div>
 
-      {/* Filters (replaces "Interests") */}
+      {/* All Filters in one place with different colors */}
       <div>
         <label className="block text-sm mb-2">Filters</label>
         <div className="space-y-2">
-          {/* Show the typed filters */}
+          {/* Show all filters in one place but with different colors */}
           <div className="flex flex-wrap gap-2">
+            {/* Regular filters */}
             {targetedInterests.map((f, i) => (
               <div key={i} className="flex items-center bg-gray-800 px-3 py-1 rounded">
                 <span className="mr-2">{f}</span>
@@ -720,7 +732,32 @@ function CreateCampaignForm() {
                 />
               </div>
             ))}
+            
+            {/* Behavioral filters with blue color */}
+            {behavioralFilters.map((f, i) => (
+              <div key={`beh-${i}`} className="flex items-center bg-blue-900 px-3 py-1 rounded">
+                <span className="mr-2 text-blue-300">{f}</span>
+                <XCircle
+                  size={14}
+                  className="cursor-pointer text-blue-400 hover:text-red-500"
+                  onClick={() => removeBehavioralFilter(f)}
+                />
+              </div>
+            ))}
+            
+            {/* Demographic filters with green color */}
+            {demographicFilters.map((f, i) => (
+              <div key={`dem-${i}`} className="flex items-center bg-green-900 px-3 py-1 rounded">
+                <span className="mr-2 text-green-300">{f}</span>
+                <XCircle
+                  size={14}
+                  className="cursor-pointer text-green-400 hover:text-red-500"
+                  onClick={() => removeDemographicFilter(f)}
+                />
+              </div>
+            ))}
           </div>
+          
           <div className="flex">
             <input
               type="text"
@@ -767,50 +804,6 @@ function CreateCampaignForm() {
               onChange={() => setGender('Female')}
             />
             <span>Female</span>
-          </label>
-        </div>
-      </div>
-
-      {/* Additional Filter toggles with color-coded sections */}
-      <div className="space-y-2 mt-3">
-        {/* Behavioral Filters (blue) */}
-        <div className="border-l-4 border-blue-500 pl-3 pb-2">
-          <h4 className="text-sm font-medium text-blue-400 mb-2">
-            Behavioral Filters
-          </h4>
-          <label className="flex items-center cursor-pointer mb-1">
-            <input
-              type="checkbox"
-              className="h-4 w-4 mr-1 accent-blue-500"
-              checked={engagedShoppers}
-              onChange={() => setEngagedShoppers(!engagedShoppers)}
-            />
-            <span className="text-sm">Engaged Shoppers</span>
-          </label>
-          <label className="flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              className="h-4 w-4 mr-1 accent-blue-500"
-              checked={frequentTravelers}
-              onChange={() => setFrequentTravelers(!frequentTravelers)}
-            />
-            <span className="text-sm">Frequent Travelers</span>
-          </label>
-        </div>
-
-        {/* Demographic Filters (green) */}
-        <div className="border-l-4 border-green-500 pl-3">
-          <h4 className="text-sm font-medium text-green-400 mb-2">
-            Demographic Filters
-          </h4>
-          <label className="flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              className="h-4 w-4 mr-1 accent-green-500"
-              checked={smallBusinessOwner}
-              onChange={() => setSmallBusinessOwner(!smallBusinessOwner)}
-            />
-            <span className="text-sm">Small Business Owner</span>
           </label>
         </div>
       </div>
