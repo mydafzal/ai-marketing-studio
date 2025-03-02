@@ -15,6 +15,7 @@ import Onboarding from "./onboarding"
 import FacebookAccountSettings from '@/components/facebook-account-settings'
 import { cn } from '@/lib/utils'
 import ManageSubscription from './manage-subscriptions'
+import {isFeatureToggleEnabled} from "@/lib/helpers/feature-toggle/feature-toggle-manager";
 
 type ProfileSettingsProps = {
   userDetails: UserType | undefined;
@@ -46,6 +47,7 @@ export default function ProfileSettings({
   const [openOnboarding, setOpenOnboarding] = React.useState<boolean>(userDetails?.defaultExtraDetails ? false : true)
   const [openFacebookSettings, setOpenFacebookSettings] = React.useState<boolean>(false)
   const [dropdownOpen, setDropdownOpen] = React.useState<boolean>(openOnboarding);
+  const isPaddleEnabled = isFeatureToggleEnabled('paddleIntegration');
 
   return (
     <>
@@ -95,7 +97,7 @@ export default function ProfileSettings({
             Account Settings
           </div>
 
-          <ManageSubscription />
+          {isPaddleEnabled && <ManageSubscription />}
 
           <Onboarding
             userDetails={userDetails}
