@@ -1,0 +1,110 @@
+import { getUserDetail } from '@/app/actions'
+import { getFbMarketingApiKey } from '@/app/actions';
+
+interface CampaignSummary {
+  campaign_id: string
+  campaign_name: string
+  total_leads: number
+  total_spent: number
+  creation_date: string
+  status: string
+  clicks: number
+  ctr: number
+  frequency: number
+  impressions: number
+  reach: number
+  unique_clicks: number
+}
+interface CampaignCreateRequest {
+  fbAccountId?: string
+  campaign_name: string
+}
+
+
+export async function createBase(
+  request: CampaignCreateRequest
+): Promise<any> {
+  try {
+    let {
+      fbAccountId,
+      campaign_name,
+    } = request
+
+    const userDetail = await getUserDetail();
+    let fbPageId = ""
+    if (userDetail.success && userDetail.user) {
+      fbPageId = String(userDetail.user.fbPageId || '')
+    }
+    let company_name = ""
+
+    if (!fbAccountId) {
+      fbAccountId = userDetail?.user?.fbAccountId || '0'
+    }
+
+    if (!company_name){
+      company_name = userDetail?.user?.company_name || ''
+    }
+
+    let payload: {
+      fb_account_id: string;
+      campaign_name: string;
+      company_name?: string;
+      page_id?: string;
+    } = {
+      fb_account_id: fbAccountId,
+      campaign_name,
+    };
+    
+    if (company_name && company_name.trim() !== "") {
+      payload.company_name = company_name;
+    }
+
+    if (fbPageId) {
+      payload.page_id = fbPageId;  // Changed from fbPageId to page_id
+    }
+
+    const fastyEndpoint = process.env.FASTY_API_URL
+    const apiUrl = `${fastyEndpoint}/facebook/exec/direct/campaign/create-base`
+    console.log('payload to create a new base', payload)
+    const token_resp = await getFbMarketingApiKey()
+    let token=""
+    if(token_resp.success && token_resp.token){
+        token=token_resp.token
+    }
+
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${process.env.FASTY_API_TOKEN}`,
+       'fb-api-key': token
+
+      },
+      body: JSON.stringify(payload)
+    })
+
+    return response
+  } catch (error) {
+    console.error('Error create campaign:', error)
+    return false
+  }
+}
+
+function getMockData(campaignId: string): CampaignSummary {
+  return {
+    campaign_id: campaignId,
+    campaign_name: 'Mock Campaign',
+    total_leads: 50,
+    total_spent: 500,
+    creation_date: new Date().toISOString(),
+    status: 'ACTIVE',
+    clicks: 1000,
+    impressions: 2000,
+    ctr: 2,
+    reach: 1500,
+    frequency: 1.5,
+    unique_clicks: 800
+  }
+}
+
+export type { CampaignSummary }
