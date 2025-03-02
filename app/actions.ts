@@ -909,6 +909,7 @@ export async function updateChatTitle(chatSlug: string, title: string) {
     }
 }
 
+
 export async function updateFbAccountId(email: string, fbAccountId: string) {
     const session = await auth()
 
