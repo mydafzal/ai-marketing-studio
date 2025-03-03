@@ -1374,6 +1374,40 @@ export async function updateAdTextWithFbId(chatSlug: string, idx: number, adText
     }
 }
 
+
+export async function getUserFbAccountId() {
+    const session = await auth()
+
+    if (!session || !session.user) {
+        return {
+            error: 'User not authenticated'
+        }
+    }
+
+    try {
+        const userKey = `user:${session.user.email}`
+
+        // Check if the chat exists
+        const user: User | null = (await kv.hgetall(userKey))
+
+        if (!user) {
+            return {
+                error: 'User not found'
+            }
+        }
+        return {
+            success: true,
+            fbAccountId: user.fbAccountId || null
+        }
+    } catch (error) {
+        console.error(`Error get current user detail:`, error)
+        return {
+            error: 'Something went wrong'
+        }
+    }
+}
+
+
 export async function getUserDetail() {
     const session = await auth()
 
