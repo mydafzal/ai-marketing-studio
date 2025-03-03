@@ -33,6 +33,7 @@ import { ImagePart, TextPart } from 'ai'
 import { AI } from '@/lib/chat/AIManager'
 import { isFeatureToggleEnabled } from '@/lib/helpers/feature-toggle/feature-toggle-manager'
 import { AccountNotConnected } from '@/components/account-not-connected-screen'
+import useAccountStore from "@/app/store/useAccountStore";
 
 interface FbFetchedObject {
   id: string
@@ -85,26 +86,11 @@ function ChatCore({ id, chat, className, session, missingKeys }: ChatProps) {
   const [messages, setMessages] = useUIState<typeof AI>()
   const { submitUserMessage } = useActions() // Get submitUserMessage from useActions
 
-  const [isFbAccountConnected, setIsFbAccountConnected] = useState(false)
+  const { isFbAccountConnected, checkFbAccountConnection } = useAccountStore()
   useEffect(() => {
-    const checkFbAccountConnection = async () => {
-      try {
-        const fbAccountConnectionState = await getUserFbAccountId()
-        if (
-          fbAccountConnectionState.success &&
-          fbAccountConnectionState.fbAccountId
-        ) {
-          setIsFbAccountConnected(true)
-        } else {
-          setIsFbAccountConnected(false)
-        }
-      } catch (error) {
-        setIsFbAccountConnected(false)
-      }
-    }
+    checkFbAccountConnection();
+  }, []);
 
-    checkFbAccountConnection()
-  }, [])
 
   // Add sendMessage function
   const sendMessage = React.useCallback(
