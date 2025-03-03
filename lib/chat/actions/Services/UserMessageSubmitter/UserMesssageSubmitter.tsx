@@ -50,6 +50,8 @@ import {createStreamableValue, getMutableAIState, streamUI} from "ai/rsc";
 import { useEffect } from "react";
 import LeadsCountUI from "@/components/campaign-leads-count";
 import showAiVideoGenerator from "@/components/stocks/ai-video-generator/server"
+import {isGlobalToggleEnabledForUser} from "@/lib/helpers/global-toggle/global-toggle-manager";
+import {getSimplifiedDefaultChatPrompt} from "@/lib/chat/actions/Providers/FbMarketingSimplifiedDefaultPromptProvider";
 
 
 interface ExtractedMessage {
@@ -157,8 +159,14 @@ export async function submitUserMessage(content: string, contentImages?: Array<T
         }
     }
 
-
     let systemMessage = getDefaultChatPrompt(campaignId, adsetId, extraDetailsFinalText);
+
+    // For facebook demo account we are simplifying the prompt of the chat.
+    let isFbDemoAccount = await isGlobalToggleEnabledForUser('fbDemoMode');
+    if(isFbDemoAccount)
+    {
+        systemMessage = getSimplifiedDefaultChatPrompt(campaignId, adsetId, extraDetailsFinalText);
+    }
     // TODO: Tool builder factory (for each tool we should have a factory),
     // ** Important Note: After adding a new tool entry here make sure to also add an entry to FetchApplicableUI.tsx **
     const result = await streamUI({
