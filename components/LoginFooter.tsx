@@ -20,6 +20,11 @@ export function LoginFooter() {
                     </a>
                 </li>
                 <li>
+                    <a href="https://reeply.ai/Pricing" target="_blank" rel="noopener noreferrer">
+                        Pricing
+                    </a>
+                </li>
+                <li>
                     <a href="https://reeply.ai/Imprint" target="_blank" rel="noopener noreferrer">
                         Imprint
                     </a>
