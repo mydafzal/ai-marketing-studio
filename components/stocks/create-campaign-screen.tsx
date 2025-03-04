@@ -8,12 +8,15 @@ import {
 import { useActiveUI } from '@/components/stocks/active-ui-context';
 import confetti from 'canvas-confetti';
 
+// Define the AspectRatio type
+type AspectRatio = '1:1' | '16:9' | '9:16' | '4:3' | '3:4' | '2:3' | '3:2';
+
 // Define our media type
 interface MediaItem {
   id: string;
   type: 'image' | 'video';
   url: string;
-  aspectRatio: '1:1' | '9:16';
+  aspectRatio: AspectRatio;
   progress?: number;
 }
 
@@ -47,6 +50,19 @@ function CreateCampaignForm() {
   const [activePreviewTab, setActivePreviewTab] =
     useState<'instagram_stories' | 'settings'>('instagram_stories');
   const [currentEditSection, setCurrentEditSection] = useState<string | null>(null);
+  
+  // Loading screen state
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadingStep, setLoadingStep] = useState(0);
+  const loadingSteps = [
+    "I am analyzing your website link...",
+    "Understanding your advertising goal...",
+    "Researching the best possible targeting...",
+    "Identifying ideal audience demographics...",
+    "Selecting optimal platform placements...",
+    "Optimizing creative elements...",
+    "Finalizing campaign settings..."
+  ];
 
   // Objective
   const [campaignObjective, setCampaignObjective] = useState('Brand Awareness');
@@ -88,6 +104,63 @@ function CreateCampaignForm() {
   // File input ref
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Function to determine actual aspect ratio of an image
+  const calculateAspectRatio = (file: File): Promise<AspectRatio> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const width = img.width;
+        const height = img.height;
+        const ratio = width / height;
+        
+        // Determine which aspect ratio the image is closest to
+        if (ratio > 0.9 && ratio < 1.1) {
+          resolve('1:1'); // Square
+        } else if (ratio > 1.7 && ratio < 1.8) {
+          resolve('16:9'); // Landscape wide
+        } else if (ratio > 0.55 && ratio < 0.6) {
+          resolve('9:16'); // Portrait tall
+        } else if (ratio > 1.3 && ratio < 1.35) {
+          resolve('4:3'); // Standard landscape
+        } else if (ratio > 0.74 && ratio < 0.76) {
+          resolve('3:4'); // Standard portrait
+        } else if (ratio > 0.65 && ratio < 0.68) {
+          resolve('2:3'); // Portrait
+        } else if (ratio > 1.45 && ratio < 1.55) {
+          resolve('3:2'); // Landscape
+        } else if (ratio <= 0.65) {
+          // Default to 9:16 for very tall images
+          resolve('9:16');
+        } else {
+          // Default to 16:9 for very wide images
+          resolve('16:9');
+        }
+      };
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
+  // Handle transition to review screen with loading sequence
+  const handleReviewTransition = () => {
+    setIsLoading(true);
+    setLoadingStep(0);
+    
+    // Simulate the AI thinking process with timed steps
+    const interval = setInterval(() => {
+      setLoadingStep(prevStep => {
+        if (prevStep >= loadingSteps.length - 1) {
+          clearInterval(interval);
+          setTimeout(() => {
+            setIsLoading(false);
+            setActiveTab('review');
+          }, 1000);
+          return prevStep;
+        }
+        return prevStep + 1;
+      });
+    }, 1800);
+  };
+
   // Launch confetti on publish
   const handlePublish = () => {
     confetti({
@@ -102,15 +175,18 @@ function CreateCampaignForm() {
   };
 
   // Handle file upload
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
-
+      
+      // Calculate the actual aspect ratio
+      const detectedRatio = await calculateAspectRatio(file);
+      
       const newMedia: MediaItem = {
         id: Math.random().toString(36).substring(7),
         type: file.type.includes('video') ? 'video' : 'image',
         url: URL.createObjectURL(file),
-        aspectRatio: Math.random() > 0.5 ? '1:1' : '9:16',
+        aspectRatio: detectedRatio, // Use the detected ratio
         progress: 30
       };
 
@@ -192,12 +268,55 @@ function CreateCampaignForm() {
               ? 'bg-gray-800 text-white font-medium'
               : 'text-gray-400'
           }`}
-          onClick={() => setActiveTab('review')}
-          disabled={mediaItems.length === 0 || !link || !budget}
+          onClick={() => handleReviewTransition()}
+          disabled={mediaItems.length === 0 || !link || !budget || isLoading}
         >
           Review
         </button>
       </div>
+    </div>
+  );
+
+  // AI Loading Screen
+  const renderLoadingScreen = () => (
+    <div className="flex flex-col items-center justify-center h-full">
+      <div className="w-20 h-20 flex items-center justify-center mb-8">
+        <div className="relative">
+          <div className="w-16 h-16 border-4 border-blue-200 border-t-[#743FC7] rounded-full animate-spin"></div>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center">
+              <span className="text-lg font-bold bg-gradient-to-r from-[#743FC7] to-blue-500 text-transparent bg-clip-text">AI</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div className="text-center mb-8">
+        <h3 className="text-xl font-bold mb-5 bg-gradient-to-r from-[#743FC7] to-blue-500 text-transparent bg-clip-text">
+          AI Campaign Assistant
+        </h3>
+        <div className="relative h-12 min-h-12">
+          {loadingSteps.map((step, index) => (
+            <p key={index} className={`text-lg font-medium absolute left-0 right-0 transition-all duration-500 ${
+              loadingStep === index ? "opacity-100 transform translate-y-0" : 
+              loadingStep > index ? "opacity-0 transform -translate-y-8" : 
+              "opacity-0 transform translate-y-8"
+            }`}>
+              {step}
+            </p>
+          ))}
+        </div>
+      </div>
+      
+      <div className="w-64 h-2 bg-gray-700 rounded-full overflow-hidden">
+        <div 
+          className="h-full bg-gradient-to-r from-[#743FC7] to-blue-500 transition-all duration-500"
+          style={{ width: `${(loadingStep + 1) / loadingSteps.length * 100}%` }}
+        ></div>
+      </div>
+      <p className="text-sm text-gray-400 mt-3">
+        Please wait while I optimize your campaign...
+      </p>
     </div>
   );
 
@@ -355,8 +474,8 @@ function CreateCampaignForm() {
       <div className="mt-6">
         <button
           className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors shadow-lg"
-          onClick={() => setActiveTab('review')}
-          disabled={mediaItems.length === 0 || !link || !budget}
+          onClick={() => handleReviewTransition()}
+          disabled={mediaItems.length === 0 || !link || !budget || isLoading}
         >
           Preview &amp; Review
         </button>
@@ -1018,7 +1137,9 @@ function CreateCampaignForm() {
 
       {renderHeader()}
 
-      {activeTab === 'create' ? renderCreateScreen() : renderReviewScreen()}
+      {isLoading ? renderLoadingScreen() : (
+        activeTab === 'create' ? renderCreateScreen() : renderReviewScreen()
+      )}
 
       {/* Settings Edit Modal */}
       <CampaignSettingsModal
