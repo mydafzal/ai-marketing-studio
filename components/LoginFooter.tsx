@@ -5,6 +5,11 @@ export function LoginFooter() {
         <footer className="fixed bottom-2 left-0 right-0 h-8 bg-gray-50 border-t border-gray-300 px-4 py-2">
             <ul className="flex justify-center space-x-4 text-zinc-700">
                 <li>
+                    <a href="https://reeply.ai/" target="_blank" rel="noopener noreferrer">
+                        About Reeply AI
+                    </a>
+                </li>
+                <li>
                     <a href="https://reeply.ai/TermsOfService" target="_blank" rel="noopener noreferrer">
                         Terms of Service
                     </a>
