@@ -282,30 +282,48 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
   }
 
   /** Continue editing the inpainted result by making it the new base image */
-  function handleContinueEditing() {
-    if (!inpaintResult) return
+  async function handleContinueEditing() {
+    if (!inpaintResult) return;
     
-    // Store the result as our new base image data
-    setBaseImageData(inpaintResult)
-    
-    // Create a new image from the result
-    const img = new Image()
-    img.onload = () => {
-      // Set this as our new base image
-      setBaseImage(img)
+    try {
+      setIsProcessing(true); // Add loading indicator while fetching
       
-      // Clear the result and mask
-      setInpaintResult(null)
+      // Fetch the image from the URL and convert to a data URL
+      const response = await fetch(inpaintResult);
+      const blob = await response.blob();
       
-      // Clear the mask canvas if it exists
-      if (maskCanvasRef.current) {
-        const maskCtx = maskCanvasRef.current.getContext("2d")
-        maskCtx?.clearRect(0, 0, maskCanvasRef.current.width, maskCanvasRef.current.height)
-      }
+      // Create a FileReader to convert the blob to a data URL
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = reader.result as string;
+        
+        // Set the data URL as our base image data
+        setBaseImageData(dataUrl);
+        
+        // Create a new image
+        const img = new Image();
+        img.onload = () => {
+          setBaseImage(img);
+          setInpaintResult(null);
+          
+          // Clear the mask canvas
+          if (maskCanvasRef.current) {
+            const maskCtx = maskCanvasRef.current.getContext("2d");
+            maskCtx?.clearRect(0, 0, maskCanvasRef.current.width, maskCanvasRef.current.height);
+          }
+          
+          showToast("Ready to Edit", "You can now continue editing your image", "success");
+          setIsProcessing(false);
+        };
+        img.src = dataUrl;
+      };
       
-      showToast("Ready to Edit", "You can now continue editing your image", "success")
+      reader.readAsDataURL(blob);
+    } catch (error) {
+      console.error("Error converting image URL to data URL:", error);
+      showToast("Error", "Failed to prepare image for continued editing", "error");
+      setIsProcessing(false);
     }
-    img.src = inpaintResult
   }
 
   /** Optional: Let user enhance the inpainting prompt with AI */
