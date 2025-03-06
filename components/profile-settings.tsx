@@ -14,6 +14,8 @@ import { type User as UserType } from '@/lib/types'
 import Onboarding from "./onboarding"
 import FacebookAccountSettings from '@/components/facebook-account-settings'
 import { cn } from '@/lib/utils'
+import ManageSubscription from './manage-subscriptions'
+import {isFeatureToggleEnabled} from "@/lib/helpers/feature-toggle/feature-toggle-manager";
 
 type ProfileSettingsProps = {
   userDetails: UserType | undefined;
@@ -35,21 +37,21 @@ type ProfileSettingsProps = {
 }
 
 export default function ProfileSettings({
-    userDetails,
-    getFacebookBusinessAccounts,
-    getFacebookAdAccounts,
-    updateFbBusinessAcc,
-    updateFbAccountId,
-    disconnectFacebook,
-    updateOnboardingDetails}:ProfileSettingsProps) {
-    const [openOnboarding, setOpenOnboarding] = React.useState<boolean>(userDetails?.defaultExtraDetails?false:true)
-    const [openFacebookSettings, setOpenFacebookSettings] = React.useState<boolean>(false)
-    const [dropdownOpen, setDropdownOpen] = React.useState<boolean>(openOnboarding);
+  userDetails,
+  getFacebookBusinessAccounts,
+  getFacebookAdAccounts,
+  updateFbBusinessAcc,
+  updateFbAccountId,
+  disconnectFacebook,
+  updateOnboardingDetails }: ProfileSettingsProps) {
+  const [openOnboarding, setOpenOnboarding] = React.useState<boolean>(userDetails?.defaultExtraDetails ? false : true)
+  const [openFacebookSettings, setOpenFacebookSettings] = React.useState<boolean>(false)
+  const [dropdownOpen, setDropdownOpen] = React.useState<boolean>(openOnboarding);
+  const isPaddleEnabled = isFeatureToggleEnabled('paddleIntegration');
 
-    
   return (
     <>
-        <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
+      <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
@@ -94,6 +96,8 @@ export default function ProfileSettings({
           <div className="text-xs font-medium text-zinc-500 dark:text-zinc-400 px-3 py-2">
             Account Settings
           </div>
+
+          {isPaddleEnabled && <ManageSubscription />}
 
           <Onboarding
             userDetails={userDetails}

@@ -385,115 +385,115 @@ export async function submitUserMessage(content: string, contentImages?: Array<T
             },
 
             getCampaignCreativeResults: {
-    description: "Show detailed performance metrics for campaign ad creatives",
-    parameters: z.object({
-        campaignId: z.string(),
-        guideForUser: z.string().optional()
-    }),
-    generate: async function* ({campaignId, guideForUser}) {
-        yield (
-            <BotCard>
-                <StockSkeleton/>
-            </BotCard>
-        )
-        await sleep(1000)
-        const toolCallId = nanoid()
-        pushMessages([
-            {
-                id: nanoid(),
-                role: 'assistant',
-                content: [
-                    {
-                        type: 'tool-call',
-                        toolName: 'getCampaignCreativeResults',
-                        toolCallId,
-                        args: {campaignId, guideForUser}
-                    }
-                ],
-                timestamp: new Date().toISOString()
+                description: "Show detailed performance metrics for campaign ad creatives",
+                parameters: z.object({
+                    campaignId: z.string(),
+                    guideForUser: z.string().optional()
+                }),
+                generate: async function* ({campaignId, guideForUser}) {
+                    yield (
+                        <BotCard>
+                            <StockSkeleton/>
+                        </BotCard>
+                    )
+                    await sleep(1000)
+                    const toolCallId = nanoid()
+                    pushMessages([
+                        {
+                            id: nanoid(),
+                            role: 'assistant',
+                            content: [
+                                {
+                                    type: 'tool-call',
+                                    toolName: 'getCampaignCreativeResults',
+                                    toolCallId,
+                                    args: {campaignId, guideForUser}
+                                }
+                            ],
+                            timestamp: new Date().toISOString()
+                        },
+                        {
+                            id: nanoid(),
+                            role: 'tool',
+                            content: [
+                                {
+                                    type: 'tool-result',
+                                    toolName: 'getCampaignCreativeResults',
+                                    toolCallId,
+                                    result: {campaignId, guideForUser}
+                                }
+                            ],
+                            timestamp: new Date().toISOString()
+                        }
+                    ])
+
+                    return (
+                        <BotCard>
+                            <AdCreativesComparison campaignId={campaignId} />
+                        </BotCard>
+                    )
+                }
             },
-            {
-                id: nanoid(),
-                role: 'tool',
-                content: [
-                    {
-                        type: 'tool-result',
-                        toolName: 'getCampaignCreativeResults',
-                        toolCallId,
-                        result: {campaignId, guideForUser}
-                    }
-                ],
-                timestamp: new Date().toISOString()
-            }
-        ])
+            /*showCreateCampaignScreen: {
+                description: "Show UI for creating a new advertising campaign with options to upload media, set links, budgets, and descriptions.",
+                parameters: z.object({}),
+                generate: async function* () {
+                    yield (
+                        <BotCard>
+                            <p>Loading campaign creation form...</p>
+                        </BotCard>
+                    )
 
-        return (
-            <BotCard>
-                <AdCreativesComparison campaignId={campaignId} />
-            </BotCard>
-        )
-    }
-},
-showCreateCampaignScreen: {
-    description: "Show UI for creating a new advertising campaign with options to upload media, set links, budgets, and descriptions.",
-    parameters: z.object({}),
-    generate: async function* () {
-      yield (
-        <BotCard>
-          <p>Loading campaign creation form...</p>
-        </BotCard>
-      )
+                    const toolCallId = nanoid()
+                    pushMessages([
+                        {
+                            id: nanoid(),
+                            role: 'assistant',
+                            content: [
+                                {
+                                    type: 'tool-call',
+                                    toolName: 'showCreateCampaignScreen',
+                                    toolCallId,
+                                    args: {}
+                                }
+                            ],
+                            timestamp: new Date().toISOString()
+                        },
+                        {
+                            id: toolCallId,
+                            role: 'tool',
+                            content: [
+                                {
+                                    type: 'tool-result',
+                                    toolName: 'showCreateCampaignScreen',
+                                    toolCallId,
+                                    result: {}
+                                }
+                            ],
+                            timestamp: new Date().toISOString()
+                        }
+                    ])
 
-      const toolCallId = nanoid()
-      pushMessages([
-        {
-          id: nanoid(),
-          role: 'assistant',
-          content: [
-            {
-              type: 'tool-call',
-              toolName: 'showCreateCampaignScreen',
-              toolCallId,
-              args: {}
-            }
-          ],
-          timestamp: new Date().toISOString()
-        },
-        {
-          id: toolCallId,
-          role: 'tool',
-          content: [
-            {
-              type: 'tool-result',
-              toolName: 'showCreateCampaignScreen',
-              toolCallId,
-              result: {}
-            }
-          ],
-          timestamp: new Date().toISOString()
-        }
-      ])
-
-      // Import and use the server component
-      const showCreateCampaignScreen = (await import('@/components/stocks/create-campaign-screen/server')).default
-      return showCreateCampaignScreen()
-    }
-},
+                    // Import and use the server component
+                    const showCreateCampaignScreen = (await import('@/components/stocks/create-campaign-screen/server')).default
+                    return showCreateCampaignScreen()
+                }
+            },*/
 // Updated tool definition in your actions.ts file
-showAiVideoGenerator: {
-    description: "Show the UI for generating an AI video.",
-    parameters: z.object({}),
-    generate: async function* () {
-      yield (
-        <BotCard>
-          <p>Loading AI Video Generator...</p>
-        </BotCard>
-      )
+            showAiVideoGenerator: {
+                description: "Show the UI for generating an AI video.",
+                parameters: z.object({}),
+                generate: async function* () {
+                    yield (
+                        <BotCard>
+                            <p>Loading AI Video Generator...</p>
+                        </BotCard>
+                    )
 
-      // Return the component from the server file
-      return showAiVideoGenerator()
-    }
-},
+                    // Return the component from the server file
+                    return showAiVideoGenerator()
+                }
+            },
 
             showFormBuilder: {
                 description: formBuilderModule.description,
