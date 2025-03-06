@@ -22,6 +22,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Award, RefreshCw, ChevronLeft, ChevronRight } from "lucide-react"
 import { CampaignContext } from "@/components/contexts/campaign-context"
+import { VideoPlayer } from "@/components/stocks/video-player"
 
 // AI hooking (for forwarding metrics to AI) - silent mode
 import { useActions, useAIState, useUIState } from "ai/rsc"
