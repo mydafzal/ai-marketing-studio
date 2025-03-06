@@ -50,8 +50,6 @@ import {createStreamableValue, getMutableAIState, streamUI} from "ai/rsc";
 import { useEffect } from "react";
 import LeadsCountUI from "@/components/campaign-leads-count";
 import showAiVideoGenerator from "@/components/stocks/ai-video-generator/server"
-import {isGlobalToggleEnabledForUser} from "@/lib/helpers/global-toggle/global-toggle-manager";
-import {getSimplifiedDefaultChatPrompt} from "@/lib/chat/actions/Providers/FbMarketingSimplifiedDefaultPromptProvider";
 
 
 interface ExtractedMessage {
@@ -159,14 +157,8 @@ export async function submitUserMessage(content: string, contentImages?: Array<T
         }
     }
 
-    let systemMessage = getDefaultChatPrompt(campaignId, adsetId, extraDetailsFinalText);
 
-    // For facebook demo account we are simplifying the prompt of the chat.
-    let isFbDemoAccount = await isGlobalToggleEnabledForUser('fbDemoMode');
-    if(isFbDemoAccount)
-    {
-        systemMessage = getSimplifiedDefaultChatPrompt(campaignId, adsetId, extraDetailsFinalText);
-    }
+    let systemMessage = getDefaultChatPrompt(campaignId, adsetId, extraDetailsFinalText);
     // TODO: Tool builder factory (for each tool we should have a factory),
     // ** Important Note: After adding a new tool entry here make sure to also add an entry to FetchApplicableUI.tsx **
     const result = await streamUI({
@@ -393,71 +385,115 @@ export async function submitUserMessage(content: string, contentImages?: Array<T
             },
 
             getCampaignCreativeResults: {
-    description: "Show detailed performance metrics for campaign ad creatives",
-    parameters: z.object({
-        campaignId: z.string(),
-        guideForUser: z.string().optional()
-    }),
-    generate: async function* ({campaignId, guideForUser}) {
-        yield (
-            <BotCard>
-                <StockSkeleton/>
-            </BotCard>
-        )
-        await sleep(1000)
-        const toolCallId = nanoid()
-        pushMessages([
-            {
-                id: nanoid(),
-                role: 'assistant',
-                content: [
-                    {
-                        type: 'tool-call',
-                        toolName: 'getCampaignCreativeResults',
-                        toolCallId,
-                        args: {campaignId, guideForUser}
-                    }
-                ],
-                timestamp: new Date().toISOString()
+                description: "Show detailed performance metrics for campaign ad creatives",
+                parameters: z.object({
+                    campaignId: z.string(),
+                    guideForUser: z.string().optional()
+                }),
+                generate: async function* ({campaignId, guideForUser}) {
+                    yield (
+                        <BotCard>
+                            <StockSkeleton/>
+                        </BotCard>
+                    )
+                    await sleep(1000)
+                    const toolCallId = nanoid()
+                    pushMessages([
+                        {
+                            id: nanoid(),
+                            role: 'assistant',
+                            content: [
+                                {
+                                    type: 'tool-call',
+                                    toolName: 'getCampaignCreativeResults',
+                                    toolCallId,
+                                    args: {campaignId, guideForUser}
+                                }
+                            ],
+                            timestamp: new Date().toISOString()
+                        },
+                        {
+                            id: nanoid(),
+                            role: 'tool',
+                            content: [
+                                {
+                                    type: 'tool-result',
+                                    toolName: 'getCampaignCreativeResults',
+                                    toolCallId,
+                                    result: {campaignId, guideForUser}
+                                }
+                            ],
+                            timestamp: new Date().toISOString()
+                        }
+                    ])
+
+                    return (
+                        <BotCard>
+                            <AdCreativesComparison campaignId={campaignId} />
+                        </BotCard>
+                    )
+                }
             },
-            {
-                id: nanoid(),
-                role: 'tool',
-                content: [
-                    {
-                        type: 'tool-result',
-                        toolName: 'getCampaignCreativeResults',
-                        toolCallId,
-                        result: {campaignId, guideForUser}
-                    }
-                ],
-                timestamp: new Date().toISOString()
-            }
-        ])
+            /*showCreateCampaignScreen: {
+                description: "Show UI for creating a new advertising campaign with options to upload media, set links, budgets, and descriptions.",
+                parameters: z.object({}),
+                generate: async function* () {
+                    yield (
+                        <BotCard>
+                            <p>Loading campaign creation form...</p>
+                        </BotCard>
+                    )
 
-        return (
-            <BotCard>
-                <AdCreativesComparison campaignId={campaignId} />
-            </BotCard>
-        )
-    }
-},
+                    const toolCallId = nanoid()
+                    pushMessages([
+                        {
+                            id: nanoid(),
+                            role: 'assistant',
+                            content: [
+                                {
+                                    type: 'tool-call',
+                                    toolName: 'showCreateCampaignScreen',
+                                    toolCallId,
+                                    args: {}
+                                }
+                            ],
+                            timestamp: new Date().toISOString()
+                        },
+                        {
+                            id: toolCallId,
+                            role: 'tool',
+                            content: [
+                                {
+                                    type: 'tool-result',
+                                    toolName: 'showCreateCampaignScreen',
+                                    toolCallId,
+                                    result: {}
+                                }
+                            ],
+                            timestamp: new Date().toISOString()
+                        }
+                    ])
 
+                    // Import and use the server component
+                    const showCreateCampaignScreen = (await import('@/components/stocks/create-campaign-screen/server')).default
+                    return showCreateCampaignScreen()
+                }
+            },*/
 // Updated tool definition in your actions.ts file
-showAiVideoGenerator: {
-    description: "Show the UI for generating an AI video.",
-    parameters: z.object({}),
-    generate: async function* () {
-      yield (
-        <BotCard>
-          <p>Loading AI Video Generator...</p>
-        </BotCard>
-      )
+            showAiVideoGenerator: {
+                description: "Show the UI for generating an AI video.",
+                parameters: z.object({}),
+                generate: async function* () {
+                    yield (
+                        <BotCard>
+                            <p>Loading AI Video Generator...</p>
+                        </BotCard>
+                    )
 
-      // Return the component from the server file
-      return showAiVideoGenerator()
-    }
-},
+                    // Return the component from the server file
+                    return showAiVideoGenerator()
+                }
+            },
 
             showFormBuilder: {
                 description: formBuilderModule.description,

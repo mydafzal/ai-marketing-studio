@@ -1,3 +1,4 @@
+/** @type {import('next').NextConfig} */
 module.exports = {
   images: {
     remotePatterns: [
@@ -29,4 +30,9 @@ module.exports = {
     ],
   },
   reactStrictMode: false,
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '8mb' // Increased limit for image data
+    }
+  }
 }

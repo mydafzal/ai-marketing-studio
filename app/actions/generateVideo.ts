@@ -41,7 +41,7 @@ export async function generateVideo({
       input
     })
     // The model returns the mp4 as a direct result (string) or array? 
-    // Often it’s a URL to the .mp4
+    // Often it's a URL to the .mp4
     if (!output) {
       throw new Error("No output returned from replicate.")
     }

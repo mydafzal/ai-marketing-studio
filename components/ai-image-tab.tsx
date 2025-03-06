@@ -4,9 +4,11 @@ import React, { useState, useEffect, useRef, useCallback } from "react"
 import NextImage from "next/image"
 import { AlertCircle, Download, ImagePlus, Save, Upload, Info, CheckCircle2 } from "lucide-react"
 import { useTheme } from "next-themes" // You'll need to install next-themes
-
-// ----- Server Actions (or adjust your imports as needed) -----
+// Import the AspectRatio type along with the server action
 import { generateImages } from "@/app/actions/generate-image"
+// Import the AspectRatio type - add this to your file
+import type { AspectRatio } from "@/app/actions/generate-image"
+// ----- Server Actions (or adjust your imports as needed) -----
 
 // Simple Magic Icon component
 const Magic = ({ className }: { className?: string }) => (
@@ -68,9 +70,24 @@ async function urlToFile(url: string, fileName: string): Promise<File> {
   return new File([blob], fileName, { type })
 }
 
+// Function to map aspect ratios to CSS classes
+function getAspectRatioClass(format: string): string {
+  switch(format) {
+    case "16:9": return "aspect-video"; // 16:9 is represented by aspect-video in Tailwind
+    case "9:16": return "aspect-[9/16]";
+    case "4:3": return "aspect-[4/3]";
+    case "3:4": return "aspect-[3/4]";
+    case "2:3": return "aspect-[2/3]";
+    case "3:2": return "aspect-[3/2]";
+    default: return "aspect-square"; // 1:1 as default
+  }
+}
+
 export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
   const { theme } = useTheme()
+  const isDarkMode = theme === "dark"
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const previewRefs = useRef<(HTMLDivElement | null)[]>([])
 
   // State management
   const [imagePrompt, setImagePrompt] = useState("")
@@ -86,6 +103,27 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
   const [promptHistory, setPromptHistory] = useState<string[]>([])
   const [logoSize, setLogoSize] = useState(20) // As percentage of image width
   const [toastMessage, setToastMessage] = useState<{title: string, description: string, type: 'success' | 'error'} | null>(null)
+  const [imageFormat, setImageFormat] = useState("1:1") // Default to square
+  
+  // Drag and drop state
+  const [customLogoPosition, setCustomLogoPosition] = useState({ x: 0, y: 0 })
+  const [isDraggingLogo, setIsDraggingLogo] = useState(false)
+  const [dragStartPos, setDragStartPos] = useState({ x: 0, y: 0 })
+  const [isCustomPosition, setIsCustomPosition] = useState(false)
+  const [draggedImageIndex, setDraggedImageIndex] = useState<number | null>(null)
+  const [logoPositions, setLogoPositions] = useState<{ [key: number]: { x: number, y: number } }>({})
+  // Add this to track if we're currently dragging to prevent preview updates
+  const [isDragUpdatePending, setIsDragUpdatePending] = useState(false)
+  // Add this to track processing state for preview generation
+  const [isProcessing, setIsProcessing] = useState(false)
+  // Add state to track when logo size is changing for smooth transitions
+  const [isResizingLogo, setIsResizingLogo] = useState(false)
+
+  // Initialize previewRefs when images change
+  useEffect(() => {
+    // Reset refs array when number of images changes
+    previewRefs.current = Array(combinedPreviews.length).fill(null)
+  }, [combinedPreviews.length])
 
   // Show toast notification
   const showToast = (title: string, description: string, type: 'success' | 'error') => {
@@ -120,6 +158,234 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
     }
   }
 
+  // Logo position handling with improved transition
+  const handlePositionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newPosition = e.target.value
+    
+    // Prevent preview updates during position changes
+    setIsDragUpdatePending(true)
+    
+    // Update the position setting
+    setOverlayPosition(newPosition)
+    setIsCustomPosition(newPosition === "custom")
+    
+    // Reset custom position when switching to a preset position
+    if (newPosition !== "custom") {
+      setCustomLogoPosition({ x: 0, y: 0 })
+      setLogoPositions({})
+    }
+    
+    // Allow preview to update after a short delay
+    setTimeout(() => {
+      setIsDragUpdatePending(false)
+    }, 100)
+  }
+
+  // Enhanced handling of logo size changes for immediate visual feedback
+  const handleLogoSizeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newSize = parseInt(e.target.value)
+    
+    // Notify the UI that we're changing size to trigger animations
+    setIsResizingLogo(true)
+    
+    // If we're in custom position mode, prevent preview regeneration
+    if (isCustomPosition) {
+      setIsDragUpdatePending(true)
+    }
+    
+    // Update the size state
+    setLogoSize(newSize)
+    
+    // Clear the resizing flag after animation completes
+    setTimeout(() => {
+      setIsResizingLogo(false)
+      
+      // If in custom position mode, allow previews to update after the size change
+      if (isCustomPosition) {
+        setIsDragUpdatePending(false)
+      }
+    }, 250) // Slightly longer than the CSS transition
+  }
+
+  // Start dragging the logo - with improved update prevention
+  const handleLogoMouseDown = (e: React.MouseEvent, imageIndex: number) => {
+    if (!isCustomPosition) return
+    
+    e.preventDefault()
+    e.stopPropagation() // Prevent selection toggle
+    
+    // Immediately prevent any preview updates to avoid showing duplicate logos
+    setIsDragUpdatePending(true)
+    
+    const previewElement = previewRefs.current[imageIndex]
+    if (!previewElement) return
+    
+    // Get the element's position information
+    const rect = previewElement.getBoundingClientRect()
+    
+    // Create starting point directly at the mouse position relative to the container
+    const newPosition = {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    }
+    
+    // Store position for this specific image
+    setLogoPositions(prev => ({
+      ...prev,
+      [imageIndex]: newPosition
+    }))
+    
+    setIsDraggingLogo(true)
+    setDraggedImageIndex(imageIndex)
+    
+    // Set starting point for drag
+    setDragStartPos({
+      x: e.clientX,
+      y: e.clientY
+    })
+  }
+
+  // Handle logo movement
+  const handleLogoMouseMove = useCallback((e: MouseEvent) => {
+    if (!isDraggingLogo || !isCustomPosition || draggedImageIndex === null) return
+    
+    const previewElement = previewRefs.current[draggedImageIndex]
+    if (!previewElement) return
+    
+    const rect = previewElement.getBoundingClientRect()
+    
+    // Calculate new position directly from mouse position
+    const newPosition = {
+      x: Math.max(0, Math.min(rect.width, e.clientX - rect.left)),
+      y: Math.max(0, Math.min(rect.height, e.clientY - rect.top))
+    }
+    
+    // Update position for the specific image being dragged
+    setLogoPositions(prev => ({
+      ...prev,
+      [draggedImageIndex]: newPosition
+    }))
+  }, [isDraggingLogo, isCustomPosition, draggedImageIndex])
+
+  // End dragging - with improved cleanup
+  const handleLogoMouseUp = useCallback(() => {
+    if (isDraggingLogo) {
+      setIsDraggingLogo(false)
+      setDraggedImageIndex(null)
+      
+      // Use a slightly longer timeout to ensure all state updates are processed
+      // before allowing preview regeneration
+      setTimeout(() => {
+        setIsDragUpdatePending(false)
+      }, 100)
+    }
+  }, [isDraggingLogo])
+
+  // Mobile touch events - improved
+  const handleLogoTouchStart = (e: React.TouchEvent, imageIndex: number) => {
+    if (!isCustomPosition) return
+    
+    e.preventDefault()
+    e.stopPropagation()
+    
+    // Immediately prevent preview updates
+    setIsDragUpdatePending(true)
+    
+    const previewElement = previewRefs.current[imageIndex]
+    if (!previewElement) return
+    
+    const rect = previewElement.getBoundingClientRect()
+    const touch = e.touches[0]
+    
+    // Position at the touch point
+    const newPosition = {
+      x: touch.clientX - rect.left,
+      y: touch.clientY - rect.top
+    }
+    
+    setLogoPositions(prev => ({
+      ...prev,
+      [imageIndex]: newPosition
+    }))
+    
+    setIsDraggingLogo(true)
+    setDraggedImageIndex(imageIndex)
+    
+    setDragStartPos({
+      x: touch.clientX,
+      y: touch.clientY
+    })
+  }
+
+  const handleLogoTouchMove = useCallback((e: TouchEvent) => {
+    if (!isDraggingLogo || !isCustomPosition || draggedImageIndex === null) return
+    
+    const previewElement = previewRefs.current[draggedImageIndex]
+    if (!previewElement) return
+    
+    const rect = previewElement.getBoundingClientRect()
+    const touch = e.touches[0]
+    
+    // Calculate new position directly from touch position
+    const newPosition = {
+      x: Math.max(0, Math.min(rect.width, touch.clientX - rect.left)),
+      y: Math.max(0, Math.min(rect.height, touch.clientY - rect.top))
+    }
+    
+    // Update position for the specific image being dragged
+    setLogoPositions(prev => ({
+      ...prev,
+      [draggedImageIndex]: newPosition
+    }))
+    
+    e.preventDefault() // Prevent scrolling while dragging
+  }, [isDraggingLogo, isCustomPosition, draggedImageIndex])
+
+  // Improved touch end handling
+  const handleLogoTouchEnd = useCallback(() => {
+    if (isDraggingLogo) {
+      setIsDraggingLogo(false)
+      setDraggedImageIndex(null)
+      
+      setTimeout(() => {
+        setIsDragUpdatePending(false)
+      }, 100)
+    }
+  }, [isDraggingLogo])
+
+  // Enhancement: Cancel dragging if mouse leaves the document
+  const handleMouseLeave = useCallback((e: MouseEvent) => {
+    // Check if the mouse has left the document
+    if (isDraggingLogo && (e.clientY <= 0 || e.clientY >= window.innerHeight || 
+        e.clientX <= 0 || e.clientX >= window.innerWidth)) {
+      setIsDraggingLogo(false)
+      setDraggedImageIndex(null)
+      
+      setTimeout(() => {
+        setIsDragUpdatePending(false)
+      }, 100)
+    }
+  }, [isDraggingLogo])
+
+  // Add event listeners for drag and drop
+  useEffect(() => {
+    if (isCustomPosition) {
+      document.addEventListener('mousemove', handleLogoMouseMove)
+      document.addEventListener('mouseup', handleLogoMouseUp)
+      document.addEventListener('touchmove', handleLogoTouchMove, { passive: false })
+      document.addEventListener('touchend', handleLogoTouchEnd)
+      document.addEventListener('mouseleave', handleMouseLeave)
+    }
+    
+    return () => {
+      document.removeEventListener('mousemove', handleLogoMouseMove)
+      document.removeEventListener('mouseup', handleLogoMouseUp)
+      document.removeEventListener('touchmove', handleLogoTouchMove)
+      document.removeEventListener('touchend', handleLogoTouchEnd)
+      document.removeEventListener('mouseleave', handleMouseLeave)
+    }
+  }, [isCustomPosition, isDraggingLogo, handleLogoMouseMove, handleLogoMouseUp, handleLogoTouchMove, handleLogoTouchEnd, handleMouseLeave])
+
   // Image generation
   async function handleImageGenerate() {
     if (!imagePrompt.trim()) {
@@ -132,12 +398,14 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
     try {
       savePromptToHistory(imagePrompt)
       
-      const result = await generateImages(imagePrompt)
+      // Pass the imageFormat as the second parameter
+      const result = await generateImages(imagePrompt, imageFormat as AspectRatio)
       if (result.success && result.images) {
         const validUrls = result.images.filter((url: unknown) => typeof url === "string") as string[]
         setGeneratedImages(validUrls)
         setCombinedPreviews([])
         setSelectedImages([])
+        setLogoPositions({}) // Reset custom logo positions for new images
         
         showToast(
           "Images generated", 
@@ -230,8 +498,8 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
     showToast("Logo removed", "Your logo has been cleared.", "success")
   }
 
-  // Combine images (wrapped in useCallback to prevent dependency warnings)
-  const combineImages = useCallback(async (backgroundUrl: string, overlayUrl: string, position: string) => {
+  // Combine images with custom logo positioning
+  const combineImages = useCallback(async (backgroundUrl: string, overlayUrl: string, position: string, imageIndex: number) => {
     return new Promise<string>((resolve, reject) => {
       const canvas = document.createElement("canvas")
       const ctx = canvas.getContext("2d")
@@ -263,22 +531,52 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
           let y = 0
           const padding = Math.floor(canvas.width * 0.03) // 3% padding
 
-          // Decide Y
-          if (position.includes("bottom")) {
-            y = canvas.height - scaledHeight - padding
-          } else if (position.includes("middle") || position.includes("center")) {
-            y = (canvas.height - scaledHeight) / 2
+          if (position === "custom" && isCustomPosition) {
+            // Use the specific position for this image index
+            const customPos = logoPositions[imageIndex]
+            if (customPos) {
+              // Get reference to preview container to calculate percentage position
+              const previewElement = previewRefs.current[imageIndex]
+              if (previewElement) {
+                // Get container dimensions
+                const containerWidth = previewElement.offsetWidth
+                const containerHeight = previewElement.offsetHeight
+                
+                // Calculate position as a percentage of container dimensions
+                const relativeX = customPos.x / containerWidth
+                const relativeY = customPos.y / containerHeight
+                
+                // Apply percentage to actual canvas dimensions
+                x = (canvas.width * relativeX) - (scaledWidth / 2)
+                y = (canvas.height * relativeY) - (scaledHeight / 2)
+                
+                // Ensure the logo stays within the image boundaries
+                x = Math.max(padding, Math.min(canvas.width - scaledWidth - padding, x))
+                y = Math.max(padding, Math.min(canvas.height - scaledHeight - padding, y))
+              }
+            } else {
+              // Default to center if no custom position set
+              x = (canvas.width - scaledWidth) / 2
+              y = (canvas.height - scaledHeight) / 2
+            }
           } else {
-            y = padding // top with padding
-          }
+            // Decide Y position for preset positions
+            if (position.includes("bottom")) {
+              y = canvas.height - scaledHeight - padding
+            } else if (position.includes("middle") || position === "center") {
+              y = (canvas.height - scaledHeight) / 2
+            } else if (position.includes("top")) {
+              y = padding
+            }
 
-          // Decide X
-          if (position.includes("right")) {
-            x = canvas.width - scaledWidth - padding
-          } else if (position.includes("center")) {
-            x = (canvas.width - scaledWidth) / 2
-          } else {
-            x = padding // left with padding
+            // Decide X position for preset positions
+            if (position.includes("right")) {
+              x = canvas.width - scaledWidth - padding
+            } else if (position.includes("center")) {
+              x = (canvas.width - scaledWidth) / 2
+            } else if (position.includes("left")) {
+              x = padding
+            }
           }
 
           ctx.drawImage(overlay, x, y, scaledWidth, scaledHeight)
@@ -292,29 +590,56 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
       background.onerror = (err) => reject(err)
       background.src = backgroundUrl
     })
-  }, [logoSize])
+  }, [logoSize, isCustomPosition, logoPositions])
 
-  // Update logo previews
+  // Updated useEffect for logo preview updates with more reliable handling
   useEffect(() => {
-    async function updateLogoPreviews() {
+    // Skip preview updates if we're in the middle of dragging
+    if (isDragUpdatePending) return
+    
+    // Prevent unnecessary preview generation when nothing has changed
+    const generatePreviews = async () => {
       if (!logoUrl || generatedImages.length === 0) {
         setCombinedPreviews([])
         return
       }
+      
       try {
+        // Show loading state during generation
+        setIsProcessing(true)
+        
         const newPreviews: string[] = []
         for (let i = 0; i < generatedImages.length; i++) {
-          const combined = await combineImages(generatedImages[i], logoUrl, overlayPosition)
+          const combined = await combineImages(generatedImages[i], logoUrl, overlayPosition, i)
           newPreviews.push(combined)
         }
+        
         setCombinedPreviews(newPreviews)
       } catch (err) {
         console.error("Error combining for previews:", err)
+        showToast("Preview error", "Failed to generate logo previews. Please try again.", "error")
+      } finally {
+        setIsProcessing(false)
       }
     }
 
-    updateLogoPreviews()
-  }, [generatedImages, logoUrl, overlayPosition, logoSize, combineImages])
+    const debounceTimeout = setTimeout(() => {
+      generatePreviews()
+    }, 200) // Add small debounce for better performance
+    
+    return () => {
+      clearTimeout(debounceTimeout)
+    }
+  }, [
+    generatedImages, 
+    logoUrl, 
+    overlayPosition, 
+    logoSize, 
+    combineImages, 
+    logoPositions, 
+    isDragUpdatePending,
+    showToast
+  ])
 
   // Download image
   async function handleDownload(imageUrl: string, index: number) {
@@ -346,7 +671,7 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
       return
     }
     try {
-      const finalUrl = await combineImages(aiImageUrl, logoUrl, overlayPosition)
+      const finalUrl = await combineImages(aiImageUrl, logoUrl, overlayPosition, index)
       const res = await fetch(finalUrl)
       if (!res.ok) throw new Error("Failed to fetch combined image for download")
 
@@ -425,7 +750,107 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
     }
   }
 
-  const isDarkMode = theme === "dark"
+  // Improved LogoDragIndicator component with exact size matching
+  const LogoDragIndicator = ({ imageIndex }: { imageIndex: number }) => {
+    if (!isCustomPosition || !logoUrl) return null
+    
+    // Get the reference to this specific image container
+    const previewRef = previewRefs.current[imageIndex]
+    if (!previewRef) return null
+    
+    // Get position for this specific image, or use defaults
+    const position = logoPositions[imageIndex] || { 
+      // Default to center if no position set
+      x: previewRef.offsetWidth / 2,
+      y: previewRef.offsetHeight / 2
+    }
+    
+    const isDragging = isDraggingLogo && draggedImageIndex === imageIndex
+    
+    // Calculate exact pixel size for the logo based on container width and logo size percentage
+    const containerWidth = previewRef.offsetWidth
+    const exactLogoWidth = Math.floor(containerWidth * (logoSize / 100))
+    
+    return (
+      <>
+        {/* Full overlay to completely hide the underlying image during any drag operation */}
+        {isDragUpdatePending && (
+          <div 
+            className="absolute inset-0 z-0 pointer-events-none"
+            style={{ 
+              backgroundColor: isDarkMode ? 'rgba(17, 24, 39, 0.85)' : 'rgba(243, 244, 246, 0.85)',
+              backgroundImage: `url(${generatedImages[imageIndex]})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              filter: 'blur(1px) brightness(0.7)'
+            }}
+          >
+            {/* This intentionally leaves nothing inside to ensure the original image 
+                is completely covered but still visible as a backdrop */}
+          </div>
+        )}
+        
+        {/* Instruction text during dragging or resizing */}
+        {isDragUpdatePending && (
+          <div className="absolute top-2 left-0 right-0 z-10 text-center pointer-events-none">
+            <div className={`inline-block text-sm font-medium py-1 px-3 rounded-md ${
+              isDarkMode ? 'bg-gray-800 text-gray-200' : 'bg-white text-gray-700'
+            }`}>
+              {isDraggingLogo ? 'Drag to position logo' : `Logo size: ${logoSize}%`}
+            </div>
+          </div>
+        )}
+        
+        {/* Draggable logo indicator with exact size matching */}
+        <div 
+          className={`absolute z-20 ${
+            isDragging ? 'cursor-grabbing' : 'cursor-grab'
+          }`}
+          style={{ 
+            width: `${exactLogoWidth}px`, // Use exact pixel width instead of percentage
+            left: position.x,
+            top: position.y,
+            transform: 'translate(-50%, -50%)',
+            touchAction: 'none',
+            opacity: 1,
+            transition: isDragging 
+              ? 'none' 
+              : 'all 0.15s ease-out'
+          }}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleLogoMouseDown(e, imageIndex);
+          }}
+          onTouchStart={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleLogoTouchStart(e, imageIndex);
+          }}
+        >
+          <NextImage
+            src={logoUrl}
+            alt="Draggable logo"
+            width={exactLogoWidth}
+            height={exactLogoWidth}
+            className="w-full h-auto object-contain pointer-events-none"
+            draggable={false}
+            style={{
+              filter: `drop-shadow(0 0 3px ${isDarkMode ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.3)'})`
+            }}
+          />
+          
+          {(imageIndex === 0 && !isDraggingLogo && !Object.keys(logoPositions).length) && (
+            <div className={`absolute -top-8 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-xs font-medium px-2 py-1 rounded-md ${
+              isDarkMode ? 'bg-blue-600 text-white' : 'bg-blue-100 text-blue-800'
+            }`}>
+              Drag me to position
+            </div>
+          )}
+        </div>
+      </>
+    )
+  }
 
   return (
     <div className={`w-full shadow-sm rounded-lg border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
@@ -514,6 +939,32 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
                     : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
                 }`}
               />
+
+              <div className="flex flex-col gap-3">
+                <div className={`space-y-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
+                  <label htmlFor="imageFormat" className="block text-sm font-medium">
+                    Image Format
+                  </label>
+                  <select
+                    id="imageFormat"
+                    value={imageFormat}
+                    onChange={(e) => setImageFormat(e.target.value)}
+                    className={`w-full p-2 text-sm rounded-md ${
+                      isDarkMode
+                        ? 'bg-gray-700 border-gray-600 text-gray-200'
+                        : 'bg-white border-gray-300 text-gray-700'
+                    }`}
+                  >
+                    <option value="1:1">Square (1:1)</option>
+                    <option value="16:9">Landscape (16:9)</option>
+                    <option value="9:16">Portrait (9:16)</option>
+                    <option value="4:3">Landscape (4:3)</option>
+                    <option value="3:4">Portrait (3:4)</option>
+                    <option value="2:3">Portrait (2:3)</option>
+                    <option value="3:2">Landscape (3:2)</option>
+                  </select>
+                </div>
+              </div>
               
               {promptHistory.length > 0 && (
                 <div className="pt-1">
@@ -651,7 +1102,7 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
                             <select 
                               id="logo-position" 
                               value={overlayPosition} 
-                              onChange={(e) => setOverlayPosition(e.target.value)}
+                              onChange={handlePositionChange}
                               className={`w-full h-8 px-2 py-1 text-sm rounded-md ${
                                 isDarkMode
                                   ? 'bg-gray-800 border-gray-600 text-gray-200'
@@ -665,6 +1116,7 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
                               <option value="bottom-left">Bottom Left</option>
                               <option value="bottom-center">Bottom Center</option>
                               <option value="bottom-right">Bottom Right</option>
+                              <option value="custom">Custom (Drag & Drop)</option>
                             </select>
                           </div>
                           <div>
@@ -672,23 +1124,37 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
                             <select 
                               id="logo-size" 
                               value={logoSize.toString()} 
-                              onChange={(e) => setLogoSize(parseInt(e.target.value))}
+                              onChange={handleLogoSizeChange}
                               className={`w-full h-8 px-2 py-1 text-sm rounded-md ${
                                 isDarkMode
                                   ? 'bg-gray-800 border-gray-600 text-gray-200'
                                   : 'bg-white border-gray-300 text-gray-700'
                               }`}
                             >
+                              <option value="5">5%</option>
                               <option value="10">10%</option>
                               <option value="15">15%</option>
                               <option value="20">20%</option>
                               <option value="25">25%</option>
                               <option value="30">30%</option>
+                              <option value="40">40%</option>
+                              <option value="50">50%</option>
                             </select>
                           </div>
                         </div>
                       </div>
                     </div>
+                    
+                    {isCustomPosition && (
+                      <div className={`mt-2 p-2 rounded ${
+                        isDarkMode ? 'bg-blue-900/30 border border-blue-800 text-blue-200' : 'bg-blue-50 border border-blue-100 text-blue-700'
+                      }`}>
+                        <p className="text-xs flex items-center">
+                          <Info className="size-3 mr-1 flex-shrink-0" />
+                          Click and drag to position your logo on each image
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -790,13 +1256,17 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
                       
                     <div className="mt-3">
                       {activeTab === "original" && (
-                        <div className="grid grid-cols-2 md:grid-cols-2 gap-3">
+                        <div className={`grid grid-cols-2 md:grid-cols-2 gap-3 ${
+                          imageFormat === "9:16" || imageFormat === "2:3" || imageFormat === "3:4" 
+                            ? "md:grid-cols-3" // More columns for portrait images
+                            : "md:grid-cols-2" // Fewer columns for landscape images
+                        }`}>
                           {generatedImages.map((imgUrl, i) => {
                             const isSelected = selectedImages.includes(i)
                             return (
                               <div
                                 key={i}
-                                className={`relative aspect-square rounded-md overflow-hidden group cursor-pointer ${
+                                className={`relative ${getAspectRatioClass(imageFormat)} rounded-md overflow-hidden group cursor-pointer ${
                                   isSelected 
                                     ? "ring-2 ring-blue-500 ring-offset-2" 
                                     : isDarkMode ? "border-gray-700 border" : "border-gray-300 border"
@@ -808,7 +1278,7 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
                                   alt={`Generated image ${i+1}`}
                                   fill
                                   sizes="(max-width: 768px) 100vw, 448px"
-                                  className="object-cover"
+                                  className="object-contain"
                                 />
                                 
                                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
@@ -837,26 +1307,35 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
                       )}
                       
                       {activeTab === "withLogo" && logoUrl && combinedPreviews.length > 0 && (
-                        <div className="grid grid-cols-2 md:grid-cols-2 gap-3">
+                        <div className={`grid grid-cols-2 md:grid-cols-2 gap-3 ${
+                          imageFormat === "9:16" || imageFormat === "2:3" || imageFormat === "3:4" 
+                            ? "md:grid-cols-3" // More columns for portrait images
+                            : "md:grid-cols-2" // Fewer columns for landscape images
+                        }`}>
                           {combinedPreviews.map((previewUrl, i) => {
                             const isSelected = selectedImages.includes(i)
                             return (
                               <div
                                 key={i}
-                                className={`relative aspect-square rounded-md overflow-hidden group cursor-pointer ${
+                                ref={el => { previewRefs.current[i] = el; }}
+                                className={`relative ${getAspectRatioClass(imageFormat)} rounded-md overflow-hidden group cursor-pointer ${
                                   isSelected 
                                     ? "ring-2 ring-blue-500 ring-offset-2" 
                                     : isDarkMode ? "border-gray-700 border" : "border-gray-300 border"
                                 }`}
                                 onClick={() => toggleImageSelected(i)}
+                                style={{ touchAction: isCustomPosition ? 'none' : 'auto' }}
                               >
                                 <NextImage
                                   src={previewUrl}
                                   alt={`Branded image ${i+1}`}
                                   fill
                                   sizes="(max-width: 768px) 100vw, 448px"
-                                  className="object-cover"
+                                  className="object-contain"
                                 />
+                                
+                                {/* Logo Drag Indicator (only shown when custom position is selected) */}
+                                {isCustomPosition && <LogoDragIndicator imageIndex={i} />}
                                 
                                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
                                   <button

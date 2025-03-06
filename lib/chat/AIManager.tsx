@@ -22,8 +22,9 @@ import { buildChatObject } from "@/lib/chat/actions/Services/ChatObjectBuilder/C
 // Existing UI tool
 import showAdCreativesSwitcher from "@/components/ad-creatives-switcher"
 
-// NEW: import our showAiVideoGenerator default export
+// NEW: import our tools
 import showAiVideoGenerator from "@/components/stocks/ai-video-generator/server"
+import showCreateCampaignScreen from "@/components/stocks/create-campaign-screen/server"
 
 export type AIState = {
   chatId: string
@@ -72,11 +73,14 @@ function defineChatActions() {
     // Existing example
     showAdCreativesSwitcher,
 
-    // ---------------- NEW TOOL ----------------
-    // Instead of returning the server function directly,
-    // we wrap it in an async arrow function that calls showAiVideoGenerator().
+    // AI Video Generator
     showAiVideoGenerator: async () => {
       return showAiVideoGenerator()
+    },
+
+    // NEW: Campaign Creation Tool
+    showCreateCampaignScreen: async () => {
+      return showCreateCampaignScreen()
     }
   }
 }

@@ -1,6 +1,6 @@
 // app/api/generate-video/route.ts
 import { NextResponse } from 'next/server'
-import Replicate from 'replicate'
+import { createReplicateClient } from "@/lib/replicate-client"
 
 export const runtime = 'nodejs'
 
@@ -16,9 +16,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing prompt" }, { status: 400 })
     }
 
-    const replicate = new Replicate({
-      auth: process.env.REPLICATE_API_TOKEN,
-    })
+    const replicate = createReplicateClient(process.env.REPLICATE_API_TOKEN)
 
     // Create prediction with proper input structure
     const prediction = await replicate.predictions.create({

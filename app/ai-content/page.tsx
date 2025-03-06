@@ -11,12 +11,17 @@ import {
 } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { InfoIcon, SparklesIcon } from "lucide-react"
+import { Info as InfoIcon, Sparkles as SparklesIcon } from "lucide-react"
+
+// Actions
 import { improvePrompt } from "@/app/actions/generate-prompt"
 
-// Import your separated tabs
+// Existing tab components
 import AiVideoTab from "@/components/ai-video-tab"
 import AiImageTab from "@/components/ai-image-tab"
+
+// NEW import for your inpainting component
+import ImageImpaint from "@/components/image-inpaint"
 
 // Platform options for social media content
 const PLATFORMS = [
@@ -51,7 +56,9 @@ export default function AiContentPage() {
             </p>
             
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Optimize for:</span>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Optimize for:
+              </span>
               <Select value={platform} onValueChange={setPlatform}>
                 <SelectTrigger className="w-[160px]">
                   <SelectValue placeholder="Platform" />
@@ -71,7 +78,10 @@ export default function AiContentPage() {
                     <InfoIcon className="h-4 w-4 text-muted-foreground cursor-help" />
                   </TooltipTrigger>
                   <TooltipContent className="max-w-sm">
-                    <p>Content will be optimized for this platform&apos;s audience, algorithm preferences, and engagement patterns.</p>
+                    <p>
+                      Content will be optimized for this platform&apos;s audience, algorithm 
+                      preferences, and engagement patterns.
+                    </p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -87,16 +97,18 @@ export default function AiContentPage() {
 
           {/* VIDEO TAB */}
           <TabsContent value="video">
-            <AiVideoTab 
-              improvePrompt={enhancedImprovePrompt}
-            />
+            <AiVideoTab improvePrompt={enhancedImprovePrompt} />
           </TabsContent>
 
           {/* IMAGE TAB */}
           <TabsContent value="image">
-            <AiImageTab 
-              improvePrompt={enhancedImprovePrompt}
-            />
+            {/* Keep or remove this AiImageTab depending on what you want */}
+            <AiImageTab improvePrompt={enhancedImprovePrompt} />
+
+            <hr className="my-6" />
+
+            {/* Your new inpainting component */}
+            <ImageImpaint />
           </TabsContent>
         </Tabs>
 
@@ -107,8 +119,9 @@ export default function AiContentPage() {
           </h3>
           <p>
             Our AI content studio enhances your prompts for maximum engagement on {PLATFORMS.find(p => p.value === platform)?.label || platform}. 
-            The system analyzes platform-specific trends, audience preferences, and content algorithms to help create material more likely to perform well. 
-            For best results, start with a clear idea and let our AI enhance it with platform-specific details.
+            The system analyzes platform-specific trends, audience preferences, and content algorithms to help 
+            create material more likely to perform well. For best results, start with a clear idea and let our AI 
+            enhance it with platform-specific details.
           </p>
         </div>
       </div>
