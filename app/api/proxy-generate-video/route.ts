@@ -1,6 +1,6 @@
 // app/api/proxy-generate-video/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import Replicate from 'replicate';
+import { createReplicateClient } from '@/lib/replicate-client';
 
 // Configure longer timeout for this API route
 export const maxDuration = 300; // 5 minutes
@@ -30,9 +30,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const replicate = new Replicate({
-      auth: process.env.REPLICATE_API_TOKEN
-    });
+    const replicate = createReplicateClient(process.env.REPLICATE_API_TOKEN);
 
     // Build input object with correct typing
     const input: VideoGenerationInput = {
