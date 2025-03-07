@@ -105,13 +105,13 @@ type CampaignObjective = 'OUTCOME_TRAFFIC' | 'OUTCOME_LEADS' | 'OUTCOME_AWARENES
 // ----------------------------------------------------------------
 function calcPercentageChange(values: number[], fallbackValues?: number[]): number {
   if (values.length < 14) return 0
-  
+
   const last7 = values.slice(values.length - 7)
   const prev7 = values.slice(values.length - 14, values.length - 7)
-  
+
   const avgLast = last7.reduce((acc, n) => acc + n, 0) / 7
   const avgPrev = prev7.reduce((acc, n) => acc + n, 0) / 7
-  
+
   if (avgPrev === 0) {
     // Try fallback metrics if primary metric is flat
     if (fallbackValues && fallbackValues.length >= 14) {
@@ -119,11 +119,15 @@ function calcPercentageChange(values: number[], fallbackValues?: number[]): numb
     }
     return avgLast > 0 ? 100 : 0
   }
-  
+
   return ((avgLast - avgPrev) / avgPrev) * 100
 }
 
-// Add this function after the other utility functions
+/**
+ * Gibt für jedes Kampagnen-Ziel die primären Metriken zurück,
+ * inkl. Format-Funktionen. Hier haben wir den CTR-Fix eingebaut,
+ * indem wir val / 100 rechnen.
+ */
 function getPrimaryMetricsForCampaign(objective: CampaignObjective): Array<{
   title: string
   key: string
@@ -131,7 +135,6 @@ function getPrimaryMetricsForCampaign(objective: CampaignObjective): Array<{
   format?: (val: number) => string
   changeKey: string
 }> {
-  // Define metric configurations by campaign objective
   const primaryMetricMap: Record<string, Array<{
     title: string
     key: string
@@ -153,11 +156,12 @@ function getPrimaryMetricsForCampaign(objective: CampaignObjective): Array<{
         format: (val) => `€${val.toFixed(2)}`,
         changeKey: "spend"
       },
-      { 
+      {
+        // Fix: CTR in der API ist bereits ~100x höher => hier /100
         title: "CTR", 
         key: "average_ctr", 
         icon: <BarChart2 className="text-purple-400" />, 
-        format: (val) => `${(val || 0).toFixed(2)}%`,
+        format: (val) => `${((val || 0) / 100).toFixed(2)}%`,
         changeKey: "ctr"
       },
       { 
@@ -182,11 +186,12 @@ function getPrimaryMetricsForCampaign(objective: CampaignObjective): Array<{
         format: (val) => `€${val.toFixed(2)}`,
         changeKey: "spend"
       },
-      { 
+      {
+        // Fix: CTR in der API ist bereits ~100x höher => hier /100
         title: "CTR", 
         key: "average_ctr", 
         icon: <Target className="text-purple-400" />, 
-        format: (val) => `${(val || 0).toFixed(2)}%`,
+        format: (val) => `${((val || 0) / 100).toFixed(2)}%`,
         changeKey: "ctr"
       },
       { 
@@ -227,12 +232,11 @@ function getPrimaryMetricsForCampaign(objective: CampaignObjective): Array<{
       }
     ]
   }
-  
-  // Default to traffic metrics if objective doesn't match
+
+  // Default zu "OUTCOME_TRAFFIC", falls keines passt
   return primaryMetricMap[objective] || primaryMetricMap["OUTCOME_TRAFFIC"]
 }
 
-// For advanced breakdown - FIXED to handle different campaign types
 function parseDemographics(demoObj: Record<string, any>, objective: CampaignObjective) {
   return Object.entries(demoObj).map(([key, val]) => {
     const [ageRange, gender] = key.split('_')
@@ -242,14 +246,11 @@ function parseDemographics(demoObj: Record<string, any>, objective: CampaignObje
       impressions: val.impressions || 0,
       spend: val.spend || 0
     }
-    
-    // Add the appropriate metrics based on campaign objective
     if (objective === 'OUTCOME_LEADS') {
       result.leads = val.actions || 0
     } else if (objective === 'OUTCOME_TRAFFIC') {
       result.clicks = val.clicks || 0
     }
-    
     return result
   })
 }
@@ -261,14 +262,11 @@ function parsePlatforms(platformObj: Record<string, any>, objective: CampaignObj
       impressions: val.impressions || 0,
       spend: val.spend || 0
     }
-    
-    // Add the appropriate metrics based on campaign objective
     if (objective === 'OUTCOME_LEADS') {
       result.leads = val.actions || 0
     } else if (objective === 'OUTCOME_TRAFFIC') {
       result.clicks = val.clicks || 0
     }
-    
     return result
   })
 }
@@ -280,14 +278,11 @@ function parseTimeOfDay(tObj: Record<string, any>, objective: CampaignObjective)
       impressions: val.impressions || 0,
       spend: val.spend || 0
     }
-    
-    // Add the appropriate metrics based on campaign objective
     if (objective === 'OUTCOME_LEADS') {
       result.leads = val.actions || 0
     } else if (objective === 'OUTCOME_TRAFFIC') {
       result.clicks = val.clicks || 0
     }
-    
     return result
   })
 }
@@ -296,20 +291,18 @@ function parseTimeOfDay(tObj: Record<string, any>, objective: CampaignObjective)
 // 3) The Stock Component
 // ----------------------------------------------------------------
 export function Stock({ campaignId, isActive }: IStockProps) {
-  // 3A) AI Tools
+  // AI Tools
   const { submitUserMessage } = useActions()
   const [aiState] = useAIState()
   const [_, setMessages] = useUIState<any>()
 
-  // 3B) "loaded" state => by default, DO NOT load data
-  // If you have a reason to use isActive from outside, you can do:
-  // const [loaded, setLoaded] = useState(isActive ?? false)
+  // "loaded"-Zustand
   const [loaded, setLoaded] = useState<boolean>(false)
   const handleLoadData = useCallback(() => {
     setLoaded(true)
   }, [])
 
-  // aggregator => correct top-level metrics
+  // aggregator => obere Metriken
   const [aggregator, setAggregator] = useState<CampaignSummary | null>(null)
   // historical => daily + advanced
   const [historical, setHistorical] = useState<IHistoricalResponse | null>(null)
@@ -320,22 +313,23 @@ export function Stock({ campaignId, isActive }: IStockProps) {
   const [platformData, setPlatformData] = useState<any[]>([])
   const [timingData, setTimingData] = useState<any[]>([])
 
-  // Add these state variables
+  // objective und primary metric
   const [objective, setObjective] = useState<CampaignObjective>('OUTCOME_TRAFFIC')
   const [primaryMetric, setPrimaryMetric] = useState<string>('clicks')
 
-  // We have 3 top-level "tabs"
+  // Tabs oben
   const [topView, setTopView] = useState<'overview' | 'extended' | 'dailytable'>('overview')
-  // Chart sub-tabs
+  // Chart-Tabs
   const [chartView, setChartView] = useState<'overview' | 'demographics' | 'platforms' | 'timing'>('overview')
 
-  // for chart sizing
+  // Chart-Resize
   const chartRef = useRef<HTMLDivElement>(null)
   useResizeObserver({ ref: chartRef, box: 'border-box' })
 
-  // 3C) aggregator fetch => only if loaded===true & we have a campaignId
+  // 3C) aggregator fetch => nur wenn loaded===true und campaignId
   useEffect(() => {
     if (!loaded || !campaignId) return
+
     const loadAggregator = async () => {
       try {
         const data = await getCampaignSummary(campaignId)
@@ -343,13 +337,12 @@ export function Stock({ campaignId, isActive }: IStockProps) {
         console.log('Aggregator =>', data)
 
         if (data && data.campaign_id !== '0') {
-          // Create a more generic message based on the available metrics
           const metricHighlight = data.total_leads > 0 
             ? `${data.total_leads} leads` 
             : data.clicks > 0 
               ? `${data.clicks} clicks` 
-              : `€${data.total_spent.toFixed(2)} spent`;
-              
+              : `€${data.total_spent.toFixed(2)} spent`
+          
           const msg = `System: aggregator loaded for campaign '${data.campaign_name}'. It has ${metricHighlight}.`
           const resp = await submitUserMessage(msg, [], true)
           setMessages((old: any[]) => [...old, resp])
@@ -361,9 +354,10 @@ export function Stock({ campaignId, isActive }: IStockProps) {
     void loadAggregator()
   }, [loaded, campaignId, submitUserMessage, setMessages])
 
-  // 3D) historical fetch => only if loaded===true & campaignId
+  // 3D) historical fetch => nur wenn loaded===true und campaignId
   useEffect(() => {
     if (!loaded || !campaignId) return
+
     const loadHistorical = async () => {
       try {
         const histData = await getCampaignHistoricalMetrics(campaignId, 'last_year', true)
@@ -379,11 +373,9 @@ export function Stock({ campaignId, isActive }: IStockProps) {
         }
         setDailyMetrics(daily)
 
-        // Inside the historical fetch effect, add this code after setting historical data
+        // objective aus campaign_details
         if (histData.campaign_details?.objective) {
           setObjective(histData.campaign_details.objective)
-          
-          // Set primary metric based on campaign objective
           const metricKey = histData.campaign_details.objective === 'OUTCOME_LEADS' 
             ? 'leads'
             : histData.campaign_details.objective === 'OUTCOME_TRAFFIC'
@@ -392,7 +384,7 @@ export function Stock({ campaignId, isActive }: IStockProps) {
           setPrimaryMetric(metricKey)
         }
 
-        // advanced - FIXED: now passing objective to parsers
+        // advanced
         const adv = histData.advanced_metrics
         const campaignObj = histData.campaign_details?.objective || 'OUTCOME_TRAFFIC'
         if (adv?.demographics) setDemographicsData(parseDemographics(adv.demographics, campaignObj))
@@ -405,7 +397,7 @@ export function Stock({ campaignId, isActive }: IStockProps) {
     void loadHistorical()
   }, [loaded, campaignId])
 
-  // 3E) If not loaded => show "Load Data" button
+  // Wenn nicht geladen => Button
   if (!loaded) {
     return (
       <div className="flex h-96 items-center justify-center bg-zinc-950">
@@ -419,7 +411,7 @@ export function Stock({ campaignId, isActive }: IStockProps) {
     )
   }
 
-  // 3F) aggregator not loaded => spinner
+  // aggregator noch nicht da => Spinner
   if (!aggregator) {
     return (
       <div className="flex h-96 items-center justify-center bg-zinc-950">
@@ -428,7 +420,7 @@ export function Stock({ campaignId, isActive }: IStockProps) {
     )
   }
 
-  // 3G) historical not loaded => spinner
+  // historical nicht da => Spinner
   if (!historical) {
     return (
       <div className="flex h-96 items-center justify-center bg-zinc-950">
@@ -437,29 +429,30 @@ export function Stock({ campaignId, isActive }: IStockProps) {
     )
   }
 
-  // Get campaign summary metrics
+  // Zusammenfassung
   const campaignName = aggregator.campaign_name
   const creationDate = aggregator.creation_date
   const status = aggregator.status
 
-  // Get metrics for calculations
   const totalLeads = historical.summary?.total_leads || 0
   const totalSpent = historical.summary?.total_spend || 0
   const totalClicks = historical.summary?.total_clicks || 0
   const totalImpressions = historical.summary?.total_impressions || 0
   const totalReach = historical.summary?.total_reach || 0
-  const averageCtr = historical.summary?.average_ctr || 0
+
+  // Hier: CTR kam als ~131.11 => wir speichern es (averageCtr) noch "roh"
+  const averageCtr = historical.summary?.average_ctr || 0 
   const averageCpc = historical.summary?.average_cpc || 0
   const averageCpm = historical.summary?.average_cpm || 0
   const averageCpa = historical.summary?.average_cpa || 0
   const averageFrequency = historical.summary?.average_frequency || 0
 
-  // aggregator might say daily_budget=1000 => user wants 10 EUR (factor 100)
+  // Budget-Fix
   const aggregatorDailyBudget = (aggregator as any).daily_budget
     ? (aggregator as any).daily_budget / 100
     : 0
 
-  // Calculate percentage changes for available metrics
+  // prozent-Änderungen
   const metricArrays: Record<string, number[]> = {}
   const availableMetrics = ['leads', 'spend', 'clicks', 'impressions', 'ctr', 'cpc', 'cpm', 'reach', 'frequency']
 
@@ -472,49 +465,32 @@ export function Stock({ campaignId, isActive }: IStockProps) {
     metricChanges[metricKey] = calcPercentageChange(metricArrays[metricKey], metricArrays['spend'])
   })
 
-  // Create chart data based on primary metric
+  // ChartData
   const chartData = dailyMetrics.map((d) => {
-    // Format date for all charts
     const formattedDate = format(new Date(d.date), 'MMM d, yyyy')
-    
-    // For leads campaigns
+
     if (objective === 'OUTCOME_LEADS') {
-      return {
-        date: formattedDate,
-        leads: d.leads || 0
-      }
-    }
-    
-    // For traffic campaigns
-    else if (objective === 'OUTCOME_TRAFFIC') {
-      return {
-        date: formattedDate,
-        clicks: d.clicks || 0
-      }
-    }
-    
-    // For awareness campaigns
-    else {
-      return {
-        date: formattedDate,
-        impressions: d.impressions || 0
-      }
+      return { date: formattedDate, leads: d.leads || 0 }
+    } else if (objective === 'OUTCOME_TRAFFIC') {
+      return { date: formattedDate, clicks: d.clicks || 0 }
+    } else {
+      return { date: formattedDate, impressions: d.impressions || 0 }
     }
   })
 
-  // Get metric config based on campaign objective
+  // MetricConfigs
   const metricConfigs = getPrimaryMetricsForCampaign(objective)
 
-  // 3H) top-level display => 3 tabs => overview, extended, dailytable
+  // Haupt-Inhalt pro Top-Tab
   let topViewContent: React.ReactNode
   if (topView === 'overview') {
     topViewContent = (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {metricConfigs.map((config, index) => {
-          // Get value from summary if available, otherwise use calculated value
           const summaryValue = historical.summary?.[config.key as keyof typeof historical.summary] || 0
+          // Das Format (z.B. CTR /100) wird jetzt bereits in config.format angewandt
           const displayValue = config.format ? config.format(summaryValue) : summaryValue
-          
+
           return (
             <MetricCard
               key={index}
@@ -529,9 +505,7 @@ export function Stock({ campaignId, isActive }: IStockProps) {
       </div>
     )
   } else if (topView === 'extended') {
-    // For extended view, show additional metrics based on the campaign type
     let extendedMetrics = []
-    
     if (objective === 'OUTCOME_LEADS') {
       extendedMetrics = [
         { label: 'Impressions', value: totalImpressions },
@@ -553,18 +527,18 @@ export function Stock({ campaignId, isActive }: IStockProps) {
         { label: 'Daily Budget', value: aggregatorDailyBudget > 0 ? `€${aggregatorDailyBudget}` : '-' },
       ]
     } else {
-      // Default to awareness metrics
       extendedMetrics = [
         { label: 'CPM', value: `€${averageCpm.toFixed(2)}` },
         { label: 'Frequency', value: averageFrequency.toFixed(2) },
         { label: 'Post Engagement', value: dailyMetrics[0]?.post_engagement || 0 },
-        { label: 'CTR', value: `${averageCtr.toFixed(2)}%` },
+        // Auch hier könnte man ggf. CTR /100 rechnen, falls der Wert zu hoch ist.
+        { label: 'CTR', value: `${(averageCtr / 100).toFixed(2)}%` },
         { label: 'Clicks', value: totalClicks },
         { label: 'CPC', value: `€${averageCpc.toFixed(2)}` },
         { label: 'Daily Budget', value: aggregatorDailyBudget > 0 ? `€${aggregatorDailyBudget}` : '-' },
       ]
     }
-    
+
     topViewContent = (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {extendedMetrics.map((metric, index) => (
@@ -576,8 +550,7 @@ export function Stock({ campaignId, isActive }: IStockProps) {
       </div>
     )
   } else {
-    // topView === 'dailytable'
-    // The entire daily table
+    // dailytable
     topViewContent = (
       <div className="overflow-auto max-h-[500px] border border-zinc-800 rounded-lg">
         <table className="min-w-max border-collapse text-sm">
@@ -619,7 +592,10 @@ export function Stock({ campaignId, isActive }: IStockProps) {
                   <TdCell>€{(item.spend || 0).toFixed(2)}</TdCell>
                   <TdCell>€{(item.cpc || 0).toFixed(2)}</TdCell>
                   <TdCell>€{(item.cpm || 0).toFixed(2)}</TdCell>
-                  <TdCell>{(item.ctr || 0).toFixed(2)}%</TdCell>
+                  {
+                    // Fix: CTR /100
+                  }
+                  <TdCell>{((item.ctr || 0) / 100).toFixed(2)}%</TdCell>
                   <TdCell>{item.impressions || 0}</TdCell>
                   <TdCell>{item.reach || 0}</TdCell>
                   <TdCell>{(item.frequency || 0).toFixed(2)}</TdCell>
@@ -676,7 +652,7 @@ export function Stock({ campaignId, isActive }: IStockProps) {
     )
   }
 
-  // Helper function to get appropriate dataKey for charts based on campaign objective
+  // Für die Charts: Key auf Basis des Ziels
   const getMetricKeyForCharts = () => {
     if (objective === 'OUTCOME_LEADS') {
       return 'leads'
@@ -689,14 +665,13 @@ export function Stock({ campaignId, isActive }: IStockProps) {
 
   return (
     <div className="relative min-h-[600px] bg-zinc-950 p-6 text-white space-y-6">
-      {/* Header: Campaign Name, date, status, AI button */}
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <div className="text-2xl font-bold">{campaignName}</div>
           <div className="text-sm text-zinc-400">
             Created: {format(new Date(creationDate), 'MMM d, yyyy HH:mm')}
           </div>
-          {/* Show campaign objective */}
           <div className="text-sm text-zinc-400 flex gap-4">
             <span>Campaign Objective: {objective.replace('OUTCOME_', '')}</span>
             <span>Daily Budget: {aggregatorDailyBudget > 0 ? `€${aggregatorDailyBudget}` : 'N/A'}</span>
@@ -723,7 +698,7 @@ export function Stock({ campaignId, isActive }: IStockProps) {
         </div>
       </div>
 
-      {/* The 3 top-level slider tabs: Key Stats, Extended Stats, Daily Table */}
+      {/* Tabs: overview, extended, dailytable */}
       <div className="flex gap-2 mt-4">
         <button
           className={cn(
@@ -760,10 +735,9 @@ export function Stock({ campaignId, isActive }: IStockProps) {
         </button>
       </div>
 
-      {/* Show the content for whichever top-level tab is selected */}
       {topViewContent}
 
-      {/* For the chart area, we only show it if topView is NOT daily table */}
+      {/* Nur wenn topView != dailytable => Chart-Bereich */}
       {topView !== 'dailytable' && (
         <>
           <div className="flex gap-2 mt-6 mb-4">
@@ -771,8 +745,13 @@ export function Stock({ campaignId, isActive }: IStockProps) {
               active={chartView === 'overview'}
               onClick={() => setChartView('overview')}
               icon={<BarChart2 size={16} />}
-              label={`Daily ${objective === 'OUTCOME_LEADS' ? 'Leads' : 
-                    objective === 'OUTCOME_TRAFFIC' ? 'Clicks' : 'Impressions'}`}
+              label={`Daily ${
+                objective === 'OUTCOME_LEADS'
+                  ? 'Leads'
+                  : objective === 'OUTCOME_TRAFFIC'
+                  ? 'Clicks'
+                  : 'Impressions'
+              }`}
             />
             <ViewTab
               active={chartView === 'demographics'}
@@ -825,10 +804,7 @@ export function Stock({ campaignId, isActive }: IStockProps) {
                     contentStyle={{ backgroundColor: '#1f2937', border: 'none' }}
                     labelStyle={{ color: '#9ca3af' }}
                   />
-                  <Bar 
-                    dataKey={getMetricKeyForCharts()} 
-                    fill="#8884d8" 
-                  />
+                  <Bar dataKey={getMetricKeyForCharts()} fill="#8884d8" />
                 </BarChart>
               ) : chartView === 'platforms' ? (
                 <BarChart data={platformData}>
@@ -839,10 +815,7 @@ export function Stock({ campaignId, isActive }: IStockProps) {
                     contentStyle={{ backgroundColor: '#1f2937', border: 'none' }}
                     labelStyle={{ color: '#9ca3af' }}
                   />
-                  <Bar 
-                    dataKey={getMetricKeyForCharts()} 
-                    fill="#82ca9d" 
-                  />
+                  <Bar dataKey={getMetricKeyForCharts()} fill="#82ca9d" />
                 </BarChart>
               ) : (
                 <LineChart data={timingData}>
