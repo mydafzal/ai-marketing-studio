@@ -7,14 +7,13 @@ const openai = new OpenAI({
 })
 
 /**
- * Enhances the user's prompt for social media content generation by making it more
- * engaging, platform-optimized, and visually descriptive. Ensures uploaded images
- * are organically incorporated into the content for better AI generation results.
+ * Enhances the user's prompt for image or video generation by making minimal
+ * improvements while preserving the original intent and description.
  * 
  * @param currentPrompt The user's original prompt text
- * @param platform Optional platform context ("instagram", "tiktok", etc.)
- * @param contentType Optional content type ("video", "image", "carousel", etc.)
- * @returns An improved, platform-optimized prompt
+ * @param platform Optional platform context 
+ * @param contentType Optional content type ("video" or "image")
+ * @returns A slightly improved prompt for better AI generation
  */
 export async function improvePrompt(
   currentPrompt: string, 
@@ -27,37 +26,26 @@ export async function improvePrompt(
       messages: [
         {
           role: "system",
-          content: `You are an expert social media content strategist who specializes in creating viral ${platform} ${contentType} content.
-          
-Your task is to transform basic prompt ideas into highly detailed, engaging content directions that will:
+          content: `You are a prompt enhancement assistant for image and video generation models. Your role is to make subtle improvements to user prompts while maintaining their original intent and core description.
 
-1. OPTIMIZE FOR PLATFORM: Enhance the prompt specifically for ${platform}'s audience, trends, and algorithm preferences.
+Guidelines:
+1. PRESERVE CORE CONTENT: Keep the user's original description as the foundation.
+2. CLARIFY AMBIGUITIES: Only clarify elements that might be unclear to an AI image/video generator.
+3. ADD MINIMAL VISUAL DETAILS: Add only essential details about lighting, perspective, or style if they're missing.
+4. MAINTAIN BREVITY: Keep the prompt concise and focused.
+5. AVOID OVEREMBELLISHMENT: Do not add dramatic narrative elements, storylines, or marketing language unless specifically in the original prompt.
 
-2. ADD VISUAL DIRECTION: Incorporate detailed visual guidance that works with the user's uploaded reference image, specifying:
-   - Lighting conditions, color palettes, and mood
-   - Camera angles, movements, and transitions (for videos)
-   - Compositional elements and focal points
-   
-3. ENHANCE ENGAGEMENT HOOKS: Add elements that will drive strong engagement metrics for ${platform}, such as:
-   - Attention-grabbing openings
-   - Narrative structures that maintain viewer retention
-   - Clear call-to-actions and ways to boost sharing/saving
-   
-4. MAINTAIN AUTHENTICITY: While improving the prompt, preserve the original intent and create a style that feels genuine and on-brand.
-
-5. TECHNICAL OPTIMIZATION: Include any relevant technical specifications that might improve the ${contentType} generation quality.
-
-Format your response as a cohesive, detailed prompt paragraph that the user can directly use for AI generation. DO NOT use bullets or numbered lists in your response.`
+Your output should be a slightly refined version of the user's input that will help image/video generation models produce better results without changing the user's original vision.`
         },
         {
           role: "user",
-          content: `Here's my basic idea for ${platform} ${contentType} content: "${currentPrompt}".
-          
-I've uploaded a reference image that should be incorporated into the final content. Please transform this into a comprehensive, optimized prompt.`
+          content: `Here's my description for a ${contentType}: "${currentPrompt}"
+
+Please make minimal improvements to help image/video generation models understand it better, while staying true to my original description.`
         }
       ],
-      temperature: 0.7, // Slightly higher temperature for more creative outputs
-      max_tokens: 1000, // Allow for longer, more detailed prompts
+      temperature: 0.3, // Lower temperature for more conservative, predictable outputs
+      max_tokens: 500, // Shorter limit to prevent overembellishment
     })
 
     const improvedText = completion.choices[0]?.message?.content || ""
