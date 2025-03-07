@@ -63,7 +63,7 @@ export const CreativeDisplay: React.FC<CreativeDisplayProps> = ({
           bg-black
         `}
       >
-        <div className={`relative h-full w-full ${aspectRatioClass}`}>
+        <div className={`relative size-full ${aspectRatioClass}`}>
           {creative.type === "video" ? (
             <VideoPlayer
               videoId={creative.videoId}
@@ -173,29 +173,29 @@ export const CreativeDisplay: React.FC<CreativeDisplayProps> = ({
             See Details
           </Button>
           <Button
-            onClick={onTogglePublish}
-            variant={creative.status === "ACTIVE" ? "destructive" : "default"}
-            size="sm"
-            className={`
-              flex-1
-              ${
-                creative.status !== "ACTIVE" &&
-                "bg-green-600 hover:bg-green-700 text-white"
-              }
-            `}
-          >
-            {creative.status === "ACTIVE" ? (
-              <>
-                <EyeOff className="mr-1.5 size-4" />
-                Pause
-              </>
-            ) : (
-              <>
-                <EyeIcon className="mr-1.5 size-4" />
-                Activate
-              </>
-            )}
-          </Button>
+  onClick={onTogglePublish}
+  variant={creative.status === "ACTIVE" ? "destructive" : "default"}
+  size="sm"
+  className={`
+    flex-1
+    ${
+      creative.status !== "ACTIVE" &&
+      "bg-green-600 hover:bg-green-700 text-white"
+    }
+  `}
+>
+  {creative.status === "ACTIVE" ? (
+    <>
+      <EyeOff className="mr-1.5 size-4" />
+      Pause
+    </>
+  ) : (
+    <>
+      <EyeIcon className="mr-1.5 size-4" />
+      Activate
+    </>
+  )}
+</Button>
         </div>
       </div>
     </div>
