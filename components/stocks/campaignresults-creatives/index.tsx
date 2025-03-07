@@ -1,5 +1,6 @@
 "use client"
 
+import { toggleAdCreativeStatus } from "@/app/api/fasty-bot/toggle-ad-creative-status";
 import React, {
   useState,
   useEffect,
@@ -364,40 +365,33 @@ const AdCreativesComparison: React.FC<{ campaignId?: string }> = ({
   }
 
   // Toggle active/inactive status of creative
-  const togglePublish = async (id: string) => {
-    try {
-      const creative = adCreatives.find((c) => c.id === id)
-      if (!creative) return
+ // Toggle active/inactive status of creative
+const togglePublish = async (id: string) => {
+  try {
+    const creative = adCreatives.find((c) => c.id === id);
+    if (!creative) return;
 
-      const response = await fetch("/api/fasty-bot/proxy-update-adcreative", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          id,
-          name: creative.name,
-          object_story_spec: creative.object_story_spec,
-          status: creative.status === "ACTIVE" ? "ARCHIVED" : "ACTIVE",
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error("Failed to update creative status")
-      }
-
-      const updatedCreative = await response.json()
-
-      // Update creative status in state
-      setAdCreatives((prevCreatives) =>
-        prevCreatives.map((c) =>
-          c.id === id ? { ...c, status: updatedCreative.status } : c
-        )
-      )
-    } catch (error) {
-      console.error("Error toggling publish status:", error)
+    // Use the toggle status service that communicates with FastAPI
+    const result = await toggleAdCreativeStatus(id);
+    
+    if (!result.success) {
+      throw new Error(result.error || "Failed to toggle creative status");
     }
+
+    // Update creative status in state based on the response
+    setAdCreatives((prevCreatives) =>
+      prevCreatives.map((c) =>
+        c.id === id ? { 
+          ...c, 
+          status: result.new_status || (c.status === "ACTIVE" ? "PAUSED" : "ACTIVE") 
+        } : c
+      )
+    );
+  } catch (error) {
+    console.error("Error toggling publish status:", error);
+    // You might want to add some UI notification for errors
   }
+}
 
   // Create new creative handler
   const addNewCreative = async () => {
