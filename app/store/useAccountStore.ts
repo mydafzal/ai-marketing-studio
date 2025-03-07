@@ -1,5 +1,5 @@
 import { getUserFbAccountId } from '@/app/actions'
-import { create } from 'zustand/react'
+import { create } from 'zustand'
 
 interface AccountState {
   isFbAccountConnected: boolean
