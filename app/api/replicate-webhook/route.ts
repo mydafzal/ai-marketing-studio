@@ -29,23 +29,6 @@ async function savePredictionResult(id: string, data: WebhookPayload): Promise<v
   }
 }
 
-// Function to retrieve prediction data from KV database
-export async function getPredictionResult(id: string): Promise<WebhookPayload | null> {
-  try {
-    const key = `video:${id}`
-    const result = await kv.get(key)
-    
-    if (result) {
-      return typeof result === 'string' ? JSON.parse(result) : result as WebhookPayload
-    }
-    
-    return null
-  } catch (error) {
-    console.error("Error retrieving prediction result from KV:", error)
-    return null
-  }
-}
-
 export async function POST(req: Request) {
   try {
     // Extract the webhook payload
