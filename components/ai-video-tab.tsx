@@ -40,6 +40,9 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
   const { theme } = useTheme()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const isDarkMode = theme === "dark"
+  const pollTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const predictionStartRef = useRef<number>(Date.now())
+  const pollCountRef = useRef<number>(0)
 
   // State management
   const [videoPrompt, setVideoPrompt] = useState("")
@@ -55,6 +58,8 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
   const [generatedVideos, setGeneratedVideos] = useState<string[]>([])
   const [selectedVideos, setSelectedVideos] = useState<number[]>([])
   const [isSaving, setIsSaving] = useState(false)
+  const [currentPredictionId, setCurrentPredictionId] = useState<string | null>(null)
+  const [currentVideoStep, setCurrentVideoStep] = useState(0)
 
   // Video generation steps
   const videoGenerationSteps = [
@@ -63,7 +68,115 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
     "Synthesizing transitions and animations...",
     "Almost ready!",
   ]
-  const [currentVideoStep, setCurrentVideoStep] = useState(0)
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (pollTimerRef.current) {
+        clearTimeout(pollTimerRef.current)
+      }
+    }
+  }, [])
+  
+  // Poll for video generation status
+  const pollVideoStatus = useCallback(async (predictionId: string) => {
+    if (!predictionId) return
+    
+    // Increment the poll count
+    pollCountRef.current++
+    const pollCount = pollCountRef.current
+    
+    try {
+      console.log(`Polling (${pollCount}) for prediction: ${predictionId}, started at: ${new Date(predictionStartRef.current).toISOString()}`)
+      
+      // Pass the starting timestamp to help detect and cancel stuck predictions
+      const startTimestamp = predictionStartRef.current
+      const res = await fetch(`/api/video-status/${predictionId}?startedAt=${startTimestamp}`)
+      
+      if (!res.ok) throw new Error("Failed to fetch video status")
+      
+      const data = await res.json()
+      console.log(`Poll ${pollCount} status: ${data.status}`)
+      
+      // Update UI based on status
+      if (data.status === "completed" && data.videoUrl) {
+        // Clear polling interval
+        if (pollTimerRef.current) {
+          clearTimeout(pollTimerRef.current)
+          pollTimerRef.current = null
+        }
+        
+        console.log(`Video ready after ${pollCount} polls! URL: ${data.videoUrl}`)
+        
+        // Update UI
+        setVideoUrl(data.videoUrl)
+        setVideoGenerated(true)
+        setIsGeneratingVideo(false)
+        setCurrentVideoStep(4) // Complete all steps
+        
+        // Add to generated videos array
+        const newVideos = [...generatedVideos]
+        newVideos.push(data.videoUrl)
+        setGeneratedVideos(newVideos)
+        
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 },
+        })
+
+        showToast("Success", "Your AI video has been generated!", "success")
+      } 
+      else if (data.status === "failed") {
+        // Clear polling interval
+        if (pollTimerRef.current) {
+          clearTimeout(pollTimerRef.current)
+          pollTimerRef.current = null
+        }
+        
+        console.error(`Video generation failed after ${pollCount} polls: ${data.error || "Unknown error"}`)
+        setIsGeneratingVideo(false)
+        showToast(
+          "Generation failed", 
+          data.error || "Unable to create video. Please try again with a different prompt.", 
+          "error"
+        )
+      }
+      else {
+        // Still processing, update progress based on status and poll count
+        if (data.status === "starting") {
+          console.log(`Still starting after ${pollCount} polls`)
+          setCurrentVideoStep(1)
+        } else if (data.status === "processing") {
+          console.log(`Processing after ${pollCount} polls`)
+          
+          // Update step based on poll count
+          if (pollCount > 5 && pollCount <= 15) {
+            setCurrentVideoStep(2)
+          } else if (pollCount > 15) {
+            setCurrentVideoStep(3)
+          }
+        }
+        
+        // Continue polling - shorter interval (2.5 seconds) for better responsiveness
+        pollTimerRef.current = setTimeout(() => pollVideoStatus(predictionId), 2500)
+        
+        // After 30 polls (75 seconds) with no progress, show a warning to the user
+        if (pollCount === 30 && data.status === "starting") {
+          showToast(
+            "Processing slowly", 
+            "The video is taking longer than expected to process. Please be patient.", 
+            "error"
+          )
+        }
+      }
+    } catch (err) {
+      console.error(`Error in poll ${pollCount}:`, err)
+      
+      // Continue polling despite error - longer interval (5 seconds) after errors
+      pollTimerRef.current = setTimeout(() => pollVideoStatus(predictionId), 5000)
+    }
+  }, [generatedVideos])
 
   // Show toast notification
   const showToast = (title: string, description: string, type: 'success' | 'error') => {
@@ -146,23 +259,15 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
     setIsGeneratingVideo(true)
     setVideoGenerated(false)
     setVideoUrl("")
-    setCurrentVideoStep(0)
+    setCurrentVideoStep(1)
+    
+    // Reset tracking variables
+    predictionStartRef.current = Date.now()
+    pollCountRef.current = 0
     
     try {
       savePromptToHistory(videoPrompt)
       
-      // Step time simulation (45s each step) for a 3-minute generation
-      const STEP_DURATION = 45000
-      let step = 0
-      const intervalId = setInterval(() => {
-        if (step < videoGenerationSteps.length) {
-          setCurrentVideoStep(step + 1)
-          step++
-        } else {
-          clearInterval(intervalId)
-        }
-      }, STEP_DURATION)
-
       const dataUrl = await fileToDataURL(videoImageFile)
       const res = await fetch("/api/generate-video", {
         method: "POST",
@@ -185,30 +290,43 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
         throw new Error(json.error || "No success from video generation service.")
       }
 
-      setVideoUrl(json.videoUrl)
-      setVideoGenerated(true)
-      
-      // Add to generated videos array
-      const newVideos = [...generatedVideos]
-      newVideos.push(json.videoUrl)
-      setGeneratedVideos(newVideos)
-      
-      confetti({
-        particleCount: 100,
-        spread: 70,
-        origin: { y: 0.6 },
-      })
+      // If we get a video URL directly (synchronous response)
+      if (json.videoUrl) {
+        console.log("Received video URL directly:", json.videoUrl)
+        setVideoUrl(json.videoUrl)
+        setVideoGenerated(true)
+        setIsGeneratingVideo(false)
+        setCurrentVideoStep(4) // Complete all steps
+        
+        // Add to generated videos array
+        const newVideos = [...generatedVideos]
+        newVideos.push(json.videoUrl)
+        setGeneratedVideos(newVideos)
+        
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 },
+        })
+        
+        showToast("Success", "Your AI video has been generated!", "success")
+        return
+      }
 
-      showToast("Success", "Your AI video has been generated!", "success")
+      // Otherwise, store the prediction ID and start polling
+      console.log("Starting polling for prediction:", json.predictionId)
+      setCurrentPredictionId(json.predictionId)
+      
+      // Start polling for status
+      pollVideoStatus(json.predictionId)
     } catch (err: any) {
       console.error("Error generating video:", err)
+      setIsGeneratingVideo(false)
       showToast(
         "Generation failed", 
         err.message || "Unable to create video. Please try again with a different prompt.", 
         "error"
       )
-    } finally {
-      setIsGeneratingVideo(false)
     }
   }
 
@@ -840,7 +958,7 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
         }`}>
           <div className="flex items-center text-xs text-gray-500">
             <span className={`mr-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-              Powered by Runway AI
+              Powered by Replicate API
             </span>
           </div>
           

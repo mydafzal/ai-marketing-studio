@@ -16,7 +16,7 @@ import { improvePrompt } from "@/app/actions/generate-prompt"
 /**
  * A client component that:
  *  - Lets user enter a prompt, optionally upload an image, pick duration/ratio
- *  - Has a button to “Improve with AI” (calls `improvePrompt(...)`)
+ *  - Has a button to "Improve with AI" (calls `improvePrompt(...)`)
  *  - Generates a video with /api/generate-video
  *  - Offers a Download button for the final MP4
  */
@@ -33,6 +33,7 @@ export function AiVideoGenerator() {
   const [isVideoGenerating, setIsVideoGenerating] = useState(false)
   const [videoGenerated, setVideoGenerated] = useState(false)
   const [videoUrl, setVideoUrl] = useState("")
+  const [predictionId, setPredictionId] = useState("")
 
   // Steps displayed while generating
   const generationSteps = useMemo(() => [
@@ -43,7 +44,7 @@ export function AiVideoGenerator() {
   ], [])
   const [currentStepIndex, setCurrentStepIndex] = useState(0)
 
-  // For the “Improve with AI” flow
+  // For the "Improve with AI" flow
   const [isImproving, setIsImproving] = useState(false)
 
   // -------------------------
@@ -133,6 +134,7 @@ export function AiVideoGenerator() {
     setIsVideoGenerating(true)
     setVideoGenerated(false)
     setVideoUrl("")
+    setPredictionId("")
     setCurrentStepIndex(0)
 
     try {
@@ -173,22 +175,97 @@ export function AiVideoGenerator() {
         throw new Error(json.error || "No success from replicate.")
       }
 
-      // SUCCESS: set the final video URL & states
-      setVideoUrl(json.videoUrl)
-      setVideoGenerated(true)
-      confetti({
-        particleCount: 100,
-        spread: 70,
-        origin: { y: 0.6 }
-      })
-      toast.success("Your AI video has been generated!")
-
-      // IMPORTANT: if successful => turn off "generating"
-      setIsVideoGenerating(false)
+      // If we got a predictionId without a videoUrl, we need to poll for status
+      if (json.predictionId && json.status !== "completed") {
+        console.log(`Starting polling for video with prediction ID: ${json.predictionId}`)
+        setPredictionId(json.predictionId)
+        
+        // Record when we started polling to detect stuck generations
+        const startedAt = Date.now()
+        
+        // Start polling for status updates
+        const checkStatus = async () => {
+          try {
+            console.log(`Checking status for prediction ID: ${json.predictionId}`)
+            const statusRes = await fetch(`/api/video-status/${json.predictionId}?startedAt=${startedAt}`)
+            
+            if (!statusRes.ok) {
+              console.error(`Error response from status check: ${statusRes.status}`)
+              return false
+            }
+            
+            const statusJson = await statusRes.json()
+            console.log(`Video status update: ${statusJson.status}`)
+            
+            if (statusJson.status === "completed" && statusJson.videoUrl) {
+              setVideoUrl(statusJson.videoUrl)
+              setVideoGenerated(true)
+              setIsVideoGenerating(false)
+              confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 }
+              })
+              toast.success("Your AI video has been generated!")
+              return true // Done polling
+            } else if (statusJson.status === "failed") {
+              setIsVideoGenerating(false)
+              toast.error(statusJson.error || "Video generation failed")
+              return true // Done polling due to failure
+            }
+            
+            // Continue polling
+            return false
+          } catch (pollError) {
+            console.error("Error polling for video status:", pollError)
+            return false
+          }
+        }
+        
+        // Setup polling with recursive setTimeout to adapt to longer waits
+        const poll = async () => {
+          // Start with short intervals, then increase if still processing
+          let attempts = 0
+          let done = false
+          
+          const attemptCheck = async () => {
+            if (done) return
+            
+            done = await checkStatus()
+            attempts++
+            
+            if (!done) {
+              // Exponential backoff with max interval of 10 seconds
+              const delay = Math.min(3000 + (attempts * 1000), 10000)
+              setTimeout(attemptCheck, delay)
+            }
+          }
+          
+          // Start polling
+          attemptCheck()
+        }
+        
+        // Begin polling but don't await it
+        poll()
+        
+      } else if (json.videoUrl) {
+        // Direct success (synchronous response with video URL)
+        setVideoUrl(json.videoUrl)
+        setVideoGenerated(true)
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 }
+        })
+        toast.success("Your AI video has been generated!")
+        setIsVideoGenerating(false)
+      } else {
+        // Unexpected response with neither videoUrl nor valid predictionId
+        throw new Error("No video URL or valid prediction ID returned")
+      }
     } catch (error: any) {
       console.error("Error generating video:", error)
       toast.error(error.message || "Failed to generate video. Please try again.")
-      // If error => turn off "generating"
       setIsVideoGenerating(false)
     }
   }
@@ -247,6 +324,11 @@ export function AiVideoGenerator() {
           <p className="text-sm text-gray-500 dark:text-gray-400">
             Creating your custom video...
           </p>
+          {predictionId && (
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              ID: {predictionId}
+            </p>
+          )}
         </div>
         <div className="flex justify-center space-x-2">
           <div className="size-2 bg-primary rounded-full animate-bounce" />
