@@ -1,6 +1,9 @@
 import {NextRequest, NextResponse} from 'next/server'
 import {fetchChatFbCampaignId} from "@/app/actions";
 
+// Mark this route as dynamic since it uses request.url
+export const dynamic = 'force-dynamic'
+
 export async function GET(req: NextRequest) {
     try {
         const {searchParams} = new URL(req.url)
@@ -13,26 +16,13 @@ export async function GET(req: NextRequest) {
         const result = await fetchChatFbCampaignId(chatSlug)
 
         console.log('chatSlug', chatSlug)
-        console.log('result of fetchChatFbCampaignId', result)
 
-        if (result.error) {
-            return NextResponse.json({error: result.error}, {status: 400})
-        }
-
-        return NextResponse.json({
-            success: true,
-            fbCampaignId: result.fbCampaignId
-        })
-    } catch (error: unknown) {
+        return NextResponse.json(result)
+    } catch (error) {
         console.error('Error in fetch-chat-fb-campaign-id route:', error)
-
-        let errorMessage = 'An unexpected error occurred'
-        if (error instanceof Error) {
-            errorMessage = error.message
-        } else if (typeof error === 'string') {
-            errorMessage = error
-        }
-
-        return NextResponse.json({error: errorMessage}, {status: 500})
+        return NextResponse.json({
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error occurred',
+        }, {status: 500})
     }
 }

@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { getFbMarketingApiKey } from '@/app/actions';
 
+// Mark this route as dynamic since it uses request.headers
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: Request) {
   try {
     // Parse the incoming request body
@@ -13,79 +16,63 @@ export async function POST(request: Request) {
       const tokenResponse = await getFbMarketingApiKey();
       if (tokenResponse?.success && tokenResponse?.token) {
         fbApiKey = tokenResponse.token;
+      } else {
+        return NextResponse.json({ success: false, error: 'Failed to get FB API key' }, { status: 401 });
       }
     }
 
-    // Basic validation
     if (!ad_creative_id) {
-      return NextResponse.json(
-        { error: 'Missing required parameter: ad_creative_id' },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: 'Missing ad_creative_id' }, { status: 400 });
     }
 
-    console.log('Attempting to toggle status for ad creative:', ad_creative_id);
+    // Get current status
+    const statusResponse = await fetch(`https://graph.facebook.com/v18.0/${ad_creative_id}?fields=status&access_token=${fbApiKey}`, {
+      method: 'GET',
+    });
 
-    // Construct the FastAPI URL with the ad_creative_id as a query parameter
-    const fastyApiUrl = process.env.FASTY_API_URL || 'http://localhost:8000';
-    const endpointUrl = `${fastyApiUrl}/facebook/exec/direct/ads/switch-ad-creative-status?ad_creative_id=${ad_creative_id}`;    
-    console.log('Calling FastAPI endpoint:', endpointUrl);
+    const statusData = await statusResponse.json();
     
-    // Call the FastAPI endpoint with no body, since we're passing the parameter in the URL
-    const response = await fetch(endpointUrl, {
+    if (!statusResponse.ok) {
+      return NextResponse.json({ success: false, error: statusData.error || 'Failed to get ad creative status' }, { status: statusResponse.status });
+    }
+
+    const currentStatus = statusData.status;
+    console.log(`Current status of ad creative ${ad_creative_id}: ${currentStatus}`);
+
+    // Toggle status (ACTIVE -> PAUSED, PAUSED -> ACTIVE)
+    const newStatus = currentStatus === 'ACTIVE' ? 'PAUSED' : 'ACTIVE';
+
+    // Update the status
+    const toggleResponse = await fetch(`https://graph.facebook.com/v18.0/${ad_creative_id}`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.FASTY_API_TOKEN ?? ''}`,
-        'fb-api-key': fbApiKey,
+        'Content-Type': 'application/json',
       },
-      // No body because we're using query parameters
-    });
-    
-    console.log('FastAPI response status:', response.status);
-    
-    // Get response text for debugging
-    const responseText = await response.text();
-    console.log('Response text:', responseText);
-    
-    // Check for errors
-    if (!response.ok) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Failed to toggle ad creative status', 
-          details: responseText
-        },
-        { status: response.status }
-      );
-    }
-    
-    // Parse and return the response
-    let responseData;
-    try {
-      responseData = JSON.parse(responseText);
-      console.log('Parsed response data:', responseData);
-    } catch (e) {
-      console.log('Failed to parse response as JSON');
-      responseData = { message: responseText };
-    }
-    
-    // Return success response
-    return NextResponse.json({
-      success: true,
-      previous_status: responseData.previous_status,
-      new_status: responseData.new_status,
-      result: responseData.result
+      body: JSON.stringify({
+        status: newStatus,
+        access_token: fbApiKey,
+      }),
     });
 
-  } catch (err) {
-    console.error('Error in Next.js route:', err);
-    return NextResponse.json(
-      { 
-        success: false,
-        error: 'An unexpected error occurred', 
-        details: String(err) 
-      },
-      { status: 500 }
-    );
+    const toggleData = await toggleResponse.json();
+    
+    if (!toggleResponse.ok) {
+      return NextResponse.json({ success: false, error: toggleData.error || 'Failed to toggle ad creative status' }, { status: toggleResponse.status });
+    }
+
+    return NextResponse.json({ 
+      success: true, 
+      data: {
+        ad_creative_id,
+        previous_status: currentStatus,
+        new_status: newStatus
+      } 
+    });
+  } catch (error) {
+    console.error('Error toggling ad creative status:', error);
+    return NextResponse.json({ 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error occurred' 
+    }, { status: 500 });
   }
 }

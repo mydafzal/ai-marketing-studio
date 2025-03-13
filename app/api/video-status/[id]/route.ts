@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60 // Set status check timeout to 60 seconds
+export const dynamic = 'force-dynamic' // Prevent static optimization
 
 export async function GET(
   request: Request,

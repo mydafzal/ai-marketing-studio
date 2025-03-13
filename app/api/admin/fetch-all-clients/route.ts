@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { fetchAllUsers } from '@/app/actions'
 
+// Mark this route as dynamic to prevent static optimization
+export const dynamic = 'force-dynamic'
+
 export async function GET(req: NextRequest) {
     console.log('Fetch all clients API route called');
     try {
