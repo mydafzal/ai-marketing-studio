@@ -157,11 +157,11 @@ function getPrimaryMetricsForCampaign(objective: CampaignObjective): Array<{
         changeKey: "spend"
       },
       {
-        // Fix: CTR in der API ist bereits ~100x höher => hier /100
+        // CTR displayed as-is from API
         title: "CTR", 
         key: "average_ctr", 
         icon: <BarChart2 className="text-purple-400" />, 
-        format: (val) => `${((val || 0) / 100).toFixed(2)}%`,
+        format: (val) => `${(val || 0).toFixed(2)}%`,
         changeKey: "ctr"
       },
       { 
@@ -187,11 +187,11 @@ function getPrimaryMetricsForCampaign(objective: CampaignObjective): Array<{
         changeKey: "spend"
       },
       {
-        // Fix: CTR in der API ist bereits ~100x höher => hier /100
+        // CTR displayed as-is from API
         title: "CTR", 
         key: "average_ctr", 
         icon: <Target className="text-purple-400" />, 
-        format: (val) => `${((val || 0) / 100).toFixed(2)}%`,
+        format: (val) => `${(val || 0).toFixed(2)}%`,
         changeKey: "ctr"
       },
       { 
@@ -237,6 +237,9 @@ function getPrimaryMetricsForCampaign(objective: CampaignObjective): Array<{
   return primaryMetricMap[objective] || primaryMetricMap["OUTCOME_TRAFFIC"]
 }
 
+/**
+ * Enhanced parsing function for demographics data that works with all campaign types
+ */
 function parseDemographics(demoObj: Record<string, any>, objective: CampaignObjective) {
   return Object.entries(demoObj).map(([key, val]) => {
     const [ageRange, gender] = key.split('_')
@@ -246,15 +249,25 @@ function parseDemographics(demoObj: Record<string, any>, objective: CampaignObje
       impressions: val.impressions || 0,
       spend: val.spend || 0
     }
+    
     if (objective === 'OUTCOME_LEADS') {
       result.leads = val.actions || 0
+      result.actions = val.actions || 0
     } else if (objective === 'OUTCOME_TRAFFIC') {
       result.clicks = val.clicks || 0
+      result.actions = val.clicks || 0  // Set actions to clicks for traffic campaigns
+    } else {
+      // For awareness campaigns or any other type
+      result.impressions = val.impressions || 0
+      result.actions = val.impressions || 0  // Set actions to impressions for awareness campaigns
     }
     return result
   })
 }
 
+/**
+ * Enhanced parsing function for platforms data that works with all campaign types
+ */
 function parsePlatforms(platformObj: Record<string, any>, objective: CampaignObjective) {
   return Object.entries(platformObj).map(([platform, val]) => {
     const result: any = {
@@ -262,15 +275,25 @@ function parsePlatforms(platformObj: Record<string, any>, objective: CampaignObj
       impressions: val.impressions || 0,
       spend: val.spend || 0
     }
+    
     if (objective === 'OUTCOME_LEADS') {
       result.leads = val.actions || 0
+      result.actions = val.actions || 0
     } else if (objective === 'OUTCOME_TRAFFIC') {
       result.clicks = val.clicks || 0
+      result.actions = val.clicks || 0  // Set actions to clicks for traffic campaigns
+    } else {
+      // For awareness campaigns or any other type
+      result.impressions = val.impressions || 0
+      result.actions = val.impressions || 0  // Set actions to impressions for awareness campaigns
     }
     return result
   })
 }
 
+/**
+ * Enhanced parsing function for time of day data that works with all campaign types
+ */
 function parseTimeOfDay(tObj: Record<string, any>, objective: CampaignObjective) {
   return Object.entries(tObj).map(([hour, val]) => {
     const result: any = {
@@ -278,10 +301,17 @@ function parseTimeOfDay(tObj: Record<string, any>, objective: CampaignObjective)
       impressions: val.impressions || 0,
       spend: val.spend || 0
     }
+    
     if (objective === 'OUTCOME_LEADS') {
       result.leads = val.actions || 0
+      result.actions = val.actions || 0
     } else if (objective === 'OUTCOME_TRAFFIC') {
       result.clicks = val.clicks || 0
+      result.actions = val.clicks || 0  // Set actions to clicks for traffic campaigns
+    } else {
+      // For awareness campaigns or any other type
+      result.impressions = val.impressions || 0
+      result.actions = val.impressions || 0  // Set actions to impressions for awareness campaigns
     }
     return result
   })
@@ -429,23 +459,24 @@ export function Stock({ campaignId, isActive }: IStockProps) {
     )
   }
 
-  // Zusammenfassung
+  // Zusammenfassung - Use aggregator for standard metrics as it's more accurate
   const campaignName = aggregator.campaign_name
   const creationDate = aggregator.creation_date
   const status = aggregator.status
 
-  const totalLeads = historical.summary?.total_leads || 0
-  const totalSpent = historical.summary?.total_spend || 0
-  const totalClicks = historical.summary?.total_clicks || 0
-  const totalImpressions = historical.summary?.total_impressions || 0
-  const totalReach = historical.summary?.total_reach || 0
+  // Use aggregator data for primary metrics (more accurate) rather than historical
+  const totalLeads = aggregator.total_leads || 0
+  const totalSpent = aggregator.total_spent || 0
+  const totalClicks = aggregator.clicks || 0 
+  const totalImpressions = aggregator.impressions || 0
+  const totalReach = aggregator.reach || 0
+  const averageCtr = aggregator.ctr || 0
+  const averageFrequency = aggregator.frequency || 0
 
-  // Hier: CTR kam als ~131.11 => wir speichern es (averageCtr) noch "roh"
-  const averageCtr = historical.summary?.average_ctr || 0 
+  // Get these from historical if they're not in aggregator
   const averageCpc = historical.summary?.average_cpc || 0
   const averageCpm = historical.summary?.average_cpm || 0
   const averageCpa = historical.summary?.average_cpa || 0
-  const averageFrequency = historical.summary?.average_frequency || 0
 
   // Budget-Fix
   const aggregatorDailyBudget = (aggregator as any).daily_budget
@@ -487,7 +518,27 @@ export function Stock({ campaignId, isActive }: IStockProps) {
     topViewContent = (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {metricConfigs.map((config, index) => {
-          const summaryValue = historical.summary?.[config.key as keyof typeof historical.summary] || 0
+          // Use aggregator for standard metrics instead of historical.summary
+          let summaryValue = 0;
+          
+          // Get value from aggregator first (more accurate)
+          if (config.key === "total_leads") {
+            summaryValue = aggregator.total_leads || 0;
+          } else if (config.key === "total_spend") {
+            summaryValue = aggregator.total_spent || 0;
+          } else if (config.key === "total_clicks") {
+            summaryValue = aggregator.clicks || 0;
+          } else if (config.key === "total_impressions") {
+            summaryValue = aggregator.impressions || 0;
+          } else if (config.key === "average_ctr") {
+            summaryValue = aggregator.ctr || 0;
+          } else if (config.key === "average_frequency") {
+            summaryValue = aggregator.frequency || 0;
+          } else {
+            // Fallback to historical.summary if not in aggregator
+            summaryValue = historical.summary?.[config.key as keyof typeof historical.summary] || 0;
+          }
+          
           // Das Format (z.B. CTR /100) wird jetzt bereits in config.format angewandt
           const displayValue = config.format ? config.format(summaryValue) : summaryValue
 
@@ -531,8 +582,8 @@ export function Stock({ campaignId, isActive }: IStockProps) {
         { label: 'CPM', value: `€${averageCpm.toFixed(2)}` },
         { label: 'Frequency', value: averageFrequency.toFixed(2) },
         { label: 'Post Engagement', value: dailyMetrics[0]?.post_engagement || 0 },
-        // Auch hier könnte man ggf. CTR /100 rechnen, falls der Wert zu hoch ist.
-        { label: 'CTR', value: `${(averageCtr / 100).toFixed(2)}%` },
+        // CTR display fix
+        { label: 'CTR', value: `${(averageCtr).toFixed(2)}%` },
         { label: 'Clicks', value: totalClicks },
         { label: 'CPC', value: `€${averageCpc.toFixed(2)}` },
         { label: 'Daily Budget', value: aggregatorDailyBudget > 0 ? `€${aggregatorDailyBudget}` : '-' },
@@ -592,10 +643,8 @@ export function Stock({ campaignId, isActive }: IStockProps) {
                   <TdCell>€{(item.spend || 0).toFixed(2)}</TdCell>
                   <TdCell>€{(item.cpc || 0).toFixed(2)}</TdCell>
                   <TdCell>€{(item.cpm || 0).toFixed(2)}</TdCell>
-                  {
-                    // Fix: CTR /100
-                  }
-                  <TdCell>{((item.ctr || 0) / 100).toFixed(2)}%</TdCell>
+                  {/* Fix: CTR display as-is */}
+                  <TdCell>{(item.ctr || 0).toFixed(2)}%</TdCell>
                   <TdCell>{item.impressions || 0}</TdCell>
                   <TdCell>{item.reach || 0}</TdCell>
                   <TdCell>{(item.frequency || 0).toFixed(2)}</TdCell>
@@ -804,7 +853,8 @@ export function Stock({ campaignId, isActive }: IStockProps) {
                     contentStyle={{ backgroundColor: '#1f2937', border: 'none' }}
                     labelStyle={{ color: '#9ca3af' }}
                   />
-                  <Bar dataKey={getMetricKeyForCharts()} fill="#8884d8" />
+                  {/* Always use actions for advanced metrics charts */}
+                  <Bar dataKey="actions" fill="#8884d8" />
                 </BarChart>
               ) : chartView === 'platforms' ? (
                 <BarChart data={platformData}>
@@ -815,7 +865,8 @@ export function Stock({ campaignId, isActive }: IStockProps) {
                     contentStyle={{ backgroundColor: '#1f2937', border: 'none' }}
                     labelStyle={{ color: '#9ca3af' }}
                   />
-                  <Bar dataKey={getMetricKeyForCharts()} fill="#82ca9d" />
+                  {/* Always use actions for advanced metrics charts */}
+                  <Bar dataKey="actions" fill="#82ca9d" />
                 </BarChart>
               ) : (
                 <LineChart data={timingData}>
@@ -826,9 +877,10 @@ export function Stock({ campaignId, isActive }: IStockProps) {
                     contentStyle={{ backgroundColor: '#1f2937', border: 'none' }}
                     labelStyle={{ color: '#9ca3af' }}
                   />
+                  {/* Always use actions for advanced metrics charts */}
                   <Line
                     type="monotone"
-                    dataKey={getMetricKeyForCharts()}
+                    dataKey="actions"
                     stroke="#ffa726"
                     strokeWidth={2}
                     dot={false}
