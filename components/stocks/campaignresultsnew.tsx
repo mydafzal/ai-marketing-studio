@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 'use client'
 
 import React, { useCallback, useState, useRef, useEffect } from 'react'
@@ -57,6 +58,9 @@ interface IDailyMetric {
   website_ctr?: number
   post_engagement?: number
   link_clicks?: number
+  inline_link_clicks?: number
+  outbound_clicks?: number
+  conversions?: number
   // Add catch-all for dynamic properties
   [key: string]: number | string | undefined
 }
@@ -98,7 +102,14 @@ interface IHistoricalResponse {
   advanced_metrics?: IAdvancedMetrics
 }
 
-type CampaignObjective = 'OUTCOME_TRAFFIC' | 'OUTCOME_LEADS' | 'OUTCOME_AWARENESS' | string
+type CampaignObjective = 
+  | 'OUTCOME_AWARENESS'    // Awareness
+  | 'OUTCOME_TRAFFIC'      // Traffic
+  | 'OUTCOME_ENGAGEMENT'   // Engagement
+  | 'OUTCOME_LEADS'        // Leads
+  | 'OUTCOME_APP_PROMOTION' // App Promotion
+  | 'OUTCOME_SALES'        // Sales/Conversions
+  | string
 
 // ----------------------------------------------------------------
 // 2) Utility: Rolling 14-day Change
@@ -238,28 +249,142 @@ function getPrimaryMetricsForCampaign(objective: CampaignObjective): Array<{
 }
 
 /**
+ * Get the appropriate metric name based on campaign objective
+ */
+function getMetricNameForObjective(objective: CampaignObjective): string {
+  switch (objective) {
+    case 'OUTCOME_LEADS': return 'Leads';
+    case 'OUTCOME_TRAFFIC': return 'Clicks';
+    case 'OUTCOME_AWARENESS': return 'Reach';
+    case 'OUTCOME_ENGAGEMENT': return 'Engagements';
+    case 'OUTCOME_APP_PROMOTION': return 'App Installs';
+    case 'OUTCOME_SALES': return 'Conversions';
+    default: return 'Impressions';
+  }
+}
+
+/**
+ * Format a platform name for display - converts snake_case to Title Case
+ * and removes duplicate words
+ */
+function formatPlatformName(platform: string): string {
+  // First, split by underscores
+  const parts = platform.split('_');
+  
+  // Remove duplicates in sequence
+  const deduplicatedParts = parts.filter((part, index) => {
+    return index === 0 || part !== parts[index - 1];
+  });
+  
+  // Now capitalize each word
+  return deduplicatedParts
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+}
+
+/**
+ * Get emoji for platform - empty implementation as requested
+ */
+function getPlatformEmoji(platform: string): string {
+  return '';
+}
+
+/**
+ * Format a demographic segment for display
+ */
+function formatDemographic(ageRange: string, gender: string): string {
+  const genderDisplay = gender.charAt(0).toUpperCase() + gender.slice(1).toLowerCase();
+  return `${ageRange} (${genderDisplay})`;
+}
+
+/**
+ * Format hour for display
+ */
+function formatHour(hour: string): string {
+  const hourNum = parseInt(hour);
+  // Create a formatted time string
+  const ampm = hourNum >= 12 ? 'PM' : 'AM';
+  const hourDisplay = hourNum % 12 === 0 ? 12 : hourNum % 12;
+  return `${hourDisplay}:00 ${ampm}`;
+}
+
+/**
  * Enhanced parsing function for demographics data that works with all campaign types
  */
 function parseDemographics(demoObj: Record<string, any>, objective: CampaignObjective) {
+  const metricName = getMetricNameForObjective(objective);
+  
   return Object.entries(demoObj).map(([key, val]) => {
     const [ageRange, gender] = key.split('_')
+    // Format for display
+    const displayLabel = formatDemographic(ageRange, gender);
+    
     const result: any = {
       ageRange,
       gender,
+      label: key,
+      displayLabel,
       impressions: val.impressions || 0,
-      spend: val.spend || 0
+      reach: val.reach || 0,
+      spend: val.spend || 0,
+      // Add metric name for tooltip display
+      metricName: metricName
     }
     
-    if (objective === 'OUTCOME_LEADS') {
-      result.leads = val.actions || 0
-      result.actions = val.actions || 0
-    } else if (objective === 'OUTCOME_TRAFFIC') {
-      result.clicks = val.clicks || 0
-      result.actions = val.clicks || 0  // Set actions to clicks for traffic campaigns
-    } else {
-      // For awareness campaigns or any other type
-      result.impressions = val.impressions || 0
-      result.actions = val.impressions || 0  // Set actions to impressions for awareness campaigns
+    // Store all available metrics
+    if (val.leads) result.leads = val.leads || 0;
+    if (val.clicks) result.clicks = val.clicks || 0;
+    if (val.actions) result.actions_original = val.actions || 0;
+    if (val.video_views) result.video_views = val.video_views || 0;
+    if (val.app_installs) result.app_installs = val.app_installs || 0;
+    if (val.purchases) result.purchases = val.purchases || 0;
+    if (val.engagement || val.post_engagement) result.engagement = val.engagement || val.post_engagement || 0;
+    if (val.inline_link_clicks) result.inline_link_clicks = val.inline_link_clicks || 0;
+    if (val.outbound_clicks) result.outbound_clicks = val.outbound_clicks || 0;
+    if (val.conversions) result.conversions = val.conversions || 0;
+    
+    // Set the appropriate primary metric based on campaign objective
+    // Also populate actions field for chart display
+    switch (objective) {
+      case 'OUTCOME_LEADS':
+        result.leads = val.actions || 0;
+        result.actions = val.actions || 0;
+        break;
+      case 'OUTCOME_TRAFFIC':
+        result.clicks = val.clicks || 0;
+        result.actions = val.clicks || 0;
+        break;
+      case 'OUTCOME_AWARENESS':
+        // Use reach instead of impressions for awareness campaigns
+        result.reach = val.reach || 0;
+        result.actions = val.reach || val.impressions || 0;
+        break;
+      case 'OUTCOME_ENGAGEMENT':
+        // For engagement campaigns, combine inbound and outbound clicks
+        const inboundClicks = val.inline_link_clicks || 0;
+        const outboundClicks = val.outbound_clicks || 0;
+        const totalEngagement = inboundClicks + outboundClicks || val.engagement || val.post_engagement || 0;
+        
+        result.combined_clicks = totalEngagement;
+        result.actions = totalEngagement > 0 ? totalEngagement : val.impressions || 0;
+        break;
+      case 'OUTCOME_APP_PROMOTION':
+        result.app_installs = val.app_installs || val.actions || 0;
+        result.actions = val.app_installs || val.actions || 0;
+        break;
+      case 'OUTCOME_SALES':
+        // Combine conversions and purchases for sales campaigns
+        const conversions = val.conversions || 0;
+        const purchases = val.purchases || 0;
+        const combinedSales = conversions + purchases || val.actions || 0;
+        
+        result.combined_sales = combinedSales;
+        result.actions = combinedSales;
+        break;
+      default:
+        // Fallback for any other or unknown campaign type
+        result.impressions = val.impressions || 0;
+        result.actions = val.impressions || 0;
     }
     return result
   })
@@ -269,23 +394,78 @@ function parseDemographics(demoObj: Record<string, any>, objective: CampaignObje
  * Enhanced parsing function for platforms data that works with all campaign types
  */
 function parsePlatforms(platformObj: Record<string, any>, objective: CampaignObjective) {
+  const metricName = getMetricNameForObjective(objective);
+  
   return Object.entries(platformObj).map(([platform, val]) => {
+    // Format the platform name for display
+    const formattedName = formatPlatformName(platform);
+    
     const result: any = {
       platform,
+      label: platform,
+      // Nice display name for hover card
+      displayLabel: formattedName,
       impressions: val.impressions || 0,
-      spend: val.spend || 0
+      reach: val.reach || 0,
+      spend: val.spend || 0,
+      // Add metric name for tooltip display
+      metricName: metricName
     }
     
-    if (objective === 'OUTCOME_LEADS') {
-      result.leads = val.actions || 0
-      result.actions = val.actions || 0
-    } else if (objective === 'OUTCOME_TRAFFIC') {
-      result.clicks = val.clicks || 0
-      result.actions = val.clicks || 0  // Set actions to clicks for traffic campaigns
-    } else {
-      // For awareness campaigns or any other type
-      result.impressions = val.impressions || 0
-      result.actions = val.impressions || 0  // Set actions to impressions for awareness campaigns
+    // Store all available metrics
+    if (val.leads) result.leads = val.leads || 0;
+    if (val.clicks) result.clicks = val.clicks || 0;
+    if (val.actions) result.actions_original = val.actions || 0;
+    if (val.video_views) result.video_views = val.video_views || 0;
+    if (val.app_installs) result.app_installs = val.app_installs || 0;
+    if (val.purchases) result.purchases = val.purchases || 0;
+    if (val.engagement || val.post_engagement) result.engagement = val.engagement || val.post_engagement || 0;
+    if (val.inline_link_clicks) result.inline_link_clicks = val.inline_link_clicks || 0;
+    if (val.outbound_clicks) result.outbound_clicks = val.outbound_clicks || 0;
+    if (val.conversions) result.conversions = val.conversions || 0;
+    
+    // Set the appropriate primary metric based on campaign objective
+    // Also populate actions field for chart display
+    switch (objective) {
+      case 'OUTCOME_LEADS':
+        result.leads = val.actions || 0;
+        result.actions = val.actions || 0;
+        break;
+      case 'OUTCOME_TRAFFIC':
+        result.clicks = val.clicks || 0;
+        result.actions = val.clicks || 0;
+        break;
+      case 'OUTCOME_AWARENESS':
+        // Use reach instead of impressions for awareness campaigns
+        result.reach = val.reach || 0;
+        result.actions = val.reach || val.impressions || 0;
+        break;
+      case 'OUTCOME_ENGAGEMENT':
+        // For engagement campaigns, combine inbound and outbound clicks
+        const inboundClicks = val.inline_link_clicks || 0;
+        const outboundClicks = val.outbound_clicks || 0;
+        const totalEngagement = inboundClicks + outboundClicks || val.engagement || val.post_engagement || 0;
+        
+        result.combined_clicks = totalEngagement;
+        result.actions = totalEngagement > 0 ? totalEngagement : val.impressions || 0;
+        break;
+      case 'OUTCOME_APP_PROMOTION':
+        result.app_installs = val.app_installs || val.actions || 0;
+        result.actions = val.app_installs || val.actions || 0;
+        break;
+      case 'OUTCOME_SALES':
+        // Combine conversions and purchases for sales campaigns
+        const conversions = val.conversions || 0;
+        const purchases = val.purchases || 0;
+        const combinedSales = conversions + purchases || val.actions || 0;
+        
+        result.combined_sales = combinedSales;
+        result.actions = combinedSales;
+        break;
+      default:
+        // Fallback for any other or unknown campaign type
+        result.impressions = val.impressions || 0;
+        result.actions = val.impressions || 0;
     }
     return result
   })
@@ -295,27 +475,104 @@ function parsePlatforms(platformObj: Record<string, any>, objective: CampaignObj
  * Enhanced parsing function for time of day data that works with all campaign types
  */
 function parseTimeOfDay(tObj: Record<string, any>, objective: CampaignObjective) {
+  const metricName = getMetricNameForObjective(objective);
+  
   return Object.entries(tObj).map(([hour, val]) => {
+    // Format the hour for display
+    const displayHour = formatHour(hour);
+    
     const result: any = {
       hour,
+      label: hour,
+      // Nice display for hover card 
+      displayLabel: displayHour,
       impressions: val.impressions || 0,
-      spend: val.spend || 0
+      reach: val.reach || 0,
+      spend: val.spend || 0,
+      // Add metric name for tooltip display
+      metricName: metricName
     }
     
-    if (objective === 'OUTCOME_LEADS') {
-      result.leads = val.actions || 0
-      result.actions = val.actions || 0
-    } else if (objective === 'OUTCOME_TRAFFIC') {
-      result.clicks = val.clicks || 0
-      result.actions = val.clicks || 0  // Set actions to clicks for traffic campaigns
-    } else {
-      // For awareness campaigns or any other type
-      result.impressions = val.impressions || 0
-      result.actions = val.impressions || 0  // Set actions to impressions for awareness campaigns
+    // Store all available metrics
+    if (val.leads) result.leads = val.leads || 0;
+    if (val.clicks) result.clicks = val.clicks || 0;
+    if (val.actions) result.actions_original = val.actions || 0;
+    if (val.video_views) result.video_views = val.video_views || 0;
+    if (val.app_installs) result.app_installs = val.app_installs || 0;
+    if (val.purchases) result.purchases = val.purchases || 0;
+    if (val.engagement || val.post_engagement) result.engagement = val.engagement || val.post_engagement || 0;
+    if (val.inline_link_clicks) result.inline_link_clicks = val.inline_link_clicks || 0;
+    if (val.outbound_clicks) result.outbound_clicks = val.outbound_clicks || 0;
+    if (val.conversions) result.conversions = val.conversions || 0;
+    
+    // Set the appropriate primary metric based on campaign objective
+    // Also populate actions field for chart display
+    switch (objective) {
+      case 'OUTCOME_LEADS':
+        result.leads = val.actions || 0;
+        result.actions = val.actions || 0;
+        break;
+      case 'OUTCOME_TRAFFIC':
+        result.clicks = val.clicks || 0;
+        result.actions = val.clicks || 0;
+        break;
+      case 'OUTCOME_AWARENESS':
+        // Use reach instead of impressions for awareness campaigns
+        result.reach = val.reach || 0;
+        result.actions = val.reach || val.impressions || 0;
+        break;
+      case 'OUTCOME_ENGAGEMENT':
+        // For engagement campaigns, combine inbound and outbound clicks
+        const inboundClicks = val.inline_link_clicks || 0;
+        const outboundClicks = val.outbound_clicks || 0;
+        const totalEngagement = inboundClicks + outboundClicks || val.engagement || val.post_engagement || 0;
+        
+        result.combined_clicks = totalEngagement;
+        result.actions = totalEngagement > 0 ? totalEngagement : val.impressions || 0;
+        break;
+      case 'OUTCOME_APP_PROMOTION':
+        result.app_installs = val.app_installs || val.actions || 0;
+        result.actions = val.app_installs || val.actions || 0;
+        break;
+      case 'OUTCOME_SALES':
+        // Combine conversions and purchases for sales campaigns
+        const conversions = val.conversions || 0;
+        const purchases = val.purchases || 0;
+        const combinedSales = conversions + purchases || val.actions || 0;
+        
+        result.combined_sales = combinedSales;
+        result.actions = combinedSales;
+        break;
+      default:
+        // Fallback for any other or unknown campaign type
+        result.impressions = val.impressions || 0;
+        result.actions = val.impressions || 0;
     }
     return result
   })
 }
+
+/**
+ * Custom tooltip component to show the correct metric name
+ */
+const CustomTooltip = ({ active, payload, label, objective }: any) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    const metricName = data.metricName || getMetricNameForObjective(objective);
+    const value = payload[0].value;
+    const displayLabel = data.displayLabel || data.label;
+    
+    return (
+      <div className="bg-zinc-800 p-2 rounded border border-zinc-700">
+        <p className="text-zinc-300">{displayLabel}</p>
+        <p className="text-white font-medium">{metricName}: {value}</p>
+        <p className="text-zinc-400">Spend: €{(data.spend || 0).toFixed(2)}</p>
+      </div>
+    );
+  }
+
+  return null;
+};
 
 // ----------------------------------------------------------------
 // 3) The Stock Component
@@ -348,7 +605,7 @@ export function Stock({ campaignId, isActive }: IStockProps) {
   const [primaryMetric, setPrimaryMetric] = useState<string>('clicks')
 
   // Tabs oben
-  const [topView, setTopView] = useState<'overview' | 'extended' | 'dailytable'>('overview')
+  const [topView, setTopView] = useState<'overview' | 'extended'>('overview')
   // Chart-Tabs
   const [chartView, setChartView] = useState<'overview' | 'demographics' | 'platforms' | 'timing'>('overview')
 
@@ -483,19 +740,6 @@ export function Stock({ campaignId, isActive }: IStockProps) {
     ? (aggregator as any).daily_budget / 100
     : 0
 
-  // prozent-Änderungen
-  const metricArrays: Record<string, number[]> = {}
-  const availableMetrics = ['leads', 'spend', 'clicks', 'impressions', 'ctr', 'cpc', 'cpm', 'reach', 'frequency']
-
-  availableMetrics.forEach(metricKey => {
-    metricArrays[metricKey] = dailyMetrics.map(d => (d[metricKey] as number) || 0)
-  })
-
-  const metricChanges: Record<string, number> = {}
-  availableMetrics.forEach(metricKey => {
-    metricChanges[metricKey] = calcPercentageChange(metricArrays[metricKey], metricArrays['spend'])
-  })
-
   // ChartData
   const chartData = dailyMetrics.map((d) => {
     const formattedDate = format(new Date(d.date), 'MMM d, yyyy')
@@ -547,9 +791,7 @@ export function Stock({ campaignId, isActive }: IStockProps) {
               key={index}
               title={config.title}
               value={displayValue}
-              change={metricChanges[config.changeKey]?.toFixed(1) || '0.0'}
               icon={config.icon}
-              subLabel="(past 14 days)"
             />
           )
         })}
@@ -601,9 +843,9 @@ export function Stock({ campaignId, isActive }: IStockProps) {
       </div>
     )
   } else {
-    // dailytable
+    // dailytable - keeping the code but not showing it in the UI
     topViewContent = (
-      <div className="overflow-auto max-h-[500px] border border-zinc-800 rounded-lg">
+      <div className="overflow-auto max-h-[500px] border border-zinc-800 rounded-lg hidden">
         <table className="min-w-max border-collapse text-sm">
           <thead className="bg-zinc-900 sticky top-0">
             <tr>
@@ -747,7 +989,7 @@ export function Stock({ campaignId, isActive }: IStockProps) {
         </div>
       </div>
 
-      {/* Tabs: overview, extended, dailytable */}
+      {/* Tabs: overview, extended (dailytable hidden) */}
       <div className="flex gap-2 mt-4">
         <button
           className={cn(
@@ -770,17 +1012,6 @@ export function Stock({ campaignId, isActive }: IStockProps) {
           onClick={() => setTopView('extended')}
         >
           Extended Stats
-        </button>
-        <button
-          className={cn(
-            'px-3 py-1 rounded-lg text-sm font-medium',
-            topView === 'dailytable'
-              ? 'bg-zinc-800 text-white'
-              : 'bg-zinc-900 text-zinc-400 hover:bg-zinc-800'
-          )}
-          onClick={() => setTopView('dailytable')}
-        >
-          Daily Table
         </button>
       </div>
 
@@ -844,40 +1075,49 @@ export function Stock({ campaignId, isActive }: IStockProps) {
               ) : chartView === 'demographics' ? (
                 <BarChart data={demographicsData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                  <XAxis
-                    dataKey={(item) => `${item.ageRange}_${item.gender}`}
+                  <XAxis 
+                    dataKey="label" 
                     stroke="#666"
+                    tick={false} // Hide the actual labels, they'll show in tooltip
                   />
                   <YAxis stroke="#666" />
                   <Tooltip
+                    content={<CustomTooltip objective={objective} />}
                     contentStyle={{ backgroundColor: '#1f2937', border: 'none' }}
                     labelStyle={{ color: '#9ca3af' }}
                   />
-                  {/* Always use actions for advanced metrics charts */}
                   <Bar dataKey="actions" fill="#8884d8" />
                 </BarChart>
               ) : chartView === 'platforms' ? (
                 <BarChart data={platformData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                  <XAxis dataKey="platform" stroke="#666" />
+                  <XAxis 
+                    dataKey="label" 
+                    stroke="#666"
+                    tick={false} // Hide the actual labels, they'll show in tooltip
+                  />
                   <YAxis stroke="#666" />
                   <Tooltip
+                    content={<CustomTooltip objective={objective} />}
                     contentStyle={{ backgroundColor: '#1f2937', border: 'none' }}
                     labelStyle={{ color: '#9ca3af' }}
                   />
-                  {/* Always use actions for advanced metrics charts */}
                   <Bar dataKey="actions" fill="#82ca9d" />
                 </BarChart>
               ) : (
                 <LineChart data={timingData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                  <XAxis dataKey="hour" stroke="#666" />
+                  <XAxis 
+                    dataKey="label" 
+                    stroke="#666" 
+                    tick={false} // Hide the actual labels, they'll show in tooltip
+                  />
                   <YAxis stroke="#666" />
                   <Tooltip
+                    content={<CustomTooltip objective={objective} />}
                     contentStyle={{ backgroundColor: '#1f2937', border: 'none' }}
                     labelStyle={{ color: '#9ca3af' }}
                   />
-                  {/* Always use actions for advanced metrics charts */}
                   <Line
                     type="monotone"
                     dataKey="actions"
@@ -911,12 +1151,9 @@ const TdCell = ({ children }: { children: React.ReactNode }) => (
 interface MetricCardProps {
   title: string
   value: string | number
-  change: string
   icon: React.ReactNode
-  subLabel?: string
 }
-const MetricCard = ({ title, value, change, icon, subLabel }: MetricCardProps) => {
-  const negative = change.startsWith('-')
+const MetricCard = ({ title, value, icon }: MetricCardProps) => {
   return (
     <div className="bg-zinc-900 p-4 rounded-lg">
       <div className="mb-2 flex items-start justify-between">
@@ -924,9 +1161,6 @@ const MetricCard = ({ title, value, change, icon, subLabel }: MetricCardProps) =
         {icon}
       </div>
       <div className="mb-1 text-xl font-bold">{value}</div>
-      <div className={cn('text-sm', negative ? 'text-red-400' : 'text-green-400')}>
-        {change}% {subLabel ?? ''}
-      </div>
     </div>
   )
 }
