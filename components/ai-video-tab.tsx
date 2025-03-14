@@ -5,6 +5,7 @@ import NextImage from "next/image"
 import { AlertCircle, Download, ImagePlus, Save, Upload, Info, CheckCircle2, Video, Brain, Sparkles } from "lucide-react"
 import { useTheme } from "next-themes"
 import confetti from "canvas-confetti"
+import { startVideoGeneration, checkVideoStatus } from "@/app/actions/generateVideo"
 
 // Helper functions
 const fileToDataURL = async (file: File): Promise<string> => {
@@ -55,6 +56,9 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
   const [generatedVideos, setGeneratedVideos] = useState<string[]>([])
   const [selectedVideos, setSelectedVideos] = useState<number[]>([])
   const [isSaving, setIsSaving] = useState(false)
+  const [predictionId, setPredictionId] = useState<string | null>(null)
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const [pollCount, setPollCount] = useState(0)
 
   // Video generation steps
   const videoGenerationSteps = [
@@ -64,6 +68,16 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
     "Almost ready!",
   ]
   const [currentVideoStep, setCurrentVideoStep] = useState(0)
+
+  // Clear polling interval on unmount
+  useEffect(() => {
+    return () => {
+      if (pollingIntervalRef.current) {
+        console.log("[CLIENT_CLEANUP] Clearing polling interval on unmount")
+        clearInterval(pollingIntervalRef.current)
+      }
+    }
+  }, [])
 
   // Show toast notification
   const showToast = (title: string, description: string, type: 'success' | 'error') => {
@@ -147,68 +161,146 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
     setVideoGenerated(false)
     setVideoUrl("")
     setCurrentVideoStep(0)
+    setPollCount(0)
     
     try {
       savePromptToHistory(videoPrompt)
       
-      // Step time simulation (45s each step) for a 3-minute generation
-      const STEP_DURATION = 45000
+      // Step time simulation for UI feedback
+      const STEP_DURATION = 20000 // 20 seconds per step instead of 45
       let step = 0
       const intervalId = setInterval(() => {
         if (step < videoGenerationSteps.length) {
           setCurrentVideoStep(step + 1)
           step++
-        } else {
-          clearInterval(intervalId)
         }
       }, STEP_DURATION)
 
+      // Convert file to data URL
       const dataUrl = await fileToDataURL(videoImageFile)
-      const res = await fetch("/api/generate-video", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prompt: videoPrompt,
-          duration: videoDuration,
-          startImageDataUrl: dataUrl,
-          aspectRatio,
-        }),
+      
+      // Start the video generation
+      console.log(`[CLIENT_GEN] Starting video generation with prompt: "${videoPrompt.substring(0, 30)}..." and duration: ${videoDuration}s`)
+      console.log(`[CLIENT_GEN] Using image file: ${videoImageFile?.name}, aspect ratio: ${aspectRatio}`)
+      
+      const startResult = await startVideoGeneration({
+        prompt: videoPrompt,
+        duration: videoDuration,
+        startImageDataUrl: dataUrl,
+        aspectRatio,
       })
+      
+      console.log(`[CLIENT_GEN] Video generation started:`, JSON.stringify(startResult))
 
-      if (!res.ok) {
-        const errData = await res.json()
-        throw new Error(errData.error || "Failed to generate video.")
+      if (!startResult.success) {
+        console.error(`[CLIENT_GEN] Failed to start video generation: ${JSON.stringify(startResult)}`)
+        throw new Error("Failed to start video generation")
       }
 
-      const json = await res.json()
-      if (!json.success) {
-        throw new Error(json.error || "No success from video generation service.")
+      // Save prediction ID for polling - store in a local const to capture it
+      const predId = startResult.predictionId
+      console.log(`[CLIENT_GEN] Setting prediction ID for polling: ${predId}`)
+      setPredictionId(predId)
+      
+      // Show initial toast
+      showToast(
+        "Processing", 
+        "Your video is being generated. This may take a few minutes.", 
+        "success"
+      )
+      
+      // Start polling for status
+      if (pollingIntervalRef.current) {
+        console.log(`[CLIENT_GEN] Clearing existing polling interval`)
+        clearInterval(pollingIntervalRef.current)
       }
-
-      setVideoUrl(json.videoUrl)
-      setVideoGenerated(true)
       
-      // Add to generated videos array
-      const newVideos = [...generatedVideos]
-      newVideos.push(json.videoUrl)
-      setGeneratedVideos(newVideos)
+      console.log(`[CLIENT_GEN] Setting up polling interval (every 5s)`)
       
-      confetti({
-        particleCount: 100,
-        spread: 70,
-        origin: { y: 0.6 },
-      })
-
-      showToast("Success", "Your AI video has been generated!", "success")
+      // Define a polling function that uses the captured ID
+      const pollWithCapturedId = async () => {
+        try {
+          console.log(`[CLIENT_POLL] Polling for prediction: ${predId}`)
+          setPollCount(count => count + 1)
+          
+          const result = await checkVideoStatus(predId)
+          console.log(`[CLIENT_POLL] Status for ${predId}: ${result.status}`)
+          
+          // Handle error case
+          if (!result.success) {
+            console.error(`[CLIENT_POLL] Generation failed:`, result.error)
+            showToast("Generation failed", result.error || "Video generation failed", "error")
+            setIsGeneratingVideo(false)
+            setPredictionId(null)
+            setPollCount(0)
+            
+            if (pollingIntervalRef.current) {
+              clearInterval(pollingIntervalRef.current)
+              pollingIntervalRef.current = null
+            }
+            return
+          }
+          
+          // Handle success case
+          if (result.status === "succeeded" && result.videoUrl) {
+            console.log(`[CLIENT_POLL] Video generated successfully! URL: ${result.videoUrl}`)
+            setVideoUrl(result.videoUrl)
+            setVideoGenerated(true)
+            setGeneratedVideos(prev => [...prev, result.videoUrl])
+            
+            showToast("Success", "Your AI video has been generated!", "success")
+            setIsGeneratingVideo(false)
+            setPredictionId(null)
+            setPollCount(0)
+            
+            confetti({
+              particleCount: 100,
+              spread: 70,
+              origin: { y: 0.6 },
+            })
+            
+            if (pollingIntervalRef.current) {
+              clearInterval(pollingIntervalRef.current)
+              pollingIntervalRef.current = null
+            }
+          } 
+          // Still processing - update UI as needed
+          else if (result.status === "processing") {
+            if (currentVideoStep >= videoGenerationSteps.length) {
+              // Keep showing "Almost ready!" state
+              setCurrentVideoStep(videoGenerationSteps.length)
+            }
+          }
+        } catch (err) {
+          console.error(`[CLIENT_POLL] Error polling status:`, err)
+          // Don't break polling loop on error
+        }
+      }
+      
+      // Start polling using captured ID
+      pollingIntervalRef.current = setInterval(pollWithCapturedId, 5000)
+      
+      // Clean up the UI step interval after all steps are done
+      setTimeout(() => {
+        console.log(`[CLIENT_GEN] Clearing UI step interval`)
+        clearInterval(intervalId)
+      }, STEP_DURATION * (videoGenerationSteps.length + 1))
+      
     } catch (err: any) {
-      console.error("Error generating video:", err)
+      console.error("[CLIENT_GEN] Error generating video:", err)
       showToast(
         "Generation failed", 
         err.message || "Unable to create video. Please try again with a different prompt.", 
         "error"
       )
-    } finally {
       setIsGeneratingVideo(false)
+      
+      // Clean up polling if it was started
+      if (pollingIntervalRef.current) {
+        console.log(`[CLIENT_GEN] Clearing polling interval due to error`)
+        clearInterval(pollingIntervalRef.current)
+        pollingIntervalRef.current = null
+      }
     }
   }
 
@@ -358,6 +450,12 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
           <div className={`size-2 ${isDarkMode ? 'bg-blue-500' : 'bg-blue-600'} rounded-full animate-bounce delay-200`} />
         </div>
         {renderVideoSteps()}
+        
+        {pollCount > 0 && (
+          <div className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'} mt-3`}>
+            Checking status... ({pollCount})
+          </div>
+        )}
       </div>
     )
   }
