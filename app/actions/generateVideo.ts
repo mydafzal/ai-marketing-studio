@@ -122,7 +122,7 @@ export async function checkVideoStatus(predictionId: string): Promise<{
       return {
         success: false,
         status: "failed",
-        error: prediction.error || "Prediction failed",
+        error: prediction.error?.toString() || "Prediction failed",
         details
       }
     }

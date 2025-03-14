@@ -246,7 +246,7 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
             console.log(`[CLIENT_POLL] Video generated successfully! URL: ${result.videoUrl}`)
             setVideoUrl(result.videoUrl)
             setVideoGenerated(true)
-            setGeneratedVideos(prev => [...prev, result.videoUrl])
+            setGeneratedVideos(prev => [...prev, result.videoUrl] as string[])
             
             showToast("Success", "Your AI video has been generated!", "success")
             setIsGeneratingVideo(false)
