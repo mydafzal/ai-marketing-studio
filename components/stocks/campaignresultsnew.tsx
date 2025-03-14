@@ -1017,8 +1017,8 @@ export function Stock({ campaignId, isActive }: IStockProps) {
 
       {topViewContent}
 
-      {/* Nur wenn topView != dailytable => Chart-Bereich */}
-      {topView !== 'dailytable' && (
+      {/* Nur wenn topView != 'overview' && topView != 'extended' => Chart-Bereich */}
+      {topView !== 'overview' && topView !== 'extended' && (
         <>
           <div className="flex gap-2 mt-6 mb-4">
             <ViewTab
