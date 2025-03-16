@@ -1,14 +1,15 @@
 'use client'
 
-import { ToolContent } from 'ai'
-import { useState, useMemo, useEffect } from 'react'
-import { AdTextSelectionSkeleton } from '@/components/stocks/ad-text-selection-skeleton'
-import { useActions, useAIState, useUIState } from 'ai/rsc'
-import type { AI } from '@/lib/chat/actions'
-import { Switch } from '@/components/ui/switch'
+import {ToolContent} from 'ai'
+import {useEffect, useMemo, useState} from 'react'
+import {AdTextSelectionSkeleton} from '@/components/stocks/ad-text-selection-skeleton'
+import {useActions, useAIState, useUIState} from 'ai/rsc'
+import type {AI} from '@/lib/chat/AIManager'
+import {Switch} from '@/components/ui/switch'
+import {getCampaignSummary} from '@/lib/api/fasty-bot/get-campaign-summary'
 import {
-  getCampaignSummary
-} from '@/lib/api/fasty-bot/get-campaign-summary'
+  confirmCampaignStatusChange
+} from "@/lib/chat/actions/Services/CampaignStatusUpdateProcessor/CampaignStatusUpdateProcessor";
 
 export interface CampaignStatusProps {
   toolCallId?: string
@@ -24,7 +25,7 @@ export function CampaignStatus({ props }: { props: CampaignStatusProps }) {
   )
   const [aiState, setAIState] = useAIState<typeof AI>()
   const [, setMessages] = useUIState<typeof AI>()
-  const { confirmUpdateStatus } = useActions()
+  const { confirmCampaignStatusChange } = useActions()
   function onStatusChange(status: string) {
     setAIState({
       ...aiState,
@@ -92,7 +93,7 @@ export function CampaignStatus({ props }: { props: CampaignStatusProps }) {
           <button
             className="w-full px-4 py-2 mt-6 font-boldtext-center text-white bg-gray-700 rounded-lg hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
             onClick={async () => {
-              const response = await confirmUpdateStatus(
+              const response = await confirmCampaignStatusChange(
                 props.campaignName,
                 currentStatus
               )

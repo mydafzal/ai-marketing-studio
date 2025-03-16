@@ -7,7 +7,7 @@ import { toast } from 'sonner'
 import { IconSpinner } from '@/components/ui/icons'
 import { useActions, useAIState, useUIState } from 'ai/rsc'
 import { sleep, cn } from '@/lib/utils'
-import type { AI } from '@/lib/chat/actions'
+import type { AI } from '@/lib/chat/AIManager'
 import { VideoAdText, Message } from '@/lib/types'
 import { generateVideoAdTemplate, generateAdsetTemplate } from '@/lib/data'
 import { updateAdText, updateAdTextWithFbId } from '@/app/actions'
@@ -17,6 +17,8 @@ import { VideoPlayer } from './video-player'
 import { getVideoDetail } from '@/lib/api/fasty-bot/get-video-detail'
 import { Card, CardContent } from '@/components/ui/card'
 import { Pencil, Check, X, AlertCircle, Video, Instagram, Facebook } from 'lucide-react'
+import { getUserDetail } from '@/app/actions'
+import {getChatIdFromUrl} from "@/lib/api/fasty-bot/helpers/chat-id-from-url-helper";
 
 export interface VideoSuggestionProps {
   videos: {
@@ -375,10 +377,37 @@ function VideoAdTextSuggestion({ videos }: VideoSuggestionProps) {
   }, [videos, isProcessing, checkVideoStatus])
 
   const acceptText = async (idx: number, adText: VideoAdText) => {
+    const userDetail = await getUserDetail();
+    let pageId = null;
+
+    if (userDetail?.user?.fbPageId){
+         pageId = parseInt(userDetail?.user?.fbPageId)
+    }
+
+    let leadGenFormId = null;
+
+    let fbCampaignId = campaign?.id;
+    let chatSlug = getChatIdFromUrl();
+    let campaignStructureResponse = await fetch(`/api/kv/fetch-campaign-structure/?fbCampaignId=${fbCampaignId}&chatSlug=${chatSlug}`, {
+        method: 'GET',
+    });
+
+    if (campaignStructureResponse.status === 200) {
+        let campaignStructureData = await campaignStructureResponse.json();
+        leadGenFormId = campaignStructureData?.leadformId;
+    }
+
     const response = await confirmCreateAd(
       campaign,
-      generateVideoAdTemplate(adText.headline, adText.text, adText),
-      generateAdsetTemplate()
+      generateVideoAdTemplate(
+        adText.headline, 
+        adText.text, 
+        adText,
+        pageId, 
+        leadGenFormId,
+        userDetail?.user?.website_link
+      ),
+      generateAdsetTemplate(pageId)
     )
     setMessages(currentMessages => [...currentMessages, response.newMessage])
 

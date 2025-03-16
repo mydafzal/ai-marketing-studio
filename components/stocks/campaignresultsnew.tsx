@@ -22,7 +22,8 @@ import {
   DollarSign,
   Target,
   BarChart2,
-  PieChart
+  PieChart,
+  Eye
 } from 'lucide-react'
 import { Clock as LucideClock } from 'lucide-react'
 import { useActions, useAIState, useUIState } from 'ai/rsc'
@@ -39,22 +40,25 @@ interface IStockProps {
   isActive?: boolean
 }
 
-/** Single day’s metrics from the historical endpoint */
+/** Single day's metrics from the historical endpoint */
 interface IDailyMetric {
   date: string
-  leads: number
-  spend: number
-  cpc: number
-  cpm: number
-  ctr: number
-  impressions: number
-  reach: number
-  frequency: number
-  clicks: number
-  unique_clicks: number
-  cpa: number
-  website_ctr: number
-  [key: string]: number | string
+  leads?: number
+  spend?: number
+  cpc?: number
+  cpm?: number
+  ctr?: number
+  impressions?: number
+  reach?: number
+  frequency?: number
+  clicks?: number
+  unique_clicks?: number
+  cpa?: number
+  website_ctr?: number
+  post_engagement?: number
+  link_clicks?: number
+  // Add catch-all for dynamic properties
+  [key: string]: number | string | undefined
 }
 
 /** Possibly advanced data from the historical endpoint. */
@@ -64,7 +68,7 @@ interface IAdvancedMetrics {
   time_of_day?: Record<string, any>
 }
 
-/** Root shape of your historical endpoint’s response. */
+/** Root shape of your historical endpoint's response. */
 interface IHistoricalResponse {
   campaign_id: string
   campaign_details?: {
@@ -94,69 +98,211 @@ interface IHistoricalResponse {
   advanced_metrics?: IAdvancedMetrics
 }
 
+type CampaignObjective = 'OUTCOME_TRAFFIC' | 'OUTCOME_LEADS' | 'OUTCOME_AWARENESS' | string
+
 // ----------------------------------------------------------------
 // 2) Utility: Rolling 14-day Change
 // ----------------------------------------------------------------
-function calcPercentageChange(values: number[]): number {
+function calcPercentageChange(values: number[], fallbackValues?: number[]): number {
   if (values.length < 14) return 0
+
   const last7 = values.slice(values.length - 7)
   const prev7 = values.slice(values.length - 14, values.length - 7)
+
   const avgLast = last7.reduce((acc, n) => acc + n, 0) / 7
   const avgPrev = prev7.reduce((acc, n) => acc + n, 0) / 7
+
   if (avgPrev === 0) {
+    // Try fallback metrics if primary metric is flat
+    if (fallbackValues && fallbackValues.length >= 14) {
+      return calcPercentageChange(fallbackValues)
+    }
     return avgLast > 0 ? 100 : 0
   }
+
   return ((avgLast - avgPrev) / avgPrev) * 100
 }
 
-// For advanced breakdown
-function parseDemographics(demoObj: Record<string, any>) {
+/**
+ * Gibt für jedes Kampagnen-Ziel die primären Metriken zurück,
+ * inkl. Format-Funktionen. Hier haben wir den CTR-Fix eingebaut,
+ * indem wir val / 100 rechnen.
+ */
+function getPrimaryMetricsForCampaign(objective: CampaignObjective): Array<{
+  title: string
+  key: string
+  icon: React.ReactNode
+  format?: (val: number) => string
+  changeKey: string
+}> {
+  const primaryMetricMap: Record<string, Array<{
+    title: string
+    key: string
+    icon: React.ReactNode
+    format?: (val: number) => string
+    changeKey: string
+  }>> = {
+    "OUTCOME_TRAFFIC": [
+      { 
+        title: "Total Clicks", 
+        key: "total_clicks", 
+        icon: <Target className="text-blue-400" />,
+        changeKey: "clicks" 
+      },
+      { 
+        title: "Total Spent", 
+        key: "total_spend", 
+        icon: <DollarSign className="text-green-400" />, 
+        format: (val) => `€${val.toFixed(2)}`,
+        changeKey: "spend"
+      },
+      {
+        // Fix: CTR in der API ist bereits ~100x höher => hier /100
+        title: "CTR", 
+        key: "average_ctr", 
+        icon: <BarChart2 className="text-purple-400" />, 
+        format: (val) => `${((val || 0) / 100).toFixed(2)}%`,
+        changeKey: "ctr"
+      },
+      { 
+        title: "CPC", 
+        key: "average_cpc", 
+        icon: <TrendingUp className="text-yellow-400" />, 
+        format: (val) => `€${(val || 0).toFixed(2)}`,
+        changeKey: "cpc"
+      }
+    ],
+    "OUTCOME_LEADS": [
+      { 
+        title: "Total Leads", 
+        key: "total_leads", 
+        icon: <TrendingUp className="text-blue-400" />,
+        changeKey: "leads"
+      },
+      { 
+        title: "Total Spent", 
+        key: "total_spend", 
+        icon: <DollarSign className="text-green-400" />, 
+        format: (val) => `€${val.toFixed(2)}`,
+        changeKey: "spend"
+      },
+      {
+        // Fix: CTR in der API ist bereits ~100x höher => hier /100
+        title: "CTR", 
+        key: "average_ctr", 
+        icon: <Target className="text-purple-400" />, 
+        format: (val) => `${((val || 0) / 100).toFixed(2)}%`,
+        changeKey: "ctr"
+      },
+      { 
+        title: "Frequency", 
+        key: "average_frequency", 
+        icon: <BarChart2 className="text-yellow-400" />, 
+        format: (val) => val.toFixed(2),
+        changeKey: "frequency"
+      }
+    ],
+    "OUTCOME_AWARENESS": [
+      { 
+        title: "Impressions", 
+        key: "total_impressions", 
+        icon: <Eye className="text-blue-400" />,
+        changeKey: "impressions"
+      },
+      { 
+        title: "Total Spent", 
+        key: "total_spend", 
+        icon: <DollarSign className="text-green-400" />, 
+        format: (val) => `€${val.toFixed(2)}`,
+        changeKey: "spend"
+      },
+      { 
+        title: "CPM", 
+        key: "average_cpm", 
+        icon: <BarChart2 className="text-purple-400" />, 
+        format: (val) => `€${(val || 0).toFixed(2)}`,
+        changeKey: "cpm"
+      },
+      { 
+        title: "Frequency", 
+        key: "average_frequency", 
+        icon: <TrendingUp className="text-yellow-400" />, 
+        format: (val) => val.toFixed(2),
+        changeKey: "frequency"
+      }
+    ]
+  }
+
+  // Default zu "OUTCOME_TRAFFIC", falls keines passt
+  return primaryMetricMap[objective] || primaryMetricMap["OUTCOME_TRAFFIC"]
+}
+
+function parseDemographics(demoObj: Record<string, any>, objective: CampaignObjective) {
   return Object.entries(demoObj).map(([key, val]) => {
     const [ageRange, gender] = key.split('_')
-    return {
+    const result: any = {
       ageRange,
       gender,
-      impressions: val.impressions,
-      spend: val.spend,
-      leads: val.actions
+      impressions: val.impressions || 0,
+      spend: val.spend || 0
     }
+    if (objective === 'OUTCOME_LEADS') {
+      result.leads = val.actions || 0
+    } else if (objective === 'OUTCOME_TRAFFIC') {
+      result.clicks = val.clicks || 0
+    }
+    return result
   })
 }
-function parsePlatforms(platformObj: Record<string, any>) {
-  return Object.entries(platformObj).map(([platform, val]) => ({
-    platform,
-    impressions: val.impressions,
-    spend: val.spend,
-    leads: val.actions
-  }))
+
+function parsePlatforms(platformObj: Record<string, any>, objective: CampaignObjective) {
+  return Object.entries(platformObj).map(([platform, val]) => {
+    const result: any = {
+      platform,
+      impressions: val.impressions || 0,
+      spend: val.spend || 0
+    }
+    if (objective === 'OUTCOME_LEADS') {
+      result.leads = val.actions || 0
+    } else if (objective === 'OUTCOME_TRAFFIC') {
+      result.clicks = val.clicks || 0
+    }
+    return result
+  })
 }
-function parseTimeOfDay(tObj: Record<string, any>) {
-  return Object.entries(tObj).map(([hour, val]) => ({
-    hour,
-    impressions: val.impressions,
-    spend: val.spend,
-    leads: val.actions
-  }))
+
+function parseTimeOfDay(tObj: Record<string, any>, objective: CampaignObjective) {
+  return Object.entries(tObj).map(([hour, val]) => {
+    const result: any = {
+      hour,
+      impressions: val.impressions || 0,
+      spend: val.spend || 0
+    }
+    if (objective === 'OUTCOME_LEADS') {
+      result.leads = val.actions || 0
+    } else if (objective === 'OUTCOME_TRAFFIC') {
+      result.clicks = val.clicks || 0
+    }
+    return result
+  })
 }
 
 // ----------------------------------------------------------------
 // 3) The Stock Component
 // ----------------------------------------------------------------
 export function Stock({ campaignId, isActive }: IStockProps) {
-  // 3A) AI Tools
+  // AI Tools
   const { submitUserMessage } = useActions()
   const [aiState] = useAIState()
   const [_, setMessages] = useUIState<any>()
 
-  // 3B) “loaded” state => by default, DO NOT load data
-  // If you have a reason to use isActive from outside, you can do:
-  // const [loaded, setLoaded] = useState(isActive ?? false)
+  // "loaded"-Zustand
   const [loaded, setLoaded] = useState<boolean>(false)
   const handleLoadData = useCallback(() => {
     setLoaded(true)
   }, [])
 
-  // aggregator => correct top-level metrics
+  // aggregator => obere Metriken
   const [aggregator, setAggregator] = useState<CampaignSummary | null>(null)
   // historical => daily + advanced
   const [historical, setHistorical] = useState<IHistoricalResponse | null>(null)
@@ -167,18 +313,23 @@ export function Stock({ campaignId, isActive }: IStockProps) {
   const [platformData, setPlatformData] = useState<any[]>([])
   const [timingData, setTimingData] = useState<any[]>([])
 
-  // We have 3 top-level “tabs”
+  // objective und primary metric
+  const [objective, setObjective] = useState<CampaignObjective>('OUTCOME_TRAFFIC')
+  const [primaryMetric, setPrimaryMetric] = useState<string>('clicks')
+
+  // Tabs oben
   const [topView, setTopView] = useState<'overview' | 'extended' | 'dailytable'>('overview')
-  // Chart sub-tabs
+  // Chart-Tabs
   const [chartView, setChartView] = useState<'overview' | 'demographics' | 'platforms' | 'timing'>('overview')
 
-  // for chart sizing
+  // Chart-Resize
   const chartRef = useRef<HTMLDivElement>(null)
   useResizeObserver({ ref: chartRef, box: 'border-box' })
 
-  // 3C) aggregator fetch => only if loaded===true & we have a campaignId
+  // 3C) aggregator fetch => nur wenn loaded===true und campaignId
   useEffect(() => {
     if (!loaded || !campaignId) return
+
     const loadAggregator = async () => {
       try {
         const data = await getCampaignSummary(campaignId)
@@ -186,9 +337,13 @@ export function Stock({ campaignId, isActive }: IStockProps) {
         console.log('Aggregator =>', data)
 
         if (data && data.campaign_id !== '0') {
-          const msg = `System: aggregator loaded for campaign '${data.campaign_name}'. It has ${data.total_leads} leads, €${data.total_spent.toFixed(
-            2
-          )} spent.`
+          const metricHighlight = data.total_leads > 0 
+            ? `${data.total_leads} leads` 
+            : data.clicks > 0 
+              ? `${data.clicks} clicks` 
+              : `€${data.total_spent.toFixed(2)} spent`
+          
+          const msg = `System: aggregator loaded for campaign '${data.campaign_name}'. It has ${metricHighlight}.`
           const resp = await submitUserMessage(msg, [], true)
           setMessages((old: any[]) => [...old, resp])
         }
@@ -199,9 +354,10 @@ export function Stock({ campaignId, isActive }: IStockProps) {
     void loadAggregator()
   }, [loaded, campaignId, submitUserMessage, setMessages])
 
-  // 3D) historical fetch => only if loaded===true & campaignId
+  // 3D) historical fetch => nur wenn loaded===true und campaignId
   useEffect(() => {
     if (!loaded || !campaignId) return
+
     const loadHistorical = async () => {
       try {
         const histData = await getCampaignHistoricalMetrics(campaignId, 'last_year', true)
@@ -217,11 +373,23 @@ export function Stock({ campaignId, isActive }: IStockProps) {
         }
         setDailyMetrics(daily)
 
+        // objective aus campaign_details
+        if (histData.campaign_details?.objective) {
+          setObjective(histData.campaign_details.objective)
+          const metricKey = histData.campaign_details.objective === 'OUTCOME_LEADS' 
+            ? 'leads'
+            : histData.campaign_details.objective === 'OUTCOME_TRAFFIC'
+              ? 'clicks'
+              : 'impressions'
+          setPrimaryMetric(metricKey)
+        }
+
         // advanced
         const adv = histData.advanced_metrics
-        if (adv?.demographics) setDemographicsData(parseDemographics(adv.demographics))
-        if (adv?.platforms) setPlatformData(parsePlatforms(adv.platforms))
-        if (adv?.time_of_day) setTimingData(parseTimeOfDay(adv.time_of_day))
+        const campaignObj = histData.campaign_details?.objective || 'OUTCOME_TRAFFIC'
+        if (adv?.demographics) setDemographicsData(parseDemographics(adv.demographics, campaignObj))
+        if (adv?.platforms) setPlatformData(parsePlatforms(adv.platforms, campaignObj))
+        if (adv?.time_of_day) setTimingData(parseTimeOfDay(adv.time_of_day, campaignObj))
       } catch (err) {
         console.error('Error historical =>', err)
       }
@@ -229,7 +397,7 @@ export function Stock({ campaignId, isActive }: IStockProps) {
     void loadHistorical()
   }, [loaded, campaignId])
 
-  // 3E) If not loaded => show “Load Data” button
+  // Wenn nicht geladen => Button
   if (!loaded) {
     return (
       <div className="flex h-96 items-center justify-center bg-zinc-950">
@@ -243,7 +411,7 @@ export function Stock({ campaignId, isActive }: IStockProps) {
     )
   }
 
-  // 3F) aggregator not loaded => spinner
+  // aggregator noch nicht da => Spinner
   if (!aggregator) {
     return (
       <div className="flex h-96 items-center justify-center bg-zinc-950">
@@ -252,7 +420,7 @@ export function Stock({ campaignId, isActive }: IStockProps) {
     )
   }
 
-  // 3G) historical not loaded => spinner
+  // historical nicht da => Spinner
   if (!historical) {
     return (
       <div className="flex h-96 items-center justify-center bg-zinc-950">
@@ -261,114 +429,128 @@ export function Stock({ campaignId, isActive }: IStockProps) {
     )
   }
 
-  // aggregator data
-  const totalLeads = aggregator.total_leads
-  const totalSpent = aggregator.total_spent
+  // Zusammenfassung
   const campaignName = aggregator.campaign_name
   const creationDate = aggregator.creation_date
   const status = aggregator.status
-  const clicks = aggregator.clicks
-  const ctr = aggregator.ctr
-  const frequency = aggregator.frequency
-  const impressions = aggregator.impressions
-  const reach = aggregator.reach
-  const uniqueClicks = aggregator.unique_clicks
 
-  // aggregator might say daily_budget=1000 => user wants 10 EUR (factor 100)
+  const totalLeads = historical.summary?.total_leads || 0
+  const totalSpent = historical.summary?.total_spend || 0
+  const totalClicks = historical.summary?.total_clicks || 0
+  const totalImpressions = historical.summary?.total_impressions || 0
+  const totalReach = historical.summary?.total_reach || 0
+
+  // Hier: CTR kam als ~131.11 => wir speichern es (averageCtr) noch "roh"
+  const averageCtr = historical.summary?.average_ctr || 0 
+  const averageCpc = historical.summary?.average_cpc || 0
+  const averageCpm = historical.summary?.average_cpm || 0
+  const averageCpa = historical.summary?.average_cpa || 0
+  const averageFrequency = historical.summary?.average_frequency || 0
+
+  // Budget-Fix
   const aggregatorDailyBudget = (aggregator as any).daily_budget
     ? (aggregator as any).daily_budget / 100
     : 0
 
-  // leads/spend rolling changes
-  const leadsArray = dailyMetrics.map((d) => d.leads ?? 0)
-  const spendArray = dailyMetrics.map((d) => d.spend ?? 0)
-  const leadsChange = calcPercentageChange(leadsArray)
-  const spendChange = calcPercentageChange(spendArray)
+  // prozent-Änderungen
+  const metricArrays: Record<string, number[]> = {}
+  const availableMetrics = ['leads', 'spend', 'clicks', 'impressions', 'ctr', 'cpc', 'cpm', 'reach', 'frequency']
 
-  // daily leads chart data
-  const chartData = dailyMetrics.map((d) => ({
-    date: format(new Date(d.date), 'MMM d, yyyy'),
-    leads: d.leads
-  }))
+  availableMetrics.forEach(metricKey => {
+    metricArrays[metricKey] = dailyMetrics.map(d => (d[metricKey] as number) || 0)
+  })
 
-  // 3H) top-level display => 3 tabs => overview, extended, dailytable
+  const metricChanges: Record<string, number> = {}
+  availableMetrics.forEach(metricKey => {
+    metricChanges[metricKey] = calcPercentageChange(metricArrays[metricKey], metricArrays['spend'])
+  })
+
+  // ChartData
+  const chartData = dailyMetrics.map((d) => {
+    const formattedDate = format(new Date(d.date), 'MMM d, yyyy')
+
+    if (objective === 'OUTCOME_LEADS') {
+      return { date: formattedDate, leads: d.leads || 0 }
+    } else if (objective === 'OUTCOME_TRAFFIC') {
+      return { date: formattedDate, clicks: d.clicks || 0 }
+    } else {
+      return { date: formattedDate, impressions: d.impressions || 0 }
+    }
+  })
+
+  // MetricConfigs
+  const metricConfigs = getPrimaryMetricsForCampaign(objective)
+
+  // Haupt-Inhalt pro Top-Tab
   let topViewContent: React.ReactNode
   if (topView === 'overview') {
     topViewContent = (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <MetricCard
-          title="Total Leads"
-          value={totalLeads}
-          change={leadsChange.toFixed(1)}
-          icon={<TrendingUp className="text-blue-400" />}
-          subLabel="(past 14 days)"
-        />
-        <MetricCard
-          title="Total Spent"
-          value={`€${totalSpent.toFixed(2)}`}
-          change={spendChange.toFixed(1)}
-          icon={<DollarSign className="text-green-400" />}
-          subLabel="(past 14 days)"
-        />
-        <MetricCard
-          title="CTR"
-          value={`${(ctr || 0).toFixed(2)}%`}
-          change="+1.2"
-          icon={<Target className="text-purple-400" />}
-          subLabel="(overall)"
-        />
-        <MetricCard
-          title="Frequency"
-          value={frequency.toFixed(2)}
-          change="+0.4"
-          icon={<BarChart2 className="text-yellow-400" />}
-          subLabel="(overall)"
-        />
+        {metricConfigs.map((config, index) => {
+          const summaryValue = historical.summary?.[config.key as keyof typeof historical.summary] || 0
+          // Das Format (z.B. CTR /100) wird jetzt bereits in config.format angewandt
+          const displayValue = config.format ? config.format(summaryValue) : summaryValue
+
+          return (
+            <MetricCard
+              key={index}
+              title={config.title}
+              value={displayValue}
+              change={metricChanges[config.changeKey]?.toFixed(1) || '0.0'}
+              icon={config.icon}
+              subLabel="(past 14 days)"
+            />
+          )
+        })}
       </div>
     )
   } else if (topView === 'extended') {
+    let extendedMetrics = []
+    if (objective === 'OUTCOME_LEADS') {
+      extendedMetrics = [
+        { label: 'Impressions', value: totalImpressions },
+        { label: 'Reach', value: totalReach },
+        { label: 'Clicks', value: totalClicks },
+        { label: 'Unique Clicks', value: aggregator.unique_clicks || 0 },
+        { label: 'Cost/Lead', value: totalLeads > 0 ? `€${(totalSpent / totalLeads).toFixed(2)}` : '-' },
+        { label: 'Cost/Click', value: totalClicks > 0 ? `€${(totalSpent / totalClicks).toFixed(2)}` : '-' },
+        { label: 'Daily Budget', value: aggregatorDailyBudget > 0 ? `€${aggregatorDailyBudget}` : '-' },
+      ]
+    } else if (objective === 'OUTCOME_TRAFFIC') {
+      extendedMetrics = [
+        { label: 'Impressions', value: totalImpressions },
+        { label: 'Reach', value: totalReach },
+        { label: 'Link Clicks', value: dailyMetrics[0]?.link_clicks || 0 },
+        { label: 'Post Engagement', value: dailyMetrics[0]?.post_engagement || 0 },
+        { label: 'Frequency', value: averageFrequency.toFixed(2) },
+        { label: 'Website CTR', value: `${(dailyMetrics[0]?.website_ctr || 0).toFixed(2)}%` },
+        { label: 'Daily Budget', value: aggregatorDailyBudget > 0 ? `€${aggregatorDailyBudget}` : '-' },
+      ]
+    } else {
+      extendedMetrics = [
+        { label: 'CPM', value: `€${averageCpm.toFixed(2)}` },
+        { label: 'Frequency', value: averageFrequency.toFixed(2) },
+        { label: 'Post Engagement', value: dailyMetrics[0]?.post_engagement || 0 },
+        // Auch hier könnte man ggf. CTR /100 rechnen, falls der Wert zu hoch ist.
+        { label: 'CTR', value: `${(averageCtr / 100).toFixed(2)}%` },
+        { label: 'Clicks', value: totalClicks },
+        { label: 'CPC', value: `€${averageCpc.toFixed(2)}` },
+        { label: 'Daily Budget', value: aggregatorDailyBudget > 0 ? `€${aggregatorDailyBudget}` : '-' },
+      ]
+    }
+
     topViewContent = (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-zinc-900 p-4 rounded-lg">
-          <div className="text-sm text-zinc-400">Impressions</div>
-          <div className="text-xl font-bold">{impressions}</div>
-        </div>
-        <div className="bg-zinc-900 p-4 rounded-lg">
-          <div className="text-sm text-zinc-400">Reach</div>
-          <div className="text-xl font-bold">{reach}</div>
-        </div>
-        <div className="bg-zinc-900 p-4 rounded-lg">
-          <div className="text-sm text-zinc-400">Clicks</div>
-          <div className="text-xl font-bold">{clicks}</div>
-        </div>
-        <div className="bg-zinc-900 p-4 rounded-lg">
-          <div className="text-sm text-zinc-400">Unique Clicks</div>
-          <div className="text-xl font-bold">{uniqueClicks}</div>
-        </div>
-        {/* row 2 */}
-        <div className="bg-zinc-900 p-4 rounded-lg">
-          <div className="text-sm text-zinc-400">Cost/Lead</div>
-          <div className="text-xl font-bold">
-            €{(totalSpent / (totalLeads || 1)).toFixed(2)}
+        {extendedMetrics.map((metric, index) => (
+          <div key={index} className="bg-zinc-900 p-4 rounded-lg">
+            <div className="text-sm text-zinc-400">{metric.label}</div>
+            <div className="text-xl font-bold">{metric.value}</div>
           </div>
-        </div>
-        <div className="bg-zinc-900 p-4 rounded-lg">
-          <div className="text-sm text-zinc-400">Cost/Click</div>
-          <div className="text-xl font-bold">
-            {clicks > 0 ? `€${(totalSpent / clicks).toFixed(2)}` : '-'}
-          </div>
-        </div>
-        <div className="bg-zinc-900 p-4 rounded-lg">
-          <div className="text-sm text-zinc-400">Daily Budget</div>
-          <div className="text-xl font-bold">
-            {aggregatorDailyBudget > 0 ? `€${aggregatorDailyBudget}` : '-'}
-          </div>
-        </div>
+        ))}
       </div>
     )
   } else {
-    // topView === 'dailytable'
-    // The entire daily table
+    // dailytable
     topViewContent = (
       <div className="overflow-auto max-h-[500px] border border-zinc-800 rounded-lg">
         <table className="min-w-max border-collapse text-sm">
@@ -406,18 +588,21 @@ export function Stock({ campaignId, isActive }: IStockProps) {
                   className="border-b border-zinc-800 hover:bg-zinc-800/50 transition-colors"
                 >
                   <TdCell>{format(new Date(dateString), 'MMM d, yyyy')}</TdCell>
-                  <TdCell>{item.leads}</TdCell>
-                  <TdCell>€{(item.spend ?? 0).toFixed(2)}</TdCell>
-                  <TdCell>€{(item.cpc ?? 0).toFixed(2)}</TdCell>
-                  <TdCell>€{(item.cpm ?? 0).toFixed(2)}</TdCell>
-                  <TdCell>{(item.ctr ?? 0).toFixed(2)}%</TdCell>
-                  <TdCell>{item.impressions ?? 0}</TdCell>
-                  <TdCell>{item.reach ?? 0}</TdCell>
-                  <TdCell>{(item.frequency ?? 0).toFixed(2)}</TdCell>
-                  <TdCell>{item.clicks ?? 0}</TdCell>
-                  <TdCell>{item.unique_clicks ?? 0}</TdCell>
-                  <TdCell>€{(item.cpa ?? 0).toFixed(2)}</TdCell>
-                  <TdCell>{(item.website_ctr ?? 0).toFixed(2)}</TdCell>
+                  <TdCell>{item.leads || 0}</TdCell>
+                  <TdCell>€{(item.spend || 0).toFixed(2)}</TdCell>
+                  <TdCell>€{(item.cpc || 0).toFixed(2)}</TdCell>
+                  <TdCell>€{(item.cpm || 0).toFixed(2)}</TdCell>
+                  {
+                    // Fix: CTR /100
+                  }
+                  <TdCell>{((item.ctr || 0) / 100).toFixed(2)}%</TdCell>
+                  <TdCell>{item.impressions || 0}</TdCell>
+                  <TdCell>{item.reach || 0}</TdCell>
+                  <TdCell>{(item.frequency || 0).toFixed(2)}</TdCell>
+                  <TdCell>{item.clicks || 0}</TdCell>
+                  <TdCell>{item.unique_clicks || 0}</TdCell>
+                  <TdCell>€{(item.cpa || 0).toFixed(2)}</TdCell>
+                  <TdCell>{(item.website_ctr || 0).toFixed(2)}</TdCell>
                   <TdCell>
                     {item.cost_per_video_view !== undefined
                       ? `€${(item.cost_per_video_view as number).toFixed(2)}`
@@ -467,14 +652,29 @@ export function Stock({ campaignId, isActive }: IStockProps) {
     )
   }
 
+  // Für die Charts: Key auf Basis des Ziels
+  const getMetricKeyForCharts = () => {
+    if (objective === 'OUTCOME_LEADS') {
+      return 'leads'
+    } else if (objective === 'OUTCOME_TRAFFIC') {
+      return 'clicks'
+    } else {
+      return 'impressions'
+    }
+  }
+
   return (
     <div className="relative min-h-[600px] bg-zinc-950 p-6 text-white space-y-6">
-      {/* Header: Campaign Name, date, status, AI button */}
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <div className="text-2xl font-bold">{campaignName}</div>
           <div className="text-sm text-zinc-400">
             Created: {format(new Date(creationDate), 'MMM d, yyyy HH:mm')}
+          </div>
+          <div className="text-sm text-zinc-400 flex gap-4">
+            <span>Campaign Objective: {objective.replace('OUTCOME_', '')}</span>
+            <span>Daily Budget: {aggregatorDailyBudget > 0 ? `€${aggregatorDailyBudget}` : 'N/A'}</span>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -498,12 +698,7 @@ export function Stock({ campaignId, isActive }: IStockProps) {
         </div>
       </div>
 
-      {/* Possibly show daily budget with factor adjust */}
-      <div className="text-sm text-zinc-400">
-        (Daily Budget: {aggregatorDailyBudget > 0 ? `€${aggregatorDailyBudget}` : 'N/A'})
-      </div>
-
-      {/* The 3 top-level slider tabs: Key Stats, Extended Stats, Daily Table */}
+      {/* Tabs: overview, extended, dailytable */}
       <div className="flex gap-2 mt-4">
         <button
           className={cn(
@@ -540,10 +735,9 @@ export function Stock({ campaignId, isActive }: IStockProps) {
         </button>
       </div>
 
-      {/* Show the content for whichever top-level tab is selected */}
       {topViewContent}
 
-      {/* For the chart area, we only show it if topView is NOT daily table */}
+      {/* Nur wenn topView != dailytable => Chart-Bereich */}
       {topView !== 'dailytable' && (
         <>
           <div className="flex gap-2 mt-6 mb-4">
@@ -551,7 +745,13 @@ export function Stock({ campaignId, isActive }: IStockProps) {
               active={chartView === 'overview'}
               onClick={() => setChartView('overview')}
               icon={<BarChart2 size={16} />}
-              label="Daily Leads"
+              label={`Daily ${
+                objective === 'OUTCOME_LEADS'
+                  ? 'Leads'
+                  : objective === 'OUTCOME_TRAFFIC'
+                  ? 'Clicks'
+                  : 'Impressions'
+              }`}
             />
             <ViewTab
               active={chartView === 'demographics'}
@@ -586,7 +786,7 @@ export function Stock({ campaignId, isActive }: IStockProps) {
                   />
                   <Line
                     type="monotone"
-                    dataKey="leads"
+                    dataKey={getMetricKeyForCharts()}
                     stroke="#34a853"
                     strokeWidth={2}
                     dot={false}
@@ -604,7 +804,7 @@ export function Stock({ campaignId, isActive }: IStockProps) {
                     contentStyle={{ backgroundColor: '#1f2937', border: 'none' }}
                     labelStyle={{ color: '#9ca3af' }}
                   />
-                  <Bar dataKey="leads" fill="#8884d8" />
+                  <Bar dataKey={getMetricKeyForCharts()} fill="#8884d8" />
                 </BarChart>
               ) : chartView === 'platforms' ? (
                 <BarChart data={platformData}>
@@ -615,7 +815,7 @@ export function Stock({ campaignId, isActive }: IStockProps) {
                     contentStyle={{ backgroundColor: '#1f2937', border: 'none' }}
                     labelStyle={{ color: '#9ca3af' }}
                   />
-                  <Bar dataKey="leads" fill="#82ca9d" />
+                  <Bar dataKey={getMetricKeyForCharts()} fill="#82ca9d" />
                 </BarChart>
               ) : (
                 <LineChart data={timingData}>
@@ -628,7 +828,7 @@ export function Stock({ campaignId, isActive }: IStockProps) {
                   />
                   <Line
                     type="monotone"
-                    dataKey="leads"
+                    dataKey={getMetricKeyForCharts()}
                     stroke="#ffa726"
                     strokeWidth={2}
                     dot={false}

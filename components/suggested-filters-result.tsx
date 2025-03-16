@@ -6,7 +6,7 @@ import { FlexibleSpec } from '@/lib/types'
 import { Card, CardContent } from '@/components/ui/card'
 import { CheckCircle, X } from 'lucide-react'
 import { useActions, useAIState, useUIState } from 'ai/rsc'
-import { type AI } from '@/lib/chat/actions'
+import { type AI } from '@/lib/chat/AIManager'
 
 interface SuggestedFiltersProps {
   suggestedFilter: FlexibleSpec

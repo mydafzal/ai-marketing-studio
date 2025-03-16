@@ -192,6 +192,181 @@ export async function updateFbCampaignExtraDetails(fbCampaignId: string, extraDe
     }
 }
 
+export async function createFbCampaignStructure(
+    campaignId: string,
+    adsetId: string,
+    pageId: string,
+    leadformId?: string
+) {
+    const session = await auth();
+
+    if (!session || !session.user) {
+        return {
+            error: 'User not authenticated'
+        };
+    }
+
+    try {
+        // Store campaign data
+        const campaignKey = `fbCampaign:${campaignId}`;
+        await kv.hset(campaignKey, {
+            campaignId,
+            adsetIds: JSON.stringify([adsetId])
+        });
+
+        // Store adset with its associated page and leadform (if provided)
+        const adsetKey = `fbAdset:${adsetId}`;
+        const adsetData: {
+            adsetId: string,
+            campaignId: string,
+            pageId: string,
+            leadformId?: string
+        } = {
+            adsetId,
+            campaignId,
+            pageId,
+        };
+
+        // Only include leadformId if it exists
+        if (leadformId) {
+            adsetData.leadformId = leadformId;
+        }
+
+        await kv.hset(adsetKey, adsetData);
+
+        return {
+            success: true,
+            message: 'Campaign structure created successfully'
+        };
+    } catch (error) {
+        console.error(`Error creating structure for fbCampaign ${campaignId}:`, error);
+        return {
+            error: 'Something went wrong'
+        };
+    }
+}
+
+export async function updateLeadFormInAdset(adSetId:string, leadFormId:string){
+    const session = await auth();
+
+    if (!session || !session.user) {
+        return { 
+            error: 'User not authenticated'
+        };
+    }
+
+    try {
+        
+        const adsetKey = `fbAdset:${adSetId}`;
+        await kv.hset(adsetKey, {leadformId:leadFormId});
+
+        return {
+            success: true,
+            message: 'Adset structure created successfully'
+        };
+    } catch (error) {
+        console.error(`Error updating structure for adSetId ${adSetId}:`, error);
+        return {
+            error: 'Something went wrong'
+        };
+    }
+}
+
+export async function fetchFbCampaignStructure(campaignId: string, adSetId: string) {
+    const session = await auth();
+
+    if (!session || !session.user) {
+        return {
+            success: false,
+            error: 'User not authenticated'
+        };
+    }
+
+    try {
+        // Get campaign data
+        const campaignKey = `fbCampaign:${campaignId}`;
+        const campaign = await kv.hgetall(campaignKey);
+
+        if (!campaign || !campaign.adsetIds) {
+            return {
+                success: false,
+                error: 'Campaign not found or has no adset'
+            };
+        }
+        const adsetIds = typeof campaign.adsetIds === 'string' ? JSON.parse(campaign.adsetIds) : campaign.adsetIds;
+        
+        if (!adsetIds.includes(adSetId)) {
+            return {
+                success: false,
+                error: 'Adset id is missing in the adset list'
+            };
+        }
+
+        const adsetKey = `fbAdset:${adSetId}`;
+        const adset = await kv.hgetall<{
+            adsetId: string,
+            pageId: string,
+            leadformId?: string
+        }>(adsetKey);
+
+        if (!adset) {
+            return {
+                success: false,
+                error: 'Adset not found'
+            };
+        }
+
+        const adsetData = {
+            adsetId: adset.adsetId,
+            pageId: adset.pageId,
+            ...(adset.leadformId && {leadformId: adset.leadformId})
+        };
+
+        return {
+            success: true,
+            data: {
+                campaignId,
+                ...adsetData
+            }
+        };
+
+    } catch (error) {
+        console.error(`Error fetching structure for fbCampaign ${campaignId}:`, error);
+        return {
+            success: false,
+            error: 'Something went wrong'
+        };
+    }
+}
+
+
+export async function saveFbCampaignStructure(data: {
+    campaign: { id: string },
+    adset: { id: string },
+    lead_form?: { id: string }
+}) {
+    const userDetail = await getUserDetail();
+    let fbPageId = "";
+
+    if (userDetail.success && userDetail.user) {
+        fbPageId = String(userDetail.user.fbPageId || '');
+    }
+
+    // Extract campaign and adset IDs from response
+    const campaignId = data.campaign.id;
+    const adsetId = data.adset?.id;
+    const pageId = fbPageId || "119021011189054"; // Use default if not provided
+    const leadFormId = data.lead_form?.id;
+
+    // Save campaign structure to database
+    await createFbCampaignStructure(
+        campaignId,
+        adsetId,
+        pageId,
+        leadFormId
+    );
+}
+
 
 export async function fetchFbCampaignExtraDetails(fbCampaignId: string) {
     const session = await auth();
@@ -512,17 +687,16 @@ export async function updateChatFbCampaignId(chatSlug: string, fbCampaignId: str
             }
         }
 
-        let update={};
+        let update = {};
 
-        if(existingChat.fbCampaignId && existingChat.fbCampaignId!=fbCampaignId){
-            update = {fbCampaignId,fbAdsetId:""}
-        }
-        else{
+        if (existingChat.fbCampaignId && existingChat.fbCampaignId != fbCampaignId) {
+            update = {fbCampaignId, fbAdsetId: ""}
+        } else {
             update = {fbCampaignId}
         }
 
         // Update or insert the fbCampaignId field
-        await kv.hset(chatKey, update )
+        await kv.hset(chatKey, update)
         revalidatePath('/')
 
         return {
@@ -1200,6 +1374,40 @@ export async function updateAdTextWithFbId(chatSlug: string, idx: number, adText
     }
 }
 
+
+export async function getUserFbAccountId() {
+    const session = await auth()
+
+    if (!session || !session.user) {
+        return {
+            error: 'User not authenticated'
+        }
+    }
+
+    try {
+        const userKey = `user:${session.user.email}`
+
+        // Check if the chat exists
+        const user: User | null = (await kv.hgetall(userKey))
+
+        if (!user) {
+            return {
+                error: 'User not found'
+            }
+        }
+        return {
+            success: true,
+            fbAccountId: user.fbAccountId || null
+        }
+    } catch (error) {
+        console.error(`Error get current user detail:`, error)
+        return {
+            error: 'Something went wrong'
+        }
+    }
+}
+
+
 export async function getUserDetail() {
     const session = await auth()
 
@@ -1272,6 +1480,7 @@ export async function updateOnboardingDetails(email: string, details: {
     company_name: string;
     company_description: string;
     website_link: string;
+    privacy_policy_link: string;
     preferred_language: string;
     goal: string
 }) {
@@ -1325,8 +1534,15 @@ export async function updateOnboardingDetails(email: string, details: {
         }
 
 
-        let newDetails = `First Name: ${details.first_name}\nLast Name: ${details.last_name}\nCompany Name: ${details.company_name}\nCompany Description: ${details.company_description}\nWebsite Link: ${details.website_link}\nWebsite data (scraped): ${website_data}\nPreferred Language: ${details.preferred_language}\nGoal: ${details.goal}`;
-
+        let newDetails = `First Name: ${details.first_name}
+        Last Name: ${details.last_name}
+        Company Name: ${details.company_name}
+        Company Description: ${details.company_description}
+        Website Link: ${details.website_link}
+        Privacy Policy Link: ${details.privacy_policy_link}
+        Website data (scraped): ${website_data}
+        Preferred Language: ${details.preferred_language}
+        Goal: ${details.goal}`;
 
         if (defaultExtraDetails) {
             let splitDetails = defaultExtraDetails.split('---');

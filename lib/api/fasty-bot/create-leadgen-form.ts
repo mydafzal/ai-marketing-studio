@@ -11,7 +11,7 @@ export async function createLeadgenForm(
   try {
     const fastyEndpoint = process.env.FASTY_API_URL
     const apiUrl = `${fastyEndpoint}/facebook/exec/direct/lead/create-leadgen-form`
-    console.log('payload to create a new leadgen-form', payload)
+    payload['page_id'] = payload['page_id'] as string;
     const token_resp = await getFbMarketingApiKey()
     let token=""
     if(token_resp.success && token_resp.token){

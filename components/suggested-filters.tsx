@@ -14,7 +14,7 @@ import { builQueryString } from '@/lib/utils'
 import { SuggestedFiltersResult } from './suggested-filters-result'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Target, Users, TrendingUp, CheckCircle, BrainCircuit } from 'lucide-react'
-import { type AI } from '@/lib/chat/actions'
+import { type AI } from '@/lib/chat/AIManager'
 
 interface SuggestedFiltersProps {
     toolCallId: string

@@ -1,7 +1,36 @@
-'use client'
+"use client"
 
-import * as React from "react"
+import React, { useState } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Info as InfoIcon, Sparkles as SparklesIcon } from "lucide-react"
+
+// Actions
+import { improvePrompt } from "@/app/actions/generate-prompt"
+
+// Existing tab components
+import AiVideoTab from "@/components/ai-video-tab"
+import AiImageTab from "@/components/ai-image-tab"
+
+// NEW import for your inpainting component
+import ImageImpaint from "@/components/image-inpaint"
+
+// Platform options for social media content
+const PLATFORMS = [
+  { value: "instagram", label: "Instagram" },
+  { value: "tiktok", label: "TikTok" },
+  { value: "youtube", label: "YouTube Shorts" },
+  { value: "facebook", label: "Facebook" },
+  { value: "linkedin", label: "LinkedIn" }
+]
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -16,11 +45,14 @@ export default function AiContentPage() {
   const [textPrompt, setTextPrompt] = React.useState("")
   const [imagePrompt, setImagePrompt] = React.useState("")
   const [additionalPrompt, SetAdditionalPrompt] = React.useState("")
-  
+  const [platform, setPlatform] = React.useState("instagram")
 
   const [logoPrompt, setLogoPrompt] = React.useState<string | null>(null);
-  const [logoPosition, setLogoPosition] = React.useState("top-left");
-
+  const [logoPosition, setLogoPosition] = React.useState("top-left");  
+  const [activeTab, setActiveTab] = React.useState("video");
+  const [logoFile, setLogoFile] = React.useState<File | null>(null);
+  const [imageUrls, setImageUrls] = React.useState([]); // Array of background image URLs
+  const [combinedImages, setCombinedImages] = React.useState<string[]>([]) // Array of data URLs for combined images
   const [isGenerating, setIsGenerating] = React.useState(false)
   const [isGeneratingImages, setIsGeneratingImages] = React.useState(false)
   const [generatedImages, setGeneratedImages] = React.useState<string[]>([])
@@ -35,12 +67,11 @@ export default function AiContentPage() {
     instagram: "Here you can see how your Instagram post will look like"
   })
 
-
-  const [logoFile, setLogoFile] = React.useState<File | null>(null);
-  const [imageUrls, setImageUrls] = React.useState([]); // Array of background image URLs
-  const [combinedImages, setCombinedImages] = React.useState<string[]>([]) // Array of data URLs for combined images
-
-
+  // Enhanced prompt improver that passes platform context
+  const enhancedImprovePrompt = async (promptText: string): Promise<string> => {
+    const contentType = activeTab === "video" ? "video" : "image"
+    return improvePrompt(promptText, platform, contentType)
+  }
 
   const { toast } = useToast()
 
@@ -100,7 +131,7 @@ export default function AiContentPage() {
   
     setIsGeneratingImages(true)
     try {
-      const result = await generateImages(imagePrompt,additionalPrompt)
+      const result = await generateImages(imagePrompt, additionalPrompt)
       console.log('Generation result:', JSON.stringify(result));
       
       if (result.success && result.images && result.images.length > 0) {
@@ -114,7 +145,7 @@ export default function AiContentPage() {
           //no logo just do normal uploads
           setCombinedImages(validUrls);
 
-        }
+        }        
         
         toast({
           title: "Success",
@@ -161,7 +192,7 @@ export default function AiContentPage() {
       })
     }
   }
-
+  
 
 
 
@@ -282,39 +313,69 @@ export default function AiContentPage() {
   return (
     <div className="container mx-auto p-6">
       <div className="flex flex-col space-y-6">
-        <div className="flex flex-col space-y-2">
-          <h1 className="text-3xl font-bold">AI Content Generation</h1>
-          <p className="text-muted-foreground">
-            Create various types of AI-generated content for your campaigns
-          </p>
+        <div className="flex flex-col space-y-3">
+          <div className="flex items-center justify-between">
+            <h1 className="text-3xl font-bold">Social Media Content Studio</h1>
+          </div>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <p className="text-muted-foreground md:max-w-lg">
+              Create professional AI-generated content optimized for social media engagement and conversions
+            </p>
+            
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Optimize for:
+              </span>
+              <Select value={platform} onValueChange={setPlatform}>
+                <SelectTrigger className="w-[160px]">
+                  <SelectValue placeholder="Platform" />
+                </SelectTrigger>
+                <SelectContent>
+                  {PLATFORMS.map(platform => (
+                    <SelectItem key={platform.value} value={platform.value}>
+                      {platform.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <InfoIcon className="h-4 w-4 text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-sm">
+                    <p>
+                      Content will be optimized for this platform&apos;s audience, algorithm 
+                      preferences, and engagement patterns.
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          </div>
         </div>
 
-        <Tabs defaultValue="text" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="ugc">AI UGC Video</TabsTrigger>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="video">AI Video Creation</TabsTrigger>
             <TabsTrigger value="image">AI Image Creatives</TabsTrigger>
-            <TabsTrigger value="text">AI Text Content</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="ugc">
-            <Card>
-              <CardHeader>
-                <CardTitle>AI UGC Video Generation</CardTitle>
-                <CardDescription>
-                  Create engaging user-generated style videos using AI
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="h-96 rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-800 flex items-center justify-center">
-                  <span className="text-muted-foreground">
-                    UGC Video Generation Interface Coming Soon
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
+          {/* VIDEO TAB */}
+          <TabsContent value="video">
+            <AiVideoTab improvePrompt={enhancedImprovePrompt} />
           </TabsContent>
 
+          {/* IMAGE TAB */}
           <TabsContent value="image">
+            {/* Keep or remove this AiImageTab depending on what you want */}
+            <AiImageTab improvePrompt={enhancedImprovePrompt} />
+
+            <hr className="my-6" />
+
+            {/* Your new inpainting component */}
+            <ImageImpaint />
             <Card>
               <CardHeader>
                 <CardTitle>AI Image Creatives</CardTitle>
@@ -626,6 +687,19 @@ export default function AiContentPage() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        <div className="rounded-lg border bg-card text-card-foreground p-5 mt-3 text-sm text-muted-foreground">
+          <h3 className="font-medium text-foreground mb-2 flex items-center gap-1.5">
+            <SparklesIcon className="h-4 w-4 text-blue-500" />
+            About Content Optimization
+          </h3>
+          <p>
+            Our AI content studio enhances your prompts for maximum engagement on {PLATFORMS.find(p => p.value === platform)?.label || platform}. 
+            The system analyzes platform-specific trends, audience preferences, and content algorithms to help 
+            create material more likely to perform well. For best results, start with a clear idea and let our AI 
+            enhance it with platform-specific details.
+          </p>
+        </div>
       </div>
     </div>
   )

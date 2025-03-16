@@ -3,36 +3,51 @@ import { VideoAdText } from '@/lib/types'
 export const generateAdTemplate = (
   headline: string,
   text: string,
-  image: string
+  image: string,
+  pageId: number|null = null,
+  leadGenFormId: number|null = null,
+  destinationLink: string|null = null
 ) => ({
   name: 'New Link Ad Creative',
   object_story_spec: {
-    page_id: 119021011189054,
+    page_id:pageId || 119021011189054,
     link_data: {
-      link: 'https://www.example.com',
+      link: destinationLink || 'https://www.example.com',
       name: headline,
       message: text,
       call_to_action: {
         type: 'SIGN_UP',
         value: {
-          lead_gen_form_id: 8902951086385726
+          lead_gen_form_id: leadGenFormId || 8902951086385726 //TODO: it has to be fetched from chat first if not found then fallback!
         }
       },
       image_url: image
     }
   }
 })
-export const generateVideoAdTemplate = (headline: string, text: string, video: VideoAdText) => ({
+export const generateVideoAdTemplate = (
+  headline: string, 
+  text: string, 
+  video: VideoAdText,
+  pageId: number|null = null,
+  leadGenFormId: number|null = null,
+  destinationLink: string|null = null
+) => ({
   name: 'New Video Ad Creative',
   object_story_spec: {
-    page_id: 119021011189054,
+    page_id: pageId || 119021011189054,
     video_data: {
       video_id: video.video_id,
       image_url: video.thumbnail,
-      call_to_action: {
+      call_to_action: leadGenFormId?{
+        type: 'SIGN_UP',
+        value: {
+          lead_gen_form_id: leadGenFormId || 8902951086385726 //TODO: it has to be fetched from chat first if not found then fallback!
+        }
+      }:{
         type: 'LEARN_MORE',
         value: {
-          link: 'https://www.example.com',
+          link: destinationLink || 'https://www.example.com',
         }
       },
       title: headline,
@@ -40,7 +55,7 @@ export const generateVideoAdTemplate = (headline: string, text: string, video: V
     }
   }
 })
-export const generateAdsetTemplate = () => ({
+export const generateAdsetTemplate = (pageId: number|null = null) => ({
   name: 'My Ad Set',
   bid_amount: 2,
   billing_event: 'IMPRESSIONS',
@@ -79,7 +94,7 @@ export const generateAdsetTemplate = () => ({
     device_platforms: ['mobile', 'desktop']
   },
   promoted_object: {
-    page_id: 119021011189054
+    page_id: pageId || 119021011189054
   },
   status: 'PAUSED'
 })

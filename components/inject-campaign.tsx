@@ -1,6 +1,6 @@
 'use client'
 
-import { type AI } from '@/lib/chat/actions'
+import { type AI } from '@/lib/chat/AIManager'
 import { useActions, useUIState } from 'ai/rsc'
 
 import { useContext, useEffect } from 'react'
