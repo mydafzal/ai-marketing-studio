@@ -47,7 +47,8 @@ export default function ProfileSettings({
   const [openOnboarding, setOpenOnboarding] = React.useState<boolean>(userDetails?.defaultExtraDetails ? false : true)
   const [openFacebookSettings, setOpenFacebookSettings] = React.useState<boolean>(false)
   const [dropdownOpen, setDropdownOpen] = React.useState<boolean>(openOnboarding);
-  const isPaddleEnabled = isFeatureToggleEnabled('paddleIntegration');
+  const isStripeIntegrationEnabled = isFeatureToggleEnabled('stripeIntegration');
+
 
   return (
     <>
@@ -97,9 +98,7 @@ export default function ProfileSettings({
             Account Settings
           </div>
 
-          {isPaddleEnabled && <ManageSubscription />}
-
-          <button 
+          {isStripeIntegrationEnabled && (<button
             className="inline-flex items-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:text-accent-foreground h-9 px-4 py-2 w-full justify-start gap-2 hover:bg-zinc-100 dark:hover:bg-zinc-800" 
             type="button"
             onClick={() => window.location.href = '/subscription'}
@@ -109,7 +108,7 @@ export default function ProfileSettings({
           <path d="M1.16675 5.83301H12.8334" stroke="black" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
           Billing
-          </button>
+          </button>)}
 
           <Onboarding
             userDetails={userDetails}
