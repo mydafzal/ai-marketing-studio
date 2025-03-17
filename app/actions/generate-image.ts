@@ -1,10 +1,10 @@
-"use server";
+"use server"
 
-import Replicate from "replicate";
+import Replicate from "replicate"
 
 const replicate = new Replicate({
   auth: process.env.REPLICATE_API_TOKEN as string,
-});
+})
 
 // Available aspect ratios with their corresponding dimensions
 const aspectRatios = {
@@ -14,7 +14,7 @@ const aspectRatios = {
   "3:4": { width: 896, height: 1152 },
   "4:3": { width: 1152, height: 896 },
   "2:3": { width: 832, height: 1216 },
-  "3:2": { width: 1216, height: 832 },
+  "3:2": { width: 1216, height: 832 }
 };
 
 // Export the AspectRatio type so it can be imported in the client component
@@ -26,97 +26,57 @@ export type AspectRatio = keyof typeof aspectRatios;
  */
 export async function generateImages(
   prompt: string,
-  additionalPrompt: string,
   aspectRatio: AspectRatio = "1:1",
   numberOfImages: number = 4
 ): Promise<{ 
-  success: boolean;
-  images?: string[];
-  error?: string;
+  success: boolean 
+  images?: string[] 
+  error?: string 
 }> {
   try {
     if (!process.env.REPLICATE_API_TOKEN) {
-      throw new Error("REPLICATE_API_TOKEN is not configured");
+      throw new Error("REPLICATE_API_TOKEN is not configured")
     }
 
-    // Generate 4 separate predictions in parallel for better performance
-    const predictions = await Promise.all([
-      replicate.run("black-forest-labs/flux-1.1-pro", {
-        input: {
-          prompt: `${prompt}. Also follow these instructions: ${additionalPrompt}`,
-          num_outputs: 1,
-          prompt_upsampling: true,
-          aspect_ratio: "1:1",
-          guidance_scale: 7.5,
-          num_inference_steps: 50,
-        },
-      }),
-      replicate.run("black-forest-labs/flux-1.1-pro", {
-        input: {
-          prompt,
-          num_outputs: 1,
-          prompt_upsampling: true,
-          aspect_ratio: "1:1",
-          guidance_scale: 7.5,
-          num_inference_steps: 50,
-        },
-      }),
-      replicate.run("black-forest-labs/flux-1.1-pro", {
-        input: {
-          prompt,
-          num_outputs: 1,
-          prompt_upsampling: true,
-          aspect_ratio: "1:1",
-          guidance_scale: 7.5,
-          num_inference_steps: 50,
-        },
-      }),
-      replicate.run("black-forest-labs/flux-1.1-pro", {
-        input: {
-          prompt,
-          num_outputs: 1,
-          prompt_upsampling: true,
-          aspect_ratio: "1:1",
-          guidance_scale: 7.5,
-          num_inference_steps: 50,
-        },
-      }),
-    ]);
-
+    console.log(`Starting image generation with prompt: "${prompt}" and aspect ratio: ${aspectRatio}`)
+    
     // Generate predictions in parallel (up to the requested number)
-    const predictionPromises = Array(Math.min(numberOfImages, 4))
-      .fill(null)
-      .map(() =>
-        replicate.run("ideogram-ai/ideogram-v2-turbo", {
-          input: {
-            prompt,
-            aspect_ratio: aspectRatio,
-            negative_prompt: "low quality, bad anatomy, blurry, pixelated",
-          },
-        })
-      );
+    const predictionPromises = Array(Math.min(numberOfImages, 4)).fill(null).map(() => 
+      replicate.run("ideogram-ai/ideogram-v2-turbo", {
+        input: {
+          prompt: prompt,
+          aspect_ratio: aspectRatio, // Use aspect_ratio directly as per the documentation
+          negative_prompt: "low quality, bad anatomy, blurry, pixelated"
+        },
+      })
+    );
 
-    const additionalPredictions = await Promise.all(predictionPromises);
-
-    // Combine all predictions
-    const allPredictions = [...predictions, ...additionalPredictions];
+    const predictions = await Promise.all(predictionPromises);
+    console.log("Generation outputs:", predictions)
 
     // Flatten the array of results and ensure they're strings
-    const imageUrls = allPredictions.flat().filter(Boolean).map(String);
+    const imageUrls = predictions
+      .flat()
+      .filter(Boolean)
+      .map((url) => String(url));
 
     if (imageUrls.length === 0) {
-      throw new Error("No images were generated");
+      throw new Error("No images were generated")
     }
 
-    return {
+    const response = {
       success: true,
       images: imageUrls,
-    };
+    }
+
+    // Ensure the response is serializable
+    return JSON.parse(JSON.stringify(response))
   } catch (error) {
+    console.error("Error in generateImages:", error)
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Failed to generate images",
-    };
+      error: error instanceof Error ? String(error.message) : "Failed to generate images",
+    }
   }
 }
 
@@ -132,80 +92,105 @@ export async function inpaintImage(
   base64Image: string,
   maskImage: string,
   aspectRatio: AspectRatio = "1:1"
-): Promise<{ 
-  success: boolean;
-  image?: string;
-  error?: string;
+): Promise<{
+  success: boolean
+  image?: string
+  error?: string
 }> {
   try {
     if (!process.env.REPLICATE_API_TOKEN) {
-      throw new Error("REPLICATE_API_TOKEN is not configured");
+      throw new Error("REPLICATE_API_TOKEN is not configured")
     }
+
+    console.log(`Starting inpainting with prompt: "${prompt}" and aspect ratio: ${aspectRatio}`)
 
     // Verify we have valid data URLs
-    if (!base64Image.startsWith("data:image/")) {
-      throw new Error("Invalid image format: must be a data URL");
+    if (!base64Image.startsWith('data:image/')) {
+      throw new Error("Invalid image format: must be a data URL")
     }
-    if (!maskImage.startsWith("data:image/")) {
-      throw new Error("Invalid mask format: must be a data URL");
+    if (!maskImage.startsWith('data:image/')) {
+      throw new Error("Invalid mask format: must be a data URL")
     }
 
-    // Create the prediction with the full prediction API
-    const prediction = await replicate.predictions.create({
-      version: "ideogram-ai/ideogram-v2",
-      input: {
-        prompt,
-        image: base64Image,
-        mask: maskImage,
-        aspect_ratio: aspectRatio,
-        negative_prompt: "low quality, bad anatomy, blurry, pixelated",
-        style_type: "General",
-      },
-    });
+    try {
+      // Create the prediction with the full prediction API
+      const prediction = await replicate.predictions.create({
+        version: "ideogram-ai/ideogram-v2",
+        input: {
+          prompt: prompt,
+          image: base64Image,
+          mask: maskImage,
+          aspect_ratio: aspectRatio, // Use aspect_ratio directly as per the documentation
+          negative_prompt: "low quality, bad anatomy, blurry, pixelated",
+          style_type: "General"
+        },
+      });
 
-    // Poll for the prediction result
-    let completedPrediction = prediction;
-    let attempts = 0;
-    const maxAttempts = 30;
+      console.log("Prediction ID:", prediction.id);
+      
+      // Poll for the prediction result
+      let completedPrediction = prediction;
+      let attempts = 0;
+      const maxAttempts = 30; // Stop after 30 attempts (30 seconds)
+      
+      while (attempts < maxAttempts) {
+        // Get the latest prediction
+        completedPrediction = await replicate.predictions.get(prediction.id);
+        console.log(`Polling attempt ${attempts + 1}/${maxAttempts}: ${completedPrediction.status}`);
 
-    while (attempts < maxAttempts) {
-      completedPrediction = await replicate.predictions.get(prediction.id);
+        if (completedPrediction.status === "succeeded") {
+          break;
+        } else if (completedPrediction.status === "failed" || completedPrediction.status === "canceled") {
+          throw new Error(`Prediction failed with status: ${completedPrediction.status}`);
+        }
 
-      if (completedPrediction.status === "succeeded") {
-        break;
-      } else if (
-        completedPrediction.status === "failed" ||
-        completedPrediction.status === "canceled"
-      ) {
-        throw new Error(`Prediction failed with status: ${completedPrediction.status}`);
+        // Wait before the next polling attempt
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        attempts++;
       }
 
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      attempts++;
+      if (attempts >= maxAttempts) {
+        throw new Error("Prediction timed out after 30 seconds");
+      }
+
+      // Process the output
+      console.log("Prediction succeeded with output:", completedPrediction.output);
+      
+      const output = completedPrediction.output;
+      
+      // Handle different output formats
+      let imageUrl: string | null = null;
+      
+      if (typeof output === "string") {
+        imageUrl = output;
+      } else if (Array.isArray(output) && output.length > 0) {
+        imageUrl = output[0];
+      }
+
+      if (!imageUrl) {
+        throw new Error("No image URL in prediction output");
+      }
+
+      return {
+        success: true,
+        image: imageUrl,
+      };
+    } catch (apiError: any) {
+      console.error("API Error details:", apiError);
+      
+      // Extract more detailed error message if available
+      let errorMessage = "Unknown API error";
+      
+      if (apiError.message) {
+        errorMessage = apiError.message;
+      } else if (apiError.response && apiError.response.data) {
+        errorMessage = JSON.stringify(apiError.response.data);
+      }
+      
+      throw new Error(`API Error: ${errorMessage}`);
     }
-
-    if (attempts >= maxAttempts) {
-      throw new Error("Prediction timed out after 30 seconds");
-    }
-
-    const output = completedPrediction.output;
-    let imageUrl: string | null = null;
-
-    if (typeof output === "string") {
-      imageUrl = output;
-    } else if (Array.isArray(output) && output.length > 0) {
-      imageUrl = output[0];
-    }
-
-    if (!imageUrl) {
-      throw new Error("No image URL in prediction output");
-    }
-
-    return {
-      success: true,
-      image: imageUrl,
-    };
   } catch (error) {
+    console.error("Error in inpaintImage:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Inpainting failed",
