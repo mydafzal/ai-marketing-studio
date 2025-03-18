@@ -1,0 +1,17 @@
+Edit line 844 through 850 of UserMesssageSubmitter.tsx to replace:
+
+                    return (
+
+                        <BotCard>
+
+                            <p>Campaign creative performance metrics are now available in the sidebar. You can analyze which ads are performing best and make adjustments as needed.</p>
+
+                        </BotCard>
+
+                    )
+
+With:
+
+                    // Import and use the server component
+                    const showAdCreativesComparison = (await import('@/components/stocks/campaignresults-creatives/server')).default
+                    return showAdCreativesComparison({campaignId})

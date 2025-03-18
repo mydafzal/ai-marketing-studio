@@ -2,16 +2,23 @@
 
 import React, { useEffect, useState } from 'react'
 import { useSidebarContent } from '@/components/contexts/sidebar-content-context'
+import { useActiveUI } from '@/components/stocks/active-ui-context'
 import { X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 export function DynamicSidebar() {
   const { content, isOpen, setIsOpen, title } = useSidebarContent()
+  const { activeUI, clearActiveUI } = useActiveUI()
   const [shouldRender, setShouldRender] = useState(false)
   const [animationClass, setAnimationClass] = useState('')
 
+  // Determine if the sidebar should be open based on either content or activeUI
+  const effectiveIsOpen = isOpen || activeUI !== null
+  const effectiveContent = activeUI?.component || content
+  const effectiveTitle = activeUI?.title || title
+
   useEffect(() => {
-    if (isOpen) {
+    if (effectiveIsOpen) {
       setShouldRender(true)
       setTimeout(() => setAnimationClass('translate-x-0'), 10)
     } else {
@@ -19,9 +26,17 @@ export function DynamicSidebar() {
       const timer = setTimeout(() => setShouldRender(false), 300)
       return () => clearTimeout(timer)
     }
-  }, [isOpen])
+  }, [effectiveIsOpen])
 
   if (!shouldRender) return null
+
+  const handleClose = () => {
+    if (activeUI) {
+      clearActiveUI()
+    } else {
+      setIsOpen(false)
+    }
+  }
 
   return (
     <div 
@@ -30,12 +45,12 @@ export function DynamicSidebar() {
     >
       <div className="flex h-full flex-col">
         <div className="flex items-center justify-between border-b p-4 dark:border-zinc-700">
-          <h2 className="text-lg font-semibold">{title}</h2>
-          <Button variant="ghost" size="sm" onClick={() => setIsOpen(false)}>
+          <h2 className="text-lg font-semibold">{effectiveTitle}</h2>
+          <Button variant="ghost" size="sm" onClick={handleClose}>
             <X className="h-5 w-5" />
           </Button>
         </div>
-        <div className="flex-1 overflow-y-auto p-4">{content}</div>
+        <div className="flex-1 overflow-y-auto p-4">{effectiveContent}</div>
       </div>
     </div>
   )

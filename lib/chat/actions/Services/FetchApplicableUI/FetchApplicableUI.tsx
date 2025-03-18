@@ -19,6 +19,7 @@ import {GeographicalLocation} from '@/components/geographical-location';
 import {SuggestedFilters} from '@/components/suggested-filters';
 import LeadsCountUI from '@/components/campaign-leads-count'
 import AdCreativesComparison from '@/components/stocks/campaignresults-creatives';
+import { AdCreativesActiveUIWrapper } from '@/components/stocks/campaignresults-creatives/active-ui-wrapper';
 import AICampaignAnalysisBoard from "@/components/ai-campaign-analysis-board";
 import { SidebarContentWrapper } from '@/components/sidebar-content-wrapper';
 
@@ -50,14 +51,10 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                     </>
                                 );
                             case 'getCampaignCreativeResults':
-                                // Use sidebar instead of chat
+                                // Use active UI system like create-campaign-screen
                                 return (
                                     <>
-                                        <SidebarContentWrapper 
-                                            content={<AdCreativesComparison campaignId={tool.result.campaignId} />}
-                                            title="Ad Creatives Performance"
-                                            onMount={true}
-                                        />
+                                        <AdCreativesActiveUIWrapper campaignId={tool.result.campaignId} />
                                         <BotCard key={tool.toolCallId}>
                                             <p>Campaign creative performance metrics are now displayed in the sidebar. You can analyze which ads are performing best and make adjustments as needed.</p>
                                         </BotCard>

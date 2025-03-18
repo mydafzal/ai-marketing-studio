@@ -1,4 +1,3 @@
-// This is the completely clean and fixed version of UserMessageSubmitter.tsx with the updated showAdBudgetUI tool
 import {ImagePart, TextPart} from "ai";
 
 import AdCreativesComparison from '@/components/stocks/campaignresults-creatives';
@@ -103,6 +102,10 @@ import LeadsCountUI from "@/components/campaign-leads-count";
 
 import showAiVideoGenerator from "@/components/stocks/ai-video-generator/server"
 
+
+
+
+
 interface ExtractedMessage {
 
     id?: string;
@@ -114,6 +117,8 @@ interface ExtractedMessage {
     timestamp?: string;
 
 }
+
+
 
 
 
@@ -586,107 +591,186 @@ export async function submitUserMessage(content: string, contentImages?: Array<T
             },
 
             showAdBudgetUI: {
+
                 description: adBudgetModule.description,
+
                 parameters: adBudgetModule.parameters,
+
                 generate: async function* ({symbol, price, numberOfShares, guideForUser}) {
-                    yield (
-                        <BotCard>
-                            <StockSkeleton/>
-                        </BotCard>
-                    )
-                    
-                    await sleep(1000)
-                    
-                    const toolCallId = nanoid()
+
+                    const toolCallId = nanoid();
+
                     const initialBudget = numberOfShares || price;
-                    
+
+
+
                     if (initialBudget <= 0 || initialBudget > 1000) {
+
                         pushMessages([
+
                             {
+
                                 id: nanoid(),
+
                                 role: 'assistant',
+
                                 content: [
+
                                     {
+
                                         type: 'tool-call',
+
                                         toolName: 'showAdBudgetUI',
+
                                         toolCallId,
+
                                         args: {symbol, price, numberOfShares: initialBudget, guideForUser}
+
                                     }
+
                                 ],
+
                                 timestamp: new Date().toISOString()
+
                             },
+
                             {
+
                                 id: nanoid(),
+
                                 role: 'tool',
+
                                 content: [
+
                                     {
+
                                         type: 'tool-result',
+
                                         toolName: 'showAdBudgetUI',
+
                                         toolCallId,
+
                                         result: {
+
                                             symbol,
+
                                             price,
+
                                             numberOfShares: initialBudget,
+
                                             status: 'expired',
+
                                             guideForUser
+
                                         }
+
                                     }
+
                                 ],
+
                                 timestamp: new Date().toISOString()
+
+                            },
+
+                            {
+
+                                id: nanoid(),
+
+                                role: 'system',
+
+                                content: `[User has selected an invalid amount]`,
+
+                                timestamp: new Date().toISOString()
+
                             }
+
                         ]);
-                        
-                        return (
-                            <BotCard>
-                                <p>Invalid budget amount. Please specify a budget between €10 and €1000.</p>
-                            </BotCard>
-                        );
+
+
+// Import and use the server component
+                    const showBudgetSetter = (await import('@/components/stocks/set-budget/server')).default
+                    return showBudgetSetter({symbol, price, numberOfShares, guideForUser})
+                        return await adBudgetModule.component({symbol, price, numberOfShares, guideForUser});
+
                     }
-                    
+
+
+
                     pushMessages([
+
                         {
+
                             id: nanoid(),
+
                             role: 'assistant',
+
                             content: [
+
                                 {
+
                                     type: 'tool-call',
+
                                     toolName: 'showAdBudgetUI',
+
                                     toolCallId,
+
                                     args: {symbol, price, numberOfShares: initialBudget, guideForUser}
+
                                 }
+
                             ],
+
                             timestamp: new Date().toISOString()
+
                         },
+
                         {
+
                             id: nanoid(),
+
                             role: 'tool',
+
                             content: [
+
                                 {
+
                                     type: 'tool-result',
+
                                     toolName: 'showAdBudgetUI',
+
                                     toolCallId,
+
                                     result: {
+
                                         symbol,
+
                                         price,
+
                                         numberOfShares: initialBudget,
+
                                         guideForUser
+
                                     }
+
                                 }
+
                             ],
+
                             timestamp: new Date().toISOString()
+
                         }
-                    ])
-                    
-                    // Import and use the server component for Budget Setter
-                    const showBudgetSetter = (await import('@/components/stocks/set-budget/server')).default;
-                    return showBudgetSetter({
-                        symbol,
-                        price,
-                        numberOfShares,
-                        guideForUser
-                    });
+
+                    ]);
+
+
+
+                    return await adBudgetModule.component({symbol, price, numberOfShares, guideForUser});
+
                 }
+
             },
+
+
 
             getCampaignCreativeResults: {
 
@@ -773,10 +857,9 @@ export async function submitUserMessage(content: string, contentImages?: Array<T
                     ])
 
 
-                    // Import and use the server component
+// Import and use the server component
                     const showAdCreativesComparison = (await import('@/components/stocks/campaignresults-creatives/server')).default
                     return showAdCreativesComparison({campaignId})
-
                 }
 
             },
@@ -1952,6 +2035,7 @@ export async function submitUserMessage(content: string, contentImages?: Array<T
 
 
 
+
                     yield(
 
                         <BotCard>
@@ -2439,6 +2523,7 @@ export async function submitUserMessage(content: string, contentImages?: Array<T
             }
 
         },
+
 
 
 
