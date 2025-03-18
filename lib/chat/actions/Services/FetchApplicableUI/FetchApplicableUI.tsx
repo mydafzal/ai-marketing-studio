@@ -238,7 +238,7 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                             onMount={true}
                                         />
                                         <BotCard key={tool.toolCallId}>
-                                            <p>The ad creatives manager is now open in the sidebar. You can manage your campaign's ad creatives from there.</p>
+                                            <p>The ad creatives manager is now open in the sidebar. You can manage your campaign&apos;s ad creatives from there.</p>
                                         </BotCard>
                                     </>
                                 );
