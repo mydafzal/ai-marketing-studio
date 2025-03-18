@@ -41,7 +41,7 @@ export default function showBudgetSetter({
       />
       <BotCard>
         <p>
-          The budget settings for campaign "{symbol}" are now available in the sidebar. 
+          The budget settings for campaign &quot;{symbol}&quot; are now available in the sidebar. 
           You can adjust the daily budget and see the total monthly investment.
         </p>
       </BotCard>
