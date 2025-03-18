@@ -2,7 +2,7 @@ import { BotCard } from "@/components/stocks/message"
 import { BudgetSetterActiveUIWrapper } from "./active-ui-wrapper"
 
 // Make sure we don't have a circular dependency by directly importing Purchase
-import { Purchase } from '@/components/stocks/set-budget.tsx'
+import { Purchase } from '@/components/stocks/set-budget'
 
 interface BudgetSetterServerProps {
   symbol: string;
