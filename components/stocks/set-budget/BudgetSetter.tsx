@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import { BotCard } from "@/components/stocks/message";
-import { Purchase } from '@/components/stocks/set-budget.tsx'
+import { Purchase } from '@/components/stocks/set-budget'
 import { useActiveUI } from '@/components/stocks/active-ui-context'
 
 interface BudgetSetterProps {
