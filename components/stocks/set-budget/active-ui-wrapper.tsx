@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import { useActiveUI } from '@/components/stocks/active-ui-context'
 // Import directly from the set-budget file instead of the directory to avoid circular imports
-import { Purchase } from '@/components/stocks/set-budget.tsx'
+import { Purchase } from '@/components/stocks/set-budget'
 
 interface BudgetSetterProps {
   symbol: string;
