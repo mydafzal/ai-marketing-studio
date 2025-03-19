@@ -1,6 +1,93 @@
 import { getUser } from '@/app/login/actions'
 import { kv } from '@vercel/kv'
-import { SubPayload } from './types'
+
+import { headers } from 'next/headers'
+import { NextResponse } from 'next/server'
+import stripe, { Stripe } from 'stripe'
+import { SubPayload, CheckoutSessionData } from './types'
+
+const webhookSecret = process.env.STRIPE_WEBHOOK_PROD_SECRET!
+
+export async function POST(req: Request) {
+  try {
+    const body = await req.text()
+    const signature = headers().get('stripe-signature')!
+
+    let event: Stripe.Event
+    
+    try {
+      event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
+    } catch (err) {
+      console.error('Webhook signature verification failed:', err)
+      return new NextResponse('Webhook signature verification failed', { status: 400 })
+    }
+
+    switch (event.type) {
+      case 'checkout.session.completed': {
+        const session = event.data.object as Stripe.Checkout.Session
+        
+        // Store checkout session data
+        const sessionData: CheckoutSessionData = {
+          customer_id: session.customer as string,
+          customer_email: session.customer_email as string,
+          session_id: session.id,
+          subscription_id: session.subscription as string,
+          price_id: session.line_items?.data[0]?.price?.id || '',
+          product_id: session.line_items?.data[0]?.price?.product as string,
+          amount_total: session.amount_total || 0,
+          currency: session.currency || 'usd',
+          payment_status: session.payment_status,
+          subscription_status: 'active'
+        }
+
+        // Store in Vercel KV
+        await kv.hset(`checkout:${session.id}`, sessionData)
+        await kv.hset(`customer:${session.customer}`, {
+          email: session.customer_email,
+          customer_id: session.customer,
+          latest_session_id: session.id
+        })
+
+        // Update subscription details
+        if (session.customer_email) {
+          const subPayload: SubPayload = {
+            sub_email: session.customer_email,
+            sub_trial_start: null,
+            sub_trial_end: null,
+            sub_status: 'active',
+            sub_current_period_start: new Date(),
+            sub_current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+            sub_offer: sessionData.product_id,
+            sub_interval: 'month',
+            sub_product_id: sessionData.product_id,
+            sub_interval_count: '1',
+            sub_stripe_customer_id: session.customer as string,
+            sub_id: session.subscription as string
+          }
+          await updateSubscriptionDetails(subPayload)
+        }
+        break
+      }
+    }
+
+    return new NextResponse('Webhook processed successfully', { status: 200 })
+  } catch (error) {
+    console.error('Webhook error:', error)
+    return new NextResponse('Webhook error', { status: 500 })
+  }
+}
+
+
+export async function getSubscriptionDetails(email: string): Promise<SubPayload | null> {
+  try {
+    const userKey = `user:${email}`
+    const subDetails = await kv.hgetall(userKey)
+    return subDetails as SubPayload
+  } catch (error) {
+    console.error('Error fetching subscription details:', error)
+    return null
+  }
+}
 
 export async function updateSubscriptionDetails(sub: SubPayload) {
   const existingUser = await getUser(sub.sub_email)
@@ -29,10 +116,12 @@ export async function updateSubscriptionDetails(sub: SubPayload) {
 }
 
 export async function deleteSubscriptionDetails(email: string) {
-  const usertoUpdate = await getUser(email)
+  const userKey = `user:${email}`
+  const existingData = await kv.hgetall(userKey)
 
-  if (!usertoUpdate || typeof usertoUpdate !== 'object') {
-    throw new Error('Key not found or is not an object')
+  if (!existingData || Object.keys(existingData).length === 0) {
+    console.error(`User not found in KV store for key: ${userKey}`)
+    return
   }
 
   // Properties to delete
@@ -48,17 +137,9 @@ export async function deleteSubscriptionDetails(email: string) {
     'sub_id'
   ]
 
-  // Step 2: Delete each property
-  // propertiesToDelete.forEach(property => {
-  //   delete usertoUpdate[property]
-  // })
-
-  // Step 3: Save the updated object back to KV
-  // const userKey = `user:${email}`
-  // await kv.set(userKey, usertoUpdate)
-  // await kv.hset(userKey, usertoUpdate)
-
-  // Use hdel to delete multiple fields from the Redis hash
-  const userKey = `user:${email}`
-  await kv.hdel(userKey, ...propertiesToDelete)
+  try {
+    await kv.hdel(userKey, ...propertiesToDelete)
+  } catch (error) {
+    console.error(`Error deleting subscription fields from KV store:`, error)
+  }
 }

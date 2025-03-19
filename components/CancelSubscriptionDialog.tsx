@@ -73,6 +73,7 @@ const CancelSubscriptionDialog = ({
               <button
                 onClick={() => {
                   handleModalOk()
+                  window.location.reload()
                 }}
                 className="h-10 ml-4 w-24 bg-purple-600 hover:bg-purple-500 text-white rounded-md shadow-md transition-transform hover:scale-105 active:scale-100 focus:outline-none"
               >

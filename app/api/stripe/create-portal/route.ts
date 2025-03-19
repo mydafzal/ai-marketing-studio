@@ -1,5 +1,4 @@
 import { headers } from 'next/headers'
-import { redirect } from 'next/navigation'
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 
@@ -8,24 +7,25 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '')
 export async function POST(req: NextRequest) {
   let portalSessionUrl
   try {
-    // Programmatically retrive hostname
+    // Programmatically retrieve hostname
     const headersList = headers()
     const host = headersList.get('host') // Retrieves the hostname
-    //   @Todo change http to http for production build
     const billingPageUrl = `http://${host}/subscription`
 
-    const formData = await req.formData()
-    const session_id = formData.get('session_id') as string
-    const checkoutSession = await stripe.checkout.sessions.retrieve(session_id)
+    const body = await req.json()
+    const customer_id = body.customer_id as string  // Ensure we use customer_id instead of session_id
+    // const customer_id =  "cus_RxWrHmPlJfgNIy"
 
-    const portaSession = await stripe.billingPortal.sessions.create({
-      customer: checkoutSession.customer as string,
+    if (!customer_id) {
+      throw new Error("Customer ID is required for Stripe portal access")
+    }
+
+    const portalSession = await stripe.billingPortal.sessions.create({
+      customer: customer_id,
       return_url: billingPageUrl
     })
 
-    portalSessionUrl = portaSession.url
-
-    console.log('portaSessionUrl: ', portalSessionUrl)
+    portalSessionUrl = portalSession.url
   } catch (error: unknown) {
     const message =
       error instanceof Error
@@ -34,7 +34,5 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: message }, { status: 500 })
   }
 
-  if (portalSessionUrl) {
-    redirect(portalSessionUrl)
-  }
+  return NextResponse.json({ url: portalSessionUrl }) // Send response instead of redirecting
 }
