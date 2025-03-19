@@ -22,7 +22,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
-import { Award, ChevronLeft, ChevronRight, ThumbsUp, Eye as EyeIcon, Clock, DollarSign, Target } from "lucide-react"
+import { Award, ChevronLeft, ChevronRight, ThumbsUp, Eye as EyeIcon, Clock, DollarSign, Target, Brain, Users, Sparkles, BarChart3, Zap } from "lucide-react"
 import { CampaignContext } from "@/components/contexts/campaign-context"
 import { VideoPlayer } from "@/components/stocks/video-player"
 
@@ -65,12 +65,49 @@ const AdCreativesComparison: React.FC<{ campaignId?: string }> = ({
   const [editError, setEditError] = useState<string | null>(null)
   const [imagePermalinkUrl, setImagePermalinkUrl] = useState<string>("")
 
+  // AI thought simulation states
+  const [showingAiThoughts, setShowingAiThoughts] = useState(true)
+  const [completedThoughts, setCompletedThoughts] = useState<number[]>([])
+
   const initialFetchDone = useRef(false)
   const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
 
   const { submitUserMessage } = useActions()
   const [aiState] = useAIState()
   const [, setMessages] = useUIState<any>()
+
+  // AI thoughts array
+  const aiThoughts = [
+    { id: 1, icon: <Brain className="size-4 text-[#4AE04A]" />, text: "Analyzing ad creative performance metrics..." },
+    { id: 2, icon: <Users className="size-4 text-blue-400" />, text: "Identifying audience engagement patterns..." },
+    { id: 3, icon: <BarChart3 className="size-4 text-purple-400" />, text: "Calculating conversion rates and ROI..." },
+    { id: 4, icon: <Sparkles className="size-4 text-amber-400" />, text: "Determining top-performing creatives..." },
+    { id: 5, icon: <Zap className="size-4 text-[#4AE04A]" />, text: "Preparing visualization of results..." }
+  ]
+
+  // AI thought simulation
+  useEffect(() => {
+    if (showingAiThoughts) {
+      // Show thoughts sequentially with a delay
+      const thoughtTimers = aiThoughts.map((thought, index) => {
+        return setTimeout(() => {
+          setCompletedThoughts(prev => [...prev, thought.id])
+          
+          // When all thoughts are complete, hide the overlay
+          if (index === aiThoughts.length - 1) {
+            setTimeout(() => {
+              setShowingAiThoughts(false)
+            }, 1000)
+          }
+        }, 800 * (index + 1)) // Show a new thought every 800ms
+      })
+      
+      // Cleanup timers on unmount
+      return () => {
+        thoughtTimers.forEach(timer => clearTimeout(timer))
+      }
+    }
+  }, [showingAiThoughts])
 
   // Get image details when editing a creative
   const getImageDetail = useCallback((imageHash: string) => {
@@ -396,6 +433,37 @@ const AdCreativesComparison: React.FC<{ campaignId?: string }> = ({
 
   return (
     <div className="flex h-full flex-col bg-[#111318] shadow-lg">
+      {/* AI Thought Process Overlay */}
+      {showingAiThoughts && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-[#111318]/95">
+          <div className="flex flex-col items-center">
+            <div className="mb-8 rounded-full bg-[#4AE04A]/20 p-4">
+              <Brain className="size-8 text-[#4AE04A]" />
+            </div>
+            <div className="w-full max-w-md space-y-3">
+              {aiThoughts.map((thought) => (
+                <div 
+                  key={thought.id} 
+                  className={`flex items-center space-x-3 rounded-lg bg-[#1A1C24] p-3 transition-all duration-300 ${
+                    completedThoughts.includes(thought.id) 
+                      ? "opacity-100 translate-y-0" 
+                      : "opacity-0 translate-y-4"
+                  }`}
+                >
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#22252F]">
+                    {thought.icon}
+                  </div>
+                  <span className="text-sm text-zinc-200">{thought.text}</span>
+                  {completedThoughts.includes(thought.id) && (
+                    <div className="ml-auto text-[#4AE04A]">✓</div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header className="relative flex items-center justify-between overflow-hidden bg-gradient-to-r from-[#1A1C24] to-[#1E212A] p-6 text-white">
         <div className="pointer-events-none absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-10" />

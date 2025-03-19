@@ -13,7 +13,7 @@ interface Purchase {
   symbol: string;
   price: number;
   initialBudget?: number;
-  status: 'requires_action' | 'completed' | 'expired';
+  status: 'requires_action' | 'completed' | 'expired' | string;
   purchasingUiProps?: IPurchasingUiProp;
 }
 
@@ -80,7 +80,7 @@ export function Purchase({
             <h3 className="text-xl font-semibold text-zinc-200">{symbol}</h3>
             <p className="text-sm text-zinc-400">Campaign Budget Configuration</p>
           </div>
-          <div className="px-3 py-1 text-sm rounded-full bg-zinc-900 text-zinc-400 border border-zinc-800">
+          <div className="px-3 py-1 text-sm rounded-full bg-zinc-900 text-yellow-400 border border-yellow-600">
             {status}
           </div>
         </div>

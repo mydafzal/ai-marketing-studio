@@ -21,6 +21,7 @@ import FacebookConnect from '@/components/facebook-connect'
 import FacebookAccountSettings from '@/components/facebook-account-settings'
 import { isFeatureToggleEnabled } from '@/lib/helpers/feature-toggle/feature-toggle-manager'
 import ProfileSettings from '@/components/profile-settings'
+import { ThemeToggle } from './theme-toggle'
 
 async function UserOrLogin() {
   const session = (await auth()) as Session
@@ -82,7 +83,10 @@ async function UserOrLogin() {
                 Content Library
               </Link>*/}
               
-
+              <div className="flex items-center ml-2">
+                <ThemeToggle />
+              </div>
+              
               <ProfileSettings
                 userDetails={userDetails}
                 getFacebookBusinessAccounts={getFacebookBusinessAccounts}

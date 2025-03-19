@@ -34,7 +34,7 @@ export function BudgetSetterActiveUIWrapper({
             symbol,
             price: +price,
             initialBudget,
-            status: 'requires_action'
+            status: 'Confirm your Ad Budget'
           }}
         />
         {guideForUser && <div className="mt-4">{guideForUser}</div>}
