@@ -90,3 +90,29 @@ export function getBestPerformerIdForMetric(creatives: AdCreative[], metric: Met
       : Number(b.metrics[metric] || 0) - Number(a.metrics[metric] || 0)
   })[0]?.id || ""
 }
+
+// Ad format constants for previews
+export const IMAGE_AD_FORMATS = [
+  "INSTAGRAM_STANDARD",
+  "INSTAGRAM_STORY",
+  "FACEBOOK_PROFILE_FEED_MOBILE",
+  "FACEBOOK_STORY_MOBILE"
+]
+
+export const VIDEO_AD_FORMATS = [
+  "INSTAGRAM_STANDARD",
+  "INSTAGRAM_STORY",
+  "INSTAGRAM_REELS",
+  "FACEBOOK_PROFILE_FEED_MOBILE",
+  "FACEBOOK_STORY_MOBILE",
+  "FACEBOOK_REELS_MOBILE"
+]
+
+export const AD_FORMAT_LABELS = {
+  "INSTAGRAM_STANDARD": "Instagram Feed",
+  "INSTAGRAM_STORY": "Instagram Story",
+  "INSTAGRAM_REELS": "Instagram Reels",
+  "FACEBOOK_PROFILE_FEED_MOBILE": "Facebook Feed",
+  "FACEBOOK_STORY_MOBILE": "Facebook Story",
+  "FACEBOOK_REELS_MOBILE": "Facebook Reels"
+}

@@ -11,7 +11,8 @@ export async function GET(request: Request) {
     }
 
     const fastyEndpoint = process.env.FASTY_API_URL;
-    const apiUrl = `${fastyEndpoint}/facebook/read/creative-preview/get-creative-preview?creative_id=${creative_id}&ad_format=${ad_format}`;
+    // Use the correct path from the swagger UI
+    const apiUrl = `${fastyEndpoint}/facebook/campaign-creation-flow/get-creative-preview?creative_id=${creative_id}&ad_format=${ad_format}`;
 
     const token_resp = await getFbMarketingApiKey();
     let token = '';
@@ -20,6 +21,8 @@ export async function GET(request: Request) {
     }
 
     try {
+        console.log(`Fetching creative preview from: ${apiUrl}`);
+        
         const response = await fetch(apiUrl, {
             headers: {
                 'Authorization': `Bearer ${process.env.FASTY_API_TOKEN}`,
@@ -29,13 +32,26 @@ export async function GET(request: Request) {
 
         if (!response.ok) {
             console.error(`HTTP error! status: ${response.status}`);
-            return NextResponse.json({ error: 'Failed to fetch creative preview' }, { status: response.status });
+            const errorText = await response.text();
+            console.error(`Error response: ${errorText}`);
+            return NextResponse.json({ 
+                success: false, 
+                error: 'Failed to fetch creative preview',
+                details: errorText 
+            }, { status: response.status });
         }
 
         const data = await response.json();
-        return NextResponse.json(data);
+        return NextResponse.json({ 
+            success: true,
+            ...data
+        });
     } catch (error) {
         console.error('Error fetching creative preview:', error);
-        return NextResponse.json({ error: 'Failed to fetch creative preview' }, { status: 500 });
+        return NextResponse.json({ 
+            success: false, 
+            error: 'Failed to fetch creative preview',
+            details: error instanceof Error ? error.message : String(error)
+        }, { status: 500 });
     }
 }

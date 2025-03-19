@@ -40,7 +40,7 @@ export function DynamicSidebar() {
 
   return (
     <div 
-      className={`fixed top-0 right-0 z-50 h-full w-[350px] transform bg-white shadow-lg 
+      className={`fixed top-0 right-0 z-50 h-full w-[500px] transform bg-white shadow-lg 
                  dark:bg-zinc-800 transition-transform duration-300 ease-in-out ${animationClass}`}
     >
       <div className="flex h-full flex-col">

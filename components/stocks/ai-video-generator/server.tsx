@@ -1,3 +1,5 @@
+"use server";
+
 // /components/stocks/ai-video-generator/server.tsx
 
 import { AiVideoGenerator } from "./ai-video-generator"
@@ -8,7 +10,7 @@ import { BotCard } from "@/components/stocks/message"
  * No "use client" here. 
  * We default-export a function returning <BotCard> + <AiVideoGenerator />
  */
-export default function showAiVideoGenerator() {
+export default async function showAiVideoGenerator() {
   return (
     <BotCard>
       <AiVideoGenerator />

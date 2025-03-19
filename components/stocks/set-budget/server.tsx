@@ -1,3 +1,5 @@
+"use server";
+
 import { BotCard } from "@/components/stocks/message"
 import { BudgetSetterActiveUIWrapper } from "./active-ui-wrapper"
 
@@ -15,7 +17,7 @@ interface BudgetSetterServerProps {
  * Server component that renders the Budget Setter
  * to be displayed in the side panel when called by the AI
  */
-export default function showBudgetSetter({ 
+export default async function showBudgetSetter({ 
   symbol, 
   price, 
   numberOfShares, 

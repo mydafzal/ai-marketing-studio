@@ -34,6 +34,7 @@ import { getAllAdMetricsByCampaignId } from "@/lib/api/fasty-bot/get-all-ad-metr
 
 // Import sub-components
 import { DetailedMetrics } from "./DetailedMetrics"
+import { AdPreview } from "./AdPreview"
 import { CreativeDisplay } from "./CreativeDisplay"
 import { AdCreative, RawCreative, getPerformanceScore } from "./types"
 
@@ -622,12 +623,21 @@ const togglePublish = async (id: string) => {
             </div>
 
             <div className="md:col-span-3 space-y-4">
-              <Tabs defaultValue="metrics" className="w-full">
+              <Tabs defaultValue="preview" className="w-full">
                 <TabsList className="w-full">
+                  <TabsTrigger value="preview">Ad Preview</TabsTrigger>
                   <TabsTrigger value="metrics">Detailed Metrics</TabsTrigger>
                   <TabsTrigger value="conversions">Conversion Data</TabsTrigger>
                 </TabsList>
 
+                <TabsContent value="preview" className="pt-4">
+                  {viewingCreative && (
+                    <AdPreview
+                      creativeId={viewingCreative.id}
+                      type={viewingCreative.type}
+                    />
+                  )}
+                </TabsContent>
                 {/* METRICS TAB */}
                 <TabsContent value="metrics" className="pt-4">
                   <div className="grid grid-cols-2 gap-4">

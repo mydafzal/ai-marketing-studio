@@ -1,3 +1,5 @@
+"use server";
+
 import { BotCard } from "@/components/stocks/message";
 import { AdCreativesActiveUIWrapper } from "./active-ui-wrapper";
 
@@ -5,7 +7,7 @@ import { AdCreativesActiveUIWrapper } from "./active-ui-wrapper";
  * Server component that renders the AdCreativesComparison
  * to be displayed in the side panel when called by the AI
  */
-export default function showAdCreativesComparison({ campaignId }: { campaignId: string }) {
+export default async function showAdCreativesComparison({ campaignId }: { campaignId: string }) {
   return (
     <>
       <AdCreativesActiveUIWrapper campaignId={campaignId} />
