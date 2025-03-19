@@ -149,7 +149,7 @@ export const CreativeDisplay: React.FC<CreativeDisplayProps> = ({
             <SelectContent>
               {formats.map((format) => (
                 <SelectItem key={format} value={format}>
-                  {AD_FORMAT_LABELS[format]}
+                  {AD_FORMAT_LABELS[format as keyof typeof AD_FORMAT_LABELS]}
                 </SelectItem>
               ))}
             </SelectContent>
