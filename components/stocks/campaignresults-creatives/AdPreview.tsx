@@ -62,7 +62,8 @@ export const AdPreview: React.FC<AdPreviewProps> = ({ creativeId, type }) => {
           <SelectContent>
             {formats.map((format) => (
               <SelectItem key={format} value={format}>
-                {AD_FORMAT_LABELS[format]}
+                {/* Fix for the TypeScript error with type assertion */}
+                {AD_FORMAT_LABELS[format as keyof typeof AD_FORMAT_LABELS]}
               </SelectItem>
             ))}
           </SelectContent>
@@ -71,8 +72,8 @@ export const AdPreview: React.FC<AdPreviewProps> = ({ creativeId, type }) => {
 
       <div className="relative w-full bg-zinc-50 dark:bg-zinc-800 rounded-md overflow-hidden min-h-[400px] flex items-center justify-center">
         {isLoading ? (
-          <div className="flex items-center justify-center h-full w-full">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <div className="flex items-center justify-center size-full">
+            <div className="animate-spin rounded-full size-12 border-b-2 border-primary"></div>
           </div>
         ) : error ? (
           <div className="text-red-500 p-4 text-center">
@@ -80,7 +81,7 @@ export const AdPreview: React.FC<AdPreviewProps> = ({ creativeId, type }) => {
           </div>
         ) : (
           <div 
-            className="w-full h-full flex items-center justify-center" 
+            className="size-full flex items-center justify-center" 
             dangerouslySetInnerHTML={renderHtml()} 
           />
         )}
