@@ -12,8 +12,9 @@ export function DynamicSidebar() {
   const [shouldRender, setShouldRender] = useState(false)
   const [animationClass, setAnimationClass] = useState('')
 
-  // Determine if the sidebar should be open based on either content or activeUI
-  const effectiveIsOpen = isOpen || activeUI !== null
+  // Only open the sidebar when isOpen is true, not based on activeUI presence
+  // This prevents automatic opening when activeUI is set
+  const effectiveIsOpen = isOpen
   const effectiveContent = activeUI?.component || content
   const effectiveTitle = activeUI?.title || title
 
@@ -41,9 +42,9 @@ export function DynamicSidebar() {
   return (
     <div 
       className={`fixed top-0 right-0 z-50 h-full w-[500px] transform bg-white shadow-lg 
-                 dark:bg-zinc-800 transition-transform duration-300 ease-in-out ${animationClass}`}
+                 dark:bg-zinc-800 transition-transform duration-300 ease-in-out ${animationClass} pointer-events-none`}
     >
-      <div className="flex h-full flex-col">
+      <div className="flex h-full flex-col pointer-events-auto">
         <div className="flex items-center justify-between border-b p-4 dark:border-zinc-700">
           <h2 className="text-lg font-semibold">{effectiveTitle}</h2>
           <Button variant="ghost" size="sm" onClick={handleClose}>
