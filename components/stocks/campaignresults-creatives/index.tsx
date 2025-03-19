@@ -21,7 +21,8 @@ import {
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
-import { Award, RefreshCw, ChevronLeft, ChevronRight } from "lucide-react"
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
+import { Award, ChevronLeft, ChevronRight, ThumbsUp, Eye as EyeIcon, Clock, DollarSign, Target } from "lucide-react"
 import { CampaignContext } from "@/components/contexts/campaign-context"
 import { VideoPlayer } from "@/components/stocks/video-player"
 
@@ -33,10 +34,10 @@ import { Message } from "ai"
 import { getAllAdMetricsByCampaignId } from "@/lib/api/fasty-bot/get-all-ad-metrics-by-campaign-id"
 
 // Import sub-components
-import { DetailedMetrics } from "./DetailedMetrics"
 import { AdPreview } from "./AdPreview"
 import { CreativeDisplay } from "./CreativeDisplay"
-import { AdCreative, RawCreative, getPerformanceScore } from "./types"
+import { EnhancedMetricItem } from "./EnhancedMetricItem"
+import { AdCreative, RawCreative, getPerformanceScore, IMAGE_AD_FORMATS, VIDEO_AD_FORMATS, AD_FORMAT_LABELS } from "./types"
 
 const FB_API_KEY = process.env.NEXT_PUBLIC_FB_API_KEY || ""
 
@@ -54,6 +55,7 @@ const AdCreativesComparison: React.FC<{ campaignId?: string }> = ({
 
   // State for viewing creative details
   const [viewingCreative, setViewingCreative] = useState<AdCreative | null>(null)
+  const [adFormat, setAdFormat] = useState<string>("INSTAGRAM_STANDARD")
 
   // State for editing creative
   const [editingCreative, setEditingCreative] = useState<AdCreative | null>(null)
@@ -366,207 +368,147 @@ const AdCreativesComparison: React.FC<{ campaignId?: string }> = ({
   }
 
   // Toggle active/inactive status of creative
- // Toggle active/inactive status of creative
-const togglePublish = async (id: string) => {
-  try {
-    const creative = adCreatives.find((c) => c.id === id);
-    if (!creative) return;
+  const togglePublish = async (id: string) => {
+    try {
+      const creative = adCreatives.find((c) => c.id === id);
+      if (!creative) return;
 
-    // Use the toggle status service that communicates with FastAPI
-    const result = await toggleAdCreativeStatus(id);
-    
-    if (!result.success) {
-      throw new Error(result.error || "Failed to toggle creative status");
+      // Use the toggle status service that communicates with FastAPI
+      const result = await toggleAdCreativeStatus(id);
+      
+      if (!result.success) {
+        throw new Error(result.error || "Failed to toggle creative status");
+      }
+
+      // Update creative status in state based on the response
+      setAdCreatives((prevCreatives) =>
+        prevCreatives.map((c) =>
+          c.id === id ? { 
+            ...c, 
+            status: result.new_status || (c.status === "ACTIVE" ? "PAUSED" : "ACTIVE") 
+          } : c
+        )
+      );
+    } catch (error) {
+      console.error("Error toggling publish status:", error);
     }
-
-    // Update creative status in state based on the response
-    setAdCreatives((prevCreatives) =>
-      prevCreatives.map((c) =>
-        c.id === id ? { 
-          ...c, 
-          status: result.new_status || (c.status === "ACTIVE" ? "PAUSED" : "ACTIVE") 
-        } : c
-      )
-    );
-  } catch (error) {
-    console.error("Error toggling publish status:", error);
-    // You might want to add some UI notification for errors
-  }
-}
-
-  // Create new creative handler
-  const addNewCreative = async () => {
-    const responseMessage = await submitUserMessage(
-      "I want to create new ad creative",
-      [],
-      true
-    )
-    setMessages((currentMessages: Message[]) => [...currentMessages, responseMessage])
   }
 
   return (
-    <div className="flex h-full flex-col bg-white shadow-lg dark:bg-zinc-800">
+    <div className="flex h-full flex-col bg-[#111318] shadow-lg">
       {/* Header */}
-      <header className="relative flex items-center justify-between overflow-hidden bg-gradient-to-r from-blue-600 to-indigo-700 p-6 text-white">
+      <header className="relative flex items-center justify-between overflow-hidden bg-gradient-to-r from-[#1A1C24] to-[#1E212A] p-6 text-white">
         <div className="pointer-events-none absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-10" />
 
         <div className="z-10 flex items-center gap-3">
-          <div className="rounded-lg bg-white/20 p-2">
-            <Award className="size-6 text-yellow-300" />
+          <div className="rounded-lg bg-[#4AE04A]/20 p-2">
+            <Award className="size-6 text-[#4AE04A]" />
           </div>
           <div>
             <h1 className="text-2xl font-bold">Ad Creative Performance</h1>
-            <p className="text-sm text-blue-100">
+            <p className="text-sm text-zinc-300">
               Compare and analyze your ad performance metrics
             </p>
           </div>
         </div>
-
-        <div className="z-10 flex items-center gap-2">
-          <Button
-            onClick={addNewCreative}
-            variant="outline"
-            size="sm"
-            className="mr-2 border-white/20 bg-white/10 text-white hover:bg-white/20"
-          >
-            <span className="mr-2">+</span>
-            New Creative
-          </Button>
-          <Button
-            onClick={fetchMetrics}
-            variant="outline"
-            size="sm"
-            className="border-white/20 bg-white/10 text-white hover:bg-white/20"
-          >
-            <RefreshCw className="mr-2 size-4" />
-            Refresh Data
-          </Button>
-        </div>
       </header>
 
       {/* Main content */}
-      <main className="grow overflow-y-auto bg-zinc-50 p-6 dark:bg-zinc-900">
+      <main className="grow overflow-y-auto bg-[#121419] p-6">
         {!effectiveCampaignId && (
-          <div className="mb-4 rounded-lg border border-yellow-200 bg-yellow-50 p-4 dark:border-yellow-800 dark:bg-yellow-900/20">
-            <p className="text-yellow-600 dark:text-yellow-400">
+          <div className="mb-4 rounded-lg border border-yellow-700 bg-yellow-900/20 p-4">
+            <p className="text-yellow-400">
               No campaign ID provided. Please select a campaign.
             </p>
           </div>
         )}
 
         {error && (
-          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-900/20">
-            <p className="text-red-600 dark:text-red-400">{error}</p>
+          <div className="mb-4 rounded-lg border border-red-800 bg-red-900/20 p-4">
+            <p className="text-red-400">{error}</p>
           </div>
         )}
 
         {isLoading && (
-          <p className="dark:text-zinc-200">Loading raw creatives...</p>
+          <p className="text-zinc-300">Loading raw creatives...</p>
         )}
 
         {adCreatives.length > 0 && !error && (
-          <Tabs defaultValue="overview" className="w-full">
-            <TabsList className="flex w-full justify-start border bg-white dark:border-zinc-700 dark:bg-zinc-800">
-              <TabsTrigger
-                value="overview"
-                className="text-zinc-700 dark:text-zinc-300"
-              >
-                Overview
-              </TabsTrigger>
-              <TabsTrigger
-                value="detailed"
-                className="text-zinc-700 dark:text-zinc-300"
-              >
-                Detailed Metrics
-              </TabsTrigger>
-            </TabsList>
-
-            {/* OVERVIEW TAB */}
-            <TabsContent value="overview">
-              <div className="mb-6 flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <Button
-                    onClick={handlePrev}
-                    variant="outline"
-                    size="sm"
-                    className="size-10 flex items-center justify-center rounded-full border-zinc-300 p-0 hover:bg-zinc-100 dark:border-zinc-600 dark:hover:bg-zinc-700"
-                    disabled={sliderIndex === 0}
-                  >
-                    <ChevronLeft className="size-5" />
-                  </Button>
-                  <div className="text-sm text-zinc-500 dark:text-zinc-400">
-                    Page {sliderIndex + 1} of {chunkedCreatives.length}
-                  </div>
-                  <Button
-                    onClick={handleNext}
-                    variant="outline"
-                    size="sm"
-                    className="size-10 flex items-center justify-center rounded-full border-zinc-300 p-0 hover:bg-zinc-100 dark:border-zinc-600 dark:hover:bg-zinc-700"
-                    disabled={sliderIndex === chunkedCreatives.length - 1}
-                  >
-                    <ChevronRight className="size-5" />
-                  </Button>
-                </div>
-
-                {/* Pagination Dots */}
-                <div className="flex space-x-1">
-                  {chunkedCreatives.map((_, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setSliderIndex(idx)}
-                      className={`size-2 rounded-full ${
-                        idx === sliderIndex
-                          ? "bg-blue-500"
-                          : "bg-zinc-300 hover:bg-zinc-400 dark:bg-zinc-600 dark:hover:bg-zinc-500"
-                      }`}
-                      aria-label={`Go to page ${idx + 1}`}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              <div className="relative w-full overflow-hidden">
-                <div
-                  className="flex transition-transform duration-300"
-                  style={{ transform: `translateX(-${sliderIndex * 100}%)` }}
+          <>
+            <div className="mb-6 flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <Button
+                  onClick={handlePrev}
+                  variant="outline"
+                  size="sm"
+                  className="size-10 flex items-center justify-center rounded-full border-zinc-700 p-0 bg-[#1A1C24] hover:bg-[#22252F] text-white"
+                  disabled={sliderIndex === 0}
                 >
-                  {chunkedCreatives.map((single, idx) => (
-                    <div
-                      key={idx}
-                      className="flex w-full shrink-0 grow-0 justify-center"
-                    >
-                      {single.map((creative) => {
-                        const sortedOverall = [...adCreatives].sort(
-                          (a, b) => getPerformanceScore(b) - getPerformanceScore(a)
-                        )
-                        const topPerformer = sortedOverall[0]?.id
-                        const secondBest = sortedOverall[1]?.id
-                        return (
-                          <CreativeDisplay
-                            key={creative.id}
-                            creative={creative}
-                            isTopPerformer={creative.id === topPerformer}
-                            isSecondBest={creative.id === secondBest}
-                            onViewDetails={() => handleViewDetails(creative)}
-                            onTogglePublish={() => togglePublish(creative.id)}
-                          />
-                        )
-                      })}
-                    </div>
-                  ))}
+                  <ChevronLeft className="size-5" />
+                </Button>
+                <div className="text-sm text-zinc-400">
+                  Page {sliderIndex + 1} of {chunkedCreatives.length}
                 </div>
+                <Button
+                  onClick={handleNext}
+                  variant="outline"
+                  size="sm"
+                  className="size-10 flex items-center justify-center rounded-full border-zinc-700 p-0 bg-[#1A1C24] hover:bg-[#22252F] text-white"
+                  disabled={sliderIndex === chunkedCreatives.length - 1}
+                >
+                  <ChevronRight className="size-5" />
+                </Button>
               </div>
-            </TabsContent>
 
-            {/* DETAILED TAB */}
-            <TabsContent value="detailed">
-              <DetailedMetrics
-                creatives={adCreatives}
-                onViewDetails={handleViewDetails}
-                onTogglePublish={togglePublish}
-              />
-            </TabsContent>
-          </Tabs>
+              {/* Pagination Dots */}
+              <div className="flex space-x-1">
+                {chunkedCreatives.map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setSliderIndex(idx)}
+                    className={`size-2 rounded-full ${
+                      idx === sliderIndex
+                        ? "bg-[#4AE04A]"
+                        : "bg-zinc-700 hover:bg-zinc-600"
+                    }`}
+                    aria-label={`Go to page ${idx + 1}`}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className="relative w-full overflow-hidden">
+              <div
+                className="flex transition-transform duration-300"
+                style={{ transform: `translateX(-${sliderIndex * 100}%)` }}
+              >
+                {chunkedCreatives.map((single, idx) => (
+                  <div
+                    key={idx}
+                    className="flex w-full shrink-0 grow-0 justify-center"
+                  >
+                    {single.map((creative) => {
+                      const sortedOverall = [...adCreatives].sort(
+                        (a, b) => getPerformanceScore(b) - getPerformanceScore(a)
+                      )
+                      const topPerformer = sortedOverall[0]?.id
+                      const secondBest = sortedOverall[1]?.id
+                      return (
+                        <CreativeDisplay
+                          key={creative.id}
+                          creative={creative}
+                          isTopPerformer={creative.id === topPerformer}
+                          isSecondBest={creative.id === secondBest}
+                          onViewDetails={() => handleViewDetails(creative)}
+                          onTogglePublish={() => togglePublish(creative.id)}
+                        />
+                      )
+                    })}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
         )}
       </main>
 
@@ -579,209 +521,191 @@ const togglePublish = async (id: string) => {
           }
         }}
       >
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-[#111318] border-zinc-700 text-white">
           <DialogHeader>
             <DialogTitle className="text-xl">Creative Details</DialogTitle>
           </DialogHeader>
 
-          <div className="grid md:grid-cols-5 gap-6 py-4">
-            <div className="md:col-span-2 space-y-4">
-              {viewingCreative?.type === "video" ? (
-                <div className="overflow-hidden rounded-lg bg-zinc-50 dark:bg-zinc-800">
-                  <VideoPlayer
-                    videoId={viewingCreative?.videoId || ""}
-                    autoPlay={true}
-                    className="w-full"
-                  />
-                </div>
-              ) : (
-                <div className="aspect-square overflow-hidden rounded-lg bg-zinc-50 dark:bg-zinc-800 flex items-center justify-center">
-                  <img
-                    src={viewingCreative?.url}
-                    alt=""
-                    className="max-h-full max-w-full object-contain"
-                  />
-                </div>
-              )}
+          <div className="space-y-4 py-4">
+            <Tabs defaultValue="preview" className="w-full">
+              <TabsList className="w-full bg-[#1A1C24] text-zinc-400">
+                <TabsTrigger value="preview" className="data-[state=active]:bg-[#22252F] data-[state=active]:text-white">Ad Preview</TabsTrigger>
+                <TabsTrigger value="metrics" className="data-[state=active]:bg-[#22252F] data-[state=active]:text-white">Metrics</TabsTrigger>
+                <TabsTrigger value="conversions" className="data-[state=active]:bg-[#22252F] data-[state=active]:text-white">Conversion Data</TabsTrigger>
+              </TabsList>
 
-              <div className="px-1">
-                <Badge className="mb-2">
-                  {viewingCreative?.type.toUpperCase()} Ad
-                </Badge>
-
-                <div className="text-sm text-zinc-500 dark:text-zinc-400">
-                  <p className="mb-1">
-                    <span className="font-medium">Name:</span>{" "}
-                    {viewingCreative?.name}
-                  </p>
-                  <p className="mb-1">
-                    <span className="font-medium">Status:</span>{" "}
-                    {viewingCreative?.status}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="md:col-span-3 space-y-4">
-              <Tabs defaultValue="preview" className="w-full">
-                <TabsList className="w-full">
-                  <TabsTrigger value="preview">Ad Preview</TabsTrigger>
-                  <TabsTrigger value="metrics">Detailed Metrics</TabsTrigger>
-                  <TabsTrigger value="conversions">Conversion Data</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="preview" className="pt-4">
-                  {viewingCreative && (
+              <TabsContent value="preview" className="pt-4">
+                {viewingCreative && (
+                  <>
+                    {/* Format selector moved inside preview tab */}
+                    <div className="w-full mb-4">
+                      <p className="text-sm font-medium text-zinc-400 mb-1">Preview Format</p>
+                      <Select 
+                        value={adFormat} 
+                        onValueChange={setAdFormat}
+                      >
+                        <SelectTrigger className="w-full bg-[#1A1C24] border-zinc-700 text-zinc-200">
+                          <SelectValue placeholder="Select format" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-[#1A1C24] border-zinc-700 text-zinc-200">
+                          {(viewingCreative?.type === 'video' ? VIDEO_AD_FORMATS : IMAGE_AD_FORMATS).map((format) => (
+                            <SelectItem key={format} value={format}>
+                              {AD_FORMAT_LABELS[format as keyof typeof AD_FORMAT_LABELS]}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
                     <AdPreview
                       creativeId={viewingCreative.id}
                       type={viewingCreative.type}
                     />
-                  )}
-                </TabsContent>
-                {/* METRICS TAB */}
-                <TabsContent value="metrics" className="pt-4">
+                  </>
+                )}
+              </TabsContent>
+              
+              {/* METRICS TAB - All metrics moved here from the main card */}
+              <TabsContent value="metrics" className="pt-4">
+                {viewingCreative && (
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="rounded-lg bg-white dark:bg-zinc-800 p-3 shadow-sm">
-                      <h4 className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-                        Impressions
-                      </h4>
-                      <p className="text-2xl font-bold">
-                        {viewingCreative?.metrics.impressions.toLocaleString()}
-                      </p>
-                    </div>
-
-                    <div className="rounded-lg bg-white dark:bg-zinc-800 p-3 shadow-sm">
-                      <h4 className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-                        Engagement
-                      </h4>
-                      <p className="text-2xl font-bold">
-                        {viewingCreative?.metrics.engagement.toLocaleString()}
-                      </p>
-                    </div>
-
-                    <div className="rounded-lg bg-white dark:bg-zinc-800 p-3 shadow-sm">
-                      <h4 className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
+                    <EnhancedMetricItem
+                      icon={<EyeIcon className="size-4 text-[#4AE04A]" />}
+                      label="Impressions"
+                      value={viewingCreative.metrics.impressions.toLocaleString()}
+                      percent={12}
+                      miniChart="sparkline"
+                    />
+                    <EnhancedMetricItem
+                      icon={<ThumbsUp className="size-4 text-[#4AE04A]" />}
+                      label="Engagement"
+                      value={viewingCreative.metrics.engagement.toLocaleString()}
+                      percent={8}
+                      miniChart="bar"
+                      isPositive
+                    />
+                    <EnhancedMetricItem
+                      icon={<Clock className="size-4 text-[#4AE04A]" />}
+                      label="Watch Time (s)"
+                      value={viewingCreative.metrics.watchTime.toFixed(1)}
+                      percent={-5}
+                      miniChart="area"
+                      isPositive={false}
+                    />
+                    <EnhancedMetricItem
+                      icon={<DollarSign className="size-4 text-[#4AE04A]" />}
+                      label="CPC"
+                      value={`$${viewingCreative.metrics.costPerClick.toFixed(2)}`}
+                      percent={-3}
+                      miniChart="line"
+                      isPositive
+                    />
+                    <EnhancedMetricItem
+                      icon={<Target className="size-4 text-[#4AE04A]" />}
+                      label="Conversions / Leads"
+                      value={`${viewingCreative.metrics.conversions}/${viewingCreative.metrics.leads}`}
+                      percent={7}
+                      miniChart="bar"
+                      isPositive
+                    />
+                    <div className="rounded-lg bg-[#171920] p-3 shadow-sm">
+                      <h4 className="text-sm font-medium text-zinc-400">
                         Reach
                       </h4>
-                      <p className="text-2xl font-bold">
-                        {viewingCreative?.metrics.reach.toLocaleString()}
+                      <p className="text-2xl font-bold text-white">
+                        {viewingCreative.metrics.reach.toLocaleString()}
                       </p>
                     </div>
-
-                    <div className="rounded-lg bg-white dark:bg-zinc-800 p-3 shadow-sm">
-                      <h4 className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-                        Watch Time (s)
-                      </h4>
-                      <p className="text-2xl font-bold">
-                        {viewingCreative?.metrics.watchTime.toFixed(1)}
-                      </p>
-                    </div>
-
-                    <div className="rounded-lg bg-white dark:bg-zinc-800 p-3 shadow-sm">
-                      <h4 className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-                        Cost Per Click
-                      </h4>
-                      <p className="text-2xl font-bold">
-                        ${viewingCreative?.metrics.costPerClick.toFixed(2)}
-                      </p>
-                    </div>
-
-                    <div className="rounded-lg bg-white dark:bg-zinc-800 p-3 shadow-sm">
-                      <h4 className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-                        Click-Through Rate
-                      </h4>
-                      <p className="text-2xl font-bold">
-                        {viewingCreative?.metrics.clickThroughRate.toFixed(2)}%
-                      </p>
-                    </div>
-
-                    <div className="rounded-lg bg-white dark:bg-zinc-800 p-3 shadow-sm">
-                      <h4 className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
+                    <div className="rounded-lg bg-[#171920] p-3 shadow-sm">
+                      <h4 className="text-sm font-medium text-zinc-400">
                         Frequency
                       </h4>
-                      <p className="text-2xl font-bold">
-                        {viewingCreative?.metrics.frequency.toFixed(2)}
+                      <p className="text-2xl font-bold text-white">
+                        {viewingCreative.metrics.frequency.toFixed(2)}
                       </p>
                     </div>
-
-                    <div className="rounded-lg bg-white dark:bg-zinc-800 p-3 shadow-sm">
-                      <h4 className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
+                    <div className="rounded-lg bg-[#171920] p-3 shadow-sm">
+                      <h4 className="text-sm font-medium text-zinc-400">
                         Unique Clicks
                       </h4>
-                      <p className="text-2xl font-bold">
-                        {viewingCreative?.metrics.uniqueClicks.toLocaleString()}
+                      <p className="text-2xl font-bold text-white">
+                        {viewingCreative.metrics.uniqueClicks.toLocaleString()}
                       </p>
                     </div>
                   </div>
-                </TabsContent>
+                )}
+              </TabsContent>
 
-                {/* CONVERSIONS TAB */}
-                <TabsContent value="conversions" className="pt-4">
+              {/* CONVERSIONS TAB */}
+              <TabsContent value="conversions" className="pt-4">
+                {viewingCreative && (
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="rounded-lg bg-white dark:bg-zinc-800 p-3 shadow-sm">
-                      <h4 className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
+                    <div className="rounded-lg bg-[#171920] p-3 shadow-sm">
+                      <h4 className="text-sm font-medium text-zinc-400">
                         Conversions
                       </h4>
-                      <p className="text-2xl font-bold">
-                        {viewingCreative?.metrics.conversions.toLocaleString()}
+                      <p className="text-2xl font-bold text-white">
+                        {viewingCreative.metrics.conversions.toLocaleString()}
                       </p>
                     </div>
 
-                    <div className="rounded-lg bg-white dark:bg-zinc-800 p-3 shadow-sm">
-                      <h4 className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
+                    <div className="rounded-lg bg-[#171920] p-3 shadow-sm">
+                      <h4 className="text-sm font-medium text-zinc-400">
                         Leads
                       </h4>
-                      <p className="text-2xl font-bold">
-                        {viewingCreative?.metrics.leads.toLocaleString()}
+                      <p className="text-2xl font-bold text-white">
+                        {viewingCreative.metrics.leads.toLocaleString()}
                       </p>
                     </div>
 
-                    <div className="rounded-lg bg-white dark:bg-zinc-800 p-3 shadow-sm">
-                      <h4 className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
+                    <div className="rounded-lg bg-[#171920] p-3 shadow-sm">
+                      <h4 className="text-sm font-medium text-zinc-400">
                         Cost Per Lead
                       </h4>
-                      <p className="text-2xl font-bold">
-                        ${viewingCreative?.metrics.costPerLead.toFixed(2)}
+                      <p className="text-2xl font-bold text-white">
+                        ${viewingCreative.metrics.costPerLead.toFixed(2)}
                       </p>
                     </div>
 
-                    <div className="rounded-lg bg-white dark:bg-zinc-800 p-3 shadow-sm">
-                      <h4 className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
+                    <div className="rounded-lg bg-[#171920] p-3 shadow-sm">
+                      <h4 className="text-sm font-medium text-zinc-400">
                         Cost Per Conversion
                       </h4>
-                      <p className="text-2xl font-bold">
-                        ${viewingCreative?.metrics.costPerConversion.toFixed(2)}
+                      <p className="text-2xl font-bold text-white">
+                        ${viewingCreative.metrics.costPerConversion.toFixed(2)}
                       </p>
                     </div>
 
-                    <div className="rounded-lg bg-white dark:bg-zinc-800 p-3 shadow-sm">
-                      <h4 className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
+                    <div className="rounded-lg bg-[#171920] p-3 shadow-sm">
+                      <h4 className="text-sm font-medium text-zinc-400">
                         Conversion Rate
                       </h4>
-                      <p className="text-2xl font-bold">
-                        {viewingCreative?.metrics.conversionRate.toFixed(2)}%
+                      <p className="text-2xl font-bold text-white">
+                        {viewingCreative.metrics.conversionRate.toFixed(2)}%
                       </p>
                     </div>
 
-                    <div className="rounded-lg bg-white dark:bg-zinc-800 p-3 shadow-sm">
-                      <h4 className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
+                    <div className="rounded-lg bg-[#171920] p-3 shadow-sm">
+                      <h4 className="text-sm font-medium text-zinc-400">
                         Total Spend
                       </h4>
-                      <p className="text-2xl font-bold">
-                        ${viewingCreative?.metrics.spend.toFixed(2)}
+                      <p className="text-2xl font-bold text-white">
+                        ${viewingCreative.metrics.spend.toFixed(2)}
                       </p>
                     </div>
                   </div>
-                </TabsContent>
-              </Tabs>
-            </div>
+                )}
+              </TabsContent>
+            </Tabs>
           </div>
 
-          <DialogFooter>
-            <Button onClick={() => handleEdit(viewingCreative!)} className="mr-2">
+          <DialogFooter className="pt-4 border-t border-zinc-700">
+            <Button onClick={() => handleEdit(viewingCreative!)} className="mr-2 bg-[#4AE04A]/90 hover:bg-[#4AE04A] text-black">
               Edit
             </Button>
-            <Button onClick={() => setViewingCreative(null)}>Close</Button>
+            <Button onClick={() => setViewingCreative(null)} variant="outline" className="bg-[#1A1C24] border-zinc-700 text-zinc-200 hover:bg-[#22252F] hover:text-white">
+              Close
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -796,7 +720,7 @@ const togglePublish = async (id: string) => {
           }
         }}
       >
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl bg-[#111318] border-zinc-700 text-white">
           <DialogHeader>
             <DialogTitle>Edit Creative</DialogTitle>
           </DialogHeader>
@@ -806,7 +730,7 @@ const togglePublish = async (id: string) => {
               <div className="col-span-4">
                 <label
                   htmlFor="editName"
-                  className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+                  className="block text-sm font-medium text-zinc-300"
                 >
                   Name
                 </label>
@@ -814,14 +738,14 @@ const togglePublish = async (id: string) => {
                   id="editName"
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
-                  className="mt-1"
+                  className="mt-1 bg-[#1A1C24] border-zinc-700 text-white"
                 />
               </div>
 
               <div className="col-span-4">
                 <label
                   htmlFor="editMessage"
-                  className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+                  className="block text-sm font-medium text-zinc-300"
                 >
                   Message
                 </label>
@@ -830,14 +754,14 @@ const togglePublish = async (id: string) => {
                   value={editMessage}
                   onChange={(e) => setEditMessage(e.target.value)}
                   rows={4}
-                  className="mt-1"
+                  className="mt-1 bg-[#1A1C24] border-zinc-700 text-white"
                 />
               </div>
             </div>
 
             {editError && (
-              <div className="rounded-md bg-red-50 p-4 dark:bg-red-900/20">
-                <p className="text-sm text-red-700 dark:text-red-400">{editError}</p>
+              <div className="rounded-md bg-red-900/20 p-4 border border-red-800">
+                <p className="text-sm text-red-400">{editError}</p>
               </div>
             )}
           </div>
@@ -847,10 +771,16 @@ const togglePublish = async (id: string) => {
               type="button"
               variant="outline"
               onClick={() => setEditingCreative(null)}
+              className="bg-[#1A1C24] border-zinc-700 text-zinc-200 hover:bg-[#22252F] hover:text-white"
             >
               Cancel
             </Button>
-            <Button type="button" onClick={handleSubmitEdit} disabled={isEditing}>
+            <Button 
+              type="button" 
+              onClick={handleSubmitEdit} 
+              disabled={isEditing}
+              className="bg-[#4AE04A]/90 hover:bg-[#4AE04A] text-black"
+            >
               {isEditing ? "Saving..." : "Save Changes"}
             </Button>
           </DialogFooter>
