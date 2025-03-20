@@ -3,7 +3,7 @@ import { kv } from '@vercel/kv'
 import { NextResponse } from 'next/server'
 
 // Define types
-export interface SubPayload {
+interface SubPayload {
   sub_email: string
   sub_trial_start?: Date | null
   sub_trial_end?: Date | null
@@ -18,7 +18,7 @@ export interface SubPayload {
   sub_id: string
 }
 
-export interface CheckoutSessionData {
+interface CheckoutSessionData {
   customer_id: string
   customer_email: string
   session_id: string
@@ -49,11 +49,11 @@ const unixTimeStampToDateTime = (unixTimeStamp: number | null | undefined) => {
 }
 
 // Database operations
-export async function updateSubscriptionDetails(sub: SubPayload) {
+async function updateSubscriptionDetails(sub: SubPayload) {
   try {
     // Log important subscription info
     console.log(
-      `Updating subscription for ${sub.sub_email}, status: ${sub.sub_status}`
+        `Updating subscription for ${sub.sub_email}, status: ${sub.sub_status}`
     )
 
     const payload = {
@@ -77,7 +77,7 @@ export async function updateSubscriptionDetails(sub: SubPayload) {
   }
 }
 
-export async function deleteSubscriptionDetails(email: string) {
+async function deleteSubscriptionDetails(email: string) {
   try {
     const userKey = `user:${email}`
     const existingData = await kv.hgetall(userKey)
@@ -123,10 +123,10 @@ const persistSubscription = async (subscription: any) => {
       sub_email: stripeCustomer.email,
       sub_status: subscription.status,
       sub_current_period_start: unixTimeStampToDateTime(
-        subscription.current_period_start
+          subscription.current_period_start
       ),
       sub_current_period_end: unixTimeStampToDateTime(
-        subscription.current_period_end
+          subscription.current_period_end
       ),
       sub_offer: stripeProduct.metadata.offer || stripeProduct.id,
       sub_interval: subscription.plan.interval,
@@ -147,7 +147,7 @@ const handleSubscriptionDeleted = async (event: Stripe.Event) => {
   try {
     const subscription = event.data.object as Stripe.Subscription
     const stripeCustomer = await fetchStripeCustomer(
-      subscription.customer as string
+        subscription.customer as string
     )
 
     if (!stripeCustomer.email) {
@@ -176,12 +176,12 @@ const handleSubscriptionUpdated = async (event: Stripe.Event) => {
 
     // Safely check previous attributes with proper typing
     const previousAttributes =
-      (event.data.previous_attributes as { status?: string }) || {}
+        (event.data.previous_attributes as { status?: string }) || {}
 
     // Check if status changed from incomplete to active
     if (
-      subscription.status === 'active' &&
-      previousAttributes.status === 'incomplete'
+        subscription.status === 'active' &&
+        previousAttributes.status === 'incomplete'
     ) {
       console.log('Subscription status changed from incomplete to active')
     }
@@ -199,11 +199,11 @@ const handleInvoicePaymentSucceeded = async (event: Stripe.Event) => {
     if (invoice.subscription) {
       // Just retrieve and persist the current subscription state
       const subscription = await stripe.subscriptions.retrieve(
-        invoice.subscription as string
+          invoice.subscription as string
       )
       await persistSubscription(subscription)
       console.log(
-        `Handled invoice payment succeeded for subscription ${invoice.subscription}`
+          `Handled invoice payment succeeded for subscription ${invoice.subscription}`
       )
     }
   } catch (error) {
@@ -223,14 +223,14 @@ const handleCheckoutSessionCompleted = async (event: Stripe.Event) => {
     // If there's a subscription, fetch it and update details
     if (session.subscription) {
       const subscription = await stripe.subscriptions.retrieve(
-        session.subscription as string
+          session.subscription as string
       )
 
       // Since we have a successful checkout, we can mark this as active
       if (subscription) {
         await persistSubscription(subscription)
         console.log(
-          `Updated subscription details from checkout session: ${session.id}`
+            `Updated subscription details from checkout session: ${session.id}`
         )
       }
     }
@@ -264,9 +264,9 @@ export async function POST(req: Request) {
     event = stripe.webhooks.constructEvent(body, signature, endpointSecret)
   } catch (error) {
     const message =
-      error instanceof Error
-        ? error.message
-        : `Unknown Error ${JSON.stringify(error)}`
+        error instanceof Error
+            ? error.message
+            : `Unknown Error ${JSON.stringify(error)}`
 
     console.error(`Webhook signature verification failed: ${message}`)
     return NextResponse.json({ error: message }, { status: 400 })
