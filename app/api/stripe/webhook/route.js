@@ -94,6 +94,9 @@ export async function POST(req) {
     case 'entitlements.active_entitlement_summary.updated':
       handleEntitlementSummaryUpdated(event)
       break
+    case 'invoice.payment_succeeded':
+      handleInvoicePaymentSucceeded(event)
+      break
     default:
       handleUnhandledEventType(event)
   }
@@ -130,6 +133,14 @@ const handleSubscriptionUpdated = async event => {
 const handleEntitlementSummaryUpdated = async event => {
   const subscription = event.data.object
   // console.log(`Active entitlement summary updated for ${subscription}.`);
+}
+
+const handleInvoicePaymentSucceeded = async event => {
+  const invoice = event.data.object
+  const subscription_id = invoice.subscription
+  const subscription = await stripe.subscriptions.retrieve(subscription_id)
+  persistSubscription(subscription)
+  console.log(`Handled invoice payment succeeded`)
 }
 
 const handleUnhandledEventType = async event => {
