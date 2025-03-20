@@ -104,7 +104,7 @@ export function Subscription({
                   Manage Subscription
                 </h1>
                 <p className="my-4 text-gray-600 text-[16px] leading-[22.89px]">
-                  Your current Reeply AI subscription plan can be seen below.
+                  Your current Reeply AI subscription plan can be seen below:
                 </p>
               </div>
           )}
