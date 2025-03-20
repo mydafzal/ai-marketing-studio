@@ -85,17 +85,33 @@ export function Subscription({
     <>
       <div className="group w-full pl-0 peer-[[data-state=open]]:lg:pl-[250px] peer-[[data-state=open]]:xl:pl-[300px] relative overflow-auto">
         <div className="max-w-5xl mx-auto py-12">
-          <div className="text-center">
-            <h1 className="text-[40px] font-bold text-purple-600">
-              Subscription Plans
-            </h1>
-            <p className="my-4 text-gray-600 text-[16px] leading-[22.89px]">
-              Select from one of our plans that suit you, your project goals and
-              team
-            </p>
-          </div>
 
-          {/* If subscription is active, only show Plan Details */}
+            {!user.sub_status ||  user.sub_status !== 'active' && (
+            <div className="text-center">
+              <h1 className="text-[40px] font-bold text-purple-600">
+                Subscription Plans
+              </h1>
+              <p className="my-4 text-gray-600 text-[16px] leading-[22.89px]">
+                Select from one of our plans that suit you, your project goals and
+                team
+              </p>
+          </div>
+              )}
+
+          {user.sub_status === 'active' && (
+              <div className="text-center">
+                <h1 className="text-[40px] font-bold text-purple-600">
+                  Manage Subscription
+                </h1>
+                <p className="my-4 text-gray-600 text-[16px] leading-[22.89px]">
+                  Your current Reeply AI subscription plan can be seen below.
+                </p>
+              </div>
+          )}
+
+
+
+              {/* If subscription is active, only show Plan Details */}
           {user.sub_status === 'active' ? (
             <Card user={user} onCancelSubscription={showModal} />
           ) : (
