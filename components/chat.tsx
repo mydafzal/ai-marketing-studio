@@ -104,17 +104,30 @@ function ChatCore({ id, chat, className, session, missingKeys }: ChatProps) {
 
   useEffect(() => {
     const fetchSubscription = async () => {
-      setIsFetchingSub(true)
-      const result = await getSubscriptionInfo()
-      if (result.success) {
-        setSubStatus(result.sub_status)
-        setSubbedPackage(result.sub_offer)
-      }
-      setIsFetchingSub(false)
-    }
+      setIsFetchingSub(true);
 
-    fetchSubscription()
-  }, [])
+      try {
+        const result = await getSubscriptionInfo();
+
+        if (result && result.success) { // Ensure result is not null before accessing properties
+          setSubStatus(result.sub_status ?? ""); // Default to empty string if missing
+          setSubbedPackage(result.sub_offer ?? ""); // Default to empty string if missing
+        } else {
+          setSubStatus(""); // Default if result is null
+          setSubbedPackage("");
+        }
+      } catch (error) {
+        console.error("Error fetching subscription info:", error);
+        setSubStatus(""); // Handle errors gracefully
+        setSubbedPackage("");
+      }
+
+      setIsFetchingSub(false);
+    };
+
+    fetchSubscription();
+  }, []);
+
 
   // Add sendMessage function
   const sendMessage = React.useCallback(
