@@ -36,6 +36,7 @@ export async function POST(req: NextRequest) {
         }
       ],
       mode: 'subscription',
+      allow_promotion_codes: true,
       // consider using customer id as session id
       success_url: `${billingPageUrl}/?success=true&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${billingPageUrl}?canceled=true`
