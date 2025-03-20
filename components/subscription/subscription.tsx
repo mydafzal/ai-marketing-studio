@@ -1,15 +1,13 @@
 'use client'
-import { useState } from 'react'
-
+import { useState, useEffect } from 'react'
 import { MonthlyPricing } from '@/components/subscription/monthly-pricing'
 import { YearlyPricing } from '@/components/subscription/yearly-pricing'
-
 import { Card } from '@/components/subscription/card'
-
 import { InvoiceItem, PaymentHistory } from './payment-history'
 import { User } from '@/lib/types'
 import CancelSubscriptionDialog from '../CancelSubscriptionDialog'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { getUser } from '@/app/login/actions'
 
 export interface SubscriptionProps {
   user: User
@@ -26,17 +24,46 @@ const getCurrentPlanTag = (user: User) => {
 }
 
 export function Subscription({
-  user,
+  user: initialUser,
   invoices,
   handleCancelSubscription
 }: SubscriptionProps) {
   const router = useRouter()
-  const durationIsMonthly = !user.sub_interval || user.sub_interval === 'month'
-  const [isMonthly, setIsMonthly] = useState(durationIsMonthly)
-
-  let currentPlanTag = getCurrentPlanTag(user)
-
+  const searchParams = useSearchParams()
+  const [user, setUser] = useState(initialUser)
+  const [isMonthly, setIsMonthly] = useState(!user.sub_interval || user.sub_interval === 'month')
   const [openModal, setOpenModal] = useState(false)
+  const [previousStatus, setPreviousStatus] = useState(initialUser.sub_status)
+
+  useEffect(() => {
+    const fetchUserSubscription = async () => {
+      try {
+        const res = await getUser(user.email)
+        const data = res as User
+
+        if (data) {
+          if (previousStatus !== data.sub_status) {
+            window.location.reload()
+          }
+
+          setPreviousStatus(data.sub_status)
+          setUser(prev => ({
+            ...prev,
+            sub_status: data.sub_status !== undefined ? data.sub_status : 'inactive'
+          }))
+        }
+      } catch (error) {
+        console.error('Error fetching updated subscription:', error)
+      }
+    }
+
+    if (searchParams.get('success') === 'true') {
+      const interval = setInterval(fetchUserSubscription, 4000) // Poll every 4 sec
+      setTimeout(() => clearInterval(interval), 20000) // Stop polling after 20 sec
+    } else {
+      fetchUserSubscription()
+    }
+  }, [searchParams, previousStatus])
 
   function showModal() {
     if (user.sub_offer) {
@@ -68,37 +95,39 @@ export function Subscription({
             </p>
           </div>
 
-          <div className="flex items-center justify-center">
-            <div className="flex bg-purple-100 rounded-lg p-1">
-              <button
-                onClick={() => setIsMonthly(true)}
-                className={`px-6 py-2 text-sm font-medium rounded-lg ${
-                  isMonthly ? 'bg-purple-600 text-white' : 'text-black'
-                }`}
-              >
-                Monthly
-              </button>
-              <button
-                onClick={() => setIsMonthly(false)}
-                className={`px-6 py-2 text-sm font-medium rounded-lg ${
-                  !isMonthly ? 'bg-purple-600 text-white' : 'text-black'
-                }`}
-              >
-                Annually
-              </button>
-            </div>
-          </div>
-
-          {/* show pricing database dependent on isMonthly */}
-
-          {isMonthly ? (
-            <MonthlyPricing currentPlanTag={currentPlanTag} />
+          {/* If subscription is active, only show Plan Details */}
+          {user.sub_status === 'active' ? (
+            <Card user={user} onCancelSubscription={showModal} />
           ) : (
-            <YearlyPricing currentPlanTag={currentPlanTag} />
-          )}
+            <>
+              <div className="flex items-center justify-center">
+                <div className="flex bg-purple-100 rounded-lg p-1">
+                  <button
+                    onClick={() => setIsMonthly(true)}
+                    className={`px-6 py-2 text-sm font-medium rounded-lg ${
+                      isMonthly ? 'bg-purple-600 text-white' : 'text-black'
+                    }`}
+                  >
+                    Monthly
+                  </button>
+                  <button
+                    onClick={() => setIsMonthly(false)}
+                    className={`px-6 py-2 text-sm font-medium rounded-lg ${
+                      !isMonthly ? 'bg-purple-600 text-white' : 'text-black'
+                    }`}
+                  >
+                    Annually
+                  </button>
+                </div>
+              </div>
 
-          <Card user={user} onCancelSubscription={showModal} />
-          <PaymentHistory invoices={invoices} />
+              {isMonthly ? (
+                <MonthlyPricing currentPlanTag={getCurrentPlanTag(user)} />
+              ) : (
+                <YearlyPricing currentPlanTag={getCurrentPlanTag(user)} />
+              )}
+            </>
+          )}
         </div>
       </div>
       {/* Modal dialog */}

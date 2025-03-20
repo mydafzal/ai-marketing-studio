@@ -12,3 +12,16 @@ export type SubPayload = {
   sub_stripe_customer_id: string
   sub_id: string
 }
+
+export type CheckoutSessionData = {
+  customer_id: string
+  customer_email: string
+  session_id: string
+  subscription_id: string
+  price_id: string
+  product_id: string
+  amount_total: number
+  currency: string
+  payment_status: string
+  subscription_status: string
+}
