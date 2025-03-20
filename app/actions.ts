@@ -1473,6 +1473,40 @@ export async function getFbMarketingApiKey() {
     }
 }
 
+export async function getSubscriptionInfo() {
+    const session = await auth();
+
+    if (!session || !session.user) {
+        return {
+            error: 'User not authenticated'
+        };
+    }
+
+    try {
+        const userKey = `user:${session.user.email}`;
+
+        // Check if the user exists
+        const user = await kv.hgetall(userKey);
+
+        if (!user) {
+            return {
+                error: 'User not found'
+            };
+        }
+
+        return {
+            success: true,
+            sub_offer: user.sub_offer || undefined,
+            sub_status: user.sub_status || undefined
+        };
+    } catch (error) {
+        console.error(`Error getting current user details:`, error);
+        return {
+            error: 'Something went wrong'
+        };
+    }
+}
+
 
 export async function updateOnboardingDetails(email: string, details: {
     first_name: string;
