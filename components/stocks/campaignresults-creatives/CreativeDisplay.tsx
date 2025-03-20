@@ -128,13 +128,13 @@ export const CreativeDisplay: React.FC<CreativeDisplayProps> = ({
           {isTopPerformer && (
             <Badge className="bg-gradient-to-r from-[#4AE04A]/80 to-[#4AE04A]/60 ml-1 text-black">
               <Award className="size-3 mr-1" />
-              Top
+              Top Performer
             </Badge>
           )}
           {isSecondBest && !isTopPerformer && (
             <Badge className="bg-gradient-to-r from-blue-400/80 to-blue-500/60 ml-1 text-black">
               <Award className="size-3 mr-1" />
-              Runner
+              Runner Up
             </Badge>
           )}
         </div>
