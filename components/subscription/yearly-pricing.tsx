@@ -58,7 +58,7 @@ export function YearlyPricing({ currentPlanTag }: YearlyPricingProps) {
                 AI Content Creator
               </h3>
 
-              <p className="text-4xl font-bold">$25</p>
+              <p className="text-4xl font-bold">€25</p>
               <p className="text-gray-500 text-sm">/ Month (Billed annually)</p>
               <hr className="my-4" />
               <p className="font-medium mb-4">Plan Features:</p>
@@ -128,7 +128,7 @@ export function YearlyPricing({ currentPlanTag }: YearlyPricingProps) {
               <h3 className="ml-2 mb-4 font-bold text-purple-600 text-[18px]">
                 AI Marketer Suite
               </h3>
-              <p className="text-4xl font-bold">$90</p>
+              <p className="text-4xl font-bold">€90</p>
               <p className="text-gray-500 text-sm">/ Month (Billed annually)</p>
               <hr className="my-4" />
               <p className="font-medium mb-4">
