@@ -31,7 +31,7 @@ export function Card({ user, onCancelSubscription }: CardProps) {
 	  };
 
   return (
-    <div className="p-6 bg-gray-50 flex justify-start items-center">
+    <div className="p-6 bg-gray-50 flex justify-center items-center">
       <div className="w-full max-w-sm bg-white shadow-md rounded-lg border border-gray-200">
         <div className="rounded-t-lg bg-purple-500 h-2"></div>
         <div className="p-6">
