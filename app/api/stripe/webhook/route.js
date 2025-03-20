@@ -3,7 +3,7 @@ import { Mutex } from 'async-mutex'
 import { deleteSubscriptionDetails, updateSubscriptionDetails } from './actions'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '')
-const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET || ''
+const endpointSecret = process.env.STRIPE_WEBHOOK_PROD_SECRET || ''
 
 const subscriptionMutex = new Mutex()
 
@@ -107,8 +107,16 @@ const handleTrialWillEnd = async event => {}
 const handleSubscriptionDeleted = async event => {
   // console.log(`Subsription deleted.`, subscription)
   const subscription = event.data.object
-  deleteSubscription(subscription)
+  const stripeCustomer = await fetchStripeCustomer(subscription.customer)
+
+  if (!stripeCustomer.email) {
+    console.error(`No email found for customer ID: ${subscription.customer}`)
+    return
+  }
+
+  await deleteSubscriptionDetails(stripeCustomer.email)
 }
+
 const handleSubscriptionCreated = async event => {
   // console.log('in subscription creaated', event.data.object)
   const subscription = event.data.object

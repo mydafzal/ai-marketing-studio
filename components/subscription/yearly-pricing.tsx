@@ -1,5 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
-
 'use client'
 import { useState } from 'react'
 
@@ -8,12 +6,9 @@ export interface YearlyPricingProps {
 }
 
 const yearlyBasicPlanLookupKey =
-  process.env.NEXT_PUBLIC_STRIPE_YEARLY_BASIC_PLAN_LOOKUP_KEY || ''
+  process.env.NEXT_PUBLIC_STRIPE_YEARLY_CONTENT_PLAN_LOOKUP_KEY || ''
 const yearlyProPlanLookupKey =
-  process.env.NEXT_PUBLIC_STRIPE_YEARLY_PRO_PLAN_LOOKUP_KEY || ''
-const yearlyAgencyPlanLookupKey =
-  process.env.NEXT_PUBLIC_STRIPE_YEARLY_AGENCY_PLAN_LOOKUP_KEY || ''
-
+  process.env.NEXT_PUBLIC_STRIPE_YEARLY_MARKETING_PLAN_LOOKUP_KEY || ''
 // Create a reusable BadgeIcon component
 const BadgeIcon = () => (
   <span className="text-purple-600 mr-2 flex items-center justify-center">
@@ -39,23 +34,19 @@ export function YearlyPricing({ currentPlanTag }: YearlyPricingProps) {
           <div className="flex items-center justify-center">
             <button className="bg-green-100 text-green-700 px-4 py-2 rounded-full font-medium flex items-center">
               <img src="diamond1.png" alt="info" className="mr-2" />
-              Save 10% with the Annual Subscriptions Package
+              Save up to 70% with the Annual Subscriptions Package
             </button>
           </div>
 
           {/* Cards */}
-          {/* Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-10">
-            {/* Basic Plan */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-10">
+            {/* AI Content Creator Plan */}
             <div className="border-2 border-purple-600 rounded-lg p-6 flex flex-col relative">
               <div className="flex items-center mb-4">
                 <div className="flex justify-between items-center w-full">
-                  {/* Icon on the left */}
                   <div className="bg-purple-100 text-purple-600 rounded-full p-2">
                     <img src="/basic.png" alt="basic" />
                   </div>
-
-                  {/* Text on the right */}
                   {currentPlanTag === 'year_basic' && (
                     <div className="bg-purple-600 text-white px-4 py-1 text-xs font-medium rounded-full">
                       Current Plan
@@ -64,63 +55,69 @@ export function YearlyPricing({ currentPlanTag }: YearlyPricingProps) {
                 </div>
               </div>
               <h3 className="ml-2 mb-4 font-bold text-purple-600 text-[18px]">
-                Basic
+                AI Content Creator
               </h3>
 
-              <p className="text-4xl font-bold">€1,069</p>
-              <p className="text-gray-500 text-sm">/ Year</p>
+              <p className="text-4xl font-bold">$25</p>
+              <p className="text-gray-500 text-sm">/ Month (Billed annually)</p>
               <hr className="my-4" />
-              <p className="font-medium mb-4">Basic Plan Supports:</p>
+              <p className="font-medium mb-4">Plan Features:</p>
               <ul className="text-sm space-y-2 grow">
                 <li className="flex items-center">
                   <BadgeIcon />
-                  Access to ad campaign management
+                  100 Image downloads monthly
                 </li>
-
                 <li className="flex items-center">
                   <BadgeIcon />
-                  €600 monthly ad budget
+                  20 Video downloads monthly
+                </li>
+                <li className="flex items-center">
+                  <BadgeIcon />
+                  Multiple aspect ratios (1:1, 9:16, 4:3, etc.)
+                </li>
+                <li className="flex items-center">
+                  <BadgeIcon />
+                  Image editing with AI brushing
+                </li>
+                <li className="flex items-center">
+                  <BadgeIcon />
+                  Generate 5-10 second video scenes
+                </li>
+                <li className="flex items-center">
+                  <BadgeIcon />
+                  Product angle shots
+                </li>
+                <li className="flex items-center">
+                  <BadgeIcon />
+                  Ad creative generation
+                </li>
+                <li className="flex items-center">
+                  <BadgeIcon />
+                  Priority support
                 </li>
               </ul>
+
               {currentPlanTag === 'year_basic' ? (
-                <button
-                  className="mt-6 w-full bg-purple-100 text-purple-600 py-2 rounded-lg font-medium"
-                  id="basic-plan-button"
-                >
+                <button className="mt-6 w-full bg-purple-100 text-purple-600 py-2 rounded-lg font-medium">
                   Current Plan
                 </button>
               ) : (
-                <form
-                  action="/api/stripe/create-checkout-session"
-                  method="POST"
-                >
-                  {/* Add a hidden field with the lookup_key of your Price */}
-                  <input
-                    type="hidden"
-                    name="lookup_key"
-                    value={yearlyBasicPlanLookupKey}
-                  />
-                  <button
-                    className="mt-6 w-full bg-purple-100 text-purple-600 py-2 rounded-lg font-medium"
-                    id="basic-plan-button"
-                    type="submit"
-                  >
-                    Buy Basic Plan
+                <form action="/api/stripe/create-checkout-session" method="POST">
+                  <input type="hidden" name="lookup_key" value={yearlyBasicPlanLookupKey} />
+                  <button className="mt-6 w-full bg-purple-100 text-purple-600 py-2 rounded-lg font-medium" type="submit">
+                    Get Started
                   </button>
                 </form>
               )}
             </div>
 
-            {/* Pro Plan */}
+            {/* AI Marketer Suite Plan */}
             <div className="border-2 border-gray-200 rounded-lg p-6 flex flex-col">
               <div className="flex items-center mb-4">
                 <div className="flex justify-between items-center w-full">
-                  {/* Icon on the left */}
                   <div className="bg-purple-100 text-purple-600 rounded-full p-2">
                     <img src="/pro.png" alt="basic" />
                   </div>
-
-                  {/* Text on the right */}
                   {currentPlanTag === 'year_pro' && (
                     <div className="bg-purple-600 text-white px-4 py-1 text-xs font-medium rounded-full">
                       Current Plan
@@ -129,134 +126,66 @@ export function YearlyPricing({ currentPlanTag }: YearlyPricingProps) {
                 </div>
               </div>
               <h3 className="ml-2 mb-4 font-bold text-purple-600 text-[18px]">
-                Pro
+                AI Marketer Suite
               </h3>
-              <p className="text-4xl font-bold">€3,229</p>
-              <p className="text-gray-500 text-sm">/ Year</p>
+              <p className="text-4xl font-bold">$90</p>
+              <p className="text-gray-500 text-sm">/ Month (Billed annually)</p>
               <hr className="my-4" />
               <p className="font-medium mb-4">
-                Includes everything in the Basic Plan plus:
+                Includes everything in the AI Content Creator Plan, plus:
               </p>
               <ul className="text-sm space-y-2 grow">
                 <li className="flex items-center">
                   <BadgeIcon />
-                  Campaign management with up to €5,000 monthly ad budget
+                  Unlimited image downloads
                 </li>
                 <li className="flex items-center">
                   <BadgeIcon />
-                  Weekly calls with a Reeply AI performance manager
+                  Unlimited video downloads
                 </li>
                 <li className="flex items-center">
                   <BadgeIcon />
-                  Advanced AI analytics for campaigns
+                  All AI Content Creator features
                 </li>
                 <li className="flex items-center">
                   <BadgeIcon />
-                  Access to AI content generation
+                  Meta Ad Campaign analysis
                 </li>
                 <li className="flex items-center">
                   <BadgeIcon />
-                  Future access to UGC Video AI content
+                  AI campaign recommendations
+                </li>
+                <li className="flex items-center">
+                  <BadgeIcon />
+                  Automatic budget adjustments
+                </li>
+                <li className="flex items-center">
+                  <BadgeIcon />
+                  Target audience optimization
+                </li>
+                <li className="flex items-center">
+                  <BadgeIcon />
+                  Campaign creation from scratch
+                </li>
+                <li className="flex items-center">
+                  <BadgeIcon />
+                  Placement optimization
+                </li>
+                <li className="flex items-center">
+                  <BadgeIcon />
+                  Conversational campaign management
                 </li>
               </ul>
+
               {currentPlanTag === 'year_pro' ? (
-                <button
-                  className="mt-6 w-full bg-purple-600 text-white py-2 rounded-lg font-medium"
-                  id="pro-plan-button"
-                >
+                <button className="mt-6 w-full bg-purple-600 text-white py-2 rounded-lg font-medium">
                   Current Plan
                 </button>
               ) : (
-                <form
-                  action="/api/stripe/create-checkout-session"
-                  method="POST"
-                >
-                  {/* Add a hidden field with the lookup_key of your Price */}
-                  <input
-                    type="hidden"
-                    name="lookup_key"
-                    value={yearlyProPlanLookupKey}
-                  />
-                  <button
-                    className="mt-6 w-full bg-purple-600 text-white py-2 rounded-lg font-medium"
-                    id="pro-plan-button"
-                    type="submit"
-                  >
-                    Buy Pro Plan
-                  </button>
-                </form>
-              )}
-            </div>
-
-            {/* Agency Plan */}
-            <div className="border-2 border-gray-200 rounded-lg p-6 flex flex-col">
-              <div className="flex items-center mb-4">
-                <div className="flex justify-between items-center w-full">
-                  {/* Icon on the left */}
-                  <div className="bg-purple-100 text-purple-600 rounded-full p-2">
-                    <img src="/agency.png" alt="basic" />
-                  </div>
-                </div>
-
-                {/* Text on the right */}
-                {currentPlanTag === 'year_agency' && (
-                  <div className="bg-purple-600 text-white px-4 py-1 text-xs font-medium rounded-full">
-                    Current Plan
-                  </div>
-                )}
-              </div>
-              <h3 className="ml-2 mb-4 font-bold text-purple-600 text-[18px]">
-                Agency
-              </h3>
-
-              <p className="text-4xl font-bold">€6,469</p>
-              <p className="text-gray-500 text-sm">/ Year</p>
-              <hr className="my-4" />
-              <p className="font-medium mb-4">
-                Includes all Pro Plan features, plus:
-              </p>
-              <ul className="text-sm space-y-2 flex-grow">
-                <li className="flex items-center">
-                  <BadgeIcon />
-                  Unlimited ad campaigns
-                </li>
-                <li className="flex items-center">
-                  <BadgeIcon />
-                  Premium support
-                </li>
-                <li className="flex items-center">
-                  <BadgeIcon />
-                  Early access to all new features
-                </li>
-                <li className="flex items-center">
-                  <BadgeIcon />
-                  White-labeled AI analytics reports
-                </li>
-              </ul>
-              {currentPlanTag === 'year_agency' ? (
-                <button
-                  className="mt-6 w-full border-2 border-purple-600 text-purple-600 py-2 rounded-lg font-medium"
-                  id="agency-plan-button"
-                >
-                  Current Plan
-                </button>
-              ) : (
-                <form
-                  action="/api/stripe/create-checkout-session"
-                  method="POST"
-                >
-                  {/* Add a hidden field with the lookup_key of your Price */}
-                  <input
-                    type="hidden"
-                    name="lookup_key"
-                    value={yearlyAgencyPlanLookupKey}
-                  />
-                  <button
-                    className="mt-6 w-full border-2 border-purple-600 text-purple-600 py-2 rounded-lg font-medium"
-                    id="agency-plan-button"
-                    type="submit"
-                  >
-                    Buy Agency Plan
+                <form action="/api/stripe/create-checkout-session" method="POST">
+                  <input type="hidden" name="lookup_key" value={yearlyProPlanLookupKey} />
+                  <button className="mt-6 w-full bg-purple-600 text-white py-2 rounded-lg font-medium" type="submit">
+                    Start Now
                   </button>
                 </form>
               )}
