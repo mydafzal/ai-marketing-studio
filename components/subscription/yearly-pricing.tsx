@@ -18,15 +18,7 @@ const BadgeIcon = () => (
 
 export function YearlyPricing({ currentPlanTag }: YearlyPricingProps) {
   return (
-    <div className="mt-10  p-6">
-      <p className="text-black-600 font-medium flex items-center justify-center text-center">
-        <img src="info.png" alt="info" className="mr-2" />
-        You’re currently on a free trial
-      </p>
-      <p className="mt-2 text-gray-600 text-center">
-        Subscribe to any of our plans for continued access to Reeply AI once
-        trial period is exceeded.
-      </p>
+    <div className="px-4 pb-4">
 
       <div className="bg-gray-50 py-12">
         <div className="max-w-7xl mx-auto px-4">
@@ -58,7 +50,7 @@ export function YearlyPricing({ currentPlanTag }: YearlyPricingProps) {
                 AI Content Creator
               </h3>
 
-              <p className="text-4xl font-bold">$25</p>
+              <p className="text-4xl font-bold">€25</p>
               <p className="text-gray-500 text-sm">/ Month (Billed annually)</p>
               <hr className="my-4" />
               <p className="font-medium mb-4">Plan Features:</p>
@@ -128,7 +120,7 @@ export function YearlyPricing({ currentPlanTag }: YearlyPricingProps) {
               <h3 className="ml-2 mb-4 font-bold text-purple-600 text-[18px]">
                 AI Marketer Suite
               </h3>
-              <p className="text-4xl font-bold">$90</p>
+              <p className="text-4xl font-bold">€90</p>
               <p className="text-gray-500 text-sm">/ Month (Billed annually)</p>
               <hr className="my-4" />
               <p className="font-medium mb-4">
