@@ -11,7 +11,7 @@ export async function GET(request: Request) {
     }
 
     const fastyEndpoint = process.env.FASTY_API_URL;
-    // Use the correct path from the swagger UI
+    // Use the correct path from the swagger UI.
     const apiUrl = `${fastyEndpoint}/facebook/campaign-creation-flow/get-creative-preview?creative_id=${creative_id}&ad_format=${ad_format}`;
 
     const token_resp = await getFbMarketingApiKey();
