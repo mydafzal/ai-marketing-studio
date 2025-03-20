@@ -36,7 +36,7 @@ import { HomePageInfoCard } from '@/components/account-not-connected-screen'
 import useAccountStore from '@/app/store/useAccountStore'
 import { useRouter } from 'next/navigation'
 import { IconSpinner } from '@/components/ui/icons'
-import {subscriptionBypassList} from "@/app/subscription/subscription-bypass-list";
+import { subscriptionBypassList } from '@/app/subscription/subscription-bypass-list'
 
 interface FbFetchedObject {
   id: string
@@ -104,30 +104,30 @@ function ChatCore({ id, chat, className, session, missingKeys }: ChatProps) {
 
   useEffect(() => {
     const fetchSubscription = async () => {
-      setIsFetchingSub(true);
+      setIsFetchingSub(true)
 
       try {
-        const result = await getSubscriptionInfo();
+        const result = await getSubscriptionInfo()
 
-        if (result && result.success) { // Ensure result is not null before accessing properties
-          setSubStatus(result.sub_status ?? ""); // Default to empty string if missing
-          setSubbedPackage(result.sub_offer ?? ""); // Default to empty string if missing
+        if (result && result.success) {
+          // Ensure result is not null before accessing properties
+          setSubStatus(result.sub_status ?? '') // Default to empty string if missing
+          setSubbedPackage(result.sub_offer ?? '') // Default to empty string if missing
         } else {
-          setSubStatus(""); // Default if result is null
-          setSubbedPackage("");
+          setSubStatus('') // Default if result is null
+          setSubbedPackage('')
         }
       } catch (error) {
-        console.error("Error fetching subscription info:", error);
-        setSubStatus(""); // Handle errors gracefully
-        setSubbedPackage("");
+        console.error('Error fetching subscription info:', error)
+        setSubStatus('') // Handle errors gracefully
+        setSubbedPackage('')
       }
 
-      setIsFetchingSub(false);
-    };
+      setIsFetchingSub(false)
+    }
 
-    fetchSubscription();
-  }, []);
-
+    fetchSubscription()
+  }, [])
 
   // Add sendMessage function
   const sendMessage = React.useCallback(
@@ -281,16 +281,16 @@ function ChatCore({ id, chat, className, session, missingKeys }: ChatProps) {
   }
 
   useEffect(() => {
-    if (isFetchingSub) return; // Avoid running while fetching
+    if (isFetchingSub) return // Avoid running while fetching
 
-    let email = session?.user?.email ?? ""; // Ensure email is always a string
+    let email = session?.user?.email ?? '' // Ensure email is always a string
 
     if (subStatus !== 'active' && !subscriptionBypassList.includes(email)) {
-      router.replace('/subscription'); // Redirects only non-bypassed users
+      window.location.href = '/subscription' // Hard redirect
     } else {
-      setSubStatus('active'); // Mark as active for bypassed users
+      setSubStatus('active') // Mark as active for bypassed users
     }
-  }, [isFetchingSub, subStatus, session?.user?.email, router]);
+  }, [isFetchingSub, subStatus, session?.user?.email, router])
 
   const renderContent = () => {
     if (isFetchingSub) {
@@ -303,12 +303,12 @@ function ChatCore({ id, chat, className, session, missingKeys }: ChatProps) {
 
     if (subStatus !== 'active') {
       // for bypassed users we dont redirect
-      return null; // Prevent rendering while redirecting
+      return null // Prevent rendering while redirecting
     }
 
     if (!isFbAccountConnected && subbedPackage == 'AI Content Creator') {
       // you are subscibed to use the AI Content Creator. To access the AI marketer tool they need to upgrade their plan.
-      return <HomePageInfoCard adAccountConnected={true} />
+      return <HomePageInfoCard adAccountConnected={false} />
     }
 
     if (!isFbAccountConnected && subbedPackage == 'AI Marketer Suite') {
