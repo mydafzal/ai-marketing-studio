@@ -95,16 +95,6 @@ export function Card({ user, onCancelSubscription }: CardProps) {
 				  Manage Subscription
         </Button>
         </div>
-        {user.sub_offer && (
-          <button
-            onClick={() => {
-              onCancelSubscription()
-            }}
-            className="block w-full text-center text-red-600 font-semibold py-3 hover:bg-red-50"
-          >
-            Cancel Subscription?
-          </button>
-        )}
       </div>
     </div>
   )
