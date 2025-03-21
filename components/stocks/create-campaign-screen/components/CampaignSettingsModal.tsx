@@ -1,7 +1,6 @@
 import React from 'react';
 import { X } from 'lucide-react';
 import { EditSection } from '../types';
-import { ObjectiveSettings } from './ObjectiveSettings';
 import { AudienceSettings } from './AudienceSettings';
 import { PlacementSettings } from './PlacementSettings';
 import { BudgetSettings } from './BudgetSettings';
@@ -81,8 +80,6 @@ export function CampaignSettingsModal({
 
   const renderSettingsContent = () => {
     switch (currentEditSection) {
-      case 'objective':
-        return <ObjectiveSettings campaignObjective={campaignObjective} setCampaignObjective={setCampaignObjective} />;
       case 'audience':
         return (
           <AudienceSettings
@@ -130,7 +127,6 @@ export function CampaignSettingsModal({
       <div className="bg-gray-900 rounded-xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
         <div className="p-4 border-b border-gray-700 flex justify-between">
           <h2 className="text-xl font-medium">
-            {currentEditSection === 'objective' && 'Campaign Objective'}
             {currentEditSection === 'audience' && 'Audience Settings'}
             {currentEditSection === 'placements' && 'Ad Placements'}
             {currentEditSection === 'budget' && 'Budget Settings'}

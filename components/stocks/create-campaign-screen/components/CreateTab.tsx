@@ -1,5 +1,5 @@
 import React from 'react';
-import { Upload, Info, XCircle, Loader2 } from 'lucide-react';
+import { Upload, Info, XCircle, Loader2, Plus } from 'lucide-react';
 import { MediaItem } from '../types';
 
 interface CreateTabProps {
@@ -47,34 +47,40 @@ export function CreateTab({
               <span className="text-xs">Upload Media</span>
             </div>
           ) : (
-            mediaItems.map(item => (
-              <div
-                key={item.id}
-                className="flex items-center space-x-2 bg-gray-800 rounded p-2"
-              >
-                {item.progress !== undefined && item.progress < 100 ? (
-                  <Loader2 className="animate-spin" size={16} />
-                ) : (
-                  <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center">
-                    <span className="text-xs text-white">✓</span>
-                  </div>
-                )}
-                <span className="text-sm text-gray-200">
-                  {item.type.toUpperCase()} ({item.aspectRatio})
-                </span>
-                <span className="text-xs text-gray-400">
-                  {item.progress ?? 0}%
-                </span>
-                <button
-                  onClick={e => {
-                    e.stopPropagation();
-                    setMediaItems(prev => prev.filter(m => m.id !== item.id));
-                  }}
+            <>
+              {mediaItems.map(item => (
+                <div
+                  key={item.id}
+                  className="flex items-center space-x-2 bg-gray-800 rounded p-2"
                 >
-                  <XCircle size={16} className="text-gray-400 hover:text-red-500" />
-                </button>
+                  {item.progress !== undefined && item.progress < 100 ? (
+                    <Loader2 className="animate-spin" size={16} />
+                  ) : (
+                    <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center">
+                      <span className="text-xs text-white">✓</span>
+                    </div>
+                  )}
+                  <span className="text-sm text-gray-200">
+                    {item.type.toUpperCase()} ({item.aspectRatio})
+                  </span>
+                  <span className="text-xs text-gray-400">
+                    {item.progress ?? 0}%
+                  </span>
+                  <button
+                    onClick={e => {
+                      e.stopPropagation();
+                      setMediaItems(prev => prev.filter(m => m.id !== item.id));
+                    }}
+                  >
+                    <XCircle size={16} className="text-gray-400 hover:text-red-500" />
+                  </button>
+                </div>
+              ))}
+              <div className="flex items-center space-x-2 bg-gray-700 rounded p-2">
+                <Plus size={16} className="text-gray-300" />
+                <span className="text-sm text-gray-300">Add more media</span>
               </div>
-            ))
+            </>
           )}
           <input
             type="file"
@@ -82,49 +88,6 @@ export function CreateTab({
             className="hidden"
             accept="image/*,video/*"
           />
-        </div>
-      </div>
-
-      {/* Campaign Objective */}
-      <div className="mt-2">
-        <h3 className="text-sm font-medium mb-1">Campaign Objective</h3>
-        <div className="space-y-1">
-          <label className="flex items-center p-2 border border-gray-700 rounded-md cursor-pointer bg-gray-800 hover:bg-gray-750 transition-colors">
-            <input
-              type="radio"
-              className="h-4 w-4 mr-2 accent-blue-500"
-              checked={campaignObjective === 'Brand Awareness'}
-              onChange={() => setCampaignObjective('Brand Awareness')}
-            />
-            <span className="text-sm">Brand Awareness</span>
-          </label>
-          <label className="flex items-center p-2 border border-gray-700 rounded-md cursor-pointer bg-gray-800 hover:bg-gray-750 transition-colors">
-            <input
-              type="radio"
-              className="h-4 w-4 mr-2 accent-blue-500"
-              checked={campaignObjective === 'Recruitment'}
-              onChange={() => setCampaignObjective('Recruitment')}
-            />
-            <span className="text-sm">Recruitment</span>
-          </label>
-          <label className="flex items-center p-2 border border-gray-700 rounded-md cursor-pointer bg-gray-800 hover:bg-gray-750 transition-colors">
-            <input
-              type="radio"
-              className="h-4 w-4 mr-2 accent-blue-500"
-              checked={campaignObjective === 'Conversions'}
-              onChange={() => setCampaignObjective('Conversions')}
-            />
-            <span className="text-sm">Conversions</span>
-          </label>
-          <label className="flex items-center p-2 border border-gray-700 rounded-md cursor-pointer bg-gray-800 hover:bg-gray-750 transition-colors">
-            <input
-              type="radio"
-              className="h-4 w-4 mr-2 accent-blue-500"
-              checked={campaignObjective === 'Lead Generation'}
-              onChange={() => setCampaignObjective('Lead Generation')}
-            />
-            <span className="text-sm">Lead Generation</span>
-          </label>
         </div>
       </div>
 

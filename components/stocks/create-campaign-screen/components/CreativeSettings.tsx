@@ -1,5 +1,5 @@
 import React from 'react';
-import { Upload, XCircle } from 'lucide-react';
+import { Upload, XCircle, Plus } from 'lucide-react';
 import { MediaItem } from '../types';
 
 interface CreativeSettingsProps {
@@ -103,6 +103,17 @@ export function CreativeSettings({
                 </button>
               </div>
             ))}
+            
+            {/* Add more media button */}
+            <div 
+              className="relative w-20 h-20 flex-shrink-0 flex items-center justify-center bg-gray-800 rounded-md cursor-pointer hover:bg-gray-700"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <div className="flex flex-col items-center">
+                <Plus size={20} className="mb-1 text-gray-300" />
+                <span className="text-xs text-gray-300">Add more</span>
+              </div>
+            </div>
           </div>
         )}
       </div>
