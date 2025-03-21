@@ -107,7 +107,7 @@ export function CreateCampaignForm() {
           throw new Error('No valid uploads found. Please upload media first.');
         }
         // Use the campaign_session_id from the API response stored with the first successful upload
-        sessionId = mediaWithHash[0].hash;
+        sessionId = mediaWithHash[0].hash || null;
         console.log('Using session ID from media:', sessionId);
       }
       
