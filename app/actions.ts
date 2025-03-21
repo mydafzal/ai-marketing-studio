@@ -1473,6 +1473,36 @@ export async function getFbMarketingApiKey() {
     }
 }
 
+export async function getSubscriptionInfo(): Promise<{ success?: boolean; sub_offer?: string; sub_status?: string; error?: string } | null> {
+    const session = await auth();
+
+    if (!session || !session.user) {
+        return null; // Explicitly return null for unauthenticated users
+    }
+
+    try {
+        const userKey = `user:${session.user.email}`;
+        const user = await kv.hgetall(userKey);
+
+        if (!user) {
+            return null; // Explicitly return null if user is not found
+        }
+
+        if(user.sub_offer === undefined || user.sub_status === undefined)
+        {
+            return null;
+        }
+
+        return {
+            success: true,
+            sub_offer: String(user.sub_offer), // Ensure empty string instead of undefined
+            sub_status: String(user.sub_status), // Ensure empty string instead of undefined
+        };
+    } catch (error) {
+        console.error(`Error getting current user details:`, error);
+        return null; // Ensure null is returned on errors
+    }
+}
 
 export async function updateOnboardingDetails(email: string, details: {
     first_name: string;

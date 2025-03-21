@@ -23,7 +23,7 @@ function basicAuth(request: NextRequest) {
 }
 
 async function middleware(request: NextRequest) {
-  const protectedRoutes = ['/supervised','/feature-toggles', '/feature-toggles/demo', '/admin', '/signup']
+  const protectedRoutes = ['/supervised','/feature-toggles', '/feature-toggles/demo', '/admin']
 
   if (protectedRoutes.some(route => request.nextUrl.pathname.startsWith(route))) {
     if (basicAuth(request)) {
