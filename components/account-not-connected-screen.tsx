@@ -5,9 +5,10 @@ interface HomePageInfoCardProps {
   adAccountConnected?: boolean;
   awaitingToGetReady?: boolean;
   isSubscribedToAIContent?: boolean;
+  upgradeToUseContentCreator?: boolean;
 }
 
-export function HomePageInfoCard({ adAccountConnected, awaitingToGetReady, isSubscribedToAIContent }: HomePageInfoCardProps) {
+export function HomePageInfoCard({ adAccountConnected, awaitingToGetReady, isSubscribedToAIContent, upgradeToUseContentCreator }: HomePageInfoCardProps) {
   return (
       <div className="mx-auto max-w-2xl px-4 py-8">
         <div className="flex flex-col gap-6 rounded-xl border border-gray-200 bg-gradient-to-b from-white to-gray-50 p-8 shadow-md">
@@ -53,6 +54,32 @@ export function HomePageInfoCard({ adAccountConnected, awaitingToGetReady, isSub
                 </span>. To access the AI Marketer tool, please upgrade your plan.
                   </p>
               )}
+
+              {upgradeToUseContentCreator && (
+                  <div className="pt-2">
+                    <Link
+                        href="https://platform.reeply.ai/subscription"
+                        className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                    >
+                      Subscription is needed to access this tool.
+                      <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="ml-2 h-4 w-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                      >
+                        <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M14 5l7 7m0 0l-7 7m7-7H3"
+                        />
+                      </svg>
+                    </Link>
+                  </div>
+              )}
+
 
               {awaitingToGetReady && (
                   <p className="text-gray-700 leading-relaxed">

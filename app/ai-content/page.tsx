@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, {useEffect, useState} from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { 
   Select, 
@@ -22,6 +22,10 @@ import AiImageTab from "@/components/ai-image-tab"
 
 // NEW import for your inpainting component
 import ImageImpaint from "@/components/image-inpaint"
+import {useRouter} from "next/navigation";
+import {getSubscriptionInfo} from "@/app/actions";
+import {IconSpinner} from "@/components/ui/icons";
+import {HomePageInfoCard} from "@/components/account-not-connected-screen";
 
 // Platform options for social media content
 const PLATFORMS = [
@@ -37,12 +41,62 @@ export default function AiContentPage() {
   const [platform, setPlatform] = useState("instagram")
   const [activeTab, setActiveTab] = useState("video")
 
+
+  const [subStatus, setSubStatus] = useState<string | undefined>(undefined)
+  const [subbedPackage, setSubbedPackage] = useState<string | undefined>(
+      undefined
+  )
+  const [isFetchingSub, setIsFetchingSub] = useState(true)
+
+  const router = useRouter()
+
+  useEffect(() => {
+    const fetchSubscription = async () => {
+      setIsFetchingSub(true)
+
+      try {
+        const result = await getSubscriptionInfo()
+        if (result && result.success) {
+          // Ensure result is not null before accessing properties
+          setSubStatus(result.sub_status ?? '') // Default to empty string if missing
+          setSubbedPackage(result.sub_offer ?? '') // Default to empty string if missing
+        } //bypass list
+        else {
+          setSubStatus('') // Default if result is null
+          setSubbedPackage('')
+        }
+      } catch (error) {
+        console.error('Error fetching subscription info:', error)
+        setSubStatus('') // Handle errors gracefully
+        setSubbedPackage('')
+      }
+
+      setIsFetchingSub(false)
+    }
+
+    fetchSubscription()
+  }, [])
+
+
   // Enhanced prompt improver that passes platform context
   const enhancedImprovePrompt = async (promptText: string): Promise<string> => {
     const contentType = activeTab === "video" ? "video" : "image"
     return improvePrompt(promptText, platform, contentType)
   }
-  
+
+  if (isFetchingSub) {
+    return (
+        <div className="flex items-center justify-center h-screen w-full">
+          <IconSpinner />
+        </div>
+    )
+  }
+
+  if (subStatus !== 'active')
+  {
+    return <HomePageInfoCard upgradeToUseContentCreator={true} />
+  }
+
   return (
     <div className="container mx-auto p-6">
       <div className="flex flex-col space-y-6">
