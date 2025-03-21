@@ -1,6 +1,7 @@
 import React from 'react';
 import { CampaignSettingsContent } from './CampaignSettingsContent';
-import { MediaItem, Gender, PreviewTab, AdPlacements } from '../types';
+import { MediaItem, Gender, PreviewTab, AdPlacements, MasterFlowResponse } from '../types';
+import Image from 'next/image';
 
 interface ReviewScreenProps {
   activePreviewTab: PreviewTab;
@@ -19,6 +20,7 @@ interface ReviewScreenProps {
   adText: string;
   openEditModal: (section: string) => void;
   handlePublish: () => void;
+  masterFlowData?: MasterFlowResponse | null;
 }
 
 export function ReviewScreen({
@@ -37,8 +39,24 @@ export function ReviewScreen({
   adHeadline,
   adText,
   openEditModal,
-  handlePublish
+  handlePublish,
+  masterFlowData
 }: ReviewScreenProps) {
+  
+  // Get preview URL from masterFlowData if available
+  const getPreviewUrl = () => {
+    if (masterFlowData?.creatives_and_previews?.creatives && 
+        masterFlowData.creatives_and_previews.creatives.length > 0) {
+      const creative = masterFlowData.creatives_and_previews.creatives[0];
+      if (creative.previews?.length > 0) {
+        return creative.previews[0].preview_url;
+      }
+    }
+    return null;
+  };
+  
+  const previewUrl = getPreviewUrl();
+  
   return (
     <div className="flex flex-col h-full">
       <div className="mb-6">
@@ -71,46 +89,60 @@ export function ReviewScreen({
           {/* Instagram Stories Preview */}
           {activePreviewTab === 'instagram_stories' && (
             <div className="w-[240px] h-[420px] bg-black mx-auto rounded-xl overflow-hidden relative shadow-xl">
-              {mediaItems.length > 0 ? (
-                mediaItems[0].type === 'image' ? (
-                  <img
-                    src={mediaItems[0].url}
-                    alt="Ad preview"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <video
-                    src={mediaItems[0].url}
-                    className="w-full h-full object-cover"
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                  />
-                )
+              {previewUrl ? (
+                <iframe 
+                  src={previewUrl} 
+                  className="size-full" 
+                  frameBorder="0"
+                  title="Facebook Ad Preview"
+                />
               ) : (
-                <div className="w-full h-full bg-gradient-to-b from-purple-500 to-pink-500"></div>
+                <>
+                  {mediaItems.length > 0 ? (
+                    mediaItems[0].type === 'image' ? (
+                      <Image
+                        src={mediaItems[0].url}
+                        alt="Ad preview"
+                        className="size-full object-cover"
+                        width={240}
+                        height={420}
+                      />
+                    ) : (
+                      <video
+                        src={mediaItems[0].url}
+                        className="size-full object-cover"
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                      />
+                    )
+                  ) : (
+                    <div className="size-full bg-gradient-to-b from-purple-500 to-pink-500"></div>
+                  )}
+                  {/* Top-left brand & 'Advertisement' */}
+                  <div className="absolute top-3 left-3 flex flex-col text-white text-sm">
+                    <div className="flex items-center space-x-2">
+                      <div className="size-6 bg-gray-200 rounded-full" />
+                      <span className="font-semibold">YourBrand</span>
+                    </div>
+                    <span className="text-xs mt-1">Advertisement</span>
+                  </div>
+                  
+                  {/* Bottom text box */}
+                  <div className="absolute bottom-0 inset-x-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
+                    <h4 className="text-white font-bold text-sm mb-1">{adHeadline}</h4>
+                    <p className="text-white text-xs line-clamp-3">{adText}</p>
+                    <button className="mt-2 px-4 py-1 bg-white text-black rounded-full text-xs font-medium">Learn More</button>
+                  </div>
+                </>
               )}
-              {/* Top-left brand & 'Advertisement' */}
-              <div className="absolute top-3 left-3 flex flex-col text-white text-sm">
-                <div className="flex items-center space-x-2">
-                  <div className="w-6 h-6 bg-gray-200 rounded-full" />
-                  <span className="font-semibold">YourBrand</span>
-                </div>
-                <span className="text-xs mt-1">Advertisement</span>
-              </div>
-              {/* Bottom center "Learn More" */}
-              <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2">
-                <button className="bg-white text-black font-medium py-2 px-4 rounded-full text-sm shadow">
-                  Learn More
-                </button>
-              </div>
             </div>
           )}
 
-          {/* Settings Tab */}
+          {/* Settings preview tab */}
           {activePreviewTab === 'settings' && (
-            <div className="bg-gray-900 rounded-lg max-h-[500px] overflow-y-auto shadow-lg border border-gray-800">
+            <div className="bg-gray-800 rounded-lg p-6">
               <CampaignSettingsContent 
                 campaignObjective={campaignObjective}
                 targetedLocations={targetedLocations}
@@ -130,11 +162,33 @@ export function ReviewScreen({
           )}
         </div>
       </div>
+      
+      {masterFlowData && (
+        <div className="mb-6 bg-blue-900/20 p-4 rounded-lg">
+          <h3 className="text-xl font-medium mb-2">AI Recommendations</h3>
+          <div className="text-sm text-blue-300">
+            <p className="mb-2">
+              <span className="font-medium">Campaign Objective:</span> {masterFlowData.campaign_objective}
+            </p>
+            {masterFlowData.age_gender_decision_reason && (
+              <p className="mb-2">
+                <span className="font-medium">Targeting Recommendation:</span> {masterFlowData.age_gender_decision_reason}
+              </p>
+            )}
+            {masterFlowData.suggested_targeting_filters && Array.isArray(masterFlowData.suggested_targeting_filters) && masterFlowData.suggested_targeting_filters.length > 0 && (
+              <p>
+                <span className="font-medium">Suggested Interest Filters:</span>{' '}
+                {masterFlowData.suggested_targeting_filters.map(filter => filter.name).join(', ')}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="mt-auto">
-        <button
-          className="w-full py-3 px-6 bg-[#743FC7] hover:bg-[#8B53DC] text-white font-medium rounded-md transition-colors shadow-lg text-base"
+        <button 
           onClick={handlePublish}
+          className="w-full py-3 bg-gradient-to-r from-purple-600 to-blue-500 text-white rounded-lg font-medium hover:from-purple-700 hover:to-blue-600 transition-colors"
         >
           Launch Campaign
         </button>

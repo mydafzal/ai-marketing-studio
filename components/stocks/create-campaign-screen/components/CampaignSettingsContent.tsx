@@ -12,9 +12,9 @@ interface CampaignSettingsContentProps {
   demographicFilters: string[];
   adPlacements: AdPlacements;
   budget: string;
-  mediaItems: MediaItem[];
-  adHeadline: string;
-  adText: string;
+  mediaItems?: MediaItem[];
+  adHeadline?: string;
+  adText?: string;
   openEditModal: (section: string) => void;
 }
 
@@ -28,14 +28,14 @@ export function CampaignSettingsContent({
   demographicFilters,
   adPlacements,
   budget,
-  mediaItems,
-  adHeadline,
-  adText,
+  mediaItems = [],
+  adHeadline = 'Default Headline',
+  adText = 'Default ad text',
   openEditModal
 }: CampaignSettingsContentProps) {
   // Count media by type for display
-  const imageCount = mediaItems.filter(item => item.type === 'image').length;
-  const videoCount = mediaItems.filter(item => item.type === 'video').length;
+  const imageCount = mediaItems?.filter(item => item.type === 'image')?.length || 0;
+  const videoCount = mediaItems?.filter(item => item.type === 'video')?.length || 0;
   
   return (
     <div className="space-y-4 p-4">
@@ -151,7 +151,7 @@ export function CampaignSettingsContent({
               Headline: {adHeadline}
             </p>
             <p className="text-sm text-gray-300">
-              Description: {adText.substring(0, 60)}...
+              Description: {adText?.substring(0, 60)}...
             </p>
           </div>
         </div>

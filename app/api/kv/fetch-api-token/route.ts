@@ -17,12 +17,21 @@ export async function GET(request: Request) {
     const resp = await getUserDetail();
     if (resp.success){
         return NextResponse.json({
-            token:resp.user.fbMarketingApiKey?resp.user.fbMarketingApiKey:""
+            success: true,
+            token: resp.user.fbMarketingApiKey ? resp.user.fbMarketingApiKey : "",
+            account: {
+                fbAccountId: resp.user.fbAccountId || "",
+                fbPageId: resp.user.fbPageId || "",
+                defaultExtraDetails: resp.user.defaultExtraDetails || "",
+                privacy_policy_link: resp.user.privacy_policy_link || "",
+                email: resp.user.email || ""
+            }
         });
     }
     else{
         return NextResponse.json({
-            message:"Not found"
+            success: false,
+            message: "User details not found"
         })
     }
     
