@@ -7,6 +7,8 @@ export interface MediaItem {
   url: string;
   aspectRatio: AspectRatio;
   progress?: number;
+  hash?: string;     // Store the Facebook image hash returned from API
+  error?: string;    // For storing error messages if upload fails
 }
 
 export type EditSection = 'objective' | 'audience' | 'placements' | 'budget' | 'creative' | null;

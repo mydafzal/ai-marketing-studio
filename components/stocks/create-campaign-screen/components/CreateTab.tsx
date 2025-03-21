@@ -81,10 +81,6 @@ export function CreateTab({
             ref={fileInputRef}
             className="hidden"
             accept="image/*,video/*"
-            onChange={(e) => {
-              // This will be handled by the useMediaUpload hook in the parent component
-              if (fileInputRef.current) fileInputRef.current.click();
-            }}
           />
         </div>
       </div>

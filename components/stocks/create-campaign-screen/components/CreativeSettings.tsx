@@ -62,8 +62,37 @@ export function CreativeSettings({
                 <img
                   src={item.url}
                   alt="Media preview"
-                  className="w-full h-full object-cover rounded-md"
+                  className={`w-full h-full object-cover rounded-md ${item.error ? 'opacity-50' : ''}`}
                 />
+                
+                {/* Progress overlay */}
+                {item.progress !== undefined && item.progress > 0 && item.progress < 100 && (
+                  <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-md">
+                    <div className="w-full h-1 bg-gray-700 mx-2">
+                      <div 
+                        className="h-full bg-blue-500" 
+                        style={{width: `${item.progress}%`}}
+                      />
+                    </div>
+                  </div>
+                )}
+                
+                {/* Error indicator */}
+                {item.error && (
+                  <div className="absolute inset-0 bg-red-900 bg-opacity-30 flex items-center justify-center rounded-md">
+                    <div className="text-white text-xs px-1 text-center">Upload failed</div>
+                  </div>
+                )}
+                
+                {/* Success indicator */}
+                {item.progress === 100 && item.hash && (
+                  <div className="absolute top-0 left-0 bg-green-500 rounded-br-md px-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-white" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                )}
+                
                 <button
                   className="absolute -top-2 -right-2 bg-gray-800 rounded-full p-1"
                   onClick={() =>

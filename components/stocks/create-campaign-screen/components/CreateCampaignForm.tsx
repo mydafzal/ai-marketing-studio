@@ -1,4 +1,6 @@
-import React, { useState, useRef } from 'react';
+'use client';
+
+import React, { useState, useRef, useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import { useMediaUpload } from '../hooks/useMediaUpload';
 import { CampaignTab, PreviewTab, Gender, AdPlacements, EditSection } from '../types';
@@ -62,6 +64,22 @@ export function CreateCampaignForm() {
   const [adPlacements, setAdPlacements] = useState<AdPlacements>({
     instagram_stories: true
   });
+
+  // Add event listener to file input ref to handle file uploads
+  useEffect(() => {
+    const currentFileInput = fileInputRef.current;
+    if (currentFileInput) {
+      const fileChangeHandler = (e: Event) => {
+        handleFileUpload(e as unknown as React.ChangeEvent<HTMLInputElement>);
+      };
+      
+      currentFileInput.addEventListener('change', fileChangeHandler);
+      
+      return () => {
+        currentFileInput.removeEventListener('change', fileChangeHandler);
+      };
+    }
+  }, [fileInputRef, handleFileUpload]);
 
   // Handle transition to review screen with loading sequence
   const handleReviewTransition = () => {
