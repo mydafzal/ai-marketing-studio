@@ -18,7 +18,7 @@ export async function POST(request: Request) {
 
     // Log all form data entries for debugging
     console.log('Received form data entries:')
-    for (const [key, value] of formData.entries()) {
+    for (const [key, value] of Array.from(formData.entries())) {
       console.log(` - ${key}:`, typeof value, value)
     }
     
