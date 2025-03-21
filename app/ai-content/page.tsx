@@ -26,6 +26,7 @@ import {useRouter} from "next/navigation";
 import {getSubscriptionInfo} from "@/app/actions";
 import {IconSpinner} from "@/components/ui/icons";
 import {HomePageInfoCard} from "@/components/account-not-connected-screen";
+import {getEmailAndBypassStatus} from "@/lib/auth/get-user-email";
 
 // Platform options for social media content
 const PLATFORMS = [
@@ -55,19 +56,24 @@ export default function AiContentPage() {
       setIsFetchingSub(true)
 
       try {
-        const result = await getSubscriptionInfo()
-        if (result && result.success) {
-          // Ensure result is not null before accessing properties
-          setSubStatus(result.sub_status ?? '') // Default to empty string if missing
-          setSubbedPackage(result.sub_offer ?? '') // Default to empty string if missing
-        } //bypass list
-        else {
-          setSubStatus('') // Default if result is null
-          setSubbedPackage('')
+        const { isBypassed } = await getEmailAndBypassStatus()
+
+        if (isBypassed) {
+          setSubStatus('active') // Override with bypass
+          setSubbedPackage('AI Marketer Suite')
+        } else {
+          const result = await getSubscriptionInfo()
+          if (result && result.success) {
+            setSubStatus(result.sub_status ?? '')
+            setSubbedPackage(result.sub_offer ?? '')
+          } else {
+            setSubStatus('')
+            setSubbedPackage('')
+          }
         }
       } catch (error) {
-        console.error('Error fetching subscription info:', error)
-        setSubStatus('') // Handle errors gracefully
+        console.error('Error fetching subscription info or email:', error)
+        setSubStatus('')
         setSubbedPackage('')
       }
 
