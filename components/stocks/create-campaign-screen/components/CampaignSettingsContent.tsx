@@ -33,6 +33,10 @@ export function CampaignSettingsContent({
   adText,
   openEditModal
 }: CampaignSettingsContentProps) {
+  // Count media by type for display
+  const imageCount = mediaItems.filter(item => item.type === 'image').length;
+  const videoCount = mediaItems.filter(item => item.type === 'video').length;
+  
   return (
     <div className="space-y-4 p-4">
       {/* Campaign Objective */}
@@ -138,7 +142,10 @@ export function CampaignSettingsContent({
           <div>
             <h4 className="font-medium">Creative</h4>
             <p className="text-sm text-gray-300">
-              Media: {mediaItems.length} uploaded
+              Media: {mediaItems.length} uploaded 
+              {imageCount > 0 && ` (${imageCount} image${imageCount > 1 ? 's' : ''}`}
+              {videoCount > 0 && `${imageCount > 0 ? ', ' : ' ('}${videoCount} video${videoCount > 1 ? 's' : ''}`}
+              {(imageCount > 0 || videoCount > 0) && ')'}
             </p>
             <p className="text-sm text-gray-300">
               Headline: {adHeadline}

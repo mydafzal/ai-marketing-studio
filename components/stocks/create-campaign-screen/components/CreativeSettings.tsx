@@ -59,11 +59,28 @@ export function CreativeSettings({
           <div className="mt-3 flex gap-2 overflow-x-auto pb-2">
             {mediaItems.map(item => (
               <div key={item.id} className="relative w-20 h-20 flex-shrink-0">
-                <img
-                  src={item.url}
-                  alt="Media preview"
-                  className={`w-full h-full object-cover rounded-md ${item.error ? 'opacity-50' : ''}`}
-                />
+                {/* Render different media types appropriately */}
+                {item.type === 'image' ? (
+                  <img
+                    src={item.url}
+                    alt="Image preview"
+                    className={`w-full h-full object-cover rounded-md ${item.error ? 'opacity-50' : ''}`}
+                  />
+                ) : (
+                  <video
+                    src={item.url}
+                    className={`w-full h-full object-cover rounded-md ${item.error ? 'opacity-50' : ''}`}
+                    autoPlay={false}
+                    loop
+                    muted
+                    controls={false}
+                    onMouseOver={e => e.currentTarget.play()}
+                    onMouseOut={e => {
+                      e.currentTarget.pause();
+                      e.currentTarget.currentTime = 0;
+                    }}
+                  />
+                )}
                 
                 {/* Progress overlay */}
                 {item.progress !== undefined && item.progress > 0 && item.progress < 100 && (
@@ -84,12 +101,15 @@ export function CreativeSettings({
                   </div>
                 )}
                 
-                {/* Success indicator */}
+                {/* Success indicator with type badge */}
                 {item.progress === 100 && item.hash && (
                   <div className="absolute top-0 left-0 bg-green-500 rounded-br-md px-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-white" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
+                    <div className="flex items-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-white" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                      <span className="text-white text-xs ml-1">{item.type}</span>
+                    </div>
                   </div>
                 )}
                 

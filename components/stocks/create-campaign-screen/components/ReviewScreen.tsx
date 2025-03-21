@@ -72,11 +72,22 @@ export function ReviewScreen({
           {activePreviewTab === 'instagram_stories' && (
             <div className="w-[240px] h-[420px] bg-black mx-auto rounded-xl overflow-hidden relative shadow-xl">
               {mediaItems.length > 0 ? (
-                <img
-                  src={mediaItems[0].url}
-                  alt="Ad preview"
-                  className="w-full h-full object-cover"
-                />
+                mediaItems[0].type === 'image' ? (
+                  <img
+                    src={mediaItems[0].url}
+                    alt="Ad preview"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <video
+                    src={mediaItems[0].url}
+                    className="w-full h-full object-cover"
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                  />
+                )
               ) : (
                 <div className="w-full h-full bg-gradient-to-b from-purple-500 to-pink-500"></div>
               )}
