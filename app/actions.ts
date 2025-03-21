@@ -1488,10 +1488,15 @@ export async function getSubscriptionInfo(): Promise<{ success?: boolean; sub_of
             return null; // Explicitly return null if user is not found
         }
 
+        if(user.sub_offer === undefined || user.sub_status === undefined)
+        {
+            return null;
+        }
+
         return {
             success: true,
-            sub_offer: user.sub_offer ?? "", // Ensure empty string instead of undefined
-            sub_status: user.sub_status ?? "" // Ensure empty string instead of undefined
+            sub_offer: String(user.sub_offer), // Ensure empty string instead of undefined
+            sub_status: String(user.sub_status), // Ensure empty string instead of undefined
         };
     } catch (error) {
         console.error(`Error getting current user details:`, error);

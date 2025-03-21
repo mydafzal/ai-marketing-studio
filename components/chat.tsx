@@ -308,7 +308,7 @@ function ChatCore({ id, chat, className, session, missingKeys }: ChatProps) {
 
     if (!isFbAccountConnected && subbedPackage == 'AI Content Creator') {
       // you are subscibed to use the AI Content Creator. To access the AI marketer tool they need to upgrade their plan.
-      return <HomePageInfoCard adAccountConnected={false} />
+      return <HomePageInfoCard isSubscribedToAIContent={true} />
     }
 
     if (!isFbAccountConnected && subbedPackage == 'AI Marketer Suite') {

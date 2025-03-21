@@ -1,9 +1,3 @@
-// subscription-bypass-list.ts
-
-// List of emails that bypass subscription requirements
-export const subscriptionBypassList: string[] = [
-  // Add emails here
-];
 
 import Link from 'next/link'
 
