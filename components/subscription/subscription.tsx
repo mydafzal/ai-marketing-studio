@@ -11,7 +11,6 @@ import { getUser } from '@/app/login/actions'
 
 export interface SubscriptionProps {
   user: User
-  invoices: InvoiceItem[]
   handleCancelSubscription: () => void
 }
 
@@ -24,46 +23,39 @@ const getCurrentPlanTag = (user: User) => {
 }
 
 export function Subscription({
-  user: initialUser,
-  invoices,
+  user,
   handleCancelSubscription
 }: SubscriptionProps) {
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const [user, setUser] = useState(initialUser)
-  const [isMonthly, setIsMonthly] = useState(!user.sub_interval || user.sub_interval === 'month')
-  const [openModal, setOpenModal] = useState(false)
-  const [previousStatus, setPreviousStatus] = useState(initialUser.sub_status)
+
+  const [invoices, setInvoices] = useState<InvoiceItem[]>([])
 
   useEffect(() => {
-    const fetchUserSubscription = async () => {
-      try {
-        const res = await getUser(user.email)
-        const data = res as User
-
-        if (data) {
-          if (previousStatus !== data.sub_status) {
-            window.location.reload()
-          }
-
-          setPreviousStatus(data.sub_status)
-          setUser(prev => ({
-            ...prev,
-            sub_status: data.sub_status !== undefined ? data.sub_status : 'inactive'
-          }))
-        }
-      } catch (error) {
-        console.error('Error fetching updated subscription:', error)
+    const fetchInvoices = async () => {
+      if (!user?.sub_stripe_customer_id) return
+  
+      const res = await fetch('/api/stripe/invoices', {
+        method: 'POST',
+        body: JSON.stringify({ customerId: user.sub_stripe_customer_id }),
+        headers: { 'Content-Type': 'application/json' }
+      })
+  
+      const data = await res.json()
+      if (res.ok && data.invoices) {
+        setInvoices(data.invoices)
       }
     }
+  
+    fetchInvoices()
+  }, [user.sub_stripe_customer_id])
 
-    if (searchParams.get('success') === 'true') {
-      const interval = setInterval(fetchUserSubscription, 4000) // Poll every 4 sec
-      setTimeout(() => clearInterval(interval), 20000) // Stop polling after 20 sec
-    } else {
-      fetchUserSubscription()
-    }
-  }, [searchParams, previousStatus])
+  const formattedInvoices = invoices.map((invoice) => ({
+    ...invoice,
+    date: new Date(invoice.date), // Convert string to Date object
+  }))
+  
+  const router = useRouter()
+  const [isMonthly, setIsMonthly] = useState(!user.sub_interval || user.sub_interval === 'month')
+  const [openModal, setOpenModal] = useState(false)
 
   function showModal() {
     if (user.sub_offer) {
@@ -144,14 +136,11 @@ export function Subscription({
               )}
             </>
           )}
+          {user.sub_status && (
+            <PaymentHistory invoices={formattedInvoices} />
+          )}
         </div>
       </div>
-      {/* Modal dialog */}
-      <CancelSubscriptionDialog
-        open={openModal}
-        handleModalCancel={handleModalCancel}
-        handleModalOk={handleModalOk}
-      />
     </>
   )
 }

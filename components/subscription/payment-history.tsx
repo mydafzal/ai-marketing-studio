@@ -2,6 +2,7 @@ export interface InvoiceItem {
   date: Date
   invoiceNumber: string
   amount: number
+  hosted_invoice_url: string
 }
 export interface PaymentHistoryProps {
   invoices: InvoiceItem[]
@@ -35,14 +36,20 @@ export function PaymentHistory({ invoices }: PaymentHistoryProps) {
                       {invoice.date.toLocaleDateString()}{' '}
                       {/* Format the date */}
                     </td>
-                    <td className="py-3 px-4 text-green-600 underline cursor-pointer">
+                    <td className="py-3 px-4 text-green-600 underline">
                       {invoice.invoiceNumber}
                     </td>
                     <td className="py-3 px-4">
                       €{(invoice.amount / 100).toFixed(2)}
                     </td>
                     <td className="py-3 px-4 text-gray-500">
-                      <button className="p-2 bg-gray-100 rounded hover:bg-gray-200">
+                      <a
+                        href={invoice.hosted_invoice_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-2 bg-gray-100 rounded hover:bg-gray-200 inline-block"
+                        title="Download Invoice"
+                      >
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
                           fill="none"
@@ -57,7 +64,7 @@ export function PaymentHistory({ invoices }: PaymentHistoryProps) {
                             d="M7 10l5 5m0 0l5-5m-5 5V3"
                           />
                         </svg>
-                      </button>
+                      </a>
                     </td>
                   </tr>
                 ))}

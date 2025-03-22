@@ -5,10 +5,10 @@ export interface MonthlyPricingProps {
   currentPlanTag: string
 }
 
-const monthlyBasicPlanLookupKey =
-  process.env.NEXT_PUBLIC_STRIPE_MONTHLY_CONTENT_PLAN_LOOKUP_KEY || ''
-const monthlyProPlanLookupKey =
-  process.env.NEXT_PUBLIC_STRIPE_MONTHLY_MARKETING_PLAN_LOOKUP_KEY || ''
+import { STRIPE_LOOKUP_KEYS } from '@/app/api/stripe/utils/lookup_key_provider' 
+
+const monthlyBasicPlanLookupKey = STRIPE_LOOKUP_KEYS.MONTHLY.CONTENT
+const monthlyProPlanLookupKey = STRIPE_LOOKUP_KEYS.MONTHLY.MARKETING
 
 // Create a reusable BadgeIcon component
 const BadgeIcon = () => (

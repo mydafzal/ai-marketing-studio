@@ -5,10 +5,11 @@ export interface YearlyPricingProps {
   currentPlanTag: string
 }
 
-const yearlyBasicPlanLookupKey =
-  process.env.NEXT_PUBLIC_STRIPE_YEARLY_CONTENT_PLAN_LOOKUP_KEY || ''
-const yearlyProPlanLookupKey =
-  process.env.NEXT_PUBLIC_STRIPE_YEARLY_MARKETING_PLAN_LOOKUP_KEY || ''
+import { STRIPE_LOOKUP_KEYS } from '@/app/api/stripe/utils/lookup_key_provider'
+
+const yearlyBasicPlanLookupKey = STRIPE_LOOKUP_KEYS.YEARLY.CONTENT
+const yearlyProPlanLookupKey = STRIPE_LOOKUP_KEYS.YEARLY.MARKETING
+
 // Create a reusable BadgeIcon component
 const BadgeIcon = () => (
   <span className="text-purple-600 mr-2 flex items-center justify-center">

@@ -18,19 +18,6 @@ interface SubPayload {
   sub_id: string
 }
 
-interface CheckoutSessionData {
-  customer_id: string
-  customer_email: string
-  session_id: string
-  subscription_id: string
-  price_id: string
-  product_id: string
-  amount_total: number
-  currency: string
-  payment_status: string
-  subscription_status: string
-}
-
 // Initialize Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '')
 const endpointSecret = process.env.STRIPE_WEBHOOK_PROD_SECRET || ''
@@ -74,37 +61,6 @@ async function updateSubscriptionDetails(sub: SubPayload) {
   } catch (error) {
     console.error(`Error updating subscription details:`, error)
     throw error // Re-throw to handle in the caller
-  }
-}
-
-async function deleteSubscriptionDetails(email: string) {
-  try {
-    const userKey = `user:${email}`
-    const existingData = await kv.hgetall(userKey)
-
-    if (!existingData || Object.keys(existingData).length === 0) {
-      console.error(`User not found in KV store for key: ${userKey}`)
-      return
-    }
-
-    // Properties to delete
-    const propertiesToDelete = [
-      'sub_status',
-      'sub_current_period_start',
-      'sub_current_period_end',
-      'sub_offer',
-      'sub_interval',
-      'sub_product_id',
-      'sub_interval_count',
-      'sub_stripe_customer_id',
-      'sub_id'
-    ]
-
-    await kv.hdel(userKey, ...propertiesToDelete)
-    console.log(`Successfully deleted subscription details for ${email}`)
-  } catch (error) {
-    console.error(`Error deleting subscription fields from KV store:`, error)
-    throw error
   }
 }
 
@@ -155,11 +111,27 @@ const handleSubscriptionDeleted = async (event: Stripe.Event) => {
       return
     }
 
-    await deleteSubscriptionDetails(stripeCustomer.email)
+    await updateSubscriptionDetails({
+      sub_email: stripeCustomer.email,
+      sub_status: 'deactivate',
+      sub_current_period_start: unixTimeStampToDateTime(
+        subscription.current_period_start
+      ),
+      sub_current_period_end: unixTimeStampToDateTime(
+        subscription.current_period_end
+      ),
+      sub_offer: subscription.items.data[0]?.plan?.product as string,
+      sub_interval: subscription.items.data[0]?.plan?.interval || '',
+      sub_product_id: subscription.items.data[0]?.plan?.product as string,
+      sub_interval_count: subscription.items.data[0]?.plan?.interval_count || '',
+      sub_stripe_customer_id: subscription.customer as string,
+      sub_id: subscription.id
+    })
   } catch (error) {
     console.error('Error handling subscription deleted event:', error)
   }
 }
+
 
 const handleSubscriptionCreated = async (event: Stripe.Event) => {
   try {
