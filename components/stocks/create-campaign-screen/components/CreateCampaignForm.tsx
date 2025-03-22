@@ -139,6 +139,12 @@ export function CreateCampaignForm() {
       
       console.log('Sending request to master flow endpoint with session ID:', sessionId);
       
+      // Include AI guidance in profile data if provided
+      let profileData = userData.account?.defaultExtraDetails || '';
+      if (aiGuidance && aiGuidance.trim() !== '') {
+        profileData = profileData + "\n\nThe user explicitly stated that they want: " + aiGuidance;
+      }
+      
       // Make the API call to master flow endpoint
       const response = await fetch('/api/master-flow-initiate-process', {
         method: 'POST',
@@ -149,7 +155,7 @@ export function CreateCampaignForm() {
         body: JSON.stringify({
           fb_account_id: userData.account?.fbAccountId || '',
           campaign_flow_session_id: sessionId,
-          profile_data: userData.account?.defaultExtraDetails || '',
+          profile_data: profileData,
           location_data: locationData,
           website_link: link,
           preferred_language: 'en',
@@ -194,13 +200,51 @@ export function CreateCampaignForm() {
     }
   };
 
-  // Launch confetti on publish
-  const handlePublish = () => {
+  // Launch confetti on publish and send AI reasoning to the chat
+  const handlePublish = async () => {
     confetti({
       particleCount: 150,
       spread: 70,
       origin: { y: 0.6 }
     });
+    
+    // Send the AI reasoning to the chat if we have master flow data
+    if (masterFlowData) {
+      try {
+        // Construct the reasoning message from the master flow data
+        let reasoningMessage = '';
+        
+        if (masterFlowData.campaign_objective) {
+          reasoningMessage += `**Campaign Objective:** ${masterFlowData.campaign_objective}\n\n`;
+        }
+        
+        if (masterFlowData.age_gender_decision_reason) {
+          reasoningMessage += `**Targeting Recommendation:** ${masterFlowData.age_gender_decision_reason}\n\n`;
+        }
+        
+        if (masterFlowData.suggested_targeting_filters && Array.isArray(masterFlowData.suggested_targeting_filters) && masterFlowData.suggested_targeting_filters.length > 0) {
+          reasoningMessage += `**Suggested Interest Filters:** ${masterFlowData.suggested_targeting_filters.map(filter => filter.name).join(', ')}\n\n`;
+        }
+        
+        // If we have any reasoning to send
+        if (reasoningMessage) {
+          // Call the API to submit the message to the chat
+          await fetch('/api/fasty-bot/proxy-submit-message.ts', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              message: `I've set up your campaign with the following recommendations:\n\n${reasoningMessage}`,
+              role: 'assistant'
+            })
+          });
+        }
+      } catch (error) {
+        console.error('Error sending AI reasoning to chat:', error);
+      }
+    }
+    
     setShowSuccessMessage(true);
     setTimeout(() => {
       setShowSuccessMessage(false);
