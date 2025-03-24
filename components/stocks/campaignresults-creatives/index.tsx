@@ -39,7 +39,7 @@ import { AdCreative, RawCreative, getPerformanceScore } from "./types"
 
 const FB_API_KEY = process.env.NEXT_PUBLIC_FB_API_KEY || ""
 
-// Main Dashboard
+// Main Dashboard.
 const AdCreativesComparison: React.FC<{ campaignId?: string }> = ({
   campaignId,
 }) => {
