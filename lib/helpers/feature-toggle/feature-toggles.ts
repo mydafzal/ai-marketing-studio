@@ -29,10 +29,6 @@ export const featureToggles: FeatureToggle[] = [
     {
         name: "rightSideOverviewCard",
         description: "Show the right hand side campaign overview card"
-    },
-    {
-        name: "stripeIntegration",
-        description: "Stripe Integration"
     }
     // Add more feature toggles as needed
 ];
