@@ -17,7 +17,7 @@ export function Support({ title = "Reeply AI Support" }: SupportProps) {
           <p className="text-sm text-zinc-400">Schedule a meeting with our support team</p>
         </div>
         <div className="px-3 py-1 text-sm rounded-full bg-zinc-900 text-green-400 border border-green-600">
-          Available 24/7
+          Available
         </div>
       </div>
 
