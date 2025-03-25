@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useCallback } from "react"
+import React, { useState, useEffect, useCallback, useRef } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { 
@@ -27,10 +27,26 @@ export const CreativeDisplay: React.FC<CreativeDisplayProps> = ({
   onTogglePublish,
 }) => {
   // Use a fixed format to ensure we only fetch once
-  const defaultFormat = creative.type === 'video' ? 'INSTAGRAM_STANDARD' : 'INSTAGRAM_STANDARD'
+  const defaultFormat = creative.type === 'video' ? 'INSTAGRAM_REELS' : 'INSTAGRAM_REELS'
   const [previewHtml, setPreviewHtml] = useState<string>("")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const previewRef = useRef<HTMLDivElement>(null)
+
+  // Process HTML to prevent auto-scaling/resizing and hide scrollbars
+  const processHtml = (html: string) => {
+    return html
+      .replace(/(<iframe[^>]*)(width="[^"]*"|height="[^"]*")/g, '$1')
+      .replace(/(<iframe[^>]*)(style="[^"]*")/g, (match, p1, p2) => {
+        return p1 + 'style="width:313px;height:534px;border:none;overflow:hidden;-ms-overflow-style:none;scrollbar-width:none;"';
+      })
+      .replace(/(<iframe[^>]*)(scrolling="[^"]*")/g, '$1 scrolling="no"')
+      .replace(/scale\([^)]*\)/g, 'scale(1)')
+      .replace(/transform:[^;]*;/g, 'transform:none;')
+      .replace(/zoom:[^;]*;/g, 'zoom:1;')
+      // Add CSS to hide scrollbars
+      .replace(/<head>/g, '<head><style>::-webkit-scrollbar{display:none;width:0;height:0;}body::-webkit-scrollbar{display:none;}</style>');
+  };
 
   // Keep the same fetch function but with fixed format
   const fetchPreview = useCallback(async () => {
@@ -54,13 +70,17 @@ export const CreativeDisplay: React.FC<CreativeDisplayProps> = ({
       
       if (data.success) {
         // Handle possible response formats from the campaign-creation-flow endpoint
+        let html = "";
         if (data.preview_html) {
-          setPreviewHtml(data.preview_html)
+          html = data.preview_html;
         } else if (data.response_data?.data?.[0]?.body) {
-          setPreviewHtml(data.response_data.data[0].body)
+          html = data.response_data.data[0].body;
         } else {
           throw new Error("No preview HTML found in response")
         }
+        
+        // Pre-process HTML to prevent scaling issues
+        setPreviewHtml(processHtml(html))
       } else {
         console.error("Preview data invalid structure:", data)
         throw new Error(data.error || data.details || "Preview data not available")
@@ -83,6 +103,61 @@ export const CreativeDisplay: React.FC<CreativeDisplayProps> = ({
     return { __html: previewHtml }
   }
 
+  // Modify iframes to be fixed size
+  useEffect(() => {
+    if (previewRef.current && !isLoading && previewHtml) {
+      const iframes = previewRef.current.querySelectorAll('iframe');
+      iframes.forEach(iframe => {
+        // Set fixed dimensions
+        iframe.setAttribute('scrolling', 'no');
+        iframe.style.width = '313px';
+        iframe.style.height = '534px';
+        iframe.style.border = 'none';
+        iframe.style.overflow = 'hidden';
+        iframe.style.transform = 'none';
+        iframe.style.transition = 'none';
+        // Add CSS to hide scrollbars
+        iframe.style.msOverflowStyle = 'none'; // IE and Edge
+        iframe.style.scrollbarWidth = 'none'; // Firefox
+        
+        // Handle load event to reapply styles
+        iframe.onload = () => {
+          // Force the iframe to maintain our dimensions
+          iframe.style.width = '313px';
+          iframe.style.height = '534px';
+          iframe.style.transform = 'none';
+          
+          // Try to access iframe content if possible
+          try {
+            if (iframe.contentWindow && iframe.contentWindow.document) {
+              const doc = iframe.contentWindow.document;
+              const style = doc.createElement('style');
+              style.textContent = `
+                html, body { 
+                  width: 313px !important; 
+                  height: 534px !important; 
+                  transform: none !important; 
+                  zoom: 1 !important;
+                  overflow: hidden !important;
+                  -ms-overflow-style: none !important;
+                  scrollbar-width: none !important;
+                }
+                ::-webkit-scrollbar {
+                  display: none !important;
+                  width: 0 !important;
+                  height: 0 !important;
+                }
+              `;
+              doc.head.appendChild(style);
+            }
+          } catch (e) {
+            console.log("Couldn't access iframe content:", e);
+          }
+        };
+      });
+    }
+  }, [previewHtml, isLoading]);
+
   // Format truncated name
   const truncatedName = formatAdName(creative.name).length > 10 
     ? `${formatAdName(creative.name).substring(0, 10)}...` 
@@ -91,7 +166,7 @@ export const CreativeDisplay: React.FC<CreativeDisplayProps> = ({
   return (
     <div
       className={`
-        group mx-auto flex max-w-[900px] flex-col
+        group mx-auto flex w-full flex-col
         overflow-hidden rounded-xl
         border border-zinc-700 transition-all duration-300 hover:shadow-xl
         bg-[#111318] 
@@ -178,11 +253,11 @@ export const CreativeDisplay: React.FC<CreativeDisplayProps> = ({
       </div>
 
       {/* BODY: Full-width Preview */}
-      <div className="relative min-h-[500px] p-4">
+      <div className="relative p-4">
         {/* Vertical accent line */}
         <div className="absolute left-0 top-0 w-1 h-full bg-[#4AE04A]/30"></div>
         
-        <div className="h-full flex items-center justify-center bg-[#171920] rounded-md overflow-hidden">
+        <div className="h-full w-[313px] mx-auto flex items-center justify-center bg-[#111318] rounded-md overflow-hidden min-h-[534px]">
           {isLoading ? (
             <div className="flex items-center justify-center h-full w-full">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#4AE04A]"></div>
@@ -193,8 +268,18 @@ export const CreativeDisplay: React.FC<CreativeDisplayProps> = ({
             </div>
           ) : (
             <div 
+              ref={previewRef}
               className="w-full h-full flex items-center justify-center" 
-              dangerouslySetInnerHTML={renderHtml()} 
+              dangerouslySetInnerHTML={renderHtml()}
+              style={{ 
+                width: '313px', 
+                height: '534px', 
+                overflow: 'hidden',
+                transformOrigin: '0 0',
+                transform: 'none',
+                msOverflowStyle: 'none',
+                scrollbarWidth: 'none'
+              }}
             />
           )}
         </div>
