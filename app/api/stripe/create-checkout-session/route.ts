@@ -8,7 +8,7 @@ import { redirect } from 'next/navigation'
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '')
 
 export async function POST(req: NextRequest) {
-    // Programmatically retrive hostname
+    // Programmatically retrive hostname.
   const headersList = headers()
   const host = headersList.get('host') || '' // Retrieves the hostname
   const billingPageUrl = `http://${host}/subscription`
