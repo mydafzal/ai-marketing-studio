@@ -42,6 +42,7 @@ import {StockSkeleton} from "@/components/stocks/stock-skeleton";
 
 import getCampaignImagesModule from "@/lib/ui-magic/modules/getCampaignImagesModule";
 
+import supportModule from "@/lib/ui-magic/modules/supportModule";
 import adBudgetModule from "@/lib/ui-magic/modules/adBudgetModule";
 
 import formBuilderModule from "@/lib/ui-magic/modules/formBuilderModule";
@@ -586,6 +587,7 @@ export async function submitUserMessage(content: string, contentImages?: Array<T
 
             },
 
+            /* Support UI component */
             showAdBudgetUI: {
                 description: adBudgetModule.description,
                 parameters: adBudgetModule.parameters,
@@ -2446,6 +2448,63 @@ export async function submitUserMessage(content: string, contentImages?: Array<T
 
                 }
 
+            },
+
+            showSupportUI: {
+                description: supportModule.description,
+                parameters: supportModule.parameters,
+                generate: async function* ({title}) {
+                    console.log("tool call showSupportUI")
+                    
+                    yield (
+                        <BotCard>
+                            <SpinnerMessage />
+                        </BotCard>
+                    )
+                    
+                    await sleep(1000)
+                    
+                    const toolCallId = nanoid()
+                    const timestamp: string = new Date().toISOString()
+                    
+                    aiState.done({
+                        ...aiState.get(),
+                        messages: [
+                            ...aiState.get().messages,
+                            {
+                                id: nanoid(),
+                                role: "assistant",
+                                content: [
+                                    {
+                                        type: "tool-call",
+                                        toolName: "showSupportUI",
+                                        toolCallId,
+                                        args: {title}
+                                    }
+                                ],
+                                timestamp
+                            },
+                            {
+                                id: toolCallId,
+                                role: "tool",
+                                content: [
+                                    {
+                                        type: "tool-result",
+                                        toolName: "showSupportUI",
+                                        toolCallId,
+                                        result: {title}
+                                    }
+                                ],
+                                timestamp
+                            }
+                        ]
+                    })
+                    
+                    const showSupportComponent = (await import("@/components/stocks/support/server")).default;
+                    return showSupportComponent({
+                        title
+                    });
+                }
             }
 
         },
