@@ -2351,7 +2351,7 @@ export async function submitUserMessage(content: string, contentImages?: Array<T
                                 onMount={false}
                             />
                             <BotCard>
-                                <p>The ad creatives manager is now available in the sidebar. You can manage your campaign's ad creatives from there.</p>
+                                <p>The ad creatives manager is now available in the sidebar. You can manage your campaign ad creatives from there.</p>
                             </BotCard>
                         </>
                     )
