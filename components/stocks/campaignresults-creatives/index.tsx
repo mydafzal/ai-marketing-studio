@@ -42,8 +42,9 @@ import { AdCreative, RawCreative, getPerformanceScore, IMAGE_AD_FORMATS, VIDEO_A
 const FB_API_KEY = process.env.NEXT_PUBLIC_FB_API_KEY || ""
 
 // Main Dashboard
-const AdCreativesComparison: React.FC<{ campaignId?: string }> = ({
+const AdCreativesComparison: React.FC<{ campaignId?: string, skipAiThoughts?: boolean }> = ({
   campaignId,
+  skipAiThoughts = false
 }) => {
   const { campaign } = useContext(CampaignContext)
   const effectiveCampaignId = campaignId || campaign?.id
@@ -66,7 +67,7 @@ const AdCreativesComparison: React.FC<{ campaignId?: string }> = ({
   const [imagePermalinkUrl, setImagePermalinkUrl] = useState<string>("")
 
   // AI thought simulation states
-  const [showingAiThoughts, setShowingAiThoughts] = useState(true)
+ const [showingAiThoughts, setShowingAiThoughts] = useState(false) // FIXED: Never show by default
   const [completedThoughts, setCompletedThoughts] = useState<number[]>([])
 
   const initialFetchDone = useRef(false)

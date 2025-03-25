@@ -2,6 +2,7 @@
 import {ImagePart, TextPart} from "ai";
 
 import AdCreativesComparison from '@/components/stocks/campaignresults-creatives';
+import { SidebarContentWrapper } from '@/components/sidebar-content-wrapper';
 
 import {getChatIdFromUrl} from "@/lib/api/fasty-bot/helpers/chat-id-from-url-helper";
 
@@ -2169,7 +2170,6 @@ export async function submitUserMessage(content: string, contentImages?: Array<T
 
 
 
-
             showAdsetConnectionUI: {
 
                 description: showAdsetConnectionUIModule.description,
@@ -2335,15 +2335,25 @@ export async function submitUserMessage(content: string, contentImages?: Array<T
                         ]
 
                     })
-
-                    return (
-
-                        <BotCard>
-
+                    
+                    // Create sidebar content without auto-opening
+                    const sidebarContent = (
+                        <div className="flex flex-col h-full">
                             <AdCreativesSwitcher/>
-
-                        </BotCard>
-
+                        </div>
+                    );
+                    
+                    return (
+                        <>
+                            <SidebarContentWrapper 
+                                content={sidebarContent}
+                                title="Manage Ad Creatives"
+                                onMount={false}
+                            />
+                            <BotCard>
+                                <p>The ad creatives manager is now available in the sidebar. You can manage your campaign's ad creatives from there.</p>
+                            </BotCard>
+                        </>
                     )
 
                 }
@@ -2439,7 +2449,6 @@ export async function submitUserMessage(content: string, contentImages?: Array<T
             }
 
         },
-
 
 
 

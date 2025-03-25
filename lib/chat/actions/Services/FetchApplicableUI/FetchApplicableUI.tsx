@@ -18,10 +18,11 @@ import {createCampaign} from '@/lib/api/fasty-bot/create-campaign'
 import {GeographicalLocation} from '@/components/geographical-location';
 import {SuggestedFilters} from '@/components/suggested-filters';
 import LeadsCountUI from '@/components/campaign-leads-count'
-import AdCreativesComparison from '@/components/stocks/campaignresults-creatives';
-import { AdCreativesActiveUIWrapper } from '@/components/stocks/campaignresults-creatives/active-ui-wrapper';
 import AICampaignAnalysisBoard from "@/components/ai-campaign-analysis-board";
 import { SidebarContentWrapper } from '@/components/sidebar-content-wrapper';
+
+// Import only what we need for server component import below
+import dynamic from 'next/dynamic';
 
 interface ToolResult {
     toolName: string;
@@ -51,14 +52,12 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                     </>
                                 );
                             case 'getCampaignCreativeResults':
-                                // Use active UI system like create-campaign-screen
+                                // Only render the BotCard message in the chat
+                                // Let the UserMessageSubmitter handle the server component loading
                                 return (
-                                    <>
-                                        <AdCreativesActiveUIWrapper campaignId={tool.result.campaignId} />
-                                        <BotCard key={tool.toolCallId}>
-                                            <p>Campaign creative performance metrics are now displayed in the sidebar. You can analyze which ads are performing best and make adjustments as needed.</p>
-                                        </BotCard>
-                                    </>
+                                    <BotCard key={tool.toolCallId}>
+                                        <p>Campaign creative performance metrics are now displayed in the sidebar. You can analyze which ads are performing best and make adjustments as needed.</p>
+                                    </BotCard>
                                 );
                             case 'showAdBudgetUI':
                                 return (
@@ -229,18 +228,12 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                     </>
                                 );
                             case 'showAdCreativesSwitcher':
-                                // Use sidebar instead of chat
+                                // Only render the BotCard message in the chat
+                                // Avoid auto-mounting
                                 return (
-                                    <>
-                                        <SidebarContentWrapper 
-                                            content={<AdCreativesSwitcher {...tool.result} toolCallId={tool.toolCallId}/>}
-                                            title="Manage Ad Creatives"
-                                            onMount={true}
-                                        />
-                                        <BotCard key={tool.toolCallId}>
-                                            <p>The ad creatives manager is now open in the sidebar. You can manage your campaign&apos;s ad creatives from there.</p>
-                                        </BotCard>
-                                    </>
+                                    <BotCard key={tool.toolCallId}>
+                                        <p>The ad creatives manager is now available in the sidebar. You can manage your campaign&apos;s ad creatives from there.</p>
+                                    </BotCard>
                                 );
                             case 'showLeadsCountUI':
                                 return (

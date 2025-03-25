@@ -34,9 +34,8 @@ export function DynamicSidebar() {
   const handleClose = () => {
     if (activeUI) {
       clearActiveUI()
-    } else {
-      setIsOpen(false)
     }
+    setIsOpen(false)
   }
 
   return (
