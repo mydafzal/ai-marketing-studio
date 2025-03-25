@@ -67,14 +67,14 @@ const AdCreativesComparison: React.FC<{ campaignId?: string, skipAiThoughts?: bo
   const [imagePermalinkUrl, setImagePermalinkUrl] = useState<string>("")
 
   // AI thought simulation states
- const [showingAiThoughts, setShowingAiThoughts] = useState(false) // FIXED: Never show by default
+  const [showingAiThoughts, setShowingAiThoughts] = useState(false) // FIXED: Never show by default
   const [completedThoughts, setCompletedThoughts] = useState<number[]>([])
 
   const initialFetchDone = useRef(false)
   const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
 
   const { submitUserMessage } = useActions()
-  const [aiState] = useAIState()
+  const [aiState, setAIState] = useAIState()
   const [, setMessages] = useUIState<any>()
 
   // AI thoughts array
@@ -255,24 +255,65 @@ const AdCreativesComparison: React.FC<{ campaignId?: string, skipAiThoughts?: bo
       })
       setAdCreatives(merged)
 
+      // Only add AI message when not called from server component (which already handles this)
       if (merged.length > 0) {
-        let msg = `System: We just loaded ${merged.length} ad creatives.`
-        merged.forEach((cr, idx) => {
-          msg += `\nCreative #${idx + 1}: "${cr.name}" => engagements: ${
-            cr.metrics.engagement
-          }, impressions: ${
-            cr.metrics.impressions
-          }, watchTime: ${cr.metrics.watchTime}s, CPC: ${
-            cr.metrics.costPerClick
-          }`
-        })
-        await submitUserMessage(msg, [], true, { silent: true })
+        try {
+          // Import the formatter
+          const { formatAdCreativeResults } = await import("@/app/actions/format-campaign-metrics");
+          
+          // Get the campaign name if available
+          const campaignName = merged[0]?.name?.split(' - ')[0] || "your campaign";
+          
+          // Format the message using our new action
+          const formattedMessage = await formatAdCreativeResults(campaignName, merged);
+          
+          // Submit the message to chat using submitUserMessage (like in campaignresultsnew)
+          const resp = await submitUserMessage(formattedMessage, [], true);
+          
+          // Update the UI state with the new message
+          setMessages((old: any[]) => [...old, resp]);
+          
+          // Also update AI state to maintain compatibility with other code
+          const { nanoid } = await import("@/lib/utils");
+          setAIState({
+            ...aiState,
+            messages: [
+              ...aiState.messages,
+              {
+                id: nanoid(),
+                role: 'assistant',
+                content: formattedMessage,
+                timestamp: new Date().toISOString()
+              }
+            ]
+          });
+        } catch (err) {
+          console.error("Error formatting ad creative results:", err);
+          
+          // Fallback to basic message if formatting fails
+          let msg = `I've analyzed ${merged.length} ad creatives from your campaign.`;
+          
+          // Add fallback message as AI message
+          const { nanoid } = await import("@/lib/utils");
+          setAIState({
+            ...aiState,
+            messages: [
+              ...aiState.messages,
+              {
+                id: nanoid(),
+                role: 'assistant',
+                content: msg,
+                timestamp: new Date().toISOString()
+              }
+            ]
+          });
+        }
       }
     } catch (err) {
       console.error("Error fetching metrics:", err)
       setError(err instanceof Error ? err.message : "Failed to fetch metrics")
     }
-  }, [effectiveCampaignId, rawCreatives, submitUserMessage])
+  }, [effectiveCampaignId, rawCreatives, aiState, setAIState, submitUserMessage, setMessages])
 
   // 3) Initial fetch
   useEffect(() => {

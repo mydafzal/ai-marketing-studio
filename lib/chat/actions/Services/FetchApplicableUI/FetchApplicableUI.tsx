@@ -53,7 +53,7 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                 );
                             case 'getCampaignCreativeResults':
                                 // Only render the BotCard message in the chat
-                                // Let the UserMessageSubmitter handle the server component loading
+                                // The server component will handle loading and displaying in sidebar
                                 return (
                                     <BotCard key={tool.toolCallId}>
                                         <p>Campaign creative performance metrics are now displayed in the sidebar. You can analyze which ads are performing best and make adjustments as needed.</p>
