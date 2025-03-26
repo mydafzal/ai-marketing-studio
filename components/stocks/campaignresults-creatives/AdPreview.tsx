@@ -83,7 +83,7 @@ export const AdPreview: React.FC<AdPreviewProps> = ({ creativeId, type }) => {
         iframe.style.transform = 'none';
         iframe.style.transition = 'none';
         // Add CSS to hide scrollbars
-        iframe.style.msOverflowStyle = 'none'; // IE and Edge
+        iframe.style.setProperty('-ms-overflow-style', 'none'); // IE and Edge
         iframe.style.scrollbarWidth = 'none'; // Firefox
         
         // Handle load event to reapply styles
