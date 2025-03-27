@@ -29,7 +29,7 @@ export async function SidebarList({ userId }: SidebarListProps) {
         )}
       </div>
       <div className="flex items-center justify-end p-4 absolute bottom-1">
-        <ClearHistory clearChats={clearChats} isEnabled={chats?.length > 0} />
+        <ClearHistory clearChats={() => clearChats().then(() => {})} isEnabled={chats?.length > 0} />
       </div>
     </div>
   )
