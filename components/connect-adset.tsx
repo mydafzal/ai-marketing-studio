@@ -22,7 +22,7 @@ import { type AI } from '@/lib/chat/AIManager'
 import { createAdset } from '@/lib/api/fasty-bot/create-adset'
 import { generateAdsetTemplate } from '@/lib/data'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { CheckCircle, Plus, Link as LinkIcon } from 'lucide-react'
+import { CheckCircle, Plus, Link as LinkIcon, XCircle } from 'lucide-react'
 
 interface ConnectAdsetFormProps {
   handleSelectAdset: (adset: Adset) => Promise<void>

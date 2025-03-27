@@ -1,7 +1,9 @@
 // Inspired by Chatbot-UI and modified to fit the needs of this project
 // @see https://github.com/mckaywrigley/chatbot-ui/blob/main/components/Chat/ChatMessage.tsx
 
-import { Message } from 'ai'
+// Import both message types - our custom one and the one from 'ai'
+import type { Message as CustomMessage } from '@/lib/types'
+import { Message as AIMessage } from 'ai'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
 
@@ -12,10 +14,18 @@ import { IconOpenAI, IconUser } from '@/components/ui/icons'
 import { ChatMessageActions } from '@/components/chat-message-actions'
 
 export interface ChatMessageProps {
-  message: Message
+  message: CustomMessage
 }
 
 export function ChatMessage({ message, ...props }: ChatMessageProps) {
+  // Create a compatible message for ChatMessageActions
+  const aiCompatibleMessage: AIMessage = {
+    id: message.id,
+    role: message.role,
+    content: typeof message.content === 'string' ? message.content : JSON.stringify(message.content),
+    createdAt: message.timestamp ? new Date(message.timestamp) : undefined
+  };
+
   return (
     <div
       className={cn('group relative mb-6 flex items-start')}
@@ -74,7 +84,7 @@ export function ChatMessage({ message, ...props }: ChatMessageProps) {
                     }
                   }}
                 >
-                  {message.content}
+                  {typeof message.content === 'string' ? message.content : JSON.stringify(message.content)}
                 </MemoizedReactMarkdown>
               {message.timestamp && (
                   <div className="flex items-center mt-3 gap-3">
@@ -94,7 +104,7 @@ export function ChatMessage({ message, ...props }: ChatMessageProps) {
                     <div className="h-px flex-grow bg-border-dark/15"></div>
                   </div>
               )}
-        <ChatMessageActions message={message} />
+        <ChatMessageActions message={aiCompatibleMessage} />
       </div>
     </div>
   )
