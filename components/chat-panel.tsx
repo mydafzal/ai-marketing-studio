@@ -130,7 +130,7 @@ export function ChatPanel({
                       open={shareDialogOpen}
                       onOpenChange={setShareDialogOpen}
                       onCopy={() => setShareDialogOpen(false)}
-                      shareChat={shareChat}
+                      shareChat={shareChat as (id: string) => Promise<any>}
                       chat={{
                         id,
                         title,

@@ -17,12 +17,12 @@ export interface Chat extends Record<string, any> {
   fbCampaignId?: string
 }
 
-export type ServerActionResult<r> = Promise<
-  | Result
+export type ServerActionResult<T> = Promise<T>
+  | T  // Use the generic parameter directly
   | {
       error: string
     }
->
+
 
 export interface Session {
   user: {

@@ -148,10 +148,10 @@ export default function OnboardingLocationSelector({
         setLoading(false)
       }
     }, 500),
-    [getCityList]
+    []
   )
 
-  const handleSelectCity = (index: number, value: string) => {
+  const handleSelectCity = useCallback((index: number, value: string) => {
     console.log("[TEMPORARY DEBUG] Selecting city with key:", value, "for location", index);
     
     const city = selectedGeoLocations[index]?.cityData?.find((e) => e.key === value);
@@ -193,9 +193,9 @@ export default function OnboardingLocationSelector({
         )
       );
     }
-  }
+  }, [selectedGeoLocations])
 
-  const handleRemoveCity = (index: number, value: string) => {
+  const handleRemoveCity = useCallback((index: number, value: string) => {
     console.log("[TEMPORARY DEBUG] Removing city with key:", value, "from location", index);
     
     setSelectedGeoLocations((prev) => {
@@ -218,7 +218,7 @@ export default function OnboardingLocationSelector({
       
       return updated;
     });
-  }
+  }, [])
 
   const handleChangeKeyword = (index: number, regionSelected: Region, value: string) => {
     if (regionSelected && value.length > 0) {
@@ -628,7 +628,8 @@ export default function OnboardingLocationSelector({
               country_code: countryCode,
               country_name: city.country_name,
               type: 'region',
-              supports_city: true
+              supports_city: true,
+              supports_region: true // Add missing property
             };
             console.log("[TEMPORARY DEBUG] Created fallback region (not found in data):", region.name);
           }
@@ -640,7 +641,8 @@ export default function OnboardingLocationSelector({
             country_code: countryCode,
             country_name: city.country_name,
             type: 'region',
-            supports_city: true
+            supports_city: true,
+            supports_region: true // Add missing property
           };
           console.log("[TEMPORARY DEBUG] Created fallback region (no region data):", region.name);
           // Add this region to the region data
@@ -786,7 +788,14 @@ export default function OnboardingLocationSelector({
             code: loc.country?.country_code || ''
           },
           // Always include at least an empty regions array
-          regions: []
+          regions: [] as Array<{
+            key: number;
+            name: string;
+            cities: Array<{
+              key: number;
+              name: string;
+            }>;
+          }>
         };
         
         // If a region is selected, add it to the regions array with its cities
@@ -990,7 +999,8 @@ export default function OnboardingLocationSelector({
               country_code: countryObj.country_code,
               country_name: countryObj.name,
               type: 'region',
-              supports_city: true
+              supports_city: true,
+              supports_region: true // Add missing property
             };
             console.log("[TEMPORARY DEBUG] Created manual region:", regionObj);
           }
@@ -1035,8 +1045,8 @@ export default function OnboardingLocationSelector({
         // Add this location to our list
         initialLocations.push(newLocation);
         console.log("[TEMPORARY DEBUG] Added location to initialLocations:", {
-          country: newLocation.country.name,
-          code: newLocation.country.country_code
+          country: newLocation.country?.name,
+          code: newLocation.country?.country_code
         });
       }
 
@@ -1065,7 +1075,7 @@ export default function OnboardingLocationSelector({
     };
 
     loadSavedLocations();
-  }, [countryData.length, locations]);
+  }, [countryData.length, locations, getRegionList]);
 
   return (
     <div className="space-y-6">
@@ -1088,11 +1098,11 @@ export default function OnboardingLocationSelector({
             className="w-full px-3 py-2 pl-10 rounded-lg text-sm transition-colors duration-200 bg-[#151925] border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4BF29C] dark:focus:ring-offset-[#0F1117]"
           />
           <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-            <Search className="h-4 w-4 text-gray-400" />
+            <Search className="size-4 text-gray-400" />
           </div>
           {isSearching && (
             <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-              <Loader2 className="h-4 w-4 text-gray-400 animate-spin" />
+              <Loader2 className="size-4 text-gray-400 animate-spin" />
             </div>
           )}
         </div>
@@ -1111,14 +1121,14 @@ export default function OnboardingLocationSelector({
                 let details = '';
                 
                 if (result.type === 'country') {
-                  icon = <Globe className="h-4 w-4 text-[#4BF29C]" />;
+                  icon = <Globe className="size-4 text-[#4BF29C]" />;
                   label = result.data.name;
                 } else if (result.type === 'region') {
-                  icon = <MapPin className="h-4 w-4 text-[#4BF29C]" />;
+                  icon = <MapPin className="size-4 text-[#4BF29C]" />;
                   label = result.data.name;
                   details = `${result.data.country_name}`;
                 } else if (result.type === 'city') {
-                  icon = <MapPin className="h-4 w-4 text-[#4BF29C]" />;
+                  icon = <MapPin className="size-4 text-[#4BF29C]" />;
                   label = result.data.name;
                   details = `${result.data.region}, ${result.data.country_name}`;
                 }
@@ -1163,13 +1173,13 @@ export default function OnboardingLocationSelector({
                     key={idx} 
                     className="bg-[#1A1D29] border border-gray-700 text-white text-xs px-3 py-2 rounded-lg flex items-center gap-2"
                   >
-                    <MapPin className="h-3 w-3 text-[#4BF29C]" />
+                    <MapPin className="size-3 text-[#4BF29C]" />
                     <span>{locationText}</span>
                     <button 
                       onClick={() => handleRemoveCountry(idx)}
                       className="text-gray-400 hover:text-white ml-1"
                     >
-                      <X className="h-3 w-3" />
+                      <X className="size-3" />
                     </button>
                   </div>
                 );
@@ -1193,9 +1203,9 @@ export default function OnboardingLocationSelector({
                   size="icon"
                   disabled={isSubmitting}
                   onClick={() => handleRemoveCountry(index)}
-                  className="h-8 w-8 text-gray-400 hover:text-white"
+                  className="size-8 text-gray-400 hover:text-white"
                 >
-                  <X className="h-4 w-4" />
+                  <X className="size-4" />
                 </Button>
               </div>
 
@@ -1213,7 +1223,7 @@ export default function OnboardingLocationSelector({
                             onClick={() => handleRemoveCity(index, city.key)}
                             className="text-gray-400 hover:text-white"
                           >
-                            <X className="h-3 w-3" />
+                            <X className="size-3" />
                           </button>
                         </div>
                       ))}
@@ -1232,7 +1242,7 @@ export default function OnboardingLocationSelector({
         onClick={handleAddCountry}
         className="w-full bg-[#1A1D29] hover:bg-[#2A2E3A] border-gray-700 text-white"
       >
-        <Plus className="h-4 w-4 mr-2" />
+        <Plus className="size-4 mr-2" />
         Add Location
       </Button>
       
