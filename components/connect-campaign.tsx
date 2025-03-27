@@ -12,7 +12,7 @@ import {IconSpinner} from '@/components/ui/icons'
 import {FbCampaign, Message} from '@/lib/types'
 import {type AI} from '@/lib/chat/AIManager'
 import {Card, CardContent} from '@/components/ui/card'
-import {CheckCircle, Link as LinkIcon, Plus} from 'lucide-react'
+import {CheckCircle, Link as LinkIcon, Plus, XCircle} from 'lucide-react'
 
 interface ConnectCampaignFormProps {
   handleSelectCampaign: (campaign: FbCampaign) => Promise<void>;
