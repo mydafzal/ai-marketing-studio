@@ -83,56 +83,61 @@ export function Subscription({
 
   return (
     <>
-      <div className="group w-full pl-0 peer-[[data-state=open]]:lg:pl-[250px] peer-[[data-state=open]]:xl:pl-[300px] relative overflow-auto">
+      <div className="group w-full pl-0 peer-[[data-state=open]]:lg:pl-[250px] peer-[[data-state=open]]:xl:pl-[300px] relative overflow-auto bg-[#0F1117] dark:bg-[#0F1117] text-white dark:text-white">
         <div className="max-w-5xl mx-auto py-12">
-
-            {!user.sub_status ||  user.sub_status !== 'active' && (
+          {!user.sub_status || user.sub_status !== 'active' ? (
             <div className="text-center">
-              <h1 className="text-[40px] font-bold text-purple-600">
-                Subscription Plans
+              <h1 className="text-[40px] font-bold text-white dark:text-white">
+                Simple, <span className="text-purple-500 dark:text-purple-500">transparent</span> pricing
               </h1>
-              <p className="my-4 text-gray-600 text-[16px] leading-[22.89px]">
-                Select from one of our plans that suit you, your project goals and
-                team
+              <p className="my-4 text-gray-400 dark:text-gray-400 text-[16px] leading-[22.89px]">
+                Choose the perfect plan to accelerate your marketing efforts with the power of AI
               </p>
-          </div>
-              )}
-
-          {user.sub_status === 'active' && (
-              <div className="text-center">
-                <h1 className="text-[40px] font-bold text-purple-600">
-                  Manage Subscription
-                </h1>
-                <p className="my-4 text-gray-600 text-[16px] leading-[22.89px]">
-                  Your current Reeply AI subscription plan can be seen below.
-                </p>
-              </div>
+            </div>
+          ) : (
+            <div className="text-center">
+              <h1 className="text-[40px] font-bold text-white dark:text-white">
+                Manage <span className="text-purple-500 dark:text-purple-500">Subscription</span>
+              </h1>
+              <p className="my-4 text-gray-400 dark:text-gray-400 text-[16px] leading-[22.89px]">
+                Your current Reeply AI subscription plan can be seen below.
+              </p>
+            </div>
           )}
 
-
-
-              {/* If subscription is active, only show Plan Details */}
+          {/* If subscription is active, only show Plan Details */}
           {user.sub_status === 'active' ? (
-            <Card user={user} onCancelSubscription={showModal} />
+            <div className="bg-[#1A1D29] dark:bg-[#1A1D29] rounded-xl overflow-hidden border border-gray-800 dark:border-gray-800">
+              <Card user={user} onCancelSubscription={showModal} />
+            </div>
           ) : (
             <>
               <div className="flex items-center justify-center">
-                <div className="flex bg-purple-100 rounded-lg p-1">
+                <div className="flex bg-[#1A1D29] dark:bg-[#1A1D29] rounded-lg p-1">
                   <button
                     onClick={() => setIsMonthly(true)}
                     className={`px-6 py-2 text-sm font-medium rounded-lg ${
-                      isMonthly ? 'bg-purple-600 text-white' : 'text-black'
+                      isMonthly 
+                        ? 'bg-purple-600 dark:bg-purple-600 text-white' 
+                        : 'text-gray-400 dark:text-gray-400'
                     }`}
                   >
                     Monthly
                   </button>
                   <button
                     onClick={() => setIsMonthly(false)}
-                    className={`px-6 py-2 text-sm font-medium rounded-lg ${
-                      !isMonthly ? 'bg-purple-600 text-white' : 'text-black'
+                    className={`px-6 py-2 text-sm font-medium rounded-lg flex items-center ${
+                      !isMonthly 
+                        ? 'bg-purple-600 dark:bg-purple-600 text-white' 
+                        : 'text-gray-400 dark:text-gray-400'
                     }`}
                   >
-                    Annually
+                    <span>Yearly</span>
+                    {!isMonthly && (
+                      <span className="ml-2 text-green-500 dark:text-green-500 text-xs">
+                        Save up to 70%
+                      </span>
+                    )}
                   </button>
                 </div>
               </div>
@@ -146,7 +151,8 @@ export function Subscription({
           )}
         </div>
       </div>
-      {/* Modal dialog */}
+      
+      {/* Modal dialog - unchanged */}
       <CancelSubscriptionDialog
         open={openModal}
         handleModalCancel={handleModalCancel}
