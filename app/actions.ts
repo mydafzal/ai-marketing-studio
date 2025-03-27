@@ -1512,7 +1512,21 @@ export async function updateOnboardingDetails(email: string, details: {
     website_link: string;
     privacy_policy_link: string;
     preferred_language: string;
-    goal: string
+    goal: string;
+    locations?: {
+        country: {
+            name: string;
+            code: string;
+        };
+        regions: Array<{
+            key: number;
+            name: string;
+            cities: Array<{
+                key: number;
+                name: string;
+            }>;
+        }>;
+    }[];
 }) {
     const session = await auth()
 
@@ -1587,8 +1601,23 @@ export async function updateOnboardingDetails(email: string, details: {
         }
 
 
-        // Update the accountId field
-        await kv.hset(userKey, {...details, defaultExtraDetails: newDetails, website_data: website_data})
+        // Prepare data to save
+        const dataToSave = {
+            first_name: details.first_name,
+            last_name: details.last_name,
+            company_name: details.company_name,
+            company_description: details.company_description,
+            website_link: details.website_link,
+            privacy_policy_link: details.privacy_policy_link,
+            preferred_language: details.preferred_language,
+            goal: details.goal,
+            defaultExtraDetails: newDetails,
+            website_data: website_data
+        };
+        
+        // Handle locations separately to ensure proper serialization
+        // Update user data in KV
+        await kv.hset(userKey, dataToSave)
 
         return {
             success: true,
