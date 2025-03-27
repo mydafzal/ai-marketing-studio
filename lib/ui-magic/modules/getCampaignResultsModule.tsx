@@ -1,7 +1,6 @@
 import { z } from 'zod'
 import { ModuleConfigBuilder } from '@/lib/ui-magic/moduleConfigBuilder'
-import { BotCard } from '@/components/stocks'
-import { Stock } from '@/components/stocks/campaignresultsnew'
+import showCampaignResults from '@/components/stocks/campaignresultsnew/server'
 
 export interface GetCampaignResultsParams {
     campaignId: string
@@ -27,14 +26,7 @@ export const getCampaignResultsModule = new ModuleConfigBuilder(
     )
     .setComponent(
         async ({ campaignId, guideForUser }: GetCampaignResultsParams) => {
-            return (
-                <>
-                    <BotCard>
-                        <Stock campaignId={campaignId} isActive />
-                    </BotCard>
-                    <div className="my-4">{guideForUser ?? ''}</div>
-                </>
-            )
+            return showCampaignResults({ campaignId, guideForUser })
         }
     )
     .build()

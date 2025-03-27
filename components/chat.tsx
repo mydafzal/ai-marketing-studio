@@ -1,4 +1,3 @@
-// chat.tsx
 'use client'
 
 import { useActions, useAIState, useUIState } from 'ai/rsc' // Add useActions here
@@ -37,6 +36,11 @@ import useAccountStore from '@/app/store/useAccountStore'
 import { useRouter } from 'next/navigation'
 import { IconSpinner } from '@/components/ui/icons'
 import { subscriptionBypassList } from '@/app/subscription/subscription-bypass-list'
+import { SidebarContentProvider } from '@/components/contexts/sidebar-content-context'
+import { DynamicSidebar } from '@/components/dynamic-sidebar'
+import { SidebarBridge } from '@/components/sidebar-bridge'
+import { useSidebarContent } from '@/components/contexts/sidebar-content-context'
+import { ActiveUIProvider } from '@/components/stocks/active-ui-context'
 
 interface FbFetchedObject {
   id: string
@@ -88,6 +92,7 @@ function ChatCore({ id, chat, className, session, missingKeys }: ChatProps) {
   const [isLoadingAdset, setIsLoadingAdset] = useState(false)
   const [messages, setMessages] = useUIState<typeof AI>()
   const { submitUserMessage } = useActions() // Get submitUserMessage from useActions
+  const { isOpen: isSidebarContentOpen } = useSidebarContent()
 
   const { isFbAccountConnected, checkFbAccountConnection } = useAccountStore()
   useEffect(() => {
@@ -330,15 +335,12 @@ function ChatCore({ id, chat, className, session, missingKeys }: ChatProps) {
   }
 
   return (
-    <div
-      className="group w-full pl-0 peer-[[data-state=open]]:lg:pl-[250px] peer-[[data-state=open]]:xl:pl-[300px] relative"
-      ref={scrollRef}
-    >
-      <div className="overflow-auto h-full">
-        <div
-          className={cn('pb-[200px] pt-4 md:pt-10 relative', className)}
-          ref={messagesRef}
-        >
+    <div className="w-full max-w-3xl flex flex-col h-full overflow-hidden">
+      <div
+        className="flex-1 overflow-y-auto hide-scrollbar"
+        ref={scrollRef}
+      >
+        <div className={cn("pt-4 md:pt-10", className)} ref={messagesRef}>
           <div>
             {renderContent()}
             <div className="w-full h-px" ref={visibilityRef} />
@@ -346,10 +348,12 @@ function ChatCore({ id, chat, className, session, missingKeys }: ChatProps) {
 
           {isFeatureToggleEnabled('rightSideOverviewCard') && (
             <div
-              className="hidden lg:block fixed top-20 right-10 w-[350px]"
+              className="hidden lg:block fixed top-20 w-[350px]"
               style={{
                 position: 'fixed',
-                zIndex: 40
+                zIndex: 40,
+                right: isSidebarContentOpen ? '370px' : '10px',
+                transition: 'right 300ms ease-in-out'
               }}
             >
               <div
@@ -391,7 +395,15 @@ function ChatCore({ id, chat, className, session, missingKeys }: ChatProps) {
 export const Chat = ({ ...chatProps }: ChatProps) => (
   <KvContextProvider chat={chatProps.chat}>
     <CampaignContextProvider>
-      <ChatCore {...chatProps} />
+      <SidebarContentProvider>
+        <ActiveUIProvider>
+          <SidebarBridge />
+          <div className="relative w-full h-full flex justify-center">
+            <ChatCore {...chatProps} />
+            <DynamicSidebar />
+          </div>
+        </ActiveUIProvider>
+      </SidebarContentProvider>
     </CampaignContextProvider>
   </KvContextProvider>
 )

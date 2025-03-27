@@ -26,8 +26,36 @@ module.exports = {
         hostname: '*.xx.fbcdn.net',
         port: '',
         pathname: '/**'
+      },
+      // Add Facebook business domain for creative previews
+      {
+        protocol: 'https',
+        hostname: 'business.facebook.com',
+        port: '',
+        pathname: '/**'
+      },
+      // Add Facebook generic domain
+      {
+        protocol: 'https',
+        hostname: '*.facebook.com',
+        port: '',
+        pathname: '/**'
       }
     ],
+  },
+  // Add header configuration to allow iframes from Facebook domains
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: `frame-ancestors 'self' *.facebook.com facebook.com *.xx.fbcdn.net business.facebook.com;`,
+          },
+        ],
+      },
+    ];
   },
   reactStrictMode: false,
   experimental: {

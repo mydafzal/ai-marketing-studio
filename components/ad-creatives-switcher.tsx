@@ -8,11 +8,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { CampaignContext } from '@/components/contexts/campaign-context'
-import * as Collapsible from '@radix-ui/react-collapsible';
-import { ChevronDown, Settings2, PlusCircle, Edit2, EyeOff, Eye, ImageIcon, Film } from 'lucide-react';
+import { Settings2, PlusCircle, Edit2, EyeOff, Eye, ImageIcon, Film } from 'lucide-react';
 import { getCampaignIdFromUrl } from "@/lib/api/fasty-bot/helpers/campaign-id-from-url-helper";
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+
 // Enhanced VideoPlayer component that supports aspect ratio detection
 const EnhancedVideoPlayer = ({ 
   videoId,
@@ -50,8 +50,8 @@ const EnhancedVideoPlayer = ({
               if (videoHeight > videoWidth) {
                 setAspectRatio('9/16');
               } else {
-            }
-              setAspectRatio('16/9');
+                setAspectRatio('16/9');
+              }
             }
           };
         }
@@ -117,10 +117,6 @@ type AdsetWithCreatives = {
   creatives: Creative[];
 }
 
-interface OpenSectionsState {
-  [key: string]: boolean;
-}
-
 const AdCreativesSwitcher = () => {
   const { submitUserMessage } = useActions()
   const [_, setMessages] = useUIState<typeof AI>()
@@ -134,18 +130,11 @@ const AdCreativesSwitcher = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
   const { campaign, adset: selectedAdset } = useContext(CampaignContext)
-
-  const [openSections, setOpenSections] = React.useState<OpenSectionsState>(() => {
-    if (!selectedAdset?.id) return {};
-    return { [selectedAdset.id]: true };
-  });
-
-  const toggleSection = (adsetId: string): void => {
-    setOpenSections((prev: OpenSectionsState) => ({
-      ...prev,
-      [adsetId]: !prev[adsetId]
-    }));
-  };
+  
+  // Current creative index state
+  const [currentCreativeIndex, setCurrentCreativeIndex] = useState<number>(0);
+  // All creatives flattened
+  const [flatCreatives, setFlatCreatives] = useState<Creative[]>([]);
   
   const getImageDetail = (imageHash: string) => {
     fetch(`/api/fasty-bot/proxy-get-image-detail?image_hash=${imageHash}`)
@@ -189,7 +178,7 @@ const AdCreativesSwitcher = () => {
         }
         const data = await response.json();
 
-       const groupedData: Record<string, Creative[]> = data?.data?.data.reduce((acc: Record<string, Creative[]>, item: any) => {
+        const groupedData: Record<string, Creative[]> = data?.data?.data.reduce((acc: Record<string, Creative[]>, item: any) => {
           const { adset_id, creative } = item;
           if (!acc[adset_id]) {
             acc[adset_id] = [];
@@ -212,6 +201,10 @@ const AdCreativesSwitcher = () => {
         }));
 
         setCreatives(adsetWithCreatives);
+        
+        // Flatten all creatives for the carousel view
+        const allCreatives = adsetWithCreatives.flatMap(adset => adset.creatives);
+        setFlatCreatives(allCreatives);
       } catch (err) {
         setError('Error fetching creatives. Please try again later.');
         console.error('Error fetching creatives:', err);
@@ -225,9 +218,7 @@ const AdCreativesSwitcher = () => {
 
   const togglePublish = async (id: number) => {
     try {
-      const creative = creatives
-        .flatMap(adset => adset.creatives)
-        .find(creative => creative.id === id);
+      const creative = flatCreatives.find(creative => creative.id === id);
       
       const response = await fetch('/api/fasty-bot/proxy-update-adcreative', {
         method: 'POST',
@@ -254,6 +245,7 @@ const AdCreativesSwitcher = () => {
 
       const updatedCreative = await response.json();
 
+      // Update both state arrays
       setCreatives(prevCreatives =>
         prevCreatives.map(adset => ({
           ...adset,
@@ -261,6 +253,12 @@ const AdCreativesSwitcher = () => {
             creative.id === id ? { ...creative, status: updatedCreative.status } : creative
           ),
         }))
+      );
+      
+      setFlatCreatives(prevCreatives => 
+        prevCreatives.map(creative => 
+          creative.id === id ? { ...creative, status: updatedCreative.status } : creative
+        )
       );
     } catch (error) {
       console.error('Error toggling publish status:', error);
@@ -309,13 +307,46 @@ const AdCreativesSwitcher = () => {
 
       const updatedCreative = await response.json();
 
+      // Update both state arrays
       setCreatives(prevCreatives =>
         prevCreatives.map(adset => ({
           ...adset,
           creatives: adset.creatives.map(creative =>
-            creative.id === editingCreative.id ? { ...creative, status: updatedCreative.status } : creative
+            creative.id === editingCreative.id ? { 
+              ...creative, 
+              name: editName,
+              status: updatedCreative.status,
+              object_story_spec: {
+                ...creative.object_story_spec,
+                video_data: creative.object_story_spec.video_data 
+                  ? { ...creative.object_story_spec.video_data, message: editMessage }
+                  : undefined,
+                link_data: creative.object_story_spec.link_data
+                  ? { ...creative.object_story_spec.link_data, message: editMessage }
+                  : undefined,
+              }
+            } : creative
           ),
         }))
+      );
+      
+      setFlatCreatives(prevCreatives => 
+        prevCreatives.map(creative => 
+          creative.id === editingCreative.id ? { 
+            ...creative, 
+            name: editName,
+            status: updatedCreative.status,
+            object_story_spec: {
+              ...creative.object_story_spec,
+              video_data: creative.object_story_spec.video_data 
+                ? { ...creative.object_story_spec.video_data, message: editMessage }
+                : undefined,
+              link_data: creative.object_story_spec.link_data
+                ? { ...creative.object_story_spec.link_data, message: editMessage }
+                : undefined,
+            }
+          } : creative
+        )
       );
 
       setEditingCreative(null);
@@ -334,13 +365,23 @@ const AdCreativesSwitcher = () => {
       true
     )
     setMessages(currentMessages => [...currentMessages, responseMessage])
-  }
-  // Function to get the display name of an adset (without IDs)
-  const getAdsetDisplayName = (adsetId: string): string => {
-    if (!selectedAdset) return "Ad Set";
-    if (selectedAdset.id === adsetId) return selectedAdset.name || "Ad Set";
-    return "Ad Set";
   };
+  
+  // Navigation functions
+  const nextCreative = () => {
+    if (flatCreatives.length === 0) return;
+    setCurrentCreativeIndex((prevIndex) => 
+      prevIndex === flatCreatives.length - 1 ? 0 : prevIndex + 1
+    );
+  };
+  
+  const prevCreative = () => {
+    if (flatCreatives.length === 0) return;
+    setCurrentCreativeIndex((prevIndex) => 
+      prevIndex === 0 ? flatCreatives.length - 1 : prevIndex - 1
+    );
+  };
+  
   // Extract the clean creative name (removing IDs)
   const getCleanCreativeName = (name: string): string => {
     // Remove any ID-like patterns from the name
@@ -374,6 +415,9 @@ const AdCreativesSwitcher = () => {
       </div>
     );
   }
+  
+  // Single creative carousel view
+  const currentCreative = flatCreatives[currentCreativeIndex];
 
   return (
     <div className="flex flex-col h-full bg-white dark:bg-zinc-900 shadow-lg rounded-xl overflow-hidden">
@@ -384,7 +428,11 @@ const AdCreativesSwitcher = () => {
           </div>
           <div>
             <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">Ad Creative Gallery</h1>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">Manage and edit your ad creatives</p>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">
+              {flatCreatives.length > 0 
+                ? `${currentCreativeIndex + 1} of ${flatCreatives.length} creatives` 
+                : "No creatives found"}
+            </p>
           </div>
         </div>
         <Button 
@@ -397,173 +445,130 @@ const AdCreativesSwitcher = () => {
       </header>
 
       <main className="flex-grow p-6 overflow-y-auto bg-zinc-50 dark:bg-zinc-900">
-        <div className="space-y-4 max-w-7xl mx-auto">
-          {creatives.length === 0 ? (
-            <div className="text-center py-12 bg-white dark:bg-zinc-800 rounded-lg shadow-sm">
-              <div className="mx-auto w-16 h-16 bg-zinc-100 dark:bg-zinc-700 rounded-full flex items-center justify-center mb-4">
-                <ImageIcon className="w-8 h-8 text-zinc-400" />
-              </div>
-              <h3 className="text-lg font-medium text-zinc-800 dark:text-zinc-200">No Creatives Found</h3>
-              <p className="text-zinc-500 dark:text-zinc-400 mt-2 max-w-md mx-auto">
-                Create your first ad creative to get started with your campaign.
-              </p>
+        {flatCreatives.length === 0 ? (
+          <div className="text-center py-12 bg-white dark:bg-zinc-800 rounded-lg shadow-sm">
+            <div className="mx-auto w-16 h-16 bg-zinc-100 dark:bg-zinc-700 rounded-full flex items-center justify-center mb-4">
+              <ImageIcon className="w-8 h-8 text-zinc-400" />
+            </div>
+            <h3 className="text-lg font-medium text-zinc-800 dark:text-zinc-200">No Creatives Found</h3>
+            <p className="text-zinc-500 dark:text-zinc-400 mt-2 max-w-md mx-auto">
+              Create your first ad creative to get started with your campaign.
+            </p>
+            <Button 
+              onClick={addNewCreative} 
+              className="mt-4"
+            >
+              Create Your First Creative
+            </Button>
+          </div>
+        ) : (
+          <div className="max-w-3xl mx-auto">
+            {/* Navigation buttons */}
+            <div className="flex justify-between mb-6">
               <Button 
-                onClick={addNewCreative} 
-                className="mt-4"
+                variant="outline" 
+                onClick={prevCreative} 
+                className="rounded-full w-10 h-10 p-0 flex items-center justify-center"
               >
-                Create Your First Creative
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+              </Button>
+              
+              <div className="flex items-center gap-2">
+                <Badge 
+                  className={
+                    currentCreative?.status === 'ACTIVE' 
+                      ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" 
+                      : "bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300"
+                  }
+                >
+                  {currentCreative?.status === 'ACTIVE' ? 'Active' : 'Inactive'}
+                </Badge>
+                <Button 
+                  variant={currentCreative?.status === 'ACTIVE' ? 'destructive' : 'default'}
+                  size="sm"
+                  onClick={() => togglePublish(currentCreative?.id)}
+                  className={cn(
+                    currentCreative?.status !== 'ACTIVE' && "bg-green-600 hover:bg-green-700"
+                  )}
+                >
+                  {currentCreative?.status === 'ACTIVE' ? (
+                    <>
+                      <EyeOff className="w-3.5 h-3.5 mr-1.5" />
+                      Pause
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="w-3.5 h-3.5 mr-1.5" />
+                      Activate
+                    </>
+                  )}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => handleEdit(currentCreative)}
+                >
+                  <Edit2 className="w-3.5 h-3.5 mr-1.5" />
+                  Edit
+                </Button>
+              </div>
+              
+              <Button 
+                variant="outline" 
+                onClick={nextCreative} 
+                className="rounded-full w-10 h-10 p-0 flex items-center justify-center"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
               </Button>
             </div>
-          ) : (
-            creatives.map(adset => (
-              <Collapsible.Root 
-                key={adset.adset_id} 
-                className="bg-white dark:bg-zinc-800 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-700 overflow-hidden"
-                open={openSections[adset.adset_id]}
-                onOpenChange={() => toggleSection(adset.adset_id)}
-              >
-                <Collapsible.Trigger className="w-full">
-                  <div className="flex items-center justify-between p-4 hover:bg-zinc-50 dark:hover:bg-zinc-750 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <ChevronDown 
-                        className={`w-5 h-5 text-zinc-400 transition-transform duration-200 ${
-                          openSections[adset.adset_id] 
-                            ? 'rotate-0' 
-                            : '-rotate-90'
-                        }`} 
+            
+            {/* Creative content */}
+            <div className="bg-white dark:bg-zinc-800 rounded-xl overflow-hidden shadow-sm border border-zinc-200 dark:border-zinc-700">
+              <div className="relative">
+                {currentCreative?.object_type === 'VIDEO' ? (
+                  <EnhancedVideoPlayer 
+                    videoId={currentCreative?.object_story_spec?.video_data?.video_id || ''}
+                    autoPlay={true}
+                  />
+                ) : (
+                  <div className="aspect-video bg-zinc-100 dark:bg-zinc-800 relative overflow-hidden">
+                    {currentCreative?.thumbnail_url ? (
+                      <img
+                        src={currentCreative?.thumbnail_url}
+                        alt={getCleanCreativeName(currentCreative?.name || '')}
+                        className="w-full h-full object-contain"
                       />
-                      <div className="text-left">
-                        <h3 className="font-medium text-zinc-800 dark:text-zinc-200">
-                          {getAdsetDisplayName(adset.adset_id)}
-                        </h3>
-                        <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                          {adset.creatives.length} {adset.creatives.length === 1 ? 'Creative' : 'Creatives'}
-                        </p>
+                    ) : (
+                      <div className="flex items-center justify-center h-full">
+                        <ImageIcon className="w-8 h-8 text-zinc-400" />
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 border-green-200 dark:border-green-800">
-                        {adset.creatives.filter(c => c.status === 'ACTIVE').length} Active
-                      </Badge>
-                      <Badge variant="outline" className="bg-zinc-50 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700">
-                        {adset.creatives.filter(c => c.status !== 'ACTIVE').length} Inactive
-                      </Badge>
-                    </div>
+                    )}
                   </div>
-                </Collapsible.Trigger>
-
-                <Collapsible.Content>
-                  <div className="p-5 border-t border-zinc-100 dark:border-zinc-700">
-                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                      {adset.creatives.map(creative => (
-                        <div
-                          key={creative.id}
-                          className={cn(
-                            "group bg-white dark:bg-zinc-800 rounded-xl overflow-hidden transition-all border",
-                            creative.status === 'ACTIVE' 
-                              ? "border-green-200 dark:border-green-800 shadow-sm" 
-                              : "border-zinc-200 dark:border-zinc-700"
-                          )}
-                        >
-                          <div className="relative">
-                            {creative.object_type === 'VIDEO' ? (
-                              <EnhancedVideoPlayer 
-                                videoId={creative.object_story_spec?.video_data?.video_id || ''}
-                                autoPlay={true}
-                              />
-                            ) : (
-                              <div className="aspect-video bg-zinc-100 dark:bg-zinc-800 relative overflow-hidden">
-                                {creative.thumbnail_url ? (
-                                  <img
-                                    src={creative.thumbnail_url}
-                                    alt={getCleanCreativeName(creative.name)}
-                                    className="w-full h-full object-contain"
-                                  />
-                                ) : (
-                                  <div className="flex items-center justify-center h-full">
-                                    <ImageIcon className="w-8 h-8 text-zinc-400" />
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                            
-                            {/* Status indicator */}
-                            <div className="absolute top-3 left-3">
-                              <Badge 
-                                className={cn(
-                                  "text-xs font-medium",
-                                  creative.status === 'ACTIVE' 
-                                    ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" 
-                                    : "bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300"
-                                )}
-                              >
-                                {creative.status === 'ACTIVE' ? 'Active' : 'Inactive'}
-                              </Badge>
-                            </div>
-                            
-                            {/* Type indicator */}
-                            <div className="absolute top-3 right-3">
-                              <Badge 
-                                variant="outline" 
-                                className="bg-white/80 dark:bg-black/50 backdrop-blur-sm text-xs font-medium"
-                              >
-                                {creative.object_type === 'VIDEO' ? 'Video' : 'Image'}
-                              </Badge>
-                            </div>
-                          </div>
-                          
-                          <div className="p-4">
-                            <h5 className="font-medium text-zinc-800 dark:text-zinc-200 mb-2 line-clamp-1">
-                              {getCleanCreativeName(creative.name)}
-                            </h5>
-                            <p className="text-sm text-zinc-600 dark:text-zinc-400 line-clamp-2 min-h-[2.5rem]">
-                              {creative.object_type === 'VIDEO' && creative.object_story_spec?.video_data?.message}
-                              {creative.object_type === 'SHARE' && creative.object_story_spec?.link_data?.message}
-                            </p>
-                            
-                            {/* Action buttons */}
-                            <div className="flex justify-between mt-4 pt-3 border-t border-zinc-100 dark:border-zinc-700">
-                              <Button
-                                onClick={() => handleEdit(creative)}
-                                variant="outline"
-                                size="sm"
-                                className="flex-1 mr-2"
-                              >
-                                <Edit2 className="w-3.5 h-3.5 mr-1.5" />
-                                Edit
-                              </Button>
-                              <Button
-                                onClick={() => togglePublish(creative.id)}
-                                variant={creative.status === 'ACTIVE' ? 'destructive' : 'default'}
-                                size="sm"
-                                className={cn(
-                                  "flex-1",
-                                  creative.status !== 'ACTIVE' && "bg-green-600 hover:bg-green-700"
-                                )}
-                              >
-                                {creative.status === 'ACTIVE' ? (
-                                  <>
-                                    <EyeOff className="w-3.5 h-3.5 mr-1.5" />
-                                    Pause
-                                  </>
-                                ) : (
-                                  <>
-                                    <Eye className="w-3.5 h-3.5 mr-1.5" />
-                                    Activate
-                                  </>
-                                )}
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </Collapsible.Content>
-              </Collapsible.Root>
-            ))
-          )}
-        </div>
+                )}
+                
+                {/* Type indicator */}
+                <div className="absolute top-3 right-3">
+                  <Badge 
+                    variant="outline" 
+                    className="bg-white/80 dark:bg-black/50 backdrop-blur-sm text-xs font-medium"
+                  >
+                    {currentCreative?.object_type === 'VIDEO' ? 'Video' : 'Image'}
+                  </Badge>
+                </div>
+              </div>
+              
+              <div className="p-5">
+                <h3 className="text-lg font-medium text-zinc-800 dark:text-zinc-200 mb-2">
+                  {getCleanCreativeName(currentCreative?.name || '')}
+                </h3>
+                <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-4">
+                  {currentCreative?.object_type === 'VIDEO' && currentCreative?.object_story_spec?.video_data?.message}
+                  {currentCreative?.object_type === 'SHARE' && currentCreative?.object_story_spec?.link_data?.message}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
 
       <Dialog 

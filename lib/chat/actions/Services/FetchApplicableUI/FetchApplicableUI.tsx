@@ -18,8 +18,11 @@ import {createCampaign} from '@/lib/api/fasty-bot/create-campaign'
 import {GeographicalLocation} from '@/components/geographical-location';
 import {SuggestedFilters} from '@/components/suggested-filters';
 import LeadsCountUI from '@/components/campaign-leads-count'
-import AdCreativesComparison from '@/components/stocks/campaignresults-creatives';
 import AICampaignAnalysisBoard from "@/components/ai-campaign-analysis-board";
+import { SidebarContentWrapper } from '@/components/sidebar-content-wrapper';
+
+// Import only what we need for server component import below
+import dynamic from 'next/dynamic';
 
 interface ToolResult {
     toolName: string;
@@ -49,15 +52,12 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                     </>
                                 );
                             case 'getCampaignCreativeResults':
+                                // Only render the BotCard message in the chat
+                                // The server component will handle loading and displaying in sidebar
                                 return (
-                                    <>
-                                        <BotCard key={tool.toolCallId}>
-                                            <AdCreativesComparison campaignId={tool.result.campaignId} />
-                                        </BotCard>
-                                        <div className="my-4">
-                                            {tool.result.guideForUser ?? ''}
-                                        </div>
-                                    </>
+                                    <BotCard key={tool.toolCallId}>
+                                        <p>Campaign creative performance metrics are now displayed in the sidebar. You can analyze which ads are performing best and make adjustments as needed.</p>
+                                    </BotCard>
                                 );
                             case 'showAdBudgetUI':
                                 return (
@@ -145,17 +145,33 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                     </BotCard>
                                 )
                             case 'showAdsetConnectionUI':
+                                // Use sidebar instead of chat
                                 return (
-                                    <BotCard key={tool.toolCallId}>
-                                        <ConnectAdset {...tool.result} toolCallId={tool.toolCallId}/>
-                                    </BotCard>
-                                )
+                                    <>
+                                        <SidebarContentWrapper 
+                                            content={<ConnectAdset {...tool.result} toolCallId={tool.toolCallId}/>}
+                                            title="Connect Ad Set"
+                                            onMount={true}
+                                        />
+                                        <BotCard key={tool.toolCallId}>
+                                            <p>The ad set selection interface is now available in the sidebar. You can choose which ad set to connect to this chat.</p>
+                                        </BotCard>
+                                    </>
+                                );
                             case 'showPlacementTargetingUI':
+                                // Use sidebar instead of chat
                                 return (
-                                    <BotCard key={tool.toolCallId}>
-                                        <PlacementTargeting {...tool.result} toolCallId={tool.toolCallId}/>
-                                    </BotCard>
-                                )
+                                    <>
+                                        <SidebarContentWrapper 
+                                            content={<PlacementTargeting {...tool.result} toolCallId={tool.toolCallId}/>}
+                                            title="Placement Targeting"
+                                            onMount={true}
+                                        />
+                                        <BotCard key={tool.toolCallId}>
+                                            <p>Placement targeting options are now available in the sidebar. You can configure where your ads will be displayed.</p>
+                                        </BotCard>
+                                    </>
+                                );
                             case 'showFormBuilder':
                                 return (
                                     <BotCard key={tool.toolCallId}>
@@ -163,23 +179,46 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                     </BotCard>
                                 )
                             case 'showGeographicalLocationUI':
+                                // Use sidebar instead of chat
                                 return (
-                                    <BotCard key={tool.toolCallId}>
-                                        <GeographicalLocation
-                                            toolCallId={tool.toolCallId}
-                                            uiProps={tool.result.uiProps}
-                                            isReadOnly={!!tool.result.uiProps}
+                                    <>
+                                        <SidebarContentWrapper 
+                                            content={
+                                                <GeographicalLocation
+                                                    toolCallId={tool.toolCallId}
+                                                    uiProps={tool.result.uiProps}
+                                                    isReadOnly={!!tool.result.uiProps}
+                                                />
+                                            }
+                                            title="Geographical Targeting"
+                                            onMount={true}
                                         />
-                                    </BotCard>
-                                )
+                                        <BotCard key={tool.toolCallId}>
+                                            <p>Geographical targeting options are now available in the sidebar. You can select regions where your ads will be shown.</p>
+                                        </BotCard>
+                                    </>
+                                );
                             case 'showSuggestedFilters':
+                                // Use sidebar instead of chat
                                 return (
-                                    <BotCard key={tool.toolCallId}>
-                                        <SuggestedFilters toolCallId={tool.toolCallId}
-                                                          suggestedFitlers={tool.result.suggestedFitlers}
-                                                          uiProps={tool.result.uiProps} isReadOnly/>
-                                    </BotCard>
-                                )
+                                    <>
+                                        <SidebarContentWrapper 
+                                            content={
+                                                <SuggestedFilters 
+                                                    toolCallId={tool.toolCallId}
+                                                    suggestedFitlers={tool.result.suggestedFitlers}
+                                                    uiProps={tool.result.uiProps} 
+                                                    isReadOnly
+                                                />
+                                            }
+                                            title="Suggested Audience Filters"
+                                            onMount={true}
+                                        />
+                                        <BotCard key={tool.toolCallId}>
+                                            <p>Suggested audience filters are now available in the sidebar. You can refine your audience targeting from there.</p>
+                                        </BotCard>
+                                    </>
+                                );
                             case 'showSupervisedTaskUI':
                                 return (
                                     <>
@@ -189,11 +228,13 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                     </>
                                 );
                             case 'showAdCreativesSwitcher':
+                                // Only render the BotCard message in the chat
+                                // Avoid auto-mounting
                                 return (
                                     <BotCard key={tool.toolCallId}>
-                                        <AdCreativesSwitcher {...tool.result} toolCallId={tool.toolCallId}/>
+                                        <p>The ad creatives manager is now available in the sidebar. You can manage your campaign&apos;s ad creatives from there.</p>
                                     </BotCard>
-                                )
+                                );
                             case 'showLeadsCountUI':
                                 return (
                                     <BotCard key={tool.toolCallId}>
@@ -201,11 +242,19 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                     </BotCard>
                                 )
                             case 'getAICampaignAnalysis':
+                                // Use sidebar instead of chat
                                 return (
-                                    <BotCard key={tool.toolCallId}>
-                                        <AICampaignAnalysisBoard campaignId={tool.result.campaignId} isActive={false} />
-                                    </BotCard>
-                                )
+                                    <>
+                                        <SidebarContentWrapper 
+                                            content={<AICampaignAnalysisBoard campaignId={tool.result.campaignId} isActive={false} />}
+                                            title="AI Campaign Analysis"
+                                            onMount={true}
+                                        />
+                                        <BotCard key={tool.toolCallId}>
+                                            <p>AI campaign analysis is now available in the sidebar. Review the detailed performance metrics and recommendations to optimize your campaign.</p>
+                                        </BotCard>
+                                    </>
+                                );
                             default:
                                 return null;
                         }

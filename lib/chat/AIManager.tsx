@@ -25,6 +25,7 @@ import showAdCreativesSwitcher from "@/components/ad-creatives-switcher"
 // NEW: import our tools
 import showAiVideoGenerator from "@/components/stocks/ai-video-generator/server"
 import showCreateCampaignScreen from "@/components/stocks/create-campaign-screen/server"
+import showSupportComponent from "@/components/stocks/support/server"
 
 export type AIState = {
   chatId: string
@@ -81,6 +82,13 @@ function defineChatActions() {
     // NEW: Campaign Creation Tool
     showCreateCampaignScreen: async () => {
       return showCreateCampaignScreen()
+    },
+    
+    // Support Component
+    showSupportComponent: async () => {
+      return showSupportComponent({
+        title: "Reeply AI Support"
+      })
     }
   }
 }
