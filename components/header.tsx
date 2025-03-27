@@ -66,12 +66,12 @@ async function UserOrLogin() {
           <div className="flex justify-between w-full">
             <UserMenu user={session.user} />
             <div className="flex items-center">
-              <Link href="/" className={cn(buttonVariants({ variant: 'ghost' }), 'ml-8 text-text-white hover:bg-light-container')}>
+              <Link href="/" className={cn(buttonVariants({ variant: 'ghost' }), 'ml-8 text-text-white hover:text-primary-green hover:bg-dark-bg')}>
                 AI Marketer
               </Link>
               <Link
                 href="/ai-content"
-                className={cn(buttonVariants({ variant: 'ghost' }), 'ml-8 text-text-white hover:bg-light-container')}
+                className={cn(buttonVariants({ variant: 'ghost' }), 'ml-8 text-text-white hover:text-primary-green hover:bg-dark-bg')}
               >
                 AI Creatives Generator
               </Link>
