@@ -3,7 +3,20 @@ import * as Dialog from "@radix-ui/react-dialog"
 import {type User} from '@/lib/types'
 import {Cross2Icon} from "@radix-ui/react-icons"
 import {Button} from '@/components/ui/button'
-import {AlertCircle, CheckCircle2, Loader2, User as UserIcon} from 'lucide-react'
+import {
+  AlertCircle, 
+  ArrowLeft, 
+  ArrowRight, 
+  CheckCircle2, 
+  Clock, 
+  Globe, 
+  Loader2, 
+  Search, 
+  Target, 
+  User as UserIcon, 
+  FileText, 
+  CheckCheck
+} from 'lucide-react'
 import {cn} from '@/lib/utils'
 
 type Details = {
@@ -45,17 +58,216 @@ type OnboardingProps = {
 }
 
 const GOAL_OPTIONS = {
-        GENERATE_LEADS: "I want to generate more leads",
-        RECRUIT_EMPLOYEES: "I want to recruit employees",
-        INCREASE_CONVERSIONS: "I want to increase conversions",
-    } as const;
+    GENERATE_LEADS: "I want to generate more leads",
+    RECRUIT_EMPLOYEES: "I want to recruit employees",
+    INCREASE_CONVERSIONS: "I want to increase conversions",
+} as const;
+
+const STEPS = [
+    { id: 'personal', title: 'Personal Information', fields: ['first_name', 'last_name'] },
+    { id: 'company', title: 'Company Information', fields: ['company_name', 'company_description'] },
+    { id: 'website', title: 'Website Details', fields: ['website_link', 'privacy_policy_link'] },
+    { id: 'preferences', title: 'Preferences', fields: ['preferred_language'] },
+    { id: 'confirm', title: 'Confirm & Save', fields: [] },
+];
+
+// Benefits panel component for the right side of the dialog
+const BenefitsPanel = ({ currentStep }: { currentStep: number }) => {
+  switch(currentStep) {
+    case 0: // Personal Information
+      return (
+        <div className="space-y-6">
+          <div className="bg-[#1A1D29] rounded-xl border border-gray-700 p-6">
+            <div className="flex items-center gap-3 mb-3">
+              <Clock className="size-5 text-[#4BF29C]" />
+              <h3 className="text-lg font-semibold text-white">30x Faster Campaign Creation</h3>
+            </div>
+            <p className="text-gray-300 mb-4">
+              Traditional campaign setup takes 30+ minutes. Reeply AI does it all automatically in seconds.
+            </p>
+            <div className="flex items-center justify-between bg-[#151925] p-3 rounded-lg">
+              <div className="flex items-center gap-2">
+                <div className="text-gray-400">Traditional:</div>
+                <div className="text-white font-medium">30+ min</div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="text-gray-400">Reeply AI:</div>
+                <div className="text-[#4BF29C] font-semibold">60 sec</div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-[#151925] rounded-xl border border-gray-700 p-6">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="flex">
+                {[1, 2, 3, 4, 5].map(star => (
+                  <svg key={star} className="w-4 h-4 text-[#4BF29C]" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                  </svg>
+                ))}
+              </div>
+            </div>
+            <p className="text-white italic mb-4">
+              &ldquo;We now generate 80% of our leads through campaigns managed with Reeply AI. Thanks to the consistently excellent support, we look forward to planning and executing more projects with Max and Reeply AI in the future.&rdquo;
+            </p>
+            <div className="flex items-center gap-3">
+              <img src="/Christian.png" alt="Christian Schmitt" className="w-8 h-8 rounded-full object-cover" />
+              <div>
+                <div className="text-white text-sm font-medium">Christian Schmitt</div>
+                <div className="text-gray-400 text-xs">Business owner at Boldbrands</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+      
+    case 1: // Company Information
+      return (
+        <div className="space-y-6">
+          <div className="bg-[#1A1D29] rounded-xl border border-gray-700 p-6">
+            <div className="flex items-center gap-3 mb-3">
+              <Search className="size-5 text-[#4BF29C]" />
+              <h3 className="text-lg font-semibold text-white">Smart Website Analysis</h3>
+            </div>
+            <p className="text-gray-300">
+              Reeply AI scans your website URL to understand your business, audience, and products—automatically selecting the perfect campaign type for your goals.
+            </p>
+          </div>
+          
+          <div className="bg-[#1A1D29] rounded-xl border border-gray-700 p-6">
+            <div className="flex items-center gap-3 mb-3">
+              <FileText className="size-5 text-[#4BF29C]" />
+              <h3 className="text-lg font-semibold text-white">AI-Generated Ad Copy</h3>
+            </div>
+            <p className="text-gray-300">
+              Based on your company description, our AI writes compelling ad text that resonates with your audience and highlights your unique value proposition.
+            </p>
+          </div>
+        </div>
+      );
+      
+    case 2: // Website Details
+      return (
+        <div className="space-y-6">
+          <div className="bg-[#1A1D29] rounded-xl border border-gray-700 p-6">
+            <h3 className="text-lg font-semibold text-white mb-4">Streamlined Process</h3>
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-[#151925] flex items-center justify-center text-white">1</div>
+                <div>
+                  <div className="text-white font-medium">Website Link</div>
+                  <div className="text-gray-400 text-sm">You provide your website</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-[#151925] flex items-center justify-center text-white">2</div>
+                <div>
+                  <div className="text-white font-medium">Smart Analysis</div>
+                  <div className="text-gray-400 text-sm">AI analyzes your website</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-[#151925] flex items-center justify-center text-white">3</div>
+                <div>
+                  <div className="text-white font-medium">Ad Creation</div>
+                  <div className="text-gray-400 text-sm">AI creates your ad campaign</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-[#151925] flex items-center justify-center text-white">4</div>
+                <div>
+                  <div className="text-white font-medium">Lead Generation</div>
+                  <div className="text-gray-400 text-sm">You get leads immediately</div>
+                </div>
+              </div>
+            </div>
+            <div className="mt-4 pt-4 border-t border-gray-700">
+              <div className="flex justify-between items-center">
+                <div className="text-gray-400">Traditional:</div>
+                <div className="text-white">30-60+ min</div>
+              </div>
+              <div className="flex justify-between items-center">
+                <div className="text-gray-400">Reeply AI:</div>
+                <div className="text-[#4BF29C] font-semibold">Under 60 sec</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+      
+    case 3: // Preferences
+      return (
+        <div className="space-y-6">
+          <div className="bg-[#1A1D29] rounded-xl border border-gray-700 p-6">
+            <div className="flex items-center gap-3 mb-3">
+              <Globe className="size-5 text-[#4BF29C]" />
+              <h3 className="text-lg font-semibold text-white">Intelligent Geo-Targeting</h3>
+            </div>
+            <p className="text-gray-300">
+              Reeply AI determines optimal geolocation targeting from your website and profile preferences, ensuring your ads reach the right audience in the right locations.
+            </p>
+          </div>
+          
+          <div className="bg-[#1A1D29] rounded-xl border border-gray-700 p-6">
+            <div className="flex items-center gap-3 mb-3">
+              <Target className="size-5 text-[#4BF29C]" />
+              <h3 className="text-lg font-semibold text-white">Advanced Audience Targeting</h3>
+            </div>
+            <p className="text-gray-300">
+              Our AI agent researches the best potential filters on Meta Ads to target your ideal audience, finding hidden opportunities other marketers might miss.
+            </p>
+          </div>
+        </div>
+      );
+      
+    case 4: // Confirmation
+      return (
+        <div className="space-y-6">
+          <div className="bg-[#1A1D29] rounded-xl border border-[#4BF29C]/30 p-6">
+            <div className="flex flex-col items-center text-center gap-3 mb-6">
+              <div className="w-16 h-16 rounded-full bg-[#4BF29C]/20 flex items-center justify-center">
+                <CheckCheck className="size-8 text-[#4BF29C]" />
+              </div>
+              <h3 className="text-xl font-semibold text-white">Your Profile is Ready!</h3>
+              <p className="text-gray-300">
+                You&apos;re all set to create your first AI-powered campaign in 60 seconds.
+              </p>
+            </div>
+            
+            <div className="bg-[#151925] rounded-lg p-4">
+              <div className="flex">
+                {[1, 2, 3, 4, 5].map(star => (
+                  <svg key={star} className="w-4 h-4 text-[#4BF29C]" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                  </svg>
+                ))}
+              </div>
+              <p className="text-white italic my-3">
+                &ldquo;I loved working with the Reeply team - dedicated, patient, professional. They are experienced and were able to jump in to problem solve, no matter how big or small the problem. I enjoyed using the Reeply platform to help me get started on my Meta ads journey. It&apos;s simple and easy to use. They helped me to launch my very first lead generation, awareness, and conversion ads. It was easy to see all my campaign results in one handy interface. I managed to gain half a million views on one of my videos in just a few days. I also gained a lot of insights on what kind of ads worked, and what didn&apos;t work. Thank you Reeply.&rdquo;
+              </p>
+              <div className="flex items-center gap-3">
+                <img src="/lin.png" alt="Lin Loke" className="w-8 h-8 rounded-full object-cover" />
+                <div>
+                  <div className="text-white text-sm font-medium">Lin Loke</div>
+                  <div className="text-gray-400 text-xs">Founder of Nuwa Wellness</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+      
+    default:
+      return null;
+  }
+};
 
 function Onboarding({
-                        userDetails,
-                        open,
-                        setOpen,
-                        updateOnboardingDetails
-                    }: OnboardingProps) {
+    userDetails,
+    open,
+    setOpen,
+    updateOnboardingDetails
+}: OnboardingProps) {
     const [error, setError] = React.useState<string | null>(null)
     const [inputError, setInputError] = React.useState<InputErrors>({
         first_name: "",
@@ -79,6 +291,7 @@ function Onboarding({
 
     const [dbChangeRequested, setDbChangeRequested] = React.useState(false)
     const [showSuccessMessage, setShowSuccessMessage] = React.useState(false)
+    const [currentStep, setCurrentStep] = React.useState(0)
 
     // Update states when userDetails changes
     React.useEffect(() => {
@@ -94,6 +307,49 @@ function Onboarding({
         }
     }, [userDetails])
 
+    // Validate the current step and move to the next if valid
+    const validateStep = () => {
+        if (currentStep >= STEPS.length - 1) return true;
+        
+        const currentFields = STEPS[currentStep].fields;
+        const errors: InputErrors = { ...inputError };
+        let hasErrors = false;
+        
+        currentFields.forEach(field => {
+            let value = "";
+            switch(field) {
+                case 'first_name': value = firstName; break;
+                case 'last_name': value = lastName; break;
+                case 'company_name': value = companyName; break;
+                case 'company_description': value = companyDescription; break;
+                case 'website_link': value = websiteLink; break;
+                case 'privacy_policy_link': value = privacyPolicyLink; break;
+                case 'preferred_language': value = preferredLanguage; break;
+                case 'goal': value = goal; break;
+            }
+            
+            if (!value || value.trim() === "") {
+                errors[field as keyof InputErrors] = "This field is required";
+                hasErrors = true;
+            } else {
+                errors[field as keyof InputErrors] = "";
+            }
+        });
+        
+        setInputError(errors);
+        return !hasErrors;
+    };
+
+    const handleNextStep = () => {
+        if (validateStep()) {
+            setCurrentStep(prev => Math.min(prev + 1, STEPS.length - 1));
+        }
+    };
+
+    const handlePrevStep = () => {
+        setCurrentStep(prev => Math.max(prev - 1, 0));
+    };
+
     const handleSave = async () => {
         if (userDetails) {
             const details = {
@@ -107,32 +363,57 @@ function Onboarding({
                 goal: goal
             }
 
-            const getEmptyKeys = (obj: Details): string[] => {
-                return Object.keys(obj).filter(key => obj[key as keyof Details] === null || obj[key as keyof Details] === "")
+            // Manually set goal since it's removed from the form
+            details.goal = GOAL_OPTIONS.GENERATE_LEADS;
+
+            // Validate required fields before saving
+            const requiredFields = [
+                'first_name', 'last_name', 'company_name', 'company_description', 
+                'website_link', 'privacy_policy_link', 'preferred_language'
+            ];
+            
+            const errors: InputErrors = { ...inputError };
+            let hasErrors = false;
+            
+            requiredFields.forEach(field => {
+                let value = "";
+                switch(field) {
+                    case 'first_name': value = firstName; break;
+                    case 'last_name': value = lastName; break;
+                    case 'company_name': value = companyName; break;
+                    case 'company_description': value = companyDescription; break;
+                    case 'website_link': value = websiteLink; break;
+                    case 'privacy_policy_link': value = privacyPolicyLink; break;
+                    case 'preferred_language': value = preferredLanguage; break;
+                }
+                
+                if (!value || value.trim() === "") {
+                    errors[field as keyof InputErrors] = "This field is required";
+                    hasErrors = true;
+                } else {
+                    errors[field as keyof InputErrors] = "";
+                }
+            });
+            
+            if (hasErrors) {
+                setInputError(errors);
+                
+                // Find the first step with errors and navigate to it
+                for (let i = 0; i < STEPS.length - 1; i++) {
+                    const stepFields = STEPS[i].fields;
+                    const hasStepError = stepFields.some(field => 
+                        !details[field as keyof typeof details] || 
+                        details[field as keyof typeof details]?.trim() === ""
+                    );
+                    if (hasStepError) {
+                        setCurrentStep(i);
+                        return;
+                    }
+                }
+                return;
             }
 
-            const emptyKeys: string[] = getEmptyKeys(details)
-
-            if (emptyKeys.length > 0) {
-                let errors = {
-                    first_name: "",
-                    last_name: "",
-                    company_name: "",
-                    company_description: "",
-                    website_link: "",
-                    privacy_policy_link: "",
-                    preferred_language: "",
-                    goal: "",
-                }
-                for (let i = 0; i < emptyKeys.length; i++) {
-                    errors = {...errors, [emptyKeys[i]]: "This field is required"}
-                }
-                setInputError(errors)
-                return
-            }
-            setOpen(false)
-            setDbChangeRequested(true)
-
+            setDbChangeRequested(true);
 
             const resp = await updateOnboardingDetails(userDetails?.email, details);
             if (resp.success) {
@@ -163,6 +444,363 @@ function Onboarding({
         }, 5000)
     }, [showSuccessMessage])
 
+    // Function to get the value based on field name
+    const getFieldValue = (field: string) => {
+        switch(field) {
+            case 'first_name': return firstName;
+            case 'last_name': return lastName;
+            case 'company_name': return companyName;
+            case 'company_description': return companyDescription;
+            case 'website_link': return websiteLink;
+            case 'privacy_policy_link': return privacyPolicyLink;
+            case 'preferred_language': return preferredLanguage;
+            case 'goal': return goal;
+            default: return "";
+        }
+    };
+
+    // Function to get the field error
+    const getFieldError = (field: string) => {
+        return inputError[field as keyof InputErrors];
+    };
+
+    // Function to render input based on field
+    const renderField = (field: string) => {
+        const value = getFieldValue(field);
+        const fieldError = getFieldError(field);
+
+        switch(field) {
+            case 'first_name':
+                return (
+                    <div className="space-y-2">
+                        <label htmlFor="first_name" className="text-sm font-semibold text-white">
+                            First Name
+                        </label>
+                        <input
+                            type="text"
+                            id="first_name"
+                            className={cn(
+                                "w-full px-3 py-2 rounded-lg text-sm transition-colors duration-200",
+                                "bg-[#1A1D29] dark:bg-[#1A1D29] border",
+                                fieldError
+                                    ? "border-red-500 dark:border-red-500 focus:ring-red-500"
+                                    : "border-gray-700 dark:border-gray-700 focus:border-[#4BF29C] dark:focus:border-[#4BF29C]",
+                                "focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4BF29C] dark:focus:ring-offset-[#0F1117]",
+                                "text-white"
+                            )}
+                            placeholder="Enter your first name"
+                            value={value}
+                            onChange={(e) => {
+                                if (e.target.value.length > 0) {
+                                    setInputError({...inputError, first_name: ""})
+                                }
+                                setFirstName(e.target.value)
+                            }}
+                        />
+                        {fieldError && (
+                            <p className="text-sm text-red-500 flex items-center gap-1">
+                                <AlertCircle className="size-3"/>
+                                {fieldError}
+                            </p>
+                        )}
+                    </div>
+                );
+            case 'last_name':
+                return (
+                    <div className="space-y-2">
+                        <label htmlFor="last_name" className="text-sm font-semibold text-white">
+                            Last Name
+                        </label>
+                        <input
+                            type="text"
+                            id="last_name"
+                            className={cn(
+                                "w-full px-3 py-2 rounded-lg text-sm transition-colors duration-200",
+                                "bg-[#1A1D29] dark:bg-[#1A1D29] border",
+                                fieldError
+                                    ? "border-red-500 dark:border-red-500 focus:ring-red-500"
+                                    : "border-gray-700 dark:border-gray-700 focus:border-[#4BF29C] dark:focus:border-[#4BF29C]",
+                                "focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4BF29C] dark:focus:ring-offset-[#0F1117]",
+                                "text-white"
+                            )}
+                            placeholder="Enter your last name"
+                            value={value}
+                            onChange={(e) => {
+                                if (e.target.value.length > 0) {
+                                    setInputError({...inputError, last_name: ""})
+                                }
+                                setLastName(e.target.value)
+                            }}
+                        />
+                        {fieldError && (
+                            <p className="text-sm text-red-500 flex items-center gap-1">
+                                <AlertCircle className="size-3"/>
+                                {fieldError}
+                            </p>
+                        )}
+                    </div>
+                );
+            case 'company_name':
+                return (
+                    <div className="space-y-2">
+                        <label htmlFor="company_name" className="text-sm font-semibold text-white">
+                            Company Name
+                        </label>
+                        <input
+                            type="text"
+                            id="company_name"
+                            className={cn(
+                                "w-full px-3 py-2 rounded-lg text-sm transition-colors duration-200",
+                                "bg-[#1A1D29] dark:bg-[#1A1D29] border",
+                                fieldError
+                                    ? "border-red-500 dark:border-red-500 focus:ring-red-500"
+                                    : "border-gray-700 dark:border-gray-700 focus:border-[#4BF29C] dark:focus:border-[#4BF29C]",
+                                "focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4BF29C] dark:focus:ring-offset-[#0F1117]",
+                                "text-white"
+                            )}
+                            placeholder="Enter your company name"
+                            value={value}
+                            onChange={(e) => {
+                                if (e.target.value.length > 0) {
+                                    setInputError({...inputError, company_name: ""})
+                                }
+                                setCompanyName(e.target.value)
+                            }}
+                        />
+                        {fieldError && (
+                            <p className="text-sm text-red-500 flex items-center gap-1">
+                                <AlertCircle className="size-3"/>
+                                {fieldError}
+                            </p>
+                        )}
+                    </div>
+                );
+            case 'company_description':
+                return (
+                    <div className="space-y-2">
+                        <label htmlFor="company_description" className="text-sm font-semibold text-white">
+                            Company Description
+                        </label>
+                        <p className="text-xs text-gray-400">
+                            Share your company&apos;s advertising goals and unique details that might not be on your website.
+                        </p>
+                        <textarea
+                            id="company_description"
+                            rows={4}
+                            className={cn(
+                                "w-full px-3 py-2 rounded-lg text-sm transition-colors duration-200",
+                                "bg-[#1A1D29] dark:bg-[#1A1D29] border",
+                                fieldError
+                                    ? "border-red-500 dark:border-red-500 focus:ring-red-500"
+                                    : "border-gray-700 dark:border-gray-700 focus:border-[#4BF29C] dark:focus:border-[#4BF29C]",
+                                "focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4BF29C] dark:focus:ring-offset-[#0F1117]",
+                                "resize-none text-white"
+                            )}
+                            placeholder="Please share your company's advertising goals and any unique details about your company that our AI might not be able to gather from your website."
+                            value={value}
+                            onChange={(e) => {
+                                if (e.target.value.length > 0) {
+                                    setInputError({...inputError, company_description: ""})
+                                }
+                                setCompanyDescription(e.target.value)
+                            }}
+                        />
+                        {fieldError && (
+                            <p className="text-sm text-red-500 flex items-center gap-1">
+                                <AlertCircle className="size-3"/>
+                                {fieldError}
+                            </p>
+                        )}
+                    </div>
+                );
+            case 'website_link':
+                return (
+                    <div className="space-y-2">
+                        <label htmlFor="website_link" className="text-sm font-semibold text-white">
+                            Website Link
+                        </label>
+                        <p className="text-xs text-gray-400">
+                            Our AI will analyze your website to better understand your company and provide more relevant suggestions.
+                        </p>
+                        <input
+                            type="text"
+                            id="website_link"
+                            className={cn(
+                                "w-full px-3 py-2 rounded-lg text-sm transition-colors duration-200",
+                                "bg-[#1A1D29] dark:bg-[#1A1D29] border",
+                                fieldError
+                                    ? "border-red-500 dark:border-red-500 focus:ring-red-500"
+                                    : "border-gray-700 dark:border-gray-700 focus:border-[#4BF29C] dark:focus:border-[#4BF29C]",
+                                "focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4BF29C] dark:focus:ring-offset-[#0F1117]",
+                                "text-white"
+                            )}
+                            placeholder="https://yourwebsite.com"
+                            value={value}
+                            onChange={(e) => {
+                                if (e.target.value.length > 0) {
+                                    setInputError({...inputError, website_link: ""})
+                                }
+                                setWebsiteLink(e.target.value)
+                            }}
+                        />
+                        {fieldError && (
+                            <p className="text-sm text-red-500 flex items-center gap-1">
+                                <AlertCircle className="size-3"/>
+                                {fieldError}
+                            </p>
+                        )}
+                    </div>
+                );
+            case 'privacy_policy_link':
+                return (
+                    <div className="space-y-2">
+                        <label htmlFor="privacy_policy_link" className="text-sm font-semibold text-white">
+                            Privacy Policy Link
+                        </label>
+                        <p className="text-xs text-gray-400">
+                            Please provide a link to your company&apos;s privacy policy.
+                        </p>
+                        <input
+                            type="text"
+                            id="privacy_policy_link"
+                            className={cn(
+                                "w-full px-3 py-2 rounded-lg text-sm transition-colors duration-200",
+                                "bg-[#1A1D29] dark:bg-[#1A1D29] border",
+                                fieldError
+                                    ? "border-red-500 dark:border-red-500 focus:ring-red-500"
+                                    : "border-gray-700 dark:border-gray-700 focus:border-[#4BF29C] dark:focus:border-[#4BF29C]",
+                                "focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4BF29C] dark:focus:ring-offset-[#0F1117]",
+                                "text-white"
+                            )}
+                            placeholder="https://yourwebsite.com/privacy-policy"
+                            value={value}
+                            onChange={(e) => {
+                                if (e.target.value.length > 0) {
+                                    setInputError({...inputError, privacy_policy_link: ""})
+                                }
+                                setPrivacyPolicyLink(e.target.value)
+                            }}
+                        />
+                        {fieldError && (
+                            <p className="text-sm text-red-500 flex items-center gap-1">
+                                <AlertCircle className="size-3"/>
+                                {fieldError}
+                            </p>
+                        )}
+                    </div>
+                );
+            case 'preferred_language':
+                return (
+                    <div className="space-y-2">
+                        <label htmlFor="languages" className="text-sm font-semibold text-white">
+                            Preferred Language
+                        </label>
+                        <p className="text-xs text-gray-400">
+                            Select the language you prefer for AI-generated content.
+                        </p>
+                        <select
+                            id="languages"
+                            value={value}
+                            onChange={(e) => {
+                                if (e.target.value.length > 0) {
+                                    setInputError({...inputError, preferred_language: ""})
+                                }
+                                setPreferredLanguage(e.target.value)
+                            }}
+                            className={cn(
+                                "w-full px-3 py-2 rounded-lg text-sm transition-colors duration-200",
+                                "bg-[#1A1D29] dark:bg-[#1A1D29] border",
+                                fieldError
+                                    ? "border-red-500 dark:border-red-500 focus:ring-red-500"
+                                    : "border-gray-700 dark:border-gray-700 focus:border-[#4BF29C] dark:focus:border-[#4BF29C]",
+                                "focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4BF29C] dark:focus:ring-offset-[#0F1117]",
+                                "text-white"
+                            )}
+                        >
+                            <option value="en">English</option>
+                            <option value="nl">Dutch</option>
+                            <option value="de">German</option>
+                            <option value="es">Spanish</option>
+                            <option value="it">Italian</option>
+                            <option value="fr">French</option>
+                        </select>
+                        {fieldError && (
+                            <p className="text-sm text-red-500 flex items-center gap-1">
+                                <AlertCircle className="size-3"/>
+                                {fieldError}
+                            </p>
+                        )}
+                    </div>
+                );
+            default:
+                return null;
+        }
+    };
+
+    // Render confirmation step
+    const renderConfirmation = () => {
+        return (
+            <div className="space-y-6">
+                <div className="bg-[#1A1D29] dark:bg-[#1A1D29] p-6 rounded-xl border border-gray-700">
+                    <h3 className="text-lg font-semibold text-white mb-4">Personal Information</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <p className="text-sm text-gray-400">First Name</p>
+                            <p className="text-white">{firstName}</p>
+                        </div>
+                        <div>
+                            <p className="text-sm text-gray-400">Last Name</p>
+                            <p className="text-white">{lastName}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div className="bg-[#1A1D29] dark:bg-[#1A1D29] p-6 rounded-xl border border-gray-700">
+                    <h3 className="text-lg font-semibold text-white mb-4">Company Information</h3>
+                    <div className="space-y-4">
+                        <div>
+                            <p className="text-sm text-gray-400">Company Name</p>
+                            <p className="text-white">{companyName}</p>
+                        </div>
+                        <div>
+                            <p className="text-sm text-gray-400">Company Description</p>
+                            <p className="text-white">{companyDescription}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div className="bg-[#1A1D29] dark:bg-[#1A1D29] p-6 rounded-xl border border-gray-700">
+                    <h3 className="text-lg font-semibold text-white mb-4">Website Details</h3>
+                    <div className="space-y-4">
+                        <div>
+                            <p className="text-sm text-gray-400">Website Link</p>
+                            <p className="text-white">{websiteLink}</p>
+                        </div>
+                        <div>
+                            <p className="text-sm text-gray-400">Privacy Policy Link</p>
+                            <p className="text-white">{privacyPolicyLink}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div className="bg-[#1A1D29] dark:bg-[#1A1D29] p-6 rounded-xl border border-gray-700">
+                    <h3 className="text-lg font-semibold text-white mb-4">Preferences</h3>
+                    <div>
+                        <p className="text-sm text-gray-400">Preferred Language</p>
+                        <p className="text-white">{
+                            preferredLanguage === 'en' ? 'English' :
+                            preferredLanguage === 'nl' ? 'Dutch' :
+                            preferredLanguage === 'de' ? 'German' :
+                            preferredLanguage === 'es' ? 'Spanish' :
+                            preferredLanguage === 'it' ? 'Italian' :
+                            preferredLanguage === 'fr' ? 'French' : preferredLanguage
+                        }</p>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     return (
         <>
             {showSuccessMessage && (
@@ -189,11 +827,17 @@ function Onboarding({
                 </div>
             )}
 
-            <Dialog.Root open={open} onOpenChange={() => setOpen(!open)}>
+            <Dialog.Root open={open} onOpenChange={() => {
+                if (userDetails?.defaultExtraDetails) {
+                    setOpen(!open)
+                } else {
+                    setError("Please complete your profile setup to proceed.")
+                }
+            }}>
                 <Dialog.Trigger asChild>
                     <Button
                         variant="ghost"
-                        className="w-full justify-start gap-2 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                        className="w-full justify-start gap-2 hover:bg-[#1A1D29] dark:hover:bg-[#1A1D29] text-white"
                     >
                         <UserIcon className="size-4"/>
                         Profile
@@ -202,362 +846,161 @@ function Onboarding({
                 <Dialog.Portal>
                     <Dialog.Overlay
                         className={cn(
-                            "fixed inset-0 z-50 bg-black/50 backdrop-blur-sm",
+                            "fixed inset-0 z-50 bg-black/80 backdrop-blur-sm",
                             "data-[state=open]:animate-in data-[state=closed]:animate-out",
                             "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
                         )}
                     />
                     <Dialog.Content
                         className={cn(
-                            "fixed left-1/2 top-1/2 z-50 w-full max-w-2xl max-h-[85vh] -translate-x-1/2 -translate-y-1/2",
-                            "bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800",
-                            "p-6 shadow-lg overflow-y-auto",
+                            "fixed inset-0 z-50 flex h-full w-full",
+                            "bg-[#0F1117] dark:bg-[#0F1117] text-white",
                             "data-[state=open]:animate-in data-[state=closed]:animate-out",
                             "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
                             "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
                             "data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%]",
-                            "data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]"
+                            "data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]",
+                            "overflow-hidden"
                         )}
                     >
-                        <Dialog.Title
-                            className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white text-center mb-6">
-                            Welcome! Let&apos;s Get Started
-                        </Dialog.Title>
-
-                        <Dialog.Description className="text-sm text-zinc-500 dark:text-zinc-400 text-center mb-6">
-                            Please fill in your details to get started. All fields are required.
-                        </Dialog.Description>
-
-                        <div className="space-y-6">
-                            {error && (
-                                <p className="text-sm text-red-500 dark:text-red-400 text-center">{error}</p>
-                            )}
-
-                            <div className="grid gap-4">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <label htmlFor="first_name"
-                                               className="text-sm font-medium text-zinc-900 dark:text-zinc-200">
-                                            First Name
-                                        </label>
-                                        <input
-                                            type="text"
-                                            id="first_name"
-                                            className={cn(
-                                                "w-full px-3 py-2 rounded-lg text-sm transition-colors",
-                                                "bg-white dark:bg-zinc-800 border",
-                                                inputError?.first_name
-                                                    ? "border-red-500 dark:border-red-500 focus:ring-red-500"
-                                                    : "border-zinc-200 dark:border-zinc-700 focus:border-blue-500 dark:focus:border-blue-400",
-                                                "focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-zinc-900",
-                                            )}
-                                            placeholder="Enter your first name"
-                                            value={firstName}
-                                            onChange={(e) => {
-                                                if (e.target.value.length > 0) {
-                                                    setInputError({...inputError, first_name: ""})
-                                                } else {
-                                                    setInputError({...inputError, first_name: "This field is required"})
-                                                }
-                                                setFirstName(e.target.value)
-                                            }}
-                                        />
-                                        {inputError?.first_name && (
-                                            <p className="text-sm text-red-500 flex items-center gap-1">
-                                                <AlertCircle className="size-3"/>
-                                                {inputError.first_name}
-                                            </p>
-                                        )}
+                        {/* Split screen layout */}
+                        <div className="flex h-full w-full max-w-[1400px] mx-auto">
+                            {/* Left column - Form (60%) */}
+                            <div className="w-3/5 h-full flex flex-col p-8 overflow-auto">
+                                {/* Progress indicator */}
+                                <div className="w-full mb-8">
+                                    <div className="flex justify-between items-center w-full mb-2">
+                                        {STEPS.map((step, index) => (
+                                            <button 
+                                                key={step.id}
+                                                onClick={() => setCurrentStep(index)}
+                                                className={cn(
+                                                    "flex flex-col items-center justify-center",
+                                                    "transition-all duration-200",
+                                                    currentStep >= index ? "text-[#4BF29C]" : "text-gray-500"
+                                                )}
+                                            >
+                                                <div className={cn(
+                                                    "rounded-full flex items-center justify-center w-8 h-8 mb-2",
+                                                    "border-2 transition-all duration-200",
+                                                    currentStep > index 
+                                                        ? "bg-[#4BF29C] border-[#4BF29C]" 
+                                                        : currentStep === index
+                                                            ? "border-[#4BF29C] text-[#4BF29C]"
+                                                            : "border-gray-700 text-gray-500"
+                                                )}>
+                                                    {currentStep > index ? (
+                                                        <CheckCircle2 className="w-4 h-4 text-[#0F1117]" />
+                                                    ) : (
+                                                        <span>{index + 1}</span>
+                                                    )}
+                                                </div>
+                                                <span className="text-xs font-medium">{step.title}</span>
+                                            </button>
+                                        ))}
                                     </div>
-
-                                    <div className="space-y-2">
-                                        <label htmlFor="last_name"
-                                               className="text-sm font-medium text-zinc-900 dark:text-zinc-200">
-                                            Last Name
-                                        </label>
-                                        <input
-                                            type="text"
-                                            id="last_name"
-                                            className={cn(
-                                                "w-full px-3 py-2 rounded-lg text-sm transition-colors",
-                                                "bg-white dark:bg-zinc-800 border",
-                                                inputError?.last_name
-                                                    ? "border-red-500 dark:border-red-500 focus:ring-red-500"
-                                                    : "border-zinc-200 dark:border-zinc-700 focus:border-blue-500 dark:focus:border-blue-400",
-                                                "focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-zinc-900",
-                                            )}
-                                            placeholder="Enter your last name"
-                                            value={lastName}
-                                            onChange={(e) => {
-                                                if (e.target.value.length > 0) {
-                                                    setInputError({...inputError, last_name: ""})
-                                                } else {
-                                                    setInputError({...inputError, last_name: "This field is required"})
-                                                }
-                                                setLastName(e.target.value)
-                                            }}
-                                        />
-                                        {inputError?.last_name && (
-                                            <p className="text-sm text-red-500 flex items-center gap-1">
-                                                <AlertCircle className="size-3"/>
-                                                {inputError.last_name}
-                                            </p>
-                                        )}
+                                    <div className="w-full bg-gray-700 h-1 rounded-full overflow-hidden">
+                                        <div 
+                                            className="bg-gradient-to-r from-purple-500 to-[#4BF29C] h-full transition-all duration-300 ease-in-out" 
+                                            style={{ width: `${(currentStep / (STEPS.length - 1)) * 100}%` }}
+                                        ></div>
                                     </div>
                                 </div>
+                                
+                                <Dialog.Title className="text-3xl font-bold tracking-tight text-white mb-4">
+                                    {STEPS[currentStep].title}
+                                </Dialog.Title>
 
-                                <div className="space-y-2">
-                                    <label htmlFor="company_name"
-                                           className="text-sm font-medium text-zinc-900 dark:text-zinc-200">
-                                        Company Name
-                                    </label>
-                                    <input
-                                        type="text"
-                                        id="company_name"
-                                        className={cn(
-                                            "w-full px-3 py-2 rounded-lg text-sm transition-colors",
-                                            "bg-white dark:bg-zinc-800 border",
-                                            inputError?.company_name
-                                                ? "border-red-500 dark:border-red-500 focus:ring-red-500"
-                                                : "border-zinc-200 dark:border-zinc-700 focus:border-blue-500 dark:focus:border-blue-400",
-                                            "focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-zinc-900",
-                                        )}
-                                        placeholder="Enter your company name"
-                                        value={companyName}
-                                        onChange={(e) => {
-                                            if (e.target.value.length > 0) {
-                                                setInputError({...inputError, company_name: ""})
-                                            } else {
-                                                setInputError({...inputError, company_name: "This field is required"})
-                                            }
-                                            setCompanyName(e.target.value)
-                                        }}
-                                    />
-                                    {inputError?.company_name && (
-                                        <p className="text-sm text-red-500 flex items-center gap-1">
-                                            <AlertCircle className="size-3"/>
-                                            {inputError.company_name}
-                                        </p>
-                                    )}
-                                </div>
+                                <Dialog.Description className="text-lg text-gray-400 mb-8">
+                                    {currentStep === STEPS.length - 1 
+                                        ? "Please review your information before saving."
+                                        : "Complete your profile to get the most out of our platform."}
+                                </Dialog.Description>
 
-                                <div className="space-y-2">
-                                    <label htmlFor="company_description"
-                                           className="text-sm font-medium text-zinc-900 dark:text-zinc-200">
-                                        Company Description
-                                    </label>
-                                    <textarea
-                                        id="company_description"
-                                        rows={4}
-                                        className={cn(
-                                            "w-full px-3 py-2 rounded-lg text-sm transition-colors",
-                                            "bg-white dark:bg-zinc-800 border",
-                                            inputError?.company_description
-                                                ? "border-red-500 dark:border-red-500 focus:ring-red-500"
-                                                : "border-zinc-200 dark:border-zinc-700 focus:border-blue-500 dark:focus:border-blue-400",
-                                            "focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-zinc-900",
-                                            "resize-none"
-                                        )}
-                                        placeholder="Please share your companies advertising goals and any unique details about your company that our AI might not be able to gather from your website."
-                                        value={companyDescription}
-                                        onChange={(e) => {
-                                            if (e.target.value.length > 0) {
-                                                setInputError({...inputError, company_description: ""})
-                                            } else {
-                                                setInputError({
-                                                    ...inputError,
-                                                    company_description: "This field is required"
-                                                })
-                                            }
-                                            setCompanyDescription(e.target.value)
-                                        }}
-                                    />
-                                    {inputError?.company_description && (
-                                        <p className="text-sm text-red-500 flex items-center gap-1">
-                                            <AlertCircle className="size-3"/>
-                                            {inputError.company_description}
-                                        </p>
-                                    )}
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label htmlFor="webciste_link"
-                                           className="text-sm font-medium text-zinc-900 dark:text-zinc-200">
-                                        Website Link
-                                    </label>
-                                    <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                                        Our AI will analyze your website to better understand your company and provide
-                                        more relevant suggestions.
-                                    </p>
-                                    <input
-                                        type="text"
-                                        id="webciste_link"
-                                        className={cn(
-                                            "w-full px-3 py-2 rounded-lg text-sm transition-colors",
-                                            "bg-white dark:bg-zinc-800 border",
-                                            inputError?.website_link
-                                                ? "border-red-500 dark:border-red-500 focus:ring-red-500"
-                                                : "border-zinc-200 dark:border-zinc-700 focus:border-blue-500 dark:focus:border-blue-400",
-                                            "focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-zinc-900",
-                                        )}
-                                        placeholder="https://yourwebsite.com"
-                                        value={websiteLink}
-                                        onChange={(e) => {
-                                            if (e.target.value.length > 0) {
-                                                setInputError({...inputError, website_link: ""})
-                                            } else {
-                                                setInputError({...inputError, website_link: "This field is required"})
-                                            }
-                                            setWebsiteLink(e.target.value)
-                                        }}
-                                    />
-                                    {inputError?.website_link && (
-                                        <p className="text-sm text-red-500 flex items-center gap-1">
-                                            <AlertCircle className="size-3"/>
-                                            {inputError.website_link}
-                                        </p>
-                                    )}
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label htmlFor="privacy_policy_link"
-                                           className="text-sm font-medium text-zinc-900 dark:text-zinc-200">
-                                        Privacy Policy Link
-                                    </label>
-                                    <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                                        Please provide a link to your company&apos;s privacy policy.
-                                    </p>
-                                    <input
-                                        type="text"
-                                        id="privacy_policy_link"
-                                        className={cn(
-                                            "w-full px-3 py-2 rounded-lg text-sm transition-colors",
-                                            "bg-white dark:bg-zinc-800 border",
-                                            inputError?.privacy_policy_link
-                                                ? "border-red-500 dark:border-red-500 focus:ring-red-500"
-                                                : "border-zinc-200 dark:border-zinc-700 focus:border-blue-500 dark:focus:border-blue-400",
-                                            "focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-zinc-900",
-                                        )}
-                                        placeholder="https://yourwebsite.com/privacy-policy"
-                                        value={privacyPolicyLink}
-                                        onChange={(e) => {
-                                            if (e.target.value.length > 0) {
-                                                setInputError({...inputError, privacy_policy_link: ""})
-                                            } else {
-                                                setInputError({
-                                                    ...inputError,
-                                                    privacy_policy_link: "This field is required"
-                                                })
-                                            }
-                                            setPrivacyPolicyLink(e.target.value)
-                                        }}
-                                    />
-                                    {inputError?.privacy_policy_link && (
-                                        <p className="text-sm text-red-500 flex items-center gap-1">
-                                            <AlertCircle className="size-3"/>
-                                            {inputError.privacy_policy_link}
-                                        </p>
-                                    )}
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-                                    <div className="space-y-2">
-                                        <label htmlFor="languages"
-                                               className="text-sm font-medium text-zinc-900 dark:text-zinc-200">
-                                            Preferred Language
-                                        </label>
-                                        <select
-                                            id="languages"
-                                            value={preferredLanguage}
-                                            onChange={(e) => {
-                                                if (e.target.value.length > 0) {
-                                                    setInputError({...inputError, preferred_language: ""})
-                                                } else {
-                                                    setInputError({
-                                                        ...inputError,
-                                                        preferred_language: "This field is required"
-                                                    })
-                                                }
-                                                setPreferredLanguage(e.target.value)
-                                            }}
-                                            className={cn(
-                                                "w-full px-3 py-2 rounded-lg text-sm transition-colors",
-                                                "bg-white dark:bg-zinc-800 border",
-                                                inputError?.preferred_language
-                                                    ? "border-red-500 dark:border-red-500 focus:ring-red-500"
-                                                    : "border-zinc-200 dark:border-zinc-700 focus:border-blue-500 dark:focus:border-blue-400",
-                                                "focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-zinc-900",
-                                            )}
-                                        >
-                                            <option value="en">English</option>
-                                            <option value="nl">Dutch</option>
-                                            <option value="de">German</option>
-                                            <option value="es">Spanish</option>
-                                            <option value="it">Italian</option>
-                                            <option value="fr">French</option>
-                                        </select>
-                                        {inputError?.preferred_language && (
-                                            <p className="text-sm text-red-500 flex items-center gap-1">
-                                                <AlertCircle className="size-3"/>
-                                                {inputError.preferred_language}
-                                            </p>
-                                        )}
+                                {error && (
+                                    <div className="mb-6 p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-400 text-center">
+                                        {error}
                                     </div>
-                                </div>
-                            </div>
+                                )}
 
-                            <div>
-                                <label htmlFor="goal"
-                                       className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">What is
-                                    your goal?</label>
-                                <select id="goal" value={goal} onChange={(e) => {
-                                    if (e.target.value.length > 0) {
-                                        setInputError({...inputError, goal: ""})
-                                    } else {
-                                        setInputError({...inputError, goal: "This field is required"})
+                                <div className="flex-1 space-y-6 overflow-y-auto pr-4 custom-scrollbar">
+                                    {currentStep === STEPS.length - 1 
+                                        ? renderConfirmation()
+                                        : STEPS[currentStep].fields.map(field => (
+                                            <div key={field}>
+                                                {renderField(field)}
+                                            </div>
+                                        ))
                                     }
-                                    setGoal(e.target.value)
-                                }} className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
-                                    {Object.values(GOAL_OPTIONS).map((option) => (
-                                        <option key={option} value={option}>{option}</option>
-                                    ))}
-                                </select>
-                                {
-                                    inputError?.goal && <p className='text-red-500'>{inputError?.goal}</p>
-                                }
+                                </div>
+
+                                <div className="flex justify-between mt-8 pt-4 border-t border-gray-800">
+                                    <button
+                                        onClick={handlePrevStep}
+                                        className={cn(
+                                            "px-6 py-3 rounded-lg flex items-center gap-2",
+                                            "bg-[#1A1D29] text-white border border-gray-700",
+                                            "transition-all duration-200 hover:bg-[#232736] hover:scale-[1.02]",
+                                            currentStep === 0 && "opacity-50 cursor-not-allowed"
+                                        )}
+                                        disabled={currentStep === 0}
+                                    >
+                                        <ArrowLeft className="w-4 h-4" />
+                                        Previous
+                                    </button>
+                                    
+                                    {currentStep === STEPS.length - 1 ? (
+                                        <button
+                                            onClick={handleSave}
+                                            className="px-6 py-3 rounded-lg flex items-center gap-2 bg-gradient-to-r from-[#4BF29C] to-[#38A169] hover:brightness-110 text-[#0F1117] font-medium transition-all duration-200 hover:scale-[1.02]"
+                                        >
+                                            Save Profile
+                                            <CheckCircle2 className="w-4 h-4" />
+                                        </button>
+                                    ) : (
+                                        <button
+                                            onClick={handleNextStep}
+                                            className="px-6 py-3 rounded-lg flex items-center gap-2 bg-gradient-to-r from-[#4BF29C] to-[#38A169] hover:brightness-110 text-[#0F1117] font-medium transition-all duration-200 hover:scale-[1.02]"
+                                        >
+                                            Next
+                                            <ArrowRight className="w-4 h-4" />
+                                        </button>
+                                    )}
+                                </div>
                             </div>
-                            <div className="flex justify-between">
-                                {/* <button
-                  // onClick={unlinkFacebook}
-                  className="h-10 px-4 flex items-center justify-center bg-gray-700 hover:bg-gray-900 text-white rounded-md shadow-md transition-transform transform hover:scale-105 active:scale-100 focus:outline-none"
-                  onClick={()=>setStep(1)}
-                  >
-                  Back
-                </button> */}
-                                <button
-                                    // onClick={unlinkFacebook}
-                                    className="h-10 px-4 flex items-center justify-center bg-blue-700 hover:bg-blue-900 text-white rounded-md shadow-md transition-transform transform hover:scale-105 active:scale-100 focus:outline-none"
-                                    onClick={handleSave}
-                                >
-                                    Save
-                                </button>
+                            
+                            {/* Right column - Benefits (40%) */}
+                            <div className="w-2/5 h-full bg-[#151925] p-8 border-l border-[#2A2E3A] overflow-y-auto">
+                                <BenefitsPanel currentStep={currentStep} />
                             </div>
                         </div>
-
-                        <Dialog.Close asChild>
-                            <button
-                                onClick={handleClose}
-                                className="absolute right-2.5 top-2.5 inline-flex size-[25px] appearance-none items-center justify-center rounded-full text-violet11 hover:bg-violet4 focus:shadow-[0_0_0_2px] focus:shadow-violet7 focus:outline-none"
-                                aria-label="Close"
-                            >
-                                <Cross2Icon/>
-                            </button>
+                        
+                        {/* Close button */}
+                        <Dialog.Close className="absolute top-4 right-4 p-2 rounded-full bg-[#1A1D29] text-gray-400 hover:text-white hover:bg-[#232736] transition-colors">
+                            <Cross2Icon className="size-4" />
                         </Dialog.Close>
                     </Dialog.Content>
                 </Dialog.Portal>
             </Dialog.Root>
+            
+            <style jsx global>{`
+                .custom-scrollbar::-webkit-scrollbar {
+                    width: 8px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-track {
+                    background: #1A1D29;
+                    border-radius: 8px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb {
+                    background: #2A2E3A;
+                    border-radius: 8px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                    background: #3A3E4A;
+                }
+            `}</style>
         </>
     )
 }
 
-export default Onboarding;
+export default Onboarding
