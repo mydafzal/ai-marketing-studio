@@ -24,11 +24,11 @@ export async function SidebarList({ userId }: SidebarListProps) {
           </div>
         ) : (
           <div className="p-8 text-center mt-4">
-            <p className="text-sm text-[#8A8F99]">No chat history</p>
+            <p className="text-sm text-text-light-gray">No chat history</p>
           </div>
         )}
       </div>
-      <div className="flex items-center justify-end p-4 border-t border-[#2A2E3A] mt-2">
+      <div className="flex items-center justify-end p-4 border-t border-border-dark mt-2">
         <ClearHistory clearChats={() => clearChats().then(() => {})} isEnabled={chats?.length > 0} />
       </div>
     </div>

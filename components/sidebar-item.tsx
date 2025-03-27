@@ -81,8 +81,8 @@ export function SidebarItem({ index, chat, children }: SidebarItemProps) {
           href={chat.path}
           className={cn(
             buttonVariants({ variant: 'ghost' }),
-            'relative w-full pr-2 py-2.5 transition-all duration-200 hover:bg-[#212534] rounded-lg mx-1 h-auto',
-            isActive && 'bg-[#1A1D29] border-l-2 border-l-[#4BF29C] font-semibold'
+            'relative w-full pr-2 py-2.5 transition-all duration-200 hover:bg-light-container rounded-lg mx-1 h-auto',
+            isActive && 'bg-container-bg border-l-2 border-l-primary-green font-semibold'
           )}
         >
           <div className="absolute left-2 top-1/2 -translate-y-1/2 flex size-6 items-center justify-center">
@@ -90,14 +90,14 @@ export function SidebarItem({ index, chat, children }: SidebarItemProps) {
               <Tooltip delayDuration={1000}>
                 <TooltipTrigger
                   tabIndex={-1}
-                  className="focus:bg-[#212534] focus:ring-1 focus:ring-[#2A2E3A]"
+                  className="focus:bg-light-container focus:ring-1 focus:ring-border-dark"
                 >
-                  <IconUsers className="text-[#8A8F99]" />
+                  <IconUsers className="text-text-light-gray" />
                 </TooltipTrigger>
-                <TooltipContent className="bg-[#1A1D29] border border-[#2A2E3A] text-white">This is a shared chat.</TooltipContent>
+                <TooltipContent className="bg-container-bg border border-border-dark text-text-white">This is a shared chat.</TooltipContent>
               </Tooltip>
             ) : (
-              <IconMessage className="text-[#8A8F99]" />
+              <IconMessage className="text-text-light-gray" />
             )}
           </div>
           <div

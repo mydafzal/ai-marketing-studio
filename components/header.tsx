@@ -61,17 +61,17 @@ async function UserOrLogin() {
         </Link>
       )}
       <div className="flex items-center w-full">
-        <IconSeparator className="size-6 text-[#2A2E3A]" />
+        <IconSeparator className="size-6 text-border-dark" />
         {session?.user ? (
           <div className="flex justify-between w-full">
             <UserMenu user={session.user} />
             <div className="flex items-center">
-              <Link href="/" className={cn(buttonVariants({ variant: 'ghost' }), 'ml-8 text-white hover:bg-[#212534]')}>
+              <Link href="/" className={cn(buttonVariants({ variant: 'ghost' }), 'ml-8 text-text-white hover:bg-light-container')}>
                 AI Marketer
               </Link>
               <Link
                 href="/ai-content"
-                className={cn(buttonVariants({ variant: 'ghost' }), 'ml-8 text-white hover:bg-[#212534]')}
+                className={cn(buttonVariants({ variant: 'ghost' }), 'ml-8 text-text-white hover:bg-light-container')}
               >
                 AI Creatives Generator
               </Link>
@@ -97,7 +97,7 @@ async function UserOrLogin() {
             </div>
           </div>
         ) : (
-          <Link href="/login" className={cn(buttonVariants({ variant: 'link' }), '-ml-2 text-[#4BF29C] hover:text-[#5cffad]')}>
+          <Link href="/login" className={cn(buttonVariants({ variant: 'link' }), '-ml-2 text-primary-green hover:text-primary-green/90')}>
             Login
           </Link>
         )}
@@ -108,7 +108,7 @@ async function UserOrLogin() {
 
 export async function Header() {
   return (
-    <header className="sticky top-0 z-50 flex items-center justify-between w-full h-16 px-4 border-b border-[#2A2E3A] shrink-0 bg-[#0F1117] backdrop-blur-xl">
+    <header className="sticky top-0 z-50 flex items-center justify-between w-full h-16 px-4 border-b border-border-dark shrink-0 bg-dark-bg backdrop-blur-xl">
       <div className="flex items-center w-full">
         <React.Suspense fallback={<div className="flex-1 overflow-auto" />}>
           {/* @ts-ignore */}

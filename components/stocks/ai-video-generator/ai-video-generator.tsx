@@ -199,28 +199,28 @@ export function AiVideoGenerator() {
 
   function renderSteps() {
     return (
-      <div className="flex flex-col space-y-3 mt-4 text-gray-600 dark:text-gray-400">
+      <div className="flex flex-col space-y-4 mt-6 text-text-light-gray">
         {generationSteps.map((step, index) => {
           const isCompleted = index < currentStepIndex - 1
           const isActive = index === currentStepIndex - 1
           const isUpcoming = index > currentStepIndex - 1
 
           return (
-            <div key={index} className="flex items-center space-x-2">
-              {isCompleted && <Check className="size-4 text-green-500" />}
+            <div key={index} className="flex items-center space-x-3">
+              {isCompleted && <Check className="size-5 text-primary-green" />}
               {isActive && (
-                <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                <div className="w-2.5 h-2.5 rounded-full bg-primary-green animate-pulse" />
               )}
               {isUpcoming && !isActive && (
-                <div className="w-2 h-2 rounded-full bg-gray-400 dark:bg-gray-500" />
+                <div className="w-2.5 h-2.5 rounded-full bg-border-dark" />
               )}
               <span
                 className={
                   isActive
-                    ? "text-sm text-green-700 dark:text-green-200"
+                    ? "text-[14px] text-primary-green font-medium"
                     : isCompleted
-                    ? "text-sm text-gray-400 line-through"
-                    : "text-sm text-gray-500 dark:text-gray-500"
+                    ? "text-[14px] text-text-light-gray line-through"
+                    : "text-[14px] text-text-light-gray"
                 }
               >
                 {step}
@@ -234,24 +234,24 @@ export function AiVideoGenerator() {
 
   function renderGeneratingState() {
     return (
-      <div className="text-center space-y-4 p-4 max-w-md mx-auto">
+      <div className="text-center space-y-6 p-6 max-w-md mx-auto">
         <div className="relative">
-          <Brain className="size-12 mx-auto text-primary animate-pulse" />
-          <Sparkles className="size-6 text-purple-500 absolute -top-2 -right-2 animate-bounce" />
-          <Sparkles className="size-6 text-blue-500 absolute -bottom-2 -left-2 animate-bounce delay-150" />
+          <Brain className="size-16 mx-auto text-primary-green animate-pulse" />
+          <Sparkles className="size-7 text-coral absolute -top-3 -right-3 animate-bounce" />
+          <Sparkles className="size-7 text-primary-green absolute -bottom-3 -left-3 animate-bounce delay-150" />
         </div>
-        <div className="space-y-2">
-          <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+        <div className="space-y-3">
+          <p className="text-[20px] font-bold text-text-white">
             AI Brain is Processing
           </p>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+          <p className="text-[15px] text-text-light-gray">
             Creating your custom video...
           </p>
         </div>
-        <div className="flex justify-center space-x-2">
-          <div className="size-2 bg-primary rounded-full animate-bounce" />
-          <div className="size-2 bg-primary rounded-full animate-bounce delay-100" />
-          <div className="size-2 bg-primary rounded-full animate-bounce delay-200" />
+        <div className="flex justify-center space-x-3">
+          <div className="w-2.5 h-2.5 bg-primary-green rounded-full animate-bounce" />
+          <div className="w-2.5 h-2.5 bg-primary-green rounded-full animate-bounce delay-100" />
+          <div className="w-2.5 h-2.5 bg-primary-green rounded-full animate-bounce delay-200" />
         </div>
         {renderSteps()}
       </div>
@@ -263,10 +263,10 @@ export function AiVideoGenerator() {
       // Fit the video to container without cropping
       const ratioClass = aspectRatio === "9:16" ? "aspect-[9/16]" : "aspect-[16/9]"
       return (
-        <div className="w-full flex flex-col gap-4">
+        <div className="w-full flex flex-col gap-6">
           <div className={`relative w-full ${ratioClass}`}>
             <video
-              className="absolute inset-0 w-full h-full rounded-lg object-contain"
+              className="absolute inset-0 w-full h-full rounded-xl object-contain bg-dark-bg"
               controls
               autoPlay
               muted
@@ -281,10 +281,10 @@ export function AiVideoGenerator() {
             <Button
               variant="outline"
               onClick={() => handleDownloadVideo(videoUrl)}
-              className="flex gap-2 items-center"
+              className="flex gap-3 items-center border-border-dark text-text-white hover:bg-container-bg transition-all duration-200 h-12 px-5 rounded-lg"
             >
-              <Download className="size-4" />
-              <span>Download</span>
+              <Download className="size-5" />
+              <span className="text-[15px] font-medium">Download Video</span>
             </Button>
           </div>
         </div>
@@ -293,10 +293,10 @@ export function AiVideoGenerator() {
 
     // If video not generated yet, show a placeholder
     return (
-      <div className="text-center space-y-2">
-        <Brain className="size-8 mx-auto text-muted-foreground mb-2" />
-        <span className="text-muted-foreground text-sm">
-          The AI video will appear here once generated.
+      <div className="text-center space-y-4">
+        <Brain className="size-16 mx-auto text-text-light-gray mb-4 opacity-50" />
+        <span className="text-text-light-gray text-[16px] block max-w-xs mx-auto">
+          Your AI-generated video will appear here once created.
         </span>
       </div>
     )
@@ -305,7 +305,7 @@ export function AiVideoGenerator() {
   function renderVideoStage() {
     return (
       <div className="w-full flex flex-col items-center space-y-4">
-        <div className="relative w-full h-[700px] border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg flex items-center justify-center bg-gray-50 dark:bg-zinc-800 overflow-hidden">
+        <div className="relative w-full h-[700px] border border-dashed border-border-dark rounded-xl flex items-center justify-center bg-dark-bg overflow-hidden">
           {isVideoGenerating ? renderGeneratingState() : renderFinalOrPlaceholder()}
         </div>
       </div>
@@ -314,105 +314,134 @@ export function AiVideoGenerator() {
 
   function renderInitialForm() {
     return (
-      <div className="grid grid-cols-1 gap-4">
+      <div className="grid grid-cols-1 gap-8">
         {/* Video Prompt */}
-        <div>
-          <label className="text-sm font-medium text-gray-900 dark:text-gray-200">
-            Video Prompt
-          </label>
+        <div className="space-y-3">
+          <h3 className="text-[18px] font-bold text-text-white">
+            Describe the video you want
+          </h3>
           <Textarea
             value={videoPrompt}
             onChange={(e) => setVideoPrompt(e.target.value)}
-            placeholder="Describe how you'd like the video to appear..."
-            className="mt-2"
+            placeholder="A cinematic panning shot of a modern office space with natural lighting, showing professionals collaborating..."
+            className="w-full min-h-[120px] border-border-dark bg-dark-bg text-text-white placeholder:text-text-light-gray focus:ring-primary-green focus:border-primary-green rounded-lg text-[15px] leading-relaxed transition-all duration-200"
           />
-        </div>
-
-        {/* Purple 'Improve with AI' button */}
-        <Button
-          onClick={handleImprovePrompt}
-          disabled={!videoPrompt.trim() || isImproving}
-          className="w-full mt-2 bg-purple-600 hover:bg-purple-700 text-white transition-colors"
-        >
-          {isImproving ? (
-            <div className="flex items-center gap-2">
-              <Sparkles className="size-4 animate-spin" />
-              <span>Improving...</span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2">
-              <Sparkles className="size-4" />
-              <span>Improve with AI</span>
-            </div>
-          )}
-        </Button>
-
-        {/* Video Duration */}
-        <div>
-          <label className="text-sm font-medium text-gray-900 dark:text-gray-200">
-            Video Duration
-          </label>
-          <div className="flex space-x-4 mt-2">
-            <Button
-              variant={videoDuration === 5 ? "default" : "outline"}
-              onClick={() => setVideoDuration(5)}
-            >
-              5 sec
-            </Button>
-            <Button
-              variant={videoDuration === 10 ? "default" : "outline"}
-              onClick={() => setVideoDuration(10)}
-            >
-              10 sec
-            </Button>
-          </div>
-        </div>
-
-        {/* Aspect Ratio */}
-        <div>
-          <label className="text-sm font-medium text-gray-900 dark:text-gray-200">
-            Aspect Ratio
-          </label>
-          <div className="flex space-x-4 mt-2">
-            <Button
-              variant={aspectRatio === "16:9" ? "default" : "outline"}
-              onClick={() => setAspectRatio("16:9")}
-            >
-              16:9
-            </Button>
-            <Button
-              variant={aspectRatio === "9:16" ? "default" : "outline"}
-              onClick={() => setAspectRatio("9:16")}
-            >
-              9:16
-            </Button>
-          </div>
-        </div>
-
-        {/* Image Upload */}
-        <div>
-          <label
-            htmlFor="videoImage"
-            className="text-sm font-medium text-gray-900 dark:text-gray-200"
+          
+          {/* Enhance prompt button */}
+          <Button
+            onClick={handleImprovePrompt}
+            disabled={!videoPrompt.trim() || isImproving}
+            className="mt-3 bg-transparent hover:bg-container-bg text-coral border border-coral hover:border-coral/90 transition-all duration-200 h-10 px-4 rounded-lg"
+            variant="outline"
           >
-            Upload an Image
-          </label>
-          <Input
-            id="videoImage"
-            type="file"
-            accept="image/*"
-            onChange={handleVideoImageUpload}
-            className="mt-2"
-          />
+            {isImproving ? (
+              <div className="flex items-center gap-2">
+                <Sparkles className="size-4 animate-spin" />
+                <span className="text-[14px]">Enhancing...</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Sparkles className="size-4" />
+                <span className="text-[14px]">Enhance prompt with AI</span>
+              </div>
+            )}
+          </Button>
+        </div>
+
+        {/* Video Settings Section */}
+        <div className="space-y-5">
+          <h3 className="text-[18px] font-bold text-text-white">
+            Video Settings
+          </h3>
+          
+          {/* Duration */}
+          <div className="space-y-3">
+            <label className="text-[14px] font-medium text-text-light-gray">
+              Duration
+            </label>
+            <div className="flex space-x-3">
+              <Button
+                variant="outline"
+                onClick={() => setVideoDuration(5)}
+                className={videoDuration === 5 
+                  ? "flex-1 bg-transparent border-primary-green text-primary-green hover:bg-container-bg transition-all duration-200 h-12 rounded-lg"
+                  : "flex-1 bg-transparent border-border-dark text-text-light-gray hover:bg-container-bg hover:text-text-white transition-all duration-200 h-12 rounded-lg"
+                }
+              >
+                <span className="text-[14px]">5 seconds</span>
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setVideoDuration(10)}
+                className={videoDuration === 10 
+                  ? "flex-1 bg-transparent border-primary-green text-primary-green hover:bg-container-bg transition-all duration-200 h-12 rounded-lg" 
+                  : "flex-1 bg-transparent border-border-dark text-text-light-gray hover:bg-container-bg hover:text-text-white transition-all duration-200 h-12 rounded-lg"
+                }
+              >
+                <span className="text-[14px]">10 seconds</span>
+              </Button>
+            </div>
+          </div>
+          
+          {/* Aspect Ratio */}
+          <div className="space-y-3">
+            <label className="text-[14px] font-medium text-text-light-gray">
+              Aspect Ratio
+            </label>
+            <div className="flex space-x-3">
+              <Button
+                variant="outline"
+                onClick={() => setAspectRatio("16:9")}
+                className={aspectRatio === "16:9" 
+                  ? "flex-1 bg-transparent border-primary-green text-primary-green hover:bg-container-bg transition-all duration-200 h-12 rounded-lg"
+                  : "flex-1 bg-transparent border-border-dark text-text-light-gray hover:bg-container-bg hover:text-text-white transition-all duration-200 h-12 rounded-lg"
+                }
+              >
+                <span className="text-[14px]">Landscape (16:9)</span>
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setAspectRatio("9:16")}
+                className={aspectRatio === "9:16" 
+                  ? "flex-1 bg-transparent border-primary-green text-primary-green hover:bg-container-bg transition-all duration-200 h-12 rounded-lg"
+                  : "flex-1 bg-transparent border-border-dark text-text-light-gray hover:bg-container-bg hover:text-text-white transition-all duration-200 h-12 rounded-lg"
+                }
+              >
+                <span className="text-[14px]">Portrait (9:16)</span>
+              </Button>
+            </div>
+          </div>
+          
+          {/* Image Upload */}
+          <div className="space-y-3">
+            <label className="text-[14px] font-medium text-text-light-gray">
+              Starting Image (Required)
+            </label>
+            <div className="flex flex-col">
+              <Input
+                id="videoImage"
+                type="file"
+                accept="image/*"
+                onChange={handleVideoImageUpload}
+                className="sr-only"
+              />
+              <label 
+                htmlFor="videoImage" 
+                className="flex items-center justify-center w-full h-12 rounded-lg border border-dashed border-border-dark bg-transparent text-text-light-gray hover:bg-container-bg hover:text-text-white cursor-pointer transition-all duration-200"
+              >
+                <span className="text-[14px]">{videoImageFile ? videoImageFile.name : "Upload image"}</span>
+              </label>
+            </div>
+          </div>
         </div>
 
         {/* Generate Video Button */}
         <Button
           onClick={handleGenerateVideo}
           disabled={isVideoGenerating}
-          className="w-full mt-4"
+          className="w-full h-12 mt-2 bg-primary-green hover:bg-primary-green/90 text-deep-black font-bold text-[16px] rounded-lg transition-all duration-200 transform hover:scale-[1.02]"
         >
-          {isVideoGenerating ? "AI is thinking..." : "Generate Video"}
+          {isVideoGenerating ? "Creating video..." : "Create video"}
         </Button>
       </div>
     )
@@ -423,17 +452,17 @@ export function AiVideoGenerator() {
   // -------------------------
   return (
     <div className="space-y-6 py-4">
-      <Card className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 overflow-hidden shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-gray-900 dark:text-gray-100">
-            AI Video Generation
+      <Card className="bg-white dark:bg-container-bg border border-border-dark rounded-xl overflow-hidden shadow-[0_4px_12px_rgba(0,0,0,0.1)]">
+        <CardHeader className="border-b border-border-dark px-6 py-5">
+          <CardTitle className="text-gray-900 dark:text-text-white text-[20px] font-bold">
+            AI Video Generator
           </CardTitle>
-          <CardDescription className="text-gray-700 dark:text-gray-400">
+          <CardDescription className="text-gray-700 dark:text-text-light-gray text-[14px] mt-1">
             Create engaging user-generated style videos using AI
           </CardDescription>
         </CardHeader>
 
-        <CardContent className="space-y-4 p-6">
+        <CardContent className="space-y-6 p-6">
           {(!isVideoGenerating && !videoGenerated) ? (
             renderInitialForm()
           ) : (

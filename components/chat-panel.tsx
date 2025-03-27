@@ -87,7 +87,7 @@ export function ChatPanel({
 
   return (
     <>
-      <div className="fixed inset-x-0 bottom-0 w-full bg-gradient-to-b from-[#0A0C14]/90 from-0% to-[#0A0C14] to-50% duration-300 ease-in-out animate-in peer-[[data-state=open]]:group-[]:lg:pl-[250px] peer-[[data-state=open]]:group-[]:xl:pl-[300px]">
+      <div className="fixed inset-x-0 bottom-0 w-full bg-gradient-to-b from-deep-black/90 from-0% to-deep-black to-50% duration-300 ease-in-out animate-in peer-[[data-state=open]]:group-[]:lg:pl-[250px] peer-[[data-state=open]]:group-[]:xl:pl-[300px]">
         <ButtonScrollToBottom
           isAtBottom={isAtBottom}
           scrollToBottom={scrollToBottom}
@@ -99,20 +99,20 @@ export function ChatPanel({
               exampleMessages.map((example, index: number) => (
                 <div
                   key={example.heading}
-                  className={`cursor-pointer rounded-xl border border-[#2A2E3A] bg-[#1A1D29] p-5 hover:bg-[#212534] transition-all duration-200 shadow-sm ${
+                  className={`cursor-pointer rounded-xl border border-border-dark bg-container-bg p-5 hover:bg-light-container transition-all duration-200 shadow-sm ${
                     index > 1 && 'hidden md:block'
                   }`}
                   onClick={async () => {
                     await sendMessage(example.message)
                   }}
                 >
-                  <div className="text-sm font-bold text-white mb-1">{example.heading}</div>
-                  <div className="text-xs text-[#8A8F99]">
+                  <div className="text-sm font-bold text-text-white mb-1">{example.heading}</div>
+                  <div className="text-xs text-text-light-gray">
                     {example.subheading}
                   </div>
                   <div className="mt-3 w-full flex justify-end">
-                    <div className="h-6 w-6 rounded-full bg-[#4BF29C] flex items-center justify-center">
-                      <IconArrowRight className="h-3 w-3 text-[#0A0C14]" />
+                    <div className="h-6 w-6 rounded-full bg-primary-green flex items-center justify-center">
+                      <IconArrowRight className="h-3 w-3 text-deep-black" />
                     </div>
                   </div>
                 </div>
@@ -148,7 +148,7 @@ export function ChatPanel({
             </div>
           ) : null}
 
-          <div className="space-y-4 border-t border-[#2A2E3A] bg-[#151925] px-4 py-2 shadow-lg sm:rounded-t-xl sm:border md:py-4">
+          <div className="space-y-4 border-t border-border-dark bg-light-container px-4 py-2 shadow-lg sm:rounded-t-xl sm:border md:py-4">
             <PromptForm onSendMessage={sendMessage} />
             <FooterText className="hidden sm:block" />
           </div>

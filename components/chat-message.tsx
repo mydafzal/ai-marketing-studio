@@ -25,8 +25,8 @@ export function ChatMessage({ message, ...props }: ChatMessageProps) {
         className={cn(
           'flex size-9 shrink-0 select-none items-center justify-center rounded-lg shadow-sm',
           message.role === 'user'
-            ? 'bg-[#1A1D29] text-white border border-[#2A2E3A]'
-            : 'bg-[#4BF29C] text-[#0A0C14]'
+            ? 'bg-container-bg text-text-white border border-border-dark'
+            : 'bg-primary-green text-deep-black'
         )}
       >
         {message.role === 'user' ? <IconUser className="size-5" /> : <IconOpenAI className="size-5" />}
@@ -36,11 +36,11 @@ export function ChatMessage({ message, ...props }: ChatMessageProps) {
             message.role === 'assistant' && "pr-2"
           )}>
               <MemoizedReactMarkdown
-                  className="prose break-words dark:prose-invert prose-p:leading-relaxed prose-pre:p-0 prose-headings:text-white prose-a:text-[#4BF29C] prose-strong:text-white"
+                  className="prose break-words dark:prose-invert prose-p:leading-relaxed prose-pre:p-0 prose-headings:text-text-white prose-a:text-primary-green prose-strong:text-text-white"
                   remarkPlugins={[remarkGfm, remarkMath]}
                   components={{
                     p({ children }) {
-                      return <p className="mb-2 last:mb-0 text-[#ADB0B8]">{children}</p>
+                      return <p className="mb-2 last:mb-0 text-text-gray">{children}</p>
                     },
                     code({ node, inline, className, children, ...props }) {
                       if (children.length) {
@@ -78,9 +78,9 @@ export function ChatMessage({ message, ...props }: ChatMessageProps) {
                 </MemoizedReactMarkdown>
               {message.timestamp && (
                   <div className="flex items-center mt-3 gap-3">
-                    <div className="h-px flex-grow bg-[#2A2E3A]/15"></div>
-                    <p className="text-xs text-[#8A8F99] font-medium flex items-center px-2 py-1 rounded-full bg-[#151925]/60 border border-[#2A2E3A]/20">
-                      <svg className="w-3 h-3 mr-1.5 text-[#4BF29C]/70" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <div className="h-px flex-grow bg-border-dark/15"></div>
+                    <p className="text-xs text-text-light-gray font-medium flex items-center px-2 py-1 rounded-full bg-light-container/60 border border-border-dark/20">
+                      <svg className="w-3 h-3 mr-1.5 text-primary-green/70" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M12 8V12L14 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                         <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
                       </svg>
@@ -91,7 +91,7 @@ export function ChatMessage({ message, ...props }: ChatMessageProps) {
                         minute: '2-digit'
                       })}
                     </p>
-                    <div className="h-px flex-grow bg-[#2A2E3A]/15"></div>
+                    <div className="h-px flex-grow bg-border-dark/15"></div>
                   </div>
               )}
         <ChatMessageActions message={message} />
