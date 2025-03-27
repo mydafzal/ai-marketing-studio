@@ -10,6 +10,7 @@ export function Providers({ children, ...props }: ThemeProviderProps) {
   // Override any passed props to force dark theme
   const darkThemeProps: ThemeProviderProps = {
     ...props,
+    children, // Add children to fix the TypeScript error
     defaultTheme: 'dark',
     forcedTheme: 'dark', // This forces dark mode always
     enableSystem: false, // Don't use system preference
