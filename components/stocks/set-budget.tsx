@@ -73,14 +73,14 @@ export function Purchase({
   }
 
   return (
-      <div className="p-6 text-white border rounded-xl bg-zinc-950 shadow-lg">
+      <div className="p-6 text-white border border-[#2A2E3A] rounded-xl bg-[#1A1D29] shadow-lg">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h3 className="text-xl font-semibold text-zinc-200">{symbol}</h3>
-            <p className="text-sm text-zinc-400">Campaign Budget Configuration</p>
+            <h3 className="text-xl font-semibold text-white">{symbol}</h3>
+            <p className="text-sm text-[#ADB0B8]">Campaign Budget Configuration</p>
           </div>
-          <div className="px-3 py-1 text-sm rounded-full bg-zinc-900 text-yellow-400 border border-yellow-600">
+          <div className="px-3 py-1 text-sm rounded-full bg-[#151925] text-[#4BF29C] border border-[#2A2E3A]">
             {status}
           </div>
         </div>
@@ -92,12 +92,12 @@ export function Purchase({
             <>
               <div className="space-y-6">
                 {/* Daily Budget */}
-                <div className="p-4 rounded-lg bg-zinc-900/50 border border-zinc-800">
+                <div className="p-4 rounded-lg bg-[#0A0C14] border border-[#2A2E3A]">
                   <div className="flex items-center gap-2 mb-4">
-                    <DollarSign className="size-5 text-green-400" />
-                    <h4 className="font-medium text-zinc-200">Daily Budget</h4>
+                    <DollarSign className="size-5 text-[#4BF29C]" />
+                    <h4 className="font-medium text-white">Daily Budget</h4>
                   </div>
-                  <div className="text-3xl font-bold text-green-400 mb-4">
+                  <div className="text-3xl font-bold text-[#4BF29C] mb-4">
                     {formatNumber(budget)}
                   </div>
                   <div className="relative">
@@ -107,9 +107,9 @@ export function Purchase({
                         max="1000"
                         value={budget}
                         onChange={onBudgetChange}
-                        className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-zinc-700 accent-green-500"
+                        className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-[#151925] accent-[#4BF29C]"
                     />
-                    <div className="absolute w-full flex justify-between text-xs text-zinc-400 mt-2">
+                    <div className="absolute w-full flex justify-between text-xs text-[#8A8F99] mt-2">
                       <span>€10</span>
                       <span>€500</span>
                       <span>€1000</span>
@@ -118,30 +118,30 @@ export function Purchase({
                 </div>
 
                 {/* Duration */}
-                <div className="p-4 rounded-lg bg-zinc-900/50 border border-zinc-800">
+                <div className="p-4 rounded-lg bg-[#0A0C14] border border-[#2A2E3A]">
                   <div className="flex items-center gap-2 mb-2">
-                    <Calendar className="size-5 text-blue-400" />
-                    <h4 className="font-medium text-zinc-200">
+                    <Calendar className="size-5 text-[#FF7D5A]" />
+                    <h4 className="font-medium text-white">
                       Ad Budget calculation based on one Month
                     </h4>
                   </div>
-                  <div className="text-2xl font-semibold text-blue-400">
+                  <div className="text-2xl font-semibold text-[#FF7D5A]">
                     {days} Days
                   </div>
                 </div>
 
                 {/* Total Investment */}
-                <div className="p-4 rounded-lg bg-zinc-900/50 border border-zinc-800">
+                <div className="p-4 rounded-lg bg-[#0A0C14] border border-[#2A2E3A]">
                   <div className="flex items-center gap-2 mb-2">
-                    <Coins className="size-5 text-purple-400" />
-                    <h4 className="font-medium text-zinc-200">Total Investment</h4>
+                    <Coins className="size-5 text-[#4BF29C]" />
+                    <h4 className="font-medium text-white">Total Investment</h4>
                   </div>
-                  <div className="flex items-center gap-3 text-zinc-400">
+                  <div className="flex items-center gap-3 text-[#ADB0B8]">
                     <span>{days} Days</span>
                     <ArrowRight className="size-4" />
                     <span>{formatNumber(budget)} daily</span>
                     <ArrowRight className="size-4" />
-                    <span className="text-2xl font-bold text-purple-400">
+                    <span className="text-2xl font-bold text-[#4BF29C]">
                   {formatNumber(days * budget)}
                 </span>
                   </div>
@@ -149,7 +149,7 @@ export function Purchase({
 
                 {/* Action Button */}
                 <button
-                    className="w-full px-6 py-3 font-semibold text-zinc-900 bg-green-400 rounded-lg hover:bg-green-500 transition-colors duration-200 flex items-center justify-center gap-2"
+                    className="w-full px-6 py-3 font-semibold text-[#0A0C14] bg-[#4BF29C] rounded-lg hover:bg-[#3AD88C] transition-colors duration-200 flex items-center justify-center gap-2"
                     onClick={handleSetBudget}
                     disabled={isLoading} // disable button if loading
                 >
@@ -162,7 +162,7 @@ export function Purchase({
 
         {/* The client-side spinner UI (optional overlay or inline) */}
         {isLoading && (
-            <div className="mt-4 flex items-center gap-2">
+            <div className="mt-4 flex items-center gap-2 text-[#ADB0B8]">
               {spinner}
               <span>Updating budget...</span>
             </div>

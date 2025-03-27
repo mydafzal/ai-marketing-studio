@@ -11,6 +11,7 @@ import {
   Clock, 
   Globe, 
   Loader2, 
+  MapPin,
   Search, 
   Target, 
   User as UserIcon, 
@@ -18,6 +19,7 @@ import {
   CheckCheck
 } from 'lucide-react'
 import {cn} from '@/lib/utils'
+import OnboardingLocationSelector, { LocationData } from './onboarding-location-selector'
 
 type Details = {
     first_name: string | null
@@ -28,6 +30,7 @@ type Details = {
     privacy_policy_link: string | null
     preferred_language: string | null
     goal: string | null
+    locations?: LocationData
 }
 
 type InputErrors = {
@@ -39,6 +42,7 @@ type InputErrors = {
     privacy_policy_link: string | null
     preferred_language: string | null
     goal: string | null
+    locations?: string | null
 }
 
 type OnboardingProps = {
@@ -54,6 +58,7 @@ type OnboardingProps = {
         privacy_policy_link: string
         preferred_language: string
         goal: string
+        locations?: LocationData
     }) => Promise<any>
 }
 
@@ -63,12 +68,38 @@ const GOAL_OPTIONS = {
     INCREASE_CONVERSIONS: "I want to increase conversions",
 } as const;
 
+// Define the steps for the onboarding process
 const STEPS = [
-    { id: 'personal', title: 'Personal Information', fields: ['first_name', 'last_name'] },
-    { id: 'company', title: 'Company Information', fields: ['company_name', 'company_description'] },
-    { id: 'website', title: 'Website Details', fields: ['website_link', 'privacy_policy_link'] },
-    { id: 'preferences', title: 'Preferences', fields: ['preferred_language'] },
-    { id: 'confirm', title: 'Confirm & Save', fields: [] },
+    { 
+        id: 'personal', 
+        title: 'Personal Information', 
+        fields: ['first_name', 'last_name'] 
+    },
+    { 
+        id: 'company', 
+        title: 'Company Information', 
+        fields: ['company_name', 'company_description'] 
+    },
+    { 
+        id: 'website', 
+        title: 'Website Details', 
+        fields: ['website_link', 'privacy_policy_link'] 
+    },
+    { 
+        id: 'preferences', 
+        title: 'Preferences', 
+        fields: ['preferred_language'] 
+    },
+    { 
+        id: 'locations', 
+        title: 'Preferred Locations', 
+        fields: ['locations'] 
+    },
+    { 
+        id: 'confirm', 
+        title: 'Confirm & Save', 
+        fields: [] 
+    },
 ];
 
 // Benefits panel component for the right side of the dialog
@@ -219,8 +250,41 @@ const BenefitsPanel = ({ currentStep }: { currentStep: number }) => {
           </div>
         </div>
       );
+
+    case 4: // Locations
+      return (
+        <div className="space-y-6">
+          <div className="bg-[#1A1D29] rounded-xl border border-gray-700 p-6">
+            <div className="flex items-center gap-3 mb-3">
+              <MapPin className="size-5 text-[#4BF29C]" />
+              <h3 className="text-lg font-semibold text-white">Targeted Local Advertising</h3>
+            </div>
+            <p className="text-gray-300">
+              By setting your preferred locations, you help our AI target your campaigns more effectively to the regions that matter most to your business.
+            </p>
+          </div>
+          
+          <div className="bg-[#1A1D29] rounded-xl border border-gray-700 p-6">
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-white mb-1">Benefits of Location Targeting</h3>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-[#151925] flex items-center justify-center text-[#4BF29C]">✓</div>
+                <div className="text-gray-300">Higher conversion rates from local audiences</div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-[#151925] flex items-center justify-center text-[#4BF29C]">✓</div>
+                <div className="text-gray-300">Reduced ad spend wastage on irrelevant regions</div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-[#151925] flex items-center justify-center text-[#4BF29C]">✓</div>
+                <div className="text-gray-300">More relevant messaging for specific geographic areas</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
       
-    case 4: // Confirmation
+    case 5: // Confirmation
       return (
         <div className="space-y-6">
           <div className="bg-[#1A1D29] rounded-xl border border-[#4BF29C]/30 p-6">
@@ -288,6 +352,7 @@ function Onboarding({
     const [privacyPolicyLink, setPrivacyPolicyLink] = React.useState<string>(userDetails?.privacy_policy_link || "")
     const [preferredLanguage, setPreferredLanguage] = React.useState<string>(userDetails?.preferred_language || "en")
     const [goal, setGoal] = React.useState<string>(userDetails?.goal || GOAL_OPTIONS.GENERATE_LEADS)
+    const [locations, setLocations] = React.useState<LocationData | undefined>(userDetails?.locations)
 
     const [dbChangeRequested, setDbChangeRequested] = React.useState(false)
     const [showSuccessMessage, setShowSuccessMessage] = React.useState(false)
@@ -296,6 +361,9 @@ function Onboarding({
     // Update states when userDetails changes
     React.useEffect(() => {
         if (userDetails) {
+            // Temporary debug log for userDetails
+            console.log("[TEMPORARY DEBUG] Loading userDetails:", userDetails);
+            
             setFirstName(userDetails.first_name || "")
             setLastName(userDetails.last_name || "")
             setCompanyName(userDetails.company_name || "")
@@ -304,17 +372,47 @@ function Onboarding({
             setPrivacyPolicyLink(userDetails.privacy_policy_link || "")
             setPreferredLanguage(userDetails.preferred_language || "en")
             setGoal(userDetails.goal || GOAL_OPTIONS.GENERATE_LEADS)
+            
+            // Handle locations - may be stored as JSON string in database
+            if (userDetails.locations) {
+                try {
+                    // If it's stored as a string, parse it
+                    if (typeof userDetails.locations === 'string') {
+                        console.log("[TEMPORARY DEBUG] Parsing locations from string:", userDetails.locations);
+                        const parsedLocations = JSON.parse(userDetails.locations);
+                        console.log("[TEMPORARY DEBUG] Parsed locations:", parsedLocations);
+                        setLocations(parsedLocations);
+                    } else {
+                        // Otherwise use it as is
+                        console.log("[TEMPORARY DEBUG] Using locations as object:", userDetails.locations);
+                        setLocations(userDetails.locations);
+                    }
+                } catch (error) {
+                    console.error('[TEMPORARY DEBUG] Error parsing locations:', error);
+                }
+            } else {
+                console.log("[TEMPORARY DEBUG] No locations found");
+                // Reset locations to empty array to ensure it's not undefined
+                setLocations([]);
+            }
         }
     }, [userDetails])
 
     // Validate the current step and move to the next if valid
     const validateStep = () => {
+        // Skip validation for confirmation step
         if (currentStep >= STEPS.length - 1) return true;
         
         const currentFields = STEPS[currentStep].fields;
         const errors: InputErrors = { ...inputError };
         let hasErrors = false;
         
+        // Handle special case for locations step
+        if (STEPS[currentStep].id === 'locations') {
+            return true; // Locations are optional, so always allow proceeding
+        }
+        
+        // Validate other fields
         currentFields.forEach(field => {
             let value = "";
             switch(field) {
@@ -326,6 +424,11 @@ function Onboarding({
                 case 'privacy_policy_link': value = privacyPolicyLink; break;
                 case 'preferred_language': value = preferredLanguage; break;
                 case 'goal': value = goal; break;
+                case 'locations': 
+                    // Locations are optional, so skip validation
+                    return;
+                default:
+                    return;
             }
             
             if (!value || value.trim() === "") {
@@ -342,16 +445,21 @@ function Onboarding({
 
     const handleNextStep = () => {
         if (validateStep()) {
-            setCurrentStep(prev => Math.min(prev + 1, STEPS.length - 1));
+            const nextStep = Math.min(currentStep + 1, STEPS.length - 1);
+            setCurrentStep(nextStep);
         }
     };
 
     const handlePrevStep = () => {
-        setCurrentStep(prev => Math.max(prev - 1, 0));
+        const prevStep = Math.max(currentStep - 1, 0);
+        setCurrentStep(prevStep);
     };
 
     const handleSave = async () => {
         if (userDetails) {
+            // Add temporary debug log for locations before saving
+            console.log("[TEMPORARY DEBUG] Saving locations:", locations);
+            
             const details = {
                 first_name: firstName,
                 last_name: lastName,
@@ -360,7 +468,8 @@ function Onboarding({
                 website_link: websiteLink,
                 privacy_policy_link: privacyPolicyLink,
                 preferred_language: preferredLanguage,
-                goal: goal
+                goal: goal,
+                locations: locations
             }
 
             // Manually set goal since it's removed from the form
@@ -401,10 +510,14 @@ function Onboarding({
                 // Find the first step with errors and navigate to it
                 for (let i = 0; i < STEPS.length - 1; i++) {
                     const stepFields = STEPS[i].fields;
-                    const hasStepError = stepFields.some(field => 
-                        !details[field as keyof typeof details] || 
-                        details[field as keyof typeof details]?.trim() === ""
-                    );
+                    const hasStepError = stepFields.some(field => {
+                        const value = details[field as keyof typeof details];
+                        if (!value) return true;
+                        if (typeof value === 'string') {
+                            return value.trim() === "";
+                        }
+                        return false;
+                    });
                     if (hasStepError) {
                         setCurrentStep(i);
                         return;
@@ -415,10 +528,13 @@ function Onboarding({
 
             setDbChangeRequested(true);
 
+            console.log("[TEMPORARY DEBUG] Saving locations data:", locations);
             const resp = await updateOnboardingDetails(userDetails?.email, details);
+            console.log("[TEMPORARY DEBUG] Save response:", resp);
+            
             if (resp.success) {
-                setDbChangeRequested(false)
-                setShowSuccessMessage(true)
+                setDbChangeRequested(false);
+                setShowSuccessMessage(true);
 
                 // To update user details in header.tsx file
                 setTimeout(() => {
@@ -732,6 +848,21 @@ function Onboarding({
                         )}
                     </div>
                 );
+            case 'locations':
+                return (
+                    <div className="space-y-4">
+                        <label className="text-sm font-semibold text-white">
+                            Preferred Locations
+                        </label>
+                        <p className="text-xs text-gray-400">
+                            Select the locations where you want to advertise. This helps our AI target your campaigns better.
+                        </p>
+                        <OnboardingLocationSelector 
+                            locations={locations || []}
+                            setLocations={setLocations as React.Dispatch<React.SetStateAction<LocationData>>}
+                        />
+                    </div>
+                );
             default:
                 return null;
         }
@@ -796,6 +927,48 @@ function Onboarding({
                             preferredLanguage === 'fr' ? 'French' : preferredLanguage
                         }</p>
                     </div>
+                </div>
+                
+                
+                {/* Always show a locations section, with debug info if no locations */}
+                <div className="bg-[#1A1D29] dark:bg-[#1A1D29] p-6 rounded-xl border border-gray-700">
+                    <h3 className="text-lg font-semibold text-white mb-4">
+                        <span className="flex items-center gap-2">
+                            <MapPin className="h-5 w-5 text-[#4BF29C]" />
+                            Preferred Locations
+                        </span>
+                    </h3>
+                    
+                    {(!locations || locations.length === 0) ? (
+                        <div className="py-3 px-4 bg-[#151925] rounded-lg">
+                            <p className="text-gray-400 text-sm">No locations selected</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            {locations.map((loc, idx) => (
+                                <div key={idx} className="border-b border-gray-700 pb-3 last:border-0 last:pb-0">
+                                    <p className="text-white font-medium">{loc.country.name}</p>
+                                    {loc.regions.map((region, regionIdx) => (
+                                        <div key={regionIdx} className="ml-4 mt-2">
+                                            <p className="text-gray-300">{region.name}</p>
+                                            {region.cities && region.cities.length > 0 && (
+                                                <div className="ml-4 mt-1 flex flex-wrap gap-2">
+                                                    {region.cities.map((city, cityIdx) => (
+                                                        <span 
+                                                            key={cityIdx} 
+                                                            className="inline-flex items-center px-2 py-1 rounded-md text-xs bg-[#232736] text-gray-300"
+                                                        >
+                                                            {city.name}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </div>
         );
@@ -908,7 +1081,7 @@ function Onboarding({
                                 </div>
                                 
                                 <Dialog.Title className="text-3xl font-bold tracking-tight text-white mb-4">
-                                    {STEPS[currentStep].title}
+                                    {STEPS[currentStep].title} (Step {currentStep + 1}/{STEPS.length})
                                 </Dialog.Title>
 
                                 <Dialog.Description className="text-lg text-gray-400 mb-8">
@@ -924,6 +1097,8 @@ function Onboarding({
                                 )}
 
                                 <div className="flex-1 space-y-6 overflow-y-auto pr-4 custom-scrollbar">
+                                    {/* Debug information */}
+                                    
                                     {currentStep === STEPS.length - 1 
                                         ? renderConfirmation()
                                         : STEPS[currentStep].fields.map(field => (

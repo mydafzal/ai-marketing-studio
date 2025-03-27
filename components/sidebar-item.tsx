@@ -58,7 +58,7 @@ export function SidebarItem({ index, chat, children }: SidebarItemProps) {
 
   return (
     <motion.div
-      className="relative h-8"
+      className="relative h-10 my-1"
       variants={{
         initial: {
           height: 0,
@@ -76,72 +76,76 @@ export function SidebarItem({ index, chat, children }: SidebarItemProps) {
         ease: 'easeIn'
       }}
     >
-      <div className="absolute left-2 top-1 flex size-6 items-center justify-center">
-        {chat.sharePath ? (
-          <Tooltip delayDuration={1000}>
-            <TooltipTrigger
-              tabIndex={-1}
-              className="focus:bg-muted focus:ring-1 focus:ring-ring"
-            >
-              <IconUsers className="mr-2 mt-1 text-zinc-500" />
-            </TooltipTrigger>
-            <TooltipContent>This is a shared chat.</TooltipContent>
-          </Tooltip>
-        ) : (
-          <IconMessage className="mr-2 mt-1 text-zinc-500" />
-        )}
-      </div>
-      <Link
-        href={chat.path}
-        className={cn(
-          buttonVariants({ variant: 'ghost' }),
-          'group w-full px-8 transition-colors hover:bg-zinc-200/40 dark:hover:bg-zinc-300/10',
-          isActive && 'bg-zinc-200 pr-16 font-semibold dark:bg-zinc-800'
-        )}
-      >
-        <div
-          className="relative max-h-5 flex-1 select-none overflow-hidden text-ellipsis break-all"
-          title={optimisticTitle ?? (chat.title || 'No Name')}
+      <div className="flex w-full relative group">
+        <Link
+          href={chat.path}
+          className={cn(
+            buttonVariants({ variant: 'ghost' }),
+            'relative w-full pr-2 py-2.5 transition-all duration-200 hover:bg-light-container rounded-lg mx-1 h-auto',
+            isActive && 'bg-container-bg border-l-2 border-l-primary-green font-semibold'
+          )}
         >
-          <span className="whitespace-nowrap">
-            {shouldAnimate ? (
-              chat.title.split('').map((character, index) => (
-                <motion.span
-                  key={index}
-                  variants={{
-                    initial: {
-                      opacity: 0,
-                      x: -100
-                    },
-                    animate: {
-                      opacity: 1,
-                      x: 0
-                    }
-                  }}
-                  initial={shouldAnimate ? 'initial' : undefined}
-                  animate={shouldAnimate ? 'animate' : undefined}
-                  transition={{
-                    duration: 0.25,
-                    ease: 'easeIn',
-                    delay: index * 0.05,
-                    staggerChildren: 0.05
-                  }}
-                  onAnimationComplete={() => {
-                    if (index === chat.title.length - 1) {
-                      setNewChatId(null)
-                    }
-                  }}
+          <div className="absolute left-2 top-1/2 -translate-y-1/2 flex size-6 items-center justify-center">
+            {chat.sharePath ? (
+              <Tooltip delayDuration={1000}>
+                <TooltipTrigger
+                  tabIndex={-1}
+                  className="focus:bg-light-container focus:ring-1 focus:ring-border-dark"
                 >
-                  {character}
-                </motion.span>
-              ))
+                  <IconUsers className="text-text-light-gray" />
+                </TooltipTrigger>
+                <TooltipContent className="bg-container-bg border border-border-dark text-text-white">This is a shared chat.</TooltipContent>
+              </Tooltip>
             ) : (
-              <span>{optimisticTitle ?? (chat.title || 'No Name')}</span>
+              <IconMessage className="text-text-light-gray" />
             )}
-          </span>
+          </div>
+          <div
+            className="relative flex-1 select-none overflow-hidden text-ellipsis break-all pl-8 pr-4"
+            title={optimisticTitle ?? (chat.title || 'No Name')}
+          >
+            <span className="whitespace-nowrap text-sm">
+              {shouldAnimate ? (
+                chat.title.split('').map((character, index) => (
+                  <motion.span
+                    key={index}
+                    variants={{
+                      initial: {
+                        opacity: 0,
+                        x: -100
+                      },
+                      animate: {
+                        opacity: 1,
+                        x: 0
+                      }
+                    }}
+                    initial={shouldAnimate ? 'initial' : undefined}
+                    animate={shouldAnimate ? 'animate' : undefined}
+                    transition={{
+                      duration: 0.25,
+                      ease: 'easeIn',
+                      delay: index * 0.05,
+                      staggerChildren: 0.05
+                    }}
+                    onAnimationComplete={() => {
+                      if (index === chat.title.length - 1) {
+                        setNewChatId(null)
+                      }
+                    }}
+                  >
+                    {character}
+                  </motion.span>
+                ))
+              ) : (
+                <span>{optimisticTitle ?? (chat.title || 'No Name')}</span>
+              )}
+            </span>
+          </div>
+        </Link>
+        <div className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          {children}
         </div>
-      </Link>
-      {isActive && <div className="absolute right-2 top-1">{children}</div>}
+      </div>
     </motion.div>
   )
 }

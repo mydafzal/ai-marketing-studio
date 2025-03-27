@@ -26,10 +26,7 @@ export const metadata = {
 }
 
 export const viewport = {
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: 'white' },
-    { media: '(prefers-color-scheme: dark)', color: 'black' }
-  ]
+  themeColor: '#0A0C14'
 }
 
 interface RootLayoutProps {
@@ -38,7 +35,7 @@ interface RootLayoutProps {
 
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className="dark">
       <body
         className={cn(
           'font-sans antialiased',
@@ -50,13 +47,10 @@ export default function RootLayout({ children }: RootLayoutProps) {
         <Toaster />
         <Providers
           attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
         >
-          <div className="flex flex-col min-h-screen">
+          <div className="flex flex-col min-h-screen bg-[#0A0C14]">
             <Header />
-            <main className="flex flex-col flex-1 bg-muted/50">{children}</main>
+            <main className="flex flex-col flex-1 bg-[#0A0C14]">{children}</main>
           </div>
           <TailwindIndicator />
         </Providers>

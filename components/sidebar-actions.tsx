@@ -38,33 +38,33 @@ export function SidebarActions({
 
     return (
         <>
-            <div className="">
+            <div className="flex space-x-1">
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <Button
                             variant="ghost"
-                            className="size-7 p-0 hover:bg-background"
+                            className="size-7 p-0 bg-transparent hover:bg-[#212534] text-[#8A8F99] hover:text-white rounded-full"
                             onClick={() => setShareDialogOpen(true)}
                         >
-                            <IconShare/>
+                            <IconShare className="size-4"/>
                             <span className="sr-only">Share</span>
                         </Button>
                     </TooltipTrigger>
-                    <TooltipContent>Share chat</TooltipContent>
+                    <TooltipContent className="bg-[#1A1D29] border border-[#2A2E3A] text-white">Share chat</TooltipContent>
                 </Tooltip>
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <Button
                             variant="ghost"
-                            className="size-7 p-0 hover:bg-background"
+                            className="size-7 p-0 bg-transparent hover:bg-[#212534] text-[#8A8F99] hover:text-white rounded-full"
                             disabled={isRemovePending}
                             onClick={() => setDeleteDialogOpen(true)}
                         >
-                            <IconTrash/>
+                            <IconTrash className="size-4"/>
                             <span className="sr-only">Delete</span>
                         </Button>
                     </TooltipTrigger>
-                    <TooltipContent>Delete chat</TooltipContent>
+                    <TooltipContent className="bg-[#1A1D29] border border-[#2A2E3A] text-white">Delete chat</TooltipContent>
                 </Tooltip>
             </div>
             <ChatShareDialog
@@ -75,20 +75,21 @@ export function SidebarActions({
                 onCopy={() => setShareDialogOpen(false)}
             />
             <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-                <AlertDialogContent>
+                <AlertDialogContent className="bg-[#1A1D29] border border-[#2A2E3A] text-white">
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
+                        <AlertDialogTitle className="text-white">Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription className="text-[#ADB0B8]">
                             This will permanently delete your chat message and remove your
                             data from our servers.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel disabled={isRemovePending}>
+                        <AlertDialogCancel disabled={isRemovePending} className="bg-[#151925] text-white border-[#2A2E3A] hover:bg-[#212534] hover:text-white">
                             Cancel
                         </AlertDialogCancel>
                         <AlertDialogAction
                             disabled={isRemovePending}
+                            className="bg-[#4BF29C] text-[#0A0C14] hover:bg-[#5cffad]"
                             onClick={event => {
                                 event.preventDefault()
                                 // @ts-ignore

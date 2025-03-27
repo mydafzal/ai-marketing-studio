@@ -17,19 +17,19 @@ export async function SidebarList({ userId }: SidebarListProps) {
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-auto px-2 pt-2">
         {chats?.length ? (
-          <div className="space-y-2 px-2">
+          <div className="space-y-1">
             <SidebarItems chats={chats} />
           </div>
         ) : (
-          <div className="p-8 text-center">
-            <p className="text-sm text-muted-foreground">No chat history</p>
+          <div className="p-8 text-center mt-4">
+            <p className="text-sm text-text-light-gray">No chat history</p>
           </div>
         )}
       </div>
-      <div className="flex items-center justify-end p-4 absolute bottom-1">
-        <ClearHistory clearChats={clearChats} isEnabled={chats?.length > 0} />
+      <div className="flex items-center justify-end p-4 border-t border-border-dark mt-2">
+        <ClearHistory clearChats={() => clearChats().then(() => {})} isEnabled={chats?.length > 0} />
       </div>
     </div>
   )

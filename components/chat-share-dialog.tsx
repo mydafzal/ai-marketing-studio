@@ -66,7 +66,6 @@ export function ChatShareDialog({
           <Button
             disabled={isSharePending}
             onClick={() => {
-              // @ts-ignore
               startShareTransition(async () => {
                 const result = await shareChat(chat.id)
 
@@ -75,7 +74,8 @@ export function ChatShareDialog({
                   return
                 }
 
-                copyShareLink(result)
+                // Fix: Type cast result to Chat since we've already checked it's not an error
+                copyShareLink(result as Chat)
               })
             }}
           >

@@ -93,26 +93,26 @@ const CodeBlock: FC<Props> = memo(({ language, value }) => {
   }
 
   return (
-    <div className="relative w-full font-sans codeblock bg-zinc-950">
-      <div className="flex items-center justify-between w-full px-6 py-2 pr-4 bg-zinc-800 text-zinc-100">
-        <span className="text-xs lowercase">{language}</span>
-        <div className="flex items-center space-x-1">
+    <div className="relative w-full font-sans codeblock bg-[#151925] rounded-lg overflow-hidden border border-[#2A2E3A] my-4">
+      <div className="flex items-center justify-between w-full px-4 py-2 pr-3 bg-[#1A1D29] text-[#ADB0B8] border-b border-[#2A2E3A]">
+        <span className="text-xs font-medium lowercase">{language}</span>
+        <div className="flex items-center space-x-2">
           <Button
             variant="ghost"
-            className="hover:bg-zinc-800 focus-visible:ring-1 focus-visible:ring-slate-700 focus-visible:ring-offset-0"
+            className="size-7 p-0 hover:bg-[#212534] text-[#8A8F99] hover:text-white rounded-md focus-visible:ring-1 focus-visible:ring-[#4BF29C] focus-visible:ring-offset-0"
             onClick={downloadAsFile}
             size="icon"
           >
-            <IconDownload />
+            <IconDownload className="size-4" />
             <span className="sr-only">Download</span>
           </Button>
           <Button
             variant="ghost"
             size="icon"
-            className="text-xs hover:bg-zinc-800 focus-visible:ring-1 focus-visible:ring-slate-700 focus-visible:ring-offset-0"
+            className="size-7 p-0 hover:bg-[#212534] text-[#8A8F99] hover:text-white rounded-md focus-visible:ring-1 focus-visible:ring-[#4BF29C] focus-visible:ring-offset-0"
             onClick={onCopy}
           >
-            {isCopied ? <IconCheck /> : <IconCopy />}
+            {isCopied ? <IconCheck className="size-4" /> : <IconCopy className="size-4" />}
             <span className="sr-only">Copy code</span>
           </Button>
         </div>
@@ -126,15 +126,21 @@ const CodeBlock: FC<Props> = memo(({ language, value }) => {
           margin: 0,
           width: '100%',
           background: 'transparent',
-          padding: '1.5rem 1rem'
+          padding: '1rem 1rem',
+          fontSize: '0.85rem'
         }}
         lineNumberStyle={{
-          userSelect: 'none'
+          userSelect: 'none',
+          color: '#8A8F99',
+          paddingRight: '1rem',
+          borderRight: '1px solid #2A2E3A',
+          marginRight: '1rem'
         }}
         codeTagProps={{
           style: {
-            fontSize: '0.9rem',
-            fontFamily: 'var(--font-mono)'
+            fontSize: '0.85rem',
+            fontFamily: 'var(--font-mono)',
+            color: '#ADB0B8'
           }
         }}
       >

@@ -398,7 +398,7 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
   // Render video generation steps
   function renderVideoSteps() {
     return (
-      <div className="flex flex-col space-y-3 mt-4 text-gray-600 dark:text-gray-400">
+      <div className="flex flex-col space-y-3 mt-4 text-gray-400">
         {videoGenerationSteps.map((step, index) => {
           const isCompleted = index < currentVideoStep - 1
           const isActive = index === currentVideoStep - 1
@@ -411,15 +411,15 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
                 <div className="size-2 rounded-full bg-green-400 animate-pulse" />
               )}
               {isUpcoming && !isActive && (
-                <div className="size-2 rounded-full bg-gray-400 dark:bg-gray-500" />
+                <div className="size-2 rounded-full bg-gray-600" />
               )}
               <span
                 className={
                   isActive
-                    ? "text-sm text-green-700 dark:text-green-200"
+                    ? "text-sm text-green-400"
                     : isCompleted
-                    ? "text-sm text-gray-400 line-through"
-                    : "text-sm text-gray-500 dark:text-gray-500"
+                    ? "text-sm text-gray-500 line-through"
+                    : "text-sm text-gray-600"
                 }
               >
                 {step}
@@ -436,23 +436,23 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
     return (
       <div className="text-center space-y-4">
         <div className="relative">
-          <Brain className="size-12 mx-auto text-primary animate-pulse" />
+          <Brain className="size-12 mx-auto text-[#4BF29C] animate-pulse" />
           <Sparkles className="size-6 text-yellow-500 absolute -top-2 -right-2 animate-bounce" />
           <Sparkles className="size-6 text-blue-500 absolute -bottom-2 -left-2 animate-bounce delay-150" />
         </div>
         <div className="space-y-2">
-          <p className={`text-lg font-semibold ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>AI Brain is Processing</p>
-          <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Creating your custom video...</p>
+          <p className="text-lg font-semibold text-[#4BF29C]">AI Brain is Processing</p>
+          <p className="text-sm text-gray-400">Creating your custom video...</p>
         </div>
         <div className="flex justify-center space-x-2">
-          <div className={`size-2 ${isDarkMode ? 'bg-blue-500' : 'bg-blue-600'} rounded-full animate-bounce`} />
-          <div className={`size-2 ${isDarkMode ? 'bg-blue-500' : 'bg-blue-600'} rounded-full animate-bounce delay-100`} />
-          <div className={`size-2 ${isDarkMode ? 'bg-blue-500' : 'bg-blue-600'} rounded-full animate-bounce delay-200`} />
+          <div className="size-2 bg-[#4BF29C] rounded-full animate-bounce" />
+          <div className="size-2 bg-[#4BF29C] rounded-full animate-bounce delay-100" />
+          <div className="size-2 bg-[#4BF29C] rounded-full animate-bounce delay-200" />
         </div>
         {renderVideoSteps()}
         
         {pollCount > 0 && (
-          <div className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'} mt-3`}>
+          <div className="text-xs text-gray-500 mt-3">
             Checking status... ({pollCount})
           </div>
         )}
@@ -481,8 +481,8 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
     }
     return (
       <div className="text-center space-y-2">
-        <Video className={`size-8 mx-auto ${isDarkMode ? 'text-gray-400' : 'text-gray-500'} mb-2`} />
-        <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+        <Video className="size-8 mx-auto text-gray-500 mb-2" />
+        <span className="text-sm text-gray-400">
           Enter a prompt, pick settings, and upload an image to generate your AI video
         </span>
       </div>
@@ -490,29 +490,29 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
   }
 
   return (
-    <div className={`w-full shadow-sm rounded-lg border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+    <div className="w-full shadow-sm rounded-lg border border-[#2A2E3A] bg-[#151925]">
       {/* Toast notification */}
       {toastMessage && (
         <div className={`fixed top-4 right-4 z-50 p-4 rounded-md shadow-md transition-all ${
           toastMessage.type === 'success' 
-            ? isDarkMode ? 'bg-green-900 border border-green-700' : 'bg-green-100 border border-green-300' 
-            : isDarkMode ? 'bg-red-900 border border-red-700' : 'bg-red-100 border border-red-300'
+            ? 'bg-[#1A3029] border border-[#2A5F46]' 
+            : 'bg-[#3D1A1A] border border-[#5F2A2A]'
         }`}>
           <div className="flex items-start gap-2">
             <div className={toastMessage.type === 'success' 
-              ? isDarkMode ? 'text-green-400' : 'text-green-600' 
-              : isDarkMode ? 'text-red-400' : 'text-red-600'}>
+              ? 'text-[#4BF29C]' 
+              : 'text-[#FF7D5A]'}>
               {toastMessage.type === 'success' ? <CheckCircle2 className="size-5" /> : <AlertCircle className="size-5" />}
             </div>
             <div>
               <h3 className={`font-medium text-sm ${toastMessage.type === 'success' 
-                ? isDarkMode ? 'text-green-200' : 'text-green-800' 
-                : isDarkMode ? 'text-red-200' : 'text-red-800'}`}>
+                ? 'text-[#4BF29C]' 
+                : 'text-[#FF7D5A]'}`}>
                 {toastMessage.title}
               </h3>
               <p className={`text-sm ${toastMessage.type === 'success' 
-                ? isDarkMode ? 'text-green-300' : 'text-green-700' 
-                : isDarkMode ? 'text-red-300' : 'text-red-700'}`}>
+                ? 'text-[#ADB0B8]' 
+                : 'text-[#ADB0B8]'}`}>
                 {toastMessage.description}
               </p>
             </div>
@@ -521,29 +521,27 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
       )}
 
       {/* Header */}
-      <div className={`flex items-center justify-between p-6 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+      <div className="flex items-center justify-between p-6 border-b border-[#2A2E3A]">
         <div>
           <h2 className="flex items-center gap-2 text-xl font-bold">
-            <Video className={`size-5 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
-            <span className={isDarkMode ? 'text-white' : 'text-gray-900'}>AI Video Generator</span>
+            <Video className="size-5 text-[#4BF29C]" />
+            <span className="text-white">AI Video Generator</span>
           </h2>
-          <p className={`text-sm mt-1.5 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+          <p className="text-sm mt-1.5 text-[#8A8F99]">
             Create engaging user-generated style videos using AI
           </p>
         </div>
         
         <div className="flex items-center gap-2">
           {generatedVideos.length > 0 && (
-            <span className={`inline-flex text-xs font-medium px-2.5 py-0.5 rounded-full ${
-              isDarkMode ? 'bg-blue-900 text-blue-200' : 'bg-blue-100 text-blue-800'
-            }`}>
+            <span className="inline-flex text-xs font-medium px-2.5 py-0.5 rounded-full bg-[#1A3029] text-[#4BF29C]">
               {generatedVideos.length} video{generatedVideos.length !== 1 ? 's' : ''} generated
             </span>
           )}
         </div>
       </div>
       
-      <hr className={isDarkMode ? 'border-gray-700' : 'border-gray-200'} />
+      <hr className="border-[#2A2E3A]" />
       
       {/* Main content */}
       <div className="p-6">
@@ -552,13 +550,13 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
           <div className="lg:col-span-1 space-y-5">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <label htmlFor="videoPrompt" className={`text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
+                <label htmlFor="videoPrompt" className="text-sm font-medium text-white">
                   Describe the video you want
                 </label>
                 
                 <button 
                   type="button" 
-                  className={isDarkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'}
+                  className="text-[#8A8F99] hover:text-white"
                   title="Tips for better prompts"
                 >
                   <Info className="size-4" />
@@ -570,30 +568,21 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
                 value={videoPrompt}
                 onChange={(e) => setVideoPrompt(e.target.value)}
                 placeholder="A cinematic panning shot of a modern office space with natural lighting, showing professionals collaborating..."
-                className={`w-full min-h-[120px] resize-none p-3 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none ${
-                  isDarkMode 
-                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
-                }`}
+                className="w-full min-h-[120px] resize-none p-3 rounded-md focus:ring-2 focus:ring-[#4BF29C] focus:border-[#4BF29C] outline-none
+                  bg-[#1A1D29] border-[#2A2E3A] border text-white placeholder-[#8A8F99]"
               />
               
               {promptHistory.length > 0 && (
                 <div className="pt-1">
-                  <div className={`text-xs flex items-center gap-1 mb-1.5 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  <div className="text-xs flex items-center gap-1 mb-1.5 text-[#8A8F99]">
                     <Sparkles className="size-3" /> Recent prompts
                   </div>
-                  <div className={`h-20 w-full overflow-y-auto rounded-md p-2 ${
-                    isDarkMode ? 'border-gray-700 border bg-gray-800' : 'border border-gray-200 bg-white'
-                  }`}>
+                  <div className="h-20 w-full overflow-y-auto rounded-md p-2 border-[#2A2E3A] border bg-[#1A1D29]">
                     {promptHistory.map((prompt, idx) => (
                       <button 
                         key={idx} 
                         type="button"
-                        className={`w-full text-left text-xs py-1 px-2 mb-1 rounded ${
-                          isDarkMode 
-                            ? 'hover:bg-gray-700 text-gray-300' 
-                            : 'hover:bg-gray-100 text-gray-700'
-                        }`}
+                        className="w-full text-left text-xs py-1 px-2 mb-1 rounded hover:bg-[#1A1D29] text-[#ADB0B8]"
                         onClick={() => setVideoPrompt(prompt)}
                       >
                         {prompt.length > 50 ? `${prompt.substring(0, 50)}...` : prompt}
@@ -611,12 +600,8 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
                 disabled={!videoPrompt.trim() || isImprovingVideoPrompt}
                 className={`flex justify-center items-center w-full py-2 px-4 border rounded-md text-sm font-medium 
                   ${!videoPrompt.trim() || isImprovingVideoPrompt 
-                    ? isDarkMode 
-                      ? 'bg-gray-700 text-gray-500 cursor-not-allowed border-gray-700' 
-                      : 'bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200'
-                    : isDarkMode
-                      ? 'bg-gray-700 text-gray-200 hover:bg-gray-600 border-gray-600' 
-                      : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-300'
+                    ? 'bg-[#1A1D29] text-[#8A8F99] cursor-not-allowed border-[#2A2E3A]' 
+                    : 'bg-[#1A1D29] text-white hover:bg-[#252836] border-[#2A2E3A]'
                   }`}
               >
                 <Sparkles className="mr-2 size-4" />
@@ -624,27 +609,23 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
               </button>
             </div>
             
-            <hr className={isDarkMode ? 'border-gray-700' : 'border-gray-200'} />
+            <hr className="border-[#2A2E3A]" />
             
             {/* Video Settings */}
             <div className="space-y-4">
-              <h3 className={`text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>Video Settings</h3>
+              <h3 className="text-sm font-medium text-white">Video Settings</h3>
               
               {/* Video Duration */}
               <div>
-                <label className={`text-xs block mb-1.5 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Duration</label>
+                <label className="text-xs block mb-1.5 text-[#ADB0B8]">Duration</label>
                 <div className="flex space-x-2">
                   <button
                     type="button"
                     onClick={() => setVideoDuration(5)}
                     className={`flex-1 py-1.5 px-3 text-sm font-medium rounded-md ${
                       videoDuration === 5
-                        ? isDarkMode
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-blue-600 text-white'
-                        : isDarkMode
-                          ? 'bg-gray-700 text-gray-200 border border-gray-600 hover:bg-gray-600'
-                          : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                        ? 'bg-[#4BF29C] text-[#0A0C14]'
+                        : 'bg-[#1A1D29] text-white border border-[#2A2E3A] hover:bg-[#252836]'
                     }`}
                   >
                     5 seconds
@@ -654,12 +635,8 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
                     onClick={() => setVideoDuration(10)}
                     className={`flex-1 py-1.5 px-3 text-sm font-medium rounded-md ${
                       videoDuration === 10
-                        ? isDarkMode
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-blue-600 text-white'
-                        : isDarkMode
-                          ? 'bg-gray-700 text-gray-200 border border-gray-600 hover:bg-gray-600'
-                          : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                        ? 'bg-[#4BF29C] text-[#0A0C14]'
+                        : 'bg-[#1A1D29] text-white border border-[#2A2E3A] hover:bg-[#252836]'
                     }`}
                   >
                     10 seconds
@@ -669,19 +646,15 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
               
               {/* Aspect Ratio */}
               <div>
-                <label className={`text-xs block mb-1.5 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Aspect Ratio</label>
+                <label className="text-xs block mb-1.5 text-[#ADB0B8]">Aspect Ratio</label>
                 <div className="flex space-x-2">
                   <button
                     type="button"
                     onClick={() => setAspectRatio("16:9")}
                     className={`flex-1 py-1.5 px-3 text-sm font-medium rounded-md ${
                       aspectRatio === "16:9"
-                        ? isDarkMode
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-blue-600 text-white'
-                        : isDarkMode
-                          ? 'bg-gray-700 text-gray-200 border border-gray-600 hover:bg-gray-600'
-                          : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                        ? 'bg-[#4BF29C] text-[#0A0C14]'
+                        : 'bg-[#1A1D29] text-white border border-[#2A2E3A] hover:bg-[#252836]'
                     }`}
                   >
                     Landscape (16:9)
@@ -691,12 +664,8 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
                     onClick={() => setAspectRatio("9:16")}
                     className={`flex-1 py-1.5 px-3 text-sm font-medium rounded-md ${
                       aspectRatio === "9:16"
-                        ? isDarkMode
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-blue-600 text-white'
-                        : isDarkMode
-                          ? 'bg-gray-700 text-gray-200 border border-gray-600 hover:bg-gray-600'
-                          : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                        ? 'bg-[#4BF29C] text-[#0A0C14]'
+                        : 'bg-[#1A1D29] text-white border border-[#2A2E3A] hover:bg-[#252836]'
                     }`}
                   >
                     Portrait (9:16)
@@ -706,7 +675,7 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
               
               {/* Image Upload */}
               <div>
-                <label className={`text-xs block mb-1.5 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                <label className="text-xs block mb-1.5 text-[#ADB0B8]">
                   Starting Image (Required)
                 </label>
                 <div className="flex items-center gap-2">
@@ -715,12 +684,8 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
                     onClick={handleImageButtonClick}
                     className={`flex items-center justify-center py-1.5 px-3 text-sm font-medium rounded-md flex-1 ${
                       videoImageFile 
-                        ? isDarkMode
-                          ? 'bg-gray-700 text-gray-200 border border-gray-600 hover:bg-gray-600'
-                          : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                        : isDarkMode
-                          ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                          : 'bg-blue-600 hover:bg-blue-700 text-white'
+                        ? 'bg-[#1A1D29] text-white border border-[#2A2E3A] hover:bg-[#252836]'
+                        : 'bg-[#4BF29C] hover:bg-[#3AD98C] text-[#0A0C14]'
                     }`}
                   >
                     <Upload className="mr-2 size-4" />
@@ -736,9 +701,7 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
                   />
                   
                   {videoImageFile && (
-                    <div className={`size-12 relative rounded-md overflow-hidden border ${
-                      isDarkMode ? 'border-gray-600' : 'border-gray-300'
-                    }`}>
+                    <div className="size-12 relative rounded-md overflow-hidden border border-[#2A2E3A]">
                       <NextImage
                         src={URL.createObjectURL(videoImageFile)}
                         alt="Starting image"
@@ -751,7 +714,7 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
                 </div>
                 
                 {videoImageFile && (
-                  <p className={`mt-1 text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  <p className="mt-1 text-xs text-[#8A8F99]">
                     {videoImageFile.name.length > 25 
                       ? `${videoImageFile.name.substring(0, 25)}...${videoImageFile.name.split('.').pop()}`
                       : videoImageFile.name
@@ -767,12 +730,8 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
                 disabled={!videoPrompt.trim() || !videoImageFile || isGeneratingVideo}
                 className={`flex justify-center items-center w-full py-2 px-4 rounded-md text-sm font-medium mt-2
                   ${!videoPrompt.trim() || !videoImageFile || isGeneratingVideo
-                    ? isDarkMode
-                      ? 'bg-blue-800 cursor-not-allowed text-blue-300'
-                      : 'bg-blue-300 cursor-not-allowed text-white'
-                    : isDarkMode
-                      ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                      : 'bg-blue-600 hover:bg-blue-700 text-white'
+                    ? 'bg-[#1A3029] cursor-not-allowed text-[#4BF29C]/50'
+                    : 'bg-[#4BF29C] hover:bg-[#3AD98C] text-[#0A0C14]'
                   }`}
               >
                 <Video className="mr-2 size-4" />
@@ -784,14 +743,12 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
           {/* Right panel: Generated video display */}
           <div className="lg:col-span-2">
             {generatedVideos.length === 0 ? (
-              <div className={`border border-dashed rounded-lg p-8 flex flex-col items-center justify-center h-full min-h-[400px] text-center ${
-                isDarkMode ? 'border-gray-700' : 'border-gray-200'
-              }`}>
-                <div className={`p-3 rounded-full mb-3 ${isDarkMode ? 'bg-blue-900' : 'bg-blue-100'}`}>
-                  <Video className={`size-6 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+              <div className="border border-dashed border-[#2A2E3A] rounded-lg p-8 flex flex-col items-center justify-center h-full min-h-[400px] text-center">
+                <div className="p-3 rounded-full mb-3 bg-[#1A3029]">
+                  <Video className="size-6 text-[#4BF29C]" />
                 </div>
-                <h3 className={`text-lg font-medium mb-1 ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>No videos generated yet</h3>
-                <p className={`text-sm max-w-md mb-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                <h3 className="text-lg font-medium mb-1 text-white">No videos generated yet</h3>
+                <p className="text-sm max-w-md mb-4 text-[#8A8F99]">
                   Enter a descriptive prompt, select your settings, and upload a starting image to generate AI videos for your project.
                 </p>
               </div>
@@ -799,23 +756,19 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex flex-col w-full">
-                    <div className={`border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                    <div className="border-b border-[#2A2E3A]">
                       <div className="flex items-center justify-between">
                         <div className="flex">
                           <button
                             type="button"
-                            className={`py-2 px-4 text-sm font-medium border-b-2 ${
-                              isDarkMode
-                                ? 'border-blue-500 text-blue-400'
-                                : 'border-blue-600 text-blue-600'
-                            }`}
+                            className="py-2 px-4 text-sm font-medium border-b-2 border-[#4BF29C] text-[#4BF29C]"
                           >
                             Generated Videos
                           </button>
                         </div>
                         
                         <div className="flex items-center gap-2">
-                          <div className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                          <div className="text-xs text-[#8A8F99]">
                             {selectedVideos.length} selected
                           </div>
                           <button 
@@ -824,12 +777,8 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
                             disabled={generatedVideos.length === 0}
                             className={`py-1 px-2 text-xs font-medium rounded border 
                               ${generatedVideos.length === 0 
-                                ? isDarkMode
-                                  ? 'bg-gray-700 text-gray-500 cursor-not-allowed border-gray-700'
-                                  : 'bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200'
-                                : isDarkMode
-                                  ? 'bg-gray-700 text-gray-300 hover:bg-gray-600 border-gray-600'
-                                  : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-300'
+                                ? 'bg-[#1A1D29] text-[#8A8F99] cursor-not-allowed border-[#2A2E3A]'
+                                : 'bg-[#1A1D29] text-white hover:bg-[#252836] border-[#2A2E3A]'
                               }`}
                           >
                             Select all
@@ -838,11 +787,7 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
                             <button 
                               type="button"
                               onClick={clearSelections}
-                              className={`py-1 px-2 text-xs font-medium rounded ${
-                                isDarkMode
-                                  ? 'bg-gray-700 text-gray-300 hover:bg-gray-600 border border-gray-600'
-                                  : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
-                              }`}
+                              className="py-1 px-2 text-xs font-medium rounded bg-[#1A1D29] text-white hover:bg-[#252836] border border-[#2A2E3A]"
                             >
                               Clear
                             </button>
@@ -862,8 +807,8 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
                               key={i}
                               className={`relative ${ratioClass} rounded-md overflow-hidden group cursor-pointer ${
                                 isSelected 
-                                  ? "ring-2 ring-blue-500 ring-offset-2" 
-                                  : isDarkMode ? "border-gray-700 border" : "border-gray-300 border"
+                                  ? "ring-2 ring-[#4BF29C] ring-offset-2 ring-offset-[#151925]" 
+                                  : "border-[#2A2E3A] border"
                               }`}
                               onClick={() => toggleVideoSelected(i)}
                             >
@@ -886,7 +831,7 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
                                     e.stopPropagation();
                                     handleDownload(videoUrl, i);
                                   }}
-                                  className="absolute bottom-2 right-2 py-1 px-3 text-xs font-medium bg-white text-gray-700 rounded-md shadow hover:bg-gray-50 flex items-center"
+                                  className="absolute bottom-2 right-2 py-1 px-3 text-xs font-medium bg-[#1A1D29] text-white rounded-md shadow hover:bg-[#252836] border border-[#2A2E3A] flex items-center"
                                 >
                                   <Download className="mr-1 size-4" />
                                   Download
@@ -894,7 +839,7 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
                               </div>
                               
                               {isSelected && (
-                                <div className="absolute top-2 left-2 bg-blue-600 text-white rounded-full p-1">
+                                <div className="absolute top-2 left-2 bg-[#4BF29C] text-[#0A0C14] rounded-full p-1">
                                   <CheckCircle2 className="size-4" />
                                 </div>
                               )}
@@ -907,19 +852,15 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
                 </div>
                 
                 {generatedVideos.length > 0 && (
-                  <div className={`flex p-4 rounded-lg ${
-                    isDarkMode 
-                      ? 'bg-gray-700 border-amber-600 border'
-                      : 'bg-gray-50 border border-gray-200'
-                  }`}>
-                    <div className={`flex-shrink-0 mr-3 ${isDarkMode ? 'text-amber-400' : 'text-amber-500'}`}>
+                  <div className="flex p-4 rounded-lg bg-[#1A1D29] border-[#FF7D5A] border">
+                    <div className="flex-shrink-0 mr-3 text-[#FF7D5A]">
                       <AlertCircle className="size-5" />
                     </div>
                     <div>
-                      <h3 className={`text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                      <h3 className="text-sm font-medium text-white">
                         Remember copyright and licensing
                       </h3>
-                      <div className={`mt-1 text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                      <div className="mt-1 text-sm text-[#ADB0B8]">
                         Always verify you have the appropriate rights to use AI-generated content in your projects.
                       </div>
                     </div>
@@ -933,11 +874,9 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
       
       {/* Footer with save to library button */}
       {generatedVideos.length > 0 && (
-        <div className={`flex justify-between items-center border-t p-4 ${
-          isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'
-        }`}>
-          <div className="flex items-center text-xs text-gray-500">
-            <span className={`mr-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+        <div className="flex justify-between items-center border-t border-[#2A2E3A] p-4 bg-[#1A1D29]">
+          <div className="flex items-center text-xs text-[#8A8F99]">
+            <span className="mr-1">
               Powered by Runway AI
             </span>
           </div>
@@ -948,10 +887,8 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
             disabled={selectedVideos.length === 0 || isSaving}
             className={`flex items-center gap-2 py-2 px-4 rounded-md text-sm font-medium 
               ${selectedVideos.length === 0 || isSaving
-                ? isDarkMode
-                  ? 'bg-blue-800 cursor-not-allowed text-blue-300'
-                  : 'bg-blue-300 cursor-not-allowed text-white'
-                : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
+                ? 'bg-[#1A3029] cursor-not-allowed text-[#4BF29C]/50'
+                : 'bg-[#4BF29C] hover:bg-[#3AD98C] text-[#0A0C14]'}`}
           >
             <Save className="size-4" />
             {isSaving ? 'Saving...' : `Save ${selectedVideos.length > 0 ? selectedVideos.length : ''} to Library`}
@@ -961,8 +898,8 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
       
       {/* Video being generated overlay */}
       {isGeneratingVideo && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
-          <div className={`mx-auto max-w-md w-full p-6 rounded-lg shadow-xl ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center">
+          <div className="mx-auto max-w-md w-full p-6 rounded-lg shadow-xl bg-[#151925] border border-[#2A2E3A]">
             {renderVideoGenerating()}
           </div>
         </div>

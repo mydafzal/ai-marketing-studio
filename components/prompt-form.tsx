@@ -337,7 +337,7 @@ export function PromptForm({
       }}
     >
       {progressBar.isShow && <ProgressBar value={progressBar.value} max={100} width="w-full" height="h-[2px]" color="bg-gray-500"/>}
-      <div className="relative flex max-h-60 w-full grow flex-col overflow-hidden bg-background px-8 sm:rounded-md sm:border sm:px-12">
+      <div className="relative flex max-h-60 w-full grow flex-col overflow-hidden bg-container-bg border border-border-dark px-8 sm:rounded-xl sm:px-12 shadow-sm">
         <input
           ref={imageInputRef}
           style={{ display: 'none' }}
@@ -358,20 +358,20 @@ export function PromptForm({
             <Button
               variant="outline"
               size="icon"
-              className="absolute left-0 top-[14px] size-8 rounded-full bg-background p-0 sm:left-4"
+              className="absolute left-0 top-[14px] size-8 rounded-full bg-light-container border-border-dark p-0 sm:left-4 hover:bg-light-container/80 hover:border-border-dark/80 transition-colors"
               disabled={uploading}
               onClick={() => setOpenUploadMenu(!openUploadMenu)}
             >
-              {uploading ? <IconSpinner /> : <IconPlus />}
+              {uploading ? <IconSpinner className="text-primary-green" /> : <IconPlus className="text-primary-green" />}
               <span className="sr-only">Upload</span>
             </Button>
           </PopoverTrigger>
-          <PopoverContent side="top">
+          <PopoverContent side="top" className="bg-container-bg border border-border-dark shadow-lg">
             <div className="w-full my-2">
               <Button
                 variant="outline"
                 size="icon"
-                className="w-full border-0 px-4 shadow-none"
+                className="w-full border-0 px-4 shadow-none text-text-white hover:bg-light-container transition-colors"
                 onClick={handleImageButtonClick}
                 disabled={uploading}
               >
@@ -383,7 +383,7 @@ export function PromptForm({
                 onClick={handleVideoButtonClick}
                 variant="outline"
                 size="icon"
-                className="w-full border-0 px-4 shadow-none"
+                className="w-full border-0 px-4 shadow-none text-text-white hover:bg-light-container transition-colors"
               >
                 Videos
               </Button>
@@ -396,7 +396,7 @@ export function PromptForm({
           tabIndex={0}
           onKeyDown={onKeyDown}
           placeholder="Send a message."
-          className="min-h-[60px] w-full resize-none bg-transparent px-4 py-[1.3rem] focus-within:outline-none sm:text-sm"
+          className="min-h-[60px] w-full resize-none bg-transparent px-4 py-[1.3rem] focus-within:outline-none sm:text-sm text-text-white placeholder:text-text-light-gray"
           autoFocus
           spellCheck={false}
           autoComplete="off"
@@ -413,13 +413,14 @@ export function PromptForm({
               <Button
                 type="submit"
                 size="icon"
+                className="bg-primary-green hover:bg-primary-green/90 text-deep-black transition-colors"
                 disabled={isDisabled || uploading || isHandling}
               >
-                <IconArrowElbow />
+                <IconArrowElbow className="text-deep-black" />
                 <span className="sr-only">Send message</span>
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Send message</TooltipContent>
+            <TooltipContent className="bg-container-bg border border-border-dark text-text-white">Send message</TooltipContent>
           </Tooltip>
         </div>
       </div>

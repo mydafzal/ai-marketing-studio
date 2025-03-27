@@ -36,7 +36,7 @@ export default function SupportComponent({
   return (
     <BotCard>
       <p>
-        Ihave opened our support scheduling tool in the sidebar. You can book a meeting with our support team at your convenience.
+        I have opened our support scheduling tool in the sidebar. You can book a meeting with our support team at your convenience.
       </p>
     </BotCard>
   );

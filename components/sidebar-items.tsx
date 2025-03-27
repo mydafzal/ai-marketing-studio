@@ -30,8 +30,8 @@ export function SidebarItems({ chats }: SidebarItemsProps) {
               <SidebarItem index={index} chat={chat}>
                 <SidebarActions
                   chat={chat}
-                  removeChat={removeChat}
-                  shareChat={shareChat}
+                  removeChat={removeChat as any}
+                  shareChat={shareChat as any}
                 />
               </SidebarItem>
             </motion.div>

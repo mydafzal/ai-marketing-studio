@@ -347,7 +347,7 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
   return (
     <div
       className={`w-full shadow-sm rounded-lg border ${
-        isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
+        isDarkMode ? "bg-container-bg border-border-dark" : "bg-white border-gray-200"
       }`}
     >
       {/* Toast notification */}
@@ -356,10 +356,10 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
           className={`fixed top-4 right-4 z-50 p-4 rounded-md shadow-md transition-all ${
             toastMessage.type === "success"
               ? isDarkMode
-                ? "bg-green-900 border border-green-700"
+                ? "bg-primary-green/20 border border-primary-green/60"
                 : "bg-green-100 border border-green-300"
               : isDarkMode
-              ? "bg-red-900 border border-red-700"
+              ? "bg-coral/20 border border-coral/60"
               : "bg-red-100 border border-red-300"
           }`}
         >
@@ -368,10 +368,10 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
               className={
                 toastMessage.type === "success"
                   ? isDarkMode
-                    ? "text-green-400"
+                    ? "text-primary-green"
                     : "text-green-600"
                   : isDarkMode
-                  ? "text-red-400"
+                  ? "text-coral"
                   : "text-red-600"
               }
             >
@@ -386,10 +386,10 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
                 className={`font-medium text-sm ${
                   toastMessage.type === "success"
                     ? isDarkMode
-                      ? "text-green-200"
+                      ? "text-primary-green"
                       : "text-green-800"
                     : isDarkMode
-                    ? "text-red-200"
+                    ? "text-coral"
                     : "text-red-800"
                 }`}
               >
@@ -399,10 +399,10 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
                 className={`text-sm ${
                   toastMessage.type === "success"
                     ? isDarkMode
-                      ? "text-green-300"
+                      ? "text-text-white"
                       : "text-green-700"
                     : isDarkMode
-                    ? "text-red-300"
+                    ? "text-text-white"
                     : "text-red-700"
                 }`}
               >
@@ -416,15 +416,15 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
       {/* Header */}
       <div
         className={`flex items-center justify-between p-6 border-b ${
-          isDarkMode ? "border-gray-700" : "border-gray-200"
+          isDarkMode ? "border-border-dark" : "border-gray-200"
         }`}
       >
         <div>
           <h2 className="flex items-center gap-2 text-xl font-bold">
-            <Brush className={`size-5 ${isDarkMode ? "text-blue-400" : "text-blue-600"}`} />
-            <span className={isDarkMode ? "text-white" : "text-gray-900"}>AI Image Inpainting</span>
+            <Brush className={`size-5 ${isDarkMode ? "text-primary-green" : "text-blue-600"}`} />
+            <span className={isDarkMode ? "text-text-white" : "text-gray-900"}>AI Image Inpainting</span>
           </h2>
-          <p className={`text-sm mt-1.5 ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>
+          <p className={`text-sm mt-1.5 ${isDarkMode ? "text-text-light-gray" : "text-gray-500"}`}>
             Remove or replace parts of an image by brushing them out and describing what you want
           </p>
         </div>
@@ -439,7 +439,7 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
             <div className="space-y-3">
               <label
                 className={`block text-sm font-medium ${
-                  isDarkMode ? "text-gray-200" : "text-gray-700"
+                  isDarkMode ? "text-text-white" : "text-gray-700"
                 }`}
               >
                 Upload image
@@ -448,7 +448,7 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
                 <label
                   className={`cursor-pointer inline-flex items-center px-3 py-2 text-sm font-medium rounded-md ${
                     isDarkMode
-                      ? "bg-gray-700 text-gray-200 border border-gray-600 hover:bg-gray-600"
+                      ? "bg-dark-bg text-text-white border border-border-dark hover:bg-light-container"
                       : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
                   }`}
                 >
@@ -474,7 +474,7 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
                 <label
                   htmlFor="inpaintPrompt"
                   className={`text-sm font-medium ${
-                    isDarkMode ? "text-gray-200" : "text-gray-700"
+                    isDarkMode ? "text-text-white" : "text-gray-700"
                   }`}
                 >
                   Describe your changes
@@ -484,9 +484,9 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   placeholder='e.g. Remove the person on the left and fill with a background of skyscrapers'
-                  className={`w-full min-h-[100px] resize-none p-3 rounded-md outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                  className={`w-full min-h-[100px] resize-none p-3 rounded-md outline-none focus:ring-2 focus:ring-primary-green focus:border-primary-green ${
                     isDarkMode
-                      ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                      ? "bg-dark-bg border-border-dark text-text-white placeholder-text-light-gray"
                       : "bg-white border-gray-300 text-gray-900 placeholder-gray-400"
                   }`}
                 />
@@ -501,10 +501,10 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
                   className={`flex items-center justify-center w-full py-2 px-4 border rounded-md text-sm font-medium ${
                     !prompt.trim() || isProcessing
                       ? isDarkMode
-                        ? "bg-gray-700 text-gray-500 cursor-not-allowed border-gray-700"
+                        ? "bg-dark-bg text-text-light-gray cursor-not-allowed border-border-dark"
                         : "bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200"
                       : isDarkMode
-                      ? "bg-gray-700 text-gray-200 hover:bg-gray-600 border-gray-600"
+                      ? "bg-dark-bg text-text-white hover:bg-light-container border-border-dark"
                       : "bg-white text-gray-700 hover:bg-gray-50 border-gray-300"
                   }`}
                 >
@@ -518,7 +518,7 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
             <div className="space-y-2">
               <label
                 className={`block text-sm font-medium ${
-                  isDarkMode ? "text-gray-200" : "text-gray-700"
+                  isDarkMode ? "text-text-white" : "text-gray-700"
                 }`}
               >
                 Brush Size
@@ -532,7 +532,7 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
                 className="w-full"
               />
               <span
-                className={`text-xs ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}
+                className={`text-xs ${isDarkMode ? "text-text-light-gray" : "text-gray-500"}`}
               >
                 {brushSize}px
               </span>
@@ -547,10 +547,10 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
                 className={`flex items-center justify-center w-full py-2 px-4 border rounded-md text-sm font-medium ${
                   !baseImage || isProcessing
                     ? isDarkMode
-                      ? "bg-gray-700 text-gray-500 cursor-not-allowed border-gray-700"
+                      ? "bg-dark-bg text-text-light-gray cursor-not-allowed border-border-dark"
                       : "bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200"
                     : isDarkMode
-                    ? "bg-gray-700 text-gray-200 hover:bg-gray-600 border-gray-600"
+                    ? "bg-dark-bg text-text-white hover:bg-light-container border-border-dark"
                     : "bg-white text-gray-700 hover:bg-gray-50 border-gray-300"
                 }`}
               >
@@ -565,10 +565,10 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
                 className={`flex items-center justify-center w-full py-2 px-4 rounded-md text-sm font-medium ${
                   !baseImage || !prompt.trim() || isProcessing
                     ? isDarkMode
-                      ? "bg-blue-800 cursor-not-allowed text-blue-300"
+                      ? "bg-primary-green/50 cursor-not-allowed text-text-white/70"
                       : "bg-blue-300 cursor-not-allowed text-white"
                     : isDarkMode
-                    ? "bg-blue-600 hover:bg-blue-700 text-white"
+                    ? "bg-primary-green hover:bg-primary-green/90 text-deep-black"
                     : "bg-blue-600 hover:bg-blue-700 text-white"
                 }`}
               >
@@ -583,7 +583,7 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
             {/* Instructions */}
             {baseImage && (
               <div className={`p-3 rounded-lg text-sm ${
-                isDarkMode ? "bg-blue-900/30 text-blue-200" : "bg-blue-50 text-blue-800"
+                isDarkMode ? "bg-primary-green/10 text-text-white" : "bg-blue-50 text-blue-800"
               }`}>
                 <div className="flex gap-2 items-start">
                   <Info className="size-4 mt-0.5 flex-shrink-0" />
@@ -598,12 +598,12 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
               <div
                 ref={containerRef}
                 className={`border rounded-lg p-4 flex flex-col gap-4 ${
-                  isDarkMode ? "border-gray-700 bg-gray-800" : "border-gray-200 bg-gray-50"
+                  isDarkMode ? "border-border-dark bg-dark-bg" : "border-gray-200 bg-gray-50"
                 }`}
               >
                 <h3
                   className={`text-md font-medium ${
-                    isDarkMode ? "text-gray-200" : "text-gray-800"
+                    isDarkMode ? "text-text-white" : "text-gray-800"
                   }`}
                 >
                   Input Image
@@ -638,7 +638,7 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
                   </div>
                 ) : (
                   <div className="text-center text-sm py-10">
-                    <p className={isDarkMode ? "text-gray-400" : "text-gray-500"}>
+                    <p className={isDarkMode ? "text-text-light-gray" : "text-gray-500"}>
                       No image loaded. Please upload an image to begin inpainting.
                     </p>
                   </div>
@@ -648,13 +648,13 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
               {/* Result preview - side by side now */}
               <div
                 className={`border rounded-lg p-4 flex flex-col gap-4 ${
-                  isDarkMode ? "border-gray-700 bg-gray-800" : "border-gray-200 bg-gray-50"
+                  isDarkMode ? "border-border-dark bg-dark-bg" : "border-gray-200 bg-gray-50"
                 }`}
               >
                 <div className="flex justify-between items-center">
                   <h3
                     className={`text-md font-medium ${
-                      isDarkMode ? "text-gray-200" : "text-gray-800"
+                      isDarkMode ? "text-text-white" : "text-gray-800"
                     }`}
                   >
                     Inpainted Result
@@ -667,7 +667,7 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
                         onClick={handleContinueEditing}
                         className={`inline-flex items-center px-3 py-1 text-sm font-medium rounded-md ${
                           isDarkMode
-                            ? "bg-green-600 text-white hover:bg-green-700"
+                            ? "bg-primary-green text-deep-black hover:bg-primary-green/90"
                             : "bg-green-600 text-white hover:bg-green-700"
                         }`}
                       >
@@ -680,7 +680,7 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
                         onClick={handleDownloadResult}
                         className={`inline-flex items-center px-3 py-1 text-sm font-medium rounded-md ${
                           isDarkMode
-                            ? "bg-blue-600 text-white hover:bg-blue-700"
+                            ? "bg-coral text-deep-black hover:bg-coral/90"
                             : "bg-blue-600 text-white hover:bg-blue-700"
                         }`}
                       >
@@ -706,15 +706,15 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
                   <div className="text-center text-sm py-10 flex-grow flex flex-col items-center justify-center">
                     {isProcessing ? (
                       <div className="flex flex-col items-center gap-3">
-                        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-                        <p className={isDarkMode ? "text-gray-300" : "text-gray-600"}>
+                        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-green"></div>
+                        <p className={isDarkMode ? "text-text-white" : "text-gray-600"}>
                           Processing your image...
                         </p>
                       </div>
                     ) : (
                       <div className="flex flex-col items-center gap-2">
-                        <ArrowLeft className={`size-5 ${isDarkMode ? "text-gray-400" : "text-gray-500"}`} />
-                        <p className={isDarkMode ? "text-gray-400" : "text-gray-500"}>
+                        <ArrowLeft className={`size-5 ${isDarkMode ? "text-text-light-gray" : "text-gray-500"}`} />
+                        <p className={isDarkMode ? "text-text-light-gray" : "text-gray-500"}>
                           Use the controls to generate your inpainted image
                         </p>
                       </div>
@@ -730,12 +730,12 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
       {/* Footer */}
       <div
         className={`flex justify-end items-center border-t p-4 ${
-          isDarkMode ? "bg-gray-800 border-gray-700" : "bg-gray-50 border-gray-200"
+          isDarkMode ? "bg-container-bg border-border-dark" : "bg-gray-50 border-gray-200"
         }`}
       >
         {/* "powered by" section */}
         <div className="flex items-center gap-2 text-xs">
-          <span className={isDarkMode ? "text-gray-400" : "text-gray-500"}>
+          <span className={isDarkMode ? "text-text-light-gray" : "text-gray-500"}>
             Powered by Ideogram AI
           </span>
           <NextImage

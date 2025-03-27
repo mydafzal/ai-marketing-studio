@@ -92,7 +92,7 @@ export const DetailedMetrics: React.FC<DetailedMetricsProps> = ({
 
   return (
     <div className="mt-4">
-      <h2 className="mb-4 text-xl font-semibold text-zinc-800 dark:text-zinc-100">
+      <h2 className="mb-4 text-xl font-semibold text-white">
         Detailed Metrics Comparison
       </h2>
 
@@ -102,7 +102,11 @@ export const DetailedMetrics: React.FC<DetailedMetricsProps> = ({
           variant={metricCategory === "engagement" ? "default" : "outline"}
           size="sm"
           onClick={() => setMetricCategory("engagement")}
-          className="rounded-full"
+          className={`rounded-full ${
+            metricCategory === "engagement"
+              ? "bg-[#4BF29C] text-[#0A0C14] hover:bg-[#4BF29C]/90"
+              : "bg-[#151925] border-[#2A2E3A] text-[#ADB0B8] hover:bg-[#1A1D29] hover:text-white"
+          }`}
         >
           <Users className="mr-2 size-4" /> Engagement
         </Button>
@@ -110,7 +114,11 @@ export const DetailedMetrics: React.FC<DetailedMetricsProps> = ({
           variant={metricCategory === "conversion" ? "default" : "outline"}
           size="sm"
           onClick={() => setMetricCategory("conversion")}
-          className="rounded-full"
+          className={`rounded-full ${
+            metricCategory === "conversion"
+              ? "bg-[#4BF29C] text-[#0A0C14] hover:bg-[#4BF29C]/90"
+              : "bg-[#151925] border-[#2A2E3A] text-[#ADB0B8] hover:bg-[#1A1D29] hover:text-white"
+          }`}
         >
           <TrendingUp className="mr-2 size-4" /> Conversion
         </Button>
@@ -118,7 +126,11 @@ export const DetailedMetrics: React.FC<DetailedMetricsProps> = ({
           variant={metricCategory === "clicks" ? "default" : "outline"}
           size="sm"
           onClick={() => setMetricCategory("clicks")}
-          className="rounded-full"
+          className={`rounded-full ${
+            metricCategory === "clicks"
+              ? "bg-[#4BF29C] text-[#0A0C14] hover:bg-[#4BF29C]/90"
+              : "bg-[#151925] border-[#2A2E3A] text-[#ADB0B8] hover:bg-[#1A1D29] hover:text-white"
+          }`}
         >
           <MousePointer className="mr-2 size-4" /> Click Data
         </Button>
@@ -126,7 +138,11 @@ export const DetailedMetrics: React.FC<DetailedMetricsProps> = ({
           variant={metricCategory === "video" ? "default" : "outline"}
           size="sm"
           onClick={() => setMetricCategory("video")}
-          className="rounded-full"
+          className={`rounded-full ${
+            metricCategory === "video"
+              ? "bg-[#4BF29C] text-[#0A0C14] hover:bg-[#4BF29C]/90"
+              : "bg-[#151925] border-[#2A2E3A] text-[#ADB0B8] hover:bg-[#1A1D29] hover:text-white"
+          }`}
         >
           <Video className="mr-2 size-4" /> Video Metrics
         </Button>
@@ -134,9 +150,9 @@ export const DetailedMetrics: React.FC<DetailedMetricsProps> = ({
 
       {/* Best performer highlight card */}
       {bestPerformerCreative && (
-        <div className="mb-6 rounded-xl bg-gradient-to-r from-yellow-50 to-amber-50 p-4 shadow-md dark:from-yellow-900/20 dark:to-amber-900/20">
+        <div className="mb-6 rounded-xl bg-gradient-to-r from-[#151925] to-[#1A1D29] p-4 shadow-md border border-[#2A2E3A]">
           <div className="flex items-center">
-            <div className="mr-4 size-20 overflow-hidden rounded-lg border border-yellow-300 shadow-md">
+            <div className="mr-4 size-20 overflow-hidden rounded-lg border border-[#4BF29C]/30 shadow-md">
               {bestPerformerCreative.type === "video" ? (
                 <VideoPlayer
                   videoId={bestPerformerCreative.videoId}
@@ -156,12 +172,12 @@ export const DetailedMetrics: React.FC<DetailedMetricsProps> = ({
             </div>
             <div>
               <div className="flex items-center">
-                <Award className="mr-2 size-5 text-amber-500" />
-                <h3 className="text-lg font-semibold text-zinc-800 dark:text-zinc-200">
+                <Award className="mr-2 size-5 text-[#4BF29C]" />
+                <h3 className="text-lg font-semibold text-white">
                   Top Performer: {formatAdName(bestPerformerCreative.name)}
                 </h3>
               </div>
-              <p className="text-sm text-zinc-600 dark:text-zinc-400">
+              <p className="text-sm text-[#ADB0B8]">
                 This creative is the top performer for{" "}
                 {selectedMetric.replace(/([A-Z])/g, " $1").trim()}:{" "}
                 {formatMetricValue(
@@ -175,22 +191,22 @@ export const DetailedMetrics: React.FC<DetailedMetricsProps> = ({
       )}
 
       {/* Data table - Wider rows */}
-      <div className="overflow-x-auto rounded-xl bg-white shadow-md dark:bg-zinc-800">
+      <div className="overflow-x-auto rounded-xl bg-[#0A0C14] shadow-md border border-[#2A2E3A]">
         <table className="min-w-full text-sm">
-          <thead className="bg-zinc-100 dark:bg-zinc-700">
+          <thead className="bg-[#151925]">
             <tr>
-              <th className="w-[300px] p-5 text-left font-medium text-zinc-700 dark:text-zinc-300">
+              <th className="w-[300px] p-5 text-left font-medium text-white">
                 Creative
               </th>
               {metricCategories[metricCategory].map((metric) => (
                 <th
                   key={metric}
-                  className="p-5 text-left font-medium text-zinc-700 dark:text-zinc-300"
+                  className="p-5 text-left font-medium text-white"
                 >
                   {metric.replace(/([A-Z])/g, " $1").trim()}
                 </th>
               ))}
-              <th className="p-5 text-center font-medium text-zinc-700 dark:text-zinc-300">
+              <th className="p-5 text-center font-medium text-white">
                 Actions
               </th>
             </tr>
@@ -201,11 +217,11 @@ export const DetailedMetrics: React.FC<DetailedMetricsProps> = ({
               return (
                 <tr
                   key={cr.id}
-                  className={`border-b border-zinc-200 dark:border-zinc-700 ${
-                    isBestPerformer ? "bg-yellow-50 dark:bg-yellow-900/20" : ""
+                  className={`border-b border-[#2A2E3A] ${
+                    isBestPerformer ? "bg-[#151925]" : ""
                   }`}
                 >
-                  <td className="p-5 font-medium text-zinc-800 dark:text-zinc-200">
+                  <td className="p-5 font-medium text-white">
                     <div className="flex items-center">
                       <CreativeThumbnail creative={cr} />
                       <div className="flex flex-col">
@@ -214,7 +230,7 @@ export const DetailedMetrics: React.FC<DetailedMetricsProps> = ({
                             {formatAdName(cr.name)}
                           </span>
                           {isBestPerformer && (
-                            <span className="ml-2 inline-flex items-center rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300">
+                            <span className="ml-2 inline-flex items-center rounded-full bg-[#4BF29C]/15 px-2 py-0.5 text-xs font-medium text-[#4BF29C] border border-[#4BF29C]/30">
                               <Award className="mr-1 size-3" />
                               Best
                             </span>
@@ -225,8 +241,8 @@ export const DetailedMetrics: React.FC<DetailedMetricsProps> = ({
                             mt-1 w-fit text-xs
                             ${
                               cr.status === "ACTIVE"
-                                ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                                : "bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300"
+                                ? "bg-[#4BF29C]/15 text-[#4BF29C] border border-[#4BF29C]/30"
+                                : "bg-[#1A1D29] text-[#ADB0B8] border border-[#2A2E3A]"
                             }
                           `}
                         >
@@ -241,9 +257,9 @@ export const DetailedMetrics: React.FC<DetailedMetricsProps> = ({
                     return (
                       <td
                         key={metricKey}
-                        className={`p-5 text-zinc-600 dark:text-zinc-300 ${
+                        className={`p-5 text-[#ADB0B8] ${
                           isCurrentAndBest
-                            ? "font-bold text-green-600 dark:text-green-400"
+                            ? "font-bold text-[#4BF29C]"
                             : ""
                         }`}
                       >
@@ -257,7 +273,7 @@ export const DetailedMetrics: React.FC<DetailedMetricsProps> = ({
                         onClick={() => onViewDetails(cr)}
                         variant="outline"
                         size="sm"
-                        className="h-9 px-2.5"
+                        className="h-9 px-2.5 bg-[#151925] border-[#2A2E3A] text-[#ADB0B8] hover:bg-[#1A1D29] hover:text-white"
                       >
                         <Edit2 className="size-4" />
                       </Button>
@@ -268,8 +284,9 @@ export const DetailedMetrics: React.FC<DetailedMetricsProps> = ({
                         className={`
                           h-9 px-2.5
                           ${
-                            cr.status !== "ACTIVE" &&
-                            "bg-green-600 hover:bg-green-700 text-white"
+                            cr.status === "ACTIVE"
+                            ? "bg-[#FF7D5A] hover:bg-[#FF7D5A]/90 text-[#0A0C14]"
+                            : "bg-[#4BF29C] hover:bg-[#4BF29C]/90 text-[#0A0C14]"
                           }
                         `}
                       >
