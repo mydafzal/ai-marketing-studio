@@ -27,7 +27,7 @@ export const CreativeDisplay: React.FC<CreativeDisplayProps> = ({
   onTogglePublish,
 }) => {
   // Use a fixed format to ensure we only fetch once
-  const defaultFormat = creative.type === 'video' ? 'INSTAGRAM_REELS' : 'INSTAGRAM_REELS'
+  const defaultFormat = creative.type === 'video' ? 'INSTAGRAM_REELS' : 'INSTAGRAM_STANDARD'
   const [previewHtml, setPreviewHtml] = useState<string>("")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -168,20 +168,20 @@ export const CreativeDisplay: React.FC<CreativeDisplayProps> = ({
       className={`
         group mx-auto flex w-full flex-col
         overflow-hidden rounded-xl
-        border border-zinc-700 transition-all duration-300 hover:shadow-xl
-        bg-[#111318] 
-        hover:scale-[1.01]
+        border border-[#2A2E3A] transition-all duration-300 hover:shadow-xl
+        bg-[#0A0C14] 
+        hover:scale-[1.02]
         ${
           isTopPerformer
-            ? "bg-gradient-to-r from-[#131419] to-[#151822] ring-2 ring-[#4AE04A]/40"
+            ? "bg-gradient-to-r from-[#151925] to-[#1A1D29] ring-1 ring-[#4BF29C]/30"
             : isSecondBest
-            ? "bg-gradient-to-r from-[#131419] to-[#151720] ring-2 ring-blue-500/30"
-            : "bg-[#111318] shadow-lg"
+            ? "bg-gradient-to-r from-[#151925] to-[#1A1D29] ring-1 ring-[#FF7D5A]/30"
+            : "bg-[#0A0C14] shadow-lg"
         }
       `}
     >
       {/* HEADER: Title & Badges */}
-      <div className="border-b border-zinc-700/70 px-5 py-3">
+      <div className="border-b border-[#2A2E3A] px-5 py-3">
         <div className="flex items-center space-x-2 mb-3">
           <h5 className="text-lg font-semibold text-white">
             {truncatedName}
@@ -191,8 +191,8 @@ export const CreativeDisplay: React.FC<CreativeDisplayProps> = ({
               text-xs font-medium ml-2
               ${
                 creative.status === "ACTIVE"
-                  ? "bg-[#4AE04A]/20 text-[#4AE04A] border border-[#4AE04A]/30"
-                  : "bg-zinc-800 text-zinc-300 border border-zinc-600"
+                  ? "bg-[#4BF29C]/15 text-[#4BF29C] border border-[#4BF29C]/30"
+                  : "bg-[#1A1D29] text-[#ADB0B8] border border-[#2A2E3A]"
               }
             `}
           >
@@ -201,13 +201,13 @@ export const CreativeDisplay: React.FC<CreativeDisplayProps> = ({
           
           {/* Performance badges */}
           {isTopPerformer && (
-            <Badge className="bg-gradient-to-r from-[#4AE04A]/80 to-[#4AE04A]/60 ml-1 text-black">
+            <Badge className="bg-gradient-to-r from-[#4BF29C]/60 to-[#4BF29C]/40 ml-1 text-[#0A0C14]">
               <Award className="size-3 mr-1" />
               Top Performer
             </Badge>
           )}
           {isSecondBest && !isTopPerformer && (
-            <Badge className="bg-gradient-to-r from-blue-400/80 to-blue-500/60 ml-1 text-black">
+            <Badge className="bg-gradient-to-r from-[#FF7D5A]/60 to-[#FF7D5A]/40 ml-1 text-[#0A0C14]">
               <Award className="size-3 mr-1" />
               Runner Up
             </Badge>
@@ -220,7 +220,7 @@ export const CreativeDisplay: React.FC<CreativeDisplayProps> = ({
             onClick={onViewDetails}
             variant="outline"
             size="sm"
-            className="bg-[#1A1C24] border-zinc-700 text-zinc-200 hover:bg-[#22252F] hover:text-white"
+            className="bg-[#151925] border-[#2A2E3A] text-[#ADB0B8] hover:bg-[#1A1D29] hover:text-white"
           >
             <Eye className="mr-1.5 size-4" />
             Details
@@ -232,8 +232,8 @@ export const CreativeDisplay: React.FC<CreativeDisplayProps> = ({
             className={`
               ${
                 creative.status !== "ACTIVE"
-                ? "bg-[#4AE04A]/90 hover:bg-[#4AE04A] text-black"
-                : "bg-red-600 hover:bg-red-700 text-white"
+                ? "bg-[#4BF29C] hover:bg-[#4BF29C]/90 text-[#0A0C14]"
+                : "bg-[#FF7D5A] hover:bg-[#FF7D5A]/90 text-[#0A0C14]"
               }
             `}
           >
@@ -255,15 +255,15 @@ export const CreativeDisplay: React.FC<CreativeDisplayProps> = ({
       {/* BODY: Full-width Preview */}
       <div className="relative p-4">
         {/* Vertical accent line */}
-        <div className="absolute left-0 top-0 w-1 h-full bg-[#4AE04A]/30"></div>
+        <div className="absolute left-0 top-0 w-1 h-full bg-[#4BF29C]/20"></div>
         
-        <div className="h-full w-[313px] mx-auto flex items-center justify-center bg-[#111318] rounded-md overflow-hidden min-h-[534px]">
+        <div className="h-full w-[313px] mx-auto flex items-center justify-center bg-[#0F1117] rounded-md overflow-hidden min-h-[534px]">
           {isLoading ? (
             <div className="flex items-center justify-center h-full w-full">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#4AE04A]"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#4BF29C]"></div>
             </div>
           ) : error ? (
-            <div className="text-red-400 p-4 text-center">
+            <div className="text-[#FF7D5A] p-4 text-center">
               {error}
             </div>
           ) : (

@@ -7,10 +7,11 @@ import { IMAGE_AD_FORMATS, VIDEO_AD_FORMATS, AD_FORMAT_LABELS } from "./types"
 interface AdPreviewProps {
   creativeId: string
   type: "image" | "video"
+  adFormat?: string
 }
 
-export const AdPreview: React.FC<AdPreviewProps> = ({ creativeId, type }) => {
-  const [adFormat, setAdFormat] = useState(type === 'video' ? 'INSTAGRAM_REELS' : 'INSTAGRAM_REELS')
+export const AdPreview: React.FC<AdPreviewProps> = ({ creativeId, type, adFormat: propsAdFormat }) => {
+  const [adFormat, setAdFormat] = useState(propsAdFormat || (type === 'video' ? 'INSTAGRAM_REELS' : 'INSTAGRAM_STANDARD'))
   const [previewHtml, setPreviewHtml] = useState<string>("")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -69,6 +70,13 @@ export const AdPreview: React.FC<AdPreviewProps> = ({ creativeId, type }) => {
     return { __html: previewHtml }
   }
 
+  // Update adFormat when propsAdFormat changes
+  useEffect(() => {
+    if (propsAdFormat && propsAdFormat !== adFormat) {
+      setAdFormat(propsAdFormat);
+    }
+  }, [propsAdFormat, adFormat]);
+
   // Modify iframes to be fixed size
   useEffect(() => {
     if (previewRef.current && !isLoading && previewHtml) {
@@ -126,13 +134,13 @@ export const AdPreview: React.FC<AdPreviewProps> = ({ creativeId, type }) => {
 
   return (
     <div className="flex flex-col items-center w-full space-y-4">
-      <div className="relative w-[313px] mx-auto bg-[#111318] rounded-md overflow-hidden min-h-[534px] flex items-center justify-center">
+      <div className="relative w-[313px] mx-auto bg-[#0F1117] rounded-md overflow-hidden min-h-[534px] flex items-center justify-center">
         {isLoading ? (
           <div className="flex items-center justify-center size-full">
-            <div className="animate-spin rounded-full size-12 border-b-2 border-[#4AE04A]"></div>
+            <div className="animate-spin rounded-full size-12 border-b-2 border-[#4BF29C]"></div>
           </div>
         ) : error ? (
-          <div className="text-red-400 p-4 text-center">
+          <div className="text-[#FF7D5A] p-4 text-center">
             {error}
           </div>
         ) : (
@@ -151,6 +159,9 @@ export const AdPreview: React.FC<AdPreviewProps> = ({ creativeId, type }) => {
             }}
           />
         )}
+      </div>
+      <div className="text-[#8A8F99] text-xs">
+        {adFormat && AD_FORMAT_LABELS[adFormat as keyof typeof AD_FORMAT_LABELS]} Preview
       </div>
     </div>
   )

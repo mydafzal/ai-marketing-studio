@@ -37,23 +37,33 @@ export function ClearHistory({
         return (
             <AlertDialog open={open} onOpenChange={setOpen}>
                 <AlertDialogTrigger asChild>
-                    <Button variant="ghost" disabled={!isEnabled || isPending}>
+                    <Button 
+                        variant="ghost" 
+                        disabled={!isEnabled || isPending}
+                        className="text-[#8A8F99] hover:text-white hover:bg-[#212534] transition-colors"
+                    >
                         {isPending && <IconSpinner className="mr-2"/>}
                         Clear history
                     </Button>
                 </AlertDialogTrigger>
-                <AlertDialogContent>
+                <AlertDialogContent className="bg-[#1A1D29] border border-[#2A2E3A] text-white">
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
+                        <AlertDialogTitle className="text-white">Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription className="text-[#ADB0B8]">
                             This will permanently delete your chat history and remove your data
                             from our servers.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel 
+                            disabled={isPending}
+                            className="bg-[#151925] text-white border-[#2A2E3A] hover:bg-[#212534] hover:text-white"
+                        >
+                            Cancel
+                        </AlertDialogCancel>
                         <AlertDialogAction
                             disabled={isPending}
+                            className="bg-[#4BF29C] text-[#0A0C14] hover:bg-[#5cffad]"
                             onClick={event => {
                                 event.preventDefault()
                                 startTransition(async () => {

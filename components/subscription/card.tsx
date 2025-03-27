@@ -31,30 +31,30 @@ export function Card({ user, onCancelSubscription }: CardProps) {
 	  };
 
   return (
-    <div className="p-6 bg-gray-50 flex justify-center items-center">
-      <div className="w-full max-w-sm bg-white shadow-md rounded-lg border border-gray-200">
-        <div className="rounded-t-lg bg-purple-500 h-2"></div>
+    <div className="p-6 bg-[#0A0C14] flex justify-center items-center">
+      <div className="w-full max-w-sm bg-[#1A1D29] shadow-md rounded-lg border border-[#2A2E3A]">
+        <div className="rounded-t-lg bg-[#4BF29C] h-2"></div>
         <div className="p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+          <h2 className="text-xl font-semibold text-white mb-4">
             Plan Details
           </h2>
           <div>
             {user.sub_offer ? (
-              <p className="text-sm text-gray-700">
-                <span className="font-semibold">Current Plan:</span>{' '}
+              <p className="text-sm text-[#ADB0B8]">
+                <span className="font-semibold text-white">Current Plan:</span>{' '}
                 {user.sub_offer!.charAt(0).toUpperCase() +
                   user.sub_offer!.slice(1)}
               </p>
             ) : (
-              <p className="text-sm text-gray-700">
-                <span className="font-semibold">Current Plan:</span>
+              <p className="text-sm text-[#ADB0B8]">
+                <span className="font-semibold text-white">Current Plan:</span>
                 {' No Subscription Plan'}
               </p>
             )}
 
             {user.sub_current_period_end && (
-              <p className="text-sm text-gray-700 mt-1">
-                <span className="font-semibold">Next billing period:</span>{' '}
+              <p className="text-sm text-[#ADB0B8] mt-1">
+                <span className="font-semibold text-white">Next billing period:</span>{' '}
                 {new Date(user.sub_current_period_end!).toLocaleDateString(
                   'en-GB',
                   {
@@ -66,8 +66,8 @@ export function Card({ user, onCancelSubscription }: CardProps) {
               </p>
             )}
           </div>
-          <div className="border-t border-gray-300 my-4"></div>
-        <Button className="mt-3 font-medium rounded-lg bg-purple-600 text-white" onClick={handleManageSubscription}>
+          <div className="border-t border-[#2A2E3A] my-4"></div>
+        <Button className="mt-3 font-medium rounded-lg bg-[#4BF29C] text-[#0A0C14] hover:bg-[#3AD88C] transition-colors" onClick={handleManageSubscription}>
 				  Manage Subscription
         </Button>
         </div>

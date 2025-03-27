@@ -88,18 +88,18 @@ export function Subscription({
           {!user.sub_status || user.sub_status !== 'active' ? (
             <div className="text-center">
               <h1 className="text-[40px] font-bold text-white dark:text-white">
-                Simple, <span className="text-purple-500 dark:text-purple-500">transparent</span> pricing
+                Simple, <span className="text-[#4BF29C] dark:text-[#4BF29C]">transparent</span> pricing
               </h1>
-              <p className="my-4 text-gray-400 dark:text-gray-400 text-[16px] leading-[22.89px]">
+              <p className="my-4 text-[#ADB0B8] dark:text-[#ADB0B8] text-[16px] leading-[22.89px]">
                 Choose the perfect plan to accelerate your marketing efforts with the power of AI
               </p>
             </div>
           ) : (
             <div className="text-center">
               <h1 className="text-[40px] font-bold text-white dark:text-white">
-                Manage <span className="text-purple-500 dark:text-purple-500">Subscription</span>
+                Manage <span className="text-[#4BF29C] dark:text-[#4BF29C]">Subscription</span>
               </h1>
-              <p className="my-4 text-gray-400 dark:text-gray-400 text-[16px] leading-[22.89px]">
+              <p className="my-4 text-[#ADB0B8] dark:text-[#ADB0B8] text-[16px] leading-[22.89px]">
                 Your current Reeply AI subscription plan can be seen below.
               </p>
             </div>
@@ -107,19 +107,19 @@ export function Subscription({
 
           {/* If subscription is active, only show Plan Details */}
           {user.sub_status === 'active' ? (
-            <div className="bg-[#1A1D29] dark:bg-[#1A1D29] rounded-xl overflow-hidden border border-gray-800 dark:border-gray-800">
+            <div className="bg-[#1A1D29] dark:bg-[#1A1D29] rounded-xl overflow-hidden border border-[#2A2E3A] dark:border-[#2A2E3A]">
               <Card user={user} onCancelSubscription={showModal} />
             </div>
           ) : (
             <>
               <div className="flex items-center justify-center">
-                <div className="flex bg-[#1A1D29] dark:bg-[#1A1D29] rounded-lg p-1">
+                <div className="flex bg-[#151925] dark:bg-[#151925] rounded-lg p-1">
                   <button
                     onClick={() => setIsMonthly(true)}
                     className={`px-6 py-2 text-sm font-medium rounded-lg ${
                       isMonthly 
-                        ? 'bg-purple-600 dark:bg-purple-600 text-white' 
-                        : 'text-gray-400 dark:text-gray-400'
+                        ? 'bg-[#4BF29C] dark:bg-[#4BF29C] text-[#0A0C14]' 
+                        : 'text-[#8A8F99] dark:text-[#8A8F99] hover:text-white transition-colors'
                     }`}
                   >
                     Monthly
@@ -128,13 +128,13 @@ export function Subscription({
                     onClick={() => setIsMonthly(false)}
                     className={`px-6 py-2 text-sm font-medium rounded-lg flex items-center ${
                       !isMonthly 
-                        ? 'bg-purple-600 dark:bg-purple-600 text-white' 
-                        : 'text-gray-400 dark:text-gray-400'
+                        ? 'bg-[#4BF29C] dark:bg-[#4BF29C] text-[#0A0C14]' 
+                        : 'text-[#8A8F99] dark:text-[#8A8F99] hover:text-white transition-colors'
                     }`}
                   >
                     <span>Yearly</span>
                     {!isMonthly && (
-                      <span className="ml-2 text-green-500 dark:text-green-500 text-xs">
+                      <span className="ml-2 text-[#FF7D5A] dark:text-[#FF7D5A] text-xs">
                         Save up to 70%
                       </span>
                     )}

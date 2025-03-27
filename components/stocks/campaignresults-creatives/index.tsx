@@ -79,11 +79,11 @@ const AdCreativesComparison: React.FC<{ campaignId?: string, skipAiThoughts?: bo
 
   // AI thoughts array
   const aiThoughts = [
-    { id: 1, icon: <Brain className="size-4 text-[#4AE04A]" />, text: "Analyzing ad creative performance metrics..." },
-    { id: 2, icon: <Users className="size-4 text-blue-400" />, text: "Identifying audience engagement patterns..." },
-    { id: 3, icon: <BarChart3 className="size-4 text-purple-400" />, text: "Calculating conversion rates and ROI..." },
-    { id: 4, icon: <Sparkles className="size-4 text-amber-400" />, text: "Determining top-performing creatives..." },
-    { id: 5, icon: <Zap className="size-4 text-[#4AE04A]" />, text: "Preparing visualization of results..." }
+    { id: 1, icon: <Brain className="size-4 text-[#4BF29C]" />, text: "Analyzing ad creative performance metrics..." },
+    { id: 2, icon: <Users className="size-4 text-[#4BF29C]" />, text: "Identifying audience engagement patterns..." },
+    { id: 3, icon: <BarChart3 className="size-4 text-[#4BF29C]" />, text: "Calculating conversion rates and ROI..." },
+    { id: 4, icon: <Sparkles className="size-4 text-[#FF7D5A]" />, text: "Determining top-performing creatives..." },
+    { id: 5, icon: <Zap className="size-4 text-[#4BF29C]" />, text: "Preparing visualization of results..." }
   ]
 
   // AI thought simulation
@@ -474,30 +474,30 @@ const AdCreativesComparison: React.FC<{ campaignId?: string, skipAiThoughts?: bo
   }
 
   return (
-    <div className="flex h-full flex-col bg-[#111318] shadow-lg">
+    <div className="flex h-full flex-col bg-[#0A0C14] shadow-lg">
       {/* AI Thought Process Overlay */}
       {showingAiThoughts && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-[#111318]/95">
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-[#0A0C14]/95">
           <div className="flex flex-col items-center">
-            <div className="mb-8 rounded-full bg-[#4AE04A]/20 p-4">
-              <Brain className="size-8 text-[#4AE04A]" />
+            <div className="mb-8 rounded-full bg-[#4BF29C]/15 p-4">
+              <Brain className="size-8 text-[#4BF29C]" />
             </div>
             <div className="w-full max-w-md space-y-3">
               {aiThoughts.map((thought) => (
                 <div 
                   key={thought.id} 
-                  className={`flex items-center space-x-3 rounded-lg bg-[#1A1C24] p-3 transition-all duration-300 ${
+                  className={`flex items-center space-x-3 rounded-lg bg-[#151925] p-3 transition-all duration-300 ${
                     completedThoughts.includes(thought.id) 
                       ? "opacity-100 translate-y-0" 
                       : "opacity-0 translate-y-4"
                   }`}
                 >
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#22252F]">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#1A1D29]">
                     {thought.icon}
                   </div>
-                  <span className="text-sm text-zinc-200">{thought.text}</span>
+                  <span className="text-sm text-[#ADB0B8]">{thought.text}</span>
                   {completedThoughts.includes(thought.id) && (
-                    <div className="ml-auto text-[#4AE04A]">✓</div>
+                    <div className="ml-auto text-[#4BF29C]">✓</div>
                   )}
                 </div>
               ))}
@@ -507,16 +507,16 @@ const AdCreativesComparison: React.FC<{ campaignId?: string, skipAiThoughts?: bo
       )}
 
       {/* Header */}
-      <header className="relative flex items-center justify-between overflow-hidden bg-gradient-to-r from-[#1A1C24] to-[#1E212A] p-6 text-white">
+      <header className="relative flex items-center justify-between overflow-hidden bg-gradient-to-r from-[#151925] to-[#1A1D29] p-6 text-white border-b border-[#2A2E3A]">
         <div className="pointer-events-none absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-10" />
 
         <div className="z-10 flex items-center gap-3">
-          <div className="rounded-lg bg-[#4AE04A]/20 p-2">
-            <Award className="size-6 text-[#4AE04A]" />
+          <div className="rounded-lg bg-[#4BF29C]/15 p-2">
+            <Award className="size-6 text-[#4BF29C]" />
           </div>
           <div>
             <h1 className="text-2xl font-bold">Ad Creative Performance</h1>
-            <p className="text-sm text-zinc-300">
+            <p className="text-sm text-[#ADB0B8]">
               Compare and analyze your ad performance metrics
             </p>
           </div>
@@ -524,23 +524,23 @@ const AdCreativesComparison: React.FC<{ campaignId?: string, skipAiThoughts?: bo
       </header>
 
       {/* Main content */}
-      <main className="grow overflow-y-auto bg-[#121419] p-6">
+      <main className="grow overflow-y-auto bg-[#0F1117] p-6">
         {!effectiveCampaignId && (
-          <div className="mb-4 rounded-lg border border-yellow-700 bg-yellow-900/20 p-4">
-            <p className="text-yellow-400">
+          <div className="mb-4 rounded-xl border border-[#FF7D5A]/30 bg-[#FF7D5A]/10 p-4">
+            <p className="text-[#FF7D5A]">
               No campaign ID provided. Please select a campaign.
             </p>
           </div>
         )}
 
         {error && (
-          <div className="mb-4 rounded-lg border border-red-800 bg-red-900/20 p-4">
-            <p className="text-red-400">{error}</p>
+          <div className="mb-4 rounded-xl border border-[#FF7D5A]/30 bg-[#FF7D5A]/10 p-4">
+            <p className="text-[#FF7D5A]">{error}</p>
           </div>
         )}
 
         {isLoading && (
-          <p className="text-zinc-300">Loading raw creatives...</p>
+          <p className="text-[#ADB0B8]">Loading raw creatives...</p>
         )}
 
         {adCreatives.length > 0 && !error && (
@@ -551,19 +551,19 @@ const AdCreativesComparison: React.FC<{ campaignId?: string, skipAiThoughts?: bo
                   onClick={handlePrev}
                   variant="outline"
                   size="sm"
-                  className="size-10 flex items-center justify-center rounded-full border-zinc-700 p-0 bg-[#1A1C24] hover:bg-[#22252F] text-white"
+                  className="size-10 flex items-center justify-center rounded-full border-[#2A2E3A] p-0 bg-[#151925] hover:bg-[#1A1D29] text-white"
                   disabled={sliderIndex === 0}
                 >
                   <ChevronLeft className="size-5" />
                 </Button>
-                <div className="text-sm text-zinc-400">
+                <div className="text-sm text-[#8A8F99]">
                   Page {sliderIndex + 1} of {chunkedCreatives.length}
                 </div>
                 <Button
                   onClick={handleNext}
                   variant="outline"
                   size="sm"
-                  className="size-10 flex items-center justify-center rounded-full border-zinc-700 p-0 bg-[#1A1C24] hover:bg-[#22252F] text-white"
+                  className="size-10 flex items-center justify-center rounded-full border-[#2A2E3A] p-0 bg-[#151925] hover:bg-[#1A1D29] text-white"
                   disabled={sliderIndex === chunkedCreatives.length - 1}
                 >
                   <ChevronRight className="size-5" />
@@ -578,8 +578,8 @@ const AdCreativesComparison: React.FC<{ campaignId?: string, skipAiThoughts?: bo
                     onClick={() => setSliderIndex(idx)}
                     className={`size-2 rounded-full ${
                       idx === sliderIndex
-                        ? "bg-[#4AE04A]"
-                        : "bg-zinc-700 hover:bg-zinc-600"
+                        ? "bg-[#4BF29C]"
+                        : "bg-[#2A2E3A] hover:bg-[#1A1D29]"
                     }`}
                     aria-label={`Go to page ${idx + 1}`}
                   />
@@ -631,17 +631,17 @@ const AdCreativesComparison: React.FC<{ campaignId?: string, skipAiThoughts?: bo
           }
         }}
       >
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-[#111318] border-zinc-700 text-white">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-[#0A0C14] border-[#2A2E3A] text-white">
           <DialogHeader>
             <DialogTitle className="text-xl">Creative Details</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
             <Tabs defaultValue="preview" className="w-full">
-              <TabsList className="w-full bg-[#1A1C24] text-zinc-400">
-                <TabsTrigger value="preview" className="data-[state=active]:bg-[#22252F] data-[state=active]:text-white">Ad Preview</TabsTrigger>
-                <TabsTrigger value="metrics" className="data-[state=active]:bg-[#22252F] data-[state=active]:text-white">Metrics</TabsTrigger>
-                <TabsTrigger value="conversions" className="data-[state=active]:bg-[#22252F] data-[state=active]:text-white">Conversion Data</TabsTrigger>
+              <TabsList className="w-full bg-[#151925] text-[#8A8F99]">
+                <TabsTrigger value="preview" className="data-[state=active]:bg-[#1A1D29] data-[state=active]:text-white">Ad Preview</TabsTrigger>
+                <TabsTrigger value="metrics" className="data-[state=active]:bg-[#1A1D29] data-[state=active]:text-white">Metrics</TabsTrigger>
+                <TabsTrigger value="conversions" className="data-[state=active]:bg-[#1A1D29] data-[state=active]:text-white">Conversion Data</TabsTrigger>
               </TabsList>
 
               <TabsContent value="preview" className="pt-4">
@@ -649,15 +649,15 @@ const AdCreativesComparison: React.FC<{ campaignId?: string, skipAiThoughts?: bo
                   <>
                     {/* Format selector moved inside preview tab */}
                     <div className="w-full mb-4">
-                      <p className="text-sm font-medium text-zinc-400 mb-1">Preview Format</p>
+                      <p className="text-sm font-medium text-[#ADB0B8] mb-1">Preview Format</p>
                       <Select 
                         value={adFormat} 
                         onValueChange={setAdFormat}
                       >
-                        <SelectTrigger className="w-full bg-[#1A1C24] border-zinc-700 text-zinc-200">
+                        <SelectTrigger className="w-full bg-[#151925] border-[#2A2E3A] text-[#ADB0B8]">
                           <SelectValue placeholder="Select format" />
                         </SelectTrigger>
-                        <SelectContent className="bg-[#1A1C24] border-zinc-700 text-zinc-200">
+                        <SelectContent className="bg-[#151925] border-[#2A2E3A] text-[#ADB0B8]">
                           {(viewingCreative?.type === 'video' ? VIDEO_AD_FORMATS : IMAGE_AD_FORMATS).map((format) => (
                             <SelectItem key={format} value={format}>
                               {AD_FORMAT_LABELS[format as keyof typeof AD_FORMAT_LABELS]}
@@ -670,6 +670,7 @@ const AdCreativesComparison: React.FC<{ campaignId?: string, skipAiThoughts?: bo
                     <AdPreview
                       creativeId={viewingCreative.id}
                       type={viewingCreative.type}
+                      adFormat={adFormat}
                     />
                   </>
                 )}
@@ -718,24 +719,24 @@ const AdCreativesComparison: React.FC<{ campaignId?: string, skipAiThoughts?: bo
                       miniChart="bar"
                       isPositive
                     />
-                    <div className="rounded-lg bg-[#171920] p-3 shadow-sm">
-                      <h4 className="text-sm font-medium text-zinc-400">
+                    <div className="rounded-lg bg-[#151925] p-3 shadow-sm border border-[#2A2E3A]">
+                      <h4 className="text-sm font-medium text-[#ADB0B8]">
                         Reach
                       </h4>
                       <p className="text-2xl font-bold text-white">
                         {viewingCreative.metrics.reach.toLocaleString()}
                       </p>
                     </div>
-                    <div className="rounded-lg bg-[#171920] p-3 shadow-sm">
-                      <h4 className="text-sm font-medium text-zinc-400">
+                    <div className="rounded-lg bg-[#151925] p-3 shadow-sm border border-[#2A2E3A]">
+                      <h4 className="text-sm font-medium text-[#ADB0B8]">
                         Frequency
                       </h4>
                       <p className="text-2xl font-bold text-white">
                         {viewingCreative.metrics.frequency.toFixed(2)}
                       </p>
                     </div>
-                    <div className="rounded-lg bg-[#171920] p-3 shadow-sm">
-                      <h4 className="text-sm font-medium text-zinc-400">
+                    <div className="rounded-lg bg-[#151925] p-3 shadow-sm border border-[#2A2E3A]">
+                      <h4 className="text-sm font-medium text-[#ADB0B8]">
                         Unique Clicks
                       </h4>
                       <p className="text-2xl font-bold text-white">
@@ -750,8 +751,8 @@ const AdCreativesComparison: React.FC<{ campaignId?: string, skipAiThoughts?: bo
               <TabsContent value="conversions" className="pt-4">
                 {viewingCreative && (
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="rounded-lg bg-[#171920] p-3 shadow-sm">
-                      <h4 className="text-sm font-medium text-zinc-400">
+                    <div className="rounded-lg bg-[#151925] p-3 shadow-sm border border-[#2A2E3A]">
+                      <h4 className="text-sm font-medium text-[#ADB0B8]">
                         Conversions
                       </h4>
                       <p className="text-2xl font-bold text-white">
@@ -759,8 +760,8 @@ const AdCreativesComparison: React.FC<{ campaignId?: string, skipAiThoughts?: bo
                       </p>
                     </div>
 
-                    <div className="rounded-lg bg-[#171920] p-3 shadow-sm">
-                      <h4 className="text-sm font-medium text-zinc-400">
+                    <div className="rounded-lg bg-[#151925] p-3 shadow-sm border border-[#2A2E3A]">
+                      <h4 className="text-sm font-medium text-[#ADB0B8]">
                         Leads
                       </h4>
                       <p className="text-2xl font-bold text-white">
@@ -768,8 +769,8 @@ const AdCreativesComparison: React.FC<{ campaignId?: string, skipAiThoughts?: bo
                       </p>
                     </div>
 
-                    <div className="rounded-lg bg-[#171920] p-3 shadow-sm">
-                      <h4 className="text-sm font-medium text-zinc-400">
+                    <div className="rounded-lg bg-[#151925] p-3 shadow-sm border border-[#2A2E3A]">
+                      <h4 className="text-sm font-medium text-[#ADB0B8]">
                         Cost Per Lead
                       </h4>
                       <p className="text-2xl font-bold text-white">
@@ -777,8 +778,8 @@ const AdCreativesComparison: React.FC<{ campaignId?: string, skipAiThoughts?: bo
                       </p>
                     </div>
 
-                    <div className="rounded-lg bg-[#171920] p-3 shadow-sm">
-                      <h4 className="text-sm font-medium text-zinc-400">
+                    <div className="rounded-lg bg-[#151925] p-3 shadow-sm border border-[#2A2E3A]">
+                      <h4 className="text-sm font-medium text-[#ADB0B8]">
                         Cost Per Conversion
                       </h4>
                       <p className="text-2xl font-bold text-white">
@@ -786,8 +787,8 @@ const AdCreativesComparison: React.FC<{ campaignId?: string, skipAiThoughts?: bo
                       </p>
                     </div>
 
-                    <div className="rounded-lg bg-[#171920] p-3 shadow-sm">
-                      <h4 className="text-sm font-medium text-zinc-400">
+                    <div className="rounded-lg bg-[#151925] p-3 shadow-sm border border-[#2A2E3A]">
+                      <h4 className="text-sm font-medium text-[#ADB0B8]">
                         Conversion Rate
                       </h4>
                       <p className="text-2xl font-bold text-white">
@@ -795,8 +796,8 @@ const AdCreativesComparison: React.FC<{ campaignId?: string, skipAiThoughts?: bo
                       </p>
                     </div>
 
-                    <div className="rounded-lg bg-[#171920] p-3 shadow-sm">
-                      <h4 className="text-sm font-medium text-zinc-400">
+                    <div className="rounded-lg bg-[#151925] p-3 shadow-sm border border-[#2A2E3A]">
+                      <h4 className="text-sm font-medium text-[#ADB0B8]">
                         Total Spend
                       </h4>
                       <p className="text-2xl font-bold text-white">
@@ -809,11 +810,11 @@ const AdCreativesComparison: React.FC<{ campaignId?: string, skipAiThoughts?: bo
             </Tabs>
           </div>
 
-          <DialogFooter className="pt-4 border-t border-zinc-700">
-            <Button onClick={() => handleEdit(viewingCreative!)} className="mr-2 bg-[#4AE04A]/90 hover:bg-[#4AE04A] text-black">
+          <DialogFooter className="pt-4 border-t border-[#2A2E3A]">
+            <Button onClick={() => handleEdit(viewingCreative!)} className="mr-2 bg-[#4BF29C] hover:bg-[#4BF29C]/90 text-[#0A0C14]">
               Edit
             </Button>
-            <Button onClick={() => setViewingCreative(null)} variant="outline" className="bg-[#1A1C24] border-zinc-700 text-zinc-200 hover:bg-[#22252F] hover:text-white">
+            <Button onClick={() => setViewingCreative(null)} variant="outline" className="bg-[#151925] border-[#2A2E3A] text-[#ADB0B8] hover:bg-[#1A1D29] hover:text-white">
               Close
             </Button>
           </DialogFooter>
@@ -830,7 +831,7 @@ const AdCreativesComparison: React.FC<{ campaignId?: string, skipAiThoughts?: bo
           }
         }}
       >
-        <DialogContent className="max-w-2xl bg-[#111318] border-zinc-700 text-white">
+        <DialogContent className="max-w-2xl bg-[#0A0C14] border-[#2A2E3A] text-white">
           <DialogHeader>
             <DialogTitle>Edit Creative</DialogTitle>
           </DialogHeader>
@@ -840,7 +841,7 @@ const AdCreativesComparison: React.FC<{ campaignId?: string, skipAiThoughts?: bo
               <div className="col-span-4">
                 <label
                   htmlFor="editName"
-                  className="block text-sm font-medium text-zinc-300"
+                  className="block text-sm font-medium text-[#ADB0B8]"
                 >
                   Name
                 </label>
@@ -848,14 +849,14 @@ const AdCreativesComparison: React.FC<{ campaignId?: string, skipAiThoughts?: bo
                   id="editName"
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
-                  className="mt-1 bg-[#1A1C24] border-zinc-700 text-white"
+                  className="mt-1 bg-[#151925] border-[#2A2E3A] text-white"
                 />
               </div>
 
               <div className="col-span-4">
                 <label
                   htmlFor="editMessage"
-                  className="block text-sm font-medium text-zinc-300"
+                  className="block text-sm font-medium text-[#ADB0B8]"
                 >
                   Message
                 </label>
@@ -864,14 +865,14 @@ const AdCreativesComparison: React.FC<{ campaignId?: string, skipAiThoughts?: bo
                   value={editMessage}
                   onChange={(e) => setEditMessage(e.target.value)}
                   rows={4}
-                  className="mt-1 bg-[#1A1C24] border-zinc-700 text-white"
+                  className="mt-1 bg-[#151925] border-[#2A2E3A] text-white"
                 />
               </div>
             </div>
 
             {editError && (
-              <div className="rounded-md bg-red-900/20 p-4 border border-red-800">
-                <p className="text-sm text-red-400">{editError}</p>
+              <div className="rounded-xl bg-[#FF7D5A]/10 p-4 border border-[#FF7D5A]/30">
+                <p className="text-sm text-[#FF7D5A]">{editError}</p>
               </div>
             )}
           </div>
@@ -881,7 +882,7 @@ const AdCreativesComparison: React.FC<{ campaignId?: string, skipAiThoughts?: bo
               type="button"
               variant="outline"
               onClick={() => setEditingCreative(null)}
-              className="bg-[#1A1C24] border-zinc-700 text-zinc-200 hover:bg-[#22252F] hover:text-white"
+              className="bg-[#151925] border-[#2A2E3A] text-[#ADB0B8] hover:bg-[#1A1D29] hover:text-white"
             >
               Cancel
             </Button>
@@ -889,7 +890,7 @@ const AdCreativesComparison: React.FC<{ campaignId?: string, skipAiThoughts?: bo
               type="button" 
               onClick={handleSubmitEdit} 
               disabled={isEditing}
-              className="bg-[#4AE04A]/90 hover:bg-[#4AE04A] text-black"
+              className="bg-[#4BF29C] hover:bg-[#4BF29C]/90 text-[#0A0C14]"
             >
               {isEditing ? "Saving..." : "Save Changes"}
             </Button>

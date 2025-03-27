@@ -70,82 +70,82 @@ function getPrimaryMetricsForCampaign(objective: CampaignObjective): Array<{
       { 
         title: "Total Clicks", 
         key: "total_clicks", 
-        icon: <Target className="text-blue-400" />,
+        icon: <Target />,
         aggregatorKey: "clicks"
       },
       { 
         title: "Total Spent", 
         key: "total_spend", 
-        icon: <DollarSign className="text-green-400" />, 
-        format: (val) => `€${val.toFixed(2)}`,
+        icon: <DollarSign />, 
+        format: (val) => val ? `€${val.toFixed(2)}` : `€0.00`,
         aggregatorKey: "total_spent"
       },
       {
         // Fix: CTR in der API ist bereits ~100x höher => hier /100
         title: "CTR", 
         key: "average_ctr", 
-        icon: <BarChart2 className="text-purple-400" />, 
-        format: (val) => `${((val || 0) / 100).toFixed(2)}%`
+        icon: <BarChart2 />, 
+        format: (val) => val ? `${(val / 100).toFixed(2)}%` : `0%`
       },
       { 
         title: "CPC", 
         key: "average_cpc", 
-        icon: <TrendingUp className="text-yellow-400" />, 
-        format: (val) => `€${(val || 0).toFixed(2)}`
+        icon: <TrendingUp />, 
+        format: (val) => val ? `€${val.toFixed(2)}` : `€0.00`
       }
     ],
     "OUTCOME_LEADS": [
       { 
         title: "Total Leads", 
         key: "total_leads", 
-        icon: <TrendingUp className="text-blue-400" />,
+        icon: <TrendingUp />,
         aggregatorKey: "total_leads"
       },
       { 
         title: "Total Spent", 
         key: "total_spend", 
-        icon: <DollarSign className="text-green-400" />, 
-        format: (val) => `€${val.toFixed(2)}`,
+        icon: <DollarSign />, 
+        format: (val) => val ? `€${val.toFixed(2)}` : `€0.00`,
         aggregatorKey: "total_spent"
       },
       {
         // Fix: CTR in der API ist bereits ~100x höher => hier /100
         title: "CTR", 
         key: "average_ctr", 
-        icon: <Target className="text-purple-400" />, 
-        format: (val) => `${((val || 0) / 100).toFixed(2)}%`
+        icon: <Target />, 
+        format: (val) => val ? `${(val / 100).toFixed(2)}%` : `0%`
       },
       { 
         title: "Frequency", 
         key: "average_frequency", 
-        icon: <BarChart2 className="text-yellow-400" />, 
-        format: (val) => val.toFixed(2)
+        icon: <BarChart2 />, 
+        format: (val) => val ? val.toFixed(2) : "0"
       }
     ],
     "OUTCOME_AWARENESS": [
       { 
         title: "Impressions", 
         key: "total_impressions", 
-        icon: <Eye className="text-blue-400" />
+        icon: <Eye />
       },
       { 
         title: "Total Spent", 
         key: "total_spend", 
-        icon: <DollarSign className="text-green-400" />, 
-        format: (val) => `€${val.toFixed(2)}`,
+        icon: <DollarSign />, 
+        format: (val) => val ? `€${val.toFixed(2)}` : `€0.00`,
         aggregatorKey: "total_spent"
       },
       { 
         title: "CPM", 
         key: "average_cpm", 
-        icon: <BarChart2 className="text-purple-400" />, 
-        format: (val) => `€${(val || 0).toFixed(2)}`
+        icon: <BarChart2 />, 
+        format: (val) => val ? `€${val.toFixed(2)}` : `€0.00`
       },
       { 
         title: "Frequency", 
         key: "average_frequency", 
-        icon: <TrendingUp className="text-yellow-400" />, 
-        format: (val) => val.toFixed(2)
+        icon: <TrendingUp />, 
+        format: (val) => val ? val.toFixed(2) : "0"
       }
     ]
   }
@@ -230,10 +230,10 @@ export function Stock({ campaignId, isActive }: IStockProps) {
   // Wenn nicht geladen => Button
   if (!loaded) {
     return (
-      <div className="flex h-96 items-center justify-center bg-zinc-950 rounded-xl">
+      <div className="flex h-96 items-center justify-center bg-[#0A0C14] rounded-xl border border-[#2A2E3A]">
         <button
           onClick={handleLoadData}
-          className="flex items-center gap-2 rounded-lg bg-green-600 px-6 py-3 font-medium text-white hover:bg-green-700"
+          className="flex items-center gap-2 rounded-lg bg-[#4BF29C] px-6 py-3 font-medium text-[#0A0C14] hover:bg-[#3AD88C] transition-colors"
         >
           Load Data
         </button>
@@ -244,8 +244,8 @@ export function Stock({ campaignId, isActive }: IStockProps) {
   // aggregator noch nicht da => Spinner
   if (!aggregator) {
     return (
-      <div className="flex h-96 items-center justify-center bg-zinc-950 rounded-xl">
-        <IconSpinner className="size-8 animate-spin text-green-400" />
+      <div className="flex h-96 items-center justify-center bg-[#0A0C14] rounded-xl border border-[#2A2E3A]">
+        <IconSpinner className="size-8 animate-spin text-[#4BF29C]" />
       </div>
     )
   }
@@ -253,8 +253,8 @@ export function Stock({ campaignId, isActive }: IStockProps) {
   // historical nicht da => Spinner
   if (!historical) {
     return (
-      <div className="flex h-96 items-center justify-center bg-zinc-950 rounded-xl">
-        <IconSpinner className="size-8 animate-spin text-blue-400" />
+      <div className="flex h-96 items-center justify-center bg-[#0A0C14] rounded-xl border border-[#2A2E3A]">
+        <IconSpinner className="size-8 animate-spin text-[#4BF29C]" />
       </div>
     )
   }
@@ -273,15 +273,15 @@ export function Stock({ campaignId, isActive }: IStockProps) {
   const metricConfigs = getPrimaryMetricsForCampaign(objective)
 
   return (
-    <div className="relative bg-zinc-950 p-6 text-white space-y-6 rounded-xl">
+    <div className="relative bg-[#1A1D29] p-6 text-white space-y-6 rounded-xl border border-[#2A2E3A]">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <div className="text-2xl font-bold">{campaignName}</div>
-          <div className="text-sm text-zinc-400">
+          <div className="text-2xl font-bold text-white">{campaignName}</div>
+          <div className="text-sm text-[#ADB0B8]">
             Created: {format(new Date(creationDate), 'MMM d, yyyy HH:mm')}
           </div>
-          <div className="text-sm text-zinc-400 flex gap-4">
+          <div className="text-sm text-[#ADB0B8] flex gap-4">
             <span>Campaign Objective: {objective.replace('OUTCOME_', '')}</span>
             <span>Daily Budget: {aggregatorDailyBudget > 0 ? `€${aggregatorDailyBudget}` : 'N/A'}</span>
           </div>
@@ -289,12 +289,16 @@ export function Stock({ campaignId, isActive }: IStockProps) {
         <div className="flex items-center gap-2">
           <div
             className={cn(
-              'rounded-full px-3 py-1 text-sm',
+              'rounded-full px-3 py-1 text-sm flex items-center',
               status === 'ACTIVE'
-                ? 'bg-green-500/20 text-green-400'
-                : 'bg-yellow-500/20 text-yellow-400'
+                ? 'bg-[#151925] text-[#4BF29C] border border-[#2A2E3A]'
+                : 'bg-[#151925] text-[#FF7D5A] border border-[#2A2E3A]'
             )}
           >
+            <div className={cn(
+              'w-2 h-2 rounded-full mr-2',
+              status === 'ACTIVE' ? 'bg-[#4BF29C]' : 'bg-[#FF7D5A]'
+            )}></div>
             {status}
           </div>
         </div>
@@ -340,12 +344,12 @@ interface MetricCardProps {
 
 const MetricCard = ({ title, value, icon }: MetricCardProps) => {
   return (
-    <div className="bg-zinc-900 p-4 rounded-lg">
+    <div className="bg-[#0A0C14] p-4 rounded-lg border border-[#2A2E3A]">
       <div className="mb-2 flex items-start justify-between">
-        <div className="text-sm text-zinc-400">{title}</div>
-        {icon}
+        <div className="text-sm text-[#8A8F99]">{title}</div>
+        <div className="text-[#4BF29C]">{icon}</div>
       </div>
-      <div className="text-xl font-bold">{value}</div>
+      <div className="text-xl font-bold text-white">{value}</div>
     </div>
   )
 }
@@ -353,30 +357,30 @@ const MetricCard = ({ title, value, icon }: MetricCardProps) => {
 /** Optional skeleton */
 export const StockSkeleton = () => {
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-4 text-green-400">
-      <div className="float-right inline-block w-fit rounded-full bg-zinc-700 px-2 py-1 text-xs text-transparent">
+    <div className="rounded-xl border border-[#2A2E3A] bg-[#1A1D29] p-4 text-[#4BF29C]">
+      <div className="float-right inline-block w-fit rounded-full bg-[#151925] px-2 py-1 text-xs text-transparent">
         xxxxxxx
       </div>
-      <div className="mb-1 w-fit rounded-md bg-zinc-700 text-lg text-transparent">
+      <div className="mb-1 w-fit rounded-md bg-[#151925] text-lg text-transparent">
         xxxx xxxx xxxx
       </div>
-      <div className="w-fit rounded-md bg-zinc-700 text-3xl font-bold text-transparent">
+      <div className="w-fit rounded-md bg-[#151925] text-3xl font-bold text-transparent">
         xxxx
       </div>
-      <div className="text mt-1 w-fit rounded-md bg-zinc-700 text-xs text-transparent">
+      <div className="text mt-1 w-fit rounded-md bg-[#151925] text-xs text-transparent">
         xxxxxx xxx xx xxxx xx xxx
       </div>
       <div className="mt-4 grid grid-cols-2 gap-2">
-        <div className="w-full rounded-md bg-zinc-700 text-sm text-transparent">
+        <div className="w-full rounded-md bg-[#151925] text-sm text-transparent">
           xxxxx: xxx
         </div>
-        <div className="w-full rounded-md bg-zinc-700 text-sm text-transparent">
+        <div className="w-full rounded-md bg-[#151925] text-sm text-transparent">
           xxxxxxxxxxx: xxx
         </div>
-        <div className="w-full rounded-md bg-zinc-700 text-sm text-transparent">
+        <div className="w-full rounded-md bg-[#151925] text-sm text-transparent">
           xxx: xxx
         </div>
-        <div className="w-full rounded-md bg-zinc-700 text-sm text-transparent">
+        <div className="w-full rounded-md bg-[#151925] text-sm text-transparent">
           xxxxx: xxx
         </div>
       </div>

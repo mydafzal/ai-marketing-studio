@@ -9,31 +9,33 @@ interface SupportProps {
 
 export function Support({ title = "Reeply AI Support" }: SupportProps) {
   return (
-    <div className="p-6 text-white border rounded-xl bg-zinc-950 shadow-lg">
+    <div className="p-6 text-white border border-[#2A2E3A] rounded-xl bg-[#1A1D29] shadow-lg">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h3 className="text-xl font-semibold text-zinc-200">{title}</h3>
-          <p className="text-sm text-zinc-400">Schedule a meeting with our support team</p>
+          <h3 className="text-xl font-semibold text-white">{title}</h3>
+          <p className="text-sm text-[#ADB0B8]">Schedule a meeting with our support team</p>
         </div>
-        <div className="px-3 py-1 text-sm rounded-full bg-zinc-900 text-green-400 border border-green-600">
+        <div className="px-3 py-1 text-sm rounded-full bg-[#151925] text-[#4BF29C] border border-[#2A2E3A]">
           Available
         </div>
       </div>
 
       {/* TidyCal Embed */}
-      <div className="mt-4 bg-zinc-900 p-4 rounded-lg">
+      <div className="mt-4 bg-[#151925] p-4 rounded-lg border border-[#2A2E3A]">
         <div className="tidycal-embed" data-path="max-reeply-ai/support"></div>
         <script src="https://asset-tidycal.b-cdn.net/js/embed.js" async></script>
       </div>
 
       {/* Additional contact info */}
-      <div className="mt-6 p-4 rounded-lg bg-zinc-900/50 border border-zinc-800">
-        <h4 className="font-medium text-zinc-200 mb-2">Need immediate help?</h4>
-        <p className="text-zinc-400 mb-2">You can also reach us via:</p>
-        <ul className="space-y-2 text-zinc-300">
-          <li>• Email: contact@reeply.ai</li>
-          
+      <div className="mt-6 p-4 rounded-lg bg-[#0A0C14] border border-[#2A2E3A]">
+        <h4 className="font-medium text-white mb-2">Need immediate help?</h4>
+        <p className="text-[#ADB0B8] mb-2">You can also reach us via:</p>
+        <ul className="space-y-2 text-[#8A8F99]">
+          <li className="flex items-center">
+            <span className="text-[#4BF29C] mr-2">•</span> 
+            Email: <span className="text-[#4BF29C] ml-1">contact@reeply.ai</span>
+          </li>
         </ul>
       </div>
     </div>
