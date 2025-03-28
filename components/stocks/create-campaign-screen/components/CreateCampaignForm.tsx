@@ -649,12 +649,12 @@ export function CreateCampaignForm() {
             activePreviewTab={activePreviewTab}
             setActivePreviewTab={setActivePreviewTab}
             mediaItems={mediaItems}
-            campaignObjective={masterFlowData?.campaign_objective || campaignObjective}
-            targetedLocations={masterFlowData?.selected_locations 
-              ? masterFlowData.selected_locations.map(loc => loc.country) 
+            campaignObjective={masterFlowData?.campaign_objective ?? campaignObjective}
+            targetedLocations={Array.isArray(masterFlowData?.selected_locations) 
+              ? masterFlowData.selected_locations.map((loc: any) => loc.name) 
               : targetedLocations}
             ageRange={masterFlowData 
-              ? [masterFlowData.suggested_age_min, masterFlowData.suggested_age_max] as [number, number] 
+              ? [masterFlowData.suggested_age_min, masterFlowData.suggested_age_max] 
               : ageRange}
             gender={masterFlowData 
               ? (masterFlowData.include_male_gender && masterFlowData.include_female_gender 

@@ -35,7 +35,7 @@ export async function POST(request: Request) {
         : String(value);
       
       console.log(` - ${key}:`, valueType, valueDisplay);
-      formDataEntries[key] = valueDisplay;
+      (formDataEntries as Record<string, any>)[key] = valueDisplay;
     }
     console.log('📊 Form data summary:', formDataEntries);
     
