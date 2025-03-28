@@ -28,13 +28,19 @@ export async function POST(req: NextRequest) {
     const stripeSession = await stripe.checkout.sessions.create({
       // customer: customerId,
       customer_email: customerEmail,
-      billing_address_collection: 'auto',
+      billing_address_collection: 'required',
+      tax_id_collection: {
+        enabled: true,
+      },
       line_items: [
         {
           price: prices.data[0].id,
           quantity: 1
         }
       ],
+      automatic_tax: {
+        enabled: true,
+      },
       mode: 'subscription',
       allow_promotion_codes: true,
       // consider using customer id as session id
