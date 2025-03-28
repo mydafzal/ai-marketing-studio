@@ -51,7 +51,7 @@ export function ReviewScreen({
   const [activeTab, setActiveTab] = useState<string>("preview");
   const [activeSettingsTab, setActiveSettingsTab] = useState<string>("adCreative");
   const [activeCreativeTab, setActiveCreativeTab] = useState<string>("creative-0");
-  const [activeLeadFormTab, setActiveLeadFormTab] = useState<string>("formBasics");
+  const [activeLeadFormTab, setActiveLeadFormTab] = useState<string>("step1");
   const [creativeId, setCreativeId] = useState<string>("");
   const [adFormat, setAdFormat] = useState<string>("INSTAGRAM_STANDARD");
   const [previewHtml, setPreviewHtml] = useState<string>("");
@@ -186,6 +186,70 @@ export function ReviewScreen({
 
   // Safe access for lead form properties using type assertion
   const leadFormContent = masterFlowData?.lead_form_content as any;
+  
+  // Process the lead form questions if they exist
+  const processLeadFormQuestions = () => {
+    if (!leadFormContent) return [];
+    
+    // Check if we have questions in the lead_form_content
+    if (leadFormContent.lead_form_questions && Array.isArray(leadFormContent.lead_form_questions)) {
+      return leadFormContent.lead_form_questions.map((question: string) => {
+        return {
+          type: question, // e.g. FIRST_NAME, LAST_NAME, EMAIL, PHONE
+          label: formatQuestionLabel(question) // Format the label for display
+        };
+      });
+    }
+    
+    // Legacy format or data inside lead_form_data
+    if (leadFormContent.lead_form_data && leadFormContent.lead_form_data.lead_form_questions) {
+      return leadFormContent.lead_form_data.lead_form_questions.map((question: string) => {
+        return {
+          type: question,
+          label: formatQuestionLabel(question)
+        };
+      });
+    }
+    
+    return [];
+  };
+  
+  // Helper to format question labels from keys like FIRST_NAME to "First Name"
+  const formatQuestionLabel = (questionKey: string): string => {
+    if (!questionKey) return '';
+    
+    // Convert FIRST_NAME to "First Name"
+    return questionKey
+      .split('_')
+      .map(word => word.charAt(0) + word.slice(1).toLowerCase())
+      .join(' ');
+  };
+  
+  // Get the lead form data
+  const getLeadFormData = () => {
+    if (!leadFormContent) return null;
+    
+    // We need to handle two possible structures:
+    // 1. Where properties are at the root of lead_form_content
+    // 2. Where properties are nested inside lead_form_data
+    
+    const data = leadFormContent.lead_form_data || leadFormContent;
+    
+    return {
+      name: data.lead_form_name,
+      title: data.lead_form_title,
+      description: data.lead_form_description,
+      thankYouText: data.lead_form_thank_you_text,
+      disclaimerText: data.lead_form_data_usage_disclaimer,
+      thankYouPageTitle: data.lead_form_thank_you_page_title,
+      locale: data.lead_form_locale,
+      privacyPolicyText: data.privacy_policy_link_text,
+      companyName: data.company_name,
+      questions: processLeadFormQuestions()
+    };
+  };
+  
+  const leadForm = getLeadFormData();
 
   // Get all creatives - either from master flow data or media items
   const getCreatives = () => {
@@ -739,92 +803,229 @@ export function ReviewScreen({
               {/* Lead Form Tab - Only shown if hasLeadFormData is true */}
               {hasLeadFormData && (
                 <TabsContent value="leadForm" className="space-y-4">
-                  <Tabs defaultValue="formBasics" value={activeLeadFormTab} onValueChange={setActiveLeadFormTab} className="w-full">
-                    <TabsList className="w-full bg-dark-bg text-text-light-gray mb-4 border border-border-dark rounded-lg overflow-hidden">
+                  <Tabs defaultValue="step1" value={activeLeadFormTab} onValueChange={setActiveLeadFormTab} className="w-full">
+                    <TabsList className="w-full bg-[#f2f2f2] text-[#767676] mb-4 border border-[#d3d3d3] rounded-lg overflow-hidden">
                       <TabsTrigger 
-                        value="formBasics" 
-                        className={`data-[state=active]:bg-dark-bg data-[state=active]:text-primary-green ${activeLeadFormTab === 'formBasics' ? 'border-b-2 border-primary-green' : ''}`}
+                        value="step1" 
+                        className={`data-[state=active]:bg-white data-[state=active]:text-[#4169e1] ${activeLeadFormTab === 'step1' ? 'border-b-2 border-[#4169e1]' : ''}`}
                       >
                         <File className="mr-2 size-4" />
-                        Form Basics
+                        Step 1: Form
                       </TabsTrigger>
                       <TabsTrigger 
-                        value="privacy" 
-                        className={`data-[state=active]:bg-dark-bg data-[state=active]:text-primary-green ${activeLeadFormTab === 'privacy' ? 'border-b-2 border-primary-green' : ''}`}
-                      >
-                        <Lock className="mr-2 size-4" />
-                        Privacy
-                      </TabsTrigger>
-                      <TabsTrigger 
-                        value="thankYou" 
-                        className={`data-[state=active]:bg-dark-bg data-[state=active]:text-primary-green ${activeLeadFormTab === 'thankYou' ? 'border-b-2 border-primary-green' : ''}`}
+                        value="step2" 
+                        className={`data-[state=active]:bg-white data-[state=active]:text-[#4169e1] ${activeLeadFormTab === 'step2' ? 'border-b-2 border-[#4169e1]' : ''}`}
                       >
                         <CheckCircle className="mr-2 size-4" />
-                        Thank You Page
+                        Step 2: Questions
+                      </TabsTrigger>
+                      <TabsTrigger 
+                        value="step3" 
+                        className={`data-[state=active]:bg-white data-[state=active]:text-[#4169e1] ${activeLeadFormTab === 'step3' ? 'border-b-2 border-[#4169e1]' : ''}`}
+                      >
+                        <Lock className="mr-2 size-4" />
+                        Step 3: Privacy
+                      </TabsTrigger>
+                      <TabsTrigger 
+                        value="step4" 
+                        className={`data-[state=active]:bg-white data-[state=active]:text-[#4169e1] ${activeLeadFormTab === 'step4' ? 'border-b-2 border-[#4169e1]' : ''}`}
+                      >
+                        <CheckCircle className="mr-2 size-4" />
+                        Step 4: Thank You
                       </TabsTrigger>
                     </TabsList>
 
-                    {/* Form Basics Tab */}
-                    <TabsContent value="formBasics" className="space-y-4">
-                      <div className="bg-dark-bg rounded-lg p-4 border border-border-dark">
-                        <h4 className="text-lg font-medium mb-4 text-primary-green">Form Basics</h4>
+                    {/* Step 1: Form Tab */}
+                    <TabsContent value="step1" className="space-y-4">
+                      <div className="bg-white rounded-lg p-5 border border-[#d3d3d3] shadow-sm">
+                        <h4 className="text-[22px] font-medium mb-5 text-[#292929]">Step 1: Lead Form</h4>
                         
-                        <div className="space-y-4">
-                          {leadFormContent?.lead_form_name && (
-                            <div>
-                              <h5 className="font-medium text-text-white mb-2">Form Name</h5>
-                              <div className="bg-container-bg p-3 rounded-lg border border-border-dark">
-                                <p className="text-text-white">
-                                  {leadFormContent.lead_form_name}
-                                </p>
+                        <div className="flex flex-col items-center">
+                          {/* Lead Form Preview */}
+                          {leadForm && (
+                            <div className="w-full max-w-sm mx-auto">
+                              <div className="bg-white rounded-lg overflow-hidden shadow-lg">
+                                {/* Form header */}
+                                <div className="bg-[#333333] p-4">
+                                  <div className="flex items-center justify-between mb-3">
+                                    <div className="bg-white h-8 w-8 rounded-full flex items-center justify-center">
+                                      <span className="text-[#4169e1] text-xl font-bold">R</span>
+                                    </div>
+                                    <div className="text-white text-sm">X</div>
+                                  </div>
+                                  <div className="bg-white rounded-md px-2 py-1 inline-block mb-2">
+                                    <span className="text-xs font-medium text-[#4169e1]">Lead Form</span>
+                                  </div>
+                                  <h3 className="text-white text-[22px] font-bold">{leadForm.title || "Unlock the Power of AI"}</h3>
+                                </div>
+                                
+                                {/* Form body */}
+                                <div className="p-5 bg-white">
+                                  <p className="text-[#292929] text-[16px] leading-relaxed mb-5">{leadForm.description || "Fill out this form to learn more about our services."}</p>
+                                  
+                                  {/* Basic form info for Step 1 */}
+                                  <div className="space-y-4 text-[16px] text-[#292929]">
+                                    <div className="flex justify-between items-center border-b border-[#f2f2f2] pb-2">
+                                      <span className="font-medium">Form Name:</span>
+                                      <span className="text-[#767676]">{leadForm.name}</span>
+                                    </div>
+                                    {leadFormContent?.headline && (
+                                      <div className="flex justify-between items-center border-b border-[#f2f2f2] pb-2">
+                                        <span className="font-medium">Headline:</span>
+                                        <span className="text-[#767676]">{leadFormContent.headline}</span>
+                                      </div>
+                                    )}
+                                    <div className="flex justify-between items-center border-b border-[#f2f2f2] pb-2">
+                                      <span className="font-medium">Company:</span>
+                                      <span className="text-[#767676]">{leadForm.companyName}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center border-b border-[#f2f2f2] pb-2">
+                                      <span className="font-medium">Language:</span>
+                                      <span className="text-[#767676]">{leadForm.locale || "en_US"}</span>
+                                    </div>
+                                  </div>
+                                  
+                                  <p className="text-[14px] text-[#767676] mt-5 border-t border-[#f2f2f2] pt-4 leading-relaxed">
+                                    This is step 1 of your lead form. Users will see your form title and description, and then be asked to provide information.
+                                  </p>
+                                </div>
+                                
+                                {/* Form footer */}
+                                <div className="p-4 bg-[#f2f2f2] border-t border-[#d3d3d3]">
+                                  <button className="w-full py-3 bg-[#4169e1] text-white rounded-md font-medium text-[16px] transition-all hover:bg-opacity-90">
+                                    Continue
+                                  </button>
+                                </div>
                               </div>
                             </div>
                           )}
-                          
-                          {leadFormContent?.headline && (
-                            <div>
-                              <h5 className="font-medium text-text-white mb-2">Headline</h5>
-                              <div className="bg-container-bg p-3 rounded-lg border border-border-dark">
-                                <p className="text-text-white text-lg">
-                                  {leadFormContent.headline}
-                                </p>
+                        </div>
+                      </div>
+                    </TabsContent>
+                    
+                    {/* Step 2: Questions Tab */}
+                    <TabsContent value="step2" className="space-y-4">
+                      <div className="bg-white rounded-lg p-5 border border-[#d3d3d3] shadow-sm">
+                        <h4 className="text-[22px] font-medium mb-5 text-[#292929]">Step 2: Lead Form Questions</h4>
+                        
+                        <div className="flex flex-col items-center">
+                          {/* Lead Form Questions Preview */}
+                          {leadForm && (
+                            <div className="w-full max-w-sm mx-auto">
+                              <div className="bg-white rounded-lg overflow-hidden shadow-lg">
+                                {/* Form header */}
+                                <div className="bg-[#333333] p-4">
+                                  <div className="flex items-center justify-between mb-3">
+                                    <div className="bg-white h-8 w-8 rounded-full flex items-center justify-center">
+                                      <span className="text-[#4169e1] text-xl font-bold">R</span>
+                                    </div>
+                                    <div className="text-white text-sm">X</div>
+                                  </div>
+                                  <div className="bg-white rounded-md px-2 py-1 inline-block mb-2">
+                                    <span className="text-xs font-medium text-[#4169e1]">Lead Form</span>
+                                  </div>
+                                  <h3 className="text-white text-[22px] font-bold">{leadForm.title || "Unlock the Power of AI"}</h3>
+                                </div>
+                                
+                                {/* Form body with questions */}
+                                <div className="p-5 bg-white">
+                                  <p className="text-[#292929] text-[16px] leading-relaxed mb-5">{leadForm.description || "Fill out this form to learn more about our services."}</p>
+                                  
+                                  {/* Form questions preview */}
+                                  <div className="space-y-4">
+                                    {leadForm.questions && leadForm.questions.length > 0 ? (
+                                      leadForm.questions.map((question: any, index: number) => (
+                                        <div key={`form-field-${index}`} className="border border-[#d3d3d3] rounded-md p-4 bg-[#f2f2f2]">
+                                          <label className="block text-[#292929] text-[14px] font-medium mb-2">{question.label}</label>
+                                          <div className="h-10 bg-white border border-[#d3d3d3] rounded w-full flex items-center px-3">
+                                            <span className="text-[#767676] text-[16px]">Enter your {question.label.toLowerCase()}</span>
+                                          </div>
+                                        </div>
+                                      ))
+                                    ) : (
+                                      <p className="text-center text-[#767676] italic p-4 bg-[#f2f2f2] rounded-md border border-[#d3d3d3]">No questions defined</p>
+                                    )}
+                                  </div>
+                                  
+                                  <p className="text-[14px] text-[#767676] mt-5 border-t border-[#f2f2f2] pt-4 leading-relaxed">
+                                    This is step 2 of your lead form. Users will be asked to provide the information requested above.
+                                  </p>
+                                </div>
+                                
+                                {/* Form footer */}
+                                <div className="p-4 bg-[#f2f2f2] border-t border-[#d3d3d3]">
+                                  <button className="w-full py-3 bg-[#4169e1] text-white rounded-md font-medium text-[16px] transition-all hover:bg-opacity-90">
+                                    Continue
+                                  </button>
+                                </div>
                               </div>
                             </div>
                           )}
-                          
-                          {leadFormContent?.lead_form_title && (
-                            <div>
-                              <h5 className="font-medium text-text-white mb-2">Form Title</h5>
-                              <div className="bg-container-bg p-3 rounded-lg border border-border-dark">
-                                <p className="text-text-white">
-                                  {leadFormContent.lead_form_title}
-                                </p>
-                              </div>
-                            </div>
-                          )}
-                          
-                          {leadFormContent?.lead_form_description && (
-                            <div>
-                              <h5 className="font-medium text-text-white mb-2">Form Description</h5>
-                              <div className="bg-container-bg p-3 rounded-lg border border-border-dark">
-                                <p className="text-text-white">
-                                  {leadFormContent.lead_form_description}
-                                </p>
-                              </div>
-                            </div>
-                          )}
-                          
-                          {leadFormContent?.questions && leadFormContent.questions.length > 0 && (
-                            <div>
-                              <h5 className="font-medium text-text-white mb-2">Form Questions</h5>
-                              <div className="bg-container-bg p-3 rounded-lg space-y-2 border border-border-dark">
-                                {leadFormContent.questions.map((question: any, index: number) => (
-                                  <div key={`question-${index}`} className="border-b border-border-dark pb-2 last:border-0 last:pb-0">
-                                    <p className="text-text-white">
-                                      <span className="text-primary-green">{question.type}:</span> {question.label}
+                        </div>
+                      </div>
+                    </TabsContent>
+                    
+                    {/* Step 3: Privacy Tab */}
+                    <TabsContent value="step3" className="space-y-4">
+                      <div className="bg-white rounded-lg p-5 border border-[#d3d3d3] shadow-sm">
+                        <h4 className="text-[22px] font-medium mb-5 text-[#292929]">Step 3: Privacy Policy</h4>
+                        
+                        <div className="flex flex-col items-center">
+                          {/* Privacy policy preview */}
+                          {leadForm && (
+                            <div className="w-full max-w-sm mx-auto">
+                              <div className="bg-white rounded-lg overflow-hidden shadow-lg">
+                                {/* Header */}
+                                <div className="bg-[#333333] p-4">
+                                  <div className="flex items-center justify-between mb-3">
+                                    <div className="bg-white h-8 w-8 rounded-full flex items-center justify-center">
+                                      <span className="text-[#4169e1] text-xl font-bold">R</span>
+                                    </div>
+                                    <div className="text-white text-sm">X</div>
+                                  </div>
+                                  <div className="bg-white rounded-md px-2 py-1 inline-block mb-2">
+                                    <span className="text-xs font-medium text-[#4169e1]">Privacy Policy</span>
+                                  </div>
+                                </div>
+                                
+                                {/* Privacy content */}
+                                <div className="p-6 bg-white">
+                                  <div className="w-16 h-16 bg-[#f2f2f2] rounded-full mx-auto mb-4 flex items-center justify-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-[#4169e1]" viewBox="0 0 20 20" fill="currentColor">
+                                      <path fillRule="evenodd" d="M18 8a6 6 0 01-7.743 5.743L10 14l-1 1-1 1H6v-1l1-1 1-1-1-1-2-2H3v-1l2.4-1.2a6 6 0 114.6 2.2h-.22L8 9l-1 1-1 1v1h2.5l.5-.5.5-.5H10v-1l-1-1-1-1-1-1H6v-1l1-1 1-1 1-1h1zm-9 6v1H4v-1h5z" clipRule="evenodd" />
+                                    </svg>
+                                  </div>
+                                  
+                                  <h3 className="text-[22px] font-bold text-[#292929] mb-4 text-center">
+                                    {leadForm.companyName || "Company"} Privacy Policy
+                                  </h3>
+                                  
+                                  <div className="text-[16px] text-[#292929] border-t border-[#f2f2f2] pt-4 space-y-4 leading-relaxed">
+                                    <p>
+                                      {leadForm.disclaimerText || "We will process your information in accordance with our privacy policy."}
+                                    </p>
+                                    
+                                    <div className="mt-4 pt-4 border-t border-[#f2f2f2]">
+                                      <a href="#" className="text-[#4169e1] font-medium underline text-[16px]">
+                                        {leadForm.privacyPolicyText || "View Full Privacy Policy"}
+                                      </a>
+                                    </div>
+                                    
+                                    <p className="text-[14px] text-[#767676] mt-5 pt-3 border-t border-[#f2f2f2]">
+                                      This is step 3 of your lead form. Users will see your privacy policy and must accept it to continue.
                                     </p>
                                   </div>
-                                ))}
+                                </div>
+                                
+                                {/* Footer with buttons */}
+                                <div className="p-4 bg-[#f2f2f2] border-t border-[#d3d3d3] flex justify-between">
+                                  <button className="px-6 py-3 bg-[#d3d3d3] text-[#292929] rounded-md font-medium transition-all hover:bg-opacity-90">
+                                    Decline
+                                  </button>
+                                  <button className="px-6 py-3 bg-[#4169e1] text-white rounded-md font-medium transition-all hover:bg-opacity-90">
+                                    Accept
+                                  </button>
+                                </div>
                               </div>
                             </div>
                           )}
@@ -832,83 +1033,53 @@ export function ReviewScreen({
                       </div>
                     </TabsContent>
                     
-                    {/* Privacy Tab */}
-                    <TabsContent value="privacy" className="space-y-4">
-                      <div className="bg-dark-bg rounded-lg p-4 border border-border-dark">
-                        <h4 className="text-lg font-medium mb-4 text-primary-green">Privacy Information</h4>
+                    {/* Step 4: Thank You Tab */}
+                    <TabsContent value="step4" className="space-y-4">
+                      <div className="bg-white rounded-lg p-5 border border-[#d3d3d3] shadow-sm">
+                        <h4 className="text-[22px] font-medium mb-5 text-[#292929]">Step 4: Thank You Page</h4>
                         
-                        <div className="space-y-4">
-                          {leadFormContent?.privacy_policy_link_text && (
-                            <div>
-                              <h5 className="font-medium text-text-white mb-2">Privacy Policy Link Text</h5>
-                              <div className="bg-container-bg p-3 rounded-lg border border-border-dark">
-                                <p className="text-text-white">
-                                  {leadFormContent.privacy_policy_link_text}
-                                </p>
-                              </div>
-                            </div>
-                          )}
-                          
-                          {leadFormContent?.lead_form_data_usage_disclaimer && (
-                            <div>
-                              <h5 className="font-medium text-text-white mb-2">Data Usage Disclaimer</h5>
-                              <div className="bg-container-bg p-3 rounded-lg border border-border-dark">
-                                <p className="text-text-white">
-                                  {leadFormContent.lead_form_data_usage_disclaimer}
-                                </p>
-                              </div>
-                            </div>
-                          )}
-                          
-                          {leadFormContent?.lead_form_locale && (
-                            <div>
-                              <h5 className="font-medium text-text-white mb-2">Form Locale</h5>
-                              <div className="bg-container-bg p-3 rounded-lg border border-border-dark">
-                                <p className="text-text-white">
-                                  {leadFormContent.lead_form_locale}
-                                </p>
-                              </div>
-                            </div>
-                          )}
-                          
-                          {leadFormContent?.company_name && (
-                            <div>
-                              <h5 className="font-medium text-text-white mb-2">Company Name</h5>
-                              <div className="bg-container-bg p-3 rounded-lg border border-border-dark">
-                                <p className="text-text-white">
-                                  {leadFormContent.company_name}
-                                </p>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </TabsContent>
-                    
-                    {/* Thank You Page Tab */}
-                    <TabsContent value="thankYou" className="space-y-4">
-                      <div className="bg-dark-bg rounded-lg p-4 border border-border-dark">
-                        <h4 className="text-lg font-medium mb-4 text-primary-green">Thank You Page</h4>
-                        
-                        <div className="space-y-4">
-                          {leadFormContent?.lead_form_thank_you_page_title && (
-                            <div>
-                              <h5 className="font-medium text-text-white mb-2">Thank You Page Title</h5>
-                              <div className="bg-container-bg p-3 rounded-lg border border-border-dark">
-                                <p className="text-text-white">
-                                  {leadFormContent.lead_form_thank_you_page_title}
-                                </p>
-                              </div>
-                            </div>
-                          )}
-                          
-                          {leadFormContent?.lead_form_thank_you_text && (
-                            <div>
-                              <h5 className="font-medium text-text-white mb-2">Thank You Text</h5>
-                              <div className="bg-container-bg p-3 rounded-lg border border-border-dark">
-                                <p className="text-text-white">
-                                  {leadFormContent.lead_form_thank_you_text}
-                                </p>
+                        <div className="flex flex-col items-center">
+                          {/* Thank You Page Preview */}
+                          {leadForm && (
+                            <div className="w-full max-w-sm mx-auto">
+                              <div className="bg-white rounded-lg overflow-hidden shadow-lg">
+                                {/* Header */}
+                                <div className="bg-[#333333] p-4">
+                                  <div className="flex items-center justify-between mb-3">
+                                    <div className="bg-white h-8 w-8 rounded-full flex items-center justify-center">
+                                      <span className="text-[#4169e1] text-xl font-bold">R</span>
+                                    </div>
+                                    <div className="text-white text-sm">X</div>
+                                  </div>
+                                  <div className="bg-white rounded-md px-2 py-1 inline-block mb-2">
+                                    <span className="text-xs font-medium text-[#4169e1]">Lead Form</span>
+                                  </div>
+                                </div>
+                                
+                                {/* Thank You content */}
+                                <div className="p-6 bg-white text-center">
+                                  <div className="w-20 h-20 bg-[#f2f2f2] rounded-full mx-auto mb-5 flex items-center justify-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-[#4169e1]" viewBox="0 0 20 20" fill="currentColor">
+                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                  </div>
+                                  
+                                  <h3 className="text-[22px] font-bold text-[#292929] mb-3">
+                                    {leadForm.thankYouPageTitle || "Thank You!"}
+                                  </h3>
+                                  
+                                  <p className="text-[16px] text-[#292929] mb-6 leading-relaxed">
+                                    {leadForm.thankYouText || "Your information has been submitted successfully."}
+                                  </p>
+                                  
+                                  <p className="text-[14px] text-[#767676] mt-5 border-t border-[#f2f2f2] pt-4 leading-relaxed">
+                                    This is step 4 of your lead form. Users will see this confirmation page after submitting the form.
+                                  </p>
+                                  
+                                  <button className="px-6 py-3 bg-[#4169e1] text-white rounded-md font-medium mt-5 transition-all hover:bg-opacity-90 text-[16px]">
+                                    Done
+                                  </button>
+                                </div>
                               </div>
                             </div>
                           )}

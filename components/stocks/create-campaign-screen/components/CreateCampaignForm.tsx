@@ -9,6 +9,7 @@ import { Header } from './Header';
 import { CreateTab } from './CreateTab';
 import { ReviewScreen } from './ReviewScreen';
 import { LoadingScreen } from './LoadingScreen';
+import { loadingSteps } from '../utils';
 import { CampaignSettingsModal } from './CampaignSettingsModal';
 
 export function CreateCampaignForm() {
@@ -105,9 +106,10 @@ export function CreateCampaignForm() {
     setError(null);
     
     // Animation intervals for moving through loading state
+    const maxSteps = loadingSteps ? loadingSteps.length - 1 : 6; // Default to 7 steps (0-6) if loadingSteps is undefined
     const loadingInterval = setInterval(() => {
       setLoadingStep(prev => {
-        if (prev < loadingSteps.length - 1) {
+        if (prev < maxSteps) {
           return prev + 1;
         }
         return prev;
@@ -330,9 +332,10 @@ export function CreateCampaignForm() {
     setLoadingStep(0);
     
     // Animation intervals for moving through loading state
+    const maxSteps = loadingSteps ? loadingSteps.length - 1 : 6; // Default to 7 steps (0-6) if loadingSteps is undefined
     const loadingInterval = setInterval(() => {
       setLoadingStep(prev => {
-        if (prev < loadingSteps.length - 1) {
+        if (prev < maxSteps) {
           return prev + 1;
         }
         return prev;
