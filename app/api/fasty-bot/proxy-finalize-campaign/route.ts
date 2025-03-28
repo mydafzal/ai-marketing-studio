@@ -21,8 +21,8 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     console.log('📋 Request body received with keys:', Object.keys(body));
     
-    // Validate required fields
-    const {
+    // Extract values from body
+    let {
       fb_account_id,
       campaign_flow_session_id,
       page_id
@@ -34,16 +34,24 @@ export async function POST(req: NextRequest) {
       'Has Page ID': !!page_id
     });
 
-    // Make sure required fields are present
-    if (!fb_account_id || !campaign_flow_session_id) {
+    // Make sure required fields are present (all three are required according to backend info)
+    if (!fb_account_id || !campaign_flow_session_id || !page_id) {
       console.error('❌ Missing required fields:', {
         'FB Account ID present': !!fb_account_id,
-        'Campaign Session ID present': !!campaign_flow_session_id
+        'Campaign Flow Session ID present': !!campaign_flow_session_id,
+        'Page ID present': !!page_id
       });
       return NextResponse.json(
-        { error: 'Missing required fields: fb_account_id and campaign_flow_session_id are required' },
+        { error: 'Missing required fields: fb_account_id, campaign_flow_session_id, and page_id are all required' },
         { status: 400 }
       )
+    }
+    
+    // Ensure FB Account ID has the act_ prefix (required by backend)
+    const formattedFbAccountId = fb_account_id.startsWith('act_') ? fb_account_id : `act_${fb_account_id}`;
+    if (formattedFbAccountId !== fb_account_id) {
+      console.log('⚠️ Added act_ prefix to FB Account ID:', fb_account_id, '->', formattedFbAccountId);
+      fb_account_id = formattedFbAccountId;
     }
 
     // Get FB API key
@@ -68,9 +76,9 @@ export async function POST(req: NextRequest) {
       'Page ID': page_id || 'Not provided'
     });
     
-    // Prepare the request payload
+    // Prepare the request payload with the correctly formatted FB Account ID
     const requestPayload = {
-      fb_account_id,
+      fb_account_id: formattedFbAccountId,
       campaign_flow_session_id,
       page_id
     };
@@ -102,17 +110,41 @@ export async function POST(req: NextRequest) {
     if (!response.ok) {
       console.error('❌ Backend API returned error status:', response.status);
       
+      // Try to get the full error details for debugging
       let errorData;
+      let errorText = '';
+      
       try {
-        errorData = await response.json();
-        console.error('❌ Error data:', JSON.stringify(errorData, null, 2));
-      } catch (parseError) {
-        console.error('❌ Failed to parse error response:', parseError);
-        errorData = { error: 'Failed to parse error response' };
+        // First get raw text response for better debugging
+        errorText = await response.text();
+        console.error('❌ Raw error response:', errorText);
+        
+        try {
+          // Then try to parse as JSON if possible
+          errorData = JSON.parse(errorText);
+          console.error('❌ Error data:', JSON.stringify(errorData, null, 2));
+        } catch (jsonError) {
+          console.error('❌ Response was not valid JSON:', jsonError);
+          // Use the raw text as error message if not valid JSON
+          errorData = { error: errorText || 'Failed to finalize campaign' };
+        }
+      } catch (textError) {
+        console.error('❌ Failed to read error response:', textError);
+        errorData = { error: 'Failed to read error response' };
       }
       
+      // Return a detailed error response for debugging
       return NextResponse.json(
-        { error: errorData.error || 'Failed to finalize campaign' },
+        { 
+          error: (errorData && errorData.error) || 'Failed to finalize campaign',
+          details: errorData,
+          requestPayload: {
+            fb_account_id,
+            campaign_flow_session_id,
+            page_id
+          },
+          rawText: errorText
+        },
         { status: response.status }
       )
     }

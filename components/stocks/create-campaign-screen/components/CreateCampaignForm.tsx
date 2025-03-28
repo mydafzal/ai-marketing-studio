@@ -104,6 +104,16 @@ export function CreateCampaignForm() {
     setLoadingStep(0);
     setError(null);
     
+    // Animation intervals for moving through loading state
+    const loadingInterval = setInterval(() => {
+      setLoadingStep(prev => {
+        if (prev < loadingSteps.length - 1) {
+          return prev + 1;
+        }
+        return prev;
+      });
+    }, 3000); // Show each loading step for 3 seconds
+    
     try {
       // Log all input values to debug
       console.log('💰 Budget value being used:', budget, typeof budget);
@@ -206,6 +216,9 @@ export function CreateCampaignForm() {
       const pageId = userData.account?.fbPageId ? String(userData.account.fbPageId) : '';
       console.log('📱 Using page ID:', pageId || 'None provided');
       
+      // Add delay to match the animation sequence
+      await new Promise(resolve => setTimeout(resolve, 7000));
+      
       // Prepare request payload - based on exact API documentation format
       const requestPayload = {
         fb_account_id: userData.account?.fbAccountId || '',
@@ -249,26 +262,13 @@ export function CreateCampaignForm() {
       console.log('📊 Master flow response data:', JSON.stringify(data, null, 2));
       setMasterFlowData(data);
       
-      // Continue loading sequence
-      console.log('⏳ Starting loading sequence animation');
-      const interval = setInterval(() => {
-        setLoadingStep(prevStep => {
-          const newStep = prevStep + 1;
-          console.log(`🔄 Loading step: ${prevStep} -> ${newStep}`);
-          
-          if (prevStep >= 6) { // 7 steps (0-6)
-            console.log('✅ Loading sequence complete');
-            clearInterval(interval);
-            setTimeout(() => {
-              console.log('🔄 Switching to review tab');
-              setIsLoading(false);
-              setActiveTab('review');
-            }, 1000);
-            return prevStep;
-          }
-          return newStep;
-        });
-      }, 1000);
+      // Add delay to complete the animation sequence
+      await new Promise(resolve => setTimeout(resolve, 4000));
+      
+      // Switch to review tab after API call and animation completes
+      console.log('🔄 Switching to review tab');
+      setIsLoading(false);
+      setActiveTab('review');
       
     } catch (error) {
       console.error('❌ Exception in master flow process:', error);
@@ -276,6 +276,8 @@ export function CreateCampaignForm() {
         ? (error as Error).message 
         : 'Failed to process campaign');
       setIsLoading(false);
+    } finally {
+      clearInterval(loadingInterval);
     }
   };
   
@@ -327,6 +329,16 @@ export function CreateCampaignForm() {
     setIsLoading(true);
     setLoadingStep(0);
     
+    // Animation intervals for moving through loading state
+    const loadingInterval = setInterval(() => {
+      setLoadingStep(prev => {
+        if (prev < loadingSteps.length - 1) {
+          return prev + 1;
+        }
+        return prev;
+      });
+    }, 3000); // Show each loading step for 3 seconds
+    
     try {
       // Get user information for API call
       console.log('🔍 Fetching user details');
@@ -343,23 +355,47 @@ export function CreateCampaignForm() {
         throw new Error('Failed to fetch user details');
       }
       
+      // Get and validate required parameters
       const fbAccountId = userData.account?.fbAccountId || '';
+      // Ensure account ID has act_ prefix (required by backend)
+      const formattedFbAccountId = fbAccountId.startsWith('act_') ? fbAccountId : `act_${fbAccountId}`;
+      
       const pageId = userData.account?.fbPageId ? String(userData.account.fbPageId) : '';
+      const campaignFlowSessionId = masterFlowData.campaign_flow_session_id;
+      
+      // Validate all required fields are present
+      if (!formattedFbAccountId) {
+        console.error('❌ Missing Facebook Account ID');
+        throw new Error('Facebook Account ID is required but missing');
+      }
+      
+      if (!campaignFlowSessionId) {
+        console.error('❌ Missing Campaign Flow Session ID');
+        throw new Error('Campaign Flow Session ID is required but missing');
+      }
+      
+      if (!pageId) {
+        console.error('❌ Missing Page ID');
+        throw new Error('Facebook Page ID is required but missing');
+      }
       
       console.log('📊 Campaign finalization parameters:', {
-        'FB Account ID': fbAccountId,
-        'Campaign Flow Session ID': masterFlowData.campaign_flow_session_id,
+        'FB Account ID': formattedFbAccountId,
+        'Campaign Flow Session ID': campaignFlowSessionId,
         'Page ID': pageId
       });
       
-      // Prepare request payload
+      // Prepare request payload with correctly formatted parameters
       const requestPayload = {
-        fb_account_id: fbAccountId,
-        campaign_flow_session_id: masterFlowData.campaign_flow_session_id,
+        fb_account_id: formattedFbAccountId,
+        campaign_flow_session_id: campaignFlowSessionId,
         page_id: pageId
       };
       
       console.log('📤 Sending request to finalize campaign with payload:', JSON.stringify(requestPayload, null, 2));
+      
+      // Add delay to match the API call animation
+      await new Promise(resolve => setTimeout(resolve, 7000));
       
       // Make the API call to finalize the campaign
       const response = await fetch('/api/fasty-bot/proxy-finalize-campaign', {
@@ -383,6 +419,9 @@ export function CreateCampaignForm() {
       const finalizeData = await response.json();
       console.log('✅ Campaign finalized successfully');
       console.log('📊 Finalize response data:', JSON.stringify(finalizeData, null, 2));
+      
+      // More delay to complete the animation
+      await new Promise(resolve => setTimeout(resolve, 3000));
       
       // Show success animation
       console.log('🎉 Launching confetti animation');
@@ -445,7 +484,7 @@ export function CreateCampaignForm() {
           const chatMessage = `I've created your campaign with the following details:\n\n${reasoningMessage}\nYour campaign is now live and will start running soon!`;
           
           // Call the API to submit the message to the chat
-          const chatResponse = await fetch('/api/fasty-bot/proxy-submit-message.ts', {
+          const chatResponse = await fetch('/api/fasty-bot/proxy-submit-message', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -486,6 +525,7 @@ export function CreateCampaignForm() {
         : 'Failed to finalize campaign');
     } finally {
       console.log('🔄 Clearing loading state');
+      clearInterval(loadingInterval);
       setIsLoading(false);
     }
   };
@@ -580,7 +620,11 @@ export function CreateCampaignForm() {
         disableReview={mediaItems.length === 0 || !link || !budget}
       />
 
-      {isLoading ? <LoadingScreen loadingStep={loadingStep} /> : (
+      {isLoading ? (
+        activeTab === 'create' 
+          ? <LoadingScreen loadingStep={loadingStep} error={error} mode="initialize" />
+          : <LoadingScreen loadingStep={loadingStep} error={error} mode="launch" />
+      ) : (
         activeTab === 'create' ? (
           <CreateTab 
             mediaItems={mediaItems}

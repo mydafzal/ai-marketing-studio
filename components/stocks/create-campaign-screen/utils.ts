@@ -85,3 +85,68 @@ export const loadingSteps = [
   "Optimizing creative elements...",
   "Finalizing campaign settings..."
 ];
+
+export const initializeApiCallSteps = [
+  {
+    label: "Initializing campaign flow...",
+    endpoint: "api/master-flow-initiate-process"
+  },
+  {
+    label: "Analyzing your website...",
+    endpoint: "api/analyze/website"
+  },
+  {
+    label: "Generating ad text suggestions...",
+    endpoint: "api/generate/ad_text"
+  },
+  {
+    label: "Researching audience targeting...",
+    endpoint: "api/research/audience"
+  },
+  {
+    label: "Processing media assets...",
+    endpoint: "api/process/media"
+  },
+  {
+    label: "Creating demographic targeting...",
+    endpoint: "api/create/targeting"
+  },
+  {
+    label: "Preparing campaign structure...",
+    endpoint: "api/prepare/campaign"
+  }
+];
+
+export const launchApiCallSteps = [
+  {
+    label: "Setting up campaign...",
+    endpoint: "api/campaign/create"
+  },
+  {
+    label: "Creating ad set with targeting...",
+    endpoint: "api/adset/create"
+  },
+  {
+    label: "Building creative content...",
+    endpoint: "api/adcreative/create"
+  },
+  {
+    label: "Configuring ad placement...",
+    endpoint: "api/ad/create"
+  },
+  {
+    label: "Optimizing audience reach...",
+    endpoint: "api/audience/update"
+  },
+  {
+    label: "Setting up lead form...",
+    endpoint: "api/leadform/create"
+  },
+  {
+    label: "Finalizing and launching campaign...",
+    endpoint: "api/fasty-bot/proxy-finalize-campaign"
+  }
+];
+
+// For backward compatibility
+export const apiCallSteps = initializeApiCallSteps;
