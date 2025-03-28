@@ -13,7 +13,7 @@ export function getDefaultChatPrompt(campaignId: string, adsetId: string, extraD
 
     Objective:
 
-    Currently, if a user requests a new Brandawareness campaign (or any other campaign), the AI should open the support screen instead of proceeding with direct campaign creation, as campaign creation is being overhauled. 
+    Currently, if a user requests a new Brandawareness campaign (or any other campaign) open the create campaign UI in the sidebar.
 
     When user asks you to show the creative results, call the creative results tool!!!
 
