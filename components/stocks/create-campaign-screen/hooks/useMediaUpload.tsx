@@ -43,12 +43,16 @@ export function useMediaUpload() {
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [campaignSessionId, setCampaignSessionId] = useState<string | null>(null);
+  // Create a ref to access the latest campaign session ID in async callbacks
+  const campaignSessionIdRef = useRef<string | null>(null);
   const [fbAccountId, setFbAccountId] = useState<string>('');
   const [fbPageId, setFbPageId] = useState<string>('');
   
   // Log any changes to important state variables
   useEffect(() => {
     console.log("🔄 State Update - Campaign Session ID:", campaignSessionId);
+    // Update the ref when the state changes
+    campaignSessionIdRef.current = campaignSessionId;
   }, [campaignSessionId]);
   
   useEffect(() => {
@@ -193,10 +197,11 @@ export function useMediaUpload() {
       formData.append('fb_account_id', fbAccountId);
       console.log('🆔 Using FB Account ID:', fbAccountId);
       
-      // Add campaign_session_id if we have one from a previous upload
-      if (campaignSessionId) {
-        console.log('🔗 Adding existing campaign session ID:', campaignSessionId);
-        formData.append('campaign_session_id', campaignSessionId);
+      // Add campaign_session_id if we have one from a previous upload (check both state and ref)
+      const currentSessionId = campaignSessionIdRef.current || campaignSessionId;
+      if (currentSessionId) {
+        console.log('🔗 Adding existing campaign session ID:', currentSessionId);
+        formData.append('campaign_session_id', currentSessionId);
       } else {
         console.log('ℹ️ No campaign session ID available yet');
       }
@@ -347,10 +352,11 @@ export function useMediaUpload() {
       initFormData.append('height', dimensions.height.toString());
       console.log('🆔 Using FB Account ID:', fbAccountId);
       
-      // Add campaign_session_id if we have one from a previous upload
-      if (campaignSessionId) {
-        console.log('🔗 Adding existing campaign session ID:', campaignSessionId);
-        initFormData.append('campaign_session_id', campaignSessionId);
+      // Add campaign_session_id if we have one from a previous upload (check both state and ref)
+      const currentSessionId = campaignSessionIdRef.current || campaignSessionId;
+      if (currentSessionId) {
+        console.log('🔗 Adding existing campaign session ID:', currentSessionId);
+        initFormData.append('campaign_session_id', currentSessionId);
       } else {
         console.log('ℹ️ No campaign session ID available yet');
       }
@@ -368,9 +374,6 @@ export function useMediaUpload() {
       console.log('📤 Sending video initialization request to /api/upload-video');
       const initResponse = await fetch('/api/upload-video', {
         method: 'POST',
-        headers: {
-          'fb_api_key': '' // Empty string will make the backend use its internal API key
-        },
         body: initFormData
       });
       
@@ -382,17 +385,71 @@ export function useMediaUpload() {
         throw new Error(`Failed to initialize video upload session: ${errorText}`);
       }
       
-      const initResult: VideoStartResponse = await initResponse.json();
+      const initResult: any = await initResponse.json();
       console.log('📊 Video init API response:', JSON.stringify(initResult, null, 2));
       
-      if (!initResult.success || !initResult.data || !initResult.data.upload_session_id) {
-        console.error('❌ Failed to initialize video upload session: No upload session ID returned');
+      // Handle different response formats including deeply nested structures
+      let uploadSessionId: string | undefined;
+      
+      console.log('🔍 Searching for upload_session_id in response...');
+      
+      // Function to recursively search for upload_session_id in a nested object
+      const findUploadSessionId = (obj: any): string | undefined => {
+        if (!obj || typeof obj !== 'object') return undefined;
+        
+        // Direct property
+        if (obj.upload_session_id) {
+          console.log('✅ Found upload_session_id directly in object');
+          return obj.upload_session_id;
+        }
+        
+        // Check data property
+        if (obj.data) {
+          // Direct in data
+          if (obj.data.upload_session_id) {
+            console.log('✅ Found upload_session_id in data property');
+            return obj.data.upload_session_id;
+          }
+          
+          // Nested in data.data
+          if (obj.data.data && obj.data.data.upload_session_id) {
+            console.log('✅ Found upload_session_id in data.data property');
+            return obj.data.data.upload_session_id;
+          }
+          
+          // Recursive search in data
+          const dataResult = findUploadSessionId(obj.data);
+          if (dataResult) return dataResult;
+        }
+        
+        // Check backend_response property
+        if (obj.backend_response) {
+          if (obj.backend_response.upload_session_id) {
+            console.log('✅ Found upload_session_id in backend_response');
+            return obj.backend_response.upload_session_id;
+          }
+          
+          // Recursive search in backend_response
+          const backendResult = findUploadSessionId(obj.backend_response);
+          if (backendResult) return backendResult;
+        }
+        
+        return undefined;
+      };
+      
+      // Search for upload_session_id in the response
+      uploadSessionId = findUploadSessionId(initResult);
+      
+      if (uploadSessionId) {
+        console.log('✅ Successfully found upload_session_id:', uploadSessionId);
+      } else {
+        console.error('❌ Failed to initialize video upload session: No upload session ID found in any format');
+        console.error('📊 Response format received:', JSON.stringify(initResult, null, 2));
         throw new Error('Failed to initialize video upload session: No upload session ID returned');
       }
       
       // Step 2: Upload video in chunks
-      const uploadSessionId = initResult.data.upload_session_id;
-      console.log('✅ Received upload session ID:', uploadSessionId);
+      console.log('✅ Using upload session ID:', uploadSessionId);
       let startOffset = 0;
       const chunkSize = 1024 * 1024; // 1MB chunks
       console.log('📊 Using chunk size (bytes):', chunkSize);
@@ -423,7 +480,21 @@ export function useMediaUpload() {
         // Prepare form data for chunk upload
         const chunkFormData = new FormData();
         const chunk = file.slice(startOffset, endOffset);
-        chunkFormData.append('file', chunk);
+        
+        // Create a proper Blob with file type to ensure correct handling
+        const chunkBlob = new Blob([chunk], { type: file.type });
+        
+        // Add the chunk as a file with a name to ensure proper multipart handling
+        chunkFormData.append('file', chunkBlob, `chunk_${chunkCount}.mp4`);
+        
+        // Extract video_id from uploadSessionId for the video chunk upload
+        // According to the Facebook API docs, for the chunk upload we need to provide video_id
+        // which is the same as the upload_session_id for the first request
+        const video_id = uploadSessionId;
+        console.log(`🎬 Using video_id for chunk ${chunkCount + 1}:`, video_id);
+        
+        // Add required parameters
+        chunkFormData.append('video_id', video_id); // Required by backend
         chunkFormData.append('start_offset', startOffset.toString());
         chunkFormData.append('finish', isLastChunk ? '1' : '0');
         chunkFormData.append('upload_session_id', uploadSessionId);
@@ -431,18 +502,19 @@ export function useMediaUpload() {
         chunkFormData.append('height', dimensions.height.toString());
         chunkFormData.append('fb_account_id', fbAccountId);
         
-        // Add campaign_session_id if we have one
-        if (campaignSessionId) {
-          chunkFormData.append('campaign_session_id', campaignSessionId);
+        // Add campaign_session_id if we have one (check both state and ref)
+        const currentSessionId = campaignSessionIdRef.current || campaignSessionId;
+        if (currentSessionId) {
+          console.log(`🔗 Adding campaign_session_id to chunk ${chunkCount + 1}:`, currentSessionId);
+          chunkFormData.append('campaign_session_id', currentSessionId);
+        } else {
+          console.log(`ℹ️ No campaign_session_id available for chunk ${chunkCount + 1}`);
         }
         
         // Upload the chunk
         console.log('📤 Sending chunk to /api/upload-video');
         const chunkResponse = await fetch('/api/upload-video', {
           method: 'POST',
-          headers: {
-            'fb_api_key': '' // Empty string will make the backend use its internal API key
-          },
           body: chunkFormData
         });
         
@@ -453,12 +525,61 @@ export function useMediaUpload() {
           throw new Error(`Failed to upload video chunk ${chunkCount + 1}/${totalChunks}: ${errorText}`);
         }
         
-        const chunkResult: VideoChunkResponse = await chunkResponse.json();
-        console.log('📊 Chunk upload API response:', JSON.stringify(chunkResult, null, 2));
+        const chunkResult: any = await chunkResponse.json();
+        // Log the chunk result in detail for debugging
+        console.log(`📊 Chunk ${chunkCount + 1}/${totalChunks} upload API response:`, JSON.stringify(chunkResult, null, 2));
         
-        if (!chunkResult.success) {
-          console.error(`❌ Chunk upload reported failure for chunk ${chunkCount + 1}/${totalChunks}`);
-          throw new Error(`Failed to upload video chunk ${chunkCount + 1}/${totalChunks}`);
+        // More extensive validation and error handling with support for different response formats
+        if (chunkResult.success === false) {
+          // Even if marked as failure, check if we have valid data in the backend_response
+          if (isLastChunk && chunkResult.backend_response && chunkResult.backend_response.video_id) {
+            console.log('⚠️ Response marked as failure but contains valid video_id, continuing...');
+            // Extract the data from backend_response
+            if (!chunkResult.data) {
+              chunkResult.data = {};
+            }
+            // Copy video_id
+            if (chunkResult.backend_response.video_id) {
+              chunkResult.data.video_id = chunkResult.backend_response.video_id;
+              console.log('✅ Extracted video_id from backend_response:', chunkResult.data.video_id);
+            }
+            // Copy campaign_session_id if available
+            if (chunkResult.backend_response.campaign_session_id) {
+              chunkResult.data.campaign_session_id = chunkResult.backend_response.campaign_session_id;
+              console.log('✅ Extracted campaign_session_id from backend_response:', chunkResult.data.campaign_session_id);
+            }
+          } else {
+            console.error(`❌ Chunk upload reported failure for chunk ${chunkCount + 1}/${totalChunks}`);
+            // Include any error details in the exception
+            const errorMessage = chunkResult.error || `Failed to upload video chunk ${chunkCount + 1}/${totalChunks}`;
+            console.error('❌ Error details:', errorMessage);
+            throw new Error(errorMessage);
+          }
+        } 
+        
+        // If the result has a direct video_id (not in data object), move it to data object
+        if (isLastChunk && chunkResult.video_id && (!chunkResult.data || !chunkResult.data.video_id)) {
+          if (!chunkResult.data) {
+            chunkResult.data = {};
+          }
+          chunkResult.data.video_id = chunkResult.video_id;
+          console.log('✅ Moved video_id to data object:', chunkResult.data.video_id);
+          
+          // Do the same for campaign_session_id
+          if (chunkResult.campaign_session_id) {
+            chunkResult.data.campaign_session_id = chunkResult.campaign_session_id;
+            console.log('✅ Moved campaign_session_id to data object:', chunkResult.data.campaign_session_id);
+          }
+        }
+        
+        // For every chunk, check if we got a campaign_session_id and store it
+        // This ensures we always have the latest session ID
+        if (chunkResult.data && chunkResult.data.campaign_session_id) {
+          const newSessionId = chunkResult.data.campaign_session_id;
+          console.log(`✅ Received campaign session ID from chunk ${chunkCount + 1}:`, newSessionId);
+          setCampaignSessionId(newSessionId);
+          // Update ref immediately for use in future operations
+          campaignSessionIdRef.current = newSessionId;
         }
         
         // Increment chunk counter
@@ -474,15 +595,112 @@ export function useMediaUpload() {
           )
         );
         
-        // If this is the last chunk, we should have a video_id
-        if (isLastChunk && chunkResult.data && chunkResult.data.video_id) {
-          videoId = chunkResult.data.video_id;
-          console.log('✅ Received video ID from last chunk:', videoId);
+        // If this is the last chunk, extract the video_id
+        if (isLastChunk) {
+          console.log('✅ Final chunk processed');
+          console.log('📊 Full response:', JSON.stringify(chunkResult, null, 2));
           
-          // Store campaign_session_id if available
-          if (chunkResult.data.campaign_session_id) {
-            console.log('✅ Received campaign session ID:', chunkResult.data.campaign_session_id);
-            setCampaignSessionId(chunkResult.data.campaign_session_id);
+          // Function to recursively search for video_id in a nested object
+          const findVideoId = (obj: any): string | undefined => {
+            if (!obj || typeof obj !== 'object') return undefined;
+            
+            // Direct property
+            if (obj.video_id) {
+              console.log('✅ Found video_id directly in object');
+              return obj.video_id;
+            }
+            
+            // Check data property
+            if (obj.data) {
+              // Direct in data
+              if (obj.data.video_id) {
+                console.log('✅ Found video_id in data property');
+                return obj.data.video_id;
+              }
+              
+              // Nested in data.data
+              if (obj.data.data && obj.data.data.video_id) {
+                console.log('✅ Found video_id in data.data property');
+                return obj.data.data.video_id;
+              }
+              
+              // Recursive search in data
+              const dataResult = findVideoId(obj.data);
+              if (dataResult) return dataResult;
+            }
+            
+            // Check backend_response property
+            if (obj.backend_response) {
+              if (obj.backend_response.video_id) {
+                console.log('✅ Found video_id in backend_response');
+                return obj.backend_response.video_id;
+              }
+              
+              // Recursive search in backend_response
+              const backendResult = findVideoId(obj.backend_response);
+              if (backendResult) return backendResult;
+            }
+            
+            return undefined;
+          };
+          
+          // Function to recursively search for campaign_session_id
+          const findCampaignSessionId = (obj: any): string | undefined => {
+            if (!obj || typeof obj !== 'object') return undefined;
+            
+            // Direct property
+            if (obj.campaign_session_id) {
+              console.log('✅ Found campaign_session_id directly in object');
+              return obj.campaign_session_id;
+            }
+            
+            // Check data property
+            if (obj.data) {
+              // Direct in data
+              if (obj.data.campaign_session_id) {
+                console.log('✅ Found campaign_session_id in data property');
+                return obj.data.campaign_session_id;
+              }
+              
+              // Nested in data.data
+              if (obj.data.data && obj.data.data.campaign_session_id) {
+                console.log('✅ Found campaign_session_id in data.data property');
+                return obj.data.data.campaign_session_id;
+              }
+              
+              // Recursive search in data
+              const dataResult = findCampaignSessionId(obj.data);
+              if (dataResult) return dataResult;
+            }
+            
+            // Check backend_response property
+            if (obj.backend_response) {
+              if (obj.backend_response.campaign_session_id) {
+                console.log('✅ Found campaign_session_id in backend_response');
+                return obj.backend_response.campaign_session_id;
+              }
+              
+              // Recursive search in backend_response
+              const backendResult = findCampaignSessionId(obj.backend_response);
+              if (backendResult) return backendResult;
+            }
+            
+            return undefined;
+          };
+          
+          // Extract video_id using recursive search
+          const foundVideoId = findVideoId(chunkResult);
+          if (foundVideoId) {
+            videoId = foundVideoId;
+            console.log('✅ Successfully found video ID:', videoId);
+          }
+          
+          // Extract campaign_session_id using recursive search
+          const sessionId = findCampaignSessionId(chunkResult);
+          if (sessionId) {
+            console.log('✅ Found campaign session ID:', sessionId);
+            setCampaignSessionId(sessionId);
+            campaignSessionIdRef.current = sessionId;
           }
         }
         

@@ -91,6 +91,7 @@ export function CreateCampaignForm() {
   const handleReviewTransition = async () => {
     console.log('🔍 Starting review transition process');
     
+    // Check for required fields
     if (mediaItems.length === 0 || !link || !budget) {
       console.warn('⚠️ Missing required data:', {
         'Media items': mediaItems.length,
@@ -98,6 +99,49 @@ export function CreateCampaignForm() {
         'Budget provided': !!budget
       });
       return;
+    }
+    
+    // Check if any videos are in the media items
+    const videoItems = mediaItems.filter(item => item.type === 'video');
+    if (videoItems.length > 0) {
+      console.log('🎬 Videos detected in upload:', videoItems.length);
+      
+      // Set loading state first so UI updates immediately
+      console.log('🔄 Setting loading state');
+      setIsLoading(true);
+      setLoadingStep(0);
+      setError(null);
+      
+      // Facebook needs time to process videos and generate thumbnails
+      // The master flow tries to fetch video details including thumbnails
+      // If we proceed too quickly, this can fail as Facebook may not have generated thumbnails yet
+      console.log('⏳ Adding significant delay for Facebook to process videos and generate thumbnails...');
+      
+      // Start the loading animation
+      const maxSteps = loadingSteps ? loadingSteps.length - 1 : 6;
+      const loadingInterval = setInterval(() => {
+        setLoadingStep(prev => {
+          // Loop through loading steps to keep animation going during longer wait
+          return (prev + 1) % (maxSteps + 1);
+        });
+      }, 3000);
+      
+      // Wait for 5 minutes to allow Facebook to fully process the video and generate thumbnails
+      // This is needed because the master flow will try to fetch video details and thumbnails
+      // Most short videos (< 1 minute) should be processed within this timeframe
+      console.log('⏳ Waiting 5 minutes for Facebook to process videos...');
+      await new Promise(resolve => setTimeout(resolve, 300000)); // 5 minutes
+      
+      console.log('✅ Video processing delay completed');
+      
+      // Clear interval and proceed with API call
+      clearInterval(loadingInterval);
+      
+      // Reset loading step to ensure proper sequence in the remaining flow
+      setLoadingStep(0);
+      
+      // Continue execution to the API call below
+      // We don't return here as we want to proceed with the API call
     }
 
     console.log('🔄 Setting loading state');

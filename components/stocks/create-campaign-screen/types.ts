@@ -7,7 +7,7 @@ export interface MediaItem {
   url: string;
   aspectRatio: AspectRatio;
   progress?: number;
-  hash?: string;     // Store the Facebook image hash returned from API
+  hash?: string;     // Store the Facebook image hash or video ID returned from API
   error?: string;    // For storing error messages if upload fails
 }
 
