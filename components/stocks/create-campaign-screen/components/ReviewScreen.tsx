@@ -461,8 +461,7 @@ export function ReviewScreen({
                               <h5 className="font-medium text-text-white mb-2">Media Type</h5>
                               <div className="bg-container-bg p-3 rounded-lg border border-border-dark">
                                 <p className="text-text-white">
-                                  {creative.media_type === 'image' ? 'Image' : 'Video'}
-                                </p>
+                                {(creative as any).media_type === 'image' ? 'Image' : 'Video'}                                </p>
                               </div>
                             </div>
 
@@ -476,12 +475,12 @@ export function ReviewScreen({
                             <div>
                               <h5 className="font-medium text-text-white mb-2">Media Preview</h5>
                               <div className="bg-container-bg p-3 rounded-lg flex justify-center border border-border-dark">
-                                {creative.media_type === 'image' ? (
+                                {(creative as any).media_type === 'image' ? (
                                   <img 
-                                    src={(creative as any).media_url || mediaItems[index]?.url || '/placeholder-image.jpg'} 
-                                    alt="Creative preview" 
-                                    className="max-h-[200px] rounded-md"
-                                  />
+                                  src={(creative as any).media_url || mediaItems[index]?.url || '/placeholder-image.jpg'} 
+                                  alt="Creative preview" 
+                                  className="max-h-[200px] rounded-md"
+                                />
                                 ) : (
                                   <video 
                                     src={(creative as any).media_url || mediaItems[index]?.url} 
