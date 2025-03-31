@@ -1615,7 +1615,16 @@ export async function updateOnboardingDetails(email: string, details: {
             website_data: website_data
         };
         
-        // Handle locations separately to ensure proper serialization
+        // Handle locations - explicitly save them as a stringified object or null
+        // This ensures deleted locations are properly removed
+        if (details.locations && Array.isArray(details.locations) && details.locations.length > 0) {
+            console.log("[TEMPORARY DEBUG] Saving locations to KV:", details.locations);
+            dataToSave["locations"] = JSON.stringify(details.locations);
+        } else {
+            console.log("[TEMPORARY DEBUG] Clearing locations in KV");
+            dataToSave["locations"] = null; // Explicitly set to null to remove locations
+        }
+        
         // Update user data in KV
         await kv.hset(userKey, dataToSave)
 

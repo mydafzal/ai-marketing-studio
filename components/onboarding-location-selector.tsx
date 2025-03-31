@@ -872,10 +872,19 @@ export default function OnboardingLocationSelector({
     getCountryList();
   }, []); // Only fetch country list once on mount
 
+  // Track if we've already loaded locations to prevent reloading
+  const [hasLoadedLocations, setHasLoadedLocations] = useState(false);
+  
   // Separate effect to handle loading saved locations
   useEffect(() => {
     if (countryData.length === 0) {
       return; // Exit if we don't have country data yet
+    }
+    
+    // Skip if we already loaded locations once
+    if (hasLoadedLocations) {
+      console.log("[TEMPORARY DEBUG] Skipping location reload - already loaded once");
+      return;
     }
 
     // If locations is an empty array, we still need to handle it properly
@@ -885,30 +894,17 @@ export default function OnboardingLocationSelector({
     if (!locations || (Array.isArray(locations) && locations.length === 0)) {
       console.log("[TEMPORARY DEBUG] No locations to load, setting default empty location");
       
-      // Create a default empty location with just a country (Germany)
-      const defaultLocation = {
-        country: {
-          name: "Germany",
-          code: "DE"
-        },
-        regions: []
-      };
-      
-      setSelectedGeoLocations([{
-        country: {
-          country_code: "DE",
-          key: "DE",
-          name: "Germany",
-          type: 'country',
-          supports_city: true,
-          supports_region: true
-        },
+      // Create an empty location state (without default country)
+      const emptyLocation = {
+        country: null,
         region: null,
         cities: [],
         regionData: [],
         cityData: []
-      }]);
+      };
       
+      setSelectedGeoLocations([emptyLocation]);
+      setHasLoadedLocations(true);
       return;
     }
 
@@ -1054,28 +1050,26 @@ export default function OnboardingLocationSelector({
         console.log("[TEMPORARY DEBUG] Setting initial locations:", initialLocations);
         setSelectedGeoLocations(initialLocations);
       } else {
-        console.log("[TEMPORARY DEBUG] No valid locations found to set, creating default location");
+        console.log("[TEMPORARY DEBUG] No valid locations found to set, creating default empty location");
         
-        // Create a default empty location with just a country (Germany)
-        setSelectedGeoLocations([{
-          country: {
-            country_code: "DE",
-            key: "DE",
-            name: "Germany",
-            type: 'country',
-            supports_city: true,
-            supports_region: true
-          },
+        // Create an empty location state (without default country)
+        const emptyLocation = {
+          country: null,
           region: null,
           cities: [],
           regionData: [],
           cityData: []
-        }]);
+        };
+        
+        setSelectedGeoLocations([emptyLocation]);
       }
+      
+      // Mark that we've loaded locations once
+      setHasLoadedLocations(true);
     };
 
     loadSavedLocations();
-  }, [countryData.length, locations, getRegionList]);
+  }, [countryData.length, locations, getRegionList, hasLoadedLocations]);
 
   return (
     <div className="space-y-6">

@@ -358,10 +358,23 @@ function Onboarding({
     const [showSuccessMessage, setShowSuccessMessage] = React.useState(false)
     const [currentStep, setCurrentStep] = React.useState(0)
 
-    // Update states when userDetails changes
+    // Track when the onboarding dialog is opened
+    const [dialogOpenedAt, setDialogOpenedAt] = React.useState<number | null>(null);
+    
+    // When dialog open state changes, record timestamp if opening
     React.useEffect(() => {
-        if (userDetails) {
-            // Temporary debug log for userDetails
+        if (open) {
+            setDialogOpenedAt(Date.now());
+        }
+    }, [open]);
+    
+    // Update states only when userDetails changes AND the dialog is not open
+    // This prevents reloading locations from database after user has deleted them
+    React.useEffect(() => {
+        // Only load userDetails when dialog is not open OR was just opened
+        const isInitialLoad = dialogOpenedAt && (Date.now() - dialogOpenedAt < 1000);
+        
+        if (userDetails && (!open || isInitialLoad)) {
             console.log("[TEMPORARY DEBUG] Loading userDetails:", userDetails);
             
             setFirstName(userDetails.first_name || "")
@@ -396,7 +409,7 @@ function Onboarding({
                 setLocations([]);
             }
         }
-    }, [userDetails])
+    }, [userDetails, open, dialogOpenedAt])
 
     // Validate the current step and move to the next if valid
     const validateStep = () => {
