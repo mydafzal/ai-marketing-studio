@@ -1619,10 +1619,10 @@ export async function updateOnboardingDetails(email: string, details: {
         // This ensures deleted locations are properly removed
         if (details.locations && Array.isArray(details.locations) && details.locations.length > 0) {
             console.log("[TEMPORARY DEBUG] Saving locations to KV:", details.locations);
-            dataToSave["locations"] = JSON.stringify(details.locations);
+            (dataToSave as any)["locations"] = JSON.stringify(details.locations);
         } else {
             console.log("[TEMPORARY DEBUG] Clearing locations in KV");
-            dataToSave["locations"] = null; // Explicitly set to null to remove locations
+            (dataToSave as any)["locations"] = null; // Explicitly set to null to remove locations
         }
         
         // Update user data in KV
