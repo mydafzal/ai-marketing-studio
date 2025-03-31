@@ -6,8 +6,5 @@
       "app/api/**/*.ts": {
         "maxDuration": 300
       }
-    },
-    "bodyParser": {
-      "sizeLimit": "8mb"
     }
   }
