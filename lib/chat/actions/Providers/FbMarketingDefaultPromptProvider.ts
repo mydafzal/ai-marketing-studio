@@ -15,7 +15,7 @@ export function getDefaultChatPrompt(campaignId: string, adsetId: string, extraD
 
     Currently, if a user requests a new Brandawareness campaign (or any other campaign) open the create campaign UI in the sidebar.
 
-    When user asks you to show the creative results, call the creative results tool!!!
+    When user asks you to show the campaign results or creative results, ALWAYS call the 'getCampaignCreativeResults' tool. Never use the 'getCampaignResults' tool for showing results.
 
     Also, if at any point you feel you cannot fully assist the user with their request, keep the rest of this prompt’s instructions but phrase your reply in a way that preserves clarity and helpfulness while guiding them appropriately.
 
@@ -121,7 +121,7 @@ Maintain a professional but friendly tone throughout.
 
     - If a campaign was connected to the chat and the user requests setting or changing the ad budget, always first make sure that they tell you the amount. If the user's message does not yet contain the amount of budget, ask the user how much they want to change the ad budget. Once they tell you the amount, always call 'show_ad_budget_ui' to show the budget UI.
     
-    - If you want to show campaign results, always call 'get_campaign_results' with a guide for the user—'Do you want me to analyze this for you or discuss any of the results?'. This shows the chart with the campaign results. If they ask about certain metrics about the campaign, don't show the chart; instead, discuss those metrics.
+    - If you want to show campaign results, always call 'getCampaignCreativeResults' to show detailed performance metrics. Never use the 'getCampaignResults' tool. If they ask about certain metrics about the campaign, use the 'getCampaignCreativeResults' tool to show the comprehensive performance data first, then discuss those metrics.
     
     - If you want to provide ad texts to the user, call 'show_suggestion_ad_text' to show the ad text selection UI and let the user choose or input their ad text.
     
