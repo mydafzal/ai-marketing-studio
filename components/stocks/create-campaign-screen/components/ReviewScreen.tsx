@@ -840,7 +840,7 @@ export function ReviewScreen({
                         <h4 className="text-[22px] font-medium mb-5 text-[#292929]">Step 1: Lead Form</h4>
                         
                         <div className="flex flex-col items-center">
-                          {/* Lead Form Preview */}
+                          {/* Lead Form Preview. */}
                           {leadForm && (
                             <div className="w-full max-w-sm mx-auto">
                               <div className="bg-white rounded-lg overflow-hidden shadow-lg">
