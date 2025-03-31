@@ -451,7 +451,7 @@ export function useMediaUpload() {
       // Step 2: Upload video in chunks
       console.log('✅ Using upload session ID:', uploadSessionId);
       let startOffset = 0;
-      const chunkSize = 1024 * 1024; // 1MB chunks
+      const chunkSize = 256 * 1024; // 256KB chunks (reduced size for Vercel limits)
       console.log('📊 Using chunk size (bytes):', chunkSize);
       
       console.log('🔄 Updating progress to 20%');
