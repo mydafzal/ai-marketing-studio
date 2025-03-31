@@ -154,6 +154,20 @@ function ChatCore({ id, chat, className, session, missingKeys }: ChatProps) {
     },
     []
   )
+  
+  // Listen for "send-support-message" events
+  useEffect(() => {
+    const handleSupportMessage = (event: CustomEvent) => {
+      const { message } = event.detail
+      sendMessage(message)
+    }
+    
+    window.addEventListener('send-support-message', handleSupportMessage as EventListener)
+    
+    return () => {
+      window.removeEventListener('send-support-message', handleSupportMessage as EventListener)
+    }
+  }, [sendMessage])
 
   // Add handleShowMe that uses sendMessage
   const handleShowMe = useCallback(

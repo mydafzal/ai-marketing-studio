@@ -7,7 +7,7 @@ import { shareChat } from '@/app/actions'
 import { Button } from '@/components/ui/button'
 import { PromptForm } from '@/components/prompt-form'
 import { ButtonScrollToBottom } from '@/components/button-scroll-to-bottom'
-import { IconShare, IconArrowRight } from '@/components/ui/icons'
+import { IconShare, IconArrowRight, IconMessageCircle } from '@/components/ui/icons'
 import { FooterText } from '@/components/footer'
 import { ChatShareDialog } from '@/components/chat-share-dialog'
 import type { AI } from '@/lib/chat/AIManager'
@@ -119,34 +119,32 @@ export function ChatPanel({
               ))}
           </div>
 
-          {messages?.length >= 2 ? (
-            <div className={`flex ${id && title && "h-12"} items-center justify-center`}>
-              <div className="flex space-x-2">
-                {id && title ? (
-                  <>
-                    <Button
-                      variant="outline"
-                      onClick={() => setShareDialogOpen(true)}
-                    >
-                      <IconShare className="mr-2" />
-                      Share
-                    </Button>
-                    <ChatShareDialog
-                      open={shareDialogOpen}
-                      onOpenChange={setShareDialogOpen}
-                      onCopy={() => setShareDialogOpen(false)}
-                      shareChat={shareChat as (id: string) => Promise<any>}
-                      chat={{
-                        id,
-                        title,
-                        messages: aiState.messages
-                      }}
-                    />
-                  </>
-                ) : null}
-              </div>
+          <div className={`flex ${id && title && "h-12"} items-center justify-center mb-4`}>
+            <div className="flex space-x-2">
+              {messages?.length >= 2 && id && title ? (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShareDialogOpen(true)}
+                  >
+                    <IconShare className="mr-2" />
+                    Share
+                  </Button>
+                  <ChatShareDialog
+                    open={shareDialogOpen}
+                    onOpenChange={setShareDialogOpen}
+                    onCopy={() => setShareDialogOpen(false)}
+                    shareChat={shareChat as (id: string) => Promise<any>}
+                    chat={{
+                      id,
+                      title,
+                      messages: aiState.messages
+                    }}
+                  />
+                </>
+              ) : null}
             </div>
-          ) : null}
+          </div>
 
           <div className="space-y-4 border-t border-border-dark bg-light-container px-4 py-2 shadow-lg sm:rounded-t-xl sm:border md:py-4">
             <PromptForm onSendMessage={sendMessage} />
