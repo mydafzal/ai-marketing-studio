@@ -239,6 +239,8 @@ export function useMediaUpload() {
         if (result.campaign_session_id) {
           console.log('✅ Received campaign session ID:', result.campaign_session_id);
           setCampaignSessionId(result.campaign_session_id);
+          // Update ref immediately for use in future operations
+          campaignSessionIdRef.current = result.campaign_session_id;
         }
         
         // Update the media item with the hash and complete progress
@@ -345,6 +347,14 @@ export function useMediaUpload() {
       console.log('📋 Preparing form data for video upload initialization');
       const initFormData = new FormData();
       
+      // We need two separate IDs for the video upload process:
+      // 1. upload_session_id - used to track the upload session
+      // 2. video_id - the actual ID of the video that will be used in campaigns
+      // According to the API guidelines, both are returned from the initialization response
+      // And the final video_id is confirmed in the last chunk response
+      let video_id = null; // Will be populated from server response
+      console.log('🎬 Initial video_id is null, will get from server response');
+      
       // Add required parameters according to documentation
       initFormData.append('file_size', String(videoFileSize));
       initFormData.append('fb_account_id', fbAccountId);
@@ -442,6 +452,37 @@ export function useMediaUpload() {
       
       if (uploadSessionId) {
         console.log('✅ Successfully found upload_session_id:', uploadSessionId);
+        
+        // Store both upload_session_id and video_id from initialization response
+        // According to guidelines, both should be returned and we need both for the chunked upload
+        if (initResult.video_id) {
+          video_id = initResult.video_id;
+          console.log('✅ Using video_id directly from session response:', video_id);
+        } else if (initResult.data && initResult.data.video_id) {
+          video_id = initResult.data.video_id;
+          console.log('✅ Using video_id from session response data:', video_id);
+        } else {
+          // If no video_id is found in the response, this is a critical error
+          // Since we've updated the backend to properly distinguish between upload_session_id and video_id
+          console.error('❌ No video_id in initialization response - this is a critical error');
+          console.error('❌ The backend should have provided a proper video_id');
+          
+          // As a fallback measure only, we'll try using the upload_session_id, but we should log 
+          // a very clear warning that this will likely fail with the updated backend
+          video_id = uploadSessionId;
+          console.warn('⚠️ CRITICAL WARNING: Using upload_session_id as video_id fallback.');
+          console.warn('⚠️ This will likely fail with the updated backend implementation!');
+        }
+        
+        // Ensure the video_id doesn't have a "video_" prefix
+        // The Fasty backend expects raw numeric IDs
+        if (typeof video_id === 'string' && video_id.startsWith('video_')) {
+          console.log('⚠️ Removing "video_" prefix from video_id to match backend expectations');
+          video_id = video_id.substring(6);
+        }
+        
+        console.log('🔍 Final video_id format check: Is numeric=' + /^\d+$/.test(String(video_id)));
+        
       } else {
         console.error('❌ Failed to initialize video upload session: No upload session ID found in any format');
         console.error('📊 Response format received:', JSON.stringify(initResult, null, 2));
@@ -487,14 +528,16 @@ export function useMediaUpload() {
         // Add the chunk as a file with a name to ensure proper multipart handling
         chunkFormData.append('file', chunkBlob, `chunk_${chunkCount}.mp4`);
         
-        // Extract video_id from uploadSessionId for the video chunk upload
-        // According to the Facebook API docs, for the chunk upload we need to provide video_id
-        // which is the same as the upload_session_id for the first request
-        const video_id = uploadSessionId;
+        // Make sure to use the EXACT same video_id consistently across all requests
+        // This is crucial for the upload to work correctly
+        // IMPORTANT: This is the video_id from initialization, not the final video_id
         console.log(`🎬 Using video_id for chunk ${chunkCount + 1}:`, video_id);
+        console.log('📝 DEBUG: Video ID type check - is string?', typeof video_id === 'string');
         
         // Add required parameters
-        chunkFormData.append('video_id', video_id); // Required by backend
+        // Per API guidelines, we send both the video_id (from initialization) 
+        // and the upload_session_id in each chunk request
+        chunkFormData.append('video_id', video_id || ''); // Required by backend
         chunkFormData.append('start_offset', startOffset.toString());
         chunkFormData.append('finish', isLastChunk ? '1' : '0');
         chunkFormData.append('upload_session_id', uploadSessionId);
@@ -557,21 +600,6 @@ export function useMediaUpload() {
           }
         } 
         
-        // If the result has a direct video_id (not in data object), move it to data object
-        if (isLastChunk && chunkResult.video_id && (!chunkResult.data || !chunkResult.data.video_id)) {
-          if (!chunkResult.data) {
-            chunkResult.data = {};
-          }
-          chunkResult.data.video_id = chunkResult.video_id;
-          console.log('✅ Moved video_id to data object:', chunkResult.data.video_id);
-          
-          // Do the same for campaign_session_id
-          if (chunkResult.campaign_session_id) {
-            chunkResult.data.campaign_session_id = chunkResult.campaign_session_id;
-            console.log('✅ Moved campaign_session_id to data object:', chunkResult.data.campaign_session_id);
-          }
-        }
-        
         // For every chunk, check if we got a campaign_session_id and store it
         // This ensures we always have the latest session ID
         if (chunkResult.data && chunkResult.data.campaign_session_id) {
@@ -582,20 +610,8 @@ export function useMediaUpload() {
           campaignSessionIdRef.current = newSessionId;
         }
         
-        // Increment chunk counter
-        chunkCount++;
-        
-        // Update progress (start at 20%, end at 90%)
-        const progressPercentage = 20 + Math.floor((chunkCount / totalChunks) * 70);
-        console.log('🔄 Updating progress to', progressPercentage + '%');
-        
-        setMediaItems(prev =>
-          prev.map(item =>
-            item.id === newMediaId ? { ...item, progress: progressPercentage } : item
-          )
-        );
-        
-        // If this is the last chunk, extract the video_id
+        // Only extract and process video_id from the last chunk
+        // The actual video_id is only available after the last chunk is processed
         if (isLastChunk) {
           console.log('✅ Final chunk processed');
           console.log('📊 Full response:', JSON.stringify(chunkResult, null, 2));
@@ -688,11 +704,19 @@ export function useMediaUpload() {
             return undefined;
           };
           
-          // Extract video_id using recursive search
+          // Extract video_id using recursive search - ONLY from the last chunk response
+          // THIS IS CRITICAL - This is the definitive video_id that must be used,
+          // not the upload_session_id or the initial video_id
           const foundVideoId = findVideoId(chunkResult);
           if (foundVideoId) {
+            // Override any previous video_id with the one from the final chunk
+            // This is the actual video_id we need to use, not the upload_session_id
             videoId = foundVideoId;
-            console.log('✅ Successfully found video ID:', videoId);
+            console.log('✅ Successfully found video ID in final chunk response:', videoId);
+            console.log('🔑 This is the definitive video ID to use for subsequent operations');
+          } else {
+            console.error('❌ Could not find video_id in final chunk response - this is critical!');
+            console.error('❌ Without the final video_id, subsequent operations will fail');
           }
           
           // Extract campaign_session_id using recursive search
@@ -704,26 +728,70 @@ export function useMediaUpload() {
           }
         }
         
+        // Increment chunk counter
+        chunkCount++;
+        
+        // Update progress (start at 20%, end at 90%)
+        const progressPercentage = 20 + Math.floor((chunkCount / totalChunks) * 70);
+        console.log('🔄 Updating progress to', progressPercentage + '%');
+        
+        setMediaItems(prev =>
+          prev.map(item =>
+            item.id === newMediaId ? { ...item, progress: progressPercentage } : item
+          )
+        );
+        
         // Move to next chunk
         startOffset = endOffset;
       }
       
-      // Update the media item with the video_id and complete progress
-      if (videoId) {
-        console.log('✅ Video upload completed successfully, video ID:', videoId);
+      // Update the media item with the video_id from the FINAL CHUNK response
+      // According to the API guidelines, the final video_id comes from the last chunk response
+      // This is critical - we must use the video_id from the final chunk, NOT the upload_session_id
+      let finalVideoId = videoId;
+      
+      // Process the videoId from the last chunk (this is the only valid video_id for further operations)
+      if (finalVideoId) {
+        // Remove "video_" prefix if present - critical for backend compatibility
+        if (typeof finalVideoId === 'string' && finalVideoId.startsWith('video_')) {
+          console.log('⚠️ Removing "video_" prefix from videoId for backend compatibility');
+          finalVideoId = finalVideoId.substring(6);
+        }
+        
+        // Verify that we have a clean numeric ID - the master flow requires this format
+        const isNumeric = /^\d+$/.test(String(finalVideoId));
+        console.log('✅ Video upload completed successfully, final video ID:', finalVideoId);
+        console.log('🔍 Final video ID format check: Is numeric=' + isNumeric);
+        
+        if (!isNumeric) {
+          console.warn('⚠️ Final video ID is not in the expected numeric format!');
+          console.warn('⚠️ This may cause issues when creating the campaign');
+        }
         console.log('🔄 Updating progress to 100%');
         setMediaItems(prev =>
           prev.map(item =>
             item.id === newMediaId ? { 
               ...item, 
               progress: 100,
-              hash: videoId // Store the video ID for later use
+              hash: finalVideoId // Store the processed video ID
             } : item
           )
         );
       } else {
-        console.error('❌ Failed to get video ID from upload');
-        throw new Error('Failed to get video ID from upload');
+        // If we didn't get a videoId from the response, we need to report an error
+        // The video_id is ONLY available in the final chunk response
+        console.error('❌ Failed to get video ID from final chunk response');
+        console.log('🔄 Setting error state for media item due to missing video ID');
+        setMediaItems(prev =>
+          prev.map(item =>
+            item.id === newMediaId ? { 
+              ...item, 
+              progress: -1,
+              error: 'Failed to get video ID from upload'
+            } : item
+          )
+        );
+        throw new Error('Failed to get video ID from upload - video ID is only returned in the final chunk response');
       }
       
     } catch (error) {

@@ -16,6 +16,16 @@ export async function GET(request: Request) {
 
     const resp = await getUserDetail();
     if (resp.success){
+        // Parse locations data if it exists
+        let locations = null;
+        if (resp.user.locations && typeof resp.user.locations === 'string') {
+            try {
+                locations = JSON.parse(resp.user.locations);
+            } catch (e) {
+                console.error('Error parsing locations data:', e);
+            }
+        }
+        
         return NextResponse.json({
             success: true,
             token: resp.user.fbMarketingApiKey ? resp.user.fbMarketingApiKey : "",
@@ -24,7 +34,8 @@ export async function GET(request: Request) {
                 fbPageId: resp.user.fbPageId || "",
                 defaultExtraDetails: resp.user.defaultExtraDetails || "",
                 privacy_policy_link: resp.user.privacy_policy_link || "",
-                email: resp.user.email || ""
+                email: resp.user.email || "",
+                locations: locations
             }
         });
     }

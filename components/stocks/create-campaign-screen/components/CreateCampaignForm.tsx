@@ -112,33 +112,10 @@ export function CreateCampaignForm() {
       setLoadingStep(0);
       setError(null);
       
-      // Facebook needs time to process videos and generate thumbnails
-      // The master flow tries to fetch video details including thumbnails
-      // If we proceed too quickly, this can fail as Facebook may not have generated thumbnails yet
-      console.log('⏳ Adding significant delay for Facebook to process videos and generate thumbnails...');
-      
-      // Start the loading animation
-      const maxSteps = loadingSteps ? loadingSteps.length - 1 : 6;
-      const loadingInterval = setInterval(() => {
-        setLoadingStep(prev => {
-          // Loop through loading steps to keep animation going during longer wait
-          return (prev + 1) % (maxSteps + 1);
-        });
-      }, 3000);
-      
-      // Wait for 5 minutes to allow Facebook to fully process the video and generate thumbnails
-      // This is needed because the master flow will try to fetch video details and thumbnails
-      // Most short videos (< 1 minute) should be processed within this timeframe
-      console.log('⏳ Waiting 5 minutes for Facebook to process videos...');
-      await new Promise(resolve => setTimeout(resolve, 300000)); // 5 minutes
-      
-      console.log('✅ Video processing delay completed');
-      
-      // Clear interval and proceed with API call
-      clearInterval(loadingInterval);
-      
-      // Reset loading step to ensure proper sequence in the remaining flow
-      setLoadingStep(0);
+      // No need to wait for videos to process
+      // We will handle errors properly if Facebook hasn't finished processing
+      console.log('🎬 Video detected - proceeding without delay');
+      console.log('ℹ️ If campaign creation fails due to video processing, user will get clear instructions');
       
       // Continue execution to the API call below
       // We don't return here as we want to proceed with the API call
@@ -158,7 +135,7 @@ export function CreateCampaignForm() {
         }
         return prev;
       });
-    }, 3000); // Show each loading step for 3 seconds
+    }, 1500); // Show each loading step for 1.5 seconds (reduced from 3 seconds)
     
     try {
       // Log all input values to debug
@@ -188,9 +165,16 @@ export function CreateCampaignForm() {
         .filter(item => item.type === 'image' && item.hash)
         .map(item => item.hash as string);
       
+      // Extract video IDs from video media items
+      // IMPORTANT: These are the final video_ids from the last chunk responses
+      // These are the definitive video_ids that FB API expects for campaign creation
+      // They are different from the upload_session_ids
       const videoIds = mediaItems
         .filter(item => item.type === 'video' && item.hash)
-        .map(item => item.hash as string);
+        .map(item => {
+          console.log(`🎬 Using video ID for campaign creation: ${item.hash}`);
+          return item.hash as string;
+        });
       
       console.log('📊 Prepared media data:', {
         'Image hashes': imageHashes,
@@ -215,9 +199,17 @@ export function CreateCampaignForm() {
       // Prepare location data based on targeted locations
       let locationData = [];
       
-      // If we have predefined locations, use them; otherwise use default Netherlands
-      if (targetedLocations && targetedLocations.length > 0) {
-        console.log('📍 Using predefined targeted locations:', targetedLocations);
+      // First check if user has saved locations from onboarding
+      if (userData.account?.locations && Array.isArray(userData.account.locations) && userData.account.locations.length > 0) {
+        console.log('📍 Using user\'s saved locations from profile:', userData.account.locations);
+        
+        // User locations are already in the correct format, use them directly
+        locationData = userData.account.locations;
+      }
+      // If no saved locations but we have targetedLocations from props, use those
+      else if (targetedLocations && targetedLocations.length > 0) {
+        console.log('📍 Using predefined targeted locations from props:', targetedLocations);
+        
         // Format location data according to API requirements
         locationData = targetedLocations.map(location => {
           // Simple case for just country names
@@ -231,8 +223,10 @@ export function CreateCampaignForm() {
             regions: []
           };
         });
-      } else {
-        console.log('📍 No targeted locations provided, using default (Netherlands)');
+      } 
+      // No locations at all, use default Netherlands
+      else {
+        console.log('📍 No locations available, using default (Netherlands)');
         // Default location if none provided
         locationData = [
           {
@@ -262,8 +256,8 @@ export function CreateCampaignForm() {
       const pageId = userData.account?.fbPageId ? String(userData.account.fbPageId) : '';
       console.log('📱 Using page ID:', pageId || 'None provided');
       
-      // Add delay to match the animation sequence
-      await new Promise(resolve => setTimeout(resolve, 7000));
+      // No delay needed - removed for better UX
+      console.log('🔄 Proceeding immediately with campaign creation');
       
       // Prepare request payload - based on exact API documentation format
       const requestPayload = {
@@ -284,6 +278,9 @@ export function CreateCampaignForm() {
       console.log('📤 Sending request to master flow endpoint with payload:', JSON.stringify(requestPayload, null, 2));
       
       // Make the API call to master flow endpoint
+      console.log('📡 Sending master flow request for session ID:', sessionId);
+      console.log('📡 Using video IDs:', videoIds);
+      
       const response = await fetch('/api/master-flow-initiate-process', {
         method: 'POST',
         headers: {
@@ -299,7 +296,32 @@ export function CreateCampaignForm() {
         console.error('❌ Master flow API returned error status:', response.status);
         const errorData = await response.json();
         console.error('❌ Error data:', JSON.stringify(errorData, null, 2));
-        throw new Error(errorData.error || 'Failed to create campaign flow');
+        
+        // Provide more detailed error for video-related issues
+        if (videoIds && videoIds.length > 0 && response.status === 500) {
+          console.error('❌ Potential issue with video processing - check video IDs:', videoIds);
+          
+          // Check if this is a Facebook GraphMethodException (object doesn't exist error)
+          if (errorData.details?.raw_error && errorData.details.raw_error.includes('Object with ID')) {
+            console.error('❌ Facebook API error: Video object not found or has incorrect format');
+            
+            // Very specific and helpful error message about Facebook video processing
+            throw new Error(
+              `Facebook hasn't finished processing your video (ID: ${videoIds[0]}).` +
+              ` Facebook needs to generate thumbnails and process videos before using them in ads (typically 5-10 minutes).` +
+              ` Please wait a few minutes and try again with the exact same settings.` +
+              ` This is a normal part of Facebook's video processing workflow.`
+            );
+          } else {
+            throw new Error(
+              `There was an issue creating your campaign with video.` +
+              ` The most likely reason is that Facebook is still processing your video.` +
+              ` Please wait 5-10 minutes and try again with the same settings.`
+            );
+          }
+        } else {
+          throw new Error(errorData.error || 'Failed to create campaign flow');
+        }
       }
       
       // Store response data
@@ -308,8 +330,8 @@ export function CreateCampaignForm() {
       console.log('📊 Master flow response data:', JSON.stringify(data, null, 2));
       setMasterFlowData(data);
       
-      // Add delay to complete the animation sequence
-      await new Promise(resolve => setTimeout(resolve, 4000));
+      // No delay needed - removed for better UX
+      console.log('🔄 Proceeding immediately to review screen');
       
       // Switch to review tab after API call and animation completes
       console.log('🔄 Switching to review tab');
@@ -384,7 +406,7 @@ export function CreateCampaignForm() {
         }
         return prev;
       });
-    }, 3000); // Show each loading step for 3 seconds
+    }, 1500); // Show each loading step for 1.5 seconds (reduced from 3 seconds)
     
     try {
       // Get user information for API call
@@ -441,8 +463,8 @@ export function CreateCampaignForm() {
       
       console.log('📤 Sending request to finalize campaign with payload:', JSON.stringify(requestPayload, null, 2));
       
-      // Add delay to match the API call animation
-      await new Promise(resolve => setTimeout(resolve, 7000));
+      // No delay needed - removed for better UX
+      console.log('🔄 Proceeding immediately with campaign finalization');
       
       // Make the API call to finalize the campaign
       const response = await fetch('/api/fasty-bot/proxy-finalize-campaign', {
@@ -467,8 +489,8 @@ export function CreateCampaignForm() {
       console.log('✅ Campaign finalized successfully');
       console.log('📊 Finalize response data:', JSON.stringify(finalizeData, null, 2));
       
-      // More delay to complete the animation
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      // No delay needed - removed for better UX
+      console.log('🔄 Proceeding immediately to success state');
       
       // Show success animation
       console.log('🎉 Launching confetti animation');
@@ -559,11 +581,11 @@ export function CreateCampaignForm() {
       console.log('🔄 Showing success message');
       setShowSuccessMessage(true);
       
-      console.log('⏱️ Setting timeout to hide success message after 3 seconds');
+      console.log('⏱️ Setting timeout to hide success message after 2 seconds');
       setTimeout(() => {
         console.log('🔄 Hiding success message');
         setShowSuccessMessage(false);
-      }, 3000);
+      }, 2000); // Reduced from 3000ms to 2000ms for better user experience
       
     } catch (error) {
       console.error('❌ Exception in campaign finalization:', error);

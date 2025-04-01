@@ -83,6 +83,21 @@ export async function POST(req: NextRequest) {
     const apiUrl = 'http://localhost:8000/facebook/campaign-creation-flow/master-flow-initiate-process';
     console.log('🔗 Forwarding request to backend API:', apiUrl);
     
+    // Ensure video_ids are in the right format for the backend API
+    // IMPORTANT: The Fasty backend expects raw numeric video IDs without any "video_" prefix
+    // We need to ensure we're sending the video IDs in the correct format
+    const processedVideoIds = video_ids.map(videoId => {
+      const videoIdStr = String(videoId);
+      // If the video ID has a "video_" prefix, we need to remove it
+      if (videoIdStr.startsWith('video_')) {
+        console.log(`🔄 Removing "video_" prefix from ${videoIdStr} to match backend expectations`);
+        return videoIdStr.substring(6); // Remove "video_" prefix
+      }
+      return videoIdStr;
+    });
+    
+    console.log('🎬 Final video IDs being sent to master flow:', JSON.stringify(processedVideoIds));
+    
     // Prepare the request payload based on exact format from documentation example
     const requestPayload = {
       fb_account_id,
@@ -95,7 +110,7 @@ export async function POST(req: NextRequest) {
       privacy_policy_link,
       page_id,
       image_hashes,
-      video_ids,
+      video_ids: processedVideoIds, // Use processed video_ids
       daily_campaign_budget // Use daily_campaign_budget exactly as provided from client
     };
     
@@ -110,6 +125,40 @@ export async function POST(req: NextRequest) {
       'Daily Campaign Budget': daily_campaign_budget,
       'Website Link': website_link
     });
+    
+    // Log detailed video_ids for debugging the video upload issues
+    if (video_ids && video_ids.length > 0) {
+      console.log('🎬 Video IDs being sent to master flow:', JSON.stringify(video_ids));
+      
+      // Log the transformed video IDs for debugging
+      for (let i = 0; i < processedVideoIds.length; i++) {
+        const originalId = video_ids[i];
+        const processedId = processedVideoIds[i];
+        console.log(`🎬 Video ID ${i+1}: Original=${originalId}, Processed=${processedId}`);
+        
+        // If we had to transform it, log that information
+        if (String(originalId) !== processedId) {
+          console.log(`ℹ️ Video ID ${i+1} was transformed to match Fasty backend expectations`);
+        }
+        
+        // Detailed debug information about video ID format
+        const isNumeric = /^\d+$/.test(processedId);
+        console.log(`🔍 Video ID ${i+1} format check: Is numeric=${isNumeric}, Length=${processedId.length}`);
+        
+        // Add a warning if the video ID is not in the expected format
+        if (!isNumeric) {
+          console.error(`❌ CRITICAL ERROR: Video ID ${i+1} is not in the expected numeric format!`);
+          console.error(`❌ This will likely cause the campaign creation to fail.`);
+          console.error(`❌ Make sure the video upload process is correctly returning a numeric video ID.`);
+        }
+      }
+      
+      // Add a warning about video processing time
+      console.warn('⚠️ Videos detected in campaign request. Note that Facebook may need time to process videos before they can be used in ads.');
+      console.warn('⚠️ If campaign creation fails with "Object does not exist" error, it likely means Facebook is still processing the video.');
+    } else if (image_hashes && image_hashes.length === 0) {
+      console.warn('⚠️ No images or videos included in the campaign');
+    }
 
     // Get FB API key
     const token_resp = await getFbMarketingApiKey()
@@ -145,18 +194,35 @@ export async function POST(req: NextRequest) {
 
     if (!response.ok) {
       console.error('❌ Backend API returned error status:', response.status);
+      console.error('❌ Request data that caused the error:', JSON.stringify(requestPayload, null, 2));
+      
+      // Get the raw response text
+      const responseText = await response.text();
+      console.error('❌ Raw response text:', responseText);
       
       let errorData;
       try {
-        errorData = await response.json();
+        // Try to parse the response text as JSON
+        errorData = JSON.parse(responseText);
         console.error('❌ Error data:', JSON.stringify(errorData, null, 2));
       } catch (parseError) {
         console.error('❌ Failed to parse error response:', parseError);
-        errorData = { error: 'Failed to parse error response' };
+        errorData = { 
+          error: 'Failed to parse error response',
+          raw_response: responseText.substring(0, 1000) // Truncate if too long
+        };
       }
       
+      // For clarity, include detailed error information including the request data that caused the error
       return NextResponse.json(
-        { error: errorData.error || 'Failed to initiate master flow' },
+        { 
+          error: errorData.error || 'Failed to initiate master flow',
+          details: {
+            status: response.status,
+            video_ids: video_ids,
+            raw_error: responseText.substring(0, 1000) // Include part of the raw error
+          }
+        },
         { status: response.status }
       )
     }
