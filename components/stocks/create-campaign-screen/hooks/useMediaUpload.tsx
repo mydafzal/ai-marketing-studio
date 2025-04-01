@@ -14,6 +14,7 @@ interface VideoStartResponse {
   success: boolean;
   data: {
     upload_session_id: string;
+    video_id: string; // Ensure this is expected in the response
     start_offset?: number;
     end_offset?: number;
   };
@@ -47,18 +48,18 @@ export function useMediaUpload() {
   const campaignSessionIdRef = useRef<string | null>(null);
   const [fbAccountId, setFbAccountId] = useState<string>('');
   const [fbPageId, setFbPageId] = useState<string>('');
-  
+
   // Log any changes to important state variables
   useEffect(() => {
     console.log("🔄 State Update - Campaign Session ID:", campaignSessionId);
     // Update the ref when the state changes
     campaignSessionIdRef.current = campaignSessionId;
   }, [campaignSessionId]);
-  
+
   useEffect(() => {
     console.log("🔄 State Update - FB Account ID:", fbAccountId);
   }, [fbAccountId]);
-  
+
   useEffect(() => {
     console.log("🔄 State Update - FB Page ID:", fbPageId);
   }, [fbPageId]);
@@ -75,21 +76,22 @@ export function useMediaUpload() {
     try {
       const response = await fetch('/api/kv/fetch-api-token');
       console.log('📡 User details API response status:', response.status);
-      
+
       if (response.ok) {
         const data: UserDetailResponse = await response.json();
-        console.log('📊 User details response received:', 
-          data.success ? 'Success' : 'Failed', 
-          data.account ? 'Account data found' : 'No account data');
-        
+        console.log('📊 User details response received:',
+            data.success ? 'Success' : 'Failed',
+            data.account ? 'Account data found' : 'No account data');
+
         if (data.success && data.account) {
           if (data.account.fbAccountId) {
             console.log('✅ Retrieved Facebook account ID:', data.account.fbAccountId);
             setFbAccountId(data.account.fbAccountId);
           } else {
-            console.warn("⚠️ No Facebook account ID found in response"); console.error("❌ Facebook account ID is required for video uploads");
+            console.warn("⚠️ No Facebook account ID found in response");
+            console.error("❌ Facebook account ID is required for video uploads");
           }
-          
+
           if (data.account.fbPageId) {
             console.log('✅ Retrieved Facebook page ID:', data.account.fbPageId);
             setFbPageId(data.account.fbPageId);
@@ -112,15 +114,15 @@ export function useMediaUpload() {
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     console.log('📤 File upload triggered');
-    
+
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
       console.log('📄 File selected:', file.name, 'Type:', file.type, 'Size:', file.size);
-      
+
       // Create a new media ID for tracking this upload
       const newMediaId = Math.random().toString(36).substring(7);
       console.log('🆔 Generated media ID:', newMediaId);
-      
+
       // Handle different file types
       if (file.type.includes('image')) {
         console.log('🖼️ Handling as image upload');
@@ -139,11 +141,11 @@ export function useMediaUpload() {
   // Handle image uploads
   const handleImageUpload = async (file: File, newMediaId: string) => {
     console.log('📸 Starting image upload process for ID:', newMediaId);
-    
+
     // Calculate the actual aspect ratio
     const detectedRatio = await calculateAspectRatio(file);
     console.log('📏 Detected image aspect ratio:', detectedRatio);
-    
+
     // Create a temporary media item with progress indicator
     const newMedia: MediaItem = {
       id: newMediaId,
@@ -156,47 +158,47 @@ export function useMediaUpload() {
     // Add the item to the list with initial progress
     console.log('➕ Adding new image to media items with 0% progress');
     setMediaItems(prev => [...prev, newMedia]);
-    
+
     // Determine format category based on aspect ratio
     const formatCategory = detectedRatio === '9:16' ? '9:16' : '1:1';
     console.log('📏 Image format category:', formatCategory);
-    
+
     // Set dimensions based on format category
-    const dimensions = formatCategory === '9:16' 
-      ? { width: 1080, height: 1920 } // 9:16 ratio
-      : { width: 1080, height: 1080 }; // 1:1 ratio (default)
+    const dimensions = formatCategory === '9:16'
+        ? { width: 1080, height: 1920 } // 9:16 ratio
+        : { width: 1080, height: 1080 }; // 1:1 ratio (default)
     console.log('🔣 Using dimensions:', dimensions);
-    
+
     try {
       // Update progress to show upload started
       console.log('🔄 Updating progress to 20%');
       setMediaItems(prev =>
-        prev.map(item =>
-          item.id === newMediaId ? { ...item, progress: 20 } : item
-        )
+          prev.map(item =>
+              item.id === newMediaId ? { ...item, progress: 20 } : item
+          )
       );
-      
+
       // If we don't have an account ID yet, try to fetch it again
       if (!fbAccountId) {
         console.log('⚠️ No Facebook account ID available, re-fetching user details');
         await fetchUserDetails();
-        
+
         // Check again after fetching
         if (!fbAccountId) {
           console.error("❌ Facebook account ID is required for image uploads but not available");
           throw new Error("Facebook account ID is required for image uploads");
         }
       }
-      
+
       // Create form data for the upload
       console.log('📋 Preparing form data for image upload');
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('widht', dimensions.width.toString());
+      formData.append('width', dimensions.width.toString()); // Fixed typo: widht -> width
       formData.append('height', dimensions.height.toString());
       formData.append('fb_account_id', fbAccountId);
       console.log('🆔 Using FB Account ID:', fbAccountId);
-      
+
       // Add campaign_session_id if we have one from a previous upload (check both state and ref)
       const currentSessionId = campaignSessionIdRef.current || campaignSessionId;
       if (currentSessionId) {
@@ -205,15 +207,15 @@ export function useMediaUpload() {
       } else {
         console.log('ℹ️ No campaign session ID available yet');
       }
-      
+
       // Upload the image using the correct endpoint
       console.log('🔄 Updating progress to 40%');
       setMediaItems(prev =>
-        prev.map(item =>
-          item.id === newMediaId ? { ...item, progress: 40 } : item
-        )
+          prev.map(item =>
+              item.id === newMediaId ? { ...item, progress: 40 } : item
+          )
       );
-      
+
       console.log('📤 Sending image upload request to /api/upload-image');
       const response = await fetch('/api/upload-image', {
         method: 'POST',
@@ -222,18 +224,18 @@ export function useMediaUpload() {
           'fb_api_key': '' // Empty string will make the backend use its internal API key
         }
       });
-      
+
       console.log('📡 Image upload response status:', response.status);
       console.log('🔄 Updating progress to 70%');
       setMediaItems(prev =>
-        prev.map(item =>
-          item.id === newMediaId ? { ...item, progress: 70 } : item
-        )
+          prev.map(item =>
+              item.id === newMediaId ? { ...item, progress: 70 } : item
+          )
       );
-      
+
       const result: UploadImageResponse = await response.json();
       console.log('📊 Image upload API response:', JSON.stringify(result, null, 2));
-      
+
       if (result.success && result.image_hash) {
         // Store the campaign_session_id for subsequent uploads
         if (result.campaign_session_id) {
@@ -242,31 +244,31 @@ export function useMediaUpload() {
           // Update ref immediately for use in future operations
           campaignSessionIdRef.current = result.campaign_session_id;
         }
-        
+
         // Update the media item with the hash and complete progress
         console.log('✅ Image upload successful, image hash:', result.image_hash);
         console.log('🔄 Updating progress to 100%');
         setMediaItems(prev =>
-          prev.map(item =>
-            item.id === newMediaId ? { 
-              ...item, 
-              progress: 100,
-              hash: result.image_hash // Store the image hash for later use
-            } : item
-          )
+            prev.map(item =>
+                item.id === newMediaId ? {
+                  ...item,
+                  progress: 100,
+                  hash: result.image_hash // Store the image hash for later use
+                } : item
+            )
         );
       } else {
         console.error('❌ Failed to upload image:', result.error);
         // Update the media item to show error
         console.log('🔄 Setting error state for media item');
         setMediaItems(prev =>
-          prev.map(item =>
-            item.id === newMediaId ? { 
-              ...item, 
-              progress: -1, // Use negative number to indicate error
-              error: result.error || 'Upload failed'
-            } : item
-          )
+            prev.map(item =>
+                item.id === newMediaId ? {
+                  ...item,
+                  progress: -1, // Use negative number to indicate error
+                  error: result.error || 'Upload failed'
+                } : item
+            )
         );
       }
     } catch (error) {
@@ -274,25 +276,25 @@ export function useMediaUpload() {
       // Update the media item to show error
       console.log('🔄 Setting error state for media item due to exception');
       setMediaItems(prev =>
-        prev.map(item =>
-          item.id === newMediaId ? { 
-            ...item, 
-            progress: -1,
-            error: 'Upload failed'
-          } : item
-        )
+          prev.map(item =>
+              item.id === newMediaId ? {
+                ...item,
+                progress: -1,
+                error: 'Upload failed'
+              } : item
+          )
       );
     }
   };
-  
+
   // Handle video uploads using the chunked approach
   const handleVideoUpload = async (file: File, newMediaId: string) => {
     console.log('🎥 Starting video upload process for ID:', newMediaId);
-    
+
     // Calculate the video aspect ratio
     const detectedRatio = await calculateVideoAspectRatio(file);
     console.log('📏 Detected video aspect ratio:', detectedRatio);
-    
+
     // Create a temporary media item with progress indicator
     const newMedia: MediaItem = {
       id: newMediaId,
@@ -305,63 +307,55 @@ export function useMediaUpload() {
     // Add the item to the list with initial progress
     console.log('➕ Adding new video to media items with 0% progress');
     setMediaItems(prev => [...prev, newMedia]);
-    
+
     // Determine format category based on aspect ratio
     const formatCategory = detectedRatio === '9:16' ? '9:16' : '1:1';
     console.log('📏 Video format category:', formatCategory);
     console.log('🔍 DEBUGGING - Current FB Account ID:', fbAccountId);
-    
+
     // Set dimensions based on format category
-    const dimensions = formatCategory === '9:16' 
-      ? { width: 1080, height: 1920 } // 9:16 ratio
-      : { width: 1080, height: 1080 }; // 1:1 ratio (default)
+    const dimensions = formatCategory === '9:16'
+        ? { width: 1080, height: 1920 } // 9:16 ratio
+        : { width: 1080, height: 1080 }; // 1:1 ratio (default)
     console.log('🔣 Using dimensions:', dimensions);
-    
+
     try {
       // Update progress to show upload started
       console.log('🔄 Updating progress to 10%');
       setMediaItems(prev =>
-        prev.map(item =>
-          item.id === newMediaId ? { ...item, progress: 10 } : item
-        )
+          prev.map(item =>
+              item.id === newMediaId ? { ...item, progress: 10 } : item
+          )
       );
-      
+
       // If we don't have an account ID yet, try to fetch it again
       if (!fbAccountId) {
         console.log('⚠️ No Facebook account ID available, re-fetching user details');
         await fetchUserDetails();
-        
+
         // Check again after fetching
         if (!fbAccountId) {
           console.error("❌ Facebook account ID is required for video uploads but not available");
           throw new Error("Facebook account ID is required for video uploads");
         }
       }
-      
+
       // Step 1: Initialize video upload session
       // Prepare file size information
       const videoFileSize = Math.floor(file.size);
       console.log('📊 Video file size (bytes):', videoFileSize);
-      
+
       // Create form data with required parameters for video-start
       console.log('📋 Preparing form data for video upload initialization');
       const initFormData = new FormData();
-      
-      // We need two separate IDs for the video upload process:
-      // 1. upload_session_id - used to track the upload session
-      // 2. video_id - the actual ID of the video that will be used in campaigns
-      // According to the API guidelines, both are returned from the initialization response
-      // And the final video_id is confirmed in the last chunk response
-      let video_id = null; // Will be populated from server response
-      console.log('🎬 Initial video_id is null, will get from server response');
-      
+
       // Add required parameters according to documentation
       initFormData.append('file_size', String(videoFileSize));
       initFormData.append('fb_account_id', fbAccountId);
-      initFormData.append('widht', dimensions.width.toString());
+      initFormData.append('width', dimensions.width.toString()); // Fixed typo: widht -> width
       initFormData.append('height', dimensions.height.toString());
       console.log('🆔 Using FB Account ID:', fbAccountId);
-      
+
       // Add campaign_session_id if we have one from a previous upload (check both state and ref)
       const currentSessionId = campaignSessionIdRef.current || campaignSessionId;
       if (currentSessionId) {
@@ -370,7 +364,7 @@ export function useMediaUpload() {
       } else {
         console.log('ℹ️ No campaign session ID available yet');
       }
-      
+
       // Log the request details
       console.log('📤 Video init request details:', {
         fileSize: String(videoFileSize),
@@ -379,14 +373,14 @@ export function useMediaUpload() {
         height: dimensions.height.toString(),
         campaignSessionId: campaignSessionId || 'none'
       });
-      
+
       // Initialize upload session with the API
       console.log('📤 Sending video initialization request to /api/upload-video');
       const initResponse = await fetch('/api/upload-video', {
         method: 'POST',
         body: initFormData
       });
-      
+
       // Handle response errors
       console.log('📡 Video init response status:', initResponse.status);
       if (!initResponse.ok) {
@@ -394,418 +388,220 @@ export function useMediaUpload() {
         console.error('❌ Video init error response:', errorText);
         throw new Error(`Failed to initialize video upload session: ${errorText}`);
       }
-      
-      const initResult: any = await initResponse.json();
+
+      const initResult = await initResponse.json();
       console.log('📊 Video init API response:', JSON.stringify(initResult, null, 2));
-      
-      // Handle different response formats including deeply nested structures
-      let uploadSessionId: string | undefined;
-      
-      console.log('🔍 Searching for upload_session_id in response...');
-      
-      // Function to recursively search for upload_session_id in a nested object
-      const findUploadSessionId = (obj: any): string | undefined => {
-        if (!obj || typeof obj !== 'object') return undefined;
-        
-        // Direct property
-        if (obj.upload_session_id) {
-          console.log('✅ Found upload_session_id directly in object');
-          return obj.upload_session_id;
-        }
-        
-        // Check data property
-        if (obj.data) {
-          // Direct in data
-          if (obj.data.upload_session_id) {
-            console.log('✅ Found upload_session_id in data property');
-            return obj.data.upload_session_id;
-          }
-          
-          // Nested in data.data
-          if (obj.data.data && obj.data.data.upload_session_id) {
-            console.log('✅ Found upload_session_id in data.data property');
-            return obj.data.data.upload_session_id;
-          }
-          
-          // Recursive search in data
-          const dataResult = findUploadSessionId(obj.data);
-          if (dataResult) return dataResult;
-        }
-        
-        // Check backend_response property
-        if (obj.backend_response) {
-          if (obj.backend_response.upload_session_id) {
-            console.log('✅ Found upload_session_id in backend_response');
-            return obj.backend_response.upload_session_id;
-          }
-          
-          // Recursive search in backend_response
-          const backendResult = findUploadSessionId(obj.backend_response);
-          if (backendResult) return backendResult;
-        }
-        
-        return undefined;
-      };
-      
-      // Search for upload_session_id in the response
-      uploadSessionId = findUploadSessionId(initResult);
-      
-      if (uploadSessionId) {
-        console.log('✅ Successfully found upload_session_id:', uploadSessionId);
-        
-        // Store both upload_session_id and video_id from initialization response
-        // According to guidelines, both should be returned and we need both for the chunked upload
-        if (initResult.video_id) {
-          video_id = initResult.video_id;
-          console.log('✅ Using video_id directly from session response:', video_id);
-        } else if (initResult.data && initResult.data.video_id) {
-          video_id = initResult.data.video_id;
-          console.log('✅ Using video_id from session response data:', video_id);
-        } else {
-          // If no video_id is found in the response, this is a critical error
-          // Since we've updated the backend to properly distinguish between upload_session_id and video_id
-          console.error('❌ No video_id in initialization response - this is a critical error');
-          console.error('❌ The backend should have provided a proper video_id');
-          
-          // As a fallback measure only, we'll try using the upload_session_id, but we should log 
-          // a very clear warning that this will likely fail with the updated backend
-          video_id = uploadSessionId;
-          console.warn('⚠️ CRITICAL WARNING: Using upload_session_id as video_id fallback.');
-          console.warn('⚠️ This will likely fail with the updated backend implementation!');
-        }
-        
-        // Ensure the video_id doesn't have a "video_" prefix
-        // The Fasty backend expects raw numeric IDs
-        if (typeof video_id === 'string' && video_id.startsWith('video_')) {
-          console.log('⚠️ Removing "video_" prefix from video_id to match backend expectations');
-          video_id = video_id.substring(6);
-        }
-        
-        console.log('🔍 Final video_id format check: Is numeric=' + /^\d+$/.test(String(video_id)));
-        
+
+      // Simplify the response extraction - focus on getting two critical IDs:
+      // 1. upload_session_id - for tracking the upload
+      // 2. video_id - for identifying the video
+
+      let uploadSessionId = '';
+      let videoId = '';
+
+      // Handle common response formats
+      if (initResult.data && initResult.data.upload_session_id) {
+        uploadSessionId = initResult.data.upload_session_id;
+        console.log('✅ Found upload_session_id in data:', uploadSessionId);
+      } else if (initResult.upload_session_id) {
+        uploadSessionId = initResult.upload_session_id;
+        console.log('✅ Found upload_session_id directly:', uploadSessionId);
       } else {
-        console.error('❌ Failed to initialize video upload session: No upload session ID found in any format');
-        console.error('📊 Response format received:', JSON.stringify(initResult, null, 2));
-        throw new Error('Failed to initialize video upload session: No upload session ID returned');
+        console.error('❌ Could not find upload_session_id in response');
+        throw new Error('Failed to initialize video upload: No upload session ID found');
       }
-      
+
+      // Extract the video_id similarly
+      if (initResult.data && initResult.data.video_id) {
+        videoId = initResult.data.video_id;
+        console.log('✅ Found video_id in data:', videoId);
+      } else if (initResult.video_id) {
+        videoId = initResult.video_id;
+        console.log('✅ Found video_id directly:', videoId);
+      } else {
+        console.error('❌ Could not find video_id in response');
+        throw new Error('Failed to initialize video upload: No video ID found');
+      }
+
+      // Clean the video_id if it has a "video_" prefix
+      if (typeof videoId === 'string' && videoId.startsWith('video_')) {
+        videoId = videoId.substring(6);
+        console.log('✅ Removed "video_" prefix from video_id:', videoId);
+      }
+
       // Step 2: Upload video in chunks
       console.log('✅ Using upload session ID:', uploadSessionId);
+      console.log('✅ Using video ID:', videoId);
+
       let startOffset = 0;
-      const chunkSize = 256 * 1024; // 256KB chunks (reduced size for Vercel limits)
+      const chunkSize = 256 * 1024; // 256KB chunks
       console.log('📊 Using chunk size (bytes):', chunkSize);
-      
+
       console.log('🔄 Updating progress to 20%');
       setMediaItems(prev =>
-        prev.map(item =>
-          item.id === newMediaId ? { ...item, progress: 20 } : item
-        )
+          prev.map(item =>
+              item.id === newMediaId ? { ...item, progress: 20 } : item
+          )
       );
-      
+
       // Calculate total number of chunks for progress tracking
       const totalChunks = Math.ceil(file.size / chunkSize);
       console.log('📊 Total chunks to upload:', totalChunks);
       let chunkCount = 0;
-      let videoId: string | undefined;
-      
+
       // Upload in chunks
       console.log('🔄 Starting chunk upload loop');
       while (startOffset < file.size) {
         const endOffset = Math.min(startOffset + chunkSize, file.size);
         const isLastChunk = endOffset === file.size;
-        
-        console.log('📤 Uploading chunk', chunkCount + 1, 'of', totalChunks, 
-          'Offset:', startOffset, 'Size:', endOffset - startOffset, 
-          'Last chunk:', isLastChunk ? 'Yes' : 'No');
-        
+
+        console.log('📤 Uploading chunk', chunkCount + 1, 'of', totalChunks,
+            'Offset:', startOffset, 'Size:', endOffset - startOffset,
+            'Last chunk:', isLastChunk ? 'Yes' : 'No');
+
         // Prepare form data for chunk upload
         const chunkFormData = new FormData();
         const chunk = file.slice(startOffset, endOffset);
-        
+
         // Create a proper Blob with file type to ensure correct handling
         const chunkBlob = new Blob([chunk], { type: file.type });
-        
+
         // Add the chunk as a file with a name to ensure proper multipart handling
         chunkFormData.append('file', chunkBlob, `chunk_${chunkCount}.mp4`);
-        
-        // Make sure to use the EXACT same video_id consistently across all requests
-        // This is crucial for the upload to work correctly
-        // IMPORTANT: This is the video_id from initialization, not the final video_id
-        console.log(`🎬 Using video_id for chunk ${chunkCount + 1}:`, video_id);
-        console.log('📝 DEBUG: Video ID type check - is string?', typeof video_id === 'string');
-        
-        // Add required parameters
-        // Per API guidelines, we send both the video_id (from initialization) 
-        // and the upload_session_id in each chunk request
-        chunkFormData.append('video_id', video_id || ''); // Required by backend
+
+        // CRITICAL: Add required parameters for chunk upload
+        chunkFormData.append('video_id', videoId); // Use the video_id from initialization
         chunkFormData.append('start_offset', startOffset.toString());
-        chunkFormData.append('finish', isLastChunk ? '1' : '0');
+        chunkFormData.append('finish', isLastChunk ? '1' : '0'); // Properly mark the last chunk
         chunkFormData.append('upload_session_id', uploadSessionId);
-        chunkFormData.append('widht', dimensions.width.toString());
+        chunkFormData.append('width', dimensions.width.toString()); // Fixed typo: widht -> width
         chunkFormData.append('height', dimensions.height.toString());
         chunkFormData.append('fb_account_id', fbAccountId);
-        
-        // Add campaign_session_id if we have one (check both state and ref)
+
+        // Add campaign_session_id if we have one
         const currentSessionId = campaignSessionIdRef.current || campaignSessionId;
         if (currentSessionId) {
           console.log(`🔗 Adding campaign_session_id to chunk ${chunkCount + 1}:`, currentSessionId);
           chunkFormData.append('campaign_session_id', currentSessionId);
-        } else {
-          console.log(`ℹ️ No campaign_session_id available for chunk ${chunkCount + 1}`);
         }
-        
+
+        // Special logging for the last chunk to ensure finish=1 is properly set
+        if (isLastChunk) {
+          console.log('🔍 LAST CHUNK DETAILS:', {
+            'video_id': videoId,
+            'upload_session_id': uploadSessionId,
+            'start_offset': startOffset,
+            'finish': '1',
+            'chunk_size': endOffset - startOffset,
+            'is_last': true
+          });
+        }
+
         // Upload the chunk
         console.log('📤 Sending chunk to /api/upload-video');
         const chunkResponse = await fetch('/api/upload-video', {
           method: 'POST',
           body: chunkFormData
         });
-        
+
         console.log('📡 Chunk upload response status:', chunkResponse.status);
         if (!chunkResponse.ok) {
           const errorText = await chunkResponse.text();
           console.error(`❌ Failed to upload video chunk ${chunkCount + 1}/${totalChunks}:`, errorText);
           throw new Error(`Failed to upload video chunk ${chunkCount + 1}/${totalChunks}: ${errorText}`);
         }
-        
-        const chunkResult: any = await chunkResponse.json();
-        // Log the chunk result in detail for debugging
+
+        const chunkResult = await chunkResponse.json();
         console.log(`📊 Chunk ${chunkCount + 1}/${totalChunks} upload API response:`, JSON.stringify(chunkResult, null, 2));
-        
-        // More extensive validation and error handling with support for different response formats
-        if (chunkResult.success === false) {
-          // Even if marked as failure, check if we have valid data in the backend_response
-          if (isLastChunk && chunkResult.backend_response && chunkResult.backend_response.video_id) {
-            console.log('⚠️ Response marked as failure but contains valid video_id, continuing...');
-            // Extract the data from backend_response
-            if (!chunkResult.data) {
-              chunkResult.data = {};
-            }
-            // Copy video_id
-            if (chunkResult.backend_response.video_id) {
-              chunkResult.data.video_id = chunkResult.backend_response.video_id;
-              console.log('✅ Extracted video_id from backend_response:', chunkResult.data.video_id);
-            }
-            // Copy campaign_session_id if available
-            if (chunkResult.backend_response.campaign_session_id) {
-              chunkResult.data.campaign_session_id = chunkResult.backend_response.campaign_session_id;
-              console.log('✅ Extracted campaign_session_id from backend_response:', chunkResult.data.campaign_session_id);
-            }
+
+        // Handle response from last chunk specially
+        if (isLastChunk) {
+          console.log('✅ Processing final chunk response');
+
+          // Extract final video_id - critical for subsequent operations
+          let finalVideoId = '';
+
+          // Check common locations for video_id in the response
+          if (chunkResult.data && chunkResult.data.video_id) {
+            finalVideoId = chunkResult.data.video_id;
+            console.log('✅ Found final video_id in data:', finalVideoId);
+          } else if (chunkResult.video_id) {
+            finalVideoId = chunkResult.video_id;
+            console.log('✅ Found final video_id directly:', finalVideoId);
           } else {
-            console.error(`❌ Chunk upload reported failure for chunk ${chunkCount + 1}/${totalChunks}`);
-            // Include any error details in the exception
-            const errorMessage = chunkResult.error || `Failed to upload video chunk ${chunkCount + 1}/${totalChunks}`;
-            console.error('❌ Error details:', errorMessage);
-            throw new Error(errorMessage);
+            console.error('❌ Could not find final video_id in last chunk response');
+            // We'll continue anyway and use the original video_id
+            finalVideoId = videoId;
+            console.log('⚠️ Using initial video_id as fallback:', finalVideoId);
           }
-        } 
-        
-        // For every chunk, check if we got a campaign_session_id and store it
-        // This ensures we always have the latest session ID
+
+          // Final validation and cleanup of video ID
+          if (typeof finalVideoId === 'string' && finalVideoId.startsWith('video_')) {
+            finalVideoId = finalVideoId.substring(6);
+            console.log('✅ Removed "video_" prefix from final video_id:', finalVideoId);
+          }
+
+          // Store the final video ID
+          videoId = finalVideoId;
+        }
+
+        // Extract and store campaign_session_id if present
         if (chunkResult.data && chunkResult.data.campaign_session_id) {
           const newSessionId = chunkResult.data.campaign_session_id;
           console.log(`✅ Received campaign session ID from chunk ${chunkCount + 1}:`, newSessionId);
           setCampaignSessionId(newSessionId);
-          // Update ref immediately for use in future operations
           campaignSessionIdRef.current = newSessionId;
         }
-        
-        // Only extract and process video_id from the last chunk
-        // The actual video_id is only available after the last chunk is processed
-        if (isLastChunk) {
-          console.log('✅ Final chunk processed');
-          console.log('📊 Full response:', JSON.stringify(chunkResult, null, 2));
-          
-          // Function to recursively search for video_id in a nested object
-          const findVideoId = (obj: any): string | undefined => {
-            if (!obj || typeof obj !== 'object') return undefined;
-            
-            // Direct property
-            if (obj.video_id) {
-              console.log('✅ Found video_id directly in object');
-              return obj.video_id;
-            }
-            
-            // Check data property
-            if (obj.data) {
-              // Direct in data
-              if (obj.data.video_id) {
-                console.log('✅ Found video_id in data property');
-                return obj.data.video_id;
-              }
-              
-              // Nested in data.data
-              if (obj.data.data && obj.data.data.video_id) {
-                console.log('✅ Found video_id in data.data property');
-                return obj.data.data.video_id;
-              }
-              
-              // Recursive search in data
-              const dataResult = findVideoId(obj.data);
-              if (dataResult) return dataResult;
-            }
-            
-            // Check backend_response property
-            if (obj.backend_response) {
-              if (obj.backend_response.video_id) {
-                console.log('✅ Found video_id in backend_response');
-                return obj.backend_response.video_id;
-              }
-              
-              // Recursive search in backend_response
-              const backendResult = findVideoId(obj.backend_response);
-              if (backendResult) return backendResult;
-            }
-            
-            return undefined;
-          };
-          
-          // Function to recursively search for campaign_session_id
-          const findCampaignSessionId = (obj: any): string | undefined => {
-            if (!obj || typeof obj !== 'object') return undefined;
-            
-            // Direct property
-            if (obj.campaign_session_id) {
-              console.log('✅ Found campaign_session_id directly in object');
-              return obj.campaign_session_id;
-            }
-            
-            // Check data property
-            if (obj.data) {
-              // Direct in data
-              if (obj.data.campaign_session_id) {
-                console.log('✅ Found campaign_session_id in data property');
-                return obj.data.campaign_session_id;
-              }
-              
-              // Nested in data.data
-              if (obj.data.data && obj.data.data.campaign_session_id) {
-                console.log('✅ Found campaign_session_id in data.data property');
-                return obj.data.data.campaign_session_id;
-              }
-              
-              // Recursive search in data
-              const dataResult = findCampaignSessionId(obj.data);
-              if (dataResult) return dataResult;
-            }
-            
-            // Check backend_response property
-            if (obj.backend_response) {
-              if (obj.backend_response.campaign_session_id) {
-                console.log('✅ Found campaign_session_id in backend_response');
-                return obj.backend_response.campaign_session_id;
-              }
-              
-              // Recursive search in backend_response
-              const backendResult = findCampaignSessionId(obj.backend_response);
-              if (backendResult) return backendResult;
-            }
-            
-            return undefined;
-          };
-          
-          // Extract video_id using recursive search - ONLY from the last chunk response
-          // THIS IS CRITICAL - This is the definitive video_id that must be used,
-          // not the upload_session_id or the initial video_id
-          const foundVideoId = findVideoId(chunkResult);
-          if (foundVideoId) {
-            // Override any previous video_id with the one from the final chunk
-            // This is the actual video_id we need to use, not the upload_session_id
-            videoId = foundVideoId;
-            console.log('✅ Successfully found video ID in final chunk response:', videoId);
-            console.log('🔑 This is the definitive video ID to use for subsequent operations');
-          } else {
-            console.error('❌ Could not find video_id in final chunk response - this is critical!');
-            console.error('❌ Without the final video_id, subsequent operations will fail');
-          }
-          
-          // Extract campaign_session_id using recursive search
-          const sessionId = findCampaignSessionId(chunkResult);
-          if (sessionId) {
-            console.log('✅ Found campaign session ID:', sessionId);
-            setCampaignSessionId(sessionId);
-            campaignSessionIdRef.current = sessionId;
-          }
-        }
-        
+
         // Increment chunk counter
         chunkCount++;
-        
+
         // Update progress (start at 20%, end at 90%)
         const progressPercentage = 20 + Math.floor((chunkCount / totalChunks) * 70);
         console.log('🔄 Updating progress to', progressPercentage + '%');
-        
+
         setMediaItems(prev =>
-          prev.map(item =>
-            item.id === newMediaId ? { ...item, progress: progressPercentage } : item
-          )
+            prev.map(item =>
+                item.id === newMediaId ? { ...item, progress: progressPercentage } : item
+            )
         );
-        
+
         // Move to next chunk
         startOffset = endOffset;
       }
-      
-      // Update the media item with the video_id from the FINAL CHUNK response
-      // According to the API guidelines, the final video_id comes from the last chunk response
-      // This is critical - we must use the video_id from the final chunk, NOT the upload_session_id
-      let finalVideoId = videoId;
-      
-      // Process the videoId from the last chunk (this is the only valid video_id for further operations)
-      if (finalVideoId) {
-        // Remove "video_" prefix if present - critical for backend compatibility
-        if (typeof finalVideoId === 'string' && finalVideoId.startsWith('video_')) {
-          console.log('⚠️ Removing "video_" prefix from videoId for backend compatibility');
-          finalVideoId = finalVideoId.substring(6);
-        }
-        
-        // Verify that we have a clean numeric ID - the master flow requires this format
-        const isNumeric = /^\d+$/.test(String(finalVideoId));
-        console.log('✅ Video upload completed successfully, final video ID:', finalVideoId);
-        console.log('🔍 Final video ID format check: Is numeric=' + isNumeric);
-        
-        if (!isNumeric) {
-          console.warn('⚠️ Final video ID is not in the expected numeric format!');
-          console.warn('⚠️ This may cause issues when creating the campaign');
-        }
-        console.log('🔄 Updating progress to 100%');
-        setMediaItems(prev =>
+
+      // Final steps after all chunks have been uploaded
+      console.log('✅ All chunks uploaded successfully');
+      console.log('✅ Final video ID:', videoId);
+
+      // Verify that we have a clean numeric ID
+      const isNumeric = /^\d+$/.test(String(videoId));
+      console.log('🔍 Final video ID format check: Is numeric=' + isNumeric);
+
+      // Update UI with final status
+      console.log('🔄 Updating progress to 100%');
+      setMediaItems(prev =>
           prev.map(item =>
-            item.id === newMediaId ? { 
-              ...item, 
-              progress: 100,
-              hash: finalVideoId // Store the processed video ID
-            } : item
+              item.id === newMediaId ? {
+                ...item,
+                progress: 100,
+                hash: videoId // Store the final video ID
+              } : item
           )
-        );
-      } else {
-        // If we didn't get a videoId from the response, we need to report an error
-        // The video_id is ONLY available in the final chunk response
-        console.error('❌ Failed to get video ID from final chunk response');
-        console.log('🔄 Setting error state for media item due to missing video ID');
-        setMediaItems(prev =>
-          prev.map(item =>
-            item.id === newMediaId ? { 
-              ...item, 
-              progress: -1,
-              error: 'Failed to get video ID from upload'
-            } : item
-          )
-        );
-        throw new Error('Failed to get video ID from upload - video ID is only returned in the final chunk response');
-      }
-      
+      );
+
     } catch (error) {
       console.error('❌ Exception during video upload:', error);
       // Update the media item to show error
       console.log('🔄 Setting error state for media item due to exception');
       setMediaItems(prev =>
-        prev.map(item =>
-          item.id === newMediaId ? { 
-            ...item, 
-            progress: -1,
-            error: 'Video upload failed'
-          } : item
-        )
+          prev.map(item =>
+              item.id === newMediaId ? {
+                ...item,
+                progress: -1,
+                error: 'Video upload failed'
+              } : item
+          )
       );
     }
   };
@@ -815,11 +611,11 @@ export function useMediaUpload() {
     setMediaItems(prev => prev.filter(m => m.id !== id));
   };
 
-  return { 
-    mediaItems, 
-    setMediaItems, 
-    fileInputRef, 
-    handleFileUpload, 
+  return {
+    mediaItems,
+    setMediaItems,
+    fileInputRef,
+    handleFileUpload,
     removeMediaItem,
     campaignSessionId,
     fbAccountId,
