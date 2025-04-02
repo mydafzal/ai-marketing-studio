@@ -323,7 +323,7 @@ export async function submitUserMessage(content: string, contentImages?: Array<T
 
     const result = await streamUI({
 
-        model: openai('gpt-4o'),
+        model: openai('gpt-4o') as any,
 
         initial: <SpinnerMessage/>,
 
