@@ -18,11 +18,30 @@ export async function GET(request: Request) {
     if (resp.success){
         // Parse locations data if it exists
         let locations = null;
-        if (resp.user.locations && typeof resp.user.locations === 'string') {
+        if (resp.user.locations) {
             try {
-                locations = JSON.parse(resp.user.locations);
+                // If it's stored as a string, parse it
+                if (typeof resp.user.locations === 'string') {
+                    const parsedLocations = JSON.parse(resp.user.locations);
+                    
+                    // Validate the parsed structure to ensure it's in the expected format
+                    if (Array.isArray(parsedLocations) && parsedLocations.length > 0) {
+                        locations = parsedLocations;
+                        console.log('Successfully parsed locations from KV storage:', parsedLocations.length);
+                    } else {
+                        console.warn('Parsed locations not in expected format:', parsedLocations);
+                        locations = []; // Reset to empty array if format is wrong
+                    }
+                } else if (Array.isArray(resp.user.locations)) {
+                    locations = resp.user.locations;
+                    console.log('Locations already in array format:', resp.user.locations.length);
+                } else {
+                    console.warn('Locations in unexpected format:', typeof resp.user.locations);
+                    locations = []; // Reset to empty array if format is wrong
+                }
             } catch (e) {
                 console.error('Error parsing locations data:', e);
+                locations = []; // Reset to empty array on parse error
             }
         }
         

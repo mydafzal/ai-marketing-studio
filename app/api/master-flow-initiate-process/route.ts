@@ -98,13 +98,65 @@ export async function POST(req: NextRequest) {
     
     console.log('🎬 Final video IDs being sent to master flow:', JSON.stringify(processedVideoIds));
     
+    // Validate location_data before sending to masterbranch
+    let processedLocationData = location_data;
+    if (processedLocationData && Array.isArray(processedLocationData)) {
+      console.log('📍 Original location data:', JSON.stringify(processedLocationData));
+      
+      // Process location data to ensure it's in the correct format
+      processedLocationData = processedLocationData.map(loc => {
+        // Skip invalid entries
+        if (!loc || !loc.country || typeof loc.country !== 'object') {
+          console.warn('📍 Skipping invalid location entry:', loc);
+          return null;
+        }
+
+        return {
+          country: {
+            name: loc.country?.name || '',
+            code: loc.country?.code || ''
+          },
+          regions: Array.isArray(loc.regions) ? loc.regions.map(region => {
+            if (!region) return null;
+            return {
+              key: typeof region.key === 'string' ? parseInt(region.key, 10) : (region.key || 0),
+              name: region.name || '',
+              cities: Array.isArray(region.cities) ? region.cities.map(city => {
+                if (!city) return null;
+                return {
+                  key: typeof city.key === 'string' ? parseInt(city.key, 10) : (city.key || 0),
+                  name: city.name || ''
+                };
+              }).filter(city => city !== null) : []
+            };
+          }).filter(region => region !== null) : []
+        };
+      }).filter(loc => loc !== null);
+      
+      console.log('📍 Processed location data:', JSON.stringify(processedLocationData));
+
+      // Fallback to Netherlands if no valid locations after processing
+      if (processedLocationData.length === 0) {
+        console.log('📍 No valid locations after processing, using default (Netherlands)');
+        processedLocationData = [
+          {
+            country: {
+              name: "Netherlands",
+              code: "NL"
+            },
+            regions: []
+          }
+        ];
+      }
+    }
+
     // Prepare the request payload based on exact format from documentation example
     const requestPayload = {
       fb_account_id,
       campaign_flow_session_id,
       company_name: company_name || 'Reeply AI', // Add company_name field which is required
       profile_data,
-      location_data,
+      location_data: processedLocationData,
       website_link,
       preferred_language,
       privacy_policy_link,

@@ -51,7 +51,7 @@ export function CreateCampaignForm() {
 
   // Audience settings
   const [ageRange, setAgeRange] = useState<[number, number]>([25, 45]);
-  const [targetedLocations, setTargetedLocations] = useState(['United States']);
+  const [targetedLocations, setTargetedLocations] = useState<string[]>([]);
   const [newLocation, setNewLocation] = useState('');
 
   // Renamed from "Interests" to "Filters" but still storing in same arrays:
@@ -198,17 +198,49 @@ export function CreateCampaignForm() {
       
       // Prepare location data based on targeted locations
       let locationData = [];
+      let locationSource = '';
+      
+      // Process user locations from account data
+      let userLocations = [];
+      if (userData.account?.locations) {
+        try {
+          // Handle locations that might be stored as string (double-parse protection)
+          if (typeof userData.account.locations === 'string') {
+            console.log('📍 Locations still in string format, parsing again:', userData.account.locations);
+            userLocations = JSON.parse(userData.account.locations);
+          } else if (Array.isArray(userData.account.locations)) {
+            userLocations = userData.account.locations;
+          } else {
+            console.warn('📍 Locations in unexpected format:', typeof userData.account.locations);
+          }
+          
+          console.log('📍 Raw user locations:', JSON.stringify(userLocations));
+          
+          // Additional validation to ensure correct structure
+          userLocations = userLocations.filter(loc => 
+            loc && 
+            loc.country && 
+            typeof loc.country === 'object' &&
+            loc.country.name && 
+            loc.country.code
+          );
+          
+          console.log('📍 Validated user locations count:', userLocations.length);
+        } catch (error) {
+          console.error('📍 Error processing user locations:', error);
+          userLocations = [];
+        }
+      }
       
       // First check if user has saved locations from onboarding
-      if (userData.account?.locations && Array.isArray(userData.account.locations) && userData.account.locations.length > 0) {
-        console.log('📍 Using user\'s saved locations from profile:', userData.account.locations);
-        
-        // User locations are already in the correct format, use them directly
-        locationData = userData.account.locations;
+      if (userLocations.length > 0) {
+        console.log('📍 LOCATION SOURCE: Using user\'s saved locations from profile:', userLocations.length);
+        locationData = userLocations;
+        locationSource = 'user_profile';
       }
       // If no saved locations but we have targetedLocations from props, use those
       else if (targetedLocations && targetedLocations.length > 0) {
-        console.log('📍 Using predefined targeted locations from props:', targetedLocations);
+        console.log('📍 LOCATION SOURCE: Using predefined targeted locations from state:', targetedLocations);
         
         // Format location data according to API requirements
         locationData = targetedLocations.map(location => {
@@ -223,10 +255,11 @@ export function CreateCampaignForm() {
             regions: []
           };
         });
+        locationSource = 'component_state';
       } 
       // No locations at all, use default Netherlands
       else {
-        console.log('📍 No locations available, using default (Netherlands)');
+        console.log('📍 LOCATION SOURCE: No locations available, using default (Netherlands)');
         // Default location if none provided
         locationData = [
           {
@@ -237,7 +270,14 @@ export function CreateCampaignForm() {
             regions: []
           }
         ];
+        locationSource = 'default_fallback';
       }
+      
+      console.log('📍 Final location data being used:', {
+        source: locationSource,
+        count: locationData.length,
+        countries: locationData.map(loc => loc.country.name).join(', ')
+      });
       
       console.log('📍 Final location data:', JSON.stringify(locationData, null, 2));
       
@@ -374,7 +414,7 @@ export function CreateCampaignForm() {
       'Brazil': 'BR'
     };
     
-    return countryCodes[countryName] || 'US'; // Default to US if not found
+    return countryCodes[countryName] || 'NL'; // Default to NL (Netherlands) if not found
   };
 
   // Launch confetti on publish and finalize the campaign with the API
