@@ -864,12 +864,6 @@ function Onboarding({
             case 'locations':
                 return (
                     <div className="space-y-4">
-                        <label className="text-sm font-semibold text-white">
-                            Preferred Locations
-                        </label>
-                        <p className="text-xs text-gray-400">
-                            Select the locations where you want to advertise. This helps our AI target your campaigns better.
-                        </p>
                         <OnboardingLocationSelector 
                             locations={locations || []}
                             setLocations={setLocations as React.Dispatch<React.SetStateAction<LocationData>>}

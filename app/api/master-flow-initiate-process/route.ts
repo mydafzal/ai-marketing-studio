@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
     // Ensure video_ids are in the right format for the backend API
     // IMPORTANT: The Fasty backend expects raw numeric video IDs without any "video_" prefix
     // We need to ensure we're sending the video IDs in the correct format
-    const processedVideoIds = video_ids.map(videoId => {
+    const processedVideoIds = video_ids.map((videoId: string) => {
       const videoIdStr = String(videoId);
       // If the video ID has a "video_" prefix, we need to remove it
       if (videoIdStr.startsWith('video_')) {

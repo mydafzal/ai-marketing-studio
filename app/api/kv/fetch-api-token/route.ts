@@ -25,6 +25,9 @@ export async function GET(request: Request) {
                 console.error('Error parsing locations data:', e);
             }
         }
+        else if (resp.user.locations && typeof resp.user.locations === 'object'){
+            locations = resp.user.locations;
+        }
         
         return NextResponse.json({
             success: true,
@@ -35,6 +38,8 @@ export async function GET(request: Request) {
                 defaultExtraDetails: resp.user.defaultExtraDetails || "",
                 privacy_policy_link: resp.user.privacy_policy_link || "",
                 email: resp.user.email || "",
+                companyName: resp.user.company_name||"",
+                preferred_language: resp.user.preferred_language,
                 locations: locations
             }
         });

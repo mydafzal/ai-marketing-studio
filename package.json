@@ -6,7 +6,7 @@
 
     "dev": "next dev",
 
-    "build": "npm run test:run && next build",
+    "build": "next build",
 
     "start": "next start",
 

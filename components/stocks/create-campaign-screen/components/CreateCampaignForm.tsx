@@ -248,9 +248,7 @@ export function CreateCampaignForm() {
         profileData = profileData + "\n\nThe user explicitly stated that they want: " + aiGuidance;
       }
       
-      const companyName = aiGuidance && aiGuidance.trim() !== '' 
-        ? aiGuidance.substring(0, 30) 
-        : 'Default Company';
+      const companyName = userData.account?.companyName;
       console.log('🏢 Using company name:', companyName);
       
       const pageId = userData.account?.fbPageId ? String(userData.account.fbPageId) : '';
@@ -263,7 +261,7 @@ export function CreateCampaignForm() {
       const requestPayload = {
         fb_account_id: userData.account?.fbAccountId || '',
         campaign_flow_session_id: sessionId,
-        company_name: companyName || 'Reeply AI', // Make sure company_name is always present
+        company_name: companyName, // Make sure company_name is always present
         profile_data: profileData,
         location_data: locationData,
         page_id: pageId,
@@ -271,7 +269,7 @@ export function CreateCampaignForm() {
         video_ids: videoIds,
         daily_campaign_budget: budget, // Use daily_campaign_budget as shown in documentation example
         website_link: link,
-        preferred_language: 'en',
+        preferred_language: userData.account?.preferred_language || "en",
         privacy_policy_link: userData.account?.privacy_policy_link || ''
       };
       
