@@ -1,0 +1,37 @@
+// subscription-bypass-list.ts
+
+// The users in this list will have access to all the features of the platform. Until their account subscriptions are linked with stripe.
+
+// List of emails that bypass subscription requirements
+export const subscriptionBypassList: string[] = [
+    'farzammdn@gmail.com',
+    'maxnols@reeply.net',
+    'maxnols@gmx.de',
+    'xlinloke@gmail.com',
+    'vinayak@reeply.ai',
+    'vinayak.ervk@gmail.com',
+    'thydiep.ta@gmail.com',
+    't.dekraker@novelt.com',
+    'sandra.beilstein@bonvitagroup.com',
+    'peter.wellbrock@w-itc.com',
+    'pascal@pascalblank.ai',
+    'os@oliver-schumacher.de',
+    'o.fassoth@elektro-heinemann.de',
+    'nadine.kocher@bonvitagroup.com',
+    'marcschaefer@reeply.net',
+    'kontakt@viola-sander.de',
+    'kontakt@digilytics.de',
+    'jens.stohrer@elektro-stohrer.de',
+    'ivonne.schiffner@helle-koepfe-recruiting.de',
+    'info@hypnose.academy',
+    'info@homemademeals.net',
+    'info@copycraft-academy.at',
+    'govi@abmarketing.be',
+    'frank@kolbenschlag-geruestbau.de',
+    'damian.wasilewski@leaware.com',
+    'cristiandch@gmail.com',
+    'corina.jacob@bonvitagroup.com',
+    'christian@boldbrands.de',
+    'bart@formitable.design',
+    'Sandra.Echsle@bonvitagroup.com'
+];

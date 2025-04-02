@@ -1,0 +1,149 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+ 
+@layer base {
+  :root {
+    /* Light mode values - kept for reference but will be using dark mode */
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+ 
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+ 
+    --primary: 240 5.9% 10%;
+    --primary-foreground: 0 0% 98%;
+ 
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+ 
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+ 
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+ 
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 240 10% 3.9%;
+ 
+    --radius: 0.75rem; /* Increased to match the 8-12px radius requirement */
+  }
+ 
+  .dark {
+    /* New color palette based on the design requirements */
+    --background: 230 22% 6%; /* #0A0C14 - Deep, rich black */
+    --foreground: 0 0% 100%; /* #FFFFFF - Pure white for headings and important text */
+ 
+    --card: 234 17% 12%; /* #1A1D29 - Slightly lighter dark for cards and panels */
+    --card-foreground: 0 0% 100%; /* #FFFFFF - Pure white for text */
+ 
+    --popover: 234 17% 12%; /* #1A1D29 - Same as card background */
+    --popover-foreground: 0 0% 100%; /* #FFFFFF - Pure white for text */
+ 
+    --primary: 152 88% 62%; /* #4BF29C - Vibrant green for highlights, CTAs */
+    --primary-foreground: 230 22% 6%; /* #0A0C14 - Dark background for contrast on primary buttons */
+ 
+    --secondary: 14 100% 68%; /* #FF7D5A - Coral/orange for secondary highlights */
+    --secondary-foreground: 0 0% 100%; /* #FFFFFF - White text on secondary elements */
+ 
+    --muted: 227 13% 15%; /* #1A1D29 - Slightly lighter dark */
+    --muted-foreground: 220 5% 65%; /* #8A8F99 - Light gray for supporting text */
+ 
+    --accent: 152 88% 62%; /* #4BF29C - Same as primary for consistency */
+    --accent-foreground: 230 22% 6%; /* #0A0C14 - Dark background for contrast */
+ 
+    --destructive: 0 62.8% 30.6%; /* Keeping original destructive color */
+    --destructive-foreground: 0 0% 98%; /* White text on destructive elements */
+ 
+    --border: 225 12% 20%; /* #2A2E3A - Dark gray for subtle separators */
+    --input: 225 12% 20%; /* #2A2E3A - Same as border */
+    --ring: 152 88% 62%; /* #4BF29C - Primary green for focus rings */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  pointer-events: auto;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  -webkit-appearance: none;
+  @apply bg-gray-500;
+
+  /* @apply w-6 h-6 appearance-none pointer-events-auto; */
+}
+
+/* Sidebar transitions */
+.sidebar-transition {
+  transition: all 300ms ease-in-out;
+}
+
+.sidebar-enter {
+  transform: translateX(100%);
+}
+
+.sidebar-enter-active {
+  transform: translateX(0);
+}
+
+.sidebar-exit {
+  transform: translateX(0);
+}
+
+.sidebar-exit-active {
+  transform: translateX(100%);
+}
+
+/* Content transitions when sidebar is open/closed */
+.content-transition {
+  transition: padding-right 300ms ease-in-out;
+}
+
+/* Chat container with responsive max-width */
+.chat-container {
+  max-width: 768px;
+  margin: 0 auto;
+  transition: all 300ms ease-in-out;
+}
+
+@media (min-width: 1024px) {
+  .chat-container {
+    max-width: 900px;
+  }
+}
+/* Chat message bubble styling */
+.chat-message-bubble-removed {
+  max-width: 85%;
+  width: fit-content;
+}
+
+.chat-message-container-removed {
+  width: 100%;
+  display: flex;
+  justify-content: flex-start;
+}
+
+/* Hide scrollbar but keep functionality */
+.hide-scrollbar {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer and Edge */
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, and Opera */
+}
