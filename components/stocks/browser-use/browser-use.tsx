@@ -242,7 +242,7 @@ export function BrowserUse({ defaultPrompt = "", isInDialog = false }: BrowserUs
       );
       
       // Submit the message to chat using submitUserMessage (exactly like in campaignresultsnew)
-      const resp = await submitUserMessage(formattedMessage, [], true);
+      await submitUserMessage(formattedMessage, [], true);
       
       // Update the AI state to maintain compatibility with other code
       const { nanoid } = await import("@/lib/utils");
