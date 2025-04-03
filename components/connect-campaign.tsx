@@ -13,6 +13,7 @@ import {FbCampaign, Message} from '@/lib/types'
 import {type AI} from '@/lib/chat/AIManager'
 import {Card, CardContent} from '@/components/ui/card'
 import {CheckCircle, Link as LinkIcon, Plus, XCircle} from 'lucide-react'
+import { useActiveUI } from '@/components/stocks/active-ui-context'
 
 interface ConnectCampaignFormProps {
   handleSelectCampaign: (campaign: FbCampaign) => Promise<void>;
@@ -21,33 +22,22 @@ interface ConnectCampaignFormProps {
 export function ConnectCampaignForm({
   handleSelectCampaign
 }: ConnectCampaignFormProps) {
-  const [selectedCampaign, setSelectedCampaign] = useState<FbCampaign>()
+  const { campaigns, getCampaignList, id: currentCampaignId } = useContext(CampaignContext)
+  const [selectedCampaign, setSelectedCampaign] = useState<FbCampaign | undefined>()
   const [isSubmitting, setSubmitting] = useState<boolean>(false)
-  const [isCreating, setCreating] = useState<boolean>(false)
-  const { campaigns, getCampaignList } = useContext(CampaignContext)
-
-  const handleCreateCampaign = async () => {
-    const createData = {
-      name: 'Lead Campaign',
-      status: 'PAUSED',
+  
+  // Pre-select the currently connected campaign if available
+  useEffect(() => {
+    if (currentCampaignId && campaigns && campaigns.length > 0 && !selectedCampaign) {
+      const connectedCampaign = campaigns.find(
+        (campaign: FbCampaign) => campaign.id === currentCampaignId
+      );
+      
+      if (connectedCampaign) {
+        setSelectedCampaign(connectedCampaign);
+      }
     }
-    const url = '/api/fasty-bot/proxy-create-base-lead-or-recruitment-campaign'
-    const responseStream = await fetch(url, {
-      method: 'POST',
-      body: JSON.stringify({
-      })
-    })
-    const response = await responseStream.json()
-    if (response.success && response.data.campaign.id) {
-      // TODO: UPDATE CHAT IN KV HERE IS WELL TO HAVE LEAD FORM ID
-      await handleSelectCampaign({
-        ...response.data.campaign,
-        created_time: Date.toString(),
-        daily_budget:"300"  // Just to avoid error
-      })
-      await getCampaignList()
-    }
-  }
+  }, [currentCampaignId, campaigns, selectedCampaign]);
 
   return (
     <>
@@ -76,7 +66,9 @@ export function ConnectCampaignForm({
                     'flex items-center p-3 rounded-lg border transition-colors cursor-pointer',
                     selectedCampaign?.id === campaign.id 
                       ? 'border-[#4BF29C] bg-[#151925]' 
-                      : 'border-[#2A2E3A] bg-[#0A0C14] hover:bg-[#151925]'
+                      : currentCampaignId === campaign.id
+                        ? 'border-[#4BF29C] bg-[#151925]/60' 
+                        : 'border-[#2A2E3A] bg-[#0A0C14] hover:bg-[#151925]'
                   )}
                 >
                   <div className="mr-3 flex-shrink-0">
@@ -88,7 +80,14 @@ export function ConnectCampaignForm({
                   </div>
                   <div className="flex-1">
                     <div className="flex flex-col">
-                      <span className="text-white font-medium">{campaign.name}</span>
+                      <div className="flex items-center">
+                        <span className="text-white font-medium">{campaign.name}</span>
+                        {currentCampaignId === campaign.id && (
+                          <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-[#0F2922] text-[#4BF29C]">
+                            Connected
+                          </span>
+                        )}
+                      </div>
                       <span className="text-xs text-[#8A8F99]">
                         {campaign.status} • {created_time}
                       </span>
@@ -99,7 +98,7 @@ export function ConnectCampaignForm({
             })}
           </div>
 
-          <div className="flex gap-4">
+          <div className="flex">
             <button
               disabled={!selectedCampaign || isSubmitting}
               onClick={async () => {
@@ -109,7 +108,7 @@ export function ConnectCampaignForm({
                 }
               }}
               className={cn(
-                'flex justify-center items-center gap-2 flex-1 h-12 px-6',
+                'flex justify-center items-center gap-2 w-full h-12 px-6',
                 'text-white font-medium rounded-lg',
                 'bg-[#151925] border border-[#2A2E3A]',
                 'hover:bg-[#1E2336]',
@@ -127,62 +126,13 @@ export function ConnectCampaignForm({
                 </>
               )}
             </button>
-
-            <button
-              disabled={isCreating}
-              onClick={async () => {
-                setCreating(true)
-                await handleCreateCampaign()
-              }}
-              className={cn(
-                'flex justify-center items-center gap-2 flex-1 h-12 px-6',
-                'text-[#0A0C14] font-medium rounded-lg',
-                'bg-[#4BF29C] hover:bg-[#3AD88C]',
-                'transition-colors duration-200',
-                'disabled:opacity-50 disabled:cursor-not-allowed',
-                'focus:outline-none focus:ring-2 focus:ring-[#4BF29C]'
-              )}
-            >
-              {isCreating ? (
-                <IconSpinner className="size-5" />
-              ) : (
-                <>
-                  <Plus className="size-4" />
-                  Create New Campaign
-                </>
-              )}
-            </button>
           </div>
         </div>
       ) : (
         <div className="py-8 text-center bg-[#0A0C14] rounded-lg border border-[#2A2E3A]">
-          <div className="text-[#ADB0B8] mb-4">
-            No campaigns available
+          <div className="text-[#ADB0B8]">
+            No campaigns available. Please use the chat to create a campaign first.
           </div>
-          <button
-            disabled={isCreating}
-            onClick={async () => {
-              setCreating(true)
-              await handleCreateCampaign()
-            }}
-            className={cn(
-              'flex justify-center items-center gap-2 mx-auto h-12 px-6',
-              'text-[#0A0C14] font-medium rounded-lg',
-              'bg-[#4BF29C] hover:bg-[#3AD88C]',
-              'transition-colors duration-200',
-              'disabled:opacity-50 disabled:cursor-not-allowed',
-              'focus:outline-none focus:ring-2 focus:ring-[#4BF29C]'
-            )}
-          >
-            {isCreating ? (
-              <IconSpinner className="size-5" />
-            ) : (
-              <>
-                <Plus className="size-4" />
-                Create New Campaign
-              </>
-            )}
-          </button>
         </div>
       )}
     </>
@@ -195,6 +145,8 @@ interface ConnectCampaignProps {
     success: boolean
   }
 }
+
+// Original ActiveUIWrapper has been moved to connect-campaign/active-ui-wrapper.tsx
 
 export function ConnectingStatus({ campaignName }: { campaignName: string }) {
   return (
@@ -218,10 +170,62 @@ export function ConnectCampaign({ connectingUiProps }: ConnectCampaignProps) {
     connectingUiProps ? <ConnectCampaignResult {...connectingUiProps} /> : null
   )
   const [_, setMessages] = useUIState<typeof AI>()
-  const { setId: setCampaignId } = useContext(CampaignContext)
+  const campaignContext = useContext(CampaignContext)
+  const { id: currentCampaignId, setId: setCampaignId, campaigns } = campaignContext
+  const [connectedCampaign, setConnectedCampaign] = useState<FbCampaign | null>(null)
+  const [showSelector, setShowSelector] = useState<boolean>(false)
 
   const aiMessages = aiState.messages;
   const shouldSendSilentMessage = useRef(false);
+  
+  // Reset the UI when showSelector changes to true
+  useEffect(() => {
+    if (showSelector) {
+      setConnectingUI(null);
+    }
+  }, [showSelector]);
+  
+  // Find currently connected campaign when component mounts or campaigns list changes
+  useEffect(() => {
+    // If we have a current campaign ID and campaigns list, find the connected campaign
+    if (currentCampaignId && campaigns && campaigns.length > 0 && !showSelector) {
+      const campaign = campaigns.find((campaign: FbCampaign) => campaign.id === currentCampaignId);
+      
+      if (campaign) {
+        setConnectedCampaign(campaign);
+        
+        // If we have a connected campaign and no UI is showing, display the success state
+        if (!connectingUI) {
+          setConnectingUI(
+            <Card className="bg-[#1A1D29] border-[#2A2E3A]">
+              <CardContent className="p-6">
+                <div className="flex flex-col gap-4">
+                  <div className="flex items-center gap-3">
+                    <CheckCircle className="size-6 text-[#4BF29C] shrink-0" />
+                    <div>
+                      <div className="text-white font-medium">
+                        Currently connected to campaign
+                      </div>
+                      <div className="text-[#ADB0B8] text-sm">
+                        {campaign.name}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <button
+                    onClick={() => setShowSelector(true)}
+                    className="mt-4 w-full px-4 py-2 bg-[#151925] text-white border border-[#2A2E3A] rounded-lg hover:bg-[#1E2336] transition-colors"
+                  >
+                    Connect to Different Campaign
+                  </button>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        }
+      }
+    }
+  }, [currentCampaignId, campaigns, connectingUI, showSelector]);
 
   useEffect(() => {
     async function refresh() {
@@ -327,14 +331,16 @@ export function ConnectCampaign({ connectingUiProps }: ConnectCampaignProps) {
   }
 
   return (
-    <Card className="bg-[#1A1D29] border-[#2A2E3A]">
-      <CardContent className="p-6">
-        {connectingUI ? (
-          connectingUI
-        ) : (
-          <ConnectCampaignForm handleSelectCampaign={handleCampaignSelection} />
-        )}
-      </CardContent>
-    </Card>
+    <div className="w-full">
+      <Card className="bg-[#1A1D29] border-[#2A2E3A]">
+        <CardContent className="p-6">
+          {connectingUI ? (
+            connectingUI
+          ) : (
+            <ConnectCampaignForm handleSelectCampaign={handleCampaignSelection} />
+          )}
+        </CardContent>
+      </Card>
+    </div>
   )
 }

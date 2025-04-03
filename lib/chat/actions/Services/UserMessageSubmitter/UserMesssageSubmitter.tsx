@@ -1699,9 +1699,15 @@ export async function submitUserMessage(content: string, contentImages?: Array<T
 
                 parameters: showCampaignConnectionUIModule.parameters,
 
-                generate: async function* ({}) {
+                generate: async function* ({connectingUiProps}) {
 
                     console.log('tool call showCampaignConnectionUI')
+
+                    yield (
+                        <BotCard>
+                            <p>Loading campaign connection interface...</p>
+                        </BotCard>
+                    )
 
                     const timestamp: string = new Date().toISOString();
 
@@ -1725,7 +1731,7 @@ export async function submitUserMessage(content: string, contentImages?: Array<T
 
                                     toolCallId,
 
-                                    args: {}
+                                    args: {connectingUiProps}
 
                                 }
 
@@ -1751,7 +1757,7 @@ export async function submitUserMessage(content: string, contentImages?: Array<T
 
                                     toolCallId,
 
-                                    result: {}
+                                    result: {connectingUiProps}
 
                                 }
 
@@ -1763,9 +1769,9 @@ export async function submitUserMessage(content: string, contentImages?: Array<T
 
                     ])
 
-
-
-                    return await showCampaignConnectionUIModule.component({})
+                    // Import and use the server component for Campaign Connection
+                    const showCampaignConnection = (await import('@/components/connect-campaign/server')).default;
+                    return showCampaignConnection({connectingUiProps});
 
                 }
 
