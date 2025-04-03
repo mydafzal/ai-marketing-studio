@@ -24,9 +24,8 @@ export default async function showBrowserUse({ researchQuery = "" }: { researchQ
         title="AI Browser Research"
         onMount={true}
       />
-      
       <BotCard>
-        <p>The AI browser research agent is now active in the sidebar. You can watch the agent browse the web in real-time and use the "Expand View" button for a larger display. Research results will be sent to this chat when complete.</p>
+        <p>The AI browser research agent is now active in the sidebar. You can watch the agent browse the web in real-time and use the &quot;Expand View&quot; button for a larger display. Research results will be sent to this chat when complete.</p>
       </BotCard>
     </>
   );
