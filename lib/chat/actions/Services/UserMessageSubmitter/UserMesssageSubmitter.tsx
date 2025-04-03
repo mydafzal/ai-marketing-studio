@@ -104,6 +104,7 @@ import { useEffect } from "react";
 import LeadsCountUI from "@/components/campaign-leads-count";
 
 import showAiVideoGenerator from "@/components/stocks/ai-video-generator/server"
+// Browser research component will be imported dynamically in the tool handler
 
 interface ExtractedMessage {
 
@@ -900,6 +901,124 @@ export async function submitUserMessage(content: string, contentImages?: Array<T
 
                     return showAiVideoGenerator()
 
+                }
+
+            },
+            
+            showBrowserResearch: {
+
+                description: "Show the UI for performing AI browser research. The AI will browse the web to find information and return results to the chat.",
+
+                parameters: z.object({
+                    researchQuery: z.string().optional().describe("The query or topic to research. This will be used as the initial prompt for the browser agent.")
+                }),
+
+                generate: async function* ({ researchQuery }) {
+
+                    yield (
+
+                        <BotCard>
+
+                            <p>Loading AI Browser Research...</p>
+
+                        </BotCard>
+
+                    )
+                    
+                    const timestamp: string = new Date().toISOString();
+                    const toolCallId = nanoid();
+                    
+                    pushMessages([
+                        {
+                            id: nanoid(),
+                            role: 'assistant',
+                            content: [
+                                {
+                                    type: 'tool-call',
+                                    toolName: 'showBrowserResearch',
+                                    toolCallId,
+                                    args: { researchQuery }
+                                }
+                            ],
+                            timestamp
+                        },
+                        {
+                            id: toolCallId,
+                            role: 'tool',
+                            content: [
+                                {
+                                    type: 'tool-result',
+                                    toolName: 'showBrowserResearch',
+                                    toolCallId,
+                                    result: { researchQuery }
+                                }
+                            ],
+                            timestamp
+                        }
+                    ]);
+
+                    // Import and return the browser research component
+                    const showBrowserUse = (await import('@/components/stocks/browser-use/server')).default;
+                    return showBrowserUse({ researchQuery });
+                }
+
+            },
+            
+            showBrowserResearch: {
+
+                description: "Show the UI for performing AI browser research. The AI will browse the web to find information and return results to the chat.",
+
+                parameters: z.object({
+                    researchQuery: z.string().optional().describe("The query or topic to research. This will be used as the initial prompt for the browser agent.")
+                }),
+
+                generate: async function* ({ researchQuery }) {
+
+                    yield (
+
+                        <BotCard>
+
+                            <p>Loading AI Browser Research...</p>
+
+                        </BotCard>
+
+                    )
+                    
+                    const timestamp: string = new Date().toISOString();
+                    const toolCallId = nanoid();
+                    
+                    pushMessages([
+                        {
+                            id: nanoid(),
+                            role: 'assistant',
+                            content: [
+                                {
+                                    type: 'tool-call',
+                                    toolName: 'showBrowserResearch',
+                                    toolCallId,
+                                    args: { researchQuery }
+                                }
+                            ],
+                            timestamp
+                        },
+                        {
+                            id: toolCallId,
+                            role: 'tool',
+                            content: [
+                                {
+                                    type: 'tool-result',
+                                    toolName: 'showBrowserResearch',
+                                    toolCallId,
+                                    result: { researchQuery }
+                                }
+                            ],
+                            timestamp
+                        }
+                    ]);
+
+                    // Import and return the browser research component
+                    const showBrowserUse = (await import('@/components/stocks/browser-use/server')).default;
+                    return showBrowserUse({ researchQuery });
                 }
 
             },
