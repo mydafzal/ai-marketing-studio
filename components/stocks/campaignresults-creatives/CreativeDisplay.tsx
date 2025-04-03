@@ -26,12 +26,30 @@ export const CreativeDisplay: React.FC<CreativeDisplayProps> = ({
   onViewDetails,
   onTogglePublish,
 }) => {
-  // Use a fixed format to ensure we only fetch once
-  const defaultFormat = creative.type === 'video' ? 'INSTAGRAM_REELS' : 'INSTAGRAM_STANDARD'
+  // Allow selecting different formats instead of a fixed one
+  const initialFormat = creative.type === 'video' ? 'INSTAGRAM_STANDARD' : 'INSTAGRAM_STANDARD'
+  const [adFormat, setAdFormat] = useState<string>(initialFormat)
   const [previewHtml, setPreviewHtml] = useState<string>("")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const previewRef = useRef<HTMLDivElement>(null)
+  
+  // Get the appropriate formats based on creative type
+  const formats = creative.type === 'video' ? [
+    "INSTAGRAM_STANDARD",
+    "INSTAGRAM_STORY",
+    "INSTAGRAM_EXPLORE_GRID_HOME",
+    "INSTAGRAM_REELS",
+    "FACEBOOK_PROFILE_FEED_MOBILE",
+    "FACEBOOK_STORY_MOBILE",
+    "FACEBOOK_REELS_MOBILE"
+  ] : [
+    "INSTAGRAM_STANDARD",
+    "INSTAGRAM_STORY",
+    "INSTAGRAM_EXPLORE_GRID_HOME",
+    "FACEBOOK_PROFILE_FEED_MOBILE",
+    "FACEBOOK_STORY_MOBILE"
+  ]
 
   // Process HTML to prevent auto-scaling/resizing and hide scrollbars
   const processHtml = (html: string) => {
@@ -48,7 +66,7 @@ export const CreativeDisplay: React.FC<CreativeDisplayProps> = ({
       .replace(/<head>/g, '<head><style>::-webkit-scrollbar{display:none;width:0;height:0;}body::-webkit-scrollbar{display:none;}</style>');
   };
 
-  // Keep the same fetch function but with fixed format
+  // Update fetch function to use current adFormat
   const fetchPreview = useCallback(async () => {
     if (!creative.id) return
     
@@ -56,8 +74,8 @@ export const CreativeDisplay: React.FC<CreativeDisplayProps> = ({
     setError(null)
 
     try {
-      console.log(`Fetching preview for creative ${creative.id} with format ${defaultFormat}`)
-      const response = await fetch(`/api/fasty-bot/proxy-get-ad-creative-preview?creative_id=${creative.id}&ad_format=${defaultFormat}`)
+      console.log(`Fetching preview for creative ${creative.id} with format ${adFormat}`)
+      const response = await fetch(`/api/fasty-bot/proxy-get-ad-creative-preview?creative_id=${creative.id}&ad_format=${adFormat}`)
       
       if (!response.ok) {
         const errorText = await response.text()
@@ -66,7 +84,6 @@ export const CreativeDisplay: React.FC<CreativeDisplayProps> = ({
       }
 
       const data = await response.json()
-      console.log("Preview response:", data)
       
       if (data.success) {
         // Handle possible response formats from the campaign-creation-flow endpoint
@@ -77,6 +94,54 @@ export const CreativeDisplay: React.FC<CreativeDisplayProps> = ({
           html = data.response_data.data[0].body;
         } else {
           throw new Error("No preview HTML found in response")
+        }
+        
+        // Check for Instagram Actor ID error
+        if (html.includes('Instagram Actor ID is required') || html.includes('Select an Instagram account')) {
+          // Return a simple placeholder that won't show the error
+          html = `
+            <html>
+              <head>
+                <style>
+                  body {
+                    margin: 0;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    height: 100vh;
+                    background-color: #1A1D29;
+                    color: white;
+                    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                  }
+                  .preview-placeholder {
+                    width: 313px;
+                    height: 534px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    flex-direction: column;
+                    text-align: center;
+                    padding: 1rem;
+                  }
+                  .ad-title {
+                    font-size: 18px;
+                    font-weight: bold;
+                    margin-bottom: 8px;
+                  }
+                  .ad-text {
+                    font-size: 14px;
+                    color: #ccc;
+                  }
+                </style>
+              </head>
+              <body>
+                <div class="preview-placeholder">
+                  <div class="ad-title">${creative.name}</div>
+                  <div class="ad-text">Preview not available for this format</div>
+                </div>
+              </body>
+            </html>
+          `;
         }
         
         // Pre-process HTML to prevent scaling issues
@@ -91,9 +156,9 @@ export const CreativeDisplay: React.FC<CreativeDisplayProps> = ({
     } finally {
       setIsLoading(false)
     }
-  }, [creative.id, defaultFormat])
+  }, [creative.id, adFormat, creative.name])
 
-  // Only fetch once when component mounts
+  // Fetch preview when component mounts or format changes
   useEffect(() => {
     fetchPreview()
   }, [fetchPreview])
@@ -256,6 +321,28 @@ export const CreativeDisplay: React.FC<CreativeDisplayProps> = ({
       <div className="relative p-4">
         {/* Vertical accent line */}
         <div className="absolute left-0 top-0 w-1 h-full bg-[#4BF29C]/20"></div>
+        
+        {/* Format selector */}
+        <div className="mb-4 mx-auto" style={{ width: '313px' }}>
+          <select
+            value={adFormat}
+            onChange={(e) => setAdFormat(e.target.value)}
+            className="w-full bg-[#1A1D29] border border-[#2A2E3A] text-white p-2 rounded-md text-sm"
+            aria-label="Ad format"
+          >
+            {formats.map(format => (
+              <option key={format} value={format}>
+                {format === "INSTAGRAM_STANDARD" ? "Instagram Feed" :
+                 format === "INSTAGRAM_STORY" ? "Instagram Story" :
+                 format === "INSTAGRAM_EXPLORE_GRID_HOME" ? "Instagram Explore" :
+                 format === "INSTAGRAM_REELS" ? "Instagram Reels" :
+                 format === "FACEBOOK_PROFILE_FEED_MOBILE" ? "Facebook Feed" :
+                 format === "FACEBOOK_STORY_MOBILE" ? "Facebook Story" :
+                 format === "FACEBOOK_REELS_MOBILE" ? "Facebook Reels" : format}
+              </option>
+            ))}
+          </select>
+        </div>
         
         <div className="h-full w-[313px] mx-auto flex items-center justify-center bg-[#0F1117] rounded-md overflow-hidden min-h-[534px]">
           {isLoading ? (

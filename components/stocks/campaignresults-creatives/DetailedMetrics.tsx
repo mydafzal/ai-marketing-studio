@@ -269,14 +269,15 @@ export const DetailedMetrics: React.FC<DetailedMetricsProps> = ({
                   })}
                   <td className="p-5 text-center">
                     <div className="flex justify-center space-x-2">
-                      <Button
+                      {/* Edit button hidden until editing feature is ready */}
+                      {/* <Button
                         onClick={() => onViewDetails(cr)}
                         variant="outline"
                         size="sm"
                         className="h-9 px-2.5 bg-[#151925] border-[#2A2E3A] text-[#ADB0B8] hover:bg-[#1A1D29] hover:text-white"
                       >
                         <Edit2 className="size-4" />
-                      </Button>
+                      </Button> */}
                       <Button
                         onClick={() => onTogglePublish(cr.id)}
                         variant={cr.status === "ACTIVE" ? "destructive" : "default"}

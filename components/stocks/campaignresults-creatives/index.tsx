@@ -1024,9 +1024,10 @@ const AdCreativesComparison: React.FC<{ campaignId?: string, skipAiThoughts?: bo
             </div>
 
             <DialogFooter className="pt-4 border-t border-[#2A2E3A]">
-              <Button onClick={() => handleEdit(viewingCreative!)} className="mr-2 bg-[#4BF29C] hover:bg-[#4BF29C]/90 text-[#0A0C14]">
+              {/* Edit button hidden until editing feature is ready */}
+              {/* <Button onClick={() => handleEdit(viewingCreative!)} className="mr-2 bg-[#4BF29C] hover:bg-[#4BF29C]/90 text-[#0A0C14]">
                 Edit
-              </Button>
+              </Button> */}
               <Button onClick={() => setViewingCreative(null)} variant="outline" className="bg-[#151925] border-[#2A2E3A] text-[#ADB0B8] hover:bg-[#1A1D29] hover:text-white">
                 Close
               </Button>
