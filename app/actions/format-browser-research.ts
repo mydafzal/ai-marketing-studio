@@ -17,11 +17,13 @@ interface BrowserResearchResult {
  * 
  * @param researchQuery The original query that was researched
  * @param results The raw research results text
+ * @param enhancedInstructions The enhanced instructions that were used (optional)
  * @returns A natural language message summarizing the research findings
  */
 export async function formatBrowserResearch(
   researchQuery: string,
-  results: string
+  results: string,
+  enhancedInstructions?: string
 ): Promise<string> {
   try {
     const completion = await openai.chat.completions.create({
@@ -43,10 +45,13 @@ Guidelines:
           role: "user",
           content: `Please format these browser research results into a natural, conversational message:
 
-RESEARCH QUERY:
+ORIGINAL USER QUERY:
 ${researchQuery}
 
-RESEARCH RESULTS:
+${enhancedInstructions ? `ENHANCED INSTRUCTIONS USED:
+${enhancedInstructions}
+
+` : ''}RESEARCH RESULTS:
 ${results.slice(0, 7500)} ${results.length > 7500 ? '... [additional content truncated]' : ''}
 
 Create a message that sounds natural and helpful. Include the 3-5 most important findings as bullet points, followed by a brief summary paragraph. This message will be added directly to the chat as an AI assistant message.`

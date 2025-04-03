@@ -44,6 +44,8 @@ export function BrowserUse({ defaultPrompt = "", isInDialog = false }: BrowserUs
   const [taskResult, setTaskResult] = useState<string | null>(null)
   const [liveUrl, setLiveUrl] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [enhancedInstructions, setEnhancedInstructions] = useState<string | null>(null)
+  const [originalQuery, setOriginalQuery] = useState<string>("")
   
   // For polling task status
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null)
@@ -54,7 +56,13 @@ export function BrowserUse({ defaultPrompt = "", isInDialog = false }: BrowserUs
   // Validate task input
   useEffect(() => {
     setIsSubmittable(!!task.trim())
-  }, [task])
+    
+    // Reset enhanced instructions when the user changes the task
+    if (task !== originalQuery && originalQuery !== "") {
+      setEnhancedInstructions(null);
+      setOriginalQuery("");
+    }
+  }, [task, originalQuery])
   
   // Clean up polling on unmount
   useEffect(() => {
@@ -77,13 +85,39 @@ export function BrowserUse({ defaultPrompt = "", isInDialog = false }: BrowserUs
     setError(null)
     
     try {
+      // Save the original query
+      setOriginalQuery(task);
+      
+      // First, enhance the user query into detailed instructions
+      const { enhanceBrowserInstructions } = await import("@/app/actions/enhance-browser-instructions");
+      
+      // Show loading state while generating enhanced instructions
+      toast.loading("Preparing detailed research instructions...");
+      
+      // Get enhanced instructions
+      const instructionsText = await enhanceBrowserInstructions(task);
+      
+      // Save the enhanced instructions
+      setEnhancedInstructions(instructionsText);
+      
+      // Log the enhanced instructions for debugging
+      console.log("Enhanced instructions:", instructionsText);
+      
+      // Dismiss loading toast
+      toast.dismiss();
+      
+      // Show a success toast with the first few words of the enhanced instructions
+      const previewText = instructionsText.split(' ').slice(0, 10).join(' ') + '...';
+      toast.success(`Instructions enhanced: ${previewText}`);
+      
+      // Now send the enhanced instructions to the browser agent
       const response = await fetch('/api/browser-use', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          task,
+          task: instructionsText,
           save_browser_data: true,
         }),
       })
@@ -193,14 +227,19 @@ export function BrowserUse({ defaultPrompt = "", isInDialog = false }: BrowserUs
   // Submit the browser task result back to the main chat through an AI-formatted message
   const submitBrowserResultToChat = async (result: string) => {
     try {
-      // Extract the query we were researching
-      const researchQuery = task || "your topic";
+      // Use the original query and enhanced instructions if available
+      const researchQuery = originalQuery || task || "your topic";
       
       // Use the formatter just like the ad creative results
       const { formatBrowserResearch } = await import("@/app/actions/format-browser-research");
       
       // Format the message using our new action
-      const formattedMessage = await formatBrowserResearch(researchQuery, result);
+      // Pass both the original query and the enhanced instructions for context
+      const formattedMessage = await formatBrowserResearch(
+        researchQuery, 
+        result,
+        enhancedInstructions || undefined
+      );
       
       // Submit the message to chat using submitUserMessage (exactly like in campaignresultsnew)
       const resp = await submitUserMessage(formattedMessage, [], true);
@@ -300,6 +339,23 @@ export function BrowserUse({ defaultPrompt = "", isInDialog = false }: BrowserUs
           {error && (
             <div className="bg-red-900/20 border border-red-900/30 text-red-500 p-3 rounded-lg">
               {error}
+            </div>
+          )}
+          
+          {/* Enhanced Instructions Display */}
+          {enhancedInstructions && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <h3 className="text-[16px] font-medium text-text-white">
+                  Enhanced Research Instructions
+                </h3>
+                <div className="text-xs text-text-light-gray">
+                  Original query: "{originalQuery}"
+                </div>
+              </div>
+              <div className="bg-[#151925] p-3 rounded-lg border border-[#2A2E3A] text-sm text-text-white overflow-y-auto max-h-[200px]">
+                {enhancedInstructions}
+              </div>
             </div>
           )}
           
