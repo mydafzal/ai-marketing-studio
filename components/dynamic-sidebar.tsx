@@ -111,7 +111,9 @@ export function RestoreSidebarButton() {
   return (
     <Button
       onClick={handleRestore}
-      className="fixed bottom-24 right-6 z-40 rounded-full bg-blue-600 p-2 shadow-lg hover:bg-blue-700"
+      variant="outline"
+      size="icon"
+      className="fixed bottom-24 right-6 z-40 rounded-full bg-[#1A1D29] border-[#2A2E3A] hover:bg-[#212534] text-white shadow-lg transition-colors"
       title="Restore sidebar"
     >
       <Maximize2 className="h-5 w-5" />
