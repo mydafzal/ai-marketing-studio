@@ -1,5 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MediaItem, Gender, PreviewTab, AdPlacements, MasterFlowResponse } from '../types';
+import { Creative as LibCreative } from '@/lib/types';
+
+// Create a combined interface that includes properties from both Creative interfaces
+interface ExtendedCreative extends Partial<LibCreative> {
+  creative_id: string;
+  preview_uuid: string;
+  is_image?: boolean;
+  is_video?: boolean;
+  previews: any;
+  media_id?: string;
+  media_url?: string;
+  media_type?: 'video' | 'image';
+}
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -62,12 +75,12 @@ export function ReviewScreen({
   useEffect(() => {
     if (masterFlowData?.creatives_and_previews?.creatives && 
         masterFlowData.creatives_and_previews.creatives.length > 0) {
-      const creative = masterFlowData.creatives_and_previews.creatives[0];
+      const creative = masterFlowData.creatives_and_previews.creatives[0] as ExtendedCreative;
       if (creative.creative_id) {
         setCreativeId(creative.creative_id);
         
         // Set a default format based on the creative type
-        if (creative.media_type === 'video') {
+        if (creative.media_type === 'video' || creative.is_video) {
           setAdFormat("INSTAGRAM_STANDARD");
         } else {
           setAdFormat("INSTAGRAM_STANDARD");
@@ -384,15 +397,20 @@ export function ReviewScreen({
       return masterFlowData.creatives_and_previews.creatives;
     }
     
-    // If no creatives in master flow data, create mock creatives from media items
-    return mediaItems.map((item, index) => ({
-      creative_id: `media-${index}`,
-      preview_uuid: '',
-      media_type: item.type,
-      media_id: item.id,
-      media_url: item.url,
-      previews: []
-    }));
+    // If no creatives in master flow data, create mock creatives from media items using our ExtendedCreative interface
+    return mediaItems.map((item, index) => {
+      const isVideo = item.type === 'video';
+      return {
+        creative_id: `media-${index}`,
+        preview_uuid: '',
+        media_type: item.type,
+        is_video: isVideo,
+        is_image: !isVideo,
+        media_id: item.id,
+        media_url: item.url,
+        previews: []
+      } as ExtendedCreative;
+    });
   };
 
   // Get creatives for display
@@ -439,7 +457,9 @@ export function ReviewScreen({
                   <option value="INSTAGRAM_EXPLORE_GRID_HOME">Instagram Explore</option>
                   <option value="FACEBOOK_PROFILE_FEED_MOBILE">Facebook Feed</option>
                   <option value="FACEBOOK_STORY_MOBILE">Facebook Story</option>
-                  {masterFlowData?.creatives_and_previews?.creatives?.[0]?.media_type === 'video' && (
+                  {/* Using our ExtendedCreative interface */}
+                  {((masterFlowData?.creatives_and_previews?.creatives?.[0] as ExtendedCreative)?.media_type === 'video' || 
+                    (masterFlowData?.creatives_and_previews?.creatives?.[0] as ExtendedCreative)?.is_video) && (
                     <>
                       <option value="FACEBOOK_REELS_MOBILE">Facebook Reels</option>
                       <option value="INSTAGRAM_REELS">Instagram Reels</option>

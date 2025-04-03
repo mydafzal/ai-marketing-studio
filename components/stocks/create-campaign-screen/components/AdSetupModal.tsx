@@ -1,4 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Creative as LibCreative } from '@/lib/types';
+
+// Create a combined interface that includes properties from both Creative interfaces
+interface ExtendedCreative extends Partial<LibCreative> {
+  creative_id: string;
+  preview_uuid: string;
+  is_image?: boolean;
+  is_video?: boolean;
+  previews: any;
+  media_id?: string;
+  media_url?: string;
+  media_type?: 'video' | 'image';
+}
 import { 
   Eye, Target, MapPin, Globe, Users, Calendar, Info, Filter, Settings, 
   Layout, MessageSquare, FileText, Image, Cog, FolderHeart,
@@ -65,7 +78,9 @@ export function AdSetupModal({
       const creativeIndex = parseInt(activeCreativeTab.split('-')[1]) || 0;
       if (creatives[creativeIndex]) {
         // Set appropriate default format
-        if (creatives[creativeIndex].media_type === 'video') {
+        // Using our ExtendedCreative interface
+        const creative = creatives[creativeIndex] as ExtendedCreative;
+        if (creative.media_type === 'video' || creative.is_video) {
           setAdFormat("INSTAGRAM_STANDARD");
         } else {
           setAdFormat("INSTAGRAM_STANDARD");
@@ -749,7 +764,8 @@ export function AdSetupModal({
                             <h5 className="font-medium text-text-white mb-2">Media Type</h5>
                             <div className="bg-container-bg p-3 rounded-lg border border-border-dark">
                               <p className="text-text-white">
-                                {(creative as any).media_type === 'image' ? 'Image' : 'Video'}
+                                {/* Using ExtendedCreative interface */}
+                                {(creative as ExtendedCreative).media_type === 'image' || (creative as ExtendedCreative).is_image ? 'Image' : 'Video'}
                               </p>
                             </div>
                           </div>
@@ -771,7 +787,9 @@ export function AdSetupModal({
                                 <option value="INSTAGRAM_EXPLORE_GRID_HOME">Instagram Explore</option>
                                 <option value="FACEBOOK_PROFILE_FEED_MOBILE">Facebook Feed</option>
                                 <option value="FACEBOOK_STORY_MOBILE">Facebook Story</option>
-                                {creatives[parseInt(activeCreativeTab.split('-')[1])]?.media_type === 'video' && (
+                                {/* Using ExtendedCreative interface */}
+                                {((creatives[parseInt(activeCreativeTab.split('-')[1])] as ExtendedCreative)?.media_type === 'video' || 
+                                  (creatives[parseInt(activeCreativeTab.split('-')[1])] as ExtendedCreative)?.is_video) && (
                                   <>
                                     <option value="FACEBOOK_REELS_MOBILE">Facebook Reels</option>
                                     <option value="INSTAGRAM_REELS">Instagram Reels</option>
@@ -836,8 +854,9 @@ export function AdSetupModal({
                       <h5 className="font-medium text-text-white mb-2">Media Type</h5>
                       <div className="bg-container-bg p-3 rounded-lg border border-border-dark">
                         <p className="text-text-white">
-                          {creatives[0]?.media_type === 'image' || creatives[0]?.is_image ? 'Image' : 
-                           creatives[0]?.media_type === 'video' || creatives[0]?.is_video ? 'Video' : 'Media'}
+                          {/* Using ExtendedCreative interface */}
+                          {(creatives[0] as ExtendedCreative)?.media_type === 'image' || (creatives[0] as ExtendedCreative)?.is_image ? 'Image' : 
+                           (creatives[0] as ExtendedCreative)?.media_type === 'video' || (creatives[0] as ExtendedCreative)?.is_video ? 'Video' : 'Media'}
                         </p>
                       </div>
                     </div>
@@ -859,7 +878,8 @@ export function AdSetupModal({
                           <option value="INSTAGRAM_EXPLORE_GRID_HOME">Instagram Explore</option>
                           <option value="FACEBOOK_PROFILE_FEED_MOBILE">Facebook Feed</option>
                           <option value="FACEBOOK_STORY_MOBILE">Facebook Story</option>
-                          {creatives[0]?.media_type === 'video' && (
+                          {/* Using ExtendedCreative interface */}
+                          {((creatives[0] as ExtendedCreative)?.media_type === 'video' || (creatives[0] as ExtendedCreative)?.is_video) && (
                             <>
                               <option value="FACEBOOK_REELS_MOBILE">Facebook Reels</option>
                               <option value="INSTAGRAM_REELS">Instagram Reels</option>
