@@ -214,7 +214,7 @@ export function AdSetupModal({
           <body>
             <div class="preview-placeholder">
               <div class="ad-title">${masterFlowData?.ad_creative_text?.ad_creative_title || adHeadline || 'Ad Preview'}</div>
-              <div class="ad-text">${masterFlowData?.ad_creative_text?.ad_creative_description?.substring(0, 100) || adText?.substring(0, 100) || 'Ad description will appear here'} ${(masterFlowData?.ad_creative_text?.ad_creative_description?.length > 100 || adText?.length > 100) ? '...' : ''}</div>
+              <div class="ad-text">${masterFlowData?.ad_creative_text?.ad_creative_description?.substring(0, 100) || adText?.substring(0, 100) || 'Ad description will appear here'} ${(masterFlowData?.ad_creative_text?.ad_creative_description?.length ?? 0) > 100 || (adText?.length ?? 0) > 100 ? '...' : ''}</div>
             </div>
           </body>
         </html>
