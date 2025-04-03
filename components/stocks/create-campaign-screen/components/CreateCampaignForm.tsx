@@ -205,7 +205,7 @@ export function CreateCampaignForm() {
           userData.account.locations.length > 0) {
         
         // Validate that location data has proper country information
-        const validLocations = userData.account.locations.filter(loc => 
+        const validLocations = userData.account.locations.filter((loc: any) => 
           loc && 
           loc.country && 
           typeof loc.country === 'object' &&
@@ -264,13 +264,12 @@ export function CreateCampaignForm() {
       if (locationData && locationData.length > 0) {
         // Make sure all locations are included, even if they're from the same country
         console.log('📍 Locations count check:', locationData.length);
-        
         // Log detailed location structure for each entry
-        locationData.forEach((loc, index) => {
+        locationData.forEach((loc: any, index: number) => {
           console.log(`📍 Location ${index + 1}:`, {
             'Country': loc.country?.name,
-            'Regions': loc.regions?.map(r => r.name),
-            'Has Cities': loc.regions?.some(r => r.cities?.length > 0)
+            'Regions': loc.regions?.map((r: any) => r.name),
+            'Has Cities': loc.regions?.some((r: any) => r.cities?.length > 0)
           });
         });
       }
