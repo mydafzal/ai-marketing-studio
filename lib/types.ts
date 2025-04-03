@@ -219,6 +219,15 @@ export interface AdCreative {
   }
 }
 
+export interface Creative {
+  creative_id: string;
+  preview_uuid: string;
+  media_type: "video" | "image";
+  media_id: string;
+  media_url: string;
+  previews: never[];
+}
+
 export interface QuestionOption {
   value: string
   label: string

@@ -61,6 +61,8 @@ module.exports = {
   experimental: {
     serverActions: {
       bodySizeLimit: '8mb' // Increased limit for image data
-    }
+    },
+    // Add these settings from the previous api config
+    serverComponentsExternalPackages: []
   }
 }

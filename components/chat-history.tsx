@@ -6,6 +6,9 @@ import { buttonVariants } from '@/components/ui/button'
 import { IconPlus } from '@/components/ui/icons'
 import { MessageSquarePlus, History } from 'lucide-react'
 
+// Import the client-side header component
+import { ChatHistoryHeader } from '@/components/chat-history-header'
+
 interface ChatHistoryProps {
   userId?: string
 }
@@ -29,12 +32,9 @@ function ChatHistorySkeleton() {
 function ChatHistoryContent({ userId }: { userId?: string }) {
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center gap-2 px-6 py-4 border-b border-[#2A2E3A]">
-        <History className="size-5 text-[#8A8F99]" />
-        <h2 className="text-base font-semibold text-white">
-          Chat History
-        </h2>
-      </div>
+      {/* Use the client component for the header */}
+      <ChatHistoryHeader />
+      
       <div className="p-3">
         <Link
           href="/"

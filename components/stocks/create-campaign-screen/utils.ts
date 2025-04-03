@@ -9,27 +9,15 @@ export const calculateAspectRatio = (file: File): Promise<AspectRatio> => {
       const height = img.height;
       const ratio = width / height;
       
-      // Determine which aspect ratio the image is closest to
-      if (ratio > 0.9 && ratio < 1.1) {
-        resolve('1:1'); // Square
-      } else if (ratio > 1.7 && ratio < 1.8) {
-        resolve('16:9'); // Landscape wide
-      } else if (ratio > 0.55 && ratio < 0.6) {
-        resolve('9:16'); // Portrait tall
-      } else if (ratio > 1.3 && ratio < 1.35) {
-        resolve('4:3'); // Standard landscape
-      } else if (ratio > 0.74 && ratio < 0.76) {
-        resolve('3:4'); // Standard portrait
-      } else if (ratio > 0.65 && ratio < 0.68) {
-        resolve('2:3'); // Portrait
-      } else if (ratio > 1.45 && ratio < 1.55) {
-        resolve('3:2'); // Landscape
-      } else if (ratio <= 0.65) {
-        // Default to 9:16 for very tall images
-        resolve('9:16');
+      // Only categorize images as either 9:16 or 1:1 as required by Facebook
+      // Images close to 9:16 ratio (0.5625) should be categorized as 9:16
+      // All other images should be categorized as 1:1
+      if (ratio > 0.53 && ratio < 0.6) {
+        console.log('📏 Image categorized as 9:16 with ratio:', ratio);
+        resolve('9:16'); // Portrait tall (9:16)
       } else {
-        // Default to 16:9 for very wide images
-        resolve('16:9');
+        console.log('📏 Image categorized as 1:1 with ratio:', ratio);
+        resolve('1:1'); // All other ratios use 1:1
       }
     };
     img.src = URL.createObjectURL(file);
@@ -48,27 +36,15 @@ export const calculateVideoAspectRatio = (file: File): Promise<AspectRatio> => {
       const height = video.videoHeight;
       const ratio = width / height;
       
-      // Same aspect ratio logic as images
-      if (ratio > 0.9 && ratio < 1.1) {
-        resolve('1:1'); // Square
-      } else if (ratio > 1.7 && ratio < 1.8) {
-        resolve('16:9'); // Landscape wide
-      } else if (ratio > 0.55 && ratio < 0.6) {
-        resolve('9:16'); // Portrait tall
-      } else if (ratio > 1.3 && ratio < 1.35) {
-        resolve('4:3'); // Standard landscape
-      } else if (ratio > 0.74 && ratio < 0.76) {
-        resolve('3:4'); // Standard portrait
-      } else if (ratio > 0.65 && ratio < 0.68) {
-        resolve('2:3'); // Portrait
-      } else if (ratio > 1.45 && ratio < 1.55) {
-        resolve('3:2'); // Landscape
-      } else if (ratio <= 0.65) {
-        // Default to 9:16 for very tall videos
-        resolve('9:16');
+      // Only categorize videos as either 9:16 or 1:1 as required by Facebook
+      // Videos close to 9:16 ratio (0.5625) should be categorized as 9:16
+      // All other videos should be categorized as 1:1
+      if (ratio > 0.53 && ratio < 0.6) {
+        console.log('📏 Video categorized as 9:16 with ratio:', ratio);
+        resolve('9:16'); // Portrait tall (9:16)
       } else {
-        // Default to 16:9 for very wide videos
-        resolve('16:9');
+        console.log('📏 Video categorized as 1:1 with ratio:', ratio);
+        resolve('1:1'); // All other ratios use 1:1
       }
     };
     
@@ -85,3 +61,68 @@ export const loadingSteps = [
   "Optimizing creative elements...",
   "Finalizing campaign settings..."
 ];
+
+export const initializeApiCallSteps = [
+  {
+    label: "Initializing campaign flow...",
+    endpoint: "api/master-flow-initiate-process"
+  },
+  {
+    label: "Analyzing your website...",
+    endpoint: "api/analyze/website"
+  },
+  {
+    label: "Generating ad text suggestions...",
+    endpoint: "api/generate/ad_text"
+  },
+  {
+    label: "Researching audience targeting...",
+    endpoint: "api/research/audience"
+  },
+  {
+    label: "Processing media assets...",
+    endpoint: "api/process/media"
+  },
+  {
+    label: "Creating demographic targeting...",
+    endpoint: "api/create/targeting"
+  },
+  {
+    label: "Preparing campaign structure...",
+    endpoint: "api/prepare/campaign"
+  }
+];
+
+export const launchApiCallSteps = [
+  {
+    label: "Setting up campaign...",
+    endpoint: "api/campaign/create"
+  },
+  {
+    label: "Creating ad set with targeting...",
+    endpoint: "api/adset/create"
+  },
+  {
+    label: "Building creative content...",
+    endpoint: "api/adcreative/create"
+  },
+  {
+    label: "Configuring ad placement...",
+    endpoint: "api/ad/create"
+  },
+  {
+    label: "Optimizing audience reach...",
+    endpoint: "api/audience/update"
+  },
+  {
+    label: "Setting up lead form...",
+    endpoint: "api/leadform/create"
+  },
+  {
+    label: "Finalizing and launching campaign...",
+    endpoint: "api/fasty-bot/proxy-finalize-campaign"
+  }
+];
+
+// For backward compatibility
+export const apiCallSteps = initializeApiCallSteps;

@@ -57,7 +57,7 @@ export class ActionUIManager {
         let textNode: React.ReactNode;
 
         const result = await streamUI({
-            model: openai('gpt-4'),
+            model: openai('gpt-4') as any,
             initial: <BotMessage content="..." />,
             messages: [
                 ...this.aiState.get().messages.map((message: Message) => ({

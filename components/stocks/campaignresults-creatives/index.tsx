@@ -22,7 +22,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
-import { Award, ChevronLeft, ChevronRight, ThumbsUp, Eye as EyeIcon, Clock, DollarSign, Target, Brain, Users, Sparkles, BarChart3, Zap } from "lucide-react"
+import { Award, ChevronLeft, ChevronRight, ThumbsUp, Eye, Clock, DollarSign, Target, Brain, Users, Sparkles, BarChart3, Zap } from "lucide-react"
 import { CampaignContext } from "@/components/contexts/campaign-context"
 import { VideoPlayer } from "@/components/stocks/video-player"
 
@@ -37,7 +37,15 @@ import { getAllAdMetricsByCampaignId } from "@/lib/api/fasty-bot/get-all-ad-metr
 import { AdPreview } from "./AdPreview"
 import { CreativeDisplay } from "./CreativeDisplay"
 import { EnhancedMetricItem } from "./EnhancedMetricItem"
-import { AdCreative, RawCreative, getPerformanceScore, IMAGE_AD_FORMATS, VIDEO_AD_FORMATS, AD_FORMAT_LABELS } from "./types"
+import { 
+  AdCreative, 
+  RawCreative, 
+  getPerformanceScore, 
+  getCombinedMetrics,
+  IMAGE_AD_FORMATS, 
+  VIDEO_AD_FORMATS, 
+  AD_FORMAT_LABELS 
+} from "./types"
 
 const FB_API_KEY = process.env.NEXT_PUBLIC_FB_API_KEY || ""
 
@@ -332,6 +340,7 @@ const AdCreativesComparison: React.FC<{ campaignId?: string, skipAiThoughts?: bo
 
   // 5) Slider logic
   const [sliderIndex, setSliderIndex] = useState(0)
+  const [metricSection, setMetricSection] = useState(0) // Combined metrics section state 
   const chunkedCreatives = useMemo(() => {
     const sorted = [...adCreatives].sort((a, b) => getPerformanceScore(b) - getPerformanceScore(a))
     const finalChunks: AdCreative[][] = []
@@ -544,359 +553,564 @@ const AdCreativesComparison: React.FC<{ campaignId?: string, skipAiThoughts?: bo
         )}
 
         {adCreatives.length > 0 && !error && (
-          <>
-            <div className="mb-6 flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <Button
-                  onClick={handlePrev}
-                  variant="outline"
-                  size="sm"
-                  className="size-10 flex items-center justify-center rounded-full border-[#2A2E3A] p-0 bg-[#151925] hover:bg-[#1A1D29] text-white"
-                  disabled={sliderIndex === 0}
-                >
-                  <ChevronLeft className="size-5" />
-                </Button>
-                <div className="text-sm text-[#8A8F99]">
-                  Page {sliderIndex + 1} of {chunkedCreatives.length}
-                </div>
-                <Button
-                  onClick={handleNext}
-                  variant="outline"
-                  size="sm"
-                  className="size-10 flex items-center justify-center rounded-full border-[#2A2E3A] p-0 bg-[#151925] hover:bg-[#1A1D29] text-white"
-                  disabled={sliderIndex === chunkedCreatives.length - 1}
-                >
-                  <ChevronRight className="size-5" />
-                </Button>
-              </div>
-
-              {/* Pagination Dots */}
-              <div className="flex space-x-1">
-                {chunkedCreatives.map((_, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setSliderIndex(idx)}
-                    className={`size-2 rounded-full ${
-                      idx === sliderIndex
-                        ? "bg-[#4BF29C]"
-                        : "bg-[#2A2E3A] hover:bg-[#1A1D29]"
-                    }`}
-                    aria-label={`Go to page ${idx + 1}`}
-                  />
-                ))}
-              </div>
-            </div>
-
-            <div className="relative w-full overflow-hidden">
-              <div
-                className="flex transition-transform duration-300"
-                style={{ transform: `translateX(-${sliderIndex * 100}%)` }}
-              >
-                {chunkedCreatives.map((single, idx) => (
-                  <div
-                    key={idx}
-                    className="flex w-full shrink-0 grow-0 justify-center"
-                  >
-                    {single.map((creative) => {
-                      const sortedOverall = [...adCreatives].sort(
-                        (a, b) => getPerformanceScore(b) - getPerformanceScore(a)
-                      )
-                      const topPerformer = sortedOverall[0]?.id
-                      const secondBest = sortedOverall[1]?.id
-                      return (
-                        <CreativeDisplay
-                          key={creative.id}
-                          creative={creative}
-                          isTopPerformer={creative.id === topPerformer}
-                          isSecondBest={creative.id === secondBest}
-                          onViewDetails={() => handleViewDetails(creative)}
-                          onTogglePublish={() => togglePublish(creative.id)}
-                        />
-                      )
-                    })}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </>
-        )}
-      </main>
-
-      {/* Details Dialog */}
-      <Dialog
-        open={!!viewingCreative}
-        onOpenChange={(open) => {
-          if (!open) {
-            setViewingCreative(null)
-          }
-        }}
-      >
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-[#0A0C14] border-[#2A2E3A] text-white">
-          <DialogHeader>
-            <DialogTitle className="text-xl">Creative Details</DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-4 py-4">
-            <Tabs defaultValue="preview" className="w-full">
-              <TabsList className="w-full bg-[#151925] text-[#8A8F99]">
-                <TabsTrigger value="preview" className="data-[state=active]:bg-[#1A1D29] data-[state=active]:text-white">Ad Preview</TabsTrigger>
-                <TabsTrigger value="metrics" className="data-[state=active]:bg-[#1A1D29] data-[state=active]:text-white">Metrics</TabsTrigger>
-                <TabsTrigger value="conversions" className="data-[state=active]:bg-[#1A1D29] data-[state=active]:text-white">Conversion Data</TabsTrigger>
+          <div className="pt-4 pb-8">
+            <Tabs defaultValue="individual" className="w-full">
+              <TabsList className="w-full mb-6 bg-[#151925] text-[#8A8F99]">
+                <TabsTrigger value="individual" className="data-[state=active]:bg-[#1A1D29] data-[state=active]:text-white">Individual Creatives</TabsTrigger>
+                <TabsTrigger value="combined" className="data-[state=active]:bg-[#1A1D29] data-[state=active]:text-white">Combined Campaign Results</TabsTrigger>
               </TabsList>
-
-              <TabsContent value="preview" className="pt-4">
-                {viewingCreative && (
-                  <>
-                    {/* Format selector moved inside preview tab */}
-                    <div className="w-full mb-4">
-                      <p className="text-sm font-medium text-[#ADB0B8] mb-1">Preview Format</p>
-                      <Select 
-                        value={adFormat} 
-                        onValueChange={setAdFormat}
-                      >
-                        <SelectTrigger className="w-full bg-[#151925] border-[#2A2E3A] text-[#ADB0B8]">
-                          <SelectValue placeholder="Select format" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-[#151925] border-[#2A2E3A] text-[#ADB0B8]">
-                          {(viewingCreative?.type === 'video' ? VIDEO_AD_FORMATS : IMAGE_AD_FORMATS).map((format) => (
-                            <SelectItem key={format} value={format}>
-                              {AD_FORMAT_LABELS[format as keyof typeof AD_FORMAT_LABELS]}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+              
+              <TabsContent value="individual" className="mt-0">
+                {/* Original Individual Creatives Content */}
+                <div className="mb-6 flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <Button
+                      onClick={handlePrev}
+                      variant="outline"
+                      size="sm"
+                      className="size-10 flex items-center justify-center rounded-full border-[#2A2E3A] p-0 bg-[#151925] hover:bg-[#1A1D29] text-white"
+                      disabled={sliderIndex === 0}
+                    >
+                      <ChevronLeft className="size-5" />
+                    </Button>
+                    <div className="text-sm text-[#8A8F99]">
+                      Page {sliderIndex + 1} of {chunkedCreatives.length}
                     </div>
-                    
-                    <AdPreview
-                      creativeId={viewingCreative.id}
-                      type={viewingCreative.type}
-                      adFormat={adFormat}
-                    />
-                  </>
-                )}
+                    <Button
+                      onClick={handleNext}
+                      variant="outline"
+                      size="sm"
+                      className="size-10 flex items-center justify-center rounded-full border-[#2A2E3A] p-0 bg-[#151925] hover:bg-[#1A1D29] text-white"
+                      disabled={sliderIndex === chunkedCreatives.length - 1}
+                    >
+                      <ChevronRight className="size-5" />
+                    </Button>
+                  </div>
+
+                  {/* Pagination Dots */}
+                  <div className="flex space-x-1">
+                    {chunkedCreatives.map((_, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setSliderIndex(idx)}
+                        className={`size-2 rounded-full ${
+                          idx === sliderIndex
+                            ? "bg-[#4BF29C]"
+                            : "bg-[#2A2E3A] hover:bg-[#1A1D29]"
+                        }`}
+                        aria-label={`Go to page ${idx + 1}`}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="relative w-full overflow-hidden">
+                  <div
+                    className="flex transition-transform duration-300"
+                    style={{ transform: `translateX(-${sliderIndex * 100}%)` }}
+                  >
+                    {chunkedCreatives.map((single, idx) => (
+                      <div
+                        key={idx}
+                        className="flex w-full shrink-0 grow-0 justify-center"
+                      >
+                        {single.map((creative) => {
+                          const sortedOverall = [...adCreatives].sort(
+                            (a, b) => getPerformanceScore(b) - getPerformanceScore(a)
+                          )
+                          const topPerformer = sortedOverall[0]?.id
+                          const secondBest = sortedOverall[1]?.id
+                          return (
+                            <CreativeDisplay
+                              key={creative.id}
+                              creative={creative}
+                              isTopPerformer={creative.id === topPerformer}
+                              isSecondBest={creative.id === secondBest}
+                              onViewDetails={() => handleViewDetails(creative)}
+                              onTogglePublish={() => togglePublish(creative.id)}
+                            />
+                          )
+                        })}
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </TabsContent>
               
-              {/* METRICS TAB - All metrics moved here from the main card */}
-              <TabsContent value="metrics" className="pt-4">
-                {viewingCreative && (
-                  <div className="grid grid-cols-2 gap-4">
-                    <EnhancedMetricItem
-                      icon={<EyeIcon className="size-4 text-[#4AE04A]" />}
-                      label="Impressions"
-                      value={viewingCreative.metrics.impressions.toLocaleString()}
-                      percent={12}
-                      miniChart="sparkline"
-                    />
-                    <EnhancedMetricItem
-                      icon={<ThumbsUp className="size-4 text-[#4AE04A]" />}
-                      label="Engagement"
-                      value={viewingCreative.metrics.engagement.toLocaleString()}
-                      percent={8}
-                      miniChart="bar"
-                      isPositive
-                    />
-                    <EnhancedMetricItem
-                      icon={<Clock className="size-4 text-[#4AE04A]" />}
-                      label="Watch Time (s)"
-                      value={viewingCreative.metrics.watchTime.toFixed(1)}
-                      percent={-5}
-                      miniChart="area"
-                      isPositive={false}
-                    />
-                    <EnhancedMetricItem
-                      icon={<DollarSign className="size-4 text-[#4AE04A]" />}
-                      label="CPC"
-                      value={`$${viewingCreative.metrics.costPerClick.toFixed(2)}`}
-                      percent={-3}
-                      miniChart="line"
-                      isPositive
-                    />
-                    <EnhancedMetricItem
-                      icon={<Target className="size-4 text-[#4AE04A]" />}
-                      label="Conversions / Leads"
-                      value={`${viewingCreative.metrics.conversions}/${viewingCreative.metrics.leads}`}
-                      percent={7}
-                      miniChart="bar"
-                      isPositive
-                    />
-                    <div className="rounded-lg bg-[#151925] p-3 shadow-sm border border-[#2A2E3A]">
-                      <h4 className="text-sm font-medium text-[#ADB0B8]">
-                        Reach
-                      </h4>
-                      <p className="text-2xl font-bold text-white">
-                        {viewingCreative.metrics.reach.toLocaleString()}
-                      </p>
+              <TabsContent value="combined" className="mt-0">
+                <div className="rounded-lg bg-gradient-to-r from-[#151925] to-[#1A1D29] p-6 shadow-lg border border-[#2A2E3A]">
+                  <div className="mb-6 flex items-center">
+                    <div className="mr-4 flex h-14 w-14 items-center justify-center rounded-lg bg-[#4BF29C]/15">
+                      <BarChart3 className="size-7 text-[#4BF29C]" />
                     </div>
-                    <div className="rounded-lg bg-[#151925] p-3 shadow-sm border border-[#2A2E3A]">
-                      <h4 className="text-sm font-medium text-[#ADB0B8]">
-                        Frequency
-                      </h4>
-                      <p className="text-2xl font-bold text-white">
-                        {viewingCreative.metrics.frequency.toFixed(2)}
-                      </p>
-                    </div>
-                    <div className="rounded-lg bg-[#151925] p-3 shadow-sm border border-[#2A2E3A]">
-                      <h4 className="text-sm font-medium text-[#ADB0B8]">
-                        Unique Clicks
-                      </h4>
-                      <p className="text-2xl font-bold text-white">
-                        {viewingCreative.metrics.uniqueClicks.toLocaleString()}
-                      </p>
+                    <div className="flex flex-1 justify-between items-center">
+                      <div>
+                        <h2 className="text-xl font-bold text-white">Campaign Overview</h2>
+                        <p className="text-sm text-[#ADB0B8]">
+                          Combined results for all {adCreatives.length} creatives
+                        </p>
+                      </div>
+                      
+                      {/* Metrics section navigation */}
+                      {adCreatives.length > 0 && (
+                        <div className="flex items-center gap-3">
+                          <div className="text-sm text-[#8A8F99]">
+                            {["Performance Metrics", "Conversion Metrics"][metricSection]} ({metricSection + 1}/2)
+                          </div>
+                          <Button
+                            onClick={() => setMetricSection(prev => (prev > 0 ? prev - 1 : prev))}
+                            variant="outline"
+                            size="sm"
+                            className="size-9 flex items-center justify-center rounded-full border-[#2A2E3A] p-0 bg-[#151925] hover:bg-[#1A1D29] text-white"
+                            disabled={metricSection === 0}
+                          >
+                            <ChevronLeft className="size-5" />
+                          </Button>
+                          <Button
+                            onClick={() => setMetricSection(prev => (prev < 1 ? prev + 1 : prev))}
+                            variant="outline"
+                            size="sm"
+                            className="size-9 flex items-center justify-center rounded-full border-[#2A2E3A] p-0 bg-[#151925] hover:bg-[#1A1D29] text-white"
+                            disabled={metricSection === 1}
+                          >
+                            <ChevronRight className="size-5" />
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </div>
-                )}
-              </TabsContent>
-
-              {/* CONVERSIONS TAB */}
-              <TabsContent value="conversions" className="pt-4">
-                {viewingCreative && (
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="rounded-lg bg-[#151925] p-3 shadow-sm border border-[#2A2E3A]">
-                      <h4 className="text-sm font-medium text-[#ADB0B8]">
-                        Conversions
-                      </h4>
-                      <p className="text-2xl font-bold text-white">
-                        {viewingCreative.metrics.conversions.toLocaleString()}
-                      </p>
-                    </div>
-
-                    <div className="rounded-lg bg-[#151925] p-3 shadow-sm border border-[#2A2E3A]">
-                      <h4 className="text-sm font-medium text-[#ADB0B8]">
-                        Leads
-                      </h4>
-                      <p className="text-2xl font-bold text-white">
-                        {viewingCreative.metrics.leads.toLocaleString()}
-                      </p>
-                    </div>
-
-                    <div className="rounded-lg bg-[#151925] p-3 shadow-sm border border-[#2A2E3A]">
-                      <h4 className="text-sm font-medium text-[#ADB0B8]">
-                        Cost Per Lead
-                      </h4>
-                      <p className="text-2xl font-bold text-white">
-                        ${viewingCreative.metrics.costPerLead.toFixed(2)}
-                      </p>
-                    </div>
-
-                    <div className="rounded-lg bg-[#151925] p-3 shadow-sm border border-[#2A2E3A]">
-                      <h4 className="text-sm font-medium text-[#ADB0B8]">
-                        Cost Per Conversion
-                      </h4>
-                      <p className="text-2xl font-bold text-white">
-                        ${viewingCreative.metrics.costPerConversion.toFixed(2)}
-                      </p>
-                    </div>
-
-                    <div className="rounded-lg bg-[#151925] p-3 shadow-sm border border-[#2A2E3A]">
-                      <h4 className="text-sm font-medium text-[#ADB0B8]">
-                        Conversion Rate
-                      </h4>
-                      <p className="text-2xl font-bold text-white">
-                        {viewingCreative.metrics.conversionRate.toFixed(2)}%
-                      </p>
-                    </div>
-
-                    <div className="rounded-lg bg-[#151925] p-3 shadow-sm border border-[#2A2E3A]">
-                      <h4 className="text-sm font-medium text-[#ADB0B8]">
-                        Total Spend
-                      </h4>
-                      <p className="text-2xl font-bold text-white">
-                        ${viewingCreative.metrics.spend.toFixed(2)}
-                      </p>
-                    </div>
-                  </div>
-                )}
+                  
+                  {adCreatives.length > 0 && (
+                    <>
+                      {/* Combined metrics display */}
+                      {(() => {
+                        const combinedMetrics = getCombinedMetrics(adCreatives);
+                        
+                        // Performance Metrics Section
+                        if (metricSection === 0) {
+                          return (
+                            <div className="rounded-lg bg-[#0A0C14] p-5 shadow-md border border-[#2A2E3A]">
+                              <h3 className="mb-4 text-lg font-semibold text-white">Performance Metrics</h3>
+                              <div className="grid grid-cols-2 gap-4">
+                                <EnhancedMetricItem
+                                  icon={<Eye className="size-4 text-[#4AE04A]" />}
+                                  label="Impressions"
+                                  value={combinedMetrics.impressions.toLocaleString()}
+                                  percent={10}
+                                  miniChart="sparkline"
+                                  isPositive
+                                />
+                                <EnhancedMetricItem
+                                  icon={<Users className="size-4 text-[#4AE04A]" />}
+                                  label="Reach"
+                                  value={combinedMetrics.reach.toLocaleString()}
+                                  percent={8}
+                                  miniChart="area"
+                                  isPositive
+                                />
+                                <div className="rounded-lg bg-[#151925] p-3 shadow-sm border border-[#2A2E3A]">
+                                  <h4 className="text-sm font-medium text-[#ADB0B8]">
+                                    Average Frequency
+                                  </h4>
+                                  <p className="text-2xl font-bold text-white">
+                                    {combinedMetrics.frequency.toFixed(2)}
+                                  </p>
+                                </div>
+                                <div className="rounded-lg bg-[#151925] p-3 shadow-sm border border-[#2A2E3A]">
+                                  <h4 className="text-sm font-medium text-[#ADB0B8]">
+                                    Clicks
+                                  </h4>
+                                  <p className="text-2xl font-bold text-white">
+                                    {combinedMetrics.inlineLinkClicks.toLocaleString()}
+                                  </p>
+                                </div>
+                                <div className="rounded-lg bg-[#151925] p-3 shadow-sm border border-[#2A2E3A]">
+                                  <h4 className="text-sm font-medium text-[#ADB0B8]">
+                                    Average CTR
+                                  </h4>
+                                  <p className="text-2xl font-bold text-white">
+                                    {combinedMetrics.clickThroughRate.toFixed(2)}%
+                                  </p>
+                                </div>
+                                <div className="rounded-lg bg-[#151925] p-3 shadow-sm border border-[#2A2E3A]">
+                                  <h4 className="text-sm font-medium text-[#ADB0B8]">
+                                    Cost Per Click
+                                  </h4>
+                                  <p className="text-2xl font-bold text-white">
+                                    ${combinedMetrics.costPerClick.toFixed(2)}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="mt-6 flex justify-end">
+                                <Button
+                                  onClick={() => setMetricSection(1)}
+                                  variant="outline"
+                                  size="sm"
+                                  className="flex items-center justify-center gap-2 rounded-full border-[#2A2E3A] bg-[#151925] hover:bg-[#1A1D29] text-white"
+                                >
+                                  Next: Conversion Metrics <ChevronRight className="size-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          );
+                        }
+                          
+                        // Conversion Metrics Section
+                        if (metricSection === 1) {
+                          return (
+                            <div className="rounded-lg bg-[#0A0C14] p-5 shadow-md border border-[#2A2E3A]">
+                              <h3 className="mb-4 text-lg font-semibold text-white">Conversion Metrics</h3>
+                              <div className="grid grid-cols-2 gap-4">
+                                <EnhancedMetricItem
+                                  icon={<Target className="size-4 text-[#4AE04A]" />}
+                                  label="Total Leads"
+                                  value={combinedMetrics.leads.toLocaleString()}
+                                  percent={7}
+                                  miniChart="bar"
+                                  isPositive
+                                />
+                                <EnhancedMetricItem
+                                  icon={<DollarSign className="size-4 text-[#4AE04A]" />}
+                                  label="Total Spend"
+                                  value={`$${combinedMetrics.spend.toFixed(2)}`}
+                                  percent={5}
+                                  miniChart="line"
+                                  isPositive={false}
+                                />
+                                <div className="rounded-lg bg-[#151925] p-3 shadow-sm border border-[#2A2E3A]">
+                                  <h4 className="text-sm font-medium text-[#ADB0B8]">
+                                    Conversions
+                                  </h4>
+                                  <p className="text-2xl font-bold text-white">
+                                    {combinedMetrics.conversions.toLocaleString()}
+                                  </p>
+                                </div>
+                                <div className="rounded-lg bg-[#151925] p-3 shadow-sm border border-[#2A2E3A]">
+                                  <h4 className="text-sm font-medium text-[#ADB0B8]">
+                                    Avg. Conversion Rate
+                                  </h4>
+                                  <p className="text-2xl font-bold text-white">
+                                    {combinedMetrics.conversionRate.toFixed(2)}%
+                                  </p>
+                                </div>
+                                <div className="rounded-lg bg-[#151925] p-3 shadow-sm border border-[#2A2E3A]">
+                                  <h4 className="text-sm font-medium text-[#ADB0B8]">
+                                    Cost Per Lead
+                                  </h4>
+                                  <p className="text-2xl font-bold text-white">
+                                    ${combinedMetrics.costPerLead.toFixed(2)}
+                                  </p>
+                                </div>
+                                <div className="rounded-lg bg-[#151925] p-3 shadow-sm border border-[#2A2E3A]">
+                                  <h4 className="text-sm font-medium text-[#ADB0B8]">
+                                    Cost Per Conversion
+                                  </h4>
+                                  <p className="text-2xl font-bold text-white">
+                                    ${combinedMetrics.costPerConversion.toFixed(2)}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="mt-6 flex justify-start">
+                                <Button
+                                  onClick={() => setMetricSection(0)}
+                                  variant="outline"
+                                  size="sm"
+                                  className="flex items-center justify-center gap-2 rounded-full border-[#2A2E3A] bg-[#151925] hover:bg-[#1A1D29] text-white"
+                                >
+                                  <ChevronLeft className="size-4" /> Back
+                                </Button>
+                              </div>
+                            </div>
+                          );
+                        }
+                        
+                        
+                        return null;
+                      })()}
+                    </>
+                  )}
+                </div>
               </TabsContent>
             </Tabs>
           </div>
+        )}
 
-          <DialogFooter className="pt-4 border-t border-[#2A2E3A]">
-            <Button onClick={() => handleEdit(viewingCreative!)} className="mr-2 bg-[#4BF29C] hover:bg-[#4BF29C]/90 text-[#0A0C14]">
-              Edit
-            </Button>
-            <Button onClick={() => setViewingCreative(null)} variant="outline" className="bg-[#151925] border-[#2A2E3A] text-[#ADB0B8] hover:bg-[#1A1D29] hover:text-white">
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        {/* Details Dialog */}
+        <Dialog
+          open={!!viewingCreative}
+          onOpenChange={(open) => {
+            if (!open) {
+              setViewingCreative(null)
+            }
+          }}
+        >
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-[#0A0C14] border-[#2A2E3A] text-white">
+            <DialogHeader>
+              <DialogTitle className="text-xl">Creative Details</DialogTitle>
+            </DialogHeader>
 
-      {/* Edit Dialog */}
-      <Dialog
-        open={!!editingCreative}
-        onOpenChange={(open) => {
-          if (!open) {
-            setEditingCreative(null)
-            setEditError(null)
-          }
-        }}
-      >
-        <DialogContent className="max-w-2xl bg-[#0A0C14] border-[#2A2E3A] text-white">
-          <DialogHeader>
-            <DialogTitle>Edit Creative</DialogTitle>
-          </DialogHeader>
+            <div className="space-y-4 py-4">
+              <Tabs defaultValue="preview" className="w-full">
+                <TabsList className="w-full bg-[#151925] text-[#8A8F99]">
+                  <TabsTrigger value="preview" className="data-[state=active]:bg-[#1A1D29] data-[state=active]:text-white">Ad Preview</TabsTrigger>
+                  <TabsTrigger value="metrics" className="data-[state=active]:bg-[#1A1D29] data-[state=active]:text-white">Metrics</TabsTrigger>
+                  <TabsTrigger value="conversions" className="data-[state=active]:bg-[#1A1D29] data-[state=active]:text-white">Conversion Data</TabsTrigger>
+                </TabsList>
 
-          <div className="space-y-4 py-4">
-            <div className="grid grid-cols-4 gap-4">
-              <div className="col-span-4">
-                <label
-                  htmlFor="editName"
-                  className="block text-sm font-medium text-[#ADB0B8]"
-                >
-                  Name
-                </label>
-                <Input
-                  id="editName"
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  className="mt-1 bg-[#151925] border-[#2A2E3A] text-white"
-                />
-              </div>
+                <TabsContent value="preview" className="pt-4">
+                  {viewingCreative && (
+                    <>
+                      {/* Format selector moved inside preview tab */}
+                      <div className="w-full mb-4">
+                        <p className="text-sm font-medium text-[#ADB0B8] mb-1">Preview Format</p>
+                        <Select 
+                          value={adFormat} 
+                          onValueChange={setAdFormat}
+                        >
+                          <SelectTrigger className="w-full bg-[#151925] border-[#2A2E3A] text-[#ADB0B8]">
+                            <SelectValue placeholder="Select format" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-[#151925] border-[#2A2E3A] text-[#ADB0B8]">
+                            {(viewingCreative?.type === 'video' ? VIDEO_AD_FORMATS : IMAGE_AD_FORMATS).map((format) => (
+                              <SelectItem key={format} value={format}>
+                                {AD_FORMAT_LABELS[format as keyof typeof AD_FORMAT_LABELS]}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <AdPreview
+                        creativeId={viewingCreative.id}
+                        type={viewingCreative.type}
+                        adFormat={adFormat}
+                      />
+                    </>
+                  )}
+                </TabsContent>
+                
+                {/* METRICS TAB - All metrics moved here from the main card */}
+                <TabsContent value="metrics" className="pt-4">
+                  {viewingCreative && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <EnhancedMetricItem
+                        icon={<Eye className="size-4 text-[#4AE04A]" />}
+                        label="Impressions"
+                        value={viewingCreative.metrics.impressions.toLocaleString()}
+                        percent={12}
+                        miniChart="sparkline"
+                      />
+                      <EnhancedMetricItem
+                        icon={<ThumbsUp className="size-4 text-[#4AE04A]" />}
+                        label="Engagement"
+                        value={viewingCreative.metrics.engagement.toLocaleString()}
+                        percent={8}
+                        miniChart="bar"
+                        isPositive
+                      />
+                      <EnhancedMetricItem
+                        icon={<Clock className="size-4 text-[#4AE04A]" />}
+                        label="Watch Time (s)"
+                        value={viewingCreative.metrics.watchTime.toFixed(1)}
+                        percent={-5}
+                        miniChart="area"
+                        isPositive={false}
+                      />
+                      <EnhancedMetricItem
+                        icon={<DollarSign className="size-4 text-[#4AE04A]" />}
+                        label="CPC"
+                        value={`$${viewingCreative.metrics.costPerClick.toFixed(2)}`}
+                        percent={-3}
+                        miniChart="line"
+                        isPositive
+                      />
+                      <EnhancedMetricItem
+                        icon={<Target className="size-4 text-[#4AE04A]" />}
+                        label="Conversions / Leads"
+                        value={`${viewingCreative.metrics.conversions}/${viewingCreative.metrics.leads}`}
+                        percent={7}
+                        miniChart="bar"
+                        isPositive
+                      />
+                      <div className="rounded-lg bg-[#151925] p-3 shadow-sm border border-[#2A2E3A]">
+                        <h4 className="text-sm font-medium text-[#ADB0B8]">
+                          Reach
+                        </h4>
+                        <p className="text-2xl font-bold text-white">
+                          {viewingCreative.metrics.reach.toLocaleString()}
+                        </p>
+                      </div>
+                      <div className="rounded-lg bg-[#151925] p-3 shadow-sm border border-[#2A2E3A]">
+                        <h4 className="text-sm font-medium text-[#ADB0B8]">
+                          Frequency
+                        </h4>
+                        <p className="text-2xl font-bold text-white">
+                          {viewingCreative.metrics.frequency.toFixed(2)}
+                        </p>
+                      </div>
+                      <div className="rounded-lg bg-[#151925] p-3 shadow-sm border border-[#2A2E3A]">
+                        <h4 className="text-sm font-medium text-[#ADB0B8]">
+                          Unique Clicks
+                        </h4>
+                        <p className="text-2xl font-bold text-white">
+                          {viewingCreative.metrics.uniqueClicks.toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </TabsContent>
 
-              <div className="col-span-4">
-                <label
-                  htmlFor="editMessage"
-                  className="block text-sm font-medium text-[#ADB0B8]"
-                >
-                  Message
-                </label>
-                <Textarea
-                  id="editMessage"
-                  value={editMessage}
-                  onChange={(e) => setEditMessage(e.target.value)}
-                  rows={4}
-                  className="mt-1 bg-[#151925] border-[#2A2E3A] text-white"
-                />
-              </div>
+                {/* CONVERSIONS TAB */}
+                <TabsContent value="conversions" className="pt-4">
+                  {viewingCreative && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="rounded-lg bg-[#151925] p-3 shadow-sm border border-[#2A2E3A]">
+                        <h4 className="text-sm font-medium text-[#ADB0B8]">
+                          Conversions
+                        </h4>
+                        <p className="text-2xl font-bold text-white">
+                          {viewingCreative.metrics.conversions.toLocaleString()}
+                        </p>
+                      </div>
+
+                      <div className="rounded-lg bg-[#151925] p-3 shadow-sm border border-[#2A2E3A]">
+                        <h4 className="text-sm font-medium text-[#ADB0B8]">
+                          Leads
+                        </h4>
+                        <p className="text-2xl font-bold text-white">
+                          {viewingCreative.metrics.leads.toLocaleString()}
+                        </p>
+                      </div>
+
+                      <div className="rounded-lg bg-[#151925] p-3 shadow-sm border border-[#2A2E3A]">
+                        <h4 className="text-sm font-medium text-[#ADB0B8]">
+                          Cost Per Lead
+                        </h4>
+                        <p className="text-2xl font-bold text-white">
+                          ${viewingCreative.metrics.costPerLead.toFixed(2)}
+                        </p>
+                      </div>
+
+                      <div className="rounded-lg bg-[#151925] p-3 shadow-sm border border-[#2A2E3A]">
+                        <h4 className="text-sm font-medium text-[#ADB0B8]">
+                          Cost Per Conversion
+                        </h4>
+                        <p className="text-2xl font-bold text-white">
+                          ${viewingCreative.metrics.costPerConversion.toFixed(2)}
+                        </p>
+                      </div>
+
+                      <div className="rounded-lg bg-[#151925] p-3 shadow-sm border border-[#2A2E3A]">
+                        <h4 className="text-sm font-medium text-[#ADB0B8]">
+                          Conversion Rate
+                        </h4>
+                        <p className="text-2xl font-bold text-white">
+                          {viewingCreative.metrics.conversionRate.toFixed(2)}%
+                        </p>
+                      </div>
+
+                      <div className="rounded-lg bg-[#151925] p-3 shadow-sm border border-[#2A2E3A]">
+                        <h4 className="text-sm font-medium text-[#ADB0B8]">
+                          Total Spend
+                        </h4>
+                        <p className="text-2xl font-bold text-white">
+                          ${viewingCreative.metrics.spend.toFixed(2)}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </TabsContent>
+              </Tabs>
             </div>
 
-            {editError && (
-              <div className="rounded-xl bg-[#FF7D5A]/10 p-4 border border-[#FF7D5A]/30">
-                <p className="text-sm text-[#FF7D5A]">{editError}</p>
-              </div>
-            )}
-          </div>
+            <DialogFooter className="pt-4 border-t border-[#2A2E3A]">
+              <Button onClick={() => handleEdit(viewingCreative!)} className="mr-2 bg-[#4BF29C] hover:bg-[#4BF29C]/90 text-[#0A0C14]">
+                Edit
+              </Button>
+              <Button onClick={() => setViewingCreative(null)} variant="outline" className="bg-[#151925] border-[#2A2E3A] text-[#ADB0B8] hover:bg-[#1A1D29] hover:text-white">
+                Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setEditingCreative(null)}
-              className="bg-[#151925] border-[#2A2E3A] text-[#ADB0B8] hover:bg-[#1A1D29] hover:text-white"
-            >
-              Cancel
-            </Button>
-            <Button 
-              type="button" 
-              onClick={handleSubmitEdit} 
-              disabled={isEditing}
-              className="bg-[#4BF29C] hover:bg-[#4BF29C]/90 text-[#0A0C14]"
-            >
-              {isEditing ? "Saving..." : "Save Changes"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        {/* Edit Dialog */}
+        <Dialog
+          open={!!editingCreative}
+          onOpenChange={(open) => {
+            if (!open) {
+              setEditingCreative(null)
+              setEditError(null)
+            }
+          }}
+        >
+          <DialogContent className="max-w-2xl bg-[#0A0C14] border-[#2A2E3A] text-white">
+            <DialogHeader>
+              <DialogTitle>Edit Creative</DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-4 py-4">
+              <div className="grid grid-cols-4 gap-4">
+                <div className="col-span-4">
+                  <label
+                    htmlFor="editName"
+                    className="block text-sm font-medium text-[#ADB0B8]"
+                  >
+                    Name
+                  </label>
+                  <Input
+                    id="editName"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="mt-1 bg-[#151925] border-[#2A2E3A] text-white"
+                  />
+                </div>
+
+                <div className="col-span-4">
+                  <label
+                    htmlFor="editMessage"
+                    className="block text-sm font-medium text-[#ADB0B8]"
+                  >
+                    Message
+                  </label>
+                  <Textarea
+                    id="editMessage"
+                    value={editMessage}
+                    onChange={(e) => setEditMessage(e.target.value)}
+                    rows={4}
+                    className="mt-1 bg-[#151925] border-[#2A2E3A] text-white"
+                  />
+                </div>
+              </div>
+
+              {editError && (
+                <div className="rounded-xl bg-[#FF7D5A]/10 p-4 border border-[#FF7D5A]/30">
+                  <p className="text-sm text-[#FF7D5A]">{editError}</p>
+                </div>
+              )}
+            </div>
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setEditingCreative(null)}
+                className="bg-[#151925] border-[#2A2E3A] text-[#ADB0B8] hover:bg-[#1A1D29] hover:text-white"
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="button" 
+                onClick={handleSubmitEdit} 
+                disabled={isEditing}
+                className="bg-[#4BF29C] hover:bg-[#4BF29C]/90 text-[#0A0C14]"
+              >
+                {isEditing ? "Saving..." : "Save Changes"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </main>
     </div>
   )
 }

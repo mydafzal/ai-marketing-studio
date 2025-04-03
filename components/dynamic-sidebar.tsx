@@ -3,11 +3,21 @@
 import React, { useEffect, useState } from 'react'
 import { useSidebarContent } from '@/components/contexts/sidebar-content-context'
 import { useActiveUI } from '@/components/stocks/active-ui-context'
-import { X } from 'lucide-react'
+import { X, Minimize2, Maximize2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { minimizeSidebar, restoreSidebar, hasMinimizedContent as checkMinimizedContent } from '@/lib/sidebar-content-manager'
 
 export function DynamicSidebar() {
-  const { content, isOpen, setIsOpen, title } = useSidebarContent()
+  const { 
+    content, 
+    isOpen, 
+    setIsOpen, 
+    title, 
+    isMinimized, 
+    setIsMinimized,
+    hasMinimizedContent,
+    setHasMinimizedContent
+  } = useSidebarContent()
   const { activeUI, clearActiveUI } = useActiveUI()
   const [shouldRender, setShouldRender] = useState(false)
   const [animationClass, setAnimationClass] = useState('')
@@ -29,6 +39,11 @@ export function DynamicSidebar() {
     }
   }, [effectiveIsOpen])
 
+  // Check if there's minimized content available
+  useEffect(() => {
+    setHasMinimizedContent(checkMinimizedContent())
+  }, [isMinimized, setHasMinimizedContent])
+
   if (!shouldRender) return null
 
   const handleClose = () => {
@@ -36,6 +51,14 @@ export function DynamicSidebar() {
       clearActiveUI()
     }
     setIsOpen(false)
+  }
+
+  const handleMinimize = () => {
+    if (effectiveContent) {
+      minimizeSidebar(effectiveContent, effectiveTitle)
+      setIsMinimized(true)
+      setIsOpen(false)
+    }
   }
 
   return (
@@ -46,17 +69,52 @@ export function DynamicSidebar() {
       <div className="flex h-full flex-col pointer-events-auto">
         <div className="flex items-center justify-between border-b border-[#2A2E3A] p-4">
           <h2 className="text-lg font-semibold text-white">{effectiveTitle}</h2>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={handleClose}
-            className="text-[#ADB0B8] hover:text-white hover:bg-[#151925] transition-colors"
-          >
-            <X className="h-5 w-5" />
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={handleMinimize}
+              className="text-[#ADB0B8] hover:text-white hover:bg-[#151925] transition-colors"
+              title="Minimize sidebar"
+            >
+              <Minimize2 className="h-4 w-4" />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={handleClose}
+              className="text-[#ADB0B8] hover:text-white hover:bg-[#151925] transition-colors"
+              title="Close sidebar"
+            >
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
         <div className="flex-1 overflow-y-auto p-4 bg-[#0A0C14]">{effectiveContent}</div>
       </div>
     </div>
+  )
+}
+
+// Restore button component that appears in chat when there's minimized content
+export function RestoreSidebarButton() {
+  const { setIsOpen, hasMinimizedContent, setIsMinimized } = useSidebarContent()
+
+  if (!hasMinimizedContent) return null
+
+  const handleRestore = () => {
+    restoreSidebar()
+    setIsMinimized(false)
+    setIsOpen(true)
+  }
+
+  return (
+    <Button
+      onClick={handleRestore}
+      className="fixed bottom-24 right-6 z-40 rounded-full bg-blue-600 p-2 shadow-lg hover:bg-blue-700"
+      title="Restore sidebar"
+    >
+      <Maximize2 className="h-5 w-5" />
+    </Button>
   )
 }

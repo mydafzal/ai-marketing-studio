@@ -3,7 +3,7 @@
 import * as React from 'react'
 
 import Textarea from 'react-textarea-autosize'
-import { ImagePart, TextPart, UserContent } from 'ai'
+import { ImagePart, TextPart, FilePart, UserContent } from 'ai'
 import chatToCampaignMapping from '@/lib/api/fasty-bot/helpers/campaign-id-list'
 import { Button } from '@/components/ui/button'
 import { IconArrowElbow, IconPlus, IconSpinner } from '@/components/ui/icons'
@@ -22,7 +22,7 @@ import { Message } from '@/lib/types'
 import { getMimeType } from '@/lib/utils'
 
 export interface PromtFormProps {
-  onSendMessage: (message: string, userContent?: (TextPart | ImagePart )[]) => Promise<void>
+  onSendMessage: (message: string, userContent?: (TextPart | ImagePart | FilePart)[]) => Promise<void>
 }
 const MAX_IMAGE_SIZE = 4 * 1024 * 1024;
 const MAX_VIDEO_SIZE = 1 * 1024 * 1024 * 1024;

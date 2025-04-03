@@ -9,6 +9,10 @@ interface SidebarContentContextProps {
   setIsOpen: (isOpen: boolean) => void
   title: string
   setTitle: (title: string) => void
+  isMinimized: boolean
+  setIsMinimized: (isMinimized: boolean) => void
+  hasMinimizedContent: boolean
+  setHasMinimizedContent: (hasMinimized: boolean) => void
 }
 
 const SidebarContentContext = createContext<SidebarContentContextProps | undefined>(undefined)
@@ -29,6 +33,8 @@ export function SidebarContentProvider({ children }: SidebarContentProviderProps
   const [content, setContent] = useState<ReactNode | null>(null)
   const [isOpen, setIsOpen] = useState(false)
   const [title, setTitle] = useState('Details')
+  const [isMinimized, setIsMinimized] = useState(false)
+  const [hasMinimizedContent, setHasMinimizedContent] = useState(false)
 
   return (
     <SidebarContentContext.Provider value={{ 
@@ -37,7 +43,11 @@ export function SidebarContentProvider({ children }: SidebarContentProviderProps
       isOpen, 
       setIsOpen,
       title,
-      setTitle
+      setTitle,
+      isMinimized,
+      setIsMinimized,
+      hasMinimizedContent,
+      setHasMinimizedContent
     }}>
       {children}
     </SidebarContentContext.Provider>

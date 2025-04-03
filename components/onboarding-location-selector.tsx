@@ -121,7 +121,10 @@ export default function OnboardingLocationSelector({
     debounce(async (index: number, regionId: string, searchTerm: string) => {
       setLoading(true)
       try {
+        console.log("[TEMPORARY DEBUG] Searching for city in region:", regionId, "with term:", searchTerm);
         const cities = await getCityList(regionId, searchTerm)
+        console.log("[TEMPORARY DEBUG] City search results:", cities?.length || 0, "cities found");
+        
         setSelectedGeoLocations((prev) =>
           prev.map((item, i) =>
             i === index
@@ -133,7 +136,7 @@ export default function OnboardingLocationSelector({
           )
         )
       } catch (error) {
-        console.error('Error fetching results:', error)
+        console.error('Error fetching city results:', error)
         setSelectedGeoLocations((prev) =>
           prev.map((item, i) =>
             i === index
@@ -355,6 +358,14 @@ export default function OnboardingLocationSelector({
             data: city 
           }))
         ];
+        
+        console.log("[TEMPORARY DEBUG] Search results:", {
+          term: term,
+          countriesFound: countryResponse?.data?.length || 0,
+          regionsFound: regionResponse?.data?.length || 0,
+          citiesFound: cityResponse?.data?.filter((item: any) => item.type === 'city')?.length || 0,
+          totalResults: results.length
+        });
         
         setSearchResults(results);
       } catch (error) {
@@ -740,8 +751,23 @@ export default function OnboardingLocationSelector({
 
   // Update search results when search term changes
   useEffect(() => {
-    searchLocations(searchTerm);
+    console.log("[TEMPORARY DEBUG] Search term changed:", searchTerm);
+    if (searchTerm.length > 1) {
+      console.log("[TEMPORARY DEBUG] Searching for:", searchTerm);
+      searchLocations(searchTerm);
+    } else {
+      console.log("[TEMPORARY DEBUG] Search term too short, not searching");
+      setSearchResults([]);
+    }
   }, [searchTerm, searchLocations]);
+
+  // This useEffect is specifically for debugging search results
+  useEffect(() => {
+    console.log("[TEMPORARY DEBUG] Search results updated:", 
+      searchResults.length > 0 ? 
+      `Found ${searchResults.length} results` : 
+      "No results");
+  }, [searchResults]);
 
   // Reference to track the last formatted locations to prevent unnecessary updates
   const lastFormattedRef = React.useRef<any>(null);
@@ -756,23 +782,14 @@ export default function OnboardingLocationSelector({
       return; // Don't update if there are no locations
     }
     
-    // Keep track of countries we've processed to avoid duplicates
-    const processedCountryCodes = new Set();
+    // Group locations by country to preserve all regions
+    const locationsByCountry = new Map();
     
+    // First filter out invalid locations
     const formattedLocations = selectedGeoLocations
       .filter(loc => {
         // Only include locations that have a valid country
-        if (!loc.country) return false;
-        
-        // Skip duplicate countries
-        if (processedCountryCodes.has(loc.country.country_code)) {
-          console.log("[TEMPORARY DEBUG] Skipping duplicate country in format:", loc.country.name);
-          return false; 
-        }
-        
-        // Mark this country as processed
-        processedCountryCodes.add(loc.country.country_code);
-        return true;
+        return loc.country && loc.country.name && loc.country.country_code;
       })
       .map(loc => {
         // Create a properly formatted location object with detailed debug logging
@@ -872,10 +889,20 @@ export default function OnboardingLocationSelector({
     getCountryList();
   }, []); // Only fetch country list once on mount
 
+  // Track if we've already loaded locations to prevent reloading
+  const [hasLoadedLocations, setHasLoadedLocations] = useState(false);
+  
   // Separate effect to handle loading saved locations
   useEffect(() => {
     if (countryData.length === 0) {
       return; // Exit if we don't have country data yet
+    }
+    
+    // Skip if we already loaded locations once, to prevent reloading
+    // and potentially losing user changes during the onboarding flow
+    if (hasLoadedLocations) {
+      console.log("[TEMPORARY DEBUG] Skipping location reload - already loaded once");
+      return;
     }
 
     // If locations is an empty array, we still need to handle it properly
@@ -885,35 +912,24 @@ export default function OnboardingLocationSelector({
     if (!locations || (Array.isArray(locations) && locations.length === 0)) {
       console.log("[TEMPORARY DEBUG] No locations to load, setting default empty location");
       
-      // Create a default empty location with just a country (Germany)
-      const defaultLocation = {
-        country: {
-          name: "Germany",
-          code: "DE"
-        },
-        regions: []
-      };
-      
-      setSelectedGeoLocations([{
-        country: {
-          country_code: "DE",
-          key: "DE",
-          name: "Germany",
-          type: 'country',
-          supports_city: true,
-          supports_region: true
-        },
+      // Create an empty location state (without default country)
+      const emptyLocation = {
+        country: null,
         region: null,
         cities: [],
         regionData: [],
         cityData: []
-      }]);
+      };
       
+      setSelectedGeoLocations([emptyLocation]);
+      setHasLoadedLocations(true);
       return;
     }
-
+    
     // Convert the locations data to the internal GeoLocation format
     const loadSavedLocations = async () => {
+      console.log("[TEMPORARY DEBUG] loadSavedLocations called with locations:", locations);
+      
       const initialLocations: GeoLocation[] = [];
 
       // Store processed locations by country code to prevent duplicates
@@ -1054,28 +1070,30 @@ export default function OnboardingLocationSelector({
         console.log("[TEMPORARY DEBUG] Setting initial locations:", initialLocations);
         setSelectedGeoLocations(initialLocations);
       } else {
-        console.log("[TEMPORARY DEBUG] No valid locations found to set, creating default location");
+        console.log("[TEMPORARY DEBUG] No valid locations found to set, creating default empty location");
         
-        // Create a default empty location with just a country (Germany)
-        setSelectedGeoLocations([{
-          country: {
-            country_code: "DE",
-            key: "DE",
-            name: "Germany",
-            type: 'country',
-            supports_city: true,
-            supports_region: true
-          },
+        // Create an empty location state (without default country)
+        const emptyLocation = {
+          country: null,
           region: null,
           cities: [],
           regionData: [],
           cityData: []
-        }]);
+        };
+        
+        setSelectedGeoLocations([emptyLocation]);
       }
+      
+      // Mark that we've loaded locations once
+      setHasLoadedLocations(true);
+      
+      console.log("[TEMPORARY DEBUG] Finished loading saved locations");
     };
 
+    console.log("[TEMPORARY DEBUG] About to call loadSavedLocations function");
+    // Call the function to load saved locations
     loadSavedLocations();
-  }, [countryData.length, locations, getRegionList]);
+  }, [countryData.length, locations, getRegionList, hasLoadedLocations]);
 
   return (
     <div className="space-y-6">
@@ -1107,14 +1125,24 @@ export default function OnboardingLocationSelector({
           )}
         </div>
         
-        {/* Search results dropdown */}
-        {searchResults.length > 0 && (
+        {/* Search results dropdown - always show when user is typing */}
+        {searchTerm.length > 1 && (
           <div className="absolute z-10 mt-1 w-full bg-[#1A1D29] border border-gray-700 rounded-lg shadow-lg max-h-60 overflow-auto">
             <div className="py-1">
-              {searchResults.length === 0 && searchTerm.length > 1 && !isSearching && (
+              {/* Show loading indicator while searching */}
+              {isSearching && (
+                <div className="px-4 py-2 text-sm text-gray-400 flex items-center">
+                  <Loader2 className="size-4 mr-2 animate-spin" />
+                  Searching...
+                </div>
+              )}
+              
+              {/* Show no results message when search is complete but no results found */}
+              {!isSearching && searchResults.length === 0 && (
                 <div className="px-4 py-2 text-sm text-gray-400">No results found</div>
               )}
               
+              {/* Map through and display any results */}
               {searchResults.map((result, i) => {
                 let icon;
                 let label = '';

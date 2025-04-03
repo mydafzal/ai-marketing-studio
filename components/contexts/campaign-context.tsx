@@ -55,7 +55,6 @@ export const CampaignContextProvider = ({ children }: { children: React.ReactNod
     const campaign = useMemo(() =>
        campaigns.find(campaign => campaign.id === id) ?? null, [campaigns, id]
     )
-    console.log('campaign', campaign)
 
     useEffect(() => {
         void getCampaignList()
