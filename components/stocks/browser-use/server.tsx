@@ -11,7 +11,7 @@ import { SidebarContentWrapper } from "@/components/sidebar-content-wrapper"
 export default async function showBrowserUse({ researchQuery = "" }: { researchQuery?: string }) {
   // Create the component that will be displayed in the sidebar
   const browserUseComponent = (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full relative">
       <BrowserUse defaultPrompt={researchQuery} />
     </div>
   );
@@ -26,7 +26,7 @@ export default async function showBrowserUse({ researchQuery = "" }: { researchQ
       />
       
       <BotCard>
-        <p>The AI browser research agent is now active in the sidebar. You can watch the agent browse the web in real-time, and the research results will be returned to this chat when complete.</p>
+        <p>The AI browser research agent is now active in the sidebar. You can watch the agent browse the web in real-time and use the "Expand View" button for a larger display. Research results will be sent to this chat when complete.</p>
       </BotCard>
     </>
   );

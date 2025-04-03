@@ -1,6 +1,21 @@
 "use client"
 
 import React, { useState, useEffect, useRef } from "react"
+
+// Add type declaration for window.taskStepsCache
+declare global {
+  interface Window {
+    taskStepsCache?: {
+      [taskId: string]: Array<{
+        id: string;
+        step: number;
+        evaluation_previous_goal?: string;
+        next_goal?: string;
+      }>;
+    };
+  }
+}
+
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -12,7 +27,12 @@ import { useActions } from 'ai/rsc'
 type TaskStatus = 'created' | 'running' | 'finished' | 'stopped' | 'paused' | 'failed'
 
 // Main component for Browser Use
-export function BrowserUse({ defaultPrompt = "" }) {
+interface BrowserUseProps {
+  defaultPrompt?: string
+  isInDialog?: boolean
+}
+
+export function BrowserUse({ defaultPrompt = "", isInDialog = false }: BrowserUseProps) {
   // The user prompt to be sent to the Browser Use API
   const [task, setTask] = useState(defaultPrompt)
   const [isSubmittable, setIsSubmittable] = useState(!!defaultPrompt.trim())
@@ -170,14 +190,39 @@ export function BrowserUse({ defaultPrompt = "" }) {
     }
   }
   
-  // Submit the browser task result back to the main chat
+  // Submit the browser task result back to the main chat through an AI-formatted message
   const submitBrowserResultToChat = async (result: string) => {
     try {
-      // Format the result nicely
-      const formattedResult = `📊 **Browser Research Results**\n\n${result}`
+      // Extract the query we were researching
+      const researchQuery = task || "your topic";
       
-      // Use the action to submit to chat (this is similar to how other components work)
-      await submitUserMessage(formattedResult, [], true)
+      // Use the formatter just like the ad creative results
+      const { formatBrowserResearch } = await import("@/app/actions/format-browser-research");
+      
+      // Format the message using our new action
+      const formattedMessage = await formatBrowserResearch(researchQuery, result);
+      
+      // Submit the message to chat using submitUserMessage (exactly like in campaignresultsnew)
+      const resp = await submitUserMessage(formattedMessage, [], true);
+      
+      // Update the AI state to maintain compatibility with other code
+      const { nanoid } = await import("@/lib/utils");
+      const { getMutableAIState } = await import("ai/rsc");
+      const aiState = getMutableAIState();
+      
+      // Add the message to the AI state
+      aiState.update({
+        ...aiState.get(),
+        messages: [
+          ...aiState.get().messages,
+          {
+            id: nanoid(),
+            role: 'assistant',
+            content: formattedMessage,
+            timestamp: new Date().toISOString()
+          }
+        ]
+      });
       
       toast.success("Results sent to chat!")
     } catch (error) {
@@ -273,43 +318,168 @@ export function BrowserUse({ defaultPrompt = "" }) {
             <div className="space-y-3">
               <h3 className="text-[18px] font-bold text-text-white flex items-center justify-between">
                 <span>Live Browser View</span>
-                {taskStatus === 'running' && (
-                  <div className="flex space-x-2">
-                    {taskStatus !== 'paused' ? (
-                      <Button
-                        onClick={() => handleControlTask('pause')}
-                        variant="outline"
-                        size="sm"
-                        className="flex items-center space-x-1 text-yellow-500 border-yellow-500/30 hover:bg-yellow-500/10"
-                      >
-                        <Pause className="h-4 w-4" />
-                        <span>Pause</span>
-                      </Button>
-                    ) : (
-                      <Button
-                        onClick={() => handleControlTask('resume')}
-                        variant="outline"
-                        size="sm"
-                        className="flex items-center space-x-1 text-green-500 border-green-500/30 hover:bg-green-500/10"
-                      >
-                        <Play className="h-4 w-4" />
-                        <span>Resume</span>
-                      </Button>
-                    )}
+                <div className="flex space-x-2">
+                  {/* Show expand button only when not already in dialog */}
+                  {!isInDialog && liveUrl && (
                     <Button
-                      onClick={() => handleControlTask('stop')}
-                      variant="outline"
+                      onClick={() => {
+                        // Create modal element
+                        const modal = document.createElement('div');
+                        modal.className = 'fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4';
+                        
+                        // Get steps from task data if available
+                        const steps = (taskId && window.taskStepsCache && window.taskStepsCache[taskId]) || [];
+                        const stepsHtml = steps.map(step => {
+                          return `
+                            <div class="mb-3 p-3 bg-[#151925] rounded-lg border border-[#2A2E3A]">
+                              <div class="flex items-center mb-2">
+                                <div class="w-2 h-2 rounded-full bg-[#4BF29C] mr-2"></div>
+                                <span class="text-[#4BF29C] text-sm font-medium">Step ${step.step}</span>
+                              </div>
+                              <p class="text-[#ADB0B8] text-sm">${step.next_goal || ''}</p>
+                              <p class="text-white text-sm mt-1">${step.evaluation_previous_goal || ''}</p>
+                            </div>
+                          `;
+                        }).join('');
+                        
+                        modal.innerHTML = `
+                          <div class="bg-container-bg max-w-6xl w-full h-[90vh] rounded-lg shadow-lg overflow-hidden flex flex-col">
+                            <div class="flex items-center justify-between p-4 border-b border-border-dark">
+                              <h2 class="text-xl font-bold text-text-white">AI Browser Research</h2>
+                              <button id="close-browser-modal" class="text-gray-400 hover:text-white">&times;</button>
+                            </div>
+                            <div class="flex-1 flex overflow-hidden">
+                              <!-- Browser Panel (Left) -->
+                              <div class="w-3/5 p-4 overflow-hidden border-r border-border-dark">
+                                <h3 class="text-white text-lg mb-2">Browser View</h3>
+                                <div class="h-[calc(90vh-130px)] bg-black rounded-lg overflow-hidden">
+                                  <iframe src="${liveUrl}" class="w-full h-full border-0"></iframe>
+                                </div>
+                              </div>
+                              
+                              <!-- AI Thought Process (Right) -->
+                              <div class="w-2/5 p-4 overflow-y-auto">
+                                <h3 class="text-white text-lg mb-2">AI Thought Process</h3>
+                                <div class="space-y-3">
+                                  <div id="steps-container" class="space-y-2">
+                                    ${stepsHtml || `<p class="text-[#ADB0B8] text-sm">The AI agent will show its thought process here as it works through your research request.</p>`}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        `;
+                        
+                        // Create a global steps cache if it doesn't exist
+                        if (!window.taskStepsCache) {
+                          window.taskStepsCache = {};
+                        }
+                        
+                        // Setup polling for steps updates
+                        if (taskId) {
+                          const updateSteps = async () => {
+                            try {
+                              const response = await fetch(`/api/browser-use?task_id=${taskId}`);
+                              if (response.ok) {
+                                const data = await response.json();
+                                if (data.steps && data.steps.length > 0) {
+                                  // Cache steps for future modal opens
+                                  window.taskStepsCache[taskId] = data.steps;
+                                  
+                                  // Update steps in the modal if it's open
+                                  const stepsContainer = document.getElementById('steps-container');
+                                  if (stepsContainer) {
+                                    const updatedStepsHtml = data.steps.map(step => {
+                                      return `
+                                        <div class="mb-3 p-3 bg-[#151925] rounded-lg border border-[#2A2E3A]">
+                                          <div class="flex items-center mb-2">
+                                            <div class="w-2 h-2 rounded-full bg-[#4BF29C] mr-2"></div>
+                                            <span class="text-[#4BF29C] text-sm font-medium">Step ${step.step}</span>
+                                          </div>
+                                          <p class="text-[#ADB0B8] text-sm">${step.next_goal || ''}</p>
+                                          <p class="text-white text-sm mt-1">${step.evaluation_previous_goal || ''}</p>
+                                        </div>
+                                      `;
+                                    }).join('');
+                                    stepsContainer.innerHTML = updatedStepsHtml;
+                                  }
+                                }
+                                
+                                // Keep polling if task is still running
+                                if (data.status === 'running' || data.status === 'created') {
+                                  setTimeout(updateSteps, 5000);
+                                }
+                              }
+                            } catch (err) {
+                              console.error('Error updating steps:', err);
+                            }
+                          };
+                          
+                          // Start polling
+                          updateSteps();
+                        }
+                        
+                        // Add to document
+                        document.body.appendChild(modal);
+                        
+                        // Add close handler
+                        document.getElementById('close-browser-modal')?.addEventListener('click', () => {
+                          document.body.removeChild(modal);
+                        });
+                      }}
+                      variant="outline" 
                       size="sm"
-                      className="flex items-center space-x-1 text-red-500 border-red-500/30 hover:bg-red-500/10"
+                      className="flex items-center space-x-1 text-blue-500 border-blue-500/30 hover:bg-blue-500/10"
                     >
-                      <StopCircle className="h-4 w-4" />
-                      <span>Stop</span>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-maximize-2 h-4 w-4 mr-1">
+                        <polyline points="15 3 21 3 21 9"></polyline>
+                        <polyline points="9 21 3 21 3 15"></polyline>
+                        <line x1="21" y1="3" x2="14" y2="10"></line>
+                        <line x1="3" y1="21" x2="10" y2="14"></line>
+                      </svg>
+                      <span>Expand View</span>
                     </Button>
-                  </div>
-                )}
+                  )}
+                  
+                  {taskStatus === 'running' && (
+                    <>
+                      {taskStatus !== 'paused' ? (
+                        <Button
+                          onClick={() => handleControlTask('pause')}
+                          variant="outline"
+                          size="sm"
+                          className="flex items-center space-x-1 text-yellow-500 border-yellow-500/30 hover:bg-yellow-500/10"
+                        >
+                          <Pause className="h-4 w-4" />
+                          <span>Pause</span>
+                        </Button>
+                      ) : (
+                        <Button
+                          onClick={() => handleControlTask('resume')}
+                          variant="outline"
+                          size="sm"
+                          className="flex items-center space-x-1 text-green-500 border-green-500/30 hover:bg-green-500/10"
+                        >
+                          <Play className="h-4 w-4" />
+                          <span>Resume</span>
+                        </Button>
+                      )}
+                      <Button
+                        onClick={() => handleControlTask('stop')}
+                        variant="outline"
+                        size="sm"
+                        className="flex items-center space-x-1 text-red-500 border-red-500/30 hover:bg-red-500/10"
+                      >
+                        <StopCircle className="h-4 w-4" />
+                        <span>Stop</span>
+                      </Button>
+                    </>
+                  )}
+                </div>
               </h3>
               <div className="relative w-full bg-black rounded-lg overflow-hidden border border-border-dark">
-                <div className="aspect-video w-full">
+                {/* Adjust height based on whether it's in the sidebar or dialog */}
+                <div className={isInDialog ? "w-full h-[500px]" : "aspect-video w-full"}>
                   <iframe
                     src={liveUrl}
                     width="100%"
