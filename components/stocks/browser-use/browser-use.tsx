@@ -350,7 +350,7 @@ export function BrowserUse({ defaultPrompt = "", isInDialog = false }: BrowserUs
                   Enhanced Research Instructions
                 </h3>
                 <div className="text-xs text-text-light-gray">
-                  Original query: "{originalQuery}"
+                  Original query: &ldquo;{originalQuery}&rdquo;
                 </div>
               </div>
               <div className="bg-[#151925] p-3 rounded-lg border border-[#2A2E3A] text-sm text-text-white overflow-y-auto max-h-[200px]">
@@ -440,12 +440,12 @@ export function BrowserUse({ defaultPrompt = "", isInDialog = false }: BrowserUs
                                 const data = await response.json();
                                 if (data.steps && data.steps.length > 0) {
                                   // Cache steps for future modal opens
-                                  window.taskStepsCache[taskId] = data.steps;
+                                  window.taskStepsCache && (window.taskStepsCache[taskId] = data.steps);
                                   
                                   // Update steps in the modal if it's open
                                   const stepsContainer = document.getElementById('steps-container');
                                   if (stepsContainer) {
-                                    const updatedStepsHtml = data.steps.map(step => {
+                                    const updatedStepsHtml = data.steps.map((step: any) => {
                                       return `
                                         <div class="mb-3 p-3 bg-[#151925] rounded-lg border border-[#2A2E3A]">
                                           <div class="flex items-center mb-2">
@@ -499,7 +499,7 @@ export function BrowserUse({ defaultPrompt = "", isInDialog = false }: BrowserUs
                   
                   {taskStatus === 'running' && (
                     <>
-                      {taskStatus !== 'paused' ? (
+                      {taskStatus === 'running' ? (
                         <Button
                           onClick={() => handleControlTask('pause')}
                           variant="outline"

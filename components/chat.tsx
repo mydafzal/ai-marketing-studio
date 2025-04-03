@@ -37,7 +37,7 @@ import { useRouter } from 'next/navigation'
 import { IconSpinner } from '@/components/ui/icons'
 import { subscriptionBypassList } from '@/app/subscription/subscription-bypass-list'
 import { SidebarContentProvider } from '@/components/contexts/sidebar-content-context'
-import { DynamicSidebar } from '@/components/dynamic-sidebar'
+import { DynamicSidebar, RestoreSidebarButton } from '@/components/dynamic-sidebar'
 import { SidebarBridge } from '@/components/sidebar-bridge'
 import { useSidebarContent } from '@/components/contexts/sidebar-content-context'
 import { ActiveUIProvider } from '@/components/stocks/active-ui-context'
@@ -416,6 +416,7 @@ export const Chat = ({ ...chatProps }: ChatProps) => (
             <ChatCore {...chatProps} />
             <DynamicSidebar />
           </div>
+          <RestoreSidebarButton />
         </ActiveUIProvider>
       </SidebarContentProvider>
     </CampaignContextProvider>

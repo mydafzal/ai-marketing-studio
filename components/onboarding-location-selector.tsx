@@ -789,7 +789,7 @@ export default function OnboardingLocationSelector({
     const formattedLocations = selectedGeoLocations
       .filter(loc => {
         // Only include locations that have a valid country
-        return loc.country && loc.country.name && loc.country.code;
+        return loc.country && loc.country.name && loc.country.country_code;
       })
       .map(loc => {
         // Create a properly formatted location object with detailed debug logging

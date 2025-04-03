@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
       console.log('📍 Total locations in request:', location_data.length);
       
       // Log detailed information about each location
-      location_data.forEach((loc, index) => {
+      location_data.forEach((loc: any, index: number) => {
         console.log(`📍 Location ${index + 1}:`, {
           'Has country': !!loc.country,
           'Country name': loc.country?.name,
@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
         
         // Log details about regions within this location
         if (loc.regions && Array.isArray(loc.regions) && loc.regions.length > 0) {
-          loc.regions.forEach((region, regIdx) => {
+          loc.regions.forEach((region: any, regIdx: number) => {
             console.log(`📍 Location ${index + 1}, Region ${regIdx + 1}:`, {
               'Region name': region.name,
               'Region key': region.key,
@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
             // Log cities if present
             if (region.cities && region.cities.length > 0) {
               console.log(`📍 Location ${index + 1}, Region ${regIdx + 1} cities:`, 
-                region.cities.map(city => city.name).join(', '));
+                region.cities.map((city: { name: string }) => city.name).join(', '));
             }
           });
         }
