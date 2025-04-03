@@ -54,6 +54,43 @@ export async function POST(req: NextRequest) {
       'Video IDs count': video_ids.length,
       'Location data count': location_data?.length || 0
     });
+    
+    // Log location data structure to help debug issues
+    if (location_data && location_data.length > 0) {
+      console.log('📍 Location data structure check:');
+      console.log('📍 Total locations in request:', location_data.length);
+      
+      // Log detailed information about each location
+      location_data.forEach((loc, index) => {
+        console.log(`📍 Location ${index + 1}:`, {
+          'Has country': !!loc.country,
+          'Country name': loc.country?.name,
+          'Country code': loc.country?.code,
+          'Has regions': !!loc.regions && Array.isArray(loc.regions),
+          'Regions count': loc.regions?.length || 0
+        });
+        
+        // Log details about regions within this location
+        if (loc.regions && Array.isArray(loc.regions) && loc.regions.length > 0) {
+          loc.regions.forEach((region, regIdx) => {
+            console.log(`📍 Location ${index + 1}, Region ${regIdx + 1}:`, {
+              'Region name': region.name,
+              'Region key': region.key,
+              'Has cities': !!region.cities && Array.isArray(region.cities),
+              'Cities count': region.cities?.length || 0
+            });
+            
+            // Log cities if present
+            if (region.cities && region.cities.length > 0) {
+              console.log(`📍 Location ${index + 1}, Region ${regIdx + 1} cities:`, 
+                region.cities.map(city => city.name).join(', '));
+            }
+          });
+        }
+      });
+    } else {
+      console.warn('⚠️ No location data provided in request');
+    }
 
     // Make sure required fields are present
     if (!fb_account_id || !campaign_flow_session_id || !website_link || !daily_campaign_budget || !company_name) {

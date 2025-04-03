@@ -199,15 +199,31 @@ export function CreateCampaignForm() {
       // Prepare location data based on targeted locations
       let locationData = [];
       
-      // First check if user has saved locations from onboarding
-      if (userData.account?.locations && Array.isArray(userData.account.locations) && userData.account.locations.length > 0) {
-        console.log('📍 Using user\'s saved locations from profile:', userData.account.locations);
+      // First check if user has saved locations from onboarding that are valid
+      if (userData.account?.locations && 
+          Array.isArray(userData.account.locations) && 
+          userData.account.locations.length > 0) {
         
-        // User locations are already in the correct format, use them directly
-        locationData = userData.account.locations;
+        // Validate that location data has proper country information
+        const validLocations = userData.account.locations.filter(loc => 
+          loc && 
+          loc.country && 
+          typeof loc.country === 'object' &&
+          loc.country.name && 
+          loc.country.code
+        );
+        
+        if (validLocations.length > 0) {
+          console.log('📍 Using valid user saved locations:', validLocations.length);
+          // User locations are in the correct format, use them directly
+          locationData = validLocations;
+        } else {
+          console.warn('⚠️ User has locations but they are invalid or empty, falling back to default');
+        }
       }
-      // If no saved locations but we have targetedLocations from props, use those
-      else if (targetedLocations && targetedLocations.length > 0) {
+      
+      // If no valid saved locations but we have targetedLocations, use those instead
+      if (locationData.length === 0 && targetedLocations && targetedLocations.length > 0) {
         console.log('📍 Using predefined targeted locations from props:', targetedLocations);
         
         // Format location data according to API requirements
@@ -224,9 +240,10 @@ export function CreateCampaignForm() {
           };
         });
       } 
-      // No locations at all, use default Netherlands
-      else {
-        console.log('📍 No locations available, using default (Netherlands)');
+      
+      // No valid locations at all, use default Netherlands
+      if (locationData.length === 0) {
+        console.log('📍 No valid locations available, using default (Netherlands)');
         // Default location if none provided
         locationData = [
           {
@@ -237,6 +254,25 @@ export function CreateCampaignForm() {
             regions: []
           }
         ];
+      }
+      
+      // Log the final location data for debugging
+      console.log('📍 Original location data:', JSON.stringify(locationData, null, 2));
+      
+      // Make sure locations from the same country are preserved correctly
+      // Some countries may have multiple regions that need to be preserved
+      if (locationData && locationData.length > 0) {
+        // Make sure all locations are included, even if they're from the same country
+        console.log('📍 Locations count check:', locationData.length);
+        
+        // Log detailed location structure for each entry
+        locationData.forEach((loc, index) => {
+          console.log(`📍 Location ${index + 1}:`, {
+            'Country': loc.country?.name,
+            'Regions': loc.regions?.map(r => r.name),
+            'Has Cities': loc.regions?.some(r => r.cities?.length > 0)
+          });
+        });
       }
       
       console.log('📍 Final location data:', JSON.stringify(locationData, null, 2));

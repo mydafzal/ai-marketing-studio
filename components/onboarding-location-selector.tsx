@@ -751,7 +751,14 @@ export default function OnboardingLocationSelector({
 
   // Update search results when search term changes
   useEffect(() => {
-    searchLocations(searchTerm);
+    console.log("[TEMPORARY DEBUG] Search term changed:", searchTerm);
+    if (searchTerm.length > 1) {
+      console.log("[TEMPORARY DEBUG] Searching for:", searchTerm);
+      searchLocations(searchTerm);
+    } else {
+      console.log("[TEMPORARY DEBUG] Search term too short, not searching");
+      setSearchResults([]);
+    }
   }, [searchTerm, searchLocations]);
 
   // This useEffect is specifically for debugging search results
@@ -775,23 +782,14 @@ export default function OnboardingLocationSelector({
       return; // Don't update if there are no locations
     }
     
-    // Keep track of countries we've processed to avoid duplicates
-    const processedCountryCodes = new Set();
+    // Group locations by country to preserve all regions
+    const locationsByCountry = new Map();
     
+    // First filter out invalid locations
     const formattedLocations = selectedGeoLocations
       .filter(loc => {
         // Only include locations that have a valid country
-        if (!loc.country) return false;
-        
-        // Skip duplicate countries
-        if (processedCountryCodes.has(loc.country.country_code)) {
-          console.log("[TEMPORARY DEBUG] Skipping duplicate country in format:", loc.country.name);
-          return false; 
-        }
-        
-        // Mark this country as processed
-        processedCountryCodes.add(loc.country.country_code);
-        return true;
+        return loc.country && loc.country.name && loc.country.code;
       })
       .map(loc => {
         // Create a properly formatted location object with detailed debug logging
@@ -930,6 +928,8 @@ export default function OnboardingLocationSelector({
     
     // Convert the locations data to the internal GeoLocation format
     const loadSavedLocations = async () => {
+      console.log("[TEMPORARY DEBUG] loadSavedLocations called with locations:", locations);
+      
       const initialLocations: GeoLocation[] = [];
 
       // Store processed locations by country code to prevent duplicates
@@ -1086,8 +1086,11 @@ export default function OnboardingLocationSelector({
       
       // Mark that we've loaded locations once
       setHasLoadedLocations(true);
+      
+      console.log("[TEMPORARY DEBUG] Finished loading saved locations");
     };
 
+    console.log("[TEMPORARY DEBUG] About to call loadSavedLocations function");
     // Call the function to load saved locations
     loadSavedLocations();
   }, [countryData.length, locations, getRegionList, hasLoadedLocations]);
