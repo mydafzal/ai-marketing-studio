@@ -964,7 +964,7 @@ export async function submitUserMessage(content: string, contentImages?: Array<T
 
             },
             
-            showBrowserResearch: {
+            browserResearch: {
 
                 description: "Show the UI for performing AI browser research. The AI will browse the web to find information and return results to the chat.",
 
