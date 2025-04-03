@@ -136,9 +136,7 @@ export function GeographicalLocation({
     });
     
     // Build the geo_locations object in Facebook's format
-    newTargeting.geo_locations = {
-      location_types: ["home"]  // Default location type
-    };
+    newTargeting.geo_locations = {};
     
     // Convert to format suitable for both backend and Facebook API
     if (locationsByCountry.size > 0) {
