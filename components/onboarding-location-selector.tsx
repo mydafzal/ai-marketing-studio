@@ -121,7 +121,10 @@ export default function OnboardingLocationSelector({
     debounce(async (index: number, regionId: string, searchTerm: string) => {
       setLoading(true)
       try {
+        console.log("[TEMPORARY DEBUG] Searching for city in region:", regionId, "with term:", searchTerm);
         const cities = await getCityList(regionId, searchTerm)
+        console.log("[TEMPORARY DEBUG] City search results:", cities?.length || 0, "cities found");
+        
         setSelectedGeoLocations((prev) =>
           prev.map((item, i) =>
             i === index
@@ -133,7 +136,7 @@ export default function OnboardingLocationSelector({
           )
         )
       } catch (error) {
-        console.error('Error fetching results:', error)
+        console.error('Error fetching city results:', error)
         setSelectedGeoLocations((prev) =>
           prev.map((item, i) =>
             i === index
@@ -355,6 +358,14 @@ export default function OnboardingLocationSelector({
             data: city 
           }))
         ];
+        
+        console.log("[TEMPORARY DEBUG] Search results:", {
+          term: term,
+          countriesFound: countryResponse?.data?.length || 0,
+          regionsFound: regionResponse?.data?.length || 0,
+          citiesFound: cityResponse?.data?.filter((item: any) => item.type === 'city')?.length || 0,
+          totalResults: results.length
+        });
         
         setSearchResults(results);
       } catch (error) {
@@ -743,6 +754,14 @@ export default function OnboardingLocationSelector({
     searchLocations(searchTerm);
   }, [searchTerm, searchLocations]);
 
+  // This useEffect is specifically for debugging search results
+  useEffect(() => {
+    console.log("[TEMPORARY DEBUG] Search results updated:", 
+      searchResults.length > 0 ? 
+      `Found ${searchResults.length} results` : 
+      "No results");
+  }, [searchResults]);
+
   // Reference to track the last formatted locations to prevent unnecessary updates
   const lastFormattedRef = React.useRef<any>(null);
   
@@ -881,7 +900,8 @@ export default function OnboardingLocationSelector({
       return; // Exit if we don't have country data yet
     }
     
-    // Skip if we already loaded locations once
+    // Skip if we already loaded locations once, to prevent reloading
+    // and potentially losing user changes during the onboarding flow
     if (hasLoadedLocations) {
       console.log("[TEMPORARY DEBUG] Skipping location reload - already loaded once");
       return;
@@ -907,7 +927,7 @@ export default function OnboardingLocationSelector({
       setHasLoadedLocations(true);
       return;
     }
-
+    
     // Convert the locations data to the internal GeoLocation format
     const loadSavedLocations = async () => {
       const initialLocations: GeoLocation[] = [];
@@ -1068,6 +1088,7 @@ export default function OnboardingLocationSelector({
       setHasLoadedLocations(true);
     };
 
+    // Call the function to load saved locations
     loadSavedLocations();
   }, [countryData.length, locations, getRegionList, hasLoadedLocations]);
 
@@ -1101,14 +1122,24 @@ export default function OnboardingLocationSelector({
           )}
         </div>
         
-        {/* Search results dropdown */}
-        {searchResults.length > 0 && (
+        {/* Search results dropdown - always show when user is typing */}
+        {searchTerm.length > 1 && (
           <div className="absolute z-10 mt-1 w-full bg-[#1A1D29] border border-gray-700 rounded-lg shadow-lg max-h-60 overflow-auto">
             <div className="py-1">
-              {searchResults.length === 0 && searchTerm.length > 1 && !isSearching && (
+              {/* Show loading indicator while searching */}
+              {isSearching && (
+                <div className="px-4 py-2 text-sm text-gray-400 flex items-center">
+                  <Loader2 className="size-4 mr-2 animate-spin" />
+                  Searching...
+                </div>
+              )}
+              
+              {/* Show no results message when search is complete but no results found */}
+              {!isSearching && searchResults.length === 0 && (
                 <div className="px-4 py-2 text-sm text-gray-400">No results found</div>
               )}
               
+              {/* Map through and display any results */}
               {searchResults.map((result, i) => {
                 let icon;
                 let label = '';
