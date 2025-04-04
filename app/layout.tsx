@@ -7,6 +7,10 @@ import { TailwindIndicator } from '@/components/tailwind-indicator'
 import { Providers } from '@/components/providers'
 import { Header } from '@/components/header'
 import { Toaster } from '@/components/ui/toaster'
+import { auth } from '@/auth'
+
+import CrispChat from '@/components/crisp-chat'
+import { getUser } from '@/app/login/actions'
 
 export const metadata = {
   metadataBase: process.env.VERCEL_URL
@@ -32,7 +36,10 @@ interface RootLayoutProps {
   children: React.ReactNode
 }
 
-export default function RootLayout({ children }: RootLayoutProps) {
+export default async function RootLayout({ children }: RootLayoutProps) {
+  const session = await auth()
+  const user = session?.user?.email ? await getUser(session.user.email) : null
+
   return (
     <html lang="en" suppressHydrationWarning className="dark">
       <body
@@ -52,6 +59,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
           </div>
           <TailwindIndicator />
         </Providers>
+        {user && <CrispChat user={{ email: user.email, name: user.name }} />}
       </body>
     </html>
   )
