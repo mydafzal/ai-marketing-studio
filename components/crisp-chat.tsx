@@ -20,8 +20,8 @@ export default function CrispChat({ user }: CrispChatProps) {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       window.$crisp = []
-      window.CRISP_WEBSITE_ID = process.env.CRISP_WEBSITE_ID || ''
-
+      // window.CRISP_WEBSITE_ID = process.env.CRISP_WEBSITE_ID || ''
+      window.CRISP_WEBSITE_ID = 'a3ab980c-7ab5-4a26-8382-7ee57c504949'
       const script = document.createElement('script')
       script.src = 'https://client.crisp.chat/l.js'
       script.async = true
