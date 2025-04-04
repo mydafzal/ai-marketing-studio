@@ -434,7 +434,7 @@ export function useMediaUpload() {
       console.log('✅ Using video ID:', videoId);
 
       let startOffset = 0;
-      const chunkSize = 4 * 1024 * 1024; // 4MB chunks. Vercel maximum is 4.5 MB
+      const chunkSize = 3 * 1024 * 1024; // 4MB chunks. Vercel maximum is 4.5 MB
       console.log('📊 Using chunk size (bytes):', chunkSize);
 
       console.log('🔄 Updating progress to 20%');
