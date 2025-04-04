@@ -8,7 +8,7 @@ export interface MediaItem {
   aspectRatio: AspectRatio;
   progress?: number;
   hash?: string;     // Store the Facebook image hash or video ID returned from API
-  error?: string;    // For storing error messages if upload fails
+  error?: string;    // For storing error messages if upload fails.
 }
 
 export type EditSection = 'objective' | 'audience' | 'placements' | 'budget' | 'creative' | null;
