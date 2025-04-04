@@ -67,12 +67,22 @@ Create a message that sounds natural and helpful. Include the 3-5 most important
     console.error("Error formatting browser research:", error)
     
     // Create a basic formatted message from the raw results
-    const basicBulletPoints = results
-      .split('\n')
-      .filter(line => line.trim().length > 20)
-      .slice(0, 5)
-      .map(line => `• ${line.trim()}`)
-      .join('\n');
+    let basicBulletPoints = "• No specific results found";
+    
+    if (results && typeof results === 'string') {
+      try {
+        basicBulletPoints = results
+          .split('\n')
+          .filter(line => line.trim().length > 20)
+          .slice(0, 5)
+          .map(line => `• ${line.trim()}`)
+          .join('\n');
+      } catch (splitError) {
+        console.error("Error processing results:", splitError);
+        // If split fails, use the results as is (if it's a string)
+        basicBulletPoints = `• ${results.substring(0, 200)}...`;
+      }
+    }
       
     return `# 🌐 Research Results: ${researchQuery}\n\n${basicBulletPoints}\n\n---\n\nI've completed the research on "${researchQuery}". These are the key findings from my web search. The detailed results are available in the sidebar, where you can also continue to explore with the browser agent.`;
   }
