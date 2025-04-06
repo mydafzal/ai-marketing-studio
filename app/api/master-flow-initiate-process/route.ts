@@ -117,7 +117,7 @@ export async function POST(req: NextRequest) {
     });
 
     // Backend API endpoint
-    const apiUrl = 'http://localhost:8000/facebook/campaign-creation-flow/master-flow-initiate-process';
+    const apiUrl = `${process.env.FASTY_API_URL}/facebook/campaign-creation-flow/master-flow-initiate-process`
     console.log('🔗 Forwarding request to backend API:', apiUrl);
     
     // Ensure video_ids are in the right format for the backend API
