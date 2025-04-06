@@ -17,12 +17,12 @@ export interface Chat extends Record<string, any> {
   fbCampaignId?: string
 }
 
-export type ServerActionResult<Result> = Promise<
-  | Result
+export type ServerActionResult<T> = Promise<T>
+  | T  // Use the generic parameter directly
   | {
       error: string
     }
->
+
 
 export interface Session {
   user: {
@@ -56,6 +56,22 @@ export interface User extends Record<string, any> {
   preferred_language?: string;
   goal?: string;
   fbPageId?: string;
+  
+  // Preferred locations for advertising
+  locations?: {
+    country: {
+      name: string;
+      code: string;
+    };
+    regions: Array<{
+      key: number;
+      name: string;
+      cities: Array<{
+        key: number;
+        name: string;
+      }>;
+    }>;
+  }[];
 
   // Subscription-related fields from buildas-stripe2
   sub_trial_start?: Date;
@@ -201,6 +217,15 @@ export interface AdCreative {
       }
     }
   }
+}
+
+export interface Creative {
+  creative_id: string;
+  preview_uuid: string;
+  media_type: "video" | "image";
+  media_id: string;
+  media_url: string;
+  previews: never[];
 }
 
 export interface QuestionOption {

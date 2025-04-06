@@ -1,0 +1,40 @@
+diff --git a/app/actions.ts b/app/actions.ts
+index 1234567..abcdefg 100644
+--- a/app/actions.ts
++++ b/app/actions.ts
+@@ -1507,7 +1507,18 @@ export async function updateOnboardingDetails(email: string, details: {
+     website_link: string;
+     privacy_policy_link: string;
+     preferred_language: string;
+-    goal: string
++    goal: string;
++    locations?: {
++        country: {
++            name: string;
++            code: string;
++        };
++        regions: Array<{
++            key: number;
++            name: string;
++            cities: Array<{
++                key: number;
++                name: string;
++            }>;
++        }>;
++    }[];
+ }) {
+@@ -1591,7 +1602,13 @@ export async function updateOnboardingDetails(email: string, details: {
+ 
+ 
+         // Update the accountId field
+-        await kv.hset(userKey, {...details, defaultExtraDetails: newDetails, website_data: website_data})
++        const dataToSave = {...details, defaultExtraDetails: newDetails, website_data: website_data};
++        
++        // Log the locations data to verify it's being passed correctly
++        if (details.locations) {
++            console.log('Saving locations data:', JSON.stringify(details.locations, null, 2));
++        }
++        
++        await kv.hset(userKey, dataToSave)
+ 
+         return {

@@ -21,6 +21,7 @@ import FacebookConnect from '@/components/facebook-connect'
 import FacebookAccountSettings from '@/components/facebook-account-settings'
 import { isFeatureToggleEnabled } from '@/lib/helpers/feature-toggle/feature-toggle-manager'
 import ProfileSettings from '@/components/profile-settings'
+import { ThemeToggle } from './theme-toggle'
 
 async function UserOrLogin() {
   const session = (await auth()) as Session
@@ -60,17 +61,17 @@ async function UserOrLogin() {
         </Link>
       )}
       <div className="flex items-center w-full">
-        <IconSeparator className="size-6 text-muted-foreground/50" />
+        <IconSeparator className="size-6 text-border-dark" />
         {session?.user ? (
           <div className="flex justify-between w-full">
             <UserMenu user={session.user} />
             <div className="flex items-center">
-              <Link href="/" className={cn(buttonVariants({ variant: 'ghost' }), 'ml-8')}>
+              <Link href="/" className={cn(buttonVariants({ variant: 'ghost' }), 'ml-8 text-text-white hover:text-primary-green hover:bg-dark-bg')}>
                 AI Marketer
               </Link>
               <Link
                 href="/ai-content"
-                className={cn(buttonVariants({ variant: 'ghost' }), 'ml-8')}
+                className={cn(buttonVariants({ variant: 'ghost' }), 'ml-8 text-text-white hover:text-primary-green hover:bg-dark-bg')}
               >
                 AI Creatives Generator
               </Link>
@@ -82,7 +83,8 @@ async function UserOrLogin() {
                 Content Library
               </Link>*/}
               
-
+              {/* Theme toggle removed */}
+              
               <ProfileSettings
                 userDetails={userDetails}
                 getFacebookBusinessAccounts={getFacebookBusinessAccounts}
@@ -95,7 +97,7 @@ async function UserOrLogin() {
             </div>
           </div>
         ) : (
-          <Link href="/login" className={cn(buttonVariants({ variant: 'link' }), '-ml-2')}>
+          <Link href="/login" className={cn(buttonVariants({ variant: 'link' }), '-ml-2 text-primary-green hover:text-primary-green/90')}>
             Login
           </Link>
         )}
@@ -106,7 +108,7 @@ async function UserOrLogin() {
 
 export async function Header() {
   return (
-    <header className="sticky top-0 z-50 flex items-center justify-between w-full h-16 px-4 border-b shrink-0 bg-gradient-to-b from-background/10 via-background/50 to-background/80 backdrop-blur-xl">
+    <header className="sticky top-0 z-50 flex items-center justify-between w-full h-16 px-4 border-b border-border-dark shrink-0 bg-dark-bg backdrop-blur-xl">
       <div className="flex items-center w-full">
         <React.Suspense fallback={<div className="flex-1 overflow-auto" />}>
           {/* @ts-ignore */}

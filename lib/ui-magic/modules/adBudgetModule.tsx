@@ -32,7 +32,7 @@ export const adBudgetModule = new ModuleConfigBuilder('showAdBudgetUI')
                             symbol,
                             price: +price,
                             initialBudget,
-                            status: 'requires_action'
+                            status: 'Confirm your Ad Budget'
                         }}
                     />
                 </BotCard>

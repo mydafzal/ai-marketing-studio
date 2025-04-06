@@ -12,23 +12,28 @@ export async function GET(request: Request) {
     const fastyEndpoint = process.env.FASTY_API_URL
     const apiUrl = `${fastyEndpoint}/facebook/read/insights/get-campaigns?account_id=${fbAccountId}`
 
-
+    // Get the user's Facebook token
     const token_resp = await getFbMarketingApiKey()
-    let token=""
+    let token = ""
+    
+    // If the user has a token, use it
     if(token_resp.success && token_resp.token){
-        token=token_resp.token
+        token = token_resp.token
+    }
+    
+    // For admin-assigned accounts, don't send any token at all
+    // The Fasty backend will use its system token
+    const headers: Record<string, string> = {
+        'Authorization': `Bearer ${process.env.FASTY_API_TOKEN}`
+    };
+    
+    // Only add the fb-api-key header if we have a token
+    if (token) {
+        headers['fb-api-key'] = token;
     }
 
-    console.log(process.env.FASTY_API_TOKEN)
-
-
     try {
-        const response = await fetch(apiUrl, {
-            headers: {
-                'Authorization': `Bearer ${process.env.FASTY_API_TOKEN}`,
-                'fb-api-key': token
-            }
-        })
+        const response = await fetch(apiUrl, { headers })
 
         if (!response.ok) {
             console.error(`HTTP error! status: ${response.status}`);

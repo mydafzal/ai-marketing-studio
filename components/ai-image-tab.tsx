@@ -853,29 +853,29 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
   }
 
   return (
-    <div className={`w-full shadow-sm rounded-lg border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+    <div className={`w-full shadow-sm rounded-lg border ${isDarkMode ? 'bg-container-bg border-border-dark' : 'bg-white border-gray-200'}`}>
       {/* Toast notification */}
       {toastMessage && (
         <div className={`fixed top-4 right-4 z-50 p-4 rounded-md shadow-md transition-all ${
           toastMessage.type === 'success' 
-            ? isDarkMode ? 'bg-green-900 border border-green-700' : 'bg-green-100 border border-green-300' 
-            : isDarkMode ? 'bg-red-900 border border-red-700' : 'bg-red-100 border border-red-300'
+            ? isDarkMode ? 'bg-primary-green/20 border border-primary-green/60' : 'bg-green-100 border border-green-300' 
+            : isDarkMode ? 'bg-coral/20 border border-coral/60' : 'bg-red-100 border border-red-300'
         }`}>
           <div className="flex items-start gap-2">
             <div className={toastMessage.type === 'success' 
-              ? isDarkMode ? 'text-green-400' : 'text-green-600' 
-              : isDarkMode ? 'text-red-400' : 'text-red-600'}>
+              ? isDarkMode ? 'text-primary-green' : 'text-green-600' 
+              : isDarkMode ? 'text-coral' : 'text-red-600'}>
               {toastMessage.type === 'success' ? <CheckCircle2 className="size-5" /> : <AlertCircle className="size-5" />}
             </div>
             <div>
               <h3 className={`font-medium text-sm ${toastMessage.type === 'success' 
-                ? isDarkMode ? 'text-green-200' : 'text-green-800' 
-                : isDarkMode ? 'text-red-200' : 'text-red-800'}`}>
+                ? isDarkMode ? 'text-primary-green' : 'text-green-800' 
+                : isDarkMode ? 'text-coral' : 'text-red-800'}`}>
                 {toastMessage.title}
               </h3>
               <p className={`text-sm ${toastMessage.type === 'success' 
-                ? isDarkMode ? 'text-green-300' : 'text-green-700' 
-                : isDarkMode ? 'text-red-300' : 'text-red-700'}`}>
+                ? isDarkMode ? 'text-text-white' : 'text-green-700' 
+                : isDarkMode ? 'text-text-white' : 'text-red-700'}`}>
                 {toastMessage.description}
               </p>
             </div>
@@ -884,13 +884,13 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
       )}
 
       {/* Header */}
-      <div className={`flex items-center justify-between p-6 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+      <div className={`flex items-center justify-between p-6 border-b ${isDarkMode ? 'border-border-dark' : 'border-gray-200'}`}>
         <div>
           <h2 className="flex items-center gap-2 text-xl font-bold">
-            <ImagePlus className={`size-5 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
-            <span className={isDarkMode ? 'text-white' : 'text-gray-900'}>AI Image Generator</span>
+            <ImagePlus className={`size-5 ${isDarkMode ? 'text-primary-green' : 'text-blue-600'}`} />
+            <span className={isDarkMode ? 'text-text-white' : 'text-gray-900'}>AI Image Generator</span>
           </h2>
-          <p className={`text-sm mt-1.5 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+          <p className={`text-sm mt-1.5 ${isDarkMode ? 'text-text-light-gray' : 'text-gray-500'}`}>
             Create professional images with AI and customize them with your branding
           </p>
         </div>
@@ -898,7 +898,7 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
         <div className="flex items-center gap-2">
           {generatedImages.length > 0 && (
             <span className={`inline-flex text-xs font-medium px-2.5 py-0.5 rounded-full ${
-              isDarkMode ? 'bg-blue-900 text-blue-200' : 'bg-blue-100 text-blue-800'
+              isDarkMode ? 'bg-primary-green/20 text-primary-green' : 'bg-blue-100 text-blue-800'
             }`}>
               {generatedImages.length} image{generatedImages.length !== 1 ? 's' : ''} generated
             </span>
@@ -906,7 +906,7 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
         </div>
       </div>
       
-      <hr className={isDarkMode ? 'border-gray-700' : 'border-gray-200'} />
+      <hr className={isDarkMode ? 'border-border-dark' : 'border-gray-200'} />
       
       {/* Main content */}
       <div className="p-6">
@@ -915,13 +915,13 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
           <div className="lg:col-span-1 space-y-5">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <label htmlFor="imagePrompt" className={`text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
+                <label htmlFor="imagePrompt" className={`text-sm font-medium ${isDarkMode ? 'text-text-white' : 'text-gray-700'}`}>
                   Describe the image you want
                 </label>
                 
                 <button 
                   type="button" 
-                  className={isDarkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'}
+                  className={isDarkMode ? 'text-text-light-gray hover:text-text-white' : 'text-gray-500 hover:text-gray-700'}
                   title="Tips for better prompts"
                 >
                   <Info className="size-4" />
@@ -933,15 +933,15 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
                 value={imagePrompt}
                 onChange={(e) => setImagePrompt(e.target.value)}
                 placeholder="A professional image of a business person working in a modern office, soft lighting, deep focus..."
-                className={`w-full min-h-[120px] resize-none p-3 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none ${
+                className={`w-full min-h-[120px] resize-none p-3 rounded-md focus:ring-2 focus:ring-primary-green focus:border-primary-green outline-none ${
                   isDarkMode 
-                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                    ? 'bg-dark-bg border-border-dark text-text-white placeholder-text-light-gray' 
                     : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
                 }`}
               />
 
               <div className="flex flex-col gap-3">
-                <div className={`space-y-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
+                <div className={`space-y-2 ${isDarkMode ? 'text-text-white' : 'text-gray-700'}`}>
                   <label htmlFor="imageFormat" className="block text-sm font-medium">
                     Image Format
                   </label>
@@ -951,7 +951,7 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
                     onChange={(e) => setImageFormat(e.target.value)}
                     className={`w-full p-2 text-sm rounded-md ${
                       isDarkMode
-                        ? 'bg-gray-700 border-gray-600 text-gray-200'
+                        ? 'bg-dark-bg border-border-dark text-text-white'
                         : 'bg-white border-gray-300 text-gray-700'
                     }`}
                   >
@@ -968,11 +968,11 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
               
               {promptHistory.length > 0 && (
                 <div className="pt-1">
-                  <div className={`text-xs flex items-center gap-1 mb-1.5 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  <div className={`text-xs flex items-center gap-1 mb-1.5 ${isDarkMode ? 'text-text-light-gray' : 'text-gray-500'}`}>
                     <Sparkles className="size-3" /> Recent prompts
                   </div>
                   <div className={`h-20 w-full overflow-y-auto rounded-md p-2 ${
-                    isDarkMode ? 'border-gray-700 border bg-gray-800' : 'border border-gray-200 bg-white'
+                    isDarkMode ? 'border-border-dark border bg-dark-bg' : 'border border-gray-200 bg-white'
                   }`}>
                     {promptHistory.map((prompt, idx) => (
                       <button 
@@ -980,7 +980,7 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
                         type="button"
                         className={`w-full text-left text-xs py-1 px-2 mb-1 rounded ${
                           isDarkMode 
-                            ? 'hover:bg-gray-700 text-gray-300' 
+                            ? 'hover:bg-light-container text-text-light-gray' 
                             : 'hover:bg-gray-100 text-gray-700'
                         }`}
                         onClick={() => setImagePrompt(prompt)}
@@ -1001,10 +1001,10 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
                 className={`flex justify-center items-center w-full py-2 px-4 border rounded-md text-sm font-medium 
                   ${!imagePrompt.trim() || isImprovingImagePrompt 
                     ? isDarkMode 
-                      ? 'bg-gray-700 text-gray-500 cursor-not-allowed border-gray-700' 
+                      ? 'bg-dark-bg text-text-light-gray cursor-not-allowed border-border-dark' 
                       : 'bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200'
                     : isDarkMode
-                      ? 'bg-gray-700 text-gray-200 hover:bg-gray-600 border-gray-600' 
+                      ? 'bg-dark-bg text-text-white hover:bg-light-container border-border-dark' 
                       : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-300'
                   }`}
               >
@@ -1019,10 +1019,10 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
                 className={`flex justify-center items-center w-full py-2 px-4 rounded-md text-sm font-medium 
                   ${!imagePrompt.trim() || isGeneratingImages 
                     ? isDarkMode
-                      ? 'bg-blue-800 cursor-not-allowed text-blue-300'
+                      ? 'bg-primary-green/50 cursor-not-allowed text-text-white/70'
                       : 'bg-blue-300 cursor-not-allowed text-white'
                     : isDarkMode
-                      ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                      ? 'bg-primary-green hover:bg-primary-green/90 text-deep-black'
                       : 'bg-blue-600 hover:bg-blue-700 text-white'
                   }`}
               >
@@ -1031,12 +1031,12 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
               </button>
             </div>
             
-            <hr className={isDarkMode ? 'border-gray-700' : 'border-gray-200'} />
+            <hr className={isDarkMode ? 'border-border-dark' : 'border-gray-200'} />
             
             {/* Logo and branding section */}
             <div className="space-y-4">
               <div>
-                <h3 className={`text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>Brand your images</h3>
+                <h3 className={`text-sm font-medium mb-2 ${isDarkMode ? 'text-text-white' : 'text-gray-700'}`}>Brand your images</h3>
                 
                 <div className="flex items-center gap-2">
                   <button 
@@ -1045,10 +1045,10 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
                     className={`flex items-center justify-center py-1.5 px-3 text-sm font-medium rounded-md flex-1 
                       ${logoUrl 
                         ? isDarkMode
-                          ? 'bg-gray-700 text-gray-200 border border-gray-600 hover:bg-gray-600'
+                          ? 'bg-dark-bg text-text-white border border-border-dark hover:bg-light-container'
                           : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
                         : isDarkMode
-                          ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                          ? 'bg-primary-green hover:bg-primary-green/90 text-deep-black'
                           : 'bg-blue-600 hover:bg-blue-700 text-white'
                       }`}
                   >
@@ -1062,7 +1062,7 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
                       onClick={handleClearLogo}
                       className={`py-1.5 px-3 text-sm font-medium rounded-md ${
                         isDarkMode
-                          ? 'bg-gray-700 text-gray-200 border border-gray-600 hover:bg-gray-600'
+                          ? 'bg-dark-bg text-text-white border border-border-dark hover:bg-light-container'
                           : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
                       }`}
                     >

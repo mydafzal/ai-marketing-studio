@@ -6,6 +6,9 @@ import { buttonVariants } from '@/components/ui/button'
 import { IconPlus } from '@/components/ui/icons'
 import { MessageSquarePlus, History } from 'lucide-react'
 
+// Import the client-side header component
+import { ChatHistoryHeader } from '@/components/chat-history-header'
+
 interface ChatHistoryProps {
   userId?: string
 }
@@ -18,8 +21,8 @@ function ChatHistorySkeleton() {
           key={i}
           className="flex items-center gap-3 animate-pulse"
         >
-          <div className="size-2 rounded-full bg-zinc-200 dark:bg-zinc-700/50" />
-          <div className="w-full h-12 rounded-lg bg-zinc-100 dark:bg-zinc-800/50" />
+          <div className="size-2 rounded-full bg-[#2A2E3A]" />
+          <div className="w-full h-12 rounded-lg bg-[#1A1D29]" />
         </div>
       ))}
     </div>
@@ -29,27 +32,23 @@ function ChatHistorySkeleton() {
 function ChatHistoryContent({ userId }: { userId?: string }) {
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center gap-2 px-6 py-4 border-b border-zinc-200 dark:border-zinc-800">
-        <History className="size-5 text-zinc-500 dark:text-zinc-400" />
-        <h2 className="text-base font-semibold text-zinc-800 dark:text-zinc-200">
-          Chat History
-        </h2>
-      </div>
+      {/* Use the client component for the header */}
+      <ChatHistoryHeader />
+      
       <div className="p-3">
         <Link
           href="/"
           className={cn(
             buttonVariants({ variant: 'outline' }),
-            'w-full h-11 gap-2 justify-center',
-            'bg-white hover:bg-zinc-100',
-            'dark:bg-zinc-800 dark:hover:bg-zinc-700',
-            'border-zinc-200 hover:border-zinc-300',
-            'dark:border-zinc-700 dark:hover:border-zinc-600',
-            'text-zinc-800 dark:text-zinc-200 font-medium',
-            'transition-colors duration-200'
+            'w-full h-12 gap-3 justify-center',
+            'bg-[#4BF29C] hover:bg-[#5cffad]',
+            'border-[#4BF29C] hover:border-[#5cffad]',
+            'text-[#0A0C14] font-medium text-sm',
+            'rounded-xl shadow-sm',
+            'transition-all duration-200'
           )}
         >
-          <MessageSquarePlus className="size-4" />
+          <MessageSquarePlus className="size-5" />
           New Chat
         </Link>
       </div>
@@ -65,8 +64,7 @@ export function ChatHistory({ userId }: ChatHistoryProps) {
   return (
     <div className={cn(
       "flex flex-col h-full",
-      "bg-white border-r border-zinc-200",
-      "dark:bg-zinc-900 dark:border-zinc-800"
+      "bg-[#0A0C14] border-r border-[#2A2E3A]"
     )}>
       <ChatHistoryContent userId={userId} />
     </div>

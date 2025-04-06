@@ -101,35 +101,89 @@ export function GeographicalLocation({
     newTargeting.age_max = ageMax
     newTargeting.genders = genders
 
-    if (selectedGeoLocations.some((location) => location.cities.length > 0)) {
-      newTargeting.geo_locations = {
-        cities: selectedGeoLocations
-          .flatMap((location) => location.cities)
-          .map((city) => ({ key: city.key })),
+    // Structure location data in the format expected by the backend
+    // Group locations by country to match the expected backend format
+    const locationsByCountry = new Map<string, {
+      country: Country,
+      regions: Region[],
+      cities: City[]
+    }>();
+    
+    // Process all selected geo locations
+    selectedGeoLocations.forEach(location => {
+      if (!location.country) return;
+      
+      const countryCode = location.country.country_code;
+      if (!locationsByCountry.has(countryCode)) {
+        locationsByCountry.set(countryCode, {
+          country: location.country,
+          regions: [],
+          cities: []
+        });
       }
-      demographicData.cities = selectedGeoLocations.flatMap(
-        (location) => location.cities
-      )
-    } else if (selectedGeoLocations.some((location) => location.region)) {
-      newTargeting.geo_locations = {
-        regions: selectedGeoLocations
-          .map((location) => location.region?.key)
-          .filter((regionKey): regionKey is string => !!regionKey)
-          .map((key) => ({ key })),
+      
+      const countryData = locationsByCountry.get(countryCode)!;
+      
+      // Add region if it exists
+      if (location.region) {
+        countryData.regions.push(location.region);
       }
-      demographicData.regions = selectedGeoLocations
-        .map((location) => location.region)
-        .filter((region): region is Region => !!region)
-    } else {
-      newTargeting.geo_locations = {
-        countries: selectedGeoLocations
-          .map((location) => location.country?.country_code)
-          .filter((countryCode): countryCode is string => !!countryCode),
+      
+      // Add cities if they exist
+      if (location.cities.length > 0) {
+        countryData.cities.push(...location.cities);
       }
-      demographicData.countries = selectedGeoLocations
-        .map((location) => location.country)
-        .filter((country): country is Country => !!country)
+    });
+    
+    // Build the geo_locations object in Facebook's format
+    newTargeting.geo_locations = {};
+    
+    // Convert to format suitable for both backend and Facebook API
+    if (locationsByCountry.size > 0) {
+      // For Facebook targeting format (needed for immediate UI updates)
+      const regionKeys = Array.from(locationsByCountry.values())
+        .flatMap(data => data.regions)
+        .map(region => ({ key: region.key }));
+        
+      const cityKeys = Array.from(locationsByCountry.values())
+        .flatMap(data => data.cities)
+        .map(city => ({ key: city.key }));
+        
+      const countryKeys = Array.from(locationsByCountry.values())
+        .map(data => data.country.country_code)
+        .filter(code => !!code);
+      
+      // Add regions if present
+      if (regionKeys.length > 0) {
+        newTargeting.geo_locations.regions = regionKeys;
+      }
+      
+      // Add cities if present
+      if (cityKeys.length > 0) {
+        newTargeting.geo_locations.cities = cityKeys;
+      }
+      
+      // Add countries only if no specific regions or cities
+      if (regionKeys.length === 0 && cityKeys.length === 0 && countryKeys.length > 0) {
+        newTargeting.geo_locations.countries = countryKeys;
+      }
+      
+      // Build simplified format for backend processing in demographicData
+      demographicData.selected_locations = Array.from(locationsByCountry.values()).map(data => ({
+        country: data.country.name,
+        region: data.regions.map(r => r.name),
+        cities: data.cities.map(c => c.name)
+      }));
+      
+      // Also keep the original format for compatibility
+      demographicData.countries = Array.from(locationsByCountry.values()).map(data => data.country);
+      demographicData.regions = Array.from(locationsByCountry.values()).flatMap(data => data.regions);
+      demographicData.cities = Array.from(locationsByCountry.values()).flatMap(data => data.cities);
     }
+    
+    // Log the created targeting for debugging
+    console.log('📍 Generated geo_locations targeting:', JSON.stringify(newTargeting.geo_locations));
+    console.log('📍 Backend-formatted location data:', JSON.stringify(demographicData.selected_locations));
 
     demographicData.age_min = ageMin
     demographicData.age_max = ageMax

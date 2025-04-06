@@ -45,7 +45,7 @@ export function UserMessage({
       </div>
 
       {Array.isArray(userContent) ? (
-        <div className="flex flex-wrap flex-1">
+        <div className="flex flex-wrap flex-1 max-w-[80%]">
           {userContent
             .filter(message => message.type === 'image')
             .map((message, idx) => (
@@ -82,7 +82,7 @@ export function UserMessage({
           }
         </div>
       ) : (
-        <div className="flex-1 space-y-2 overflow-hidden">
+        <div className="flex-1 space-y-2 overflow-hidden max-w-[80%]">
           <div className="inline-block rounded-2xl rounded-tl-sm bg-blue-500/10 px-4 py-3 text-zinc-900 shadow-sm dark:bg-blue-500/10 dark:text-zinc-200">
             {children}
           </div>
@@ -110,7 +110,7 @@ export function BotMessage({
         <Brain className="size-5 text-green-600 dark:text-green-500" />
       </div>
       <div className="flex-1 space-y-2 overflow-hidden">
-        <div className="inline-block rounded-2xl rounded-tl-sm bg-zinc-100 px-4 py-3 shadow-sm dark:bg-zinc-800/80">
+        <div className="inline-block max-w-[80%] rounded-2xl rounded-tl-sm bg-zinc-100 px-4 py-3 shadow-sm dark:bg-zinc-800/80">
           <MemoizedReactMarkdown
             className="prose break-words prose-zinc dark:prose-invert prose-p:leading-relaxed prose-pre:p-0 max-w-none"
             remarkPlugins={[remarkGfm, remarkMath]}
@@ -177,7 +177,7 @@ export function BotCard({
       >
         <Brain className="size-5 text-green-600 dark:text-green-500" />
       </div>
-      <div className="flex-1 overflow-hidden rounded-2xl rounded-tl-sm bg-zinc-100 px-4 py-3 shadow-sm dark:bg-zinc-800/80">
+      <div className="flex-1 overflow-hidden rounded-2xl rounded-tl-sm bg-zinc-100 px-4 py-3 shadow-sm dark:bg-zinc-800/80 max-w-[80%]">
         {children}
       </div>
     </div>

@@ -17,7 +17,8 @@ export const useScrollAnchor = () => {
       requestAnimationFrame(() => {
         const container = scrollRef.current;
         if (container) {
-          const targetPosition = container.scrollHeight - container.clientHeight - 100;
+          // Removed the -100 offset to ensure it scrolls all the way to the bottom
+          const targetPosition = container.scrollHeight - container.clientHeight;
           container.scrollTo({
             top: targetPosition,
             behavior: 'smooth'
@@ -42,8 +43,9 @@ export const useScrollAnchor = () => {
 
     const handleScroll = () => {
       const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
-      const paddingBottom = 150; // Increased threshold for bottom detection
-      const distanceFromBottom = scrollHeight - (scrollTop + clientHeight + 100);
+      // Increased threshold for bottom detection
+      const paddingBottom = 200; 
+      const distanceFromBottom = scrollHeight - (scrollTop + clientHeight);
       const atBottom = distanceFromBottom < paddingBottom;
 
       setIsAtBottom(atBottom);
@@ -55,8 +57,8 @@ export const useScrollAnchor = () => {
 
       scrollContainer._scrollTimeout = window.setTimeout(() => {
         setIsScrolling(false);
-        // Check if we should snap to bottom
-        if (distanceFromBottom < 20) {
+        // Only snap to bottom if very close to avoid bounce effect
+        if (distanceFromBottom < 10) {
           scrollToBottom();
         }
       }, 150);
@@ -89,7 +91,8 @@ export const useScrollAnchor = () => {
       },
       {
         root: scrollRef.current,
-        rootMargin: '0px 0px -150px 0px', // Increased bottom margin
+        // Increased bottom margin to ensure visibility detection works with the padding
+        rootMargin: '0px 0px -200px 0px',
         threshold: 0
       }
     );

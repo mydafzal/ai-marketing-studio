@@ -6,8 +6,11 @@ import { cn } from '@/lib/utils'
 import { TailwindIndicator } from '@/components/tailwind-indicator'
 import { Providers } from '@/components/providers'
 import { Header } from '@/components/header'
-import { Toaster as SonnerToaster } from '@/components/ui/sonner'
 import { Toaster } from '@/components/ui/toaster'
+import { auth } from '@/auth'
+
+import CrispChat from '@/components/crisp-chat'
+import { getUser } from '@/app/login/actions'
 
 export const metadata = {
   metadataBase: process.env.VERCEL_URL
@@ -19,26 +22,26 @@ export const metadata = {
   },
   description: 'An AI-powered chatbot built to support your digital marketing campaigns!',
   icons: {
-    icon: '/favicon.ico',
-    shortcut: '/favicon-16x16.png',
-    apple: '/apple-touch-icon.png'
+    icon: '/favicon.png',
+    shortcut: '/favicon.png',
+    apple: '/favicon.png'
   }
 }
 
 export const viewport = {
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: 'white' },
-    { media: '(prefers-color-scheme: dark)', color: 'black' }
-  ]
+  themeColor: '#0A0C14'
 }
 
 interface RootLayoutProps {
   children: React.ReactNode
 }
 
-export default function RootLayout({ children }: RootLayoutProps) {
+export default async function RootLayout({ children }: RootLayoutProps) {
+  const session = await auth()
+  const user = session?.user?.email ? await getUser(session.user.email) : null
+
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className="dark">
       <body
         className={cn(
           'font-sans antialiased',
@@ -46,20 +49,17 @@ export default function RootLayout({ children }: RootLayoutProps) {
           GeistMono.variable
         )}
       >
-        <SonnerToaster position="top-center" />
         <Toaster />
         <Providers
           attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
         >
-          <div className="flex flex-col min-h-screen">
+          <div className="flex flex-col min-h-screen bg-[#0A0C14]">
             <Header />
-            <main className="flex flex-col flex-1 bg-muted/50">{children}</main>
+            <main className="flex flex-col flex-1 bg-[#0A0C14]">{children}</main>
           </div>
           <TailwindIndicator />
         </Providers>
+        {user && <CrispChat user={{ email: user.email, name: user.name }} />}
       </body>
     </html>
   )
