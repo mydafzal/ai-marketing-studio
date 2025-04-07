@@ -50,11 +50,13 @@ const fetchInvoices = async (
     customer: customerId,
     limit: 5
   })
+
   return invoices.data.map(i => {
     return {
       date: unixTimeStampToDateTime(i.created)!,
       invoiceNumber: i.id,
-      amount: i.amount_due
+      amount: i.amount_due,
+      hosted_invoice_url: i.hosted_invoice_url || '#' // fallback to '#' if not present
     }
   })
 }
@@ -87,13 +89,11 @@ export default async function IndexPage() {
     }
   }
 
-  const invoices = await fetchInvoices(user?.sub_stripe_customer_id)
   return (
     <div className="relative flex h-[calc(100vh_-_theme(spacing.16))] overflow-hidden">
       <SidebarDesktop />
       <Subscription
         user={user}
-        invoices={invoices}
         handleCancelSubscription={handleCancelSubscription}
       />
     </div>
