@@ -351,7 +351,7 @@ function Onboarding({
     const [websiteLink, setWebsiteLink] = React.useState<string>(userDetails?.website_link || "")
     const [privacyPolicyLink, setPrivacyPolicyLink] = React.useState<string>(userDetails?.privacy_policy_link || "")
     const [preferredLanguage, setPreferredLanguage] = React.useState<string>(userDetails?.preferred_language || "en")
-    const [goal, setGoal] = React.useState<string>(userDetails?.goal || GOAL_OPTIONS.GENERATE_LEADS)
+    const [goal, setGoal] = React.useState<string>(userDetails?.goal || "")
     const [locations, setLocations] = React.useState<LocationData | undefined>(userDetails?.locations)
 
     const [dbChangeRequested, setDbChangeRequested] = React.useState(false)
@@ -384,7 +384,7 @@ function Onboarding({
             setWebsiteLink(userDetails.website_link || "")
             setPrivacyPolicyLink(userDetails.privacy_policy_link || "")
             setPreferredLanguage(userDetails.preferred_language || "en")
-            setGoal(userDetails.goal || GOAL_OPTIONS.GENERATE_LEADS)
+            setGoal(userDetails.goal || "")
             
             // Handle locations - may be stored as JSON string in database
             if (userDetails.locations) {
@@ -486,7 +486,7 @@ function Onboarding({
             }
 
             // Manually set goal since it's removed from the form
-            details.goal = GOAL_OPTIONS.GENERATE_LEADS;
+            details.goal = "";
 
             // Validate required fields before saving
             const requiredFields = [
