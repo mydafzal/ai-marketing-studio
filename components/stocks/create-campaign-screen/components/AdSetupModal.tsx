@@ -44,6 +44,7 @@ interface AdSetupModalProps {
   adPlacements: AdPlacements;
   budget: string;
   creatives: any[];
+  onCreativesUpdated?: (creatives: ExtendedCreative[]) => void;
 }
 
 export function AdSetupModal({
@@ -62,7 +63,8 @@ export function AdSetupModal({
                                demographicFilters,
                                adPlacements,
                                budget,
-                               creatives
+                               creatives,
+                               onCreativesUpdated
                              }: AdSetupModalProps) {
   // States for editable headline/description
   const [editedHeadline, setEditedHeadline] = useState(
@@ -188,6 +190,11 @@ export function AdSetupModal({
         
         // Update the creatives state with new data
         setUpdatedCreatives(newCreatives);
+        
+        // Call the onCreativesUpdated callback if provided
+        if (onCreativesUpdated) {
+          onCreativesUpdated(newCreatives);
+        }
       }
       
       // Update original values to match current values
