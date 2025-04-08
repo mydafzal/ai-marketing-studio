@@ -64,18 +64,28 @@ export function AdSetupModal({
                                budget,
                                creatives
                              }: AdSetupModalProps) {
-  // --------------------------------------------
-  // NEW: Local states for editable headline/description
-  // --------------------------------------------
+  // States for editable headline/description
   const [editedHeadline, setEditedHeadline] = useState(
       masterFlowData?.ad_creative_text?.ad_creative_title || adHeadline
   );
   const [editedDescription, setEditedDescription] = useState(
       masterFlowData?.ad_creative_text?.ad_creative_description || adText
   );
-
-  // We'll use this to trigger the save in a useEffect
-  const [shouldSave, setShouldSave] = useState(false);
+  
+  // Track original values to detect changes
+  const [originalHeadline, setOriginalHeadline] = useState(
+      masterFlowData?.ad_creative_text?.ad_creative_title || adHeadline
+  );
+  const [originalDescription, setOriginalDescription] = useState(
+      masterFlowData?.ad_creative_text?.ad_creative_description || adText
+  );
+  
+  // Track if text has been modified and needs saving
+  const [isTextModified, setIsTextModified] = useState(false);
+  
+  // Track save operation state
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   // Tab states
   const [activeSettingsTab, setActiveSettingsTab] = useState<string>("adtext");
@@ -90,43 +100,75 @@ export function AdSetupModal({
   const [error, setError] = useState<string | null>(null);
   const previewRef = useRef<HTMLDivElement>(null);
 
-  // --------------------------------------------
-  // NEW: useEffect to handle the "save" call
-  // --------------------------------------------
+  // Check for text modifications
   useEffect(() => {
-    if (!shouldSave) return;
+    // Check if either headline or description has changed
+    const headlineChanged = editedHeadline !== originalHeadline;
+    const descriptionChanged = editedDescription !== originalDescription;
+    
+    // Update the modified state based on changes
+    setIsTextModified(headlineChanged || descriptionChanged);
+    
+    // Reset the save success message when text is modified again
+    if (headlineChanged || descriptionChanged) {
+      setSaveSuccess(false);
+    }
+  }, [editedHeadline, editedDescription, originalHeadline, originalDescription]);
 
-    const postAdCreativeTextAdjustment = async () => {
-      try {
-        // Simulate a POST request to your API
-        const response = await fetch('/api/proxy-ad-creative-text-adjustment', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            headline: editedHeadline,
-            description: editedDescription,
-          }),
-        });
+  // Handler for headline changes
+  const handleHeadlineChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEditedHeadline(e.target.value);
+  };
 
-        if (!response.ok) {
-          throw new Error('Failed to save ad text changes.');
-        }
-        console.log('Ad text changes saved successfully!');
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setShouldSave(false);
-      }
-    };
-
-    postAdCreativeTextAdjustment();
-  }, [shouldSave, editedHeadline, editedDescription]);
+  // Handler for description changes
+  const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setEditedDescription(e.target.value);
+  };
 
   // Handler for user clicking the "save" icon
-  const handleSave = () => {
-    // In a real scenario, you'd probably call your API directly here.
-    // We set a flag so our useEffect will do the actual fetch.
-    setShouldSave(true);
+  const handleSave = async () => {
+    // Only proceed if text is actually modified
+    if (!isTextModified) return;
+    
+    setIsSaving(true);
+    
+    try {
+      // Call the API to save the changes
+      const response = await fetch('/api/proxy-ad-creative-text-adjustment', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          headline: editedHeadline,
+          description: editedDescription,
+          // Add campaign ID and creative ID if available
+          campaignId: 123123123, //masterFlowData?.campaign_id,
+          adCreativeId: 123123123123, //masterFlowData?.ad_creative_id || creatives?.[0]?.creative_id
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save ad text changes.');
+      }
+      
+      // Update original values to match current values
+      setOriginalHeadline(editedHeadline);
+      setOriginalDescription(editedDescription);
+      
+      // Mark as no longer modified and save as successful
+      setIsTextModified(false);
+      setSaveSuccess(true);
+      
+      // Reset success message after 3 seconds
+      setTimeout(() => {
+        setSaveSuccess(false);
+      }, 3000);
+      
+      console.log('Ad text changes saved successfully!');
+    } catch (err) {
+      console.error('Error saving ad text:', err);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // Update format based on creative type when tab changes
@@ -544,14 +586,34 @@ export function AdSetupModal({
                       Ad Creative Text
                     </h4>
 
-                    {/* Save icon button */}
-                    <button
-                        onClick={handleSave}
-                        className="text-primary-green hover:text-white transition-colors"
-                        title="Save changes"
-                    >
-                      <Save className="w-5 h-5" />
-                    </button>
+                    {/* Save icon button with status indicators */}
+                    <div className="flex flex-col items-end">
+                      <button
+                          onClick={handleSave}
+                          disabled={!isTextModified || isSaving}
+                          className={`transition-colors relative ${
+                            isSaving ? 'opacity-50 cursor-not-allowed' : 
+                            isTextModified ? 'text-yellow-400 hover:text-yellow-300' : 
+                            'text-primary-green hover:text-white'
+                          }`}
+                          title={isTextModified ? "Save changes" : "No changes to save"}
+                      >
+                        <Save className="w-5 h-5" />
+                        {isSaving && (
+                          <span className="animate-spin absolute inset-0 flex items-center justify-center">
+                            <span className="w-3 h-3 border-2 border-t-transparent border-yellow-400 rounded-full"></span>
+                          </span>
+                        )}
+                      </button>
+                      
+                      {/* Status indicator text */}
+                      {isTextModified && (
+                        <span className="text-yellow-400 text-xs mt-1">Click to save</span>
+                      )}
+                      {saveSuccess && (
+                        <span className="text-green-400 text-xs mt-1">Saved!</span>
+                      )}
+                    </div>
                   </div>
 
                   <div className="space-y-6">
@@ -561,8 +623,12 @@ export function AdSetupModal({
                       <input
                           type="text"
                           value={editedHeadline}
-                          onChange={(e) => setEditedHeadline(e.target.value)}
-                          className="w-full bg-container-bg p-3 rounded-lg border border-border-dark text-text-white focus:outline-none"
+                          onChange={handleHeadlineChange}
+                          className={`w-full bg-container-bg p-3 rounded-lg border ${
+                            editedHeadline !== originalHeadline 
+                              ? 'border-yellow-400' 
+                              : 'border-border-dark'
+                          } text-text-white focus:outline-none focus:border-primary-green`}
                       />
                     </div>
 
@@ -571,10 +637,25 @@ export function AdSetupModal({
                       <h5 className="font-medium text-text-white mb-2">Description</h5>
                       <textarea
                           value={editedDescription}
-                          onChange={(e) => setEditedDescription(e.target.value)}
-                          className="w-full bg-container-bg p-3 rounded-lg border border-border-dark text-text-white focus:outline-none min-h-[80px]"
+                          onChange={handleDescriptionChange}
+                          className={`w-full bg-container-bg p-3 rounded-lg border ${
+                            editedDescription !== originalDescription 
+                              ? 'border-yellow-400' 
+                              : 'border-border-dark'
+                          } text-text-white focus:outline-none focus:border-primary-green min-h-[80px]`}
                       />
                     </div>
+
+                    {masterFlowData?.ad_creative_text?.ad_creative_name && (
+                        <div>
+                          <h5 className="font-medium text-text-white mb-2">Creative Name</h5>
+                          <div className="bg-container-bg p-3 rounded-lg border border-border-dark">
+                            <p className="text-text-white">
+                              {masterFlowData.ad_creative_text.ad_creative_name}
+                            </p>
+                          </div>
+                        </div>
+                    )}
 
                     {campaignName && (
                         <div>
