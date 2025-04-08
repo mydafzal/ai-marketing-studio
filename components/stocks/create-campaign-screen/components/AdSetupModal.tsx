@@ -133,21 +133,44 @@ export function AdSetupModal({
     setIsSaving(true);
     
     try {
+      // Get required fields from masterFlowData
+      const campaign_session_id = masterFlowData?.campaign_flow_session_id;
+      const fb_account_id = masterFlowData?.fb_account_id;
+      
+      // Validate required fields
+      if (!campaign_session_id) {
+        throw new Error('Missing campaign session ID');
+      }
+      
+      if (!fb_account_id) {
+        throw new Error('Missing Facebook account ID');
+      }
+      
       // Call the API to save the changes
-      const response = await fetch('/api/proxy-ad-creative-text-adjustment', {
+      const response = await fetch('/api/fasty-bot/proxy-ad-creative-text-adjustment', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          headline: editedHeadline,
-          description: editedDescription,
-          // Add campaign ID and creative ID if available
-          campaignId: 123123123, //masterFlowData?.campaign_id,
-          adCreativeId: 123123123123, //masterFlowData?.ad_creative_id || creatives?.[0]?.creative_id
+          campaign_session_id,
+          fb_account_id,
+          title: editedHeadline,
+          message: editedDescription,
         }),
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to save ad text changes.');
+      // Parse response
+      const data = await response.json();
+      
+      if (!response.ok || !data.success) {
+        const errorMessage = data.message || 'Failed to save ad text changes';
+        console.error('API error:', data);
+        throw new Error(errorMessage);
+      }
+      
+      // Process the response to check if it contains updated creative data
+      if (data.creatives && data.creatives.length > 0) {
+        console.log('Updated creatives:', data.creatives);
+        // Here you could update the creatives in the component state if needed
       }
       
       // Update original values to match current values
@@ -166,6 +189,8 @@ export function AdSetupModal({
       console.log('Ad text changes saved successfully!');
     } catch (err) {
       console.error('Error saving ad text:', err);
+      // Show error message to user (could use a toast notification in a real app)
+      alert(`Error: ${err instanceof Error ? err.message : 'Failed to save changes'}`);
     } finally {
       setIsSaving(false);
     }
