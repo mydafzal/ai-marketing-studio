@@ -63,6 +63,12 @@ export function ReviewScreen({
   handlePublish,
   masterFlowData
 }: ReviewScreenProps) {
+  // State to track updated creatives from any text edits
+  const [updatedCreatives, setUpdatedCreatives] = useState<ExtendedCreative[]>([]);
+  
+  // State to track which creative is currently being viewed
+  const [currentCreativeIndex, setCurrentCreativeIndex] = useState<number>(0);
+  
   const [creativeId, setCreativeId] = useState<string>("");
   const [adFormat, setAdFormat] = useState<string>("INSTAGRAM_STANDARD");
   const [previewHtml, setPreviewHtml] = useState<string>("");  
@@ -71,23 +77,72 @@ export function ReviewScreen({
   const [error, setError] = useState<string | null>(null);
   const [isAdSetupModalOpen, setIsAdSetupModalOpen] = useState(false);
 
-  // Extract the creative ID from master flow data if available
-  useEffect(() => {
+  // Get all creatives - either from updatedCreatives, master flow data, or media items
+  const getCreatives = (): ExtendedCreative[] => {
+    // If we have updated creatives from text edits, use those
+    if (updatedCreatives.length > 0) {
+      return updatedCreatives;
+    }
+    
+    // Otherwise use creatives from master flow data
     if (masterFlowData?.creatives_and_previews?.creatives && 
         masterFlowData.creatives_and_previews.creatives.length > 0) {
-      const creative = masterFlowData.creatives_and_previews.creatives[0] as ExtendedCreative;
-      if (creative.creative_id) {
-        setCreativeId(creative.creative_id);
-        
-        // Set a default format based on the creative type
-        if (creative.media_type === 'video' || creative.is_video) {
-          setAdFormat("INSTAGRAM_STANDARD");
-        } else {
-          setAdFormat("INSTAGRAM_STANDARD");
-        }
+      return masterFlowData.creatives_and_previews.creatives as ExtendedCreative[];
+    }
+    
+    // If no creatives in master flow data, create mock creatives from media items
+    return mediaItems.map((item, index) => {
+      const isVideo = item.type === 'video';
+      return {
+        creative_id: `media-${index}`,
+        preview_uuid: '',
+        media_type: item.type,
+        is_video: isVideo,
+        is_image: !isVideo,
+        media_id: item.id,
+        media_url: item.url,
+        previews: []
+      } as ExtendedCreative;
+    });
+  };
+  
+  // Get the creatives array
+  const creatives = getCreatives();
+  
+  // Calculate total number of creatives
+  const totalCreatives = creatives.length;
+  
+  // Navigate to previous creative
+  const navigateToPrevCreative = () => {
+    if (totalCreatives <= 1) return;
+    setCurrentCreativeIndex(prev => (prev - 1 + totalCreatives) % totalCreatives);
+  };
+  
+  // Navigate to next creative
+  const navigateToNextCreative = () => {
+    if (totalCreatives <= 1) return;
+    setCurrentCreativeIndex(prev => (prev + 1) % totalCreatives);
+  };
+
+  // Update current creative ID when index changes or creatives array changes
+  useEffect(() => {
+    if (creatives.length === 0) return;
+    
+    // Make sure index is within bounds
+    const safeIndex = Math.min(currentCreativeIndex, creatives.length - 1);
+    
+    const creative = creatives[safeIndex];
+    if (creative?.creative_id) {
+      setCreativeId(creative.creative_id);
+      
+      // Set a default format based on the creative type
+      if (creative.media_type === 'video' || creative.is_video) {
+        setAdFormat("INSTAGRAM_STANDARD");
+      } else {
+        setAdFormat("INSTAGRAM_STANDARD");
       }
     }
-  }, [masterFlowData]);
+  }, [currentCreativeIndex, creatives]);
 
   // Fetch the creative preview HTML when creative ID or ad format changes
   useEffect(() => {
@@ -182,6 +237,10 @@ export function ReviewScreen({
   const processHtml = (html: string) => {
     // First, check if the HTML contains the Instagram Actor ID error message and replace it with a blank preview
     if (html.includes('Instagram Actor ID is required') || html.includes('Select an Instagram account')) {
+      // Get the current creative to display proper info if available
+      const currentCreative = creatives[currentCreativeIndex];
+      const isUpdated = updatedCreatives.length > 0;
+      
       // Return a simple placeholder that won't show the error
       return `
         <html>
@@ -206,6 +265,7 @@ export function ReviewScreen({
                 flex-direction: column;
                 text-align: center;
                 padding: 1rem;
+                position: relative;
               }
               .ad-title {
                 font-size: 18px;
@@ -216,10 +276,33 @@ export function ReviewScreen({
                 font-size: 14px;
                 color: #ccc;
               }
+              .creative-indicator {
+                position: absolute;
+                top: 20px;
+                left: 20px;
+                background-color: rgba(255, 255, 255, 0.1);
+                color: #ccc;
+                font-size: 12px;
+                padding: 2px 8px;
+                border-radius: 12px;
+              }
+              .updated-badge {
+                position: absolute;
+                top: 20px;
+                right: 20px;
+                background-color: rgba(34, 197, 94, 0.2);
+                color: rgb(74, 222, 128);
+                font-size: 12px;
+                padding: 2px 8px;
+                border-radius: 12px;
+                border: 1px solid rgba(34, 197, 94, 0.3);
+              }
             </style>
           </head>
           <body>
             <div class="preview-placeholder">
+              ${totalCreatives > 1 ? `<div class="creative-indicator">Creative ${currentCreativeIndex + 1} of ${totalCreatives}</div>` : ''}
+              ${isUpdated ? '<div class="updated-badge">Updated</div>' : ''}
               <div class="ad-title">${adHeadline || 'Ad Preview'}</div>
               <div class="ad-text">${adText?.substring(0, 100) || 'Ad description will appear here'} ${adText?.length > 100 ? '...' : ''}</div>
             </div>
@@ -390,35 +473,18 @@ export function ReviewScreen({
   
   const leadForm = getLeadFormData();
 
-  // Get all creatives - either from master flow data or media items
-  const getCreatives = () => {
-    if (masterFlowData?.creatives_and_previews?.creatives && 
-        masterFlowData.creatives_and_previews.creatives.length > 0) {
-      return masterFlowData.creatives_and_previews.creatives;
+  // Handle receiving updated creatives from AdSetupModal
+  const handleUpdatedCreatives = (newCreatives: ExtendedCreative[]) => {
+    if (newCreatives && newCreatives.length > 0) {
+      setUpdatedCreatives(newCreatives);
+      // Reset the current index to 0 when we get new creatives
+      setCurrentCreativeIndex(0);
     }
-    
-    // If no creatives in master flow data, create mock creatives from media items using our ExtendedCreative interface
-    return mediaItems.map((item, index) => {
-      const isVideo = item.type === 'video';
-      return {
-        creative_id: `media-${index}`,
-        preview_uuid: '',
-        media_type: item.type,
-        is_video: isVideo,
-        is_image: !isVideo,
-        media_id: item.id,
-        media_url: item.url,
-        previews: []
-      } as ExtendedCreative;
-    });
   };
-
-  // Get creatives for display
-  const creatives = getCreatives();
 
   return (
     <div className="flex flex-col h-full bg-container-bg text-text-white rounded-xl border border-border-dark shadow-[0_4px_12px_rgba(0,0,0,0.1)]">
-      {/* Ad Setup Modal */}
+      {/* Ad Setup Modal with callback to receive updated creatives */}
       <AdSetupModal 
         isOpen={isAdSetupModalOpen}
         onOpenChange={setIsAdSetupModalOpen}
@@ -435,7 +501,8 @@ export function ReviewScreen({
         demographicFilters={demographicFilters}
         adPlacements={adPlacements}
         budget={budget}
-        creatives={creatives}
+        creatives={updatedCreatives.length > 0 ? updatedCreatives : creatives}
+        onCreativesUpdated={handleUpdatedCreatives}
       />
 
       <div className="mb-6 px-6 pt-6">
@@ -495,13 +562,68 @@ export function ReviewScreen({
                 )}
               </div>
               
-              <Button
-                onClick={() => setIsAdSetupModalOpen(true)}
-                className="w-full mt-4 bg-dark-bg hover:bg-[#212534] border border-border-dark text-white flex items-center justify-center"
-              >
-                <Settings2 className="mr-2 size-4" />
-                View Ad Setup
-              </Button>
+              {/* Navigation arrows and creative count indicator */}
+              {totalCreatives > 1 && (
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm text-text-light-gray">
+                    Creative {currentCreativeIndex + 1} of {totalCreatives}
+                  </p>
+                  
+                  {updatedCreatives.length > 0 && (
+                    <span className="text-xs bg-green-800/20 text-green-400 px-2 py-1 rounded border border-green-600/30">
+                      Using updated creatives
+                    </span>
+                  )}
+                </div>
+              )}
+              
+              {/* Navigation buttons and View Ad Setup button */}
+              <div className="flex space-x-2 mt-4">
+                {totalCreatives > 1 ? (
+                  <>
+                    <button
+                      onClick={navigateToPrevCreative}
+                      className="w-1/2 py-2 bg-dark-bg hover:bg-[#212534] border border-border-dark text-white flex items-center justify-center"
+                      disabled={totalCreatives <= 1}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                      Prev
+                    </button>
+                    
+                    <button
+                      onClick={navigateToNextCreative}
+                      className="w-1/2 py-2 bg-dark-bg hover:bg-[#212534] border border-border-dark text-white flex items-center justify-center"
+                      disabled={totalCreatives <= 1}
+                    >
+                      Next
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  </>
+                ) : (
+                  <Button
+                    onClick={() => setIsAdSetupModalOpen(true)}
+                    className="w-full py-2 bg-dark-bg hover:bg-[#212534] border border-border-dark text-white flex items-center justify-center"
+                  >
+                    <Settings2 className="mr-2 size-4" />
+                    View Ad Setup
+                  </Button>
+                )}
+              </div>
+              
+              {/* Show Ad Setup button separately if we have multiple creatives */}
+              {totalCreatives > 1 && (
+                <Button
+                  onClick={() => setIsAdSetupModalOpen(true)}
+                  className="w-full mt-2 py-2 bg-dark-bg hover:bg-[#212534] border border-border-dark text-white flex items-center justify-center"
+                >
+                  <Settings2 className="mr-2 size-4" />
+                  View Ad Setup
+                </Button>
+              )}
             </div>
           ) : (
             <div className="space-y-4">
@@ -509,13 +631,68 @@ export function ReviewScreen({
                 No creative preview available. Make sure your media has been uploaded successfully.
               </div>
               
-              <Button
-                onClick={() => setIsAdSetupModalOpen(true)}
-                className="w-full mt-4 bg-dark-bg hover:bg-[#212534] border border-border-dark text-white flex items-center justify-center"
-              >
-                <Settings2 className="mr-2 size-4" />
-                View Ad Setup
-              </Button>
+              {/* Navigation arrows and creative count indicator */}
+              {totalCreatives > 1 && (
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm text-text-light-gray">
+                    Creative {currentCreativeIndex + 1} of {totalCreatives}
+                  </p>
+                  
+                  {updatedCreatives.length > 0 && (
+                    <span className="text-xs bg-green-800/20 text-green-400 px-2 py-1 rounded border border-green-600/30">
+                      Using updated creatives
+                    </span>
+                  )}
+                </div>
+              )}
+              
+              {/* Navigation buttons and View Ad Setup button */}
+              <div className="flex space-x-2 mt-4">
+                {totalCreatives > 1 ? (
+                  <>
+                    <button
+                      onClick={navigateToPrevCreative}
+                      className="w-1/2 py-2 bg-dark-bg hover:bg-[#212534] border border-border-dark text-white flex items-center justify-center"
+                      disabled={totalCreatives <= 1}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                      Prev
+                    </button>
+                    
+                    <button
+                      onClick={navigateToNextCreative}
+                      className="w-1/2 py-2 bg-dark-bg hover:bg-[#212534] border border-border-dark text-white flex items-center justify-center"
+                      disabled={totalCreatives <= 1}
+                    >
+                      Next
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  </>
+                ) : (
+                  <Button
+                    onClick={() => setIsAdSetupModalOpen(true)}
+                    className="w-full py-2 bg-dark-bg hover:bg-[#212534] border border-border-dark text-white flex items-center justify-center"
+                  >
+                    <Settings2 className="mr-2 size-4" />
+                    View Ad Setup
+                  </Button>
+                )}
+              </div>
+              
+              {/* Show Ad Setup button separately if we have multiple creatives */}
+              {totalCreatives > 1 && (
+                <Button
+                  onClick={() => setIsAdSetupModalOpen(true)}
+                  className="w-full mt-2 py-2 bg-dark-bg hover:bg-[#212534] border border-border-dark text-white flex items-center justify-center"
+                >
+                  <Settings2 className="mr-2 size-4" />
+                  View Ad Setup
+                </Button>
+              )}
             </div>
           )}
         </div>
