@@ -86,6 +86,9 @@ export function AdSetupModal({
   // Track save operation state
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  
+  // Track updated creatives from the API response
+  const [updatedCreatives, setUpdatedCreatives] = useState<ExtendedCreative[]>([]);
 
   // Tab states
   const [activeSettingsTab, setActiveSettingsTab] = useState<string>("adtext");
@@ -167,10 +170,24 @@ export function AdSetupModal({
         throw new Error(errorMessage);
       }
       
-      // Process the response to check if it contains updated creative data
+      // Process the response to update the creatives with new data
       if (data.creatives && data.creatives.length > 0) {
         console.log('Updated creatives:', data.creatives);
-        // Here you could update the creatives in the component state if needed
+        
+        // Transform API response creatives to ExtendedCreative format
+        const newCreatives: ExtendedCreative[] = data.creatives.map((creative: any) => ({
+          creative_id: creative.creative_id,
+          name: creative.name,
+          preview_uuid: creative.preview_uuid,
+          is_image: creative.is_image ?? false,
+          is_video: creative.is_video ?? false,
+          media_type: creative.is_video ? 'video' : 'image',
+          previews: creative.previews || {},
+          // Preserve any other fields from original creatives if needed
+        }));
+        
+        // Update the creatives state with new data
+        setUpdatedCreatives(newCreatives);
       }
       
       // Update original values to match current values
@@ -198,11 +215,16 @@ export function AdSetupModal({
 
   // Update format based on creative type when tab changes
   useEffect(() => {
-    if (creatives && creatives.length > 0) {
+    // Use updated creatives if available, otherwise fall back to props
+    const effectiveCreatives = updatedCreatives.length > 0 ? updatedCreatives : creatives;
+    
+    if (effectiveCreatives && effectiveCreatives.length > 0) {
       const creativeIndex = parseInt(activeCreativeTab.split('-')[1]) || 0;
-      if (creatives[creativeIndex]) {
-        const creative = creatives[creativeIndex] as ExtendedCreative;
-        // In real logic, you'd set different formats for videos/images if desired
+      if (effectiveCreatives[creativeIndex]) {
+        const creative = effectiveCreatives[creativeIndex] as ExtendedCreative;
+        console.log('Setting format based on creative:', creative);
+        
+        // Set format based on media type
         if (creative.media_type === 'video' || creative.is_video) {
           setAdFormat("INSTAGRAM_STANDARD");
         } else {
@@ -210,20 +232,32 @@ export function AdSetupModal({
         }
       }
     }
-  }, [activeCreativeTab, creatives]);
+  }, [activeCreativeTab, creatives, updatedCreatives]);
 
   // Fetch preview HTML when a creative is selected
   useEffect(() => {
     const fetchPreview = async () => {
+      // Determine which creatives array to use - use updated creatives if available, otherwise fall back to props
+      const effectiveCreatives = updatedCreatives.length > 0 ? updatedCreatives : creatives;
+      
       if (
-          !creatives ||
-          creatives.length === 0 ||
-          !creatives[parseInt(activeCreativeTab.split('-')[1])]?.creative_id
+          !effectiveCreatives ||
+          effectiveCreatives.length === 0
       ) {
         return;
       }
+      
+      // Get the index of the current creative
+      const creativeIndex = parseInt(activeCreativeTab.split('-')[1]) || 0;
+      
+      // Make sure the creative exists at this index
+      if (!effectiveCreatives[creativeIndex]?.creative_id) {
+        setError("Selected creative not found");
+        return;
+      }
 
-      const creativeId = creatives[parseInt(activeCreativeTab.split('-')[1])].creative_id;
+      const creativeId = effectiveCreatives[creativeIndex].creative_id;
+      console.log(`Fetching preview for creative ID: ${creativeId} with format: ${adFormat}`);
 
       setIsLoading(true);
       setError(null);
@@ -251,7 +285,7 @@ export function AdSetupModal({
     if (isOpen) {
       fetchPreview();
     }
-  }, [isOpen, activeCreativeTab, adFormat, creatives]);
+  }, [isOpen, activeCreativeTab, adFormat, creatives, updatedCreatives]);
 
   // Modify iframes to be fixed size
   useEffect(() => {
@@ -303,6 +337,11 @@ export function AdSetupModal({
   const processHtml = (html: string) => {
     // Check for "Instagram Actor ID" error
     if (html.includes('Instagram Actor ID is required') || html.includes('Select an Instagram account')) {
+      // Always use the most recent version of the text (edited values take precedence)
+      const title = editedHeadline || masterFlowData?.ad_creative_text?.ad_creative_title || 'Ad Preview';
+      const description = editedDescription || masterFlowData?.ad_creative_text?.ad_creative_description || 'Ad description will appear here';
+      
+      // Create a placeholder preview with the current text
       return `
         <html>
           <head>
@@ -336,19 +375,26 @@ export function AdSetupModal({
                 font-size: 14px;
                 color: #ccc;
               }
+              .updated-badge {
+                position: absolute;
+                top: 20px;
+                right: 20px;
+                background-color: rgba(34, 197, 94, 0.2);
+                color: rgb(74, 222, 128);
+                font-size: 12px;
+                padding: 2px 8px;
+                border-radius: 12px;
+                border: 1px solid rgba(34, 197, 94, 0.3);
+              }
             </style>
           </head>
           <body>
             <div class="preview-placeholder">
-              <div class="ad-title">${masterFlowData?.ad_creative_text?.ad_creative_title || editedHeadline || 'Ad Preview'}</div>
+              ${updatedCreatives.length > 0 ? '<div class="updated-badge">Updated</div>' : ''}
+              <div class="ad-title">${title}</div>
               <div class="ad-text">
-                ${(masterFlowData?.ad_creative_text?.ad_creative_description || editedDescription || 'Ad description will appear here').substring(0, 100)}
-                ${
-          ((masterFlowData?.ad_creative_text?.ad_creative_description?.length ?? 0) > 100) ||
-          (editedDescription?.length ?? 0) > 100
-              ? '...'
-              : ''
-      }
+                ${description.substring(0, 100)}
+                ${description.length > 100 ? '...' : ''}
               </div>
             </div>
           </body>
@@ -917,15 +963,32 @@ export function AdSetupModal({
               {/*   A D   C R E A T I V E S  T A B  */}
               {/* -------------------------------- */}
               <TabsContent value="adCreative" className="space-y-4">
-                {creatives.length > 1 ? (
+                {/* Calculate effective creatives - use updated creatives if available */}
+                {(() => {
+                  // Use updated creatives if available, otherwise fall back to props
+                  const effectiveCreatives = updatedCreatives.length > 0 ? updatedCreatives : creatives;
+                  
+                  // If updated creatives exist, show an indicator
+                  const hasUpdatedCreatives = updatedCreatives.length > 0;
+                  
+                  return effectiveCreatives.length > 1 ? (
                     <Tabs
                         defaultValue="creative-0"
                         value={activeCreativeTab}
                         onValueChange={setActiveCreativeTab}
                         className="w-full"
                     >
+                      {hasUpdatedCreatives && (
+                        <div className="bg-green-800/20 p-2 rounded-md mb-3 text-sm border border-green-600/30">
+                          <p className="text-green-400 flex items-center">
+                            <span className="mr-2">●</span>
+                            Using updated ad creatives with your text changes
+                          </p>
+                        </div>
+                      )}
+                    
                       <TabsList className="w-full bg-dark-bg text-text-light-gray mb-4 flex overflow-x-auto border border-border-dark rounded-lg">
-                        {creatives.map((_, index) => (
+                        {effectiveCreatives.map((_, index) => (
                             <TabsTrigger
                                 key={`creative-tab-${index}`}
                                 value={`creative-${index}`}
@@ -938,16 +1001,21 @@ export function AdSetupModal({
                         ))}
                       </TabsList>
 
-                      {creatives.map((creative, index) => (
+                      {effectiveCreatives.map((creative, index) => (
                           <TabsContent key={`creative-content-${index}`} value={`creative-${index}`} className="space-y-4">
                             <div className="bg-dark-bg rounded-lg p-4 border border-border-dark">
-                              <h4 className="text-lg font-medium mb-4 text-primary-green">Ad Creative {index + 1} Details</h4>
+                              <h4 className="text-lg font-medium mb-4 text-primary-green">
+                                Ad Creative {index + 1} Details 
+                                {hasUpdatedCreatives && <span className="text-xs text-green-400 ml-2">(Updated)</span>}
+                              </h4>
 
                               {masterFlowData?.ad_creative_text?.ad_creative_name && index === 0 && (
                                   <div className="mb-4">
                                     <h5 className="font-medium text-text-white mb-2">Creative Name</h5>
                                     <div className="bg-container-bg p-3 rounded-lg border border-border-dark">
-                                      <p className="text-text-white">{masterFlowData.ad_creative_text.ad_creative_name}</p>
+                                      <p className="text-text-white">
+                                        {creative.name || masterFlowData.ad_creative_text.ad_creative_name}
+                                      </p>
                                     </div>
                                   </div>
                               )}
@@ -961,6 +1029,15 @@ export function AdSetupModal({
                                       (creative as ExtendedCreative).is_image
                                           ? 'Image'
                                           : 'Video'}
+                                    </p>
+                                  </div>
+                                </div>
+                                
+                                <div>
+                                  <h5 className="font-medium text-text-white mb-2">Creative ID</h5>
+                                  <div className="bg-container-bg p-3 rounded-lg border border-border-dark">
+                                    <p className="text-text-white font-mono text-sm overflow-hidden text-ellipsis">
+                                      {creative.creative_id}
                                     </p>
                                   </div>
                                 </div>
@@ -1024,15 +1101,29 @@ export function AdSetupModal({
                           </TabsContent>
                       ))}
                     </Tabs>
-                ) : (
+                  ) : (
                     <div className="bg-dark-bg rounded-lg p-4 border border-border-dark">
-                      <h4 className="text-lg font-medium mb-4 text-primary-green">Ad Creative Details</h4>
+                      {hasUpdatedCreatives && (
+                        <div className="bg-green-800/20 p-2 rounded-md mb-3 text-sm border border-green-600/30">
+                          <p className="text-green-400 flex items-center">
+                            <span className="mr-2">●</span>
+                            Using updated ad creative with your text changes
+                          </p>
+                        </div>
+                      )}
+                      
+                      <h4 className="text-lg font-medium mb-4 text-primary-green">
+                        Ad Creative Details
+                        {hasUpdatedCreatives && <span className="text-xs text-green-400 ml-2">(Updated)</span>}
+                      </h4>
 
                       {masterFlowData?.ad_creative_text?.ad_creative_name && (
                           <div className="mb-4">
                             <h5 className="font-medium text-text-white mb-2">Creative Name</h5>
                             <div className="bg-container-bg p-3 rounded-lg border border-border-dark">
-                              <p className="text-text-white">{masterFlowData.ad_creative_text.ad_creative_name}</p>
+                              <p className="text-text-white">
+                                {effectiveCreatives[0]?.name || masterFlowData.ad_creative_text.ad_creative_name}
+                              </p>
                             </div>
                           </div>
                       )}
@@ -1042,13 +1133,22 @@ export function AdSetupModal({
                           <h5 className="font-medium text-text-white mb-2">Media Type</h5>
                           <div className="bg-container-bg p-3 rounded-lg border border-border-dark">
                             <p className="text-text-white">
-                              {(creatives[0] as ExtendedCreative)?.media_type === 'image' ||
-                              (creatives[0] as ExtendedCreative)?.is_image
+                              {(effectiveCreatives[0] as ExtendedCreative)?.media_type === 'image' ||
+                              (effectiveCreatives[0] as ExtendedCreative)?.is_image
                                   ? 'Image'
-                                  : (creatives[0] as ExtendedCreative)?.media_type === 'video' ||
-                                  (creatives[0] as ExtendedCreative)?.is_video
+                                  : (effectiveCreatives[0] as ExtendedCreative)?.media_type === 'video' ||
+                                  (effectiveCreatives[0] as ExtendedCreative)?.is_video
                                       ? 'Video'
                                       : 'Media'}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <h5 className="font-medium text-text-white mb-2">Creative ID</h5>
+                          <div className="bg-container-bg p-3 rounded-lg border border-border-dark">
+                            <p className="text-text-white font-mono text-sm overflow-hidden text-ellipsis">
+                              {effectiveCreatives[0]?.creative_id}
                             </p>
                           </div>
                         </div>
@@ -1068,8 +1168,8 @@ export function AdSetupModal({
                               <option value="INSTAGRAM_EXPLORE_GRID_HOME">Instagram Explore</option>
                               <option value="FACEBOOK_PROFILE_FEED_MOBILE">Facebook Feed</option>
                               <option value="FACEBOOK_STORY_MOBILE">Facebook Story</option>
-                              {((creatives[0] as ExtendedCreative)?.media_type === 'video' ||
-                                  (creatives[0] as ExtendedCreative)?.is_video) && (
+                              {((effectiveCreatives[0] as ExtendedCreative)?.media_type === 'video' ||
+                                  (effectiveCreatives[0] as ExtendedCreative)?.is_video) && (
                                   <>
                                     <option value="FACEBOOK_REELS_MOBILE">Facebook Reels</option>
                                     <option value="INSTAGRAM_REELS">Instagram Reels</option>
@@ -1109,7 +1209,8 @@ export function AdSetupModal({
                         </div>
                       </div>
                     </div>
-                )}
+                  )
+                })()}
               </TabsContent>
 
               {/* -------------------------- */}
