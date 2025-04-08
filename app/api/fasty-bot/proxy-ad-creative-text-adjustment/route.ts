@@ -75,23 +75,6 @@ export async function PUT(request: NextRequest) {
     // Parse the successful response
     const responseData = await fastyResponse.json()
     
-    /* 
-    Expected successful response structure:
-    {
-      "success": true,
-      "creatives": [
-        {
-          "creative_id": "673907521855802",
-          "name": "Reeply_LG_India_AIKampagne_April_2025_video_1",
-          "success": true,
-          "preview_uuid": "bc953314-ef0b-4e14-ae28-6081b20450bb",
-          "is_image": false,
-          "is_video": true
-        }
-      ]
-    }
-    */
-
     return NextResponse.json(responseData)
   } catch (error) {
     console.error('Error updating ad creative text:', error)
