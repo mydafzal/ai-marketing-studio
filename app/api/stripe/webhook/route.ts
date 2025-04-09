@@ -136,6 +136,19 @@ const persistSubscription = async (subscription: any) => {
       sub_id: subscription.id
     }
 
+    // Check if this subscription has a trial and update the user's trial status
+    if (subscription.trial_start !== null || subscription.trial_end !== null) {
+      // Mark this user as having had a trial in KV for future reference
+      const userKey = `user:${stripeCustomer.email}`
+      await kv.hset(userKey, { 
+        has_had_trial: true,
+        // Also include trial information in the user record
+        sub_trial_start: unixTimeStampToDateTime(subscription.trial_start),
+        sub_trial_end: unixTimeStampToDateTime(subscription.trial_end)
+      })
+      console.log(`Marked user ${stripeCustomer.email} as having had a trial`)
+    }
+
     await updateSubscriptionDetails(subscriptionPayload)
   } catch (error) {
     console.error('Error persisting subscription:', error)
@@ -229,10 +242,27 @@ const handleCheckoutSessionCompleted = async (event: Stripe.Event) => {
       // Since we have a successful checkout, we can mark this as active
       if (subscription) {
         await persistSubscription(subscription)
+        
+        // Double-check: Make sure the user is marked as having had a trial if this subscription has a trial
+        if (subscription.trial_start !== null || subscription.trial_end !== null) {
+          const userKey = `user:${session.customer_email}`
+          await kv.hset(userKey, { has_had_trial: true })
+          console.log(`Confirmed trial status for ${session.customer_email} after checkout completion`)
+        }
+        
         console.log(
             `Updated subscription details from checkout session: ${session.id}`
         )
       }
+    }
+
+    // Update the checkout session record in KV
+    const checkoutSessionData = await kv.hgetall(`checkout:${session.id}`)
+    if (checkoutSessionData) {
+      await kv.hset(`checkout:${session.id}`, {
+        ...checkoutSessionData,
+        status: 'completed',
+      })
     }
 
     console.log(`Handled checkout session completed for ${session.id}`)
