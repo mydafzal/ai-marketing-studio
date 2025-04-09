@@ -78,8 +78,13 @@ export function MonthlyPricing({ currentPlanTag }: MonthlyPricingProps) {
             <h3 className="ml-2 mb-4 font-bold text-[#4BF29C] dark:text-[#4BF29C] text-[18px]">
               AI Marketer Suite
             </h3>
-            <p className="text-4xl font-bold text-white dark:text-white">€99</p>
-            <p className="text-[#8A8F99] dark:text-[#8A8F99] text-sm">/ Month</p>
+            <div className="flex flex-col">
+              <div className="bg-[#252A3A] px-3 py-1 rounded-full text-[#4BF29C] text-xs font-medium self-start mb-1">
+                Start with 7-day free trial
+              </div>
+              <p className="text-4xl font-bold text-white dark:text-white">€99</p>
+              <p className="text-[#8A8F99] dark:text-[#8A8F99] text-sm">/ Month</p>
+            </div>
             <hr className="my-4 border-[#2A2E3A] dark:border-[#2A2E3A]" />
             <p className="font-medium mb-4 text-white dark:text-white">AI Marketer + Ad Creatives Generator:</p>
             <ul className="text-sm space-y-2 grow text-[#ADB0B8] dark:text-[#ADB0B8]">
