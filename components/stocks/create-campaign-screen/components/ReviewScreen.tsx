@@ -402,6 +402,9 @@ export function ReviewScreen({
   
   // Check for lead form data
   const hasLeadFormData = masterFlowData?.lead_form_content !== undefined;
+  
+  // Track updated lead form data
+  const [updatedLeadFormData, setUpdatedLeadFormData] = useState<any>(null);
 
   // Type assertion for campaign_name that might not be in the interface
   const campaignName = (masterFlowData as any)?.campaign_name;
@@ -411,11 +414,14 @@ export function ReviewScreen({
   
   // Process the lead form questions if they exist
   const processLeadFormQuestions = () => {
-    if (!leadFormContent) return [];
+    // Use updated lead form data if available, otherwise use the original data
+    const effectiveLeadFormContent = updatedLeadFormData || leadFormContent;
+    
+    if (!effectiveLeadFormContent) return [];
     
     // Check if we have questions in the lead_form_content
-    if (leadFormContent.lead_form_questions && Array.isArray(leadFormContent.lead_form_questions)) {
-      return leadFormContent.lead_form_questions.map((question: string) => {
+    if (effectiveLeadFormContent.lead_form_questions && Array.isArray(effectiveLeadFormContent.lead_form_questions)) {
+      return effectiveLeadFormContent.lead_form_questions.map((question: string) => {
         return {
           type: question, // e.g. FIRST_NAME, LAST_NAME, EMAIL, PHONE
           label: formatQuestionLabel(question) // Format the label for display
@@ -423,9 +429,19 @@ export function ReviewScreen({
       });
     }
     
+    // Check for custom_questions from the updated lead form
+    if (effectiveLeadFormContent.custom_questions && Array.isArray(effectiveLeadFormContent.custom_questions)) {
+      return effectiveLeadFormContent.custom_questions.map((question: string) => {
+        return {
+          type: question,
+          label: formatQuestionLabel(question)
+        };
+      });
+    }
+    
     // Legacy format or data inside lead_form_data
-    if (leadFormContent.lead_form_data && leadFormContent.lead_form_data.lead_form_questions) {
-      return leadFormContent.lead_form_data.lead_form_questions.map((question: string) => {
+    if (effectiveLeadFormContent.lead_form_data && effectiveLeadFormContent.lead_form_data.lead_form_questions) {
+      return effectiveLeadFormContent.lead_form_data.lead_form_questions.map((question: string) => {
         return {
           type: question,
           label: formatQuestionLabel(question)
@@ -449,22 +465,26 @@ export function ReviewScreen({
   
   // Get the lead form data
   const getLeadFormData = () => {
-    if (!leadFormContent) return null;
+    // Use updated lead form data if available, otherwise use the original data
+    const effectiveLeadFormContent = updatedLeadFormData || leadFormContent;
+    
+    if (!effectiveLeadFormContent) return null;
     
     // We need to handle two possible structures:
     // 1. Where properties are at the root of lead_form_content
     // 2. Where properties are nested inside lead_form_data
+    // 3. Where properties come from updated lead form with different field names
     
-    const data = leadFormContent.lead_form_data || leadFormContent;
+    const data = effectiveLeadFormContent.lead_form_data || effectiveLeadFormContent;
     
     return {
-      name: data.lead_form_name,
-      title: data.lead_form_title,
-      description: data.lead_form_description,
-      thankYouText: data.lead_form_thank_you_text,
-      disclaimerText: data.lead_form_data_usage_disclaimer,
-      thankYouPageTitle: data.lead_form_thank_you_page_title,
-      locale: data.lead_form_locale,
+      name: data.lead_form_name || data.form_name,
+      title: data.lead_form_title || data.form_title,
+      description: data.lead_form_description || data.form_description,
+      thankYouText: data.lead_form_thank_you_text || data.thank_you_text,
+      disclaimerText: data.lead_form_data_usage_disclaimer || data.data_usage_notice,
+      thankYouPageTitle: data.lead_form_thank_you_page_title || data.thank_you_page_title,
+      locale: data.lead_form_locale || data.locale,
       privacyPolicyText: data.privacy_policy_link_text,
       companyName: data.company_name,
       questions: processLeadFormQuestions()
@@ -472,6 +492,15 @@ export function ReviewScreen({
   };
   
   const leadForm = getLeadFormData();
+  
+  // Handler for lead form updates from AdSetupModal
+  const handleLeadFormUpdated = (updatedFields: any) => {
+    console.log('Lead form updated with fields:', updatedFields);
+    setUpdatedLeadFormData({
+      ...leadFormContent,
+      ...updatedFields,
+    });
+  };
 
   // Handle receiving updated creatives from AdSetupModal
   const handleUpdatedCreatives = (newCreatives: ExtendedCreative[]) => {
@@ -503,6 +532,7 @@ export function ReviewScreen({
         budget={budget}
         creatives={updatedCreatives.length > 0 ? updatedCreatives : creatives}
         onCreativesUpdated={handleUpdatedCreatives}
+        onLeadFormUpdated={handleLeadFormUpdated}
       />
 
       <div className="mb-6 px-6 pt-6">

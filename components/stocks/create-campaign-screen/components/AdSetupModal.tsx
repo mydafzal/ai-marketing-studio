@@ -45,6 +45,7 @@ interface AdSetupModalProps {
   budget: string;
   creatives: any[];
   onCreativesUpdated?: (creatives: ExtendedCreative[]) => void;
+  onLeadFormUpdated?: (updatedFields: any) => void;
 }
 
 export function AdSetupModal({
@@ -64,7 +65,8 @@ export function AdSetupModal({
                                adPlacements,
                                budget,
                                creatives,
-                               onCreativesUpdated
+                               onCreativesUpdated,
+                               onLeadFormUpdated
                              }: AdSetupModalProps) {
   // States for editable headline/description
   const [editedHeadline, setEditedHeadline] = useState(
@@ -91,6 +93,92 @@ export function AdSetupModal({
   
   // Track updated creatives from the API response
   const [updatedCreatives, setUpdatedCreatives] = useState<ExtendedCreative[]>([]);
+  
+  // Safe access for lead form properties using type assertion 
+  const leadFormContent = masterFlowData?.lead_form_content as any;
+  
+  // Debug the lead form content structure
+  useEffect(() => {
+    if (leadFormContent) {
+      console.log('Lead form content structure:', leadFormContent);
+    }
+  }, [leadFormContent]);
+  
+  // Handle the nested structure of lead form data
+  const getLeadFormValue = (field: string) => {
+    if (!leadFormContent) return "";
+    
+    // Try directly on leadFormContent
+    if (leadFormContent[field] !== undefined) {
+      return leadFormContent[field];
+    }
+    
+    // Try nested within lead_form_data
+    if (leadFormContent.lead_form_data && leadFormContent.lead_form_data[field] !== undefined) {
+      return leadFormContent.lead_form_data[field];
+    }
+    
+    return "";
+  };
+  
+  // States for editable lead form fields
+  const [editedFormTitle, setEditedFormTitle] = useState(
+    getLeadFormValue("lead_form_title") || getLeadFormValue("form_title") || ""
+  );
+  const [editedFormDescription, setEditedFormDescription] = useState(
+    getLeadFormValue("lead_form_description") || getLeadFormValue("form_description") || ""
+  );
+  const [editedThankYouText, setEditedThankYouText] = useState(
+    getLeadFormValue("lead_form_thank_you_text") || getLeadFormValue("thank_you_text") || ""
+  );
+  const [editedThankYouPageTitle, setEditedThankYouPageTitle] = useState(
+    getLeadFormValue("lead_form_thank_you_page_title") || getLeadFormValue("thank_you_page_title") || ""
+  );
+  const [editedDataUsageNotice, setEditedDataUsageNotice] = useState(
+    getLeadFormValue("lead_form_data_usage_disclaimer") || getLeadFormValue("data_usage_notice") || ""
+  );
+  const [editedPrivacyPolicyLinkText, setEditedPrivacyPolicyLinkText] = useState(
+    getLeadFormValue("privacy_policy_link_text") || ""
+  );
+  const [editedCompanyName, setEditedCompanyName] = useState(
+    getLeadFormValue("company_name") || ""
+  );
+  const [editedFollowUpUrl, setEditedFollowUpUrl] = useState(
+    getLeadFormValue("follow_up_url") || ""
+  );
+  
+  // Track original values for lead form fields
+  const [originalFormTitle, setOriginalFormTitle] = useState(
+    getLeadFormValue("lead_form_title") || getLeadFormValue("form_title") || ""
+  );
+  const [originalFormDescription, setOriginalFormDescription] = useState(
+    getLeadFormValue("lead_form_description") || getLeadFormValue("form_description") || ""
+  );
+  const [originalThankYouText, setOriginalThankYouText] = useState(
+    getLeadFormValue("lead_form_thank_you_text") || getLeadFormValue("thank_you_text") || ""
+  );
+  const [originalThankYouPageTitle, setOriginalThankYouPageTitle] = useState(
+    getLeadFormValue("lead_form_thank_you_page_title") || getLeadFormValue("thank_you_page_title") || ""
+  );
+  const [originalDataUsageNotice, setOriginalDataUsageNotice] = useState(
+    getLeadFormValue("lead_form_data_usage_disclaimer") || getLeadFormValue("data_usage_notice") || ""
+  );
+  const [originalPrivacyPolicyLinkText, setOriginalPrivacyPolicyLinkText] = useState(
+    getLeadFormValue("privacy_policy_link_text") || ""
+  );
+  const [originalCompanyName, setOriginalCompanyName] = useState(
+    getLeadFormValue("company_name") || ""
+  );
+  const [originalFollowUpUrl, setOriginalFollowUpUrl] = useState(
+    getLeadFormValue("follow_up_url") || ""
+  );
+  
+  // Track if lead form has been modified and needs saving
+  const [isLeadFormModified, setIsLeadFormModified] = useState(false);
+  
+  // Track lead form save operation state
+  const [isLeadFormSaving, setIsLeadFormSaving] = useState(false);
+  const [leadFormSaveSuccess, setLeadFormSaveSuccess] = useState(false);
 
   // Tab states
   const [activeSettingsTab, setActiveSettingsTab] = useState<string>("adtext");
@@ -119,6 +207,52 @@ export function AdSetupModal({
       setSaveSuccess(false);
     }
   }, [editedHeadline, editedDescription, originalHeadline, originalDescription]);
+  
+  // Check for lead form modifications
+  useEffect(() => {
+    // Check if any lead form field has changed
+    const titleChanged = editedFormTitle !== originalFormTitle;
+    const descriptionChanged = editedFormDescription !== originalFormDescription;
+    const thankYouTextChanged = editedThankYouText !== originalThankYouText;
+    const thankYouPageTitleChanged = editedThankYouPageTitle !== originalThankYouPageTitle;
+    const dataUsageNoticeChanged = editedDataUsageNotice !== originalDataUsageNotice;
+    const privacyPolicyLinkTextChanged = editedPrivacyPolicyLinkText !== originalPrivacyPolicyLinkText;
+    const companyNameChanged = editedCompanyName !== originalCompanyName;
+    const followUpUrlChanged = editedFollowUpUrl !== originalFollowUpUrl;
+    
+    // Update the modified state based on changes
+    setIsLeadFormModified(
+      titleChanged || 
+      descriptionChanged || 
+      thankYouTextChanged || 
+      thankYouPageTitleChanged || 
+      dataUsageNoticeChanged || 
+      privacyPolicyLinkTextChanged || 
+      companyNameChanged || 
+      followUpUrlChanged
+    );
+    
+    // Reset the save success message when form is modified again
+    if (titleChanged || 
+        descriptionChanged || 
+        thankYouTextChanged || 
+        thankYouPageTitleChanged || 
+        dataUsageNoticeChanged || 
+        privacyPolicyLinkTextChanged || 
+        companyNameChanged || 
+        followUpUrlChanged) {
+      setLeadFormSaveSuccess(false);
+    }
+  }, [
+    editedFormTitle, originalFormTitle,
+    editedFormDescription, originalFormDescription,
+    editedThankYouText, originalThankYouText,
+    editedThankYouPageTitle, originalThankYouPageTitle,
+    editedDataUsageNotice, originalDataUsageNotice,
+    editedPrivacyPolicyLinkText, originalPrivacyPolicyLinkText,
+    editedCompanyName, originalCompanyName,
+    editedFollowUpUrl, originalFollowUpUrl
+  ]);
 
   // Handler for headline changes
   const handleHeadlineChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -128,6 +262,39 @@ export function AdSetupModal({
   // Handler for description changes
   const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setEditedDescription(e.target.value);
+  };
+  
+  // Handlers for lead form field changes
+  const handleFormTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEditedFormTitle(e.target.value);
+  };
+  
+  const handleFormDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setEditedFormDescription(e.target.value);
+  };
+  
+  const handleThankYouTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setEditedThankYouText(e.target.value);
+  };
+  
+  const handleThankYouPageTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEditedThankYouPageTitle(e.target.value);
+  };
+  
+  const handleDataUsageNoticeChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setEditedDataUsageNotice(e.target.value);
+  };
+  
+  const handlePrivacyPolicyLinkTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEditedPrivacyPolicyLinkText(e.target.value);
+  };
+  
+  const handleCompanyNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEditedCompanyName(e.target.value);
+  };
+  
+  const handleFollowUpUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEditedFollowUpUrl(e.target.value);
   };
 
   // Handler for user clicking the "save" icon
@@ -217,6 +384,117 @@ export function AdSetupModal({
       alert(`Error: ${err instanceof Error ? err.message : 'Failed to save changes'}`);
     } finally {
       setIsSaving(false);
+    }
+  };
+  
+  // Handler for saving lead form changes
+  const handleSaveLeadForm = async () => {
+    // Only proceed if lead form is actually modified
+    if (!isLeadFormModified) return;
+    
+    setIsLeadFormSaving(true);
+    
+    try {
+      // Get required fields from masterFlowData
+      const campaign_session_id = masterFlowData?.campaign_flow_session_id;
+      
+      // Validate required fields
+      if (!campaign_session_id) {
+        throw new Error('Missing campaign session ID');
+      }
+      
+      // Get the form name from existing data or generate one
+      const formName = leadFormContent?.lead_form_name || leadFormContent?.form_name || `${campaignName?.replace(/\s+/g, '_').toLowerCase() || 'leadform'}_${Date.now().toString(36)}`;
+      
+      // Get questions from the lead form
+      const questions = leadForm?.questions?.map((q: any) => q.type) || 
+        leadFormContent?.custom_questions || 
+        leadFormContent?.lead_form_questions || 
+        ["FIRST_NAME", "LAST_NAME", "EMAIL"];
+      
+      console.log("Updating lead form for campaign session:", campaign_session_id);
+      console.log("Lead form data:", {
+        form_name: formName,
+        form_title: editedFormTitle,
+        questions: questions
+      });
+      
+      // Call the API to save the changes
+      const response = await fetch('/api/fasty-bot/proxy-update-lead-form', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          campaign_creation_flow_session_id: campaign_session_id,
+          form_template_name: "Standard", // Default template
+          form_name: formName,
+          form_title: editedFormTitle,
+          form_description: editedFormDescription,
+          thank_you_text: editedThankYouText,
+          thank_you_page_title: editedThankYouPageTitle,
+          data_usage_notice: editedDataUsageNotice,
+          custom_questions: questions,
+          privacy_policy_link: leadFormContent?.privacy_policy_link || "",
+          privacy_policy_link_text: editedPrivacyPolicyLinkText,
+          locale: leadFormContent?.lead_form_locale || "en_US",
+          company_name: editedCompanyName,
+          follow_up_url: editedFollowUpUrl
+        }),
+      });
+      
+      // Parse response
+      const data = await response.json();
+      
+      if (!response.ok || !data.success) {
+        const errorMessage = data.error || 'Failed to save lead form changes';
+        console.error('API error:', data);
+        throw new Error(errorMessage);
+      }
+      
+      console.log('Lead form update response:', data);
+      
+      // Update original values to match current values
+      setOriginalFormTitle(editedFormTitle);
+      setOriginalFormDescription(editedFormDescription);
+      setOriginalThankYouText(editedThankYouText);
+      setOriginalThankYouPageTitle(editedThankYouPageTitle);
+      setOriginalDataUsageNotice(editedDataUsageNotice);
+      setOriginalPrivacyPolicyLinkText(editedPrivacyPolicyLinkText);
+      setOriginalCompanyName(editedCompanyName);
+      setOriginalFollowUpUrl(editedFollowUpUrl);
+      
+      // Mark as no longer modified and save as successful
+      setIsLeadFormModified(false);
+      setLeadFormSaveSuccess(true);
+      
+      // Reset success message after 3 seconds
+      setTimeout(() => {
+        setLeadFormSaveSuccess(false);
+      }, 3000);
+      
+      // Create the updated fields data even if not provided by the API
+      const updatedFields = data.updated_fields || {
+        form_title: editedFormTitle,
+        form_description: editedFormDescription,
+        thank_you_text: editedThankYouText,
+        thank_you_page_title: editedThankYouPageTitle,
+        data_usage_notice: editedDataUsageNotice,
+        privacy_policy_link_text: editedPrivacyPolicyLinkText,
+        company_name: editedCompanyName,
+        follow_up_url: editedFollowUpUrl,
+        custom_questions: questions
+      };
+      
+      // Call the callback with the updated fields if provided
+      if (onLeadFormUpdated) {
+        onLeadFormUpdated(updatedFields);
+      }
+      
+      console.log('Lead form changes saved successfully!');
+    } catch (err) {
+      console.error('Error saving lead form:', err);
+      alert(`Error: ${err instanceof Error ? err.message : 'Failed to save changes'}`);
+    } finally {
+      setIsLeadFormSaving(false);
     }
   };
 
@@ -550,12 +828,14 @@ export function AdSetupModal({
 
   const hasPlacementData = masterFlowData?.hasOwnProperty('placements');
   const hasLeadFormData = masterFlowData?.lead_form_content !== undefined;
-  const leadFormContent = masterFlowData?.lead_form_content as any;
 
   // Extract lead form data
   const processLeadFormQuestions = () => {
     if (!leadFormContent) return [];
 
+    // Check for different possible locations of questions data
+    
+    // Option 1: Top-level lead_form_questions array
     if (leadFormContent.lead_form_questions && Array.isArray(leadFormContent.lead_form_questions)) {
       return leadFormContent.lead_form_questions.map((question: string) => {
         return {
@@ -564,8 +844,20 @@ export function AdSetupModal({
         };
       });
     }
+    
+    // Option 2: Questions in lead_form_data nested structure
     if (leadFormContent.lead_form_data && leadFormContent.lead_form_data.lead_form_questions) {
       return leadFormContent.lead_form_data.lead_form_questions.map((question: string) => {
+        return {
+          type: question,
+          label: formatQuestionLabel(question)
+        };
+      });
+    }
+    
+    // Option 3: New format custom_questions array
+    if (leadFormContent.custom_questions && Array.isArray(leadFormContent.custom_questions)) {
+      return leadFormContent.custom_questions.map((question: string) => {
         return {
           type: question,
           label: formatQuestionLabel(question)
@@ -587,16 +879,19 @@ export function AdSetupModal({
   const getLeadFormData = () => {
     if (!leadFormContent) return null;
     const data = leadFormContent.lead_form_data || leadFormContent;
+    
+    // Use both old and new field names to support both formats
     return {
-      name: data.lead_form_name,
-      title: data.lead_form_title,
-      description: data.lead_form_description,
-      thankYouText: data.lead_form_thank_you_text,
-      disclaimerText: data.lead_form_data_usage_disclaimer,
-      thankYouPageTitle: data.lead_form_thank_you_page_title,
-      locale: data.lead_form_locale,
-      privacyPolicyText: data.privacy_policy_link_text,
-      companyName: data.company_name,
+      name: data.lead_form_name || data.form_name,
+      title: data.lead_form_title || data.form_title || editedFormTitle,
+      description: data.lead_form_description || data.form_description || editedFormDescription,
+      thankYouText: data.lead_form_thank_you_text || data.thank_you_text || editedThankYouText,
+      disclaimerText: data.lead_form_data_usage_disclaimer || data.data_usage_notice || editedDataUsageNotice,
+      thankYouPageTitle: data.lead_form_thank_you_page_title || data.thank_you_page_title || editedThankYouPageTitle,
+      locale: data.lead_form_locale || data.locale,
+      privacyPolicyText: data.privacy_policy_link_text || editedPrivacyPolicyLinkText,
+      companyName: data.company_name || editedCompanyName,
+      followUpUrl: data.follow_up_url || editedFollowUpUrl,
       questions: processLeadFormQuestions()
     };
   };
@@ -1273,61 +1568,122 @@ export function AdSetupModal({
                       {/* Step 1: Form */}
                       <TabsContent value="step1" className="space-y-4">
                         <div className="bg-white rounded-lg p-5 border border-[#d3d3d3] shadow-sm">
-                          <h4 className="text-[22px] font-medium mb-5 text-[#292929]">Step 1: Lead Form</h4>
+                          <div className="flex items-center justify-between mb-4">
+                            <h4 className="text-[22px] font-medium text-[#292929]">Step 1: Lead Form</h4>
+                            
+                            {/* Save button with status indicators */}
+                            <div className="flex flex-col items-end">
+                              <button
+                                onClick={handleSaveLeadForm}
+                                disabled={!isLeadFormModified || isLeadFormSaving}
+                                className={`transition-colors relative ${
+                                  isLeadFormSaving ? 'opacity-50 cursor-not-allowed' : 
+                                  isLeadFormModified ? 'text-yellow-400 hover:text-yellow-300' : 
+                                  'text-primary-green hover:text-white'
+                                }`}
+                                title={isLeadFormModified ? "Save changes" : "No changes to save"}
+                              >
+                                <Save className="w-5 h-5" />
+                                {isLeadFormSaving && (
+                                  <span className="animate-spin absolute inset-0 flex items-center justify-center">
+                                    <span className="w-3 h-3 border-2 border-t-transparent border-yellow-400 rounded-full"></span>
+                                  </span>
+                                )}
+                              </button>
+                              
+                              {/* Status indicator text */}
+                              {isLeadFormModified && (
+                                <span className="text-yellow-400 text-xs mt-1">Click to save</span>
+                              )}
+                              {leadFormSaveSuccess && (
+                                <span className="text-green-400 text-xs mt-1">Saved!</span>
+                              )}
+                            </div>
+                          </div>
 
-                          <div className="flex flex-col items-center">
-                            {leadForm && (
-                                <div className="w-full max-w-sm mx-auto">
-                                  <div className="bg-white rounded-lg overflow-hidden shadow-lg">
-                                    <div className="bg-[#333333] p-4">
-                                      <div className="flex items-center justify-between mb-3">
-                                        <div className="bg-white h-8 w-8 rounded-full flex items-center justify-center">
-                                          <span className="text-[#4169e1] text-xl font-bold">R</span>
-                                        </div>
-                                        <div className="text-white text-sm">X</div>
-                                      </div>
-                                      <div className="bg-white rounded-md px-2 py-1 inline-block mb-2">
-                                        <span className="text-xs font-medium text-[#4169e1]">Lead Form</span>
-                                      </div>
-                                      <h3 className="text-white text-[22px] font-bold">
-                                        {leadForm.title || "Unlock the Power of AI"}
-                                      </h3>
-                                    </div>
-
-                                    <div className="p-5 bg-white">
-                                      <p className="text-[#292929] text-[16px] leading-relaxed mb-5">
-                                        {leadForm.description || "Fill out this form to learn more about our services."}
-                                      </p>
-
-                                      <div className="space-y-4 text-[16px] text-[#292929]">
-                                        <div className="flex justify-between items-center border-b border-[#f2f2f2] pb-2">
-                                          <span className="font-medium">Form Name:</span>
-                                          <span className="text-[#767676]">{leadForm.name}</span>
-                                        </div>
-                                        {leadFormContent?.headline && (
-                                            <div className="flex justify-between items-center border-b border-[#f2f2f2] pb-2">
-                                              <span className="font-medium">Headline:</span>
-                                              <span className="text-[#767676]">{leadFormContent.headline}</span>
-                                            </div>
-                                        )}
-                                        <div className="flex justify-between items-center border-b border-[#f2f2f2] pb-2">
-                                          <span className="font-medium">Company:</span>
-                                          <span className="text-[#767676]">{leadForm.companyName}</span>
-                                        </div>
-                                        <div className="flex justify-between items-center border-b border-[#f2f2f2] pb-2">
-                                          <span className="font-medium">Language:</span>
-                                          <span className="text-[#767676]">{leadForm.locale || "en_US"}</span>
-                                        </div>
-                                      </div>
-
-                                      <p className="text-[#767676] text-[14px] mt-5 border-t border-[#f2f2f2] pt-4 leading-relaxed">
-                                        This is step 1 of your lead form. Users will see your form title and description, and
-                                        then be asked to provide information.
-                                      </p>
-                                    </div>
+                          <div className="space-y-5">
+                            {/* Form Title */}
+                            <div>
+                              <label className="font-medium text-[#292929] mb-2 block">Form Title</label>
+                              <input
+                                type="text"
+                                value={editedFormTitle}
+                                onChange={handleFormTitleChange}
+                                className={`w-full bg-white p-3 rounded-lg border ${
+                                  editedFormTitle !== originalFormTitle 
+                                    ? 'border-yellow-400' 
+                                    : 'border-[#d3d3d3]'
+                                } text-[#292929] focus:outline-none focus:border-[#4169e1]`}
+                                placeholder="Enter a compelling form title"
+                              />
+                            </div>
+                            
+                            {/* Form Description */}
+                            <div>
+                              <label className="font-medium text-[#292929] mb-2 block">Form Description</label>
+                              <textarea
+                                value={editedFormDescription}
+                                onChange={handleFormDescriptionChange}
+                                className={`w-full bg-white p-3 rounded-lg border ${
+                                  editedFormDescription !== originalFormDescription 
+                                    ? 'border-yellow-400' 
+                                    : 'border-[#d3d3d3]'
+                                } text-[#292929] focus:outline-none focus:border-[#4169e1] min-h-[80px]`}
+                                placeholder="Add description text to explain the purpose of your form"
+                              />
+                            </div>
+                            
+                            {/* Company Name */}
+                            <div>
+                              <label className="font-medium text-[#292929] mb-2 block">Company Name</label>
+                              <input
+                                type="text"
+                                value={editedCompanyName}
+                                onChange={handleCompanyNameChange}
+                                className={`w-full bg-white p-3 rounded-lg border ${
+                                  editedCompanyName !== originalCompanyName 
+                                    ? 'border-yellow-400' 
+                                    : 'border-[#d3d3d3]'
+                                } text-[#292929] focus:outline-none focus:border-[#4169e1]`}
+                                placeholder="Enter your company name"
+                              />
+                            </div>
+                            
+                            {/* Form Locale (display only) */}
+                            <div>
+                              <label className="font-medium text-[#292929] mb-2 block">Form Locale</label>
+                              <div className="p-3 border border-[#d3d3d3] rounded-lg bg-[#f9f9f9] text-[#767676]">
+                                {leadFormContent?.lead_form_locale || "en_US"}
+                              </div>
+                            </div>
+                            
+                            {/* Form Preview */}
+                            <div className="mt-8 bg-white rounded-lg overflow-hidden shadow-lg border border-[#d3d3d3]">
+                              <div className="bg-[#333333] p-4">
+                                <div className="flex items-center justify-between mb-3">
+                                  <div className="bg-white h-8 w-8 rounded-full flex items-center justify-center">
+                                    <span className="text-[#4169e1] text-xl font-bold">R</span>
                                   </div>
+                                  <div className="text-white text-sm">X</div>
                                 </div>
-                            )}
+                                <div className="bg-white rounded-md px-2 py-1 inline-block mb-2">
+                                  <span className="text-xs font-medium text-[#4169e1]">Lead Form</span>
+                                </div>
+                                <h3 className="text-white text-[22px] font-bold">
+                                  {editedFormTitle || "Enter Your Form Title"}
+                                </h3>
+                              </div>
+
+                              <div className="p-5 bg-white">
+                                <p className="text-[#292929] text-[16px] leading-relaxed mb-5">
+                                  {editedFormDescription || "Add a description to explain what this form is for."}
+                                </p>
+
+                                <div className="text-[#767676] text-[14px] mt-5 border-t border-[#f2f2f2] pt-4 leading-relaxed">
+                                  <span className="font-medium text-[#292929]">Preview:</span> This is how users will see your form title and description before they provide their information.
+                                </div>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </TabsContent>
@@ -1335,7 +1691,42 @@ export function AdSetupModal({
                       {/* Step 2: Questions */}
                       <TabsContent value="step2" className="space-y-4">
                         <div className="bg-white rounded-lg p-5 border border-[#d3d3d3] shadow-sm">
-                          <h4 className="text-[22px] font-medium mb-5 text-[#292929]">Step 2: Questions</h4>
+                          <div className="flex items-center justify-between mb-4">
+                            <h4 className="text-[22px] font-medium text-[#292929]">Step 2: Questions</h4>
+                            
+                            {/* Save button for tab consistency */}
+                            <div className="flex flex-col items-end">
+                              <button
+                                onClick={handleSaveLeadForm}
+                                disabled={!isLeadFormModified || isLeadFormSaving}
+                                className={`transition-colors relative ${
+                                  isLeadFormSaving ? 'opacity-50 cursor-not-allowed' : 
+                                  isLeadFormModified ? 'text-yellow-400 hover:text-yellow-300' : 
+                                  'text-primary-green hover:text-white'
+                                }`}
+                                title={isLeadFormModified ? "Save changes" : "No changes to save"}
+                              >
+                                <Save className="w-5 h-5" />
+                                {isLeadFormSaving && (
+                                  <span className="animate-spin absolute inset-0 flex items-center justify-center">
+                                    <span className="w-3 h-3 border-2 border-t-transparent border-yellow-400 rounded-full"></span>
+                                  </span>
+                                )}
+                              </button>
+                              
+                              {isLeadFormModified && (
+                                <span className="text-yellow-400 text-xs mt-1">Click to save</span>
+                              )}
+                              {leadFormSaveSuccess && (
+                                <span className="text-green-400 text-xs mt-1">Saved!</span>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <p className="text-[#767676] mb-4">
+                            Questions are configured based on your campaign objectives. To add custom questions, contact support.
+                          </p>
+                          
                           {leadForm && leadForm.questions && (
                               <div className="space-y-4">
                                 {leadForm.questions.map((question: any, idx: number) => (
@@ -1354,31 +1745,185 @@ export function AdSetupModal({
                       {/* Step 3: Privacy */}
                       <TabsContent value="step3" className="space-y-4">
                         <div className="bg-white rounded-lg p-5 border border-[#d3d3d3] shadow-sm">
-                          <h4 className="text-[22px] font-medium mb-5 text-[#292929]">Privacy Policy</h4>
-                          {leadForm && (
-                              <div className="p-4 border border-[#d3d3d3] rounded bg-[#f2f2f2]">
-                                <p className="text-[#292929]">
-                                  {leadForm.disclaimerText || "Privacy policy information"}
+                          <div className="flex items-center justify-between mb-4">
+                            <h4 className="text-[22px] font-medium text-[#292929]">Step 3: Privacy Policy</h4>
+                            
+                            {/* Save button for tab consistency */}
+                            <div className="flex flex-col items-end">
+                              <button
+                                onClick={handleSaveLeadForm}
+                                disabled={!isLeadFormModified || isLeadFormSaving}
+                                className={`transition-colors relative ${
+                                  isLeadFormSaving ? 'opacity-50 cursor-not-allowed' : 
+                                  isLeadFormModified ? 'text-yellow-400 hover:text-yellow-300' : 
+                                  'text-primary-green hover:text-white'
+                                }`}
+                                title={isLeadFormModified ? "Save changes" : "No changes to save"}
+                              >
+                                <Save className="w-5 h-5" />
+                                {isLeadFormSaving && (
+                                  <span className="animate-spin absolute inset-0 flex items-center justify-center">
+                                    <span className="w-3 h-3 border-2 border-t-transparent border-yellow-400 rounded-full"></span>
+                                  </span>
+                                )}
+                              </button>
+                              
+                              {isLeadFormModified && (
+                                <span className="text-yellow-400 text-xs mt-1">Click to save</span>
+                              )}
+                              {leadFormSaveSuccess && (
+                                <span className="text-green-400 text-xs mt-1">Saved!</span>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-5">
+                            {/* Data Usage Notice */}
+                            <div>
+                              <label className="font-medium text-[#292929] mb-2 block">Data Usage Notice</label>
+                              <textarea
+                                value={editedDataUsageNotice}
+                                onChange={handleDataUsageNoticeChange}
+                                className={`w-full bg-white p-3 rounded-lg border ${
+                                  editedDataUsageNotice !== originalDataUsageNotice 
+                                    ? 'border-yellow-400' 
+                                    : 'border-[#d3d3d3]'
+                                } text-[#292929] focus:outline-none focus:border-[#4169e1] min-h-[80px]`}
+                                placeholder="Explain how you will use the collected data"
+                              />
+                            </div>
+                            
+                            {/* Privacy Policy Link Text */}
+                            <div>
+                              <label className="font-medium text-[#292929] mb-2 block">Privacy Policy Link Text</label>
+                              <input
+                                type="text"
+                                value={editedPrivacyPolicyLinkText}
+                                onChange={handlePrivacyPolicyLinkTextChange}
+                                className={`w-full bg-white p-3 rounded-lg border ${
+                                  editedPrivacyPolicyLinkText !== originalPrivacyPolicyLinkText 
+                                    ? 'border-yellow-400' 
+                                    : 'border-[#d3d3d3]'
+                                } text-[#292929] focus:outline-none focus:border-[#4169e1]`}
+                                placeholder="Enter your privacy policy URL"
+                              />
+                            </div>
+                            
+                            {/* Privacy Policy Preview */}
+                            <div className="mt-5 p-4 border border-[#d3d3d3] rounded bg-[#f2f2f2]">
+                              <h5 className="font-medium text-[#292929] mb-2">Preview:</h5>
+                              <p className="text-[#292929]">
+                                {editedDataUsageNotice || "Add a data usage notice to inform users about how their data will be processed."}
+                              </p>
+                              
+                              {editedPrivacyPolicyLinkText && (
+                                <p className="text-[#4169e1] mt-2 underline">
+                                  {editedPrivacyPolicyLinkText}
                                 </p>
-                              </div>
-                          )}
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </TabsContent>
 
                       {/* Step 4: Thank You */}
                       <TabsContent value="step4" className="space-y-4">
                         <div className="bg-white rounded-lg p-5 border border-[#d3d3d3] shadow-sm">
-                          <h4 className="text-[22px] font-medium mb-5 text-[#292929]">Thank You Page</h4>
-                          {leadForm && (
-                              <div className="text-center p-4 border border-[#d3d3d3] rounded bg-[#f2f2f2]">
-                                <h5 className="text-xl font-bold mb-2 text-[#292929]">
-                                  {leadForm.thankYouPageTitle || "Thank You!"}
-                                </h5>
-                                <p className="text-[#292929]">
-                                  {leadForm.thankYouText || "Your form has been submitted successfully."}
-                                </p>
-                              </div>
-                          )}
+                          <div className="flex items-center justify-between mb-4">
+                            <h4 className="text-[22px] font-medium text-[#292929]">Step 4: Thank You Page</h4>
+                            
+                            {/* Save button for tab consistency */}
+                            <div className="flex flex-col items-end">
+                              <button
+                                onClick={handleSaveLeadForm}
+                                disabled={!isLeadFormModified || isLeadFormSaving}
+                                className={`transition-colors relative ${
+                                  isLeadFormSaving ? 'opacity-50 cursor-not-allowed' : 
+                                  isLeadFormModified ? 'text-yellow-400 hover:text-yellow-300' : 
+                                  'text-primary-green hover:text-white'
+                                }`}
+                                title={isLeadFormModified ? "Save changes" : "No changes to save"}
+                              >
+                                <Save className="w-5 h-5" />
+                                {isLeadFormSaving && (
+                                  <span className="animate-spin absolute inset-0 flex items-center justify-center">
+                                    <span className="w-3 h-3 border-2 border-t-transparent border-yellow-400 rounded-full"></span>
+                                  </span>
+                                )}
+                              </button>
+                              
+                              {isLeadFormModified && (
+                                <span className="text-yellow-400 text-xs mt-1">Click to save</span>
+                              )}
+                              {leadFormSaveSuccess && (
+                                <span className="text-green-400 text-xs mt-1">Saved!</span>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-5">
+                            {/* Thank You Page Title */}
+                            <div>
+                              <label className="font-medium text-[#292929] mb-2 block">Thank You Page Title</label>
+                              <input
+                                type="text"
+                                value={editedThankYouPageTitle}
+                                onChange={handleThankYouPageTitleChange}
+                                className={`w-full bg-white p-3 rounded-lg border ${
+                                  editedThankYouPageTitle !== originalThankYouPageTitle 
+                                    ? 'border-yellow-400' 
+                                    : 'border-[#d3d3d3]'
+                                } text-[#292929] focus:outline-none focus:border-[#4169e1]`}
+                                placeholder="Enter a thank you page title"
+                              />
+                            </div>
+                            
+                            {/* Thank You Text */}
+                            <div>
+                              <label className="font-medium text-[#292929] mb-2 block">Thank You Message</label>
+                              <textarea
+                                value={editedThankYouText}
+                                onChange={handleThankYouTextChange}
+                                className={`w-full bg-white p-3 rounded-lg border ${
+                                  editedThankYouText !== originalThankYouText 
+                                    ? 'border-yellow-400' 
+                                    : 'border-[#d3d3d3]'
+                                } text-[#292929] focus:outline-none focus:border-[#4169e1] min-h-[80px]`}
+                                placeholder="Enter a thank you message for your leads"
+                              />
+                            </div>
+                            
+                            {/* Follow Up URL */}
+                            <div>
+                              <label className="font-medium text-[#292929] mb-2 block">Follow Up URL (Optional)</label>
+                              <input
+                                type="text"
+                                value={editedFollowUpUrl}
+                                onChange={handleFollowUpUrlChange}
+                                className={`w-full bg-white p-3 rounded-lg border ${
+                                  editedFollowUpUrl !== originalFollowUpUrl 
+                                    ? 'border-yellow-400' 
+                                    : 'border-[#d3d3d3]'
+                                } text-[#292929] focus:outline-none focus:border-[#4169e1]`}
+                                placeholder="Enter a URL to redirect users after form submission"
+                              />
+                            </div>
+                            
+                            {/* Thank You Preview */}
+                            <div className="mt-5 text-center p-4 border border-[#d3d3d3] rounded bg-[#f2f2f2]">
+                              <h5 className="text-xl font-bold mb-2 text-[#292929]">
+                                {editedThankYouPageTitle || "Thank You!"}
+                              </h5>
+                              <p className="text-[#292929] mb-3">
+                                {editedThankYouText || "Your form has been submitted successfully."}
+                              </p>
+                              {editedFollowUpUrl && (
+                                <div className="mt-3 p-2 bg-[#4169e1] text-white rounded inline-block">
+                                  Continue to website
+                                </div>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </TabsContent>
                     </Tabs>

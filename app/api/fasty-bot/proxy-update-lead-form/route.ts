@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { getFbMarketingApiKey } from '@/app/actions';
 
-export async function POST(req: NextRequest) {
+export async function PUT(req: NextRequest) {
   try {
     // Check authentication
     const session = await auth()
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
     }
     
     const response = await fetch(apiUrl, {
-      method: 'POST',
+      method: 'PUT',
       headers,
       body: JSON.stringify({
         campaign_creation_flow_session_id,
@@ -90,9 +90,18 @@ export async function POST(req: NextRequest) {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ error: 'Failed to parse error response' }))
-      console.error('Lead form update failed:', errorData)
+      console.error('Lead form update failed:', {
+        status: response.status,
+        statusText: response.statusText,
+        errorData
+      })
       return NextResponse.json(
-        { error: errorData.error || 'Failed to update lead form' },
+        { 
+          success: false,
+          error: errorData.error || 'Failed to update lead form',
+          status: response.status,
+          statusText: response.statusText
+        },
         { status: response.status }
       )
     }
