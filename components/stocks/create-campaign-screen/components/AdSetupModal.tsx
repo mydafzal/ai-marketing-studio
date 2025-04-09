@@ -121,6 +121,42 @@ export function AdSetupModal({
     return "";
   };
   
+  // Available locales for the form
+  const locales = [
+    { value: "ar_AR", label: "Arabic" },
+    { value: "cs_CZ", label: "Czech" },
+    { value: "da_DK", label: "Danish" },
+    { value: "de_DE", label: "German" },
+    { value: "el_GR", label: "Greek" },
+    { value: "en_GB", label: "English (UK)" },
+    { value: "en_US", label: "English (US)" },
+    { value: "es_ES", label: "Spanish (Spain)" },
+    { value: "es_LA", label: "Spanish (Latin America)" },
+    { value: "fi_FI", label: "Finnish" },
+    { value: "fr_FR", label: "French" },
+    { value: "he_IL", label: "Hebrew" },
+    { value: "hi_IN", label: "Hindi" },
+    { value: "hu_HU", label: "Hungarian" },
+    { value: "id_ID", label: "Indonesian" },
+    { value: "it_IT", label: "Italian" },
+    { value: "ja_JP", label: "Japanese" },
+    { value: "ko_KR", label: "Korean" },
+    { value: "nb_NO", label: "Norwegian" },
+    { value: "nl_NL", label: "Dutch" },
+    { value: "pl_PL", label: "Polish" },
+    { value: "pt_BR", label: "Portuguese (Brazil)" },
+    { value: "pt_PT", label: "Portuguese (Portugal)" },
+    { value: "ro_RO", label: "Romanian" },
+    { value: "ru_RU", label: "Russian" },
+    { value: "sv_SE", label: "Swedish" },
+    { value: "th_TH", label: "Thai" },
+    { value: "tr_TR", label: "Turkish" },
+    { value: "vi_VN", label: "Vietnamese" },
+    { value: "zh_CN", label: "Chinese (Simplified)" },
+    { value: "zh_HK", label: "Chinese (Hong Kong)" },
+    { value: "zh_TW", label: "Chinese (Taiwan)" }
+  ];
+
   // States for editable lead form fields
   const [editedFormTitle, setEditedFormTitle] = useState(
     getLeadFormValue("lead_form_title") || getLeadFormValue("form_title") || ""
@@ -146,11 +182,50 @@ export function AdSetupModal({
   const [editedFollowUpUrl, setEditedFollowUpUrl] = useState(
     getLeadFormValue("follow_up_url") || ""
   );
+  const [editedLocale, setEditedLocale] = useState(
+    getLeadFormValue("lead_form_locale") || getLeadFormValue("locale") || "en_US"
+  );
+  const [editedCustomQuestions, setEditedCustomQuestions] = useState<string[]>([]);
+  const [newCustomQuestion, setNewCustomQuestion] = useState("");
   
   // Add state for validation errors
   const [formTitleError, setFormTitleError] = useState<string | null>(null);
   const [formDescriptionError, setFormDescriptionError] = useState<string | null>(null);
   const [thankYouTextError, setThankYouTextError] = useState<string | null>(null);
+  const [customQuestionError, setCustomQuestionError] = useState<string | null>(null);
+  
+  // Utility function to get custom questions from various possible locations
+  const getCustomQuestionsFromData = () => {
+    if (!leadFormContent) return [];
+    
+    // Try different properties that might contain custom questions
+    if (leadFormContent.custom_questions && Array.isArray(leadFormContent.custom_questions)) {
+      return leadFormContent.custom_questions;
+    }
+    
+    if (leadFormContent.lead_form_questions && Array.isArray(leadFormContent.lead_form_questions)) {
+      // Default questions that are always there and should not be considered custom
+      const defaultQuestions = ["FIRST_NAME", "LAST_NAME", "EMAIL", "PHONE"];
+      return leadFormContent.lead_form_questions.filter(q => !defaultQuestions.includes(q));
+    }
+    
+    if (leadFormContent.lead_form_data && 
+        leadFormContent.lead_form_data.lead_form_questions && 
+        Array.isArray(leadFormContent.lead_form_data.lead_form_questions)) {
+      const defaultQuestions = ["FIRST_NAME", "LAST_NAME", "EMAIL", "PHONE"];
+      return leadFormContent.lead_form_data.lead_form_questions.filter(q => !defaultQuestions.includes(q));
+    }
+    
+    return [];
+  };
+  
+  // Initialize custom questions from data
+  useEffect(() => {
+    const customQuestionsFromData = getCustomQuestionsFromData();
+    if (customQuestionsFromData.length > 0) {
+      setEditedCustomQuestions(customQuestionsFromData);
+    }
+  }, [leadFormContent]);
   
   // Track original values for lead form fields
   const [originalFormTitle, setOriginalFormTitle] = useState(
@@ -176,6 +251,12 @@ export function AdSetupModal({
   );
   const [originalFollowUpUrl, setOriginalFollowUpUrl] = useState(
     getLeadFormValue("follow_up_url") || ""
+  );
+  const [originalLocale, setOriginalLocale] = useState(
+    getLeadFormValue("lead_form_locale") || getLeadFormValue("locale") || "en_US"
+  );
+  const [originalCustomQuestions, setOriginalCustomQuestions] = useState<string[]>(
+    getCustomQuestionsFromData()
   );
   
   // Track if lead form has been modified and needs saving
@@ -213,6 +294,21 @@ export function AdSetupModal({
     }
   }, [editedHeadline, editedDescription, originalHeadline, originalDescription]);
   
+  // Helper to compare custom questions arrays
+  const areCustomQuestionsChanged = (): boolean => {
+    if (editedCustomQuestions.length !== originalCustomQuestions.length) {
+      return true;
+    }
+    
+    for (let i = 0; i < editedCustomQuestions.length; i++) {
+      if (editedCustomQuestions[i] !== originalCustomQuestions[i]) {
+        return true;
+      }
+    }
+    
+    return false;
+  };
+  
   // Check for lead form modifications
   useEffect(() => {
     // Check if any lead form field has changed
@@ -224,6 +320,8 @@ export function AdSetupModal({
     const privacyPolicyLinkTextChanged = editedPrivacyPolicyLinkText !== originalPrivacyPolicyLinkText;
     const companyNameChanged = editedCompanyName !== originalCompanyName;
     const followUpUrlChanged = editedFollowUpUrl !== originalFollowUpUrl;
+    const localeChanged = editedLocale !== originalLocale;
+    const customQuestionsChanged = areCustomQuestionsChanged();
     
     // Update the modified state based on changes
     setIsLeadFormModified(
@@ -234,7 +332,9 @@ export function AdSetupModal({
       dataUsageNoticeChanged || 
       privacyPolicyLinkTextChanged || 
       companyNameChanged || 
-      followUpUrlChanged
+      followUpUrlChanged ||
+      localeChanged ||
+      customQuestionsChanged
     );
     
     // Reset the save success message when form is modified again
@@ -245,7 +345,9 @@ export function AdSetupModal({
         dataUsageNoticeChanged || 
         privacyPolicyLinkTextChanged || 
         companyNameChanged || 
-        followUpUrlChanged) {
+        followUpUrlChanged ||
+        localeChanged ||
+        customQuestionsChanged) {
       setLeadFormSaveSuccess(false);
     }
   }, [
@@ -256,7 +358,9 @@ export function AdSetupModal({
     editedDataUsageNotice, originalDataUsageNotice,
     editedPrivacyPolicyLinkText, originalPrivacyPolicyLinkText,
     editedCompanyName, originalCompanyName,
-    editedFollowUpUrl, originalFollowUpUrl
+    editedFollowUpUrl, originalFollowUpUrl,
+    editedLocale, originalLocale,
+    editedCustomQuestions
   ]);
 
   // Handler for headline changes
@@ -401,6 +505,52 @@ export function AdSetupModal({
   const handleFollowUpUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEditedFollowUpUrl(e.target.value);
   };
+  
+  // Handler for locale change
+  const handleLocaleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setEditedLocale(e.target.value);
+  };
+  
+  // Handler for new custom question input
+  const handleCustomQuestionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewCustomQuestion(e.target.value);
+  };
+  
+  // Handler for keydown in custom question input
+  const handleCustomQuestionKeyDown = (e: React.KeyboardEvent) => {
+    console.log("Key pressed in custom question:", e.key);
+    // If the key pressed is a comma, prevent the default action
+    if (e.key === ',') {
+      console.log("Comma key blocked in custom question");
+      e.preventDefault();
+      setCustomQuestionError("Facebook lead forms don't allow commas in questions");
+      setTimeout(() => setCustomQuestionError(null), 3000);
+    }
+  };
+  
+  // Add new custom question to the list
+  const addCustomQuestion = () => {
+    if (!newCustomQuestion.trim()) {
+      return; // Don't add empty questions
+    }
+    
+    if (newCustomQuestion.includes(',')) {
+      setCustomQuestionError("Facebook lead forms don't allow commas in questions");
+      setTimeout(() => setCustomQuestionError(null), 3000);
+      setNewCustomQuestion(newCustomQuestion.replace(/,/g, ''));
+      return;
+    }
+    
+    setEditedCustomQuestions([...editedCustomQuestions, newCustomQuestion.trim()]);
+    setNewCustomQuestion(""); // Clear the input field
+  };
+  
+  // Remove a custom question
+  const removeCustomQuestion = (index: number) => {
+    const updatedQuestions = [...editedCustomQuestions];
+    updatedQuestions.splice(index, 1);
+    setEditedCustomQuestions(updatedQuestions);
+  };
 
   // Handler for user clicking the "save" icon
   const handleSave = async () => {
@@ -527,18 +677,11 @@ export function AdSetupModal({
       // Get the form name from existing data or generate one
       const formName = leadFormContent?.lead_form_name || leadFormContent?.form_name || `${campaignName?.replace(/\s+/g, '_').toLowerCase() || 'leadform'}_${Date.now().toString(36)}`;
       
-      // Get questions from the lead form, excluding the default ones
       // Default questions that are always there and should not be submitted as custom questions
       const defaultQuestions = ["FIRST_NAME", "LAST_NAME", "EMAIL", "PHONE"];
       
-      // Get all questions
-      const allQuestions = leadForm?.questions?.map((q: any) => q.type) || 
-        leadFormContent?.custom_questions || 
-        leadFormContent?.lead_form_questions || 
-        [];
-      
-      // Filter out the default questions to avoid duplicates
-      const customQuestions = allQuestions.filter(question => !defaultQuestions.includes(question));
+      // Use our edited custom questions for the request
+      const customQuestions = editedCustomQuestions;
       
       console.log("Updating lead form for campaign session:", campaign_session_id);
       // Get privacy policy link from all possible sources
@@ -569,7 +712,7 @@ export function AdSetupModal({
         data_usage_notice: editedDataUsageNotice,
         privacy_policy_link: privacyPolicyLink,
         privacy_policy_link_text: editedPrivacyPolicyLinkText,
-        locale: leadFormContent?.lead_form_locale || "en_US",
+        locale: editedLocale,
         company_name: editedCompanyName,
         follow_up_url: editedFollowUpUrl
       };
@@ -608,6 +751,8 @@ export function AdSetupModal({
       setOriginalPrivacyPolicyLinkText(editedPrivacyPolicyLinkText);
       setOriginalCompanyName(editedCompanyName);
       setOriginalFollowUpUrl(editedFollowUpUrl);
+      setOriginalLocale(editedLocale);
+      setOriginalCustomQuestions([...editedCustomQuestions]);
       
       // Mark as no longer modified and save as successful
       setIsLeadFormModified(false);
@@ -628,7 +773,8 @@ export function AdSetupModal({
         privacy_policy_link_text: editedPrivacyPolicyLinkText,
         company_name: editedCompanyName,
         follow_up_url: editedFollowUpUrl,
-        custom_questions: customQuestions
+        locale: editedLocale,
+        custom_questions: editedCustomQuestions
       };
       
       // Call the callback with the updated fields if provided
@@ -1832,12 +1978,24 @@ export function AdSetupModal({
                               />
                             </div>
                             
-                            {/* Form Locale (display only) */}
+                            {/* Form Locale (editable dropdown) */}
                             <div>
                               <label className="font-medium text-[#292929] mb-2 block">Form Locale</label>
-                              <div className="p-3 border border-[#d3d3d3] rounded-lg bg-[#f9f9f9] text-[#767676]">
-                                {leadFormContent?.lead_form_locale || "en_US"}
-                              </div>
+                              <select
+                                value={editedLocale}
+                                onChange={handleLocaleChange}
+                                className={`w-full bg-white p-3 rounded-lg border ${
+                                  editedLocale !== originalLocale 
+                                    ? 'border-yellow-400' 
+                                    : 'border-[#d3d3d3]'
+                                } text-[#292929] focus:outline-none focus:border-[#4169e1]`}
+                              >
+                                {locales.map(locale => (
+                                  <option key={locale.value} value={locale.value}>
+                                    {locale.label} ({locale.value})
+                                  </option>
+                                ))}
+                              </select>
                             </div>
                             
                             {/* Form Preview */}
@@ -1906,22 +2064,95 @@ export function AdSetupModal({
                             </div>
                           </div>
                           
-                          <p className="text-[#767676] mb-4">
-                            Questions are configured based on your campaign objectives. To add custom questions, contact support.
-                          </p>
+                          <div className="mb-6">
+                            <h5 className="font-medium text-[#292929] mb-2">Default Questions</h5>
+                            <p className="text-[#767676] mb-4">
+                              These default questions are always included and cannot be modified.
+                            </p>
+                            
+                            <div className="space-y-2 mb-6">
+                              <div className="p-3 border border-[#d3d3d3] rounded bg-[#f9f9f9]">
+                                <p className="font-medium text-[#292929]">First Name</p>
+                              </div>
+                              <div className="p-3 border border-[#d3d3d3] rounded bg-[#f9f9f9]">
+                                <p className="font-medium text-[#292929]">Last Name</p>
+                              </div>
+                              <div className="p-3 border border-[#d3d3d3] rounded bg-[#f9f9f9]">
+                                <p className="font-medium text-[#292929]">Email</p>
+                              </div>
+                              <div className="p-3 border border-[#d3d3d3] rounded bg-[#f9f9f9]">
+                                <p className="font-medium text-[#292929]">Phone</p>
+                              </div>
+                            </div>
+                          </div>
                           
-                          {leadForm && leadForm.questions && (
-                              <div className="space-y-4">
-                                {leadForm.questions.map((question: any, idx: number) => (
-                                    <div
-                                        key={`question-${idx}`}
-                                        className="p-3 border border-[#d3d3d3] rounded bg-[#f2f2f2]"
+                          <div>
+                            <h5 className="font-medium text-[#292929] mb-2">Custom Questions</h5>
+                            <p className="text-[#767676] mb-4">
+                              Add custom questions to collect additional information from your leads.
+                            </p>
+                            
+                            {/* Input field to add new custom questions */}
+                            <div className="flex gap-2 mb-4">
+                              <div className="flex-1">
+                                <input
+                                  id="custom-question-input"
+                                  type="text"
+                                  value={newCustomQuestion}
+                                  onChange={handleCustomQuestionChange}
+                                  onKeyDown={handleCustomQuestionKeyDown}
+                                  onPaste={(e) => {
+                                    // Check if pasted text contains comma
+                                    const pastedText = e.clipboardData.getData('text');
+                                    if (pastedText.includes(',')) {
+                                      e.preventDefault();
+                                      // Paste without commas
+                                      const cleanText = pastedText.replace(/,/g, '');
+                                      setNewCustomQuestion(newCustomQuestion + cleanText);
+                                      setCustomQuestionError("Facebook lead forms don't allow commas in questions");
+                                      setTimeout(() => setCustomQuestionError(null), 3000);
+                                    }
+                                  }}
+                                  placeholder="Enter your custom question here"
+                                  className={`w-full bg-white p-3 rounded-lg border ${
+                                    customQuestionError ? 'border-red-500' : 'border-[#d3d3d3]'
+                                  } text-[#292929] focus:outline-none focus:border-[#4169e1]`}
+                                />
+                                {customQuestionError && (
+                                  <p className="text-red-500 text-xs mt-1">{customQuestionError}</p>
+                                )}
+                              </div>
+                              <button
+                                onClick={addCustomQuestion}
+                                className="px-4 py-3 bg-[#4169e1] hover:bg-[#3152b3] text-white font-medium rounded-lg transition-colors"
+                                disabled={!newCustomQuestion.trim()}
+                              >
+                                Add
+                              </button>
+                            </div>
+                            
+                            {/* Display existing custom questions */}
+                            {editedCustomQuestions.length > 0 ? (
+                              <div className="space-y-2">
+                                {editedCustomQuestions.map((question, idx) => (
+                                  <div 
+                                    key={`custom-${idx}`}
+                                    className="p-3 border border-[#d3d3d3] rounded bg-[#f2f2f2] flex justify-between items-center"
+                                  >
+                                    <p className="font-medium text-[#292929]">{question}</p>
+                                    <button 
+                                      onClick={() => removeCustomQuestion(idx)}
+                                      className="text-red-500 hover:text-red-700"
                                     >
-                                      <p className="font-medium text-[#292929]">{question.label}</p>
-                                    </div>
+                                      <X size={18} />
+                                    </button>
+                                  </div>
                                 ))}
                               </div>
-                          )}
+                            ) : (
+                              <p className="text-[#767676] italic">No custom questions added yet</p>
+                            )}
+                          </div>
                         </div>
                       </TabsContent>
 
