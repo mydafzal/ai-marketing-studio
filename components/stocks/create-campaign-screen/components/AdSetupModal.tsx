@@ -147,6 +147,11 @@ export function AdSetupModal({
     getLeadFormValue("follow_up_url") || ""
   );
   
+  // Add state for validation errors
+  const [formTitleError, setFormTitleError] = useState<string | null>(null);
+  const [formDescriptionError, setFormDescriptionError] = useState<string | null>(null);
+  const [thankYouTextError, setThankYouTextError] = useState<string | null>(null);
+  
   // Track original values for lead form fields
   const [originalFormTitle, setOriginalFormTitle] = useState(
     getLeadFormValue("lead_form_title") || getLeadFormValue("form_title") || ""
@@ -264,21 +269,121 @@ export function AdSetupModal({
     setEditedDescription(e.target.value);
   };
   
+  // Helper function to check for commas
+  const hasComma = (value: string): boolean => {
+    return value.includes(',');
+  };
+  
+  // Handle keydown to prevent comma entry
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    console.log("Key pressed:", e.key);
+    // If the key pressed is a comma, prevent the default action
+    if (e.key === ',') {
+      console.log("Comma key blocked");
+      e.preventDefault();
+      // Show appropriate error message based on the input field
+      if ((e.target as HTMLElement).id === 'form-title') {
+        setFormTitleError("Facebook lead forms don't allow commas in title fields");
+      } else if ((e.target as HTMLElement).id === 'form-description') {
+        setFormDescriptionError("Facebook lead forms don't allow commas in description fields");
+      } else if ((e.target as HTMLElement).id === 'thank-you-text') {
+        setThankYouTextError("Facebook lead forms don't allow commas in thank you text");
+      }
+      
+      // Clear error after 3 seconds
+      setTimeout(() => {
+        setFormTitleError(null);
+        setFormDescriptionError(null);
+        setThankYouTextError(null);
+      }, 3000);
+    }
+  };
+
   // Handlers for lead form field changes
   const handleFormTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setEditedFormTitle(e.target.value);
+    const newValue = e.target.value;
+    console.log("Form title changed to:", newValue);
+    console.log("Has comma?", newValue.includes(','));
+    
+    // Check for commas directly with includes
+    if (newValue.includes(',')) {
+      console.log("Comma detected in form title, removing it");
+      // Replace commas with empty string and set error message
+      const cleanValue = newValue.replace(/,/g, '');
+      console.log("Clean value:", cleanValue);
+      
+      setEditedFormTitle(cleanValue);
+      setFormTitleError("Facebook lead forms don't allow commas in title fields");
+      
+      // Clear error after 3 seconds
+      setTimeout(() => {
+        setFormTitleError(null);
+      }, 3000);
+    } else {
+      setEditedFormTitle(newValue);
+      setFormTitleError(null);
+    }
   };
   
   const handleFormDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setEditedFormDescription(e.target.value);
+    const newValue = e.target.value;
+    console.log("Description changed to:", newValue);
+    console.log("Has comma?", hasComma(newValue));
+    
+    // Check for commas - let's debug the comma detection logic
+    if (newValue.includes(',')) {
+      console.log("Comma detected in description, removing it");
+      // Replace commas with empty string and set error message
+      const cleanValue = newValue.replace(/,/g, '');
+      console.log("Clean value:", cleanValue);
+      
+      setEditedFormDescription(cleanValue);
+      setFormDescriptionError("Facebook lead forms don't allow commas in description fields");
+      
+      // Clear error after 3 seconds
+      setTimeout(() => {
+        setFormDescriptionError(null);
+      }, 3000);
+    } else {
+      setEditedFormDescription(newValue);
+      setFormDescriptionError(null);
+    }
   };
   
   const handleThankYouTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setEditedThankYouText(e.target.value);
+    const newValue = e.target.value;
+    console.log("Thank you text changed to:", newValue);
+    console.log("Has comma?", newValue.includes(','));
+    
+    // Check for commas directly with includes rather than the helper function
+    if (newValue.includes(',')) {
+      console.log("Comma detected in thank you text, removing it");
+      // Replace commas with empty string and set error message
+      const cleanValue = newValue.replace(/,/g, '');
+      console.log("Clean value:", cleanValue);
+      
+      setEditedThankYouText(cleanValue);
+      setThankYouTextError("Facebook lead forms don't allow commas in thank you text");
+      
+      // Clear error after 3 seconds
+      setTimeout(() => {
+        setThankYouTextError(null);
+      }, 3000);
+    } else {
+      setEditedThankYouText(newValue);
+      setThankYouTextError(null);
+    }
   };
   
   const handleThankYouPageTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setEditedThankYouPageTitle(e.target.value);
+    const newValue = e.target.value;
+    
+    // For consistency, also prevent commas in thank you page title
+    if (hasComma(newValue)) {
+      setEditedThankYouPageTitle(newValue.replace(/,/g, ''));
+    } else {
+      setEditedThankYouPageTitle(newValue);
+    }
   };
   
   const handleDataUsageNoticeChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -391,6 +496,22 @@ export function AdSetupModal({
   const handleSaveLeadForm = async () => {
     // Only proceed if lead form is actually modified
     if (!isLeadFormModified) return;
+    
+    // Additional validation to catch any commas before saving
+    if (hasComma(editedFormTitle)) {
+      setFormTitleError("Facebook lead forms don't allow commas in title fields");
+      return;
+    }
+    
+    if (hasComma(editedFormDescription)) {
+      setFormDescriptionError("Facebook lead forms don't allow commas in description fields");
+      return;
+    }
+    
+    if (hasComma(editedThankYouText)) {
+      setThankYouTextError("Facebook lead forms don't allow commas in thank you text");
+      return;
+    }
     
     setIsLeadFormSaving(true);
     
@@ -1632,31 +1753,67 @@ export function AdSetupModal({
                             <div>
                               <label className="font-medium text-[#292929] mb-2 block">Form Title</label>
                               <input
+                                id="form-title"
                                 type="text"
                                 value={editedFormTitle}
                                 onChange={handleFormTitleChange}
+                                onKeyDown={handleKeyDown}
+                                onPaste={(e) => {
+                                  // Check if pasted text contains comma
+                                  const pastedText = e.clipboardData.getData('text');
+                                  if (pastedText.includes(',')) {
+                                    e.preventDefault();
+                                    // Paste without commas
+                                    const cleanText = pastedText.replace(/,/g, '');
+                                    setEditedFormTitle(editedFormTitle + cleanText);
+                                    setFormTitleError("Facebook lead forms don't allow commas in title fields");
+                                    setTimeout(() => setFormTitleError(null), 3000);
+                                  }
+                                }}
                                 className={`w-full bg-white p-3 rounded-lg border ${
+                                  formTitleError ? 'border-red-500' :
                                   editedFormTitle !== originalFormTitle 
                                     ? 'border-yellow-400' 
                                     : 'border-[#d3d3d3]'
                                 } text-[#292929] focus:outline-none focus:border-[#4169e1]`}
                                 placeholder="Enter a compelling form title"
                               />
+                              {formTitleError && (
+                                <p className="text-red-500 text-xs mt-1">{formTitleError}</p>
+                              )}
                             </div>
                             
                             {/* Form Description */}
                             <div>
                               <label className="font-medium text-[#292929] mb-2 block">Form Description</label>
                               <textarea
+                                id="form-description"
                                 value={editedFormDescription}
                                 onChange={handleFormDescriptionChange}
+                                onKeyDown={handleKeyDown}
+                                onPaste={(e) => {
+                                  // Check if pasted text contains comma
+                                  const pastedText = e.clipboardData.getData('text');
+                                  if (pastedText.includes(',')) {
+                                    e.preventDefault();
+                                    // Paste without commas
+                                    const cleanText = pastedText.replace(/,/g, '');
+                                    setEditedFormDescription(editedFormDescription + cleanText);
+                                    setFormDescriptionError("Facebook lead forms don't allow commas in description fields");
+                                    setTimeout(() => setFormDescriptionError(null), 3000);
+                                  }
+                                }}
                                 className={`w-full bg-white p-3 rounded-lg border ${
+                                  formDescriptionError ? 'border-red-500' :
                                   editedFormDescription !== originalFormDescription 
                                     ? 'border-yellow-400' 
                                     : 'border-[#d3d3d3]'
                                 } text-[#292929] focus:outline-none focus:border-[#4169e1] min-h-[80px]`}
                                 placeholder="Add description text to explain the purpose of your form"
                               />
+                              {formDescriptionError && (
+                                <p className="text-red-500 text-xs mt-1">{formDescriptionError}</p>
+                              )}
                             </div>
                             
                             {/* Company Name */}
@@ -1908,15 +2065,33 @@ export function AdSetupModal({
                             <div>
                               <label className="font-medium text-[#292929] mb-2 block">Thank You Message</label>
                               <textarea
+                                id="thank-you-text"
                                 value={editedThankYouText}
                                 onChange={handleThankYouTextChange}
+                                onKeyDown={handleKeyDown}
+                                onPaste={(e) => {
+                                  // Check if pasted text contains comma
+                                  const pastedText = e.clipboardData.getData('text');
+                                  if (pastedText.includes(',')) {
+                                    e.preventDefault();
+                                    // Paste without commas
+                                    const cleanText = pastedText.replace(/,/g, '');
+                                    setEditedThankYouText(editedThankYouText + cleanText);
+                                    setThankYouTextError("Facebook lead forms don't allow commas in thank you text");
+                                    setTimeout(() => setThankYouTextError(null), 3000);
+                                  }
+                                }}
                                 className={`w-full bg-white p-3 rounded-lg border ${
+                                  thankYouTextError ? 'border-red-500' :
                                   editedThankYouText !== originalThankYouText 
                                     ? 'border-yellow-400' 
                                     : 'border-[#d3d3d3]'
                                 } text-[#292929] focus:outline-none focus:border-[#4169e1] min-h-[80px]`}
                                 placeholder="Enter a thank you message for your leads"
                               />
+                              {thankYouTextError && (
+                                <p className="text-red-500 text-xs mt-1">{thankYouTextError}</p>
+                              )}
                             </div>
                             
                             {/* Follow Up URL */}
