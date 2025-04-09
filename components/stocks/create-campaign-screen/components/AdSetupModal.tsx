@@ -45,6 +45,7 @@ interface AdSetupModalProps {
   budget: string;
   creatives: any[];
   onCreativesUpdated?: (creatives: ExtendedCreative[]) => void;
+  onLeadFormUpdated?: (updatedFields: any) => void;
 }
 
 export function AdSetupModal({
@@ -64,7 +65,8 @@ export function AdSetupModal({
                                adPlacements,
                                budget,
                                creatives,
-                               onCreativesUpdated
+                               onCreativesUpdated,
+                               onLeadFormUpdated
                              }: AdSetupModalProps) {
   // States for editable headline/description
   const [editedHeadline, setEditedHeadline] = useState(
@@ -91,6 +93,178 @@ export function AdSetupModal({
   
   // Track updated creatives from the API response
   const [updatedCreatives, setUpdatedCreatives] = useState<ExtendedCreative[]>([]);
+  
+  // Safe access for lead form properties using type assertion 
+  const leadFormContent = masterFlowData?.lead_form_content as any;
+  
+  // Debug the lead form content structure
+  useEffect(() => {
+    if (leadFormContent) {
+      console.log('Lead form content structure:', leadFormContent);
+    }
+  }, [leadFormContent]);
+  
+  // Handle the nested structure of lead form data
+  const getLeadFormValue = (field: string) => {
+    if (!leadFormContent) return "";
+    
+    // Try directly on leadFormContent
+    if (leadFormContent[field] !== undefined) {
+      return leadFormContent[field];
+    }
+    
+    // Try nested within lead_form_data
+    if (leadFormContent.lead_form_data && leadFormContent.lead_form_data[field] !== undefined) {
+      return leadFormContent.lead_form_data[field];
+    }
+    
+    return "";
+  };
+  
+  // Available locales for the form
+  const locales = [
+    { value: "ar_AR", label: "Arabic" },
+    { value: "cs_CZ", label: "Czech" },
+    { value: "da_DK", label: "Danish" },
+    { value: "de_DE", label: "German" },
+    { value: "el_GR", label: "Greek" },
+    { value: "en_GB", label: "English (UK)" },
+    { value: "en_US", label: "English (US)" },
+    { value: "es_ES", label: "Spanish (Spain)" },
+    { value: "es_LA", label: "Spanish (Latin America)" },
+    { value: "fi_FI", label: "Finnish" },
+    { value: "fr_FR", label: "French" },
+    { value: "he_IL", label: "Hebrew" },
+    { value: "hi_IN", label: "Hindi" },
+    { value: "hu_HU", label: "Hungarian" },
+    { value: "id_ID", label: "Indonesian" },
+    { value: "it_IT", label: "Italian" },
+    { value: "ja_JP", label: "Japanese" },
+    { value: "ko_KR", label: "Korean" },
+    { value: "nb_NO", label: "Norwegian" },
+    { value: "nl_NL", label: "Dutch" },
+    { value: "pl_PL", label: "Polish" },
+    { value: "pt_BR", label: "Portuguese (Brazil)" },
+    { value: "pt_PT", label: "Portuguese (Portugal)" },
+    { value: "ro_RO", label: "Romanian" },
+    { value: "ru_RU", label: "Russian" },
+    { value: "sv_SE", label: "Swedish" },
+    { value: "th_TH", label: "Thai" },
+    { value: "tr_TR", label: "Turkish" },
+    { value: "vi_VN", label: "Vietnamese" },
+    { value: "zh_CN", label: "Chinese (Simplified)" },
+    { value: "zh_HK", label: "Chinese (Hong Kong)" },
+    { value: "zh_TW", label: "Chinese (Taiwan)" }
+  ];
+
+  // States for editable lead form fields
+  const [editedFormTitle, setEditedFormTitle] = useState(
+    getLeadFormValue("lead_form_title") || getLeadFormValue("form_title") || ""
+  );
+  const [editedFormDescription, setEditedFormDescription] = useState(
+    getLeadFormValue("lead_form_description") || getLeadFormValue("form_description") || ""
+  );
+  const [editedThankYouText, setEditedThankYouText] = useState(
+    getLeadFormValue("lead_form_thank_you_text") || getLeadFormValue("thank_you_text") || ""
+  );
+  const [editedThankYouPageTitle, setEditedThankYouPageTitle] = useState(
+    getLeadFormValue("lead_form_thank_you_page_title") || getLeadFormValue("thank_you_page_title") || ""
+  );
+  const [editedDataUsageNotice, setEditedDataUsageNotice] = useState(
+    getLeadFormValue("lead_form_data_usage_disclaimer") || getLeadFormValue("data_usage_notice") || ""
+  );
+  const [editedPrivacyPolicyLinkText, setEditedPrivacyPolicyLinkText] = useState(
+    getLeadFormValue("privacy_policy_link_text") || ""
+  );
+  const [editedCompanyName, setEditedCompanyName] = useState(
+    getLeadFormValue("company_name") || ""
+  );
+  const [editedFollowUpUrl, setEditedFollowUpUrl] = useState(
+    getLeadFormValue("follow_up_url") || ""
+  );
+  const [editedLocale, setEditedLocale] = useState(
+    getLeadFormValue("lead_form_locale") || getLeadFormValue("locale") || "en_US"
+  );
+  const [editedCustomQuestions, setEditedCustomQuestions] = useState<string[]>([]);
+  const [newCustomQuestion, setNewCustomQuestion] = useState("");
+  
+  // Add state for validation errors
+  const [formTitleError, setFormTitleError] = useState<string | null>(null);
+  const [formDescriptionError, setFormDescriptionError] = useState<string | null>(null);
+  const [thankYouTextError, setThankYouTextError] = useState<string | null>(null);
+  const [customQuestionError, setCustomQuestionError] = useState<string | null>(null);
+  
+  // Utility function to get custom questions from various possible locations
+  const getCustomQuestionsFromData = () => {
+    if (!leadFormContent) return [];
+    
+    // Try different properties that might contain custom questions
+    if (leadFormContent.custom_questions && Array.isArray(leadFormContent.custom_questions)) {
+      return leadFormContent.custom_questions;
+    }
+    
+    if (leadFormContent.lead_form_questions && Array.isArray(leadFormContent.lead_form_questions)) {
+      // Default questions that are always there and should not be considered custom
+      const defaultQuestions = ["FIRST_NAME", "LAST_NAME", "EMAIL", "PHONE"];
+      return leadFormContent.lead_form_questions.filter((q: string) => !defaultQuestions.includes(q));
+    }
+    
+    if (leadFormContent.lead_form_data && 
+        leadFormContent.lead_form_data.lead_form_questions && 
+        Array.isArray(leadFormContent.lead_form_data.lead_form_questions)) {
+      const defaultQuestions = ["FIRST_NAME", "LAST_NAME", "EMAIL", "PHONE"];
+      return leadFormContent.lead_form_data.lead_form_questions.filter((q: string) => !defaultQuestions.includes(q));
+    }
+    
+    return [];
+  };
+  
+  // Initialize custom questions from data
+  useEffect(() => {
+    const customQuestionsFromData = getCustomQuestionsFromData();
+    if (customQuestionsFromData.length > 0) {
+      setEditedCustomQuestions(customQuestionsFromData);
+    }
+  }, [leadFormContent]);
+  
+  // Track original values for lead form fields
+  const [originalFormTitle, setOriginalFormTitle] = useState(
+    getLeadFormValue("lead_form_title") || getLeadFormValue("form_title") || ""
+  );
+  const [originalFormDescription, setOriginalFormDescription] = useState(
+    getLeadFormValue("lead_form_description") || getLeadFormValue("form_description") || ""
+  );
+  const [originalThankYouText, setOriginalThankYouText] = useState(
+    getLeadFormValue("lead_form_thank_you_text") || getLeadFormValue("thank_you_text") || ""
+  );
+  const [originalThankYouPageTitle, setOriginalThankYouPageTitle] = useState(
+    getLeadFormValue("lead_form_thank_you_page_title") || getLeadFormValue("thank_you_page_title") || ""
+  );
+  const [originalDataUsageNotice, setOriginalDataUsageNotice] = useState(
+    getLeadFormValue("lead_form_data_usage_disclaimer") || getLeadFormValue("data_usage_notice") || ""
+  );
+  const [originalPrivacyPolicyLinkText, setOriginalPrivacyPolicyLinkText] = useState(
+    getLeadFormValue("privacy_policy_link_text") || ""
+  );
+  const [originalCompanyName, setOriginalCompanyName] = useState(
+    getLeadFormValue("company_name") || ""
+  );
+  const [originalFollowUpUrl, setOriginalFollowUpUrl] = useState(
+    getLeadFormValue("follow_up_url") || ""
+  );
+  const [originalLocale, setOriginalLocale] = useState(
+    getLeadFormValue("lead_form_locale") || getLeadFormValue("locale") || "en_US"
+  );
+  const [originalCustomQuestions, setOriginalCustomQuestions] = useState<string[]>(
+    getCustomQuestionsFromData()
+  );
+  
+  // Track if lead form has been modified and needs saving
+  const [isLeadFormModified, setIsLeadFormModified] = useState(false);
+  
+  // Track lead form save operation state
+  const [isLeadFormSaving, setIsLeadFormSaving] = useState(false);
+  const [leadFormSaveSuccess, setLeadFormSaveSuccess] = useState(false);
 
   // Tab states
   const [activeSettingsTab, setActiveSettingsTab] = useState<string>("adtext");
@@ -119,6 +293,75 @@ export function AdSetupModal({
       setSaveSuccess(false);
     }
   }, [editedHeadline, editedDescription, originalHeadline, originalDescription]);
+  
+  // Helper to compare custom questions arrays
+  const areCustomQuestionsChanged = (): boolean => {
+    if (editedCustomQuestions.length !== originalCustomQuestions.length) {
+      return true;
+    }
+    
+    for (let i = 0; i < editedCustomQuestions.length; i++) {
+      if (editedCustomQuestions[i] !== originalCustomQuestions[i]) {
+        return true;
+      }
+    }
+    
+    return false;
+  };
+  
+  // Check for lead form modifications
+  useEffect(() => {
+    // Check if any lead form field has changed
+    const titleChanged = editedFormTitle !== originalFormTitle;
+    const descriptionChanged = editedFormDescription !== originalFormDescription;
+    const thankYouTextChanged = editedThankYouText !== originalThankYouText;
+    const thankYouPageTitleChanged = editedThankYouPageTitle !== originalThankYouPageTitle;
+    const dataUsageNoticeChanged = editedDataUsageNotice !== originalDataUsageNotice;
+    const privacyPolicyLinkTextChanged = editedPrivacyPolicyLinkText !== originalPrivacyPolicyLinkText;
+    const companyNameChanged = editedCompanyName !== originalCompanyName;
+    const followUpUrlChanged = editedFollowUpUrl !== originalFollowUpUrl;
+    const localeChanged = editedLocale !== originalLocale;
+    const customQuestionsChanged = areCustomQuestionsChanged();
+    
+    // Update the modified state based on changes
+    setIsLeadFormModified(
+      titleChanged || 
+      descriptionChanged || 
+      thankYouTextChanged || 
+      thankYouPageTitleChanged || 
+      dataUsageNoticeChanged || 
+      privacyPolicyLinkTextChanged || 
+      companyNameChanged || 
+      followUpUrlChanged ||
+      localeChanged ||
+      customQuestionsChanged
+    );
+    
+    // Reset the save success message when form is modified again
+    if (titleChanged || 
+        descriptionChanged || 
+        thankYouTextChanged || 
+        thankYouPageTitleChanged || 
+        dataUsageNoticeChanged || 
+        privacyPolicyLinkTextChanged || 
+        companyNameChanged || 
+        followUpUrlChanged ||
+        localeChanged ||
+        customQuestionsChanged) {
+      setLeadFormSaveSuccess(false);
+    }
+  }, [
+    editedFormTitle, originalFormTitle,
+    editedFormDescription, originalFormDescription,
+    editedThankYouText, originalThankYouText,
+    editedThankYouPageTitle, originalThankYouPageTitle,
+    editedDataUsageNotice, originalDataUsageNotice,
+    editedPrivacyPolicyLinkText, originalPrivacyPolicyLinkText,
+    editedCompanyName, originalCompanyName,
+    editedFollowUpUrl, originalFollowUpUrl,
+    editedLocale, originalLocale,
+    editedCustomQuestions
+  ]);
 
   // Handler for headline changes
   const handleHeadlineChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -128,6 +371,185 @@ export function AdSetupModal({
   // Handler for description changes
   const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setEditedDescription(e.target.value);
+  };
+  
+  // Helper function to check for commas
+  const hasComma = (value: string): boolean => {
+    return value.includes(',');
+  };
+  
+  // Handle keydown to prevent comma entry
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    console.log("Key pressed:", e.key);
+    // If the key pressed is a comma, prevent the default action
+    if (e.key === ',') {
+      console.log("Comma key blocked");
+      e.preventDefault();
+      // Show appropriate error message based on the input field
+      if ((e.target as HTMLElement).id === 'form-title') {
+        setFormTitleError("Facebook lead forms don't allow commas in title fields");
+      } else if ((e.target as HTMLElement).id === 'form-description') {
+        setFormDescriptionError("Facebook lead forms don't allow commas in description fields");
+      } else if ((e.target as HTMLElement).id === 'thank-you-text') {
+        setThankYouTextError("Facebook lead forms don't allow commas in thank you text");
+      }
+      
+      // Clear error after 3 seconds
+      setTimeout(() => {
+        setFormTitleError(null);
+        setFormDescriptionError(null);
+        setThankYouTextError(null);
+      }, 3000);
+    }
+  };
+
+  // Handlers for lead form field changes
+  const handleFormTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    console.log("Form title changed to:", newValue);
+    console.log("Has comma?", newValue.includes(','));
+    
+    // Check for commas directly with includes
+    if (newValue.includes(',')) {
+      console.log("Comma detected in form title, removing it");
+      // Replace commas with empty string and set error message
+      const cleanValue = newValue.replace(/,/g, '');
+      console.log("Clean value:", cleanValue);
+      
+      setEditedFormTitle(cleanValue);
+      setFormTitleError("Facebook lead forms don't allow commas in title fields");
+      
+      // Clear error after 3 seconds
+      setTimeout(() => {
+        setFormTitleError(null);
+      }, 3000);
+    } else {
+      setEditedFormTitle(newValue);
+      setFormTitleError(null);
+    }
+  };
+  
+  const handleFormDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newValue = e.target.value;
+    console.log("Description changed to:", newValue);
+    console.log("Has comma?", hasComma(newValue));
+    
+    // Check for commas - let's debug the comma detection logic
+    if (newValue.includes(',')) {
+      console.log("Comma detected in description, removing it");
+      // Replace commas with empty string and set error message
+      const cleanValue = newValue.replace(/,/g, '');
+      console.log("Clean value:", cleanValue);
+      
+      setEditedFormDescription(cleanValue);
+      setFormDescriptionError("Facebook lead forms don't allow commas in description fields");
+      
+      // Clear error after 3 seconds
+      setTimeout(() => {
+        setFormDescriptionError(null);
+      }, 3000);
+    } else {
+      setEditedFormDescription(newValue);
+      setFormDescriptionError(null);
+    }
+  };
+  
+  const handleThankYouTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newValue = e.target.value;
+    console.log("Thank you text changed to:", newValue);
+    console.log("Has comma?", newValue.includes(','));
+    
+    // Check for commas directly with includes rather than the helper function
+    if (newValue.includes(',')) {
+      console.log("Comma detected in thank you text, removing it");
+      // Replace commas with empty string and set error message
+      const cleanValue = newValue.replace(/,/g, '');
+      console.log("Clean value:", cleanValue);
+      
+      setEditedThankYouText(cleanValue);
+      setThankYouTextError("Facebook lead forms don't allow commas in thank you text");
+      
+      // Clear error after 3 seconds
+      setTimeout(() => {
+        setThankYouTextError(null);
+      }, 3000);
+    } else {
+      setEditedThankYouText(newValue);
+      setThankYouTextError(null);
+    }
+  };
+  
+  const handleThankYouPageTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    
+    // For consistency, also prevent commas in thank you page title
+    if (hasComma(newValue)) {
+      setEditedThankYouPageTitle(newValue.replace(/,/g, ''));
+    } else {
+      setEditedThankYouPageTitle(newValue);
+    }
+  };
+  
+  const handleDataUsageNoticeChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setEditedDataUsageNotice(e.target.value);
+  };
+  
+  const handlePrivacyPolicyLinkTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEditedPrivacyPolicyLinkText(e.target.value);
+  };
+  
+  const handleCompanyNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEditedCompanyName(e.target.value);
+  };
+  
+  const handleFollowUpUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEditedFollowUpUrl(e.target.value);
+  };
+  
+  // Handler for locale change
+  const handleLocaleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setEditedLocale(e.target.value);
+  };
+  
+  // Handler for new custom question input
+  const handleCustomQuestionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewCustomQuestion(e.target.value);
+  };
+  
+  // Handler for keydown in custom question input
+  const handleCustomQuestionKeyDown = (e: React.KeyboardEvent) => {
+    console.log("Key pressed in custom question:", e.key);
+    // If the key pressed is a comma, prevent the default action
+    if (e.key === ',') {
+      console.log("Comma key blocked in custom question");
+      e.preventDefault();
+      setCustomQuestionError("Facebook lead forms don't allow commas in questions");
+      setTimeout(() => setCustomQuestionError(null), 3000);
+    }
+  };
+  
+  // Add new custom question to the list
+  const addCustomQuestion = () => {
+    if (!newCustomQuestion.trim()) {
+      return; // Don't add empty questions
+    }
+    
+    if (newCustomQuestion.includes(',')) {
+      setCustomQuestionError("Facebook lead forms don't allow commas in questions");
+      setTimeout(() => setCustomQuestionError(null), 3000);
+      setNewCustomQuestion(newCustomQuestion.replace(/,/g, ''));
+      return;
+    }
+    
+    setEditedCustomQuestions([...editedCustomQuestions, newCustomQuestion.trim()]);
+    setNewCustomQuestion(""); // Clear the input field
+  };
+  
+  // Remove a custom question
+  const removeCustomQuestion = (index: number) => {
+    const updatedQuestions = [...editedCustomQuestions];
+    updatedQuestions.splice(index, 1);
+    setEditedCustomQuestions(updatedQuestions);
   };
 
   // Handler for user clicking the "save" icon
@@ -217,6 +639,205 @@ export function AdSetupModal({
       alert(`Error: ${err instanceof Error ? err.message : 'Failed to save changes'}`);
     } finally {
       setIsSaving(false);
+    }
+  };
+  
+  // Handler for saving lead form changes
+  const handleSaveLeadForm = async () => {
+    // Only proceed if lead form is actually modified
+    if (!isLeadFormModified) return;
+    
+    // Additional validation to catch any commas before saving
+    if (hasComma(editedFormTitle)) {
+      setFormTitleError("Facebook lead forms don't allow commas in title fields");
+      return;
+    }
+    
+    if (hasComma(editedFormDescription)) {
+      setFormDescriptionError("Facebook lead forms don't allow commas in description fields");
+      return;
+    }
+    
+    if (hasComma(editedThankYouText)) {
+      setThankYouTextError("Facebook lead forms don't allow commas in thank you text");
+      return;
+    }
+    
+    setIsLeadFormSaving(true);
+    
+    try {
+      // Get required fields from masterFlowData
+      const campaign_session_id = masterFlowData?.campaign_flow_session_id;
+      
+      // Validate required fields
+      if (!campaign_session_id) {
+        throw new Error('Missing campaign session ID');
+      }
+      
+      // Get the form name from existing data or generate one
+      const formName = leadFormContent?.lead_form_name || leadFormContent?.form_name || `${campaignName?.replace(/\s+/g, '_').toLowerCase() || 'leadform'}_${Date.now().toString(36)}`;
+      
+      // Default questions that are always there and should not be submitted as custom questions
+      const defaultQuestions = ["FIRST_NAME", "LAST_NAME", "EMAIL", "PHONE"];
+      
+      // Use our edited custom questions for the request
+      const customQuestions = editedCustomQuestions;
+      
+      console.log("Updating lead form for campaign session:", campaign_session_id);
+      // Privacy policy link is already configured and should not be changed
+      // This is intentionally commented out to avoid sending this field to the API
+      
+      console.log("Lead form data:", {
+        form_name: formName,
+        form_title: editedFormTitle,
+        custom_questions: customQuestions,
+        excluded_default_questions: defaultQuestions
+      });
+      
+      // Prepare payload with only required fields and those we want to update
+      // Note: form_name, form_template_name, privacy_policy_link are not updatable
+      // follow_up_url should only be included if changed
+      const payload: any = {
+        campaign_creation_flow_session_id: campaign_session_id,
+      };
+      
+      // Only include fields that have actually changed
+      if (editedFormTitle !== originalFormTitle) {
+        payload.form_title = editedFormTitle;
+      }
+      
+      if (editedFormDescription !== originalFormDescription) {
+        payload.form_description = editedFormDescription;
+      }
+      
+      if (editedThankYouText !== originalThankYouText) {
+        payload.thank_you_text = editedThankYouText;
+      }
+      
+      if (editedThankYouPageTitle !== originalThankYouPageTitle) {
+        payload.thank_you_page_title = editedThankYouPageTitle;
+      }
+      
+      if (editedDataUsageNotice !== originalDataUsageNotice) {
+        payload.data_usage_notice = editedDataUsageNotice;
+      }
+      
+      if (editedLocale !== originalLocale) {
+        payload.locale = editedLocale;
+      }
+      
+      if (editedCompanyName !== originalCompanyName) {
+        payload.company_name = editedCompanyName;
+      }
+      
+      // Only include follow_up_url if it has been explicitly changed
+      if (editedFollowUpUrl !== originalFollowUpUrl) {
+        payload.follow_up_url = editedFollowUpUrl;
+      }
+      
+      // Only include custom_questions if we actually have custom questions (not default ones)
+      if (customQuestions.length > 0) {
+        payload.custom_questions = customQuestions;
+      }
+      
+      console.log("Final payload being sent:", payload);
+      
+      // Call the API to save the changes
+      const response = await fetch('/api/fasty-bot/proxy-update-lead-form', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      
+      // Parse response
+      const data = await response.json();
+      
+      if (!response.ok || !data.success) {
+        const errorMessage = data.error || 'Failed to save lead form changes';
+        console.error('API error:', data);
+        throw new Error(errorMessage);
+      }
+      
+      console.log('Lead form update response:', data);
+      
+      // Update original values to match current values
+      setOriginalFormTitle(editedFormTitle);
+      setOriginalFormDescription(editedFormDescription);
+      setOriginalThankYouText(editedThankYouText);
+      setOriginalThankYouPageTitle(editedThankYouPageTitle);
+      setOriginalDataUsageNotice(editedDataUsageNotice);
+      setOriginalPrivacyPolicyLinkText(editedPrivacyPolicyLinkText);
+      setOriginalCompanyName(editedCompanyName);
+      setOriginalFollowUpUrl(editedFollowUpUrl);
+      setOriginalLocale(editedLocale);
+      setOriginalCustomQuestions([...editedCustomQuestions]);
+      
+      // Mark as no longer modified and save as successful
+      setIsLeadFormModified(false);
+      setLeadFormSaveSuccess(true);
+      
+      // Reset success message after 3 seconds
+      setTimeout(() => {
+        setLeadFormSaveSuccess(false);
+      }, 3000);
+      
+      // Create the updated fields data based on what was actually changed
+      // Only include fields that were modified
+      const updatedFields: any = {};
+      
+      if (editedFormTitle !== originalFormTitle) {
+        updatedFields.form_title = editedFormTitle;
+      }
+      
+      if (editedFormDescription !== originalFormDescription) {
+        updatedFields.form_description = editedFormDescription;
+      }
+      
+      if (editedThankYouText !== originalThankYouText) {
+        updatedFields.thank_you_text = editedThankYouText;
+      }
+      
+      if (editedThankYouPageTitle !== originalThankYouPageTitle) {
+        updatedFields.thank_you_page_title = editedThankYouPageTitle;
+      }
+      
+      if (editedDataUsageNotice !== originalDataUsageNotice) {
+        updatedFields.data_usage_notice = editedDataUsageNotice;
+      }
+      
+      if (editedLocale !== originalLocale) {
+        updatedFields.locale = editedLocale;
+      }
+      
+      if (editedCompanyName !== originalCompanyName) {
+        updatedFields.company_name = editedCompanyName;
+      }
+      
+      if (editedFollowUpUrl !== originalFollowUpUrl) {
+        updatedFields.follow_up_url = editedFollowUpUrl;
+      }
+      
+      // Only include custom questions if they've changed
+      if (areCustomQuestionsChanged()) {
+        updatedFields.custom_questions = editedCustomQuestions;
+      }
+      
+      // Merge with API response data if available
+      if (data.updated_fields) {
+        Object.assign(updatedFields, data.updated_fields);
+      }
+      
+      // Call the callback with the updated fields if provided
+      if (onLeadFormUpdated) {
+        onLeadFormUpdated(updatedFields);
+      }
+      
+      console.log('Lead form changes saved successfully!');
+    } catch (err) {
+      console.error('Error saving lead form:', err);
+      alert(`Error: ${err instanceof Error ? err.message : 'Failed to save changes'}`);
+    } finally {
+      setIsLeadFormSaving(false);
     }
   };
 
@@ -550,12 +1171,14 @@ export function AdSetupModal({
 
   const hasPlacementData = masterFlowData?.hasOwnProperty('placements');
   const hasLeadFormData = masterFlowData?.lead_form_content !== undefined;
-  const leadFormContent = masterFlowData?.lead_form_content as any;
 
   // Extract lead form data
   const processLeadFormQuestions = () => {
     if (!leadFormContent) return [];
 
+    // Check for different possible locations of questions data
+    
+    // Option 1: Top-level lead_form_questions array
     if (leadFormContent.lead_form_questions && Array.isArray(leadFormContent.lead_form_questions)) {
       return leadFormContent.lead_form_questions.map((question: string) => {
         return {
@@ -564,8 +1187,20 @@ export function AdSetupModal({
         };
       });
     }
+    
+    // Option 2: Questions in lead_form_data nested structure
     if (leadFormContent.lead_form_data && leadFormContent.lead_form_data.lead_form_questions) {
       return leadFormContent.lead_form_data.lead_form_questions.map((question: string) => {
+        return {
+          type: question,
+          label: formatQuestionLabel(question)
+        };
+      });
+    }
+    
+    // Option 3: New format custom_questions array
+    if (leadFormContent.custom_questions && Array.isArray(leadFormContent.custom_questions)) {
+      return leadFormContent.custom_questions.map((question: string) => {
         return {
           type: question,
           label: formatQuestionLabel(question)
@@ -587,16 +1222,19 @@ export function AdSetupModal({
   const getLeadFormData = () => {
     if (!leadFormContent) return null;
     const data = leadFormContent.lead_form_data || leadFormContent;
+    
+    // Use both old and new field names to support both formats
     return {
-      name: data.lead_form_name,
-      title: data.lead_form_title,
-      description: data.lead_form_description,
-      thankYouText: data.lead_form_thank_you_text,
-      disclaimerText: data.lead_form_data_usage_disclaimer,
-      thankYouPageTitle: data.lead_form_thank_you_page_title,
-      locale: data.lead_form_locale,
-      privacyPolicyText: data.privacy_policy_link_text,
-      companyName: data.company_name,
+      name: data.lead_form_name || data.form_name,
+      title: data.lead_form_title || data.form_title || editedFormTitle,
+      description: data.lead_form_description || data.form_description || editedFormDescription,
+      thankYouText: data.lead_form_thank_you_text || data.thank_you_text || editedThankYouText,
+      disclaimerText: data.lead_form_data_usage_disclaimer || data.data_usage_notice || editedDataUsageNotice,
+      thankYouPageTitle: data.lead_form_thank_you_page_title || data.thank_you_page_title || editedThankYouPageTitle,
+      locale: data.lead_form_locale || data.locale,
+      privacyPolicyText: data.privacy_policy_link_text || editedPrivacyPolicyLinkText,
+      companyName: data.company_name || editedCompanyName,
+      followUpUrl: data.follow_up_url || editedFollowUpUrl,
       questions: processLeadFormQuestions()
     };
   };
@@ -1273,61 +1911,170 @@ export function AdSetupModal({
                       {/* Step 1: Form */}
                       <TabsContent value="step1" className="space-y-4">
                         <div className="bg-white rounded-lg p-5 border border-[#d3d3d3] shadow-sm">
-                          <h4 className="text-[22px] font-medium mb-5 text-[#292929]">Step 1: Lead Form</h4>
+                          <div className="flex items-center justify-between mb-4">
+                            <h4 className="text-[22px] font-medium text-[#292929]">Step 1: Lead Form</h4>
+                            
+                            {/* Save button with status indicators */}
+                            <div className="flex flex-col items-end">
+                              <button
+                                onClick={handleSaveLeadForm}
+                                disabled={!isLeadFormModified || isLeadFormSaving}
+                                className={`transition-colors relative ${
+                                  isLeadFormSaving ? 'opacity-50 cursor-not-allowed' : 
+                                  isLeadFormModified ? 'text-yellow-400 hover:text-yellow-300' : 
+                                  'text-primary-green hover:text-white'
+                                }`}
+                                title={isLeadFormModified ? "Save changes" : "No changes to save"}
+                              >
+                                <Save className="w-5 h-5" />
+                                {isLeadFormSaving && (
+                                  <span className="animate-spin absolute inset-0 flex items-center justify-center">
+                                    <span className="w-3 h-3 border-2 border-t-transparent border-yellow-400 rounded-full"></span>
+                                  </span>
+                                )}
+                              </button>
+                              
+                              {/* Status indicator text */}
+                              {isLeadFormModified && (
+                                <span className="text-yellow-400 text-xs mt-1">Click to save</span>
+                              )}
+                              {leadFormSaveSuccess && (
+                                <span className="text-green-400 text-xs mt-1">Saved!</span>
+                              )}
+                            </div>
+                          </div>
 
-                          <div className="flex flex-col items-center">
-                            {leadForm && (
-                                <div className="w-full max-w-sm mx-auto">
-                                  <div className="bg-white rounded-lg overflow-hidden shadow-lg">
-                                    <div className="bg-[#333333] p-4">
-                                      <div className="flex items-center justify-between mb-3">
-                                        <div className="bg-white h-8 w-8 rounded-full flex items-center justify-center">
-                                          <span className="text-[#4169e1] text-xl font-bold">R</span>
-                                        </div>
-                                        <div className="text-white text-sm">X</div>
-                                      </div>
-                                      <div className="bg-white rounded-md px-2 py-1 inline-block mb-2">
-                                        <span className="text-xs font-medium text-[#4169e1]">Lead Form</span>
-                                      </div>
-                                      <h3 className="text-white text-[22px] font-bold">
-                                        {leadForm.title || "Unlock the Power of AI"}
-                                      </h3>
-                                    </div>
-
-                                    <div className="p-5 bg-white">
-                                      <p className="text-[#292929] text-[16px] leading-relaxed mb-5">
-                                        {leadForm.description || "Fill out this form to learn more about our services."}
-                                      </p>
-
-                                      <div className="space-y-4 text-[16px] text-[#292929]">
-                                        <div className="flex justify-between items-center border-b border-[#f2f2f2] pb-2">
-                                          <span className="font-medium">Form Name:</span>
-                                          <span className="text-[#767676]">{leadForm.name}</span>
-                                        </div>
-                                        {leadFormContent?.headline && (
-                                            <div className="flex justify-between items-center border-b border-[#f2f2f2] pb-2">
-                                              <span className="font-medium">Headline:</span>
-                                              <span className="text-[#767676]">{leadFormContent.headline}</span>
-                                            </div>
-                                        )}
-                                        <div className="flex justify-between items-center border-b border-[#f2f2f2] pb-2">
-                                          <span className="font-medium">Company:</span>
-                                          <span className="text-[#767676]">{leadForm.companyName}</span>
-                                        </div>
-                                        <div className="flex justify-between items-center border-b border-[#f2f2f2] pb-2">
-                                          <span className="font-medium">Language:</span>
-                                          <span className="text-[#767676]">{leadForm.locale || "en_US"}</span>
-                                        </div>
-                                      </div>
-
-                                      <p className="text-[#767676] text-[14px] mt-5 border-t border-[#f2f2f2] pt-4 leading-relaxed">
-                                        This is step 1 of your lead form. Users will see your form title and description, and
-                                        then be asked to provide information.
-                                      </p>
-                                    </div>
+                          <div className="space-y-5">
+                            {/* Form Title */}
+                            <div>
+                              <label className="font-medium text-[#292929] mb-2 block">Form Title</label>
+                              <input
+                                id="form-title"
+                                type="text"
+                                value={editedFormTitle}
+                                onChange={handleFormTitleChange}
+                                onKeyDown={handleKeyDown}
+                                onPaste={(e) => {
+                                  // Check if pasted text contains comma
+                                  const pastedText = e.clipboardData.getData('text');
+                                  if (pastedText.includes(',')) {
+                                    e.preventDefault();
+                                    // Paste without commas
+                                    const cleanText = pastedText.replace(/,/g, '');
+                                    setEditedFormTitle(editedFormTitle + cleanText);
+                                    setFormTitleError("Facebook lead forms don't allow commas in title fields");
+                                    setTimeout(() => setFormTitleError(null), 3000);
+                                  }
+                                }}
+                                className={`w-full bg-white p-3 rounded-lg border ${
+                                  formTitleError ? 'border-red-500' :
+                                  editedFormTitle !== originalFormTitle 
+                                    ? 'border-yellow-400' 
+                                    : 'border-[#d3d3d3]'
+                                } text-[#292929] focus:outline-none focus:border-[#4169e1]`}
+                                placeholder="Enter a compelling form title"
+                              />
+                              {formTitleError && (
+                                <p className="text-red-500 text-xs mt-1">{formTitleError}</p>
+                              )}
+                            </div>
+                            
+                            {/* Form Description */}
+                            <div>
+                              <label className="font-medium text-[#292929] mb-2 block">Form Description</label>
+                              <textarea
+                                id="form-description"
+                                value={editedFormDescription}
+                                onChange={handleFormDescriptionChange}
+                                onKeyDown={handleKeyDown}
+                                onPaste={(e) => {
+                                  // Check if pasted text contains comma
+                                  const pastedText = e.clipboardData.getData('text');
+                                  if (pastedText.includes(',')) {
+                                    e.preventDefault();
+                                    // Paste without commas
+                                    const cleanText = pastedText.replace(/,/g, '');
+                                    setEditedFormDescription(editedFormDescription + cleanText);
+                                    setFormDescriptionError("Facebook lead forms don't allow commas in description fields");
+                                    setTimeout(() => setFormDescriptionError(null), 3000);
+                                  }
+                                }}
+                                className={`w-full bg-white p-3 rounded-lg border ${
+                                  formDescriptionError ? 'border-red-500' :
+                                  editedFormDescription !== originalFormDescription 
+                                    ? 'border-yellow-400' 
+                                    : 'border-[#d3d3d3]'
+                                } text-[#292929] focus:outline-none focus:border-[#4169e1] min-h-[80px]`}
+                                placeholder="Add description text to explain the purpose of your form"
+                              />
+                              {formDescriptionError && (
+                                <p className="text-red-500 text-xs mt-1">{formDescriptionError}</p>
+                              )}
+                            </div>
+                            
+                            {/* Company Name */}
+                            <div>
+                              <label className="font-medium text-[#292929] mb-2 block">Company Name</label>
+                              <input
+                                type="text"
+                                value={editedCompanyName}
+                                onChange={handleCompanyNameChange}
+                                className={`w-full bg-white p-3 rounded-lg border ${
+                                  editedCompanyName !== originalCompanyName 
+                                    ? 'border-yellow-400' 
+                                    : 'border-[#d3d3d3]'
+                                } text-[#292929] focus:outline-none focus:border-[#4169e1]`}
+                                placeholder="Enter your company name"
+                              />
+                            </div>
+                            
+                            {/* Form Locale (editable dropdown) */}
+                            <div>
+                              <label className="font-medium text-[#292929] mb-2 block">Form Locale</label>
+                              <select
+                                value={editedLocale}
+                                onChange={handleLocaleChange}
+                                className={`w-full bg-white p-3 rounded-lg border ${
+                                  editedLocale !== originalLocale 
+                                    ? 'border-yellow-400' 
+                                    : 'border-[#d3d3d3]'
+                                } text-[#292929] focus:outline-none focus:border-[#4169e1]`}
+                              >
+                                {locales.map(locale => (
+                                  <option key={locale.value} value={locale.value}>
+                                    {locale.label} ({locale.value})
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                            
+                            {/* Form Preview */}
+                            <div className="mt-8 bg-white rounded-lg overflow-hidden shadow-lg border border-[#d3d3d3]">
+                              <div className="bg-[#333333] p-4">
+                                <div className="flex items-center justify-between mb-3">
+                                  <div className="bg-white h-8 w-8 rounded-full flex items-center justify-center">
+                                    <span className="text-[#4169e1] text-xl font-bold">R</span>
                                   </div>
+                                  <div className="text-white text-sm">X</div>
                                 </div>
-                            )}
+                                <div className="bg-white rounded-md px-2 py-1 inline-block mb-2">
+                                  <span className="text-xs font-medium text-[#4169e1]">Lead Form</span>
+                                </div>
+                                <h3 className="text-white text-[22px] font-bold">
+                                  {editedFormTitle || "Enter Your Form Title"}
+                                </h3>
+                              </div>
+
+                              <div className="p-5 bg-white">
+                                <p className="text-[#292929] text-[16px] leading-relaxed mb-5">
+                                  {editedFormDescription || "Add a description to explain what this form is for."}
+                                </p>
+
+                                <div className="text-[#767676] text-[14px] mt-5 border-t border-[#f2f2f2] pt-4 leading-relaxed">
+                                  <span className="font-medium text-[#292929]">Preview:</span> This is how users will see your form title and description before they provide their information.
+                                </div>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </TabsContent>
@@ -1335,50 +2082,330 @@ export function AdSetupModal({
                       {/* Step 2: Questions */}
                       <TabsContent value="step2" className="space-y-4">
                         <div className="bg-white rounded-lg p-5 border border-[#d3d3d3] shadow-sm">
-                          <h4 className="text-[22px] font-medium mb-5 text-[#292929]">Step 2: Questions</h4>
-                          {leadForm && leadForm.questions && (
-                              <div className="space-y-4">
-                                {leadForm.questions.map((question: any, idx: number) => (
-                                    <div
-                                        key={`question-${idx}`}
-                                        className="p-3 border border-[#d3d3d3] rounded bg-[#f2f2f2]"
+                          <div className="flex items-center justify-between mb-4">
+                            <h4 className="text-[22px] font-medium text-[#292929]">Step 2: Questions</h4>
+                            
+                            {/* Save button for tab consistency */}
+                            <div className="flex flex-col items-end">
+                              <button
+                                onClick={handleSaveLeadForm}
+                                disabled={!isLeadFormModified || isLeadFormSaving}
+                                className={`transition-colors relative ${
+                                  isLeadFormSaving ? 'opacity-50 cursor-not-allowed' : 
+                                  isLeadFormModified ? 'text-yellow-400 hover:text-yellow-300' : 
+                                  'text-primary-green hover:text-white'
+                                }`}
+                                title={isLeadFormModified ? "Save changes" : "No changes to save"}
+                              >
+                                <Save className="w-5 h-5" />
+                                {isLeadFormSaving && (
+                                  <span className="animate-spin absolute inset-0 flex items-center justify-center">
+                                    <span className="w-3 h-3 border-2 border-t-transparent border-yellow-400 rounded-full"></span>
+                                  </span>
+                                )}
+                              </button>
+                              
+                              {isLeadFormModified && (
+                                <span className="text-yellow-400 text-xs mt-1">Click to save</span>
+                              )}
+                              {leadFormSaveSuccess && (
+                                <span className="text-green-400 text-xs mt-1">Saved!</span>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <div className="mb-6">
+                            <h5 className="font-medium text-[#292929] mb-2">Default Questions</h5>
+                            <p className="text-[#767676] mb-4">
+                              These default questions are always included and cannot be modified.
+                            </p>
+                            
+                            <div className="space-y-2 mb-6">
+                              <div className="p-3 border border-[#d3d3d3] rounded bg-[#f9f9f9]">
+                                <p className="font-medium text-[#292929]">First Name</p>
+                              </div>
+                              <div className="p-3 border border-[#d3d3d3] rounded bg-[#f9f9f9]">
+                                <p className="font-medium text-[#292929]">Last Name</p>
+                              </div>
+                              <div className="p-3 border border-[#d3d3d3] rounded bg-[#f9f9f9]">
+                                <p className="font-medium text-[#292929]">Email</p>
+                              </div>
+                              <div className="p-3 border border-[#d3d3d3] rounded bg-[#f9f9f9]">
+                                <p className="font-medium text-[#292929]">Phone</p>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <h5 className="font-medium text-[#292929] mb-2">Custom Questions</h5>
+                            <p className="text-[#767676] mb-4">
+                              Add custom questions to collect additional information from your leads.
+                            </p>
+                            
+                            {/* Input field to add new custom questions */}
+                            <div className="flex gap-2 mb-4">
+                              <div className="flex-1">
+                                <input
+                                  id="custom-question-input"
+                                  type="text"
+                                  value={newCustomQuestion}
+                                  onChange={handleCustomQuestionChange}
+                                  onKeyDown={handleCustomQuestionKeyDown}
+                                  onPaste={(e) => {
+                                    // Check if pasted text contains comma
+                                    const pastedText = e.clipboardData.getData('text');
+                                    if (pastedText.includes(',')) {
+                                      e.preventDefault();
+                                      // Paste without commas
+                                      const cleanText = pastedText.replace(/,/g, '');
+                                      setNewCustomQuestion(newCustomQuestion + cleanText);
+                                      setCustomQuestionError("Facebook lead forms don't allow commas in questions");
+                                      setTimeout(() => setCustomQuestionError(null), 3000);
+                                    }
+                                  }}
+                                  placeholder="Enter your custom question here"
+                                  className={`w-full bg-white p-3 rounded-lg border ${
+                                    customQuestionError ? 'border-red-500' : 'border-[#d3d3d3]'
+                                  } text-[#292929] focus:outline-none focus:border-[#4169e1]`}
+                                />
+                                {customQuestionError && (
+                                  <p className="text-red-500 text-xs mt-1">{customQuestionError}</p>
+                                )}
+                              </div>
+                              <button
+                                onClick={addCustomQuestion}
+                                className="px-4 py-3 bg-[#4169e1] hover:bg-[#3152b3] text-white font-medium rounded-lg transition-colors"
+                                disabled={!newCustomQuestion.trim()}
+                              >
+                                Add
+                              </button>
+                            </div>
+                            
+                            {/* Display existing custom questions */}
+                            {editedCustomQuestions.length > 0 ? (
+                              <div className="space-y-2">
+                                {editedCustomQuestions.map((question, idx) => (
+                                  <div 
+                                    key={`custom-${idx}`}
+                                    className="p-3 border border-[#d3d3d3] rounded bg-[#f2f2f2] flex justify-between items-center"
+                                  >
+                                    <p className="font-medium text-[#292929]">{question}</p>
+                                    <button 
+                                      onClick={() => removeCustomQuestion(idx)}
+                                      className="text-red-500 hover:text-red-700"
                                     >
-                                      <p className="font-medium text-[#292929]">{question.label}</p>
-                                    </div>
+                                      <X size={18} />
+                                    </button>
+                                  </div>
                                 ))}
                               </div>
-                          )}
+                            ) : (
+                              <p className="text-[#767676] italic">No custom questions added yet</p>
+                            )}
+                          </div>
                         </div>
                       </TabsContent>
 
                       {/* Step 3: Privacy */}
                       <TabsContent value="step3" className="space-y-4">
                         <div className="bg-white rounded-lg p-5 border border-[#d3d3d3] shadow-sm">
-                          <h4 className="text-[22px] font-medium mb-5 text-[#292929]">Privacy Policy</h4>
-                          {leadForm && (
-                              <div className="p-4 border border-[#d3d3d3] rounded bg-[#f2f2f2]">
-                                <p className="text-[#292929]">
-                                  {leadForm.disclaimerText || "Privacy policy information"}
+                          <div className="flex items-center justify-between mb-4">
+                            <h4 className="text-[22px] font-medium text-[#292929]">Step 3: Privacy Policy</h4>
+                            
+                            {/* Save button for tab consistency */}
+                            <div className="flex flex-col items-end">
+                              <button
+                                onClick={handleSaveLeadForm}
+                                disabled={!isLeadFormModified || isLeadFormSaving}
+                                className={`transition-colors relative ${
+                                  isLeadFormSaving ? 'opacity-50 cursor-not-allowed' : 
+                                  isLeadFormModified ? 'text-yellow-400 hover:text-yellow-300' : 
+                                  'text-primary-green hover:text-white'
+                                }`}
+                                title={isLeadFormModified ? "Save changes" : "No changes to save"}
+                              >
+                                <Save className="w-5 h-5" />
+                                {isLeadFormSaving && (
+                                  <span className="animate-spin absolute inset-0 flex items-center justify-center">
+                                    <span className="w-3 h-3 border-2 border-t-transparent border-yellow-400 rounded-full"></span>
+                                  </span>
+                                )}
+                              </button>
+                              
+                              {isLeadFormModified && (
+                                <span className="text-yellow-400 text-xs mt-1">Click to save</span>
+                              )}
+                              {leadFormSaveSuccess && (
+                                <span className="text-green-400 text-xs mt-1">Saved!</span>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-5">
+                            {/* Data Usage Notice */}
+                            <div>
+                              <label className="font-medium text-[#292929] mb-2 block">Data Usage Notice</label>
+                              <textarea
+                                value={editedDataUsageNotice}
+                                onChange={handleDataUsageNoticeChange}
+                                className={`w-full bg-white p-3 rounded-lg border ${
+                                  editedDataUsageNotice !== originalDataUsageNotice 
+                                    ? 'border-yellow-400' 
+                                    : 'border-[#d3d3d3]'
+                                } text-[#292929] focus:outline-none focus:border-[#4169e1] min-h-[80px]`}
+                                placeholder="Explain how you will use the collected data"
+                              />
+                            </div>
+                            
+                            {/* Privacy Policy Link Text */}
+                            <div>
+                              <label className="font-medium text-[#292929] mb-2 block">Privacy Policy Link Text</label>
+                              <input
+                                type="text"
+                                value={editedPrivacyPolicyLinkText}
+                                onChange={handlePrivacyPolicyLinkTextChange}
+                                className={`w-full bg-white p-3 rounded-lg border ${
+                                  editedPrivacyPolicyLinkText !== originalPrivacyPolicyLinkText 
+                                    ? 'border-yellow-400' 
+                                    : 'border-[#d3d3d3]'
+                                } text-[#292929] focus:outline-none focus:border-[#4169e1]`}
+                                placeholder="Enter your privacy policy URL"
+                              />
+                            </div>
+                            
+                            {/* Privacy Policy Preview */}
+                            <div className="mt-5 p-4 border border-[#d3d3d3] rounded bg-[#f2f2f2]">
+                              <h5 className="font-medium text-[#292929] mb-2">Preview:</h5>
+                              <p className="text-[#292929]">
+                                {editedDataUsageNotice || "Add a data usage notice to inform users about how their data will be processed."}
+                              </p>
+                              
+                              {editedPrivacyPolicyLinkText && (
+                                <p className="text-[#4169e1] mt-2 underline">
+                                  {editedPrivacyPolicyLinkText}
                                 </p>
-                              </div>
-                          )}
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </TabsContent>
 
                       {/* Step 4: Thank You */}
                       <TabsContent value="step4" className="space-y-4">
                         <div className="bg-white rounded-lg p-5 border border-[#d3d3d3] shadow-sm">
-                          <h4 className="text-[22px] font-medium mb-5 text-[#292929]">Thank You Page</h4>
-                          {leadForm && (
-                              <div className="text-center p-4 border border-[#d3d3d3] rounded bg-[#f2f2f2]">
-                                <h5 className="text-xl font-bold mb-2 text-[#292929]">
-                                  {leadForm.thankYouPageTitle || "Thank You!"}
-                                </h5>
-                                <p className="text-[#292929]">
-                                  {leadForm.thankYouText || "Your form has been submitted successfully."}
-                                </p>
-                              </div>
-                          )}
+                          <div className="flex items-center justify-between mb-4">
+                            <h4 className="text-[22px] font-medium text-[#292929]">Step 4: Thank You Page</h4>
+                            
+                            {/* Save button for tab consistency */}
+                            <div className="flex flex-col items-end">
+                              <button
+                                onClick={handleSaveLeadForm}
+                                disabled={!isLeadFormModified || isLeadFormSaving}
+                                className={`transition-colors relative ${
+                                  isLeadFormSaving ? 'opacity-50 cursor-not-allowed' : 
+                                  isLeadFormModified ? 'text-yellow-400 hover:text-yellow-300' : 
+                                  'text-primary-green hover:text-white'
+                                }`}
+                                title={isLeadFormModified ? "Save changes" : "No changes to save"}
+                              >
+                                <Save className="w-5 h-5" />
+                                {isLeadFormSaving && (
+                                  <span className="animate-spin absolute inset-0 flex items-center justify-center">
+                                    <span className="w-3 h-3 border-2 border-t-transparent border-yellow-400 rounded-full"></span>
+                                  </span>
+                                )}
+                              </button>
+                              
+                              {isLeadFormModified && (
+                                <span className="text-yellow-400 text-xs mt-1">Click to save</span>
+                              )}
+                              {leadFormSaveSuccess && (
+                                <span className="text-green-400 text-xs mt-1">Saved!</span>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-5">
+                            {/* Thank You Page Title */}
+                            <div>
+                              <label className="font-medium text-[#292929] mb-2 block">Thank You Page Title</label>
+                              <input
+                                type="text"
+                                value={editedThankYouPageTitle}
+                                onChange={handleThankYouPageTitleChange}
+                                className={`w-full bg-white p-3 rounded-lg border ${
+                                  editedThankYouPageTitle !== originalThankYouPageTitle 
+                                    ? 'border-yellow-400' 
+                                    : 'border-[#d3d3d3]'
+                                } text-[#292929] focus:outline-none focus:border-[#4169e1]`}
+                                placeholder="Enter a thank you page title"
+                              />
+                            </div>
+                            
+                            {/* Thank You Text */}
+                            <div>
+                              <label className="font-medium text-[#292929] mb-2 block">Thank You Message</label>
+                              <textarea
+                                id="thank-you-text"
+                                value={editedThankYouText}
+                                onChange={handleThankYouTextChange}
+                                onKeyDown={handleKeyDown}
+                                onPaste={(e) => {
+                                  // Check if pasted text contains comma
+                                  const pastedText = e.clipboardData.getData('text');
+                                  if (pastedText.includes(',')) {
+                                    e.preventDefault();
+                                    // Paste without commas
+                                    const cleanText = pastedText.replace(/,/g, '');
+                                    setEditedThankYouText(editedThankYouText + cleanText);
+                                    setThankYouTextError("Facebook lead forms don't allow commas in thank you text");
+                                    setTimeout(() => setThankYouTextError(null), 3000);
+                                  }
+                                }}
+                                className={`w-full bg-white p-3 rounded-lg border ${
+                                  thankYouTextError ? 'border-red-500' :
+                                  editedThankYouText !== originalThankYouText 
+                                    ? 'border-yellow-400' 
+                                    : 'border-[#d3d3d3]'
+                                } text-[#292929] focus:outline-none focus:border-[#4169e1] min-h-[80px]`}
+                                placeholder="Enter a thank you message for your leads"
+                              />
+                              {thankYouTextError && (
+                                <p className="text-red-500 text-xs mt-1">{thankYouTextError}</p>
+                              )}
+                            </div>
+                            
+                            {/* Follow Up URL */}
+                            <div>
+                              <label className="font-medium text-[#292929] mb-2 block">Follow Up URL (Optional)</label>
+                              <input
+                                type="text"
+                                value={editedFollowUpUrl}
+                                onChange={handleFollowUpUrlChange}
+                                className={`w-full bg-white p-3 rounded-lg border ${
+                                  editedFollowUpUrl !== originalFollowUpUrl 
+                                    ? 'border-yellow-400' 
+                                    : 'border-[#d3d3d3]'
+                                } text-[#292929] focus:outline-none focus:border-[#4169e1]`}
+                                placeholder="Enter a URL to redirect users after form submission"
+                              />
+                            </div>
+                            
+                            {/* Thank You Preview */}
+                            <div className="mt-5 text-center p-4 border border-[#d3d3d3] rounded bg-[#f2f2f2]">
+                              <h5 className="text-xl font-bold mb-2 text-[#292929]">
+                                {editedThankYouPageTitle || "Thank You!"}
+                              </h5>
+                              <p className="text-[#292929] mb-3">
+                                {editedThankYouText || "Your form has been submitted successfully."}
+                              </p>
+                              {editedFollowUpUrl && (
+                                <div className="mt-3 p-2 bg-[#4169e1] text-white rounded inline-block">
+                                  Continue to website
+                                </div>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </TabsContent>
                     </Tabs>

@@ -125,6 +125,7 @@ export interface LeadFormContent {
   lead_form_data: LeadFormData;
   lead_form_template: string;
   lead_form_questions: string[];
+  privacy_policy_link: string;
 }
 
 export interface Preview {
