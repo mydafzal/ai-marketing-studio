@@ -406,39 +406,65 @@ export function AdSetupModal({
       // Get the form name from existing data or generate one
       const formName = leadFormContent?.lead_form_name || leadFormContent?.form_name || `${campaignName?.replace(/\s+/g, '_').toLowerCase() || 'leadform'}_${Date.now().toString(36)}`;
       
-      // Get questions from the lead form
-      const questions = leadForm?.questions?.map((q: any) => q.type) || 
+      // Get questions from the lead form, excluding the default ones
+      // Default questions that are always there and should not be submitted as custom questions
+      const defaultQuestions = ["FIRST_NAME", "LAST_NAME", "EMAIL", "PHONE"];
+      
+      // Get all questions
+      const allQuestions = leadForm?.questions?.map((q: any) => q.type) || 
         leadFormContent?.custom_questions || 
         leadFormContent?.lead_form_questions || 
-        ["FIRST_NAME", "LAST_NAME", "EMAIL"];
+        [];
+      
+      // Filter out the default questions to avoid duplicates
+      const customQuestions = allQuestions.filter(question => !defaultQuestions.includes(question));
       
       console.log("Updating lead form for campaign session:", campaign_session_id);
+      // Get privacy policy link from all possible sources
+      const privacyPolicyLink = 
+        leadFormContent?.privacy_policy_link || 
+        (leadFormContent?.lead_form_data && leadFormContent.lead_form_data.privacy_policy_link) || 
+        (masterFlowData?.lead_form_content && masterFlowData.lead_form_content.privacy_policy_link) || 
+        masterFlowData?.privacy_policy_link || 
+        "https://privacy-policy-example.com/privacy";  // Fallback default
+      
       console.log("Lead form data:", {
         form_name: formName,
         form_title: editedFormTitle,
-        questions: questions
+        custom_questions: customQuestions,
+        excluded_default_questions: defaultQuestions,
+        privacy_policy_link: privacyPolicyLink
       });
+      
+      // Prepare payload without including custom_questions
+      const payload: any = {
+        campaign_creation_flow_session_id: campaign_session_id,
+        form_template_name: "Standard", // Default template
+        form_name: formName,
+        form_title: editedFormTitle,
+        form_description: editedFormDescription,
+        thank_you_text: editedThankYouText,
+        thank_you_page_title: editedThankYouPageTitle,
+        data_usage_notice: editedDataUsageNotice,
+        privacy_policy_link: privacyPolicyLink,
+        privacy_policy_link_text: editedPrivacyPolicyLinkText,
+        locale: leadFormContent?.lead_form_locale || "en_US",
+        company_name: editedCompanyName,
+        follow_up_url: editedFollowUpUrl
+      };
+      
+      // Only include custom_questions if we actually have custom questions (not default ones)
+      if (customQuestions.length > 0) {
+        payload.custom_questions = customQuestions;
+      }
+      
+      console.log("Final payload being sent:", payload);
       
       // Call the API to save the changes
       const response = await fetch('/api/fasty-bot/proxy-update-lead-form', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          campaign_creation_flow_session_id: campaign_session_id,
-          form_template_name: "Standard", // Default template
-          form_name: formName,
-          form_title: editedFormTitle,
-          form_description: editedFormDescription,
-          thank_you_text: editedThankYouText,
-          thank_you_page_title: editedThankYouPageTitle,
-          data_usage_notice: editedDataUsageNotice,
-          custom_questions: questions,
-          privacy_policy_link: leadFormContent?.privacy_policy_link || "",
-          privacy_policy_link_text: editedPrivacyPolicyLinkText,
-          locale: leadFormContent?.lead_form_locale || "en_US",
-          company_name: editedCompanyName,
-          follow_up_url: editedFollowUpUrl
-        }),
+        body: JSON.stringify(payload),
       });
       
       // Parse response
@@ -481,7 +507,7 @@ export function AdSetupModal({
         privacy_policy_link_text: editedPrivacyPolicyLinkText,
         company_name: editedCompanyName,
         follow_up_url: editedFollowUpUrl,
-        custom_questions: questions
+        custom_questions: customQuestions
       };
       
       // Call the callback with the updated fields if provided
