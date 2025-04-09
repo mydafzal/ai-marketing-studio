@@ -85,7 +85,7 @@ export function Subscription({
     <>
       <div className="group w-full pl-0 peer-[[data-state=open]]:lg:pl-[250px] peer-[[data-state=open]]:xl:pl-[300px] relative overflow-auto bg-[#0F1117] dark:bg-[#0F1117] text-white dark:text-white">
         <div className="max-w-5xl mx-auto py-12">
-          {!user.sub_status || user.sub_status !== 'active' ? (
+          {!user.sub_status || (user.sub_status !== 'active' && user.sub_status !== 'trialing') ? (
             <div className="text-center">
               <h1 className="text-[40px] font-bold text-white dark:text-white">
                 Simple, <span className="text-[#4BF29C] dark:text-[#4BF29C]">transparent</span> pricing
@@ -106,7 +106,7 @@ export function Subscription({
           )}
 
           {/* If subscription is active, only show Plan Details */}
-          {user.sub_status === 'active' ? (
+          {user.sub_status === 'active' || user.sub_status === 'trialing' ? (
             <div className="bg-[#1A1D29] dark:bg-[#1A1D29] rounded-xl overflow-hidden border border-[#2A2E3A] dark:border-[#2A2E3A]">
               <Card user={user} onCancelSubscription={showModal} />
             </div>

@@ -45,7 +45,10 @@ export async function POST(req: NextRequest) {
       allow_promotion_codes: true,
       // consider using customer id as session id
       success_url: `${billingPageUrl}/?success=true&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${billingPageUrl}?canceled=true`
+      cancel_url: `${billingPageUrl}?canceled=true`,
+      subscription_data: {
+        trial_period_days: 7,
+      }
     })
 
     // Store initial session data in KV
