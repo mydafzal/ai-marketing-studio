@@ -206,14 +206,14 @@ export function AdSetupModal({
     if (leadFormContent.lead_form_questions && Array.isArray(leadFormContent.lead_form_questions)) {
       // Default questions that are always there and should not be considered custom
       const defaultQuestions = ["FIRST_NAME", "LAST_NAME", "EMAIL", "PHONE"];
-      return leadFormContent.lead_form_questions.filter(q => !defaultQuestions.includes(q));
+      return leadFormContent.lead_form_questions.filter((q: string) => !defaultQuestions.includes(q));
     }
     
     if (leadFormContent.lead_form_data && 
         leadFormContent.lead_form_data.lead_form_questions && 
         Array.isArray(leadFormContent.lead_form_data.lead_form_questions)) {
       const defaultQuestions = ["FIRST_NAME", "LAST_NAME", "EMAIL", "PHONE"];
-      return leadFormContent.lead_form_data.lead_form_questions.filter(q => !defaultQuestions.includes(q));
+      return leadFormContent.lead_form_data.lead_form_questions.filter((q: string) => !defaultQuestions.includes(q));
     }
     
     return [];
@@ -684,38 +684,56 @@ export function AdSetupModal({
       const customQuestions = editedCustomQuestions;
       
       console.log("Updating lead form for campaign session:", campaign_session_id);
-      // Get privacy policy link from all possible sources
-      const privacyPolicyLink = 
-        leadFormContent?.privacy_policy_link || 
-        (leadFormContent?.lead_form_data && leadFormContent.lead_form_data.privacy_policy_link) || 
-        (masterFlowData?.lead_form_content && masterFlowData.lead_form_content.privacy_policy_link) || 
-        masterFlowData?.privacy_policy_link || 
-        "https://privacy-policy-example.com/privacy";  // Fallback default
+      // Privacy policy link is already configured and should not be changed
+      // This is intentionally commented out to avoid sending this field to the API
       
       console.log("Lead form data:", {
         form_name: formName,
         form_title: editedFormTitle,
         custom_questions: customQuestions,
-        excluded_default_questions: defaultQuestions,
-        privacy_policy_link: privacyPolicyLink
+        excluded_default_questions: defaultQuestions
       });
       
-      // Prepare payload without including custom_questions
+      // Prepare payload with only required fields and those we want to update
+      // Note: form_name, form_template_name, privacy_policy_link are not updatable
+      // follow_up_url should only be included if changed
       const payload: any = {
         campaign_creation_flow_session_id: campaign_session_id,
-        form_template_name: "Standard", // Default template
-        form_name: formName,
-        form_title: editedFormTitle,
-        form_description: editedFormDescription,
-        thank_you_text: editedThankYouText,
-        thank_you_page_title: editedThankYouPageTitle,
-        data_usage_notice: editedDataUsageNotice,
-        privacy_policy_link: privacyPolicyLink,
-        privacy_policy_link_text: editedPrivacyPolicyLinkText,
-        locale: editedLocale,
-        company_name: editedCompanyName,
-        follow_up_url: editedFollowUpUrl
       };
+      
+      // Only include fields that have actually changed
+      if (editedFormTitle !== originalFormTitle) {
+        payload.form_title = editedFormTitle;
+      }
+      
+      if (editedFormDescription !== originalFormDescription) {
+        payload.form_description = editedFormDescription;
+      }
+      
+      if (editedThankYouText !== originalThankYouText) {
+        payload.thank_you_text = editedThankYouText;
+      }
+      
+      if (editedThankYouPageTitle !== originalThankYouPageTitle) {
+        payload.thank_you_page_title = editedThankYouPageTitle;
+      }
+      
+      if (editedDataUsageNotice !== originalDataUsageNotice) {
+        payload.data_usage_notice = editedDataUsageNotice;
+      }
+      
+      if (editedLocale !== originalLocale) {
+        payload.locale = editedLocale;
+      }
+      
+      if (editedCompanyName !== originalCompanyName) {
+        payload.company_name = editedCompanyName;
+      }
+      
+      // Only include follow_up_url if it has been explicitly changed
+      if (editedFollowUpUrl !== originalFollowUpUrl) {
+        payload.follow_up_url = editedFollowUpUrl;
+      }
       
       // Only include custom_questions if we actually have custom questions (not default ones)
       if (customQuestions.length > 0) {
@@ -763,19 +781,51 @@ export function AdSetupModal({
         setLeadFormSaveSuccess(false);
       }, 3000);
       
-      // Create the updated fields data even if not provided by the API
-      const updatedFields = data.updated_fields || {
-        form_title: editedFormTitle,
-        form_description: editedFormDescription,
-        thank_you_text: editedThankYouText,
-        thank_you_page_title: editedThankYouPageTitle,
-        data_usage_notice: editedDataUsageNotice,
-        privacy_policy_link_text: editedPrivacyPolicyLinkText,
-        company_name: editedCompanyName,
-        follow_up_url: editedFollowUpUrl,
-        locale: editedLocale,
-        custom_questions: editedCustomQuestions
-      };
+      // Create the updated fields data based on what was actually changed
+      // Only include fields that were modified
+      const updatedFields: any = {};
+      
+      if (editedFormTitle !== originalFormTitle) {
+        updatedFields.form_title = editedFormTitle;
+      }
+      
+      if (editedFormDescription !== originalFormDescription) {
+        updatedFields.form_description = editedFormDescription;
+      }
+      
+      if (editedThankYouText !== originalThankYouText) {
+        updatedFields.thank_you_text = editedThankYouText;
+      }
+      
+      if (editedThankYouPageTitle !== originalThankYouPageTitle) {
+        updatedFields.thank_you_page_title = editedThankYouPageTitle;
+      }
+      
+      if (editedDataUsageNotice !== originalDataUsageNotice) {
+        updatedFields.data_usage_notice = editedDataUsageNotice;
+      }
+      
+      if (editedLocale !== originalLocale) {
+        updatedFields.locale = editedLocale;
+      }
+      
+      if (editedCompanyName !== originalCompanyName) {
+        updatedFields.company_name = editedCompanyName;
+      }
+      
+      if (editedFollowUpUrl !== originalFollowUpUrl) {
+        updatedFields.follow_up_url = editedFollowUpUrl;
+      }
+      
+      // Only include custom questions if they've changed
+      if (areCustomQuestionsChanged()) {
+        updatedFields.custom_questions = editedCustomQuestions;
+      }
+      
+      // Merge with API response data if available
+      if (data.updated_fields) {
+        Object.assign(updatedFields, data.updated_fields);
+      }
       
       // Call the callback with the updated fields if provided
       if (onLeadFormUpdated) {
