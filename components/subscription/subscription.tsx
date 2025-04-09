@@ -83,7 +83,7 @@ export function Subscription({
 
   return (
     <>
-      <div className="group w-full pl-0 peer-[[data-state=open]]:lg:pl-[250px] peer-[[data-state=open]]:xl:pl-[300px] relative overflow-auto bg-[#0F1117] dark:bg-[#0F1117] text-white dark:text-white">
+      <div className="group w-full pl-0 peer-[[data-state=open]]:lg:pl-[250px] peer-[[data-state=open]]:xl:pl-[300px] relative overflow-auto bg-[#0F1117] dark:bg-[#0F1117] text-white dark:text-white flex flex-col items-center">
         <div className="max-w-5xl mx-auto py-12">
           {!user.sub_status || (user.sub_status !== 'active' && user.sub_status !== 'trialing') ? (
             <div className="text-center">
@@ -135,7 +135,7 @@ export function Subscription({
                     <span>Yearly</span>
                     {!isMonthly && (
                       <span className="ml-2 text-[#FF7D5A] dark:text-[#FF7D5A] text-xs">
-                        Save up to 70%
+                        Save up to 16%
                       </span>
                     )}
                   </button>

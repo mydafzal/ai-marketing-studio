@@ -55,61 +55,14 @@ export function MonthlyPricing({ currentPlanTag }: MonthlyPricingProps) {
         <div className="flex items-center justify-center">
           <button className="bg-[#1A1D29] dark:bg-[#1A1D29] text-green-500 dark:text-green-500 px-4 py-2 rounded-full font-medium flex items-center border border-gray-800 dark:border-gray-800">
             <DiamondIcon />
-            Save up to 70% with the Annual Subscriptions Package
+            Save up to 16% with the Annual Subscriptions Package
           </button>
         </div>
 
         {/* Cards with Improved Spacing */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-10">
-          {/* AI Content Creator Plan */}
-          <div className="border-2 border-[#2A2E3A] rounded-lg p-6 flex flex-col relative flex-grow bg-[#1A1D29] dark:bg-[#1A1D29] text-white dark:text-white shadow-md">
-            <div className="flex items-center mb-4">
-              <div className="flex justify-between items-center w-full">
-                <div className="bg-[#151925] dark:bg-[#151925] text-[#4BF29C] dark:text-[#4BF29C] rounded-full p-2 flex items-center justify-center">
-                  <ContentCreatorIcon />
-                </div>
-                {currentPlanTag === 'month_basic' && (
-                  <div className="bg-[#4BF29C] dark:bg-[#4BF29C] text-[#0A0C14] px-4 py-1 text-xs font-medium rounded-full">
-                    Current Plan
-                  </div>
-                )}
-              </div>
-            </div>
-            <h3 className="ml-2 mb-4 font-bold text-[#4BF29C] dark:text-[#4BF29C] text-[18px]">
-              AI Content Creator
-            </h3>
-
-            <p className="text-4xl font-bold text-white dark:text-white">€45</p>
-            <p className="text-[#8A8F99] dark:text-[#8A8F99] text-sm">/ Month</p>
-            <hr className="my-4 border-[#2A2E3A] dark:border-[#2A2E3A]" />
-            <p className="font-medium mb-4 text-white dark:text-white">Plan Features:</p>
-            <ul className="text-sm space-y-2 grow text-[#ADB0B8] dark:text-[#ADB0B8]">
-              <li className="flex items-center"><BadgeIcon /> 100 Image downloads monthly</li>
-              <li className="flex items-center"><BadgeIcon /> 20 Video downloads monthly</li>
-              <li className="flex items-center"><BadgeIcon /> Multiple aspect ratios (1:1, 9:16, 4:3, etc.)</li>
-              <li className="flex items-center"><BadgeIcon /> Image editing with AI brushing</li>
-              <li className="flex items-center"><BadgeIcon /> Generate 5-10 second video scenes</li>
-              <li className="flex items-center"><BadgeIcon /> Product angle shots</li>
-              <li className="flex items-center"><BadgeIcon /> Ad creative generation</li>
-              <li className="flex items-center"><BadgeIcon /> Priority support</li>
-            </ul>
-
-            {currentPlanTag === 'month_basic' ? (
-              <button className="mt-6 w-full bg-[#151925] dark:bg-[#151925] text-[#4BF29C] dark:text-[#4BF29C] py-2 rounded-lg font-medium border border-[#2A2E3A] dark:border-[#2A2E3A]">
-                Current Plan
-              </button>
-            ) : (
-              <form action="/api/stripe/create-checkout-session" method="POST">
-                <input type="hidden" name="lookup_key" value={monthlyBasicPlanLookupKey} />
-                <button className="mt-6 w-full bg-[#151925] dark:bg-[#151925] text-[#4BF29C] dark:text-[#4BF29C] py-2 rounded-lg font-medium border border-[#4BF29C] dark:border-[#4BF29C] hover:bg-[#1E2336] transition-colors" type="submit">
-                  Get Started
-                </button>
-              </form>
-            )}
-          </div>
-
+        <div className="flex justify-center mt-10">
           {/* AI Marketer Suite Plan */}
-          <div className="border-2 border-[#4BF29C] rounded-lg p-6 flex flex-col flex-grow bg-[#1A1D29] dark:bg-[#1A1D29] text-white dark:text-white shadow-md">
+          <div className="border-2 border-[#4BF29C] rounded-lg p-6 flex flex-col flex-grow bg-[#1A1D29] dark:bg-[#1A1D29] text-white dark:text-white shadow-md max-w-lg w-full">
             <div className="flex items-center mb-4">
               <div className="flex justify-between items-center w-full">
                 <div className="bg-[#151925] dark:bg-[#151925] text-[#4BF29C] dark:text-[#4BF29C] rounded-full p-2 flex items-center justify-center">
@@ -125,21 +78,19 @@ export function MonthlyPricing({ currentPlanTag }: MonthlyPricingProps) {
             <h3 className="ml-2 mb-4 font-bold text-[#4BF29C] dark:text-[#4BF29C] text-[18px]">
               AI Marketer Suite
             </h3>
-            <p className="text-4xl font-bold text-white dark:text-white">€297</p>
+            <p className="text-4xl font-bold text-white dark:text-white">€99</p>
             <p className="text-[#8A8F99] dark:text-[#8A8F99] text-sm">/ Month</p>
             <hr className="my-4 border-[#2A2E3A] dark:border-[#2A2E3A]" />
-            <p className="font-medium mb-4 text-white dark:text-white">Includes everything in the AI Content Creator Plan, plus:</p>
+            <p className="font-medium mb-4 text-white dark:text-white">AI Marketer + Ad Creatives Generator:</p>
             <ul className="text-sm space-y-2 grow text-[#ADB0B8] dark:text-[#ADB0B8]">
-              <li className="flex items-center"><BadgeIcon /> Unlimited image downloads</li>
-              <li className="flex items-center"><BadgeIcon /> Unlimited video downloads</li>
-              <li className="flex items-center"><BadgeIcon /> All AI Content Creator features</li>
+              <li className="flex items-center"><BadgeIcon /> Campaign creation from scratch</li>
+              <li className="flex items-center"><BadgeIcon /> Conversational campaign management</li>
               <li className="flex items-center"><BadgeIcon /> Meta Ad Campaign analysis</li>
               <li className="flex items-center"><BadgeIcon /> AI campaign recommendations</li>
-              <li className="flex items-center"><BadgeIcon /> Automatic budget adjustments</li>
-              <li className="flex items-center"><BadgeIcon /> Target audience optimization</li>
-              <li className="flex items-center"><BadgeIcon /> Campaign creation from scratch</li>
-              <li className="flex items-center"><BadgeIcon /> Placement optimization</li>
-              <li className="flex items-center"><BadgeIcon /> Conversational campaign management</li>
+              <li className="flex items-center"><BadgeIcon /> Ad creative generation</li>
+              <li className="flex items-center"><BadgeIcon /> Image editing with AI brushing</li>
+              <li className="flex items-center"><BadgeIcon /> Generate 5-10 second video scenes</li>
+              <li className="flex items-center"><BadgeIcon /> Product angle shots</li>
             </ul>
 
             {currentPlanTag === 'month_pro' ? (
