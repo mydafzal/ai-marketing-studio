@@ -98,7 +98,7 @@ export default function AiContentPage() {
     )
   }
 
-  if (subStatus !== 'active')
+  if (subStatus !== 'active' && subStatus !== 'trialing')
   {
     return <HomePageInfoCard upgradeToUseContentCreator={true} />
   }

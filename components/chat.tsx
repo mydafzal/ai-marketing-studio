@@ -304,10 +304,10 @@ function ChatCore({ id, chat, className, session, missingKeys }: ChatProps) {
 
     let email = session?.user?.email ?? '' // Ensure email is always a string
 
-    if (subStatus !== 'active' && !subscriptionBypassList.includes(email)) {
+    if (subStatus !== 'active' && subStatus !== 'trialing' && !subscriptionBypassList.includes(email)) {
       window.location.href = '/subscription' // Hard redirect
     } else {
-      setSubStatus('active') // Mark as active for bypassed users
+      setSubStatus('active') // Mark as active for bypassed users and trialing users
     }
   }, [isFetchingSub, subStatus, session?.user?.email, router])
 
@@ -320,7 +320,7 @@ function ChatCore({ id, chat, className, session, missingKeys }: ChatProps) {
       )
     }
 
-    if (subStatus !== 'active') {
+    if (subStatus !== 'active' && subStatus !== 'trialing') {
       // for bypassed users we dont redirect
       return null // Prevent rendering while redirecting
     }
