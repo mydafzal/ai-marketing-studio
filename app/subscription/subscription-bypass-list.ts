@@ -5,6 +5,7 @@
 // List of emails that bypass subscription requirements
 export const subscriptionBypassList: string[] = [
     'farzammdn@gmail.com',
+    'madani.farzam@gmail.com',
     'contact@reeply.net',
     'maxnols@reeply.net',
     'maxnols@gmx.de',

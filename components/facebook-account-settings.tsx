@@ -25,6 +25,7 @@ type FacebookAccountSettingsProps = {
   getFacebookAdAccounts: (encryptedAccessToken: string, business_acc_id: string) => Promise<any>;
   updateFbBusinessAcc: (email: string, accountId: string) => Promise<any>;
   updateFbAccountId: (email: string, fbAccountId: string) => Promise<any>;
+  updateFbPageId: (email: string, pageId: string) => Promise<any>;
   disconnectFacebook: (email: string) => Promise<any>;
   updateOnboardingDetails: (email: string, details: {
     first_name: string;
@@ -46,6 +47,7 @@ const FacebookAccountSettings = ({
   getFacebookAdAccounts,
   updateFbBusinessAcc,
   updateFbAccountId,
+  updateFbPageId,
   disconnectFacebook,
   updateOnboardingDetails,
 }: FacebookAccountSettingsProps) => {
@@ -57,14 +59,21 @@ const FacebookAccountSettings = ({
   const [fbBusinessAccs, setFbBusinessAccs] = React.useState<Account[] | undefined>(undefined);
   const [selectedFbAdAcc, setSelectedFbAdAcc] = React.useState<Account | undefined>(undefined);
   const [fbAdAccs, setFbAdAccs] = React.useState<Account[] | undefined>(undefined);
+  const [selectedFbPage, setSelectedFbPage] = React.useState<Account | undefined>(undefined);
+  const [fbPages, setFbPages] = React.useState<Account[] | undefined>(undefined);
   const [facebookConnected, setFacebookConnected] = React.useState(userDetails?.fbMarketingApiKey ? true : false);
   const [adAccountSelected, setAdAccountSelected] = React.useState(userDetails?.fbAccountId ? true : false);
+  const [pageSelected, setPageSelected] = React.useState(userDetails?.fbPageId ? true : false);
 
   function handleClose() {
     if (isFeatureToggleEnabled("enforceUserApiKey")) {
       if (facebookConnected) {
         if (adAccountSelected) {
-          setOpen(false);
+          if (selectedFbBusinessAcc && !pageSelected) {
+            setError("Please select a Facebook Page before proceeding");
+          } else {
+            setOpen(false);
+          }
         } else {
           setError("Please complete Ad Account selection before proceeding");
         }
@@ -90,10 +99,44 @@ const FacebookAccountSettings = ({
     }
   }
 
+  async function getFacebookPages(businessAccountId: string) {
+    try {
+      const response = await fetch('/api/fasty-bot/proxy-get-facebook-pages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          businessAccountId
+        })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch Facebook pages');
+      }
+      
+      const data = await response.json();
+      setFbPages(data);
+      return data;
+    } catch (error) {
+      console.error('Error fetching Facebook pages:', error);
+      setError('Failed to fetch Facebook pages. Please try again.');
+      return [];
+    }
+  }
+
   async function selectBusinessAccount(id: string) {
     if (fbBusinessAccs && userDetails) {
       setSelectedFbBusinessAcc(fbBusinessAccs.find((acc) => acc.id === id));
       await updateFbBusinessAcc(userDetails?.email, id);
+      
+      // Reset page selection when business account changes
+      setSelectedFbPage(undefined);
+      setPageSelected(false);
+      
+      // Fetch pages for the selected business account
+      await getFacebookPages(id);
     }
   }
 
@@ -102,6 +145,27 @@ const FacebookAccountSettings = ({
       setSelectedFbAdAcc(fbAdAccs.find((acc) => acc.id === id));
       await updateFbAccountId(userDetails?.email, id);
       setAdAccountSelected(true);
+    }
+  }
+  
+  async function selectPage(id: string) {
+    if (fbPages && userDetails) {
+      const selectedPage = fbPages.find((page) => page.id === id);
+      setSelectedFbPage(selectedPage);
+      
+      try {
+        const result = await updateFbPageId(userDetails.email, id);
+        
+        if (result.success) {
+          setPageSelected(true);
+        } else {
+          console.error('Error updating page ID:', result.error);
+          setError(result.error || 'Failed to update page selection. Please try again.');
+        }
+      } catch (error) {
+        console.error('Exception updating page ID:', error);
+        setError('Failed to update page selection. Please try again.');
+      }
     }
   }
 
@@ -118,7 +182,13 @@ const FacebookAccountSettings = ({
 
   React.useEffect(() => {
     if (userDetails?.fbBusinessAccId && fbBusinessAccs) {
-      setSelectedFbBusinessAcc(fbBusinessAccs.find((acc) => acc.id === `${userDetails?.fbBusinessAccId}`));
+      const businessAcc = fbBusinessAccs.find((acc) => acc.id === `${userDetails?.fbBusinessAccId}`);
+      setSelectedFbBusinessAcc(businessAcc);
+      
+      // Fetch pages for existing business account
+      if (businessAcc && !fbPages) {
+        getFacebookPages(businessAcc.id);
+      }
     }
     if (userDetails?.fbAccountId) {
       setSelectedFbAdAcc({
@@ -127,6 +197,17 @@ const FacebookAccountSettings = ({
       });
     }
   }, [fbBusinessAccs]);
+  
+  // Set selected page when fbPages changes
+  React.useEffect(() => {
+    if (userDetails?.fbPageId && fbPages && fbPages.length > 0) {
+      const page = fbPages.find((page) => page.id === userDetails.fbPageId);
+      if (page) {
+        setSelectedFbPage(page);
+        setPageSelected(true);
+      }
+    }
+  }, [fbPages, userDetails?.fbPageId]);
 
   React.useEffect(() => {
     setTimeout(() => {
@@ -213,19 +294,44 @@ const FacebookAccountSettings = ({
             </div>
 
             {userDetails?.fbMarketingApiKey && (
-              <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-lg p-4">
-                <FBAccountDropdown
-                  title="Select Business Account"
-                  selectedAcccount={selectedFbBusinessAcc}
-                  accounts={fbBusinessAccs}
-                  handleAccountChange={selectBusinessAccount}
-                />
-                <FBAccountDropdown
-                  title="Select Ad Account"
-                  selectedAcccount={selectedFbAdAcc}
-                  accounts={fbAdAccs}
-                  handleAccountChange={selectAdAccount}
-                />
+              <div className="w-full bg-zinc-50 dark:bg-zinc-800/50 rounded-lg p-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <FBAccountDropdown
+                    title="Select Business Account"
+                    selectedAcccount={selectedFbBusinessAcc}
+                    accounts={fbBusinessAccs}
+                    handleAccountChange={selectBusinessAccount}
+                  />
+                  <FBAccountDropdown
+                    title="Select Ad Account"
+                    selectedAcccount={selectedFbAdAcc}
+                    accounts={fbAdAccs}
+                    handleAccountChange={selectAdAccount}
+                  />
+                </div>
+                
+                {selectedFbBusinessAcc && (
+                  <div className="border-t border-zinc-200 dark:border-zinc-700 pt-4 mt-2">
+                    {fbPages && fbPages.length > 0 ? (
+                      <FBAccountDropdown
+                        title="Select Facebook Page"
+                        selectedAcccount={selectedFbPage}
+                        accounts={fbPages}
+                        handleAccountChange={selectPage}
+                      />
+                    ) : (
+                      <div className="p-3 text-center">
+                        <div className="text-black dark:text-white mb-1">Select Facebook Page</div>
+                        <button 
+                          onClick={() => getFacebookPages(selectedFbBusinessAcc.id)}
+                          className="w-full min-h-[55px] flex items-center justify-center gap-2 px-4 py-2 text-black bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                        >
+                          Click here to load pages for this business account
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
