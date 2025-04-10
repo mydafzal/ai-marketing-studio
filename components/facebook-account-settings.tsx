@@ -150,13 +150,20 @@ const FacebookAccountSettings = ({
   
   async function selectPage(id: string) {
     if (fbPages && userDetails) {
-      setSelectedFbPage(fbPages.find((page) => page.id === id));
-
+      const selectedPage = fbPages.find((page) => page.id === id);
+      setSelectedFbPage(selectedPage);
+      
       try {
-        await updateFbPageId(userDetails.email, id);
-        setPageSelected(true);
+        const result = await updateFbPageId(userDetails.email, id);
+        
+        if (result.success) {
+          setPageSelected(true);
+        } else {
+          console.error('Error updating page ID:', result.error);
+          setError(result.error || 'Failed to update page selection. Please try again.');
+        }
       } catch (error) {
-        console.error('Error updating page ID:', error);
+        console.error('Exception updating page ID:', error);
         setError('Failed to update page selection. Please try again.');
       }
     }

@@ -23,6 +23,7 @@ type ProfileSettingsProps = {
   ) => Promise<any>
   updateFbBusinessAcc: (email: string, accountId: string) => Promise<any>
   updateFbAccountId: (email: string, fbAccountId: string) => Promise<any>
+  updateFbPageId: (email: string, pageId: string) => Promise<any>
   disconnectFacebook: (email: string) => Promise<any>
   updateOnboardingDetails: (
     email: string,
@@ -45,6 +46,7 @@ export default function ProfileSettings({
   getFacebookAdAccounts,
   updateFbBusinessAcc,
   updateFbAccountId,
+  updateFbPageId,
   disconnectFacebook,
   updateOnboardingDetails
 }: ProfileSettingsProps) {
@@ -147,6 +149,7 @@ export default function ProfileSettings({
             getFacebookAdAccounts={getFacebookAdAccounts}
             updateFbBusinessAcc={updateFbBusinessAcc}
             updateFbAccountId={updateFbAccountId}
+            updateFbPageId={updateFbPageId}
             disconnectFacebook={disconnectFacebook}
             updateOnboardingDetails={updateOnboardingDetails}
           />
