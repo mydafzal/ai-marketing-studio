@@ -25,7 +25,7 @@ type FacebookAccountSettingsProps = {
   getFacebookAdAccounts: (encryptedAccessToken: string, business_acc_id: string) => Promise<any>;
   updateFbBusinessAcc: (email: string, accountId: string) => Promise<any>;
   updateFbAccountId: (email: string, fbAccountId: string) => Promise<any>;
-  updateFbPageId?: (email: string, pageId: string) => Promise<any>;
+  updateFbPageId: (email: string, pageId: string) => Promise<any>;
   disconnectFacebook: (email: string) => Promise<any>;
   updateOnboardingDetails: (email: string, details: {
     first_name: string;
@@ -99,18 +99,44 @@ const FacebookAccountSettings = ({
     }
   }
 
+  async function getFacebookPages(businessAccountId: string) {
+    try {
+      const response = await fetch('/api/fasty-bot/proxy-get-facebook-pages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          businessAccountId
+        })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch Facebook pages');
+      }
+      
+      const data = await response.json();
+      setFbPages(data);
+      return data;
+    } catch (error) {
+      console.error('Error fetching Facebook pages:', error);
+      setError('Failed to fetch Facebook pages. Please try again.');
+      return [];
+    }
+  }
+
   async function selectBusinessAccount(id: string) {
     if (fbBusinessAccs && userDetails) {
       setSelectedFbBusinessAcc(fbBusinessAccs.find((acc) => acc.id === id));
       await updateFbBusinessAcc(userDetails?.email, id);
       
-      // For demo purposes - in the real implementation this would call an API
-      // Mock pages data for now
-      setFbPages([
-        { id: "page_123456789", name: "Business Page 1" },
-        { id: "page_234567890", name: "Business Page 2" },
-        { id: "page_345678901", name: "Business Page 3" }
-      ]);
+      // Reset page selection when business account changes
+      setSelectedFbPage(undefined);
+      setPageSelected(false);
+      
+      // Fetch pages for the selected business account
+      await getFacebookPages(id);
     }
   }
 
@@ -123,10 +149,16 @@ const FacebookAccountSettings = ({
   }
   
   async function selectPage(id: string) {
-    if (fbPages && userDetails && updateFbPageId) {
+    if (fbPages && userDetails) {
       setSelectedFbPage(fbPages.find((page) => page.id === id));
-      await updateFbPageId(userDetails?.email, id);
-      setPageSelected(true);
+
+      try {
+        await updateFbPageId(userDetails.email, id);
+        setPageSelected(true);
+      } catch (error) {
+        console.error('Error updating page ID:', error);
+        setError('Failed to update page selection. Please try again.');
+      }
     }
   }
 
@@ -143,15 +175,12 @@ const FacebookAccountSettings = ({
 
   React.useEffect(() => {
     if (userDetails?.fbBusinessAccId && fbBusinessAccs) {
-      setSelectedFbBusinessAcc(fbBusinessAccs.find((acc) => acc.id === `${userDetails?.fbBusinessAccId}`));
+      const businessAcc = fbBusinessAccs.find((acc) => acc.id === `${userDetails?.fbBusinessAccId}`);
+      setSelectedFbBusinessAcc(businessAcc);
       
-      // Mock pages data for existing business account
-      if (!fbPages) {
-        setFbPages([
-          { id: "page_123456789", name: "Business Page 1" },
-          { id: "page_234567890", name: "Business Page 2" },
-          { id: "page_345678901", name: "Business Page 3" }
-        ]);
+      // Fetch pages for existing business account
+      if (businessAcc && !fbPages) {
+        getFacebookPages(businessAcc.id);
       }
     }
     if (userDetails?.fbAccountId) {
@@ -160,10 +189,18 @@ const FacebookAccountSettings = ({
         name: userDetails?.fbAccountId.split("act_")[1]
       });
     }
-    if (userDetails?.fbPageId && fbPages) {
-      setSelectedFbPage(fbPages.find((page) => page.id === userDetails.fbPageId));
+  }, [fbBusinessAccs]);
+  
+  // Set selected page when fbPages changes
+  React.useEffect(() => {
+    if (userDetails?.fbPageId && fbPages && fbPages.length > 0) {
+      const page = fbPages.find((page) => page.id === userDetails.fbPageId);
+      if (page) {
+        setSelectedFbPage(page);
+        setPageSelected(true);
+      }
     }
-  }, [fbBusinessAccs, fbPages]);
+  }, [fbPages, userDetails?.fbPageId]);
 
   React.useEffect(() => {
     setTimeout(() => {
@@ -268,12 +305,24 @@ const FacebookAccountSettings = ({
                 
                 {selectedFbBusinessAcc && (
                   <div className="border-t border-zinc-200 dark:border-zinc-700 pt-4 mt-2">
-                    <FBAccountDropdown
-                      title="Select Facebook Page"
-                      selectedAcccount={selectedFbPage}
-                      accounts={fbPages}
-                      handleAccountChange={selectPage}
-                    />
+                    {fbPages && fbPages.length > 0 ? (
+                      <FBAccountDropdown
+                        title="Select Facebook Page"
+                        selectedAcccount={selectedFbPage}
+                        accounts={fbPages}
+                        handleAccountChange={selectPage}
+                      />
+                    ) : (
+                      <div className="p-3 text-center">
+                        <div className="text-black dark:text-white mb-1">Select Facebook Page</div>
+                        <button 
+                          onClick={() => getFacebookPages(selectedFbBusinessAcc.id)}
+                          className="w-full min-h-[55px] flex items-center justify-center gap-2 px-4 py-2 text-black bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                        >
+                          Click here to load pages for this business account
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
