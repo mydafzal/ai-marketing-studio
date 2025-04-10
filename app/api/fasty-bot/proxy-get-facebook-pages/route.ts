@@ -23,7 +23,8 @@ export async function POST(request: Request) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'fb-api-key': token
+                Authorization: `Bearer ${process.env.FASTY_API_TOKEN}`,
+                'fb-api-key': token,
             },
             body: JSON.stringify({
                 fb_business_account_id: businessAccountId
