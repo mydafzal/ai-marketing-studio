@@ -1,6 +1,7 @@
-import React from 'react';
-import { Upload, Info, XCircle, Loader2, Plus } from 'lucide-react';
+import React, { useState } from 'react';
+import { Upload, Info, XCircle, Loader2, Plus, HelpCircle } from 'lucide-react';
 import { MediaItem } from '../types';
+import { InfoModal } from './InfoModal';
 
 interface CreateTabProps {
   mediaItems: MediaItem[];
@@ -33,6 +34,7 @@ export function CreateTab({
   handleReviewTransition,
   isLoading
 }: CreateTabProps) {
+  const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
   return (
     <>
       {/* Upload area - smaller height + immediate display */}
@@ -147,6 +149,15 @@ export function CreateTab({
 
       {/* Next Step: Preview & Review */}
       <div className="mt-8">
+        <div className="flex items-center justify-between mb-2">
+          <button
+            onClick={() => setIsInfoModalOpen(true)}
+            className="flex items-center text-text-light-gray hover:text-primary-green transition-colors"
+          >
+            <HelpCircle size={16} className="mr-1" />
+            <span className="text-xs">What information is passed to Facebook?</span>
+          </button>
+        </div>
         <button
           className={`w-full bg-primary-green hover:bg-primary-green/90 text-deep-black font-bold py-3 px-4 rounded-lg transition-all duration-200 transform hover:scale-[1.02] ${mediaItems.length === 0 || !link || !budget || isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
           onClick={() => handleReviewTransition()}
@@ -155,6 +166,33 @@ export function CreateTab({
           Preview &amp; Review
         </button>
       </div>
+      
+      {/* Info Modal */}
+      <InfoModal
+        isOpen={isInfoModalOpen}
+        onClose={() => setIsInfoModalOpen(false)}
+        title="Data Passed to Facebook for Campaign Creation"
+      >
+        <div className="space-y-4 text-sm">
+          <p>
+            When you proceed to the review stage, the following data is sent to Facebook to prepare your campaign:
+          </p>
+          <ul className="list-disc list-inside space-y-2 ml-2">
+            <li><strong>Media Files:</strong> The images and videos you've uploaded</li>
+            <li><strong>Website Link:</strong> The URL you entered for your campaign destination</li>
+            <li><strong>Daily Budget:</strong> The amount you set for daily campaign spending</li>
+            <li><strong>Account ID:</strong> Your Facebook Ad Account ID</li>
+            <li><strong>Page ID:</strong> Your connected Facebook Page ID</li>
+            <li><strong>Profile Data:</strong> Business information from your account settings</li>
+            <li><strong>Locations:</strong> Geographic targeting information from your account</li>
+            <li><strong>AI Guidance:</strong> Any optional instructions you provided</li>
+          </ul>
+          <p>
+            This information is used to generate campaign recommendations and prepare your ad for review.
+            No actual campaigns are created until you click "Launch Campaign" in the final step.
+          </p>
+        </div>
+      </InfoModal>
     </>
   );
 }

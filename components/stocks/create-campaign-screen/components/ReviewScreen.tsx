@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MediaItem, Gender, PreviewTab, AdPlacements, MasterFlowResponse } from '../types';
 import { Creative as LibCreative } from '@/lib/types';
+import { HelpCircle } from 'lucide-react';
+import { InfoModal } from './InfoModal';
 
 // Create a combined interface that includes properties from both Creative interfaces
 interface ExtendedCreative extends Partial<LibCreative> {
@@ -76,6 +78,7 @@ export function ReviewScreen({
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [isAdSetupModalOpen, setIsAdSetupModalOpen] = useState(false);
+  const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
 
   // Get all creatives - either from updatedCreatives, master flow data, or media items
   const getCreatives = (): ExtendedCreative[] => {
@@ -732,6 +735,15 @@ export function ReviewScreen({
       </div>
 
       <div className="mt-auto px-6 pb-6">
+        <div className="flex items-center justify-end mb-2">
+          <button
+            onClick={() => setIsInfoModalOpen(true)}
+            className="flex items-center text-text-light-gray hover:text-primary-green transition-colors"
+          >
+            <HelpCircle size={16} className="mr-1" />
+            <span className="text-xs">What data is sent to Facebook?</span>
+          </button>
+        </div>
         <button 
           onClick={handlePublish}
           className="w-full py-3 bg-primary-green text-deep-black rounded-lg font-bold hover:bg-primary-green/90 transition-all duration-200 transform hover:scale-[1.02]"
@@ -739,6 +751,34 @@ export function ReviewScreen({
           Launch Campaign
         </button>
       </div>
+      
+      {/* Info Modal */}
+      <InfoModal
+        isOpen={isInfoModalOpen}
+        onClose={() => setIsInfoModalOpen(false)}
+        title="Data Sent to Facebook When Launching Campaign"
+      >
+        <div className="space-y-4 text-sm">
+          <p>
+            When you click "Launch Campaign", the following information is sent to Facebook to create your actual ad campaign:
+          </p>
+          <ul className="list-disc list-inside space-y-2 ml-2">
+            <li><strong>Campaign Structure:</strong> Campaign, Ad Set, and Ad created using Facebook Marketing API</li>
+            <li><strong>Facebook Account ID:</strong> Your connected ad account identifier</li>
+            <li><strong>Page ID:</strong> The Facebook Page that will be associated with your ads</li>
+            <li><strong>Campaign Flow Session:</strong> The identifier for your current setup process</li>
+            <li><strong>Creatives:</strong> Final ad images/videos with text and headline</li>
+            <li><strong>Targeting:</strong> Age, gender, location, interests, and behavior settings</li>
+            <li><strong>Budget:</strong> Your configured daily spending limit</li>
+            <li><strong>Campaign Objective:</strong> The goal you selected (e.g., Lead Generation)</li>
+            <li><strong>Destination:</strong> The website link for your campaign</li>
+          </ul>
+          <p>
+            This information is sent to the Facebook Marketing API via our proxy service, which creates the actual campaign
+            in your Facebook Ads Manager account. The campaign will be live immediately after this step completes.
+          </p>
+        </div>
+      </InfoModal>
     </div>
   );
 }
