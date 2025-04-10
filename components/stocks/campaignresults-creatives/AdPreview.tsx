@@ -21,6 +21,55 @@ export const AdPreview: React.FC<AdPreviewProps> = ({ creativeId, type, adFormat
 
   // Process HTML to prevent auto-scaling/resizing and hide scrollbars
   const processHtml = (html: string) => {
+    // First, check if the HTML contains the Instagram Actor ID error message and replace it with a blank preview
+    if (html.includes('Instagram Actor ID is required') || html.includes('Select an Instagram account')) {
+      // Return a simple placeholder that won't show the error
+      return `
+        <html>
+          <head>
+            <style>
+              body {
+                margin: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                height: 100vh;
+                background-color: #1A1D29;
+                color: white;
+                font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              }
+              .preview-placeholder {
+                width: 313px;
+                height: 534px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-direction: column;
+                text-align: center;
+                padding: 1rem;
+                position: relative;
+              }
+              .ad-title {
+                font-size: 18px;
+                font-weight: bold;
+                margin-bottom: 8px;
+              }
+              .ad-text {
+                font-size: 14px;
+                color: #ccc;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="preview-placeholder">
+              <div class="ad-title">Ad Preview</div>
+              <div class="ad-text">Ad preview will appear here</div>
+            </div>
+          </body>
+        </html>
+      `;
+    }
+    
     return html
       .replace(/(<iframe[^>]*)(width="[^"]*"|height="[^"]*")/g, '$1')
       .replace(/(<iframe[^>]*)(style="[^"]*")/g, (match, p1, p2) => {
@@ -42,6 +91,9 @@ export const AdPreview: React.FC<AdPreviewProps> = ({ creativeId, type, adFormat
       setError(null)
 
       try {
+        // Add a small delay to ensure account credentials are loaded
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
         const response = await fetch(`/api/fasty-bot/proxy-get-ad-creative-preview?creative_id=${creativeId}&ad_format=${adFormat}`)
         if (!response.ok) {
           throw new Error(`Failed to fetch preview: ${response.statusText}`)

@@ -70,7 +70,7 @@ export function ReviewScreen({
   const [currentCreativeIndex, setCurrentCreativeIndex] = useState<number>(0);
   
   const [creativeId, setCreativeId] = useState<string>("");
-  const [adFormat, setAdFormat] = useState<string>("INSTAGRAM_STANDARD");
+  const [adFormat, setAdFormat] = useState<string>("FACEBOOK_PROFILE_FEED_MOBILE");
   const [previewHtml, setPreviewHtml] = useState<string>("");  
   const previewRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -137,9 +137,9 @@ export function ReviewScreen({
       
       // Set a default format based on the creative type
       if (creative.media_type === 'video' || creative.is_video) {
-        setAdFormat("INSTAGRAM_STANDARD");
+        setAdFormat("FACEBOOK_PROFILE_FEED_MOBILE");
       } else {
-        setAdFormat("INSTAGRAM_STANDARD");
+        setAdFormat("FACEBOOK_PROFILE_FEED_MOBILE");
       }
     }
   }, [currentCreativeIndex, creatives]);
@@ -153,6 +153,9 @@ export function ReviewScreen({
       setError(null);
 
       try {
+        // Add a small delay to ensure account credentials are fully loaded
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
         const response = await fetch(`/api/fasty-bot/proxy-get-ad-creative-preview?creative_id=${creativeId}&ad_format=${adFormat}`);
         if (!response.ok) {
           throw new Error(`Failed to fetch preview: ${response.statusText}`);
@@ -549,11 +552,11 @@ export function ReviewScreen({
                   onChange={(e) => setAdFormat(e.target.value)}
                   className="w-full bg-dark-bg border-border-dark text-text-white p-2 rounded-md"
                 >
+                  <option value="FACEBOOK_PROFILE_FEED_MOBILE">Facebook Feed</option>
+                  <option value="FACEBOOK_STORY_MOBILE">Facebook Story</option>
                   <option value="INSTAGRAM_STANDARD">Instagram Feed</option>
                   <option value="INSTAGRAM_STORY">Instagram Story</option>
                   <option value="INSTAGRAM_EXPLORE_GRID_HOME">Instagram Explore</option>
-                  <option value="FACEBOOK_PROFILE_FEED_MOBILE">Facebook Feed</option>
-                  <option value="FACEBOOK_STORY_MOBILE">Facebook Story</option>
                   {/* Using our ExtendedCreative interface */}
                   {((masterFlowData?.creatives_and_previews?.creatives?.[0] as ExtendedCreative)?.media_type === 'video' || 
                     (masterFlowData?.creatives_and_previews?.creatives?.[0] as ExtendedCreative)?.is_video) && (
