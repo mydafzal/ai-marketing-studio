@@ -35,7 +35,7 @@ const FBAccountDropdown = ({title,selectedAcccount,accounts,handleAccountChange}
                         {selectedAcccount ? <div className="flex-1 text-left">
                             <p className="text-lg text-black">{selectedAcccount.name}</p>
                             <p className="text-xs text-black">{selectedAcccount.id}</p>
-                        </div>:<span className="text-black">Select Account</span>}
+                        </div>:<span className="text-black">Click to Select</span>}
                         <ChevronDownIcon className="text-black"/>
                     </button>
                 </DropdownMenu.Trigger>
