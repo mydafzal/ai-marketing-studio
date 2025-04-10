@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import {getFbMarketingApiKey} from "@/app/actions";
 
 export async function POST(request: Request) {
     try {
@@ -12,10 +13,17 @@ export async function POST(request: Request) {
             );
         }
 
+        const token_resp = await getFbMarketingApiKey()
+        let token=""
+        if(token_resp.success && token_resp.token){
+            token=token_resp.token
+        }
+
         const response = await fetch(`${process.env.FASTY_API_URL}/facebook/account-connection/list-owned-pages-via-business-account-id`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'fb-api-key': token
             },
             body: JSON.stringify({
                 fb_business_account_id: businessAccountId
