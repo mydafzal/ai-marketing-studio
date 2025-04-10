@@ -25,18 +25,18 @@ const FBAccountDropdown = ({title,selectedAcccount,accounts,handleAccountChange}
 
 	return (
         <div className="mb-4">
-            <p>{title}</p>
+            <p className="text-black dark:text-white mb-1">{title}</p>
             <DropdownMenu.Root>
                 <DropdownMenu.Trigger asChild>
                     <button
-                        className="min-h-[55px] flex min-w-[220px] border px-2 py-1 items-center justify-between rounded bg-white text-violet11 outline-none hover:bg-violet3 focus:shadow-[0_0_0_2px] focus:shadow-black"
+                        className="min-h-[55px] flex min-w-[220px] border px-2 py-1 items-center justify-between rounded bg-white text-black outline-none hover:bg-violet3 focus:shadow-[0_0_0_2px] focus:shadow-black dark:text-black"
                         aria-label="Customise options"
                     >
                         {selectedAcccount ? <div className="flex-1 text-left">
-                            <p className="text-lg">{selectedAcccount.name}</p>
-                            <p className="text-xs">{selectedAcccount.id}</p>
-                        </div>:"Select Account"}
-                        <ChevronDownIcon/>
+                            <p className="text-lg text-black">{selectedAcccount.name}</p>
+                            <p className="text-xs text-black">{selectedAcccount.id}</p>
+                        </div>:<span className="text-black">Select Account</span>}
+                        <ChevronDownIcon className="text-black"/>
                     </button>
                 </DropdownMenu.Trigger>
 
@@ -50,17 +50,17 @@ const FBAccountDropdown = ({title,selectedAcccount,accounts,handleAccountChange}
                                     <div key={index}>
                                         <DropdownMenu.Item 
                                             onSelect={()=>handleSelect(account.id)}
-                                            className="mb-1 py-1 group bg-white relative flex select-none items-center rounded px-2 text-xs leading-none text-violet11 outline-none data-[disabled]:pointer-events-none data-[highlighted]:bg-violet9 data-[disabled]:text-mauve8 data-[highlighted]:text-violet1">
+                                            className="mb-1 py-1 group bg-white relative flex select-none items-center rounded px-2 text-xs leading-none text-black outline-none data-[disabled]:pointer-events-none data-[highlighted]:bg-violet9 data-[disabled]:text-black data-[highlighted]:text-white">
                                                 <div className="flex-1">
-                                                    <p className="text-lg">{account.name}</p>
-                                                    <p>{account.id}</p>
+                                                    <p className="text-lg text-black data-[highlighted]:text-white">{account.name}</p>
+                                                    <p className="text-black data-[highlighted]:text-white">{account.id}</p>
                                                 </div>
-                                                {account.id==selectedAcccount?.id &&<CheckIcon className="h-4 w-4"/>}
+                                                {account.id==selectedAcccount?.id &&<CheckIcon className="h-4 w-4 text-black"/>}
                                         </DropdownMenu.Item>
                                         <div className="border-b border-[#e7e7e7]"></div>
                                     </div>
                                 )
-                            ):"No account found"
+                            ):<span className="text-black p-2">No account found</span>
                         }
                         
                     </DropdownMenu.Content>
