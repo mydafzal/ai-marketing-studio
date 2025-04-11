@@ -178,7 +178,7 @@ export function CreateTab({
             When you proceed to the review stage, the following data is sent to Facebook to prepare your campaign:
           </p>
           <ul className="list-disc list-inside space-y-2 ml-2">
-            <li><strong>Media Files:</strong> The images and videos you've uploaded</li>
+            <li><strong>Media Files:</strong> The images and videos you&apos;ve uploaded</li>
             <li><strong>Website Link:</strong> The URL you entered for your campaign destination</li>
             <li><strong>Daily Budget:</strong> The amount you set for daily campaign spending</li>
             <li><strong>Account ID:</strong> Your Facebook Ad Account ID</li>
@@ -189,7 +189,7 @@ export function CreateTab({
           </ul>
           <p>
             This information is used to generate campaign recommendations and prepare your ad for review.
-            No actual campaigns are created until you click "Launch Campaign" in the final step.
+            No actual campaigns are created until you click &quot;Launch Campaign&quot; in the final step.
           </p>
         </div>
       </InfoModal>
