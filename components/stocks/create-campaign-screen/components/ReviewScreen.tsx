@@ -760,7 +760,7 @@ export function ReviewScreen({
       >
         <div className="space-y-4 text-sm">
           <p>
-            When you click "Launch Campaign", the following information is sent to Facebook to create your actual ad campaign:
+            When you click &ldquo;Launch Campaign&rdquo;, the following information is sent to Facebook to create your actual ad campaign:
           </p>
           <ul className="list-disc list-inside space-y-2 ml-2">
             <li><strong>Campaign Structure:</strong> Campaign, Ad Set, and Ad created using Facebook Marketing API</li>
