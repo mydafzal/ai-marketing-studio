@@ -1,7 +1,7 @@
 'use server'
 
 import { signIn } from '@/auth'
-import { ResultCode, getStringFromBuffer } from '@/lib/utils'
+import { ResultCode, getStringFromBuffer, trackEvent } from '@/lib/utils'
 import { z } from 'zod'
 import { kv } from '@vercel/kv'
 import { getUser } from '../login/actions'
@@ -73,6 +73,10 @@ export async function signup(
       const result = await createUser(email, hashedPassword, salt)
 
       if (result.resultCode === ResultCode.UserCreated) {
+        const user = await getUser(email)
+        if (user) {
+          await trackEvent('User Signed Up', { email: user.email, id: user.id }, { signup_type: 'credentials' })
+        }
         await signIn('credentials', {
           email,
           password,
