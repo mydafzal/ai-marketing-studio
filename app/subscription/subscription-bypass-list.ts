@@ -37,4 +37,5 @@ export const subscriptionBypassList: string[] = [
     'bart@formitable.design',
     'Sandra.Echsle@bonvitagroup.com',
     'vinayak@reeply.ai', // facebook verification account
+    'dhyey-account@reeply.ai'
 ];
