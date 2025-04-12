@@ -1,4 +1,6 @@
 import { getFbMarketingApiKey } from '@/app/actions';
+import { auth } from '@/auth';
+ import { encryptEmail } from '@/lib/email-encryption';
 
 async function setDailyCampaignBudget(campaignId: string, dailyBudget: number): Promise<boolean> {
     if (campaignId == '0') { // TODO: Remove this once Fasty bot is live and campaign IDs are available
@@ -12,6 +14,14 @@ async function setDailyCampaignBudget(campaignId: string, dailyBudget: number): 
         token=token_resp.token
     }
 
+    const session = await auth()
+     if (!session?.user) {
+         console.error('❌ Authentication failed - no valid user session');
+         return false;
+     }    
+
+     const encryptedEmail = await encryptEmail(session.user.email || '');
+
     try {
         const fastyEndpoint = process.env.FASTY_API_URL;
         const apiUrl = `${fastyEndpoint}/facebook/exec/direct/adjust-campaign/set-daily-budget`;
@@ -22,12 +32,13 @@ async function setDailyCampaignBudget(campaignId: string, dailyBudget: number): 
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${process.env.FASTY_API_TOKEN}`,
-                'fb-api-key': token
-
+                'fb-api-key': token,
+                'encrypted_email': encryptedEmail
             },
             body: JSON.stringify({
                 campaign_id: campaignId,
-                daily_budget: dailyBudget
+                daily_budget: dailyBudget,
+                encrypted_email: encryptedEmail
             })
         });
 

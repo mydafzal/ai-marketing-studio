@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getFbMarketingApiKey } from '@/app/actions'
+import { auth } from '@/auth'
+import { encryptEmail } from '@/lib/email-encryption'
 
 export async function GET(request: Request) {
   try {
@@ -9,6 +11,14 @@ export async function GET(request: Request) {
     const timeline = searchParams.get('timeline') ?? 'last_month'
     const advancedModeParam = searchParams.get('advanced_mode') ?? 'false'
     const advanced_mode = advancedModeParam === 'true'
+
+    const session = await auth()
+     if (!session?.user) {
+       console.error('❌ Authentication failed - no valid user session');
+       return NextResponse.json({error: 'Unauthorized'}, {status: 401})
+     }
+
+     const encryptedEmail = await encryptEmail(session.user.email || '')
 
     // Basic validation
     if (!campaign_id) {
@@ -21,7 +31,7 @@ export async function GET(request: Request) {
     // 2. Construct the FastAPI URL
     // Replace FASTY_API_URL with your environment variable or actual URL
     const fastyApiUrl = process.env.FASTY_API_URL || 'http://localhost:8000'
-    const endpointUrl = `${fastyApiUrl}/facebook/read/insights/get-all-campaign-historical-metrics?campaign_id=${campaign_id}&timeline=${timeline}&advanced_mode=${advanced_mode}`
+    const endpointUrl = `${fastyApiUrl}/facebook/read/insights/get-all-campaign-historical-metrics?campaign_id=${campaign_id}&timeline=${timeline}&advanced_mode=${advanced_mode}&encrypted_email=${encryptedEmail}`
 
     // 3. Get the Facebook API key (assuming you have a helper that fetches it)
     const tokenResponse = await getFbMarketingApiKey()
@@ -38,6 +48,7 @@ export async function GET(request: Request) {
         Authorization: `Bearer ${process.env.FASTY_API_TOKEN ?? ''}`,
         // The FastAPI endpoint expects "fb_api_key" (see your HistoricalMetricsRequest docstring)
         'fb-api-key': fbApiKey,
+        'encrypted_email': encryptedEmail
       },
     })
 

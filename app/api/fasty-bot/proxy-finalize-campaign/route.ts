@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { getFbMarketingApiKey } from '@/app/actions';
+import { encryptEmail } from '@/lib/email-encryption';
 
 export async function POST(req: NextRequest) {
   console.log('📥 Received request to proxy-finalize-campaign endpoint');
@@ -68,6 +69,9 @@ export async function POST(req: NextRequest) {
     // Make the request to the backend API
     const fastyEndpoint = process.env.FASTY_API_URL || 'http://localhost:8000';
     const apiUrl = `${fastyEndpoint}/facebook/campaign-creation-flow/finalize-campaign`
+
+    // Encrypt user email
+    const encryptedEmail = await encryptEmail(session.user.email || '');    
     
     console.log('🔗 Finalizing campaign with backend API URL:', apiUrl);
     console.log('📊 Finalization parameters:', {
@@ -141,7 +145,8 @@ export async function POST(req: NextRequest) {
           requestPayload: {
             fb_account_id,
             campaign_flow_session_id,
-            page_id
+            page_id,
+            encrypted_email: encryptedEmail
           },
           rawText: errorText
         },

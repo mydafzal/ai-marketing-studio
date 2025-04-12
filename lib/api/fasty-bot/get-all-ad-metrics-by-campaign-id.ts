@@ -234,7 +234,7 @@ const transformMetricsData = (insights: AdInsight[]): TransformedAdCreative[] =>
 };
 
 // Main function to fetch and transform ad metrics
-export async function getAllAdMetricsByCampaignId(campaignId?: string): Promise<TransformedAdMetricsResponse> {
+export async function getAllAdMetricsByCampaignId(campaignId?: string, encryptedEmail?: string): Promise<TransformedAdMetricsResponse> {
   if (!campaignId) {
     console.error("No campaign ID provided");
     return { adCreatives: [] };
@@ -260,7 +260,7 @@ export async function getAllAdMetricsByCampaignId(campaignId?: string): Promise<
     try {
       console.log("Fetching fresh metrics data");
       // Using campaign_id parameter to match server expectations
-      const response = await fetch(`/api/fasty-bot/proxy-get-all-ad-metrics-by-campaign-id?campaign_id=${campaignId}`, {
+      const response = await fetch(`/api/fasty-bot/proxy-get-all-ad-metrics-by-campaign-id?campaign_id=${campaignId}&encrypted_email=${encryptedEmail}`, {
         headers: {
           'Content-Type': 'application/json',
         }

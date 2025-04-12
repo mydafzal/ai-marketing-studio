@@ -1,9 +1,19 @@
 import {NextResponse} from 'next/server'
 import { getFbMarketingApiKey } from '@/app/actions';
+import { auth } from '@/auth';
+ import { encryptEmail } from '@/lib/email-encryption';
 
 export async function POST(request: Request) {
     try {
         const {campaign_id, daily_budget} = await request.json()
+
+        const session = await auth()
+         if (!session?.user) {
+             console.error('❌ Authentication failed - no valid user session');
+             return NextResponse.json({error: 'Unauthorized'}, {status: 401})
+         }
+ 
+         const encryptedEmail = await encryptEmail(session.user.email || '');        
 
         if (!campaign_id || daily_budget === undefined) {
             return NextResponse.json({error: 'Campaign ID and daily budget are required'}, {status: 400})
@@ -25,12 +35,13 @@ export async function POST(request: Request) {
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${process.env.FASTY_API_TOKEN}`,
-                'fb-api-key': token
-
+                'fb-api-key': token,
+                'encrypted_email': encryptedEmail
             },
             body: JSON.stringify({
                 campaign_id,
-                daily_budget
+                daily_budget,
+                encrypted_email: encryptedEmail
             })
         })
 

@@ -47,6 +47,9 @@ import {
   AD_FORMAT_LABELS 
 } from "./types"
 
+import { auth } from '@/auth'
+import { encryptEmail } from '@/lib/email-encryption'
+
 const FB_API_KEY = process.env.NEXT_PUBLIC_FB_API_KEY || ""
 
 // Main Dashboard
@@ -200,8 +203,16 @@ const AdCreativesComparison: React.FC<{ campaignId?: string, skipAiThoughts?: bo
   const fetchMetrics = useCallback(async () => {
     if (!effectiveCampaignId) return
     try {
+      const session = await auth()
+      if (!session?.user) {
+        console.error('❌ Authentication failed - no valid user session');
+        return
+      }
+      const encryptedEmail = await encryptEmail(session.user.email || '')
+
       const { adCreatives: metricsArray } = await getAllAdMetricsByCampaignId(
-        effectiveCampaignId
+        effectiveCampaignId,
+        encryptedEmail
       )
 
       const merged = rawCreatives.map((rc) => {

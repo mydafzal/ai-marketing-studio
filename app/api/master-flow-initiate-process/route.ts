@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { getUserDetail, getFbMarketingApiKey } from '@/app/actions'
+import { encryptEmail, decryptEmail } from '@/lib/email-encryption'
 
 export async function POST(req: NextRequest) {
   console.log('📥 Received request to master-flow-initiate-process endpoint');
@@ -16,6 +17,9 @@ export async function POST(req: NextRequest) {
       )
     }
     console.log('✅ Authentication successful, user:', session.user.name || session.user.email);
+
+    // Encrypt user email
+    const encryptedEmail = await encryptEmail(session.user.email || '');    
 
     // Get request body
     const body = await req.json()
@@ -148,7 +152,8 @@ export async function POST(req: NextRequest) {
       page_id,
       image_hashes,
       video_ids: processedVideoIds, // Use processed video_ids
-      daily_campaign_budget // Use daily_campaign_budget exactly as provided from client
+      daily_campaign_budget, // Use daily_campaign_budget exactly as provided from client
+      encrypted_email: encryptedEmail
     };
     
     console.log('📤 Sending request to backend with params:', {
@@ -160,7 +165,8 @@ export async function POST(req: NextRequest) {
       'Videos': video_ids.length,
       'Locations': location_data?.length || 0,
       'Daily Campaign Budget': daily_campaign_budget,
-      'Website Link': website_link
+      'Website Link': website_link,
+      'Encrypted Email': encryptedEmail
     });
     
     // Log detailed video_ids for debugging the video upload issues
