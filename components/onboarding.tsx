@@ -20,6 +20,7 @@ import {
 } from 'lucide-react'
 import {cn} from '@/lib/utils'
 import OnboardingLocationSelector, { LocationData } from './onboarding-location-selector'
+import posthog from 'posthog-js'
 
 type Details = {
     first_name: string | null
@@ -30,6 +31,7 @@ type Details = {
     privacy_policy_link: string | null
     preferred_language: string | null
     goal: string | null
+    company_segment: string | null
     locations?: LocationData
 }
 
@@ -42,6 +44,7 @@ type InputErrors = {
     privacy_policy_link: string | null
     preferred_language: string | null
     goal: string | null
+    company_segment: string | null
     locations?: string | null
 }
 
@@ -58,6 +61,7 @@ type OnboardingProps = {
         privacy_policy_link: string
         preferred_language: string
         goal: string
+        company_segment: string
         locations?: LocationData
     }) => Promise<any>
 }
@@ -66,6 +70,19 @@ const GOAL_OPTIONS = {
     GENERATE_LEADS: "I want to generate more leads",
     RECRUIT_EMPLOYEES: "I want to recruit employees",
     INCREASE_CONVERSIONS: "I want to increase conversions",
+} as const;
+
+const SEGMENT_OPTIONS = {
+    INDIVIDUAL: "Individual Consumer – I use your product/service for personal use",
+    FREELANCER: "Freelancer / Sole Proprietor – I'm self-employed and use this for my own work",
+    STARTUP: "Startup (1–10 employees) – A small team building or growing a business",
+    SMALL_BUSINESS: "Small Business (11–50 employees) – An established small business",
+    MID_SIZED: "Mid-Sized Company (51–200 employees) – A growing business with departments",
+    ENTERPRISE: "Large Enterprise (200+ employees) – A large-scale organization or corporation",
+    NONPROFIT: "Nonprofit / NGO – A mission-driven organization",
+    EDUCATION: "Educational Institution – School, college, or training center",
+    GOVERNMENT: "Government / Public Sector – Any public service or department",
+    OTHER: "Other (please specify) – For anything that doesn't quite fit"
 } as const;
 
 // Define the steps for the onboarding process
@@ -78,7 +95,7 @@ const STEPS = [
     { 
         id: 'company', 
         title: 'Company Information', 
-        fields: ['company_name', 'company_description'] 
+        fields: ['company_name', 'company_segment', 'company_description'] 
     },
     { 
         id: 'website', 
@@ -342,6 +359,7 @@ function Onboarding({
         privacy_policy_link: "",
         preferred_language: "",
         goal: "",
+        company_segment: ""
     })
 
     const [firstName, setFirstName] = React.useState<string>(userDetails?.first_name || "")
@@ -352,6 +370,7 @@ function Onboarding({
     const [privacyPolicyLink, setPrivacyPolicyLink] = React.useState<string>(userDetails?.privacy_policy_link || "")
     const [preferredLanguage, setPreferredLanguage] = React.useState<string>(userDetails?.preferred_language || "en")
     const [goal, setGoal] = React.useState<string>(userDetails?.goal || "")
+    const [companySegment, setCompanySegment] = React.useState<string>(userDetails?.company_segment || "")
     const [locations, setLocations] = React.useState<LocationData | undefined>(userDetails?.locations)
 
     const [dbChangeRequested, setDbChangeRequested] = React.useState(false)
@@ -385,6 +404,7 @@ function Onboarding({
             setPrivacyPolicyLink(userDetails.privacy_policy_link || "")
             setPreferredLanguage(userDetails.preferred_language || "en")
             setGoal(userDetails.goal || "")
+            setCompanySegment(userDetails.company_segment || "")
             
             // Handle locations - may be stored as JSON string in database
             if (userDetails.locations) {
@@ -437,6 +457,7 @@ function Onboarding({
                 case 'privacy_policy_link': value = privacyPolicyLink; break;
                 case 'preferred_language': value = preferredLanguage; break;
                 case 'goal': value = goal; break;
+                case 'company_segment': value = companySegment; break;
                 case 'locations': 
                     // Locations are optional, so skip validation
                     return;
@@ -482,6 +503,7 @@ function Onboarding({
                 privacy_policy_link: privacyPolicyLink,
                 preferred_language: preferredLanguage,
                 goal: goal,
+                company_segment: companySegment,
                 locations: locations
             }
 
@@ -491,7 +513,7 @@ function Onboarding({
             // Validate required fields before saving
             const requiredFields = [
                 'first_name', 'last_name', 'company_name', 'company_description', 
-                'website_link', 'privacy_policy_link', 'preferred_language'
+                'website_link', 'privacy_policy_link', 'preferred_language', 'company_segment'
             ];
             
             const errors: InputErrors = { ...inputError };
@@ -504,6 +526,7 @@ function Onboarding({
                     case 'last_name': value = lastName; break;
                     case 'company_name': value = companyName; break;
                     case 'company_description': value = companyDescription; break;
+                    case 'company_segment': value = companySegment; break;
                     case 'website_link': value = websiteLink; break;
                     case 'privacy_policy_link': value = privacyPolicyLink; break;
                     case 'preferred_language': value = preferredLanguage; break;
@@ -584,6 +607,7 @@ function Onboarding({
             case 'privacy_policy_link': return privacyPolicyLink;
             case 'preferred_language': return preferredLanguage;
             case 'goal': return goal;
+            case 'company_segment': return companySegment;
             default: return "";
         }
     };
@@ -861,6 +885,64 @@ function Onboarding({
                         )}
                     </div>
                 );
+            case 'company_segment':
+                return (
+                    <div className="space-y-2">
+                        <label htmlFor="company_segment" className="text-sm font-semibold text-white">
+                            Company Segment
+                        </label>
+                        <p className="text-xs text-gray-400">
+                            Select the category that best describes your organization.
+                        </p>
+                        <select
+                            id="company_segment"
+                            value={value}
+                            onChange={(e) => {
+                                const selectedSegment = e.target.value;
+                                if (selectedSegment.length > 0) {
+                                    setInputError({...inputError, company_segment: ""})
+                                    
+                                    // Set company_segment as a person property
+                                    posthog.capture('$set', {
+                                        $set: {
+                                            company_segment: selectedSegment,
+                                            company_segment_name: SEGMENT_OPTIONS[selectedSegment as keyof typeof SEGMENT_OPTIONS]
+                                        }
+                                    });
+
+                                    // Track segment selection event
+                                    posthog.capture('company_segment_selected', {
+                                        segment: selectedSegment,
+                                        segment_name: SEGMENT_OPTIONS[selectedSegment as keyof typeof SEGMENT_OPTIONS],
+                                        previous_segment: companySegment,
+                                        previous_segment_name: companySegment ? SEGMENT_OPTIONS[companySegment as keyof typeof SEGMENT_OPTIONS] : null
+                                    });
+                                }
+                                setCompanySegment(selectedSegment)
+                            }}
+                            className={cn(
+                                "w-full px-3 py-2 rounded-lg text-sm transition-colors duration-200",
+                                "bg-[#1A1D29] dark:bg-[#1A1D29] border",
+                                fieldError
+                                    ? "border-red-500 dark:border-red-500 focus:ring-red-500"
+                                    : "border-gray-700 dark:border-gray-700 focus:border-[#4BF29C] dark:focus:border-[#4BF29C]",
+                                "focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4BF29C] dark:focus:ring-offset-[#0F1117]",
+                                "text-white"
+                            )}
+                        >
+                            <option value="">Select a segment</option>
+                            {Object.entries(SEGMENT_OPTIONS).map(([key, value]) => (
+                                <option key={key} value={key}>{value}</option>
+                            ))}
+                        </select>
+                        {fieldError && (
+                            <p className="text-sm text-red-500 flex items-center gap-1">
+                                <AlertCircle className="size-3"/>
+                                {fieldError}
+                            </p>
+                        )}
+                    </div>
+                );
             case 'locations':
                 return (
                     <div className="space-y-4">
@@ -899,6 +981,10 @@ function Onboarding({
                         <div>
                             <p className="text-sm text-gray-400">Company Name</p>
                             <p className="text-white">{companyName}</p>
+                        </div>
+                        <div>
+                            <p className="text-sm text-gray-400">Company Segment</p>
+                            <p className="text-white">{SEGMENT_OPTIONS[companySegment as keyof typeof SEGMENT_OPTIONS] || 'Not specified'}</p>
                         </div>
                         <div>
                             <p className="text-sm text-gray-400">Company Description</p>
