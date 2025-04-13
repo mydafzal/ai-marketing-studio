@@ -2,6 +2,7 @@ import { TextPart, ImagePart, FilePart } from 'ai'
 import { useAIState, useActions, useUIState } from 'ai/rsc'
 import { nanoid } from 'nanoid'
 import * as React from 'react'
+import { trackEvent } from '@/lib/utils'
 
 import { shareChat } from '@/app/actions'
 import { Button } from '@/components/ui/button'
@@ -48,6 +49,7 @@ export interface ChatPanelProps {
   scrollToBottom: () => void
   onCampaignCreate: (campaignId: string) => Promise<void>
   campaignId: string | null
+  session?: { user?: { email?: string; id?: string } }
 }
 
 export function ChatPanel({
@@ -57,6 +59,7 @@ export function ChatPanel({
   scrollToBottom,
   onCampaignCreate,
   campaignId,
+  session
 }: ChatPanelProps) {
   const [aiState] = useAIState()
   const [messages, setMessages] = useUIState<typeof AI>()
@@ -76,6 +79,17 @@ export function ChatPanel({
 
     // Submit and get response message
     const responseMessage = await submitUserMessage(message, userContent);
+    // Track user message sent
+    await trackEvent('chat_message_sent', 
+      { email: session?.user?.email || '', id: session?.user?.id || '' },
+      {
+        message_type: 'user',
+        message: message,
+        has_attachments: !!userContent,
+        chat_id: id
+      }
+    )
+
     setMessages(currentMessages => [...currentMessages, responseMessage])
   }, [])
 
@@ -84,6 +98,15 @@ export function ChatPanel({
   }
 
   const { isFbAccountConnected } = useAccountStore();
+
+  const handleExampleClick = React.useCallback(async (example: string) => {
+
+    await trackEvent('example_message_clicked', 
+      { email: session?.user?.email || '', id: session?.user?.id || '' },
+      { message: example }
+    )
+    sendMessage(example)
+  }, [sendMessage, session])
 
   return (
     <>
@@ -102,9 +125,7 @@ export function ChatPanel({
                   className={`cursor-pointer rounded-xl border border-border-dark bg-container-bg p-5 hover:bg-light-container transition-all duration-200 shadow-sm ${
                     index > 1 && 'hidden md:block'
                   }`}
-                  onClick={async () => {
-                    await sendMessage(example.message)
-                  }}
+                  onClick={() => handleExampleClick(example.message)}
                 >
                   <div className="text-sm font-bold text-text-white mb-1">{example.heading}</div>
                   <div className="text-xs text-text-light-gray">

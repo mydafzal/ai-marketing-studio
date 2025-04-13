@@ -3,6 +3,7 @@
 import { useActions, useAIState, useUIState } from 'ai/rsc' // Add useActions here
 import React, { useCallback, useContext, useEffect, useState } from 'react'
 import { toast } from 'sonner'
+import { trackEvent } from '@/lib/utils'
 
 import {
   fetchChatFbAdsetId,
@@ -137,6 +138,18 @@ function ChatCore({ id, chat, className, session, missingKeys }: ChatProps) {
   // Add sendMessage function
   const sendMessage = React.useCallback(
     async (message: string, userContent?: (TextPart | ImagePart)[]) => {
+
+      // Track user message sent
+      await trackEvent('chat_message_sent', 
+        { email: session?.user?.email || '', id: session?.user?.id || '' },
+        {
+          message_type: 'user',
+          message: message,
+          has_attachments: !!userContent,
+          chat_id: id
+        }
+      )
+
       // Optimistically add user message UI
       setMessages(currentMessages => [
         ...currentMessages,
@@ -152,7 +165,7 @@ function ChatCore({ id, chat, className, session, missingKeys }: ChatProps) {
       const responseMessage = await submitUserMessage(message, userContent)
       setMessages(currentMessages => [...currentMessages, responseMessage])
     },
-    []
+    [id, session]
   )
   
   // Listen for "send-support-message" events
@@ -401,6 +414,7 @@ function ChatCore({ id, chat, className, session, missingKeys }: ChatProps) {
         scrollToBottom={scrollToBottom}
         onCampaignCreate={handleCampaignCreated}
         campaignId={campaignId}
+        session={session}
       />
     </div>
   )
