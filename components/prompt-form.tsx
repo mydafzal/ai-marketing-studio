@@ -438,7 +438,7 @@ export function PromptForm({
             <Button
               variant="outline"
               size="icon"
-              className="absolute left-[46px] top-[14px] size-8 rounded-full bg-light-container border-border-dark p-0 sm:left-[60px] hover:bg-light-container/80 hover:border-border-dark/80 transition-colors"
+              className="absolute left-[46px] top-[14px] size-8 rounded-full bg-light-container border-border-dark p-0 sm:left-[64px] hover:bg-light-container/80 hover:border-border-dark/80 transition-colors"
               disabled={isHandling}
               onClick={() => setOpenActionsMenu(!openActionsMenu)}
             >
@@ -485,7 +485,7 @@ export function PromptForm({
           tabIndex={0}
           onKeyDown={onKeyDown}
           placeholder="Send a message."
-          className="min-h-[60px] w-full resize-none bg-transparent px-4 py-[1.3rem] focus-within:outline-none sm:text-sm text-text-white placeholder:text-text-light-gray"
+          className="min-h-[60px] w-full resize-none bg-transparent px-4 py-[1.3rem] pl-[100px] sm:pl-[116px] focus-within:outline-none sm:text-sm text-text-white placeholder:text-text-light-gray"
           autoFocus
           spellCheck={false}
           autoComplete="off"
