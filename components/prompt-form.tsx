@@ -433,8 +433,8 @@ export function PromptForm({
           </PopoverContent>
         </Popover>
         
-        <Popover open={openActionsMenu} onOpenChange={setOpenActionsMenu}>
-          <PopoverTrigger asChild>
+        <Dialog open={openActionsMenu} onOpenChange={setOpenActionsMenu}>
+          <DialogTrigger asChild>
             <Button
               variant="outline"
               size="icon"
@@ -445,10 +445,11 @@ export function PromptForm({
               <IconBlaze className="text-primary-green" />
               <span className="sr-only">Actions</span>
             </Button>
-          </PopoverTrigger>
-          <PopoverContent side="top" className="bg-container-bg border border-border-dark shadow-lg w-64 max-h-96 overflow-y-auto">
-            <div className="p-2">
-              <div className="relative mb-2">
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[600px] p-0 bg-container-bg border border-border-dark">
+            <div className="p-4 border-b border-border-dark">
+              <h4 className="text-lg font-semibold text-text-white">Actions</h4>
+              <div className="relative mt-2">
                 <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                   <IconSearch className="text-primary-green" />
                 </div>
@@ -457,26 +458,27 @@ export function PromptForm({
                   placeholder="Search actions..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 bg-transparent border-border-dark text-text-white"
+                  className="pl-10 bg-transparent border-border-dark text-text-white w-full"
                 />
               </div>
             </div>
-            <div className="max-h-72 overflow-y-auto">
-              {filteredActions.map((action) => (
-                <div key={action.id} className="w-full py-1 px-2">
+            <div className="max-h-[400px] overflow-y-auto p-4">
+              <div className="grid grid-cols-1 gap-2">
+                {filteredActions.map((action) => (
                   <Button
+                    key={action.id}
                     variant="outline"
-                    className="w-full border-0 px-4 shadow-none text-text-white hover:bg-light-container transition-colors text-left justify-start"
+                    className="w-full border border-border-dark py-3 px-4 shadow-sm text-text-white hover:bg-light-container transition-colors text-left justify-start"
                     onClick={() => handleActionClick(action.label)}
                     disabled={isHandling}
                   >
                     {action.label}
                   </Button>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </PopoverContent>
-        </Popover>
+          </DialogContent>
+        </Dialog>
         <Textarea
           ref={inputRef}
           disabled={isTextareaDisabled}
