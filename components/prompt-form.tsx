@@ -6,13 +6,15 @@ import Textarea from 'react-textarea-autosize'
 import { ImagePart, TextPart, FilePart, UserContent } from 'ai'
 import chatToCampaignMapping from '@/lib/api/fasty-bot/helpers/campaign-id-list'
 import { Button } from '@/components/ui/button'
-import { IconArrowElbow, IconPlus, IconSpinner } from '@/components/ui/icons'
+import { IconArrowElbow, IconPlus, IconSpinner, IconBlaze, IconSearch } from '@/components/ui/icons'
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger
 } from '@/components/ui/tooltip'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
 import { ProgressBar } from '@/components/ui/progress-bar'
 import { toast } from 'sonner'
 import { useEnterSubmit } from '@/lib/hooks/use-enter-submit'
@@ -40,6 +42,23 @@ interface ProgressBarProps {
   isShow: boolean;
   value: number;
 }
+interface ActionItem {
+  id: string;
+  label: string;
+}
+
+const actionItems: ActionItem[] = [
+  { id: 'create-campaign', label: 'Create a campaign' },
+  { id: 'connect-campaign', label: 'Connect to a campaign' },
+  { id: 'view-results', label: 'View campaign results' },
+  { id: 'analyze-results', label: 'Analyze the campaign results' },
+  { id: 'analyze-creatives', label: 'Analyze ad creatives' },
+  { id: 'download-leads', label: 'Download leads of my campaign' },
+  { id: 'change-budget', label: 'Change budget' },
+  { id: 'toggle-campaign', label: 'Turn campaign on/off' },
+  { id: 'contact-support', label: 'Contact Support' }
+];
+
 export function PromptForm({
   onSendMessage
 }: PromtFormProps) {
@@ -50,6 +69,8 @@ export function PromptForm({
   const [isDisabled, setIsDisabled] = React.useState(true)
   const [isHandling, setIsHandling] = React.useState(false)
   const [openUploadMenu, setOpenUploadMenu] = React.useState(false);
+  const [openActionsMenu, setOpenActionsMenu] = React.useState(false);
+  const [searchTerm, setSearchTerm] = React.useState('');
   const [videoUploadDataInfo, setVideoUploadDataInfo] = React.useState<ChunkUploadProps>({});
 
   const [progressBar, setProgressBar] = React.useState<ProgressBarProps>({
@@ -61,6 +82,27 @@ export function PromptForm({
   const videoInputRef = React.useRef<HTMLInputElement>(null)
 
   const [uploading, setUploading] = React.useState(false)
+  
+  const filteredActions = React.useMemo(() => {
+    if (!searchTerm) return actionItems;
+    return actionItems.filter(item => 
+      item.label.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [searchTerm]);
+  
+  const handleActionClick = async (actionText: string) => {
+    setOpenActionsMenu(false);
+    setSearchTerm('');
+    
+    if (inputRef.current) {
+      inputRef.current.value = actionText;
+      setIsDisabled(false);
+    }
+    
+    setIsHandling(true);
+    await onSendMessage(actionText);
+    setIsHandling(false);
+  };
 
   const handleImageFileChange = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -387,6 +429,51 @@ export function PromptForm({
               >
                 Videos
               </Button>
+            </div>
+          </PopoverContent>
+        </Popover>
+        
+        <Popover open={openActionsMenu} onOpenChange={setOpenActionsMenu}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              size="icon"
+              className="absolute left-[46px] top-[14px] size-8 rounded-full bg-light-container border-border-dark p-0 sm:left-[60px] hover:bg-light-container/80 hover:border-border-dark/80 transition-colors"
+              disabled={isHandling}
+              onClick={() => setOpenActionsMenu(!openActionsMenu)}
+            >
+              <IconBlaze className="text-primary-green" />
+              <span className="sr-only">Actions</span>
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent side="top" className="bg-container-bg border border-border-dark shadow-lg w-64 max-h-96 overflow-y-auto">
+            <div className="p-2">
+              <div className="relative mb-2">
+                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                  <IconSearch className="text-primary-green" />
+                </div>
+                <Input 
+                  type="text"
+                  placeholder="Search actions..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 bg-transparent border-border-dark text-text-white"
+                />
+              </div>
+            </div>
+            <div className="max-h-72 overflow-y-auto">
+              {filteredActions.map((action) => (
+                <div key={action.id} className="w-full py-1 px-2">
+                  <Button
+                    variant="outline"
+                    className="w-full border-0 px-4 shadow-none text-text-white hover:bg-light-container transition-colors text-left justify-start"
+                    onClick={() => handleActionClick(action.label)}
+                    disabled={isHandling}
+                  >
+                    {action.label}
+                  </Button>
+                </div>
+              ))}
             </div>
           </PopoverContent>
         </Popover>
