@@ -1,10 +1,11 @@
 'use client'
 
 import posthog from 'posthog-js'
-
-export const initPostHog = () => {
+import { getConfig } from '@/utils/config'
+export const initPostHog = async () => {
+  const config = await getConfig();
   if (typeof window !== 'undefined' && !posthog.__loaded) {
-    posthog.init(process.env.NEXT_PUBLIC_POSTHOG_API_KEY || '', {
+    posthog.init(config.posthogApiKey, {
       api_host: 'https://eu.i.posthog.com',
       capture_pageview: true,
       autocapture: true,
