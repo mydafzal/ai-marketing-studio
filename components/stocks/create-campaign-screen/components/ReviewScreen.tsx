@@ -70,7 +70,7 @@ export function ReviewScreen({
   const [currentCreativeIndex, setCurrentCreativeIndex] = useState<number>(0);
   
   const [creativeId, setCreativeId] = useState<string>("");
-  const [adFormat, setAdFormat] = useState<string>("INSTAGRAM_STANDARD");
+  const [adFormat, setAdFormat] = useState<string>("FACEBOOK_PROFILE_FEED_MOBILE");
   const [previewHtml, setPreviewHtml] = useState<string>("");  
   const previewRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -137,9 +137,9 @@ export function ReviewScreen({
       
       // Set a default format based on the creative type
       if (creative.media_type === 'video' || creative.is_video) {
-        setAdFormat("INSTAGRAM_STANDARD");
+        setAdFormat("FACEBOOK_PROFILE_FEED_MOBILE");
       } else {
-        setAdFormat("INSTAGRAM_STANDARD");
+        setAdFormat("FACEBOOK_PROFILE_FEED_MOBILE");
       }
     }
   }, [currentCreativeIndex, creatives]);
