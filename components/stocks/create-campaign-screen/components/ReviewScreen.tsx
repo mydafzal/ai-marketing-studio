@@ -549,11 +549,11 @@ export function ReviewScreen({
                   onChange={(e) => setAdFormat(e.target.value)}
                   className="w-full bg-dark-bg border-border-dark text-text-white p-2 rounded-md"
                 >
+                  <option value="FACEBOOK_PROFILE_FEED_MOBILE">Facebook Feed</option>
+                  <option value="FACEBOOK_STORY_MOBILE">Facebook Story</option>
                   <option value="INSTAGRAM_STANDARD">Instagram Feed</option>
                   <option value="INSTAGRAM_STORY">Instagram Story</option>
                   <option value="INSTAGRAM_EXPLORE_GRID_HOME">Instagram Explore</option>
-                  <option value="FACEBOOK_PROFILE_FEED_MOBILE">Facebook Feed</option>
-                  <option value="FACEBOOK_STORY_MOBILE">Facebook Story</option>
                   {/* Using our ExtendedCreative interface */}
                   {((masterFlowData?.creatives_and_previews?.creatives?.[0] as ExtendedCreative)?.media_type === 'video' || 
                     (masterFlowData?.creatives_and_previews?.creatives?.[0] as ExtendedCreative)?.is_video) && (
