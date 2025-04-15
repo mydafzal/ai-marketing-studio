@@ -7,6 +7,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
+import { useFacebookSettingsStore } from '@/lib/store/facebookSettingsStore'
 import { Button } from '@/components/ui/button'
 import { Settings, User } from 'lucide-react'
 import { type User as UserType } from '@/lib/types'
@@ -53,8 +54,23 @@ export default function ProfileSettings({
   const [openOnboarding, setOpenOnboarding] = React.useState<boolean>(
     userDetails?.defaultExtraDetails ? false : true
   )
-  const [openFacebookSettings, setOpenFacebookSettings] =
+  // Access the Facebook settings store
+  const openFacebookSettingsFromStore = useFacebookSettingsStore(state => state.openFacebookSettings);
+  const setOpenFacebookSettingsInStore = useFacebookSettingsStore(state => state.setOpenFacebookSettings);
+  
+  // Initialize the local state with the store value
+  const [openFacebookSettings, setOpenFacebookSettings] = 
     React.useState<boolean>(false)
+  
+  // Listen for changes in the store and update local state
+  React.useEffect(() => {
+    if (openFacebookSettingsFromStore) {
+      setOpenFacebookSettings(true);
+      setDropdownOpen(true);
+      // Reset the store value
+      setOpenFacebookSettingsInStore(false);
+    }
+  }, [openFacebookSettingsFromStore, setOpenFacebookSettingsInStore])
   const [dropdownOpen, setDropdownOpen] =
     React.useState<boolean>(openOnboarding)
 

@@ -35,7 +35,7 @@ export async function GET(request: Request) {
 
   if (!code) {
     // TODO Show proper user messages
-    return NextResponse.redirect(getProductionURL());
+    return NextResponse.redirect(`${getProductionURL()}?fbSettings=open`);
 
     // return NextResponse.json({ error: 'Authorization code missing' }, { status: 400 });
   }
@@ -111,8 +111,7 @@ export async function GET(request: Request) {
       redirect: false
     })
 
-
-    return NextResponse.redirect(getProductionURL());
+    return NextResponse.redirect(`${getProductionURL()}?fbSettings=open`);
   }
 
   // Exchange the short-lived token for a long-lived token
@@ -131,5 +130,5 @@ export async function GET(request: Request) {
   const encryptedToken = await encryptToken(longLivedAccessToken);
   const token_save_resp = await updateFbAccessToken(session.user.email,encryptedToken) // TODO fail error handling
 
-  return NextResponse.redirect(getProductionURL());
+  return NextResponse.redirect(`${getProductionURL()}?fbSettings=open`);
 }

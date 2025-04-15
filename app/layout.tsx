@@ -10,6 +10,7 @@ import { Toaster } from '@/components/ui/toaster'
 import { auth } from '@/auth'
 
 import CrispChat from '@/components/crisp-chat'
+import FacebookSettingsDetector from '@/components/facebook-settings-detector'
 import { getUser } from '@/app/login/actions'
 
 export const metadata = {
@@ -58,6 +59,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
             <main className="flex flex-col flex-1 bg-[#0A0C14]">{children}</main>
           </div>
           <TailwindIndicator />
+          <FacebookSettingsDetector />
         </Providers>
         {user && <CrispChat user={{ email: user.email, name: user.name }} />}
       </body>
