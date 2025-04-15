@@ -2,7 +2,8 @@
 
 import {decryptToken} from '@/app/cryptoUtils';
 
-const FACEBOOK_API_URL = 'https://graph.facebook.com/v19.0/';
+// Todo: this logic needs to be moved to the backend!
+const FACEBOOK_API_URL = 'https://graph.facebook.com/v22.0/';
 
 export async function getFacebookBusinessAccounts(encryptedAccessToken:string) {
 
