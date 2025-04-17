@@ -61,6 +61,8 @@ const FacebookAccountSettings = ({
   const [fbAdAccs, setFbAdAccs] = React.useState<Account[] | undefined>(undefined);
   const [selectedFbPage, setSelectedFbPage] = React.useState<Account | undefined>(undefined);
   const [fbPages, setFbPages] = React.useState<Account[] | undefined>(undefined);
+  const [instagramAccounts, setInstagramAccounts] = React.useState<Account[] | undefined>(undefined);
+  const [selectedInstagramAccount, setSelectedInstagramAccount] = React.useState<Account | undefined>(undefined);
   const [facebookConnected, setFacebookConnected] = React.useState(userDetails?.fbMarketingApiKey ? true : false);
   const [adAccountSelected, setAdAccountSelected] = React.useState(userDetails?.fbAccountId ? true : false);
   const [pageSelected, setPageSelected] = React.useState(userDetails?.fbPageId ? true : false);
@@ -125,15 +127,51 @@ const FacebookAccountSettings = ({
       return [];
     }
   }
+  
+  async function getInstagramAccounts() {
+    try {
+      // For now, we're using dummy data as requested
+      const dummyAccounts = [
+        { id: "ig_1", name: "Instagram Account 1" },
+        { id: "ig_2", name: "Instagram Account 2" },
+        { id: "ig_3", name: "Instagram Account 3" }
+      ];
+      
+      setInstagramAccounts(dummyAccounts);
+      return dummyAccounts;
+      
+      // The actual implementation would look like this:
+      /*
+      const response = await fetch('/api/fasty-bot/proxy-get-instagram-pages', {
+        method: 'GET',
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch Instagram accounts');
+      }
+      
+      const data = await response.json();
+      setInstagramAccounts(data);
+      return data;
+      */
+    } catch (error) {
+      console.error('Error fetching Instagram accounts:', error);
+      setError('Failed to fetch Instagram accounts. Please try again.');
+      return [];
+    }
+  }
 
   async function selectBusinessAccount(id: string) {
     if (fbBusinessAccs && userDetails) {
       setSelectedFbBusinessAcc(fbBusinessAccs.find((acc) => acc.id === id));
       await updateFbBusinessAcc(userDetails?.email, id);
       
-      // Reset page selection when business account changes
+      // Reset page and Instagram selection when business account changes
       setSelectedFbPage(undefined);
       setPageSelected(false);
+      setSelectedInstagramAccount(undefined);
+      setInstagramAccounts(undefined);
       
       // Fetch pages for the selected business account
       await getFacebookPages(id);
@@ -158,6 +196,9 @@ const FacebookAccountSettings = ({
         
         if (result.success) {
           setPageSelected(true);
+          
+          // When a Facebook page is selected, fetch Instagram accounts
+          await getInstagramAccounts();
         } else {
           console.error('Error updating page ID:', result.error);
           setError(result.error || 'Failed to update page selection. Please try again.');
@@ -166,6 +207,17 @@ const FacebookAccountSettings = ({
         console.error('Exception updating page ID:', error);
         setError('Failed to update page selection. Please try again.');
       }
+    }
+  }
+  
+  async function selectInstagramAccount(id: string) {
+    if (instagramAccounts) {
+      const selectedAccount = instagramAccounts.find((account) => account.id === id);
+      setSelectedInstagramAccount(selectedAccount);
+      
+      // In the future, we would update the Instagram account ID in the database
+      // For now, we just set it locally
+      console.log('Selected Instagram account:', selectedAccount);
     }
   }
 
@@ -322,7 +374,7 @@ const FacebookAccountSettings = ({
                 </div>
                 
                 {selectedFbBusinessAcc && (
-                  <div className="border-t border-zinc-200 dark:border-zinc-700 pt-4 mt-2">
+                  <div className="border-t border-zinc-200 dark:border-zinc-700 pt-4 mt-2 space-y-4">
                     {fbPages && fbPages.length > 0 ? (
                       <FBAccountDropdown
                         title="Select Facebook Page"
@@ -339,6 +391,30 @@ const FacebookAccountSettings = ({
                         >
                           Click here to load pages for this business account
                         </button>
+                      </div>
+                    )}
+                    
+                    {/* Instagram account dropdown - only shows up if Facebook page is selected */}
+                    {selectedFbPage && (
+                      <div className="pt-2">
+                        {instagramAccounts && instagramAccounts.length > 0 ? (
+                          <FBAccountDropdown
+                            title="Select Instagram Account"
+                            selectedAcccount={selectedInstagramAccount}
+                            accounts={instagramAccounts}
+                            handleAccountChange={selectInstagramAccount}
+                          />
+                        ) : (
+                          <div className="p-3 text-center">
+                            <div className="text-black dark:text-white mb-1">Select Instagram Account</div>
+                            <button 
+                              onClick={getInstagramAccounts}
+                              className="w-full min-h-[55px] flex items-center justify-center gap-2 px-4 py-2 text-black bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                            >
+                              Click here to load Instagram accounts
+                            </button>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
