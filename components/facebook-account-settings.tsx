@@ -15,6 +15,7 @@ import { type User } from '@/lib/types';
 type Account = {
   name: string;
   id: string;
+  profile_picture_url?: string;
 }
 
 type FacebookAccountSettingsProps = {
