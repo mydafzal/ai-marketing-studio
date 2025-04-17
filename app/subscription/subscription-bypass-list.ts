@@ -36,6 +36,7 @@ export const subscriptionBypassList: string[] = [
     'christian@boldbrands.de',
     'bart@formitable.design',
     'Sandra.Echsle@bonvitagroup.com',
+    'client-simulation@reeply.net',
     'vinayak@reeply.ai', // facebook verification account,
     'magdalena.wanten@bonvitagroup.com',
     'jessica.rheinberger@bonvitagroup.com',
