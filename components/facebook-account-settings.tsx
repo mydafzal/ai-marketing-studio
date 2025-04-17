@@ -199,13 +199,33 @@ const FacebookAccountSettings = ({
   }
   
   async function selectInstagramAccount(id: string) {
-    if (instagramAccounts) {
+    if (instagramAccounts && userDetails && selectedFbPage) {
       const selectedAccount = instagramAccounts.find((account) => account.id === id);
       setSelectedInstagramAccount(selectedAccount);
       
-      // In the future, we would update the Instagram account ID in the database
-      // For now, we just set it locally
-      console.log('Selected Instagram account:', selectedAccount);
+      try {
+        const response = await fetch('/api/kv/update-instagram-account-id', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: userDetails.email,
+            instagramAccountId: id,
+            fbPageId: selectedFbPage.id
+          })
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to update Instagram account ID');
+        }
+        
+        console.log('Instagram account ID updated successfully');
+      } catch (error) {
+        console.error('Error updating Instagram account ID:', error);
+        setError('Failed to update Instagram account ID. Please try again.');
+      }
     }
   }
 
