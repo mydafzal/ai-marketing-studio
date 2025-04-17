@@ -362,49 +362,51 @@ const FacebookAccountSettings = ({
                 </div>
                 
                 {selectedFbBusinessAcc && (
-                  <div className="border-t border-zinc-200 dark:border-zinc-700 pt-4 mt-2 space-y-4">
-                    {fbPages && fbPages.length > 0 ? (
-                      <FBAccountDropdown
-                        title="Select Facebook Page"
-                        selectedAcccount={selectedFbPage}
-                        accounts={fbPages}
-                        handleAccountChange={selectPage}
-                      />
-                    ) : (
-                      <div className="p-3 text-center">
-                        <div className="text-black dark:text-white mb-1">Select Facebook Page</div>
-                        <button 
-                          onClick={() => getFacebookPages(selectedFbBusinessAcc.id)}
-                          className="w-full min-h-[55px] flex items-center justify-center gap-2 px-4 py-2 text-black bg-white border border-gray-300 rounded-md hover:bg-gray-50"
-                        >
-                          Click here to load pages for this business account
-                        </button>
-                      </div>
-                    )}
-                    
-                    {/* Instagram account dropdown - only shows up if Facebook page is selected */}
-                    {selectedFbPage && (
-                      <div className="pt-2">
-                        {instagramAccounts && instagramAccounts.length > 0 ? (
-                          <FBAccountDropdown
-                            title="Select Instagram Account"
-                            selectedAcccount={selectedInstagramAccount}
-                            accounts={instagramAccounts}
-                            handleAccountChange={selectInstagramAccount}
-                          />
-                        ) : (
-                          <div className="p-3 text-center">
-                            <div className="text-black dark:text-white mb-1">Select Instagram Account</div>
-                            <button 
-                              onClick={getInstagramAccounts}
-                              className="w-full min-h-[55px] flex items-center justify-center gap-2 px-4 py-2 text-black bg-white border border-gray-300 rounded-md hover:bg-gray-50"
-                            >
-                              Click here to load Instagram accounts
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    )}
+                  <div className="border-t border-zinc-200 dark:border-zinc-700 pt-4 mt-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {fbPages && fbPages.length > 0 ? (
+                        <FBAccountDropdown
+                          title="Select Facebook Page"
+                          selectedAcccount={selectedFbPage}
+                          accounts={fbPages}
+                          handleAccountChange={selectPage}
+                        />
+                      ) : (
+                        <div className="p-3 text-center">
+                          <div className="text-black dark:text-white mb-1">Select Facebook Page</div>
+                          <button 
+                            onClick={() => getFacebookPages(selectedFbBusinessAcc.id)}
+                            className="w-full min-h-[55px] flex items-center justify-center gap-2 px-4 py-2 text-black bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                          >
+                            Click here to load pages for this business account
+                          </button>
+                        </div>
+                      )}
+                      
+                      {/* Instagram account dropdown - appears alongside Facebook page */}
+                      {selectedFbPage && (
+                        <>
+                          {instagramAccounts && instagramAccounts.length > 0 ? (
+                            <FBAccountDropdown
+                              title="Select Instagram Account"
+                              selectedAcccount={selectedInstagramAccount}
+                              accounts={instagramAccounts}
+                              handleAccountChange={selectInstagramAccount}
+                            />
+                          ) : (
+                            <div className="p-3 text-center">
+                              <div className="text-black dark:text-white mb-1">Select Instagram Account</div>
+                              <button 
+                                onClick={getInstagramAccounts}
+                                className="w-full min-h-[55px] flex items-center justify-center gap-2 px-4 py-2 text-black bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                              >
+                                Click here to load Instagram accounts
+                              </button>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
