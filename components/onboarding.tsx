@@ -73,16 +73,15 @@ const GOAL_OPTIONS = {
 } as const;
 
 const SEGMENT_OPTIONS = {
-    INDIVIDUAL: "Individual Consumer – I use your product/service for personal use",
-    FREELANCER: "Freelancer / Sole Proprietor – I'm self-employed and use this for my own work",
-    STARTUP: "Startup (1–10 employees) – A small team building or growing a business",
-    SMALL_BUSINESS: "Small Business (11–50 employees) – An established small business",
-    MID_SIZED: "Mid-Sized Company (51–200 employees) – A growing business with departments",
-    ENTERPRISE: "Large Enterprise (200+ employees) – A large-scale organization or corporation",
-    NONPROFIT: "Nonprofit / NGO – A mission-driven organization",
-    EDUCATION: "Educational Institution – School, college, or training center",
-    GOVERNMENT: "Government / Public Sector – Any public service or department",
-    OTHER: "Other (please specify) – For anything that doesn't quite fit"
+    FREELANCER: "Freelancer / Sole Proprietor",
+    STARTUP: "Startup (1–10 employees)",
+    SMALL_BUSINESS: "Small Business (11–50 employees)",
+    MID_SIZED: "Mid-Sized Company (51–200 employees)",
+    ENTERPRISE: "Large Enterprise (200+ employees)",
+    NONPROFIT: "Nonprofit / NGO",
+    EDUCATION: "Educational Institution",
+    GOVERNMENT: "Government / Public Sector",
+    OTHER: "Other"
 } as const;
 
 // Define the steps for the onboarding process

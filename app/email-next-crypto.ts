@@ -1,4 +1,7 @@
 class EmailCrypto {
+    // this is deterministic encryption. same value will always result in same hash.
+    // this is for posthog only
+
     private secret: string
   
     constructor(secret: string) {
