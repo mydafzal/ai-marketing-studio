@@ -33,7 +33,6 @@ class MessageActivityValidator{
             'contact@reeply.net',
             'themadnoise@gmail.com',
             'maxnols@reeply.net',
-            'vinayak@reeply.ai',
             'madani.farzam@gmail.com'
         ];
     }
