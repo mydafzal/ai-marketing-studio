@@ -130,18 +130,6 @@ const FacebookAccountSettings = ({
   
   async function getInstagramAccounts() {
     try {
-      // For now, we're using dummy data as requested
-      const dummyAccounts = [
-        { id: "ig_1", name: "Instagram Account 1" },
-        { id: "ig_2", name: "Instagram Account 2" },
-        { id: "ig_3", name: "Instagram Account 3" }
-      ];
-      
-      setInstagramAccounts(dummyAccounts);
-      return dummyAccounts;
-      
-      // The actual implementation would look like this:
-      /*
       const response = await fetch('/api/fasty-bot/proxy-get-instagram-pages', {
         method: 'GET',
       });
@@ -154,7 +142,6 @@ const FacebookAccountSettings = ({
       const data = await response.json();
       setInstagramAccounts(data);
       return data;
-      */
     } catch (error) {
       console.error('Error fetching Instagram accounts:', error);
       setError('Failed to fetch Instagram accounts. Please try again.');
