@@ -250,13 +250,13 @@ export async function updateLeadFormInAdset(adSetId:string, leadFormId:string){
     const session = await auth();
 
     if (!session || !session.user) {
-        return { 
+        return {
             error: 'User not authenticated'
         };
     }
 
     try {
-        
+
         const adsetKey = `fbAdset:${adSetId}`;
         await kv.hset(adsetKey, {leadformId:leadFormId});
 
@@ -294,7 +294,7 @@ export async function fetchFbCampaignStructure(campaignId: string, adSetId: stri
             };
         }
         const adsetIds = typeof campaign.adsetIds === 'string' ? JSON.parse(campaign.adsetIds) : campaign.adsetIds;
-        
+
         if (!adsetIds.includes(adSetId)) {
             return {
                 success: false,
@@ -1058,14 +1058,21 @@ export async function updateInstagramAccountId(email: string, instagramAccountId
             }
         }
 
-        // Update the accountId field
-        await kv.hset(userKey, {instagramAccountId: instagramAccountId})
+        // Create a JSON object with the Instagram account ID and mapped Facebook page ID
+        const instagramData = JSON.stringify({
+            instagramAccountId: instagramAccountId,
+            mappedFbPageId: fbPageId
+        })
+
+        // Update the instagramData field with the JSON string
+        await kv.hset(userKey, {instagramData: instagramData})
+
         return {
             success: true,
-            message: 'Instagram Business account id updated successfully'
+            message: 'Instagram account data updated successfully'
         }
     } catch (error) {
-        console.error(`Error updating Instagram Business account id for user ${email}:`, error)
+        console.error(`Error updating Instagram account data for user ${email}:`, error)
         return {
             success: false,
             error: 'Something went wrong'
@@ -1073,7 +1080,53 @@ export async function updateInstagramAccountId(email: string, instagramAccountId
     }
 }
 
+export async function getInstagramAccountId(email: string) {
+    try {
+        // Construct the user key using the email
+        const userKey = `user:${email}`
 
+        // Retrieve the user data
+        const userData = await kv.hgetall(userKey)
+
+        if (!userData) {
+            console.error(`User not found for email: ${email}`)
+            return null
+        }
+
+        // Check if instagramData exists
+        if (!userData.instagramData) {
+            console.error(`No Instagram data found for user: ${email}`)
+            return null
+        }
+
+        // Parse the Instagram data JSON - add type assertion to ensure TypeScript treats it as string
+        let instagramData
+        try {
+            instagramData = JSON.parse(userData.instagramData as string)
+        } catch (error) {
+            console.error(`Error parsing Instagram data for user ${email}:`, error)
+            return null
+        }
+
+        // Check if the fbPageId exists
+        if (!userData.fbPageId) {
+            console.error(`No Facebook Page ID found for user: ${email}`)
+            return null
+        }
+
+        // Validate that the fbPageId matches the mappedFbPageId
+        if (userData.fbPageId !== instagramData.mappedFbPageId) {
+            console.error(`Facebook Page ID mismatch for user ${email}. Expected: ${instagramData.mappedFbPageId}, Got: ${userData.fbPageId}`)
+            return null
+        }
+
+        // Return the Instagram account ID if validation passes
+        return instagramData.instagramAccountId
+    } catch (error) {
+        console.error(`Error getting Instagram account ID for user ${email}:`, error)
+        return null
+    }
+}
 
 export async function updateFbAccessToken(email: string, fbAccessToken: string) {
     const session = await auth()
@@ -1654,7 +1707,7 @@ export async function updateOnboardingDetails(email: string, details: {
             defaultExtraDetails: newDetails,
             website_data: website_data
         };
-        
+
         // Handle locations - explicitly save them as a stringified object or null
         // This ensures deleted locations are properly removed
         if (details.locations && Array.isArray(details.locations) && details.locations.length > 0) {
@@ -1664,7 +1717,7 @@ export async function updateOnboardingDetails(email: string, details: {
             console.log("[TEMPORARY DEBUG] Clearing locations in KV");
             (dataToSave as any)["locations"] = null; // Explicitly set to null to remove locations
         }
-        
+
         // Update user data in KV
         await kv.hset(userKey, dataToSave)
 
