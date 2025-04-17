@@ -1479,10 +1479,9 @@ export function AdSetupModal({
                               <p className="text-text-light-gray">Placements data from API</p>
                           ) : (
                               <p className="text-text-light-gray">
-                                {Object.entries(adPlacements)
-                                    .filter(([_, isEnabled]) => isEnabled)
-                                    .map(([placement]) => placement.replace('_', ' '))
-                                    .join(', ')}
+                                <span className="font-medium">Instagram:</span> Stories, Feed, Explore Home, Explore, Reels (for videos)
+                                <br />
+                                <span className="font-medium">Facebook:</span> Feed, Right Hand Column, Stories, Reels (for videos)
                               </p>
                           )}
                         </div>

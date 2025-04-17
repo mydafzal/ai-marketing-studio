@@ -83,7 +83,7 @@ export function LoadingScreen({ loadingStep, error, mode = 'initialize' }: Loadi
         
         <div className="font-mono text-xs mb-3 bg-[#13141B] p-2 rounded border border-gray-800 overflow-hidden">
           <p className="text-[#FFD942]">
-            $ facebook-api-client --token=**** --version=v18.0
+            $ facebook-api-client --token=**** --version=v22.0
           </p>
         </div>
         
