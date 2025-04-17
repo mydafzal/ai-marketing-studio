@@ -305,8 +305,13 @@ export function CreateCampaignForm() {
         daily_campaign_budget: budget, // Use daily_campaign_budget as shown in documentation example
         website_link: link,
         preferred_language: userData.account?.preferred_language || "en",
-        privacy_policy_link: userData.account?.privacy_policy_link || ''
+        privacy_policy_link: userData.account?.privacy_policy_link || '',
+        instagram_account_id: null,
       };
+
+      if (userData.account?.instagramAccountId !== '') {
+        requestPayload.instagram_account_id = userData.account.instagramAccountId;
+      }
       
       console.log('📤 Sending request to master flow endpoint with payload:', JSON.stringify(requestPayload, null, 2));
       
