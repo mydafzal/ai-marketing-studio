@@ -15,6 +15,7 @@ import { type User } from '@/lib/types';
 type Account = {
   name: string;
   id: string;
+  profile_picture_url?: string;
 }
 
 type FacebookAccountSettingsProps = {
@@ -62,6 +63,8 @@ const FacebookAccountSettings = ({
   const [fbAdAccs, setFbAdAccs] = React.useState<Account[] | undefined>(undefined);
   const [selectedFbPage, setSelectedFbPage] = React.useState<Account | undefined>(undefined);
   const [fbPages, setFbPages] = React.useState<Account[] | undefined>(undefined);
+  const [instagramAccounts, setInstagramAccounts] = React.useState<Account[] | undefined>(undefined);
+  const [selectedInstagramAccount, setSelectedInstagramAccount] = React.useState<Account | undefined>(undefined);
   const [facebookConnected, setFacebookConnected] = React.useState(userDetails?.fbMarketingApiKey ? true : false);
   const [adAccountSelected, setAdAccountSelected] = React.useState(userDetails?.fbAccountId ? true : false);
   const [pageSelected, setPageSelected] = React.useState(userDetails?.fbPageId ? true : false);
@@ -126,15 +129,38 @@ const FacebookAccountSettings = ({
       return [];
     }
   }
+  
+  async function getInstagramAccounts() {
+    try {
+      const response = await fetch('/api/fasty-bot/proxy-get-instagram-pages', {
+        method: 'GET',
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch Instagram accounts');
+      }
+      
+      const data = await response.json();
+      setInstagramAccounts(data);
+      return data;
+    } catch (error) {
+      console.error('Error fetching Instagram accounts:', error);
+      setError('Failed to fetch Instagram accounts. Please try again.');
+      return [];
+    }
+  }
 
   async function selectBusinessAccount(id: string) {
     if (fbBusinessAccs && userDetails) {
       setSelectedFbBusinessAcc(fbBusinessAccs.find((acc) => acc.id === id));
       await updateFbBusinessAcc(userDetails?.email, id);
       
-      // Reset page selection when business account changes
+      // Reset page and Instagram selection when business account changes
       setSelectedFbPage(undefined);
       setPageSelected(false);
+      setSelectedInstagramAccount(undefined);
+      setInstagramAccounts(undefined);
       
       // Fetch pages for the selected business account
       await getFacebookPages(id);
@@ -159,6 +185,9 @@ const FacebookAccountSettings = ({
         
         if (result.success) {
           setPageSelected(true);
+          
+          // When a Facebook page is selected, fetch Instagram accounts
+          await getInstagramAccounts();
         } else {
           console.error('Error updating page ID:', result.error);
           setError(result.error || 'Failed to update page selection. Please try again.');
@@ -166,6 +195,37 @@ const FacebookAccountSettings = ({
       } catch (error) {
         console.error('Exception updating page ID:', error);
         setError('Failed to update page selection. Please try again.');
+      }
+    }
+  }
+  
+  async function selectInstagramAccount(id: string) {
+    if (instagramAccounts && userDetails && selectedFbPage) {
+      const selectedAccount = instagramAccounts.find((account) => account.id === id);
+      setSelectedInstagramAccount(selectedAccount);
+      
+      try {
+        const response = await fetch('/api/kv/update-instagram-account-id', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: userDetails.email,
+            instagramAccountId: id,
+            fbPageId: selectedFbPage.id
+          })
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to update Instagram account ID');
+        }
+        
+        console.log('Instagram account ID updated successfully');
+      } catch (error) {
+        console.error('Error updating Instagram account ID:', error);
+        setError('Failed to update Instagram account ID. Please try again.');
       }
     }
   }
@@ -324,24 +384,50 @@ const FacebookAccountSettings = ({
                 
                 {selectedFbBusinessAcc && (
                   <div className="border-t border-zinc-200 dark:border-zinc-700 pt-4 mt-2">
-                    {fbPages && fbPages.length > 0 ? (
-                      <FBAccountDropdown
-                        title="Select Facebook Page"
-                        selectedAcccount={selectedFbPage}
-                        accounts={fbPages}
-                        handleAccountChange={selectPage}
-                      />
-                    ) : (
-                      <div className="p-3 text-center">
-                        <div className="text-black dark:text-white mb-1">Select Facebook Page</div>
-                        <button 
-                          onClick={() => getFacebookPages(selectedFbBusinessAcc.id)}
-                          className="w-full min-h-[55px] flex items-center justify-center gap-2 px-4 py-2 text-black bg-white border border-gray-300 rounded-md hover:bg-gray-50"
-                        >
-                          Click here to load pages for this business account
-                        </button>
-                      </div>
-                    )}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {fbPages && fbPages.length > 0 ? (
+                        <FBAccountDropdown
+                          title="Select Facebook Page"
+                          selectedAcccount={selectedFbPage}
+                          accounts={fbPages}
+                          handleAccountChange={selectPage}
+                        />
+                      ) : (
+                        <div className="p-3 text-center">
+                          <div className="text-black dark:text-white mb-1">Select Facebook Page</div>
+                          <button 
+                            onClick={() => getFacebookPages(selectedFbBusinessAcc.id)}
+                            className="w-full min-h-[55px] flex items-center justify-center gap-2 px-4 py-2 text-black bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                          >
+                            Click here to load pages for this business account
+                          </button>
+                        </div>
+                      )}
+                      
+                      {/* Instagram account dropdown - appears alongside Facebook page */}
+                      {selectedFbPage && (
+                        <>
+                          {instagramAccounts && instagramAccounts.length > 0 ? (
+                            <FBAccountDropdown
+                              title="Select Instagram Account"
+                              selectedAcccount={selectedInstagramAccount}
+                              accounts={instagramAccounts}
+                              handleAccountChange={selectInstagramAccount}
+                            />
+                          ) : (
+                            <div className="p-3 text-center">
+                              <div className="text-black dark:text-white mb-1">Select Instagram Account</div>
+                              <button 
+                                onClick={getInstagramAccounts}
+                                className="w-full min-h-[55px] flex items-center justify-center gap-2 px-4 py-2 text-black bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                              >
+                                Click here to load Instagram accounts
+                              </button>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>

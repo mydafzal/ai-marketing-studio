@@ -250,13 +250,13 @@ export async function updateLeadFormInAdset(adSetId:string, leadFormId:string){
     const session = await auth();
 
     if (!session || !session.user) {
-        return { 
+        return {
             error: 'User not authenticated'
         };
     }
 
     try {
-        
+
         const adsetKey = `fbAdset:${adSetId}`;
         await kv.hset(adsetKey, {leadformId:leadFormId});
 
@@ -294,7 +294,7 @@ export async function fetchFbCampaignStructure(campaignId: string, adSetId: stri
             };
         }
         const adsetIds = typeof campaign.adsetIds === 'string' ? JSON.parse(campaign.adsetIds) : campaign.adsetIds;
-        
+
         if (!adsetIds.includes(adSetId)) {
             return {
                 success: false,
@@ -1034,6 +1034,48 @@ export async function updateFbBusinessAcc(email: string, accountId: string) {
     }
 }
 
+export async function updateInstagramAccountId(email: string, instagramAccountId: string, fbPageId: string) {
+    const session = await auth()
+
+    if (!session || !session.user) {
+        return {
+            success: false,
+            error: 'User not authenticated'
+        }
+    }
+
+    try {
+        // Construct the user key using the email
+        const userKey = `user:${email}`
+
+        // Check if the user exists
+        const existingUser = await kv.hgetall(userKey)
+
+        if (!existingUser) {
+            return {
+                success: false,
+                error: 'User not found'
+            }
+        }
+
+        // Create a combined value with dot separator: "instagramId.fbPageId"
+        const instagramFbPagePairing = `${instagramAccountId}.${fbPageId}`
+
+        // Update the instagramFbPagePairing field with the combined string
+        await kv.hset(userKey, {instagramFbPagePairing})
+
+        return {
+            success: true,
+            message: 'Instagram account configuration updated successfully'
+        }
+    } catch (error) {
+        console.error(`Error updating Instagram account configuration for user ${email}:`, error)
+        return {
+            success: false,
+            error: 'Something went wrong'
+        }
+    }
+}
 
 export async function updateFbAccessToken(email: string, fbAccessToken: string) {
     const session = await auth()
@@ -1617,7 +1659,7 @@ export async function updateOnboardingDetails(email: string, details: {
             defaultExtraDetails: newDetails,
             website_data: website_data
         };
-        
+
         // Handle locations - explicitly save them as a stringified object or null
         // This ensures deleted locations are properly removed
         if (details.locations && Array.isArray(details.locations) && details.locations.length > 0) {
@@ -1627,7 +1669,7 @@ export async function updateOnboardingDetails(email: string, details: {
             console.log("[TEMPORARY DEBUG] Clearing locations in KV");
             (dataToSave as any)["locations"] = null; // Explicitly set to null to remove locations
         }
-        
+
         // Update user data in KV
         await kv.hset(userKey, dataToSave)
 

@@ -57,6 +57,7 @@ export interface User extends Record<string, any> {
   goal?: string;
   company_segment?: string;
   fbPageId?: string;
+  instagramFbPagePairing?: string; // String in format "instagramId.fbPageId"
   
   // Preferred locations for advertising
   locations?: {

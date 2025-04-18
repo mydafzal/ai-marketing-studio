@@ -2,7 +2,10 @@ import { Session } from '@/lib/types';
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { getUserDetail } from '@/app/actions';
+import {validateAndExtractInstagramAccountId} from "@/lib/helpers/kv/validate-and-extract-instagram-account-id";
 
+
+// todo rename this file to what it actually is doing!
 export async function GET(request: Request) {
     const session = (await auth()) as Session;
     if (!session.user){
@@ -28,7 +31,7 @@ export async function GET(request: Request) {
         else if (resp.user.locations && typeof resp.user.locations === 'object'){
             locations = resp.user.locations;
         }
-        
+
         return NextResponse.json({
             success: true,
             token: resp.user.fbMarketingApiKey ? resp.user.fbMarketingApiKey : "",
@@ -40,7 +43,8 @@ export async function GET(request: Request) {
                 email: resp.user.email || "",
                 companyName: resp.user.company_name||"",
                 preferred_language: resp.user.preferred_language,
-                locations: locations
+                locations: locations,
+                instagramAccountId: validateAndExtractInstagramAccountId(resp.user),
             }
         });
     }
