@@ -1513,6 +1513,7 @@ export async function updateOnboardingDetails(email: string, details: {
     privacy_policy_link: string;
     preferred_language: string;
     goal: string;
+    company_segment: string;
     locations?: {
         country: {
             name: string;
@@ -1582,6 +1583,7 @@ export async function updateOnboardingDetails(email: string, details: {
         Last Name: ${details.last_name}
         Company Name: ${details.company_name}
         Company Description: ${details.company_description}
+        Company Segment: ${details.company_segment}
         Website Link: ${details.website_link}
         Privacy Policy Link: ${details.privacy_policy_link}
         Website data (scraped): ${website_data}
@@ -1611,6 +1613,7 @@ export async function updateOnboardingDetails(email: string, details: {
             privacy_policy_link: details.privacy_policy_link,
             preferred_language: details.preferred_language,
             goal: details.goal,
+            company_segment: details.company_segment,
             defaultExtraDetails: newDetails,
             website_data: website_data
         };

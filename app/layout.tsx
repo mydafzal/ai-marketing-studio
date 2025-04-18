@@ -9,8 +9,8 @@ import { Header } from '@/components/header'
 import { Toaster } from '@/components/ui/toaster'
 import { auth } from '@/auth'
 
-import CrispChat from '@/components/crisp-chat'
 import { getUser } from '@/app/login/actions'
+import AnalyticsSetup from '@/components/analytics-setup'
 
 export const metadata = {
   metadataBase: process.env.VERCEL_URL
@@ -59,7 +59,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
           </div>
           <TailwindIndicator />
         </Providers>
-        {user && <CrispChat user={{ email: user.email, name: user.name }} />}
+        {user && <AnalyticsSetup user={{ email: user.email, name: user.name }} />}
       </body>
     </html>
   )

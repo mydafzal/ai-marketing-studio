@@ -36,6 +36,7 @@ type FacebookAccountSettingsProps = {
     privacy_policy_link: string;
     preferred_language: string;
     goal: string;
+    company_segment: string;
   }) => Promise<any>;
 }
 

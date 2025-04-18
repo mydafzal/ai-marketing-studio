@@ -132,3 +132,18 @@ export const builQueryString = (params: Record<string, any>) => {
   const queryString = new URLSearchParams(filteredParams).toString()
   return `?${queryString}`
 }
+
+export async function trackEvent(event: string, user: { email: string; id: string }, properties: Record<string, any> = {}) {
+  try {
+    await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/posthog-track`, {
+      method: 'POST',
+      body: JSON.stringify({
+        event,
+        user,
+        properties
+      })
+    });
+  } catch (error) {
+    console.error('Error tracking event:', error);
+  }
+}

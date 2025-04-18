@@ -2,7 +2,7 @@ import NextAuth from 'next-auth'
 import Credentials from 'next-auth/providers/credentials'
 import { authConfig } from './auth.config'
 import { z } from 'zod'
-import { getStringFromBuffer } from './lib/utils'
+import { getStringFromBuffer, trackEvent } from './lib/utils'
 import { getUser } from './app/login/actions'
 export const { auth, signIn, signOut } = NextAuth({
   ...authConfig,
@@ -26,7 +26,11 @@ export const { auth, signIn, signOut } = NextAuth({
 
           if (!user) return null
 
-          if (login_type && login_type=="facebook"){
+          if (login_type === 'facebook') {
+            await trackEvent('User Facebook Sign In', 
+              { email: user.email, id: user.id },
+              { login_type: 'facebook' }
+            )
             return user
           } 
 
@@ -39,6 +43,11 @@ export const { auth, signIn, signOut } = NextAuth({
           const hashedPassword = getStringFromBuffer(hashedPasswordBuffer)
 
           if (hashedPassword === user.password) {
+            await trackEvent('User Signed In', 
+              { email: user.email, id: user.id },
+              { login_type: 'credentials' }
+            )
+            console.log('User posthog tracked')
             return user
           } else {
             return null

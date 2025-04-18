@@ -55,6 +55,7 @@ export interface User extends Record<string, any> {
   website_data?: string;
   preferred_language?: string;
   goal?: string;
+  company_segment?: string;
   fbPageId?: string;
   
   // Preferred locations for advertising
