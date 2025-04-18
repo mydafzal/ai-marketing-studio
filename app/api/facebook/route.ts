@@ -11,7 +11,7 @@ export async function GET(request: Request) {
   redirectUrl.searchParams.append('client_id', FACEBOOK_CLIENT_ID!);
   redirectUrl.searchParams.append('redirect_uri', FACEBOOK_REDIRECT_URI!);
   redirectUrl.searchParams.append('response_type', 'code');
-  redirectUrl.searchParams.append('scope', 'ads_read,ads_management,pages_manage_ads,business_management,pages_show_list,leads_retrieval,email,public_profile'); // Add scopes as per requirement
+  redirectUrl.searchParams.append('scope', 'ads_read,ads_management,pages_manage_ads,business_management,pages_show_list,leads_retrieval,email,public_profile,instagram_basic,pages_read_engagement'); // Add scopes as per requirement
 
   // Redirect user to Facebook login
   return NextResponse.redirect(redirectUrl.toString());
