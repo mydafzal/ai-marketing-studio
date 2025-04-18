@@ -1058,14 +1058,11 @@ export async function updateInstagramAccountId(email: string, instagramAccountId
             }
         }
 
-        // Create a JSON object with the Instagram account ID and mapped Facebook page ID
-        const instagramAccountConfig = JSON.stringify({
-            instagramAccountId: instagramAccountId,
-            mappedFbPageId: fbPageId
-        })
+        // Create a combined value with dot separator: "instagramId.fbPageId"
+        const instagramFbPagePairing = `${instagramAccountId}.${fbPageId}`
 
-        // Update the instagramAccountConfig field with the JSON string
-        await kv.hset(userKey, {instagramAccountConfig: instagramAccountConfig})
+        // Update the instagramFbPagePairing field with the combined string
+        await kv.hset(userKey, {instagramFbPagePairing})
 
         return {
             success: true,
@@ -1077,54 +1074,6 @@ export async function updateInstagramAccountId(email: string, instagramAccountId
             success: false,
             error: 'Something went wrong'
         }
-    }
-}
-
-export async function getInstagramAccountId(email: string) {
-    try {
-        // Construct the user key using the email
-        const userKey = `user:${email}`
-
-        // Retrieve the user data
-        const userData = await kv.hgetall(userKey)
-
-        if (!userData) {
-            console.error(`User not found for email: ${email}`)
-            return null
-        }
-
-        // Check if instagramAccountConfig exists
-        if (!userData.instagramAccountConfig) {
-            console.error(`No Instagram account configuration found for user: ${email}`)
-            return null
-        }
-
-        // Parse the Instagram account config JSON - add type assertion to ensure TypeScript treats it as string
-        let instagramConfig
-        try {
-            instagramConfig = JSON.parse(userData.instagramAccountConfig as string)
-        } catch (error) {
-            console.error(`Error parsing Instagram account configuration for user ${email}:`, error)
-            return null
-        }
-
-        // Check if the fbPageId exists
-        if (!userData.fbPageId) {
-            console.error(`No Facebook Page ID found for user: ${email}`)
-            return null
-        }
-
-        // Validate that the fbPageId matches the mappedFbPageId
-        if (userData.fbPageId !== instagramConfig.mappedFbPageId) {
-            console.error(`Facebook Page ID mismatch for user ${email}. Expected: ${instagramConfig.mappedFbPageId}, Got: ${userData.fbPageId}`)
-            return null
-        }
-
-        // Return the Instagram account ID if validation passes
-        return instagramConfig.instagramAccountId
-    } catch (error) {
-        console.error(`Error getting Instagram account ID for user ${email}:`, error)
-        return null
     }
 }
 

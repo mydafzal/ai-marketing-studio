@@ -56,7 +56,7 @@ export interface User extends Record<string, any> {
   preferred_language?: string;
   goal?: string;
   fbPageId?: string;
-  instagramAccountConfig?: string; // JSON string containing instagramAccountId and mappedFbPageId
+  instagramFbPagePairing?: string; // String in format "instagramId.fbPageId"
   
   // Preferred locations for advertising
   locations?: {

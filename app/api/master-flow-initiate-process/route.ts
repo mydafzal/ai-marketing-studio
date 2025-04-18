@@ -43,7 +43,8 @@ export async function POST(req: NextRequest) {
       image_hashes = [],
       video_ids = [],
       daily_campaign_budget, // Extract daily_campaign_budget as shown in documentation
-      company_name  // Make sure we extract company_name
+      company_name,  // Make sure we extract company_name
+      instagram_account_id
     } = body
 
     console.log('📊 Request validation data:', {
@@ -148,7 +149,8 @@ export async function POST(req: NextRequest) {
       page_id,
       image_hashes,
       video_ids: processedVideoIds, // Use processed video_ids
-      daily_campaign_budget // Use daily_campaign_budget exactly as provided from client
+      daily_campaign_budget, // Use daily_campaign_budget exactly as provided from client
+      instagram_account_id
     };
     
     console.log('📤 Sending request to backend with params:', {

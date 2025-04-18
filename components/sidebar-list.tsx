@@ -14,7 +14,7 @@ const loadChats = cache(async (userId?: string) => {
 
 export async function SidebarList({ userId }: SidebarListProps) {
   const chats = await loadChats(userId)
-
+  // clear chat has issues. for now commented out.
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <div className="flex-1 overflow-auto px-2 pt-2">
@@ -28,9 +28,9 @@ export async function SidebarList({ userId }: SidebarListProps) {
           </div>
         )}
       </div>
-      <div className="flex items-center justify-end p-4 border-t border-border-dark mt-2">
-        <ClearHistory clearChats={() => clearChats().then(() => {})} isEnabled={chats?.length > 0} />
-      </div>
+      {/*<div className="flex items-center justify-end p-4 border-t border-border-dark mt-2">*/}
+      {/*  <ClearHistory clearChats={() => clearChats().then(() => {})} isEnabled={chats?.length > 0} />*/}
+      {/*</div>*/}
     </div>
   )
 }

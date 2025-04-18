@@ -306,13 +306,10 @@ export function CreateCampaignForm() {
         website_link: link,
         preferred_language: userData.account?.preferred_language || "en",
         privacy_policy_link: userData.account?.privacy_policy_link || '',
-        instagram_account_id: null,
+        instagram_account_id: userData.account?.instagramAccountId || '',
+        // instagram_account_id: "17841459585033029",
       };
 
-      if (userData.account?.instagramAccountId !== '') {
-        requestPayload.instagram_account_id = userData.account.instagramAccountId;
-      }
-      
       console.log('📤 Sending request to master flow endpoint with payload:', JSON.stringify(requestPayload, null, 2));
       
       // Make the API call to master flow endpoint
