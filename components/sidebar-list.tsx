@@ -14,7 +14,7 @@ const loadChats = cache(async (userId?: string) => {
 
 export async function SidebarList({ userId }: SidebarListProps) {
   const chats = await loadChats(userId)
-  // clear chat has issues. for now commented out.
+  // todo: clear chat has issues. for now commented out.
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <div className="flex-1 overflow-auto px-2 pt-2">

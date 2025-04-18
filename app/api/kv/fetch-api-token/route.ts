@@ -32,8 +32,6 @@ export async function GET(request: Request) {
             locations = resp.user.locations;
         }
 
-        let instagramAccountId = resp.user.instagramFbPagePairing ?? ''
-
         return NextResponse.json({
             success: true,
             token: resp.user.fbMarketingApiKey ? resp.user.fbMarketingApiKey : "",
@@ -46,8 +44,7 @@ export async function GET(request: Request) {
                 companyName: resp.user.company_name||"",
                 preferred_language: resp.user.preferred_language,
                 locations: locations,
-                // instagramAccountId: validateAndExtractInstagramAccountId(resp.user),
-                instagramAccountId: instagramAccountId.split('.')[0],
+                instagramAccountId: validateAndExtractInstagramAccountId(resp.user),
             }
         });
     }
