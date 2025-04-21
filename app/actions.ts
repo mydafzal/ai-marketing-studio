@@ -497,6 +497,58 @@ export async function updateUserDefaultExtraDetailsForAdmin(userEmail: string, p
     }
 }
 
+export async function fetchUserDefaultExtraAdminDetailsForAdmin(userEmail: string) {
+    const session = await auth()
+
+    if (!session || !session.user) {
+        return {
+            error: 'User not authenticated'
+        }
+    }
+
+    if (!userEmail) {
+        return {
+            error: 'Missing user email'
+        }
+    }
+
+    try {
+        const userKey = `user:${userEmail}`
+        const defaultExtraAdminDetails = await kv.hget(userKey, 'defaultExtraAdminDetails')
+
+        return defaultExtraAdminDetails || ''
+
+    } catch (error) {
+        console.error(`Error fetching defaultExtraAdminDetails for user: ${userEmail}`, error)
+        return ''
+    }
+}
+
+export async function updateUserDefaultExtraAdminDetailsForAdmin(userEmail: string, promptString: string) {
+    const session = await auth()
+    if (!session || !session.user) {
+        return {error: 'User not authenticated'}
+    }
+
+    if (!userEmail) {
+        return {error: 'Missing user email'}
+    }
+
+    if (!promptString) {
+        return {error: 'Missing prompt string'}
+    }
+
+    try {
+        const userKey = `user:${userEmail}`
+        await kv.hset(userKey, {defaultExtraAdminDetails: promptString})
+        return {success: true, message: 'Default extra admin details updated successfully'}
+    } catch (error) {
+        console.error(`Error updating defaultExtraAdminDetails for user: ${userEmail}`, error)
+        return {error: 'Failed to update default extra details'}
+    }
+}
+
+
 
 export async function fetchUserDefaultExtraDetails() {
     const session = await auth()
