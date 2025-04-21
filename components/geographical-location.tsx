@@ -82,6 +82,10 @@ export function GeographicalLocation({
     if (!selectedGeoLocations[0].country) {
       return toast.info('You should select at least a country to set targeting.')
     }
+    
+    // Instead of preventing submission with validation, we'll handle this by prioritizing locations
+    // in the geo_locations object based on specificity (cities > regions > countries)
+    
     setIsSubmitting(true)
 
     let newTargeting: AdsetTargeting = { ...adset.targeting }
@@ -153,19 +157,22 @@ export function GeographicalLocation({
         .map(data => data.country.country_code)
         .filter(code => !!code);
       
-      // Add regions if present
-      if (regionKeys.length > 0) {
-        newTargeting.geo_locations.regions = regionKeys;
-      }
+      // Facebook doesn't allow targeting at multiple levels in the hierarchy
+      // Prioritize the most specific locations (cities > regions > countries)
+      newTargeting.geo_locations = {}; // Reset geo_locations object
       
-      // Add cities if present
       if (cityKeys.length > 0) {
+        // Use only cities if available - most specific level
         newTargeting.geo_locations.cities = cityKeys;
-      }
-      
-      // Add countries only if no specific regions or cities
-      if (regionKeys.length === 0 && cityKeys.length === 0 && countryKeys.length > 0) {
+        console.log('Target by cities only:', cityKeys);
+      } else if (regionKeys.length > 0) {
+        // Use only regions if no cities
+        newTargeting.geo_locations.regions = regionKeys;
+        console.log('Target by regions only:', regionKeys);
+      } else if (countryKeys.length > 0) {
+        // Use only countries if no cities or regions
         newTargeting.geo_locations.countries = countryKeys;
+        console.log('Target by countries only:', countryKeys);
       }
       
       // Build simplified format for backend processing in demographicData
