@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getFbMarketingApiKey } from '@/app/actions'
 
 export async function PUT(request: NextRequest) {
   try {
@@ -46,12 +47,19 @@ export async function PUT(request: NextRequest) {
     }
 
     console.log('Calling Fasty API with payload:', JSON.stringify(requestBody))
-    
+
+    const tokenResponse = await getFbMarketingApiKey()
+    let fbApiKey = ''
+    if (tokenResponse?.success && tokenResponse?.token) {
+      fbApiKey = tokenResponse.token
+    }
+
     const fastyResponse = await fetch(apiUrl, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${fastyToken}`
+        'Authorization': `Bearer ${fastyToken}`,
+        'fb-api-key': fbApiKey,
       },
       body: JSON.stringify(requestBody)
     })
