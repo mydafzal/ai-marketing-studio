@@ -5,6 +5,7 @@ import { AudienceSettings } from './AudienceSettings';
 import { PlacementSettings } from './PlacementSettings';
 import { BudgetSettings } from './BudgetSettings';
 import { CreativeSettings } from './CreativeSettings';
+import { ObjectiveSettings } from './ObjectiveSettings';
 
 interface CampaignSettingsModalProps {
   isOpen: boolean;
@@ -117,6 +118,8 @@ export function CampaignSettingsModal({
             fileInputRef={fileInputRef}
           />
         );
+      case 'advanced':
+        return <ObjectiveSettings campaignObjective={campaignObjective} setCampaignObjective={setCampaignObjective} />;
       default:
         return null;
     }
@@ -131,6 +134,7 @@ export function CampaignSettingsModal({
             {currentEditSection === 'placements' && 'Ad Placements'}
             {currentEditSection === 'budget' && 'Budget Settings'}
             {currentEditSection === 'creative' && 'Creative Settings'}
+            {currentEditSection === 'advanced' && 'Advanced Settings'}
           </h2>
           <button
             onClick={onClose}

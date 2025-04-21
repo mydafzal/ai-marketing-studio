@@ -16,6 +16,7 @@ interface CreateTabProps {
   setAiGuidance: React.Dispatch<React.SetStateAction<string>>;
   handleReviewTransition: () => void;
   isLoading: boolean;
+  openAdvancedSettings?: () => void;
 }
 
 export function CreateTab({
@@ -31,7 +32,8 @@ export function CreateTab({
   aiGuidance,
   setAiGuidance,
   handleReviewTransition,
-  isLoading
+  isLoading,
+  openAdvancedSettings
 }: CreateTabProps) {
   return (
     <>
@@ -144,6 +146,31 @@ export function CreateTab({
         />
       </div>
 
+
+      {/* Advanced Settings Link */}
+      <div className="mt-5">
+        <button
+          onClick={() => openAdvancedSettings?.()}
+          className="text-primary-green hover:text-primary-green/80 text-sm font-medium transition-colors duration-200 flex items-center"
+          type="button"
+        >
+          Advanced Settings
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="ml-1"
+          >
+            <path d="m9 18 6-6-6-6" />
+          </svg>
+        </button>
+      </div>
 
       {/* Next Step: Preview & Review */}
       <div className="mt-8">

@@ -34,8 +34,8 @@ export function CreateCampaignForm() {
   const [masterFlowData, setMasterFlowData] = useState<MasterFlowResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Objective
-  const [campaignObjective, setCampaignObjective] = useState('Lead Generation');
+  // Objective - use lowercase as per API requirement
+  const [campaignObjective, setCampaignObjective] = useState('lead_generation');
 
   // Creative text
   const [adText, setAdText] = useState(
@@ -307,6 +307,7 @@ export function CreateCampaignForm() {
         preferred_language: userData.account?.preferred_language || "en",
         privacy_policy_link: userData.account?.privacy_policy_link || '',
         instagram_account_id: userData.account?.instagramAccountId || '',
+        post_assessment_campaign_objective: campaignObjective, // Add campaign objective
       };
 
       console.log('📤 Sending request to master flow endpoint with payload:', JSON.stringify(requestPayload, null, 2));
@@ -743,6 +744,10 @@ export function CreateCampaignForm() {
             setAiGuidance={setAiGuidance}
             handleReviewTransition={handleReviewTransition}
             isLoading={isLoading}
+            openAdvancedSettings={() => {
+              setCurrentEditSection('advanced');
+              setIsEditModalOpen(true);
+            }}
           />
         ) : (
           <ReviewScreen 

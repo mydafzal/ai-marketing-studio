@@ -11,7 +11,7 @@ export interface MediaItem {
   error?: string;    // For storing error messages if upload fails.
 }
 
-export type EditSection = 'objective' | 'audience' | 'placements' | 'budget' | 'creative' | null;
+export type EditSection = 'objective' | 'audience' | 'placements' | 'budget' | 'creative' | 'advanced' | null;
 export type Gender = 'All' | 'Male' | 'Female';
 export type CampaignTab = 'create' | 'review';
 export type PreviewTab = 'instagram_stories' | 'settings';
