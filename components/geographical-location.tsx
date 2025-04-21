@@ -6,6 +6,7 @@ import debounce from 'lodash/debounce'
 import * as React from 'react'
 import { useState, useCallback, useContext, useEffect } from 'react'
 import { toast } from 'sonner'
+import { SearchableSelect } from '@/components/ui/searchable-select'
 import { MapPin, Users, X, Plus, ChevronDown } from 'lucide-react'
 import { CampaignContext } from '@/components/contexts/campaign-context'
 import { GeographicalLocationResult } from '@/components/geographical-location-result'
@@ -83,8 +84,17 @@ export function GeographicalLocation({
       return toast.info('You should select at least a country to set targeting.')
     }
     
-    // Instead of preventing submission with validation, we'll handle this by prioritizing locations
-    // in the geo_locations object based on specificity (cities > regions > countries)
+    // Validate to prevent overlapping locations - but in a non-blocking way
+    const hasCities = selectedGeoLocations.some(loc => loc.cities.length > 0);
+    const hasRegions = selectedGeoLocations.some(loc => loc.region !== null && loc.cities.length === 0);
+    const hasCountriesOnly = selectedGeoLocations.some(loc => loc.country !== null && loc.region === null && loc.cities.length === 0);
+    
+    // Show warnings for potentially problematic combinations, but don't block submission
+    if (hasCities && (hasRegions || hasCountriesOnly)) {
+      toast.warning('Your locations may overlap. The system will prioritize cities over regions and countries.');
+    } else if (hasRegions && hasCountriesOnly) {
+      toast.warning('Your locations may overlap. The system will prioritize regions over countries.');
+    }
     
     setIsSubmitting(true)
 
@@ -160,6 +170,15 @@ export function GeographicalLocation({
       // Facebook doesn't allow targeting at multiple levels in the hierarchy
       // Prioritize the most specific locations (cities > regions > countries)
       newTargeting.geo_locations = {}; // Reset geo_locations object
+      
+      // Store original structure for debugging
+      const originalStructure = {
+        cities: cityKeys.length > 0 ? cityKeys : undefined,
+        regions: regionKeys.length > 0 ? regionKeys : undefined,
+        countries: countryKeys.length > 0 ? countryKeys : undefined
+      };
+      
+      console.log('Original structure:', JSON.stringify(originalStructure));
       
       if (cityKeys.length > 0) {
         // Use only cities if available - most specific level
@@ -480,43 +499,32 @@ export function GeographicalLocation({
 
                   <div className="space-y-2">
                     <Label className="text-gray-700 dark:text-zinc-300">Country</Label>
-                    <Select
+                    <SearchableSelect
                       disabled={countryData.length === 0 || isReadOnly}
                       value={geoLocation.country?.country_code}
                       onValueChange={value => {
                         handleCountrySelect(index, countryData.find(e => e.key === value) ?? null)
                       }}
-                    >
-                      <SelectTrigger className="bg-white dark:bg-zinc-800 border-gray-200 dark:border-zinc-700">
-                        <SelectValue placeholder="Select a country" className="text-gray-900 dark:text-zinc-100" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {countryData.map((country: Country) => (
-                          <SelectItem key={country.key} value={country.key}>
-                            {country.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      options={countryData.map((country: Country) => ({
+                        value: country.key,
+                        label: country.name
+                      }))}
+                      placeholder="Select a country"
+                    />
 
                     <Label className="text-gray-700 dark:text-zinc-300">Region</Label>
-                    <Select
+                    <SearchableSelect
                       disabled={geoLocation.regionData.length === 0 || isReadOnly}
+                      value={geoLocation.region?.key}
                       onValueChange={value => {
                         handleRegionSelect(index, geoLocation.regionData.find(e => e.key === value) ?? null)
                       }}
-                    >
-                      <SelectTrigger className="bg-white dark:bg-zinc-800 border-gray-200 dark:border-zinc-700">
-                        <SelectValue placeholder="Select a region" className="text-gray-900 dark:text-zinc-100" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {geoLocation.regionData.map((region: Region) => (
-                          <SelectItem key={region.key} value={region.key}>
-                            {region.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      options={geoLocation.regionData.map((region: Region) => ({
+                        value: region.key,
+                        label: region.name
+                      }))}
+                      placeholder="Select a region"
+                    />
 
                     <Label className="text-gray-700 dark:text-zinc-300">Cities</Label>
 <div className="bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 rounded-md">
