@@ -14,7 +14,7 @@ import {
 
     fetchFbCampaignExtraDetailsForChat,
 
-    fetchUserDefaultExtraDetails,
+    fetchUserDefaultAndAdminExtraDetails,
 
     saveFbCampaignStructure,
 
@@ -176,7 +176,8 @@ export async function submitUserMessage(content: string, contentImages?: Array<T
 
         if (chatId) {
 
-            const defaultExtraDetailsResult = await fetchUserDefaultExtraDetails();
+            const defaultExtraDetailsResult = await fetchUserDefaultAndAdminExtraDetails();
+            console.log("Testing prompt ", defaultExtraDetailsResult)
 
 
 

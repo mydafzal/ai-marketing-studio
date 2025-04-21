@@ -550,7 +550,7 @@ export async function updateUserDefaultExtraAdminDetailsForAdmin(userEmail: stri
 
 
 
-export async function fetchUserDefaultExtraDetails() {
+export async function fetchUserDefaultAndAdminExtraDetails() {
     const session = await auth()
 
     if (!session?.user?.email) {
@@ -560,12 +560,17 @@ export async function fetchUserDefaultExtraDetails() {
 
     try {
         const userKey = `user:${session.user.email}`
-        const defaultExtraDetails = await kv.hget(userKey, 'defaultExtraDetails')
+        const details = await kv.hmget(userKey, 'defaultExtraDetails', 'defaultExtraAdminDetails');
 
-        return defaultExtraDetails || ''
+        const userDetails = details?.defaultExtraDetails ?? '';
+        const adminDetails = details?.defaultExtraAdminDetails ?? '';
+
+        let concatenatedDetails = userDetails + "\n\n"+ adminDetails;
+
+        return concatenatedDetails;
 
     } catch (error) {
-        console.error(`Error fetching defaultExtraDetails for user: ${session.user.email}`, error)
+        console.error(`Error fetching default and admin extra details for user: ${session.user.email}`, error)
         return ''
     }
 }
