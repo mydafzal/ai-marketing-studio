@@ -52,10 +52,8 @@ function ChatHistoryContent({ userId }: { userId?: string }) {
           New Chat
         </Link>
       </div>
-      <React.Suspense fallback={<ChatHistorySkeleton />}>
-        {/* @ts-ignore */}
-        <SidebarList userId={userId} />
-      </React.Suspense>
+      {/* Client component SidebarList doesn't need a Suspense boundary */}
+      <SidebarList userId={userId} />
     </div>
   )
 }
