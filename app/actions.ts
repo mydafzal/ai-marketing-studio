@@ -77,8 +77,12 @@ export async function clearChats() {
 
     const chats: string[] = await kv.zrange(`user:chat:${session.user.id}`, 0, -1)
     if (!chats.length) {
-        return redirect('/')
+        return {
+            success: true,
+            message: 'No chats to clear'
+        }
     }
+    
     const pipeline = kv.pipeline()
 
     for (const chat of chats) {
@@ -88,8 +92,12 @@ export async function clearChats() {
 
     await pipeline.exec()
 
-    revalidatePath('/')
-    return redirect('/')
+    // We'll handle the redirect on the client side
+    // to ensure it's a full page reload
+    return {
+        success: true,
+        message: 'Chats cleared successfully'
+    }
 }
 
 export async function getSharedChat(id: string) {
