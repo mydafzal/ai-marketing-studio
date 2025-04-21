@@ -82,11 +82,44 @@ export function HomePageInfoCard({ adAccountConnected, awaitingToGetReady, isSub
 
 
               {awaitingToGetReady && (
-                  <p className="text-gray-700 leading-relaxed">
+                <div className="text-gray-700 leading-relaxed">
+                  <p>
                     You have an AI Marketer subscription, but your Facebook account is not connected yet.
-                    Contact <a href="mailto:contact@reeply.net" className="text-blue-600 underline">contact@reeply.net</a>{' '} to get started.
+                    Connecting to your Facebook account should only take a few minutes.{' '}
+                    <strong>
+                      Click{' '}
+                      <a
+                        href="https://reeply-ai.crisp.help/en/article/how-to-connect-your-account-to-facebook-mr0zul/"
+                        className="text-blue-600 underline"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        HERE
+                      </a>{' '}
+                      to view our official guide and connect your Facebook account quickly.
+                    </strong>
                   </p>
+
+                  <hr className="my-6 border-gray-300" />
+
+                  <div className="text-sm text-gray-600 mt-4">
+                    <p className="italic">
+                      If you are having difficulties connecting your Facebook account, use the chat widget at the bottom right side of the screen. We will get back to you as soon as we can to help you with your issue.
+                    </p>
+                    <br />
+                    <p>
+                      Would you like to email us instead? Use{' '}
+                      <a href="mailto:contact@reeply.ai" className="text-blue-600 underline">
+                        contact@reeply.ai
+                      </a>.
+                    </p>
+                    <br />
+                    <p>All the best with your marketing journey!</p>
+                  </div>
+                </div>
               )}
+
+
 
               {isSubscribedToAIContent && (
                   <div className="pt-2">
