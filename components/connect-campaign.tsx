@@ -231,7 +231,7 @@ export function ConnectCampaign({ connectingUiProps }: ConnectCampaignProps) {
     async function refresh() {
       // Look for the last user message to determine context
       const lastUserMessage = aiMessages
-        .filter(msg => msg.role === 'user')
+        .filter((msg: { role: string }) => msg.role === 'user')
         .pop()?.content || '';
 
       // Construct a contextual response based on previous user messages
