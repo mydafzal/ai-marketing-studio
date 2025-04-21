@@ -232,13 +232,19 @@ export async function POST(request: Request) {
       }, { status: 400 });
     }
 
+    const token_resp = await getFbMarketingApiKey();
+    let token = "";
+    if (token_resp.success && token_resp.token) {
+      token = token_resp.token;
+    }
+
     // Make the request to the backend service without fb-api-key
     console.log('📤 Sending request to backend');
     const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.FASTY_API_TOKEN || ''}`
-        // Do not include fb-api-key header to let backend use its internal key
+        'Authorization': `Bearer ${process.env.FASTY_API_TOKEN || ''}`,
+        'fb-api-key': token,
       },
       body: fbFormData
     });
