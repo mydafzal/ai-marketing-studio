@@ -157,8 +157,7 @@ export function ConnectAdsetForm({
                 'bg-[#4BF29C] hover:bg-[#3AD88C]',
                 'transition-colors duration-200',
                 'disabled:opacity-50 disabled:cursor-not-allowed',
-                'focus:outline-none focus:ring-2 focus:ring-[#4BF29C]',
-                'hidden'
+                'focus:outline-none focus:ring-2 focus:ring-[#4BF29C]'
               )}
             >
               {isCreating ? (
@@ -189,8 +188,7 @@ export function ConnectAdsetForm({
               'bg-[#4BF29C] hover:bg-[#3AD88C]',
               'transition-colors duration-200',
               'disabled:opacity-50 disabled:cursor-not-allowed',
-              'focus:outline-none focus:ring-2 focus:ring-[#4BF29C]',
-              'hidden'
+              'focus:outline-none focus:ring-2 focus:ring-[#4BF29C]'
             )}
           >
             {isCreating ? (
