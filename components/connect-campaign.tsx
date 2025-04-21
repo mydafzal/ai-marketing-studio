@@ -229,8 +229,35 @@ export function ConnectCampaign({ connectingUiProps }: ConnectCampaignProps) {
 
   useEffect(() => {
     async function refresh() {
+      // Look for the last user message to determine context
+      const lastUserMessage = aiMessages
+        .filter((msg: { role: string }) => msg.role === 'user')
+        .pop()?.content || '';
+
+      // Construct a contextual response based on previous user messages
+      let responsePrompt = 'I have successfully connected to the campaign. ';
+      
+      if (typeof lastUserMessage === 'string' && 
+          (lastUserMessage.toLowerCase().includes('result') || 
+           lastUserMessage.toLowerCase().includes('performance') ||
+           lastUserMessage.toLowerCase().includes('stats') ||
+           lastUserMessage.toLowerCase().includes('metrics'))) {
+        // User was likely asking about campaign results/performance
+        responsePrompt += 'Now continue with showing the campaign results or metrics as previously discussed.';
+      } else if (typeof lastUserMessage === 'string' && 
+                (lastUserMessage.toLowerCase().includes('edit') || 
+                 lastUserMessage.toLowerCase().includes('change') ||
+                 lastUserMessage.toLowerCase().includes('update') ||
+                 lastUserMessage.toLowerCase().includes('modify'))) {
+        // User was likely asking about editing the campaign
+        responsePrompt += 'Now continue with helping the user edit or update the campaign as previously discussed.';
+      } else {
+        // No specific context found, ask for next steps
+        responsePrompt += 'Ask the user what they would like to do with this campaign now that it\'s connected.';
+      }
+      
       const responseMessage = await submitUserMessage(
-        'Okay, I connected campaign. Ask me whether I like to see campaign results. dont ask me to create a campaign.',
+        responsePrompt,
         [],
         true
       )

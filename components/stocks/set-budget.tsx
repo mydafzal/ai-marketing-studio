@@ -77,12 +77,10 @@ export function Purchase({
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h3 className="text-xl font-semibold text-white">{symbol}</h3>
+            <h3 className="text-xl font-semibold text-white">{symbol.length > 25 ? symbol.substring(0, 25) + '...' : symbol}</h3>
             <p className="text-sm text-[#ADB0B8]">Campaign Budget Configuration</p>
           </div>
-          <div className="px-3 py-1 text-sm rounded-full bg-[#151925] text-[#4BF29C] border border-[#2A2E3A]">
-            {status}
-          </div>
+          {/* Badge removed as per requirements */}
         </div>
 
         {/* If we have purchasingUI set, display it. Otherwise, show the budget sliders & button */}

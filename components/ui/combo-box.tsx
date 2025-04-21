@@ -42,7 +42,7 @@ const ComboBox: React.FC<ComboBoxProps> = ({
         className={`dark:bg-zinc-700 dark:text-zinc-200`}
       />
       {options.length > 0 && (
-        <ul className="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md overflow-auto focus:outline-none">
+        <ul className="absolute z-10 mt-1 w-full bg-white dark:bg-zinc-800 shadow-lg max-h-60 rounded-md overflow-auto focus:outline-none border border-gray-200 dark:border-zinc-700">
           {options.map((option, index) => (
             <li
               key={index}
@@ -50,7 +50,7 @@ const ComboBox: React.FC<ComboBoxProps> = ({
                 onSelect(option.value)
                 setQuery('')
               }}
-              className="cursor-pointer text-sm select-none relative py-2 pl-3 pr-9 hover:bg-gray-950 hover:text-white"
+              className="cursor-pointer text-sm select-none relative py-2 pl-3 pr-9 text-gray-800 dark:text-zinc-100 hover:bg-gray-100 dark:hover:bg-zinc-700"
             >
               {option.label}
             </li>
