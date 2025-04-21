@@ -105,9 +105,12 @@ export function SidebarActions({
                                     }
 
                                     setDeleteDialogOpen(false)
-                                    router.refresh()
-                                    router.push('/')
                                     toast.success('Chat deleted')
+                                    
+                                    // Force a complete page reload to ensure all server components get refreshed
+                                    setTimeout(() => {
+                                        window.location.href = '/'
+                                    }, 300) // Short delay to allow toast to appear
                                 })
                             }}
                         >
