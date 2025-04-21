@@ -18,6 +18,7 @@ const CustomerSearch: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedEmail, setSelectedEmail] = useState('');
     const [defaultPrompt, setDefaultPrompt] = useState('');
+    const [defaultAdminPrompt, setDefaultAdminPrompt] = useState('');
     const [fbPageId, setFbPageId] = useState('');
     const [pageIdSuccessMessage, setPageIdSuccessMessage] = useState<string | null>(null);
 
@@ -241,10 +242,14 @@ const CustomerSearch: React.FC = () => {
         }
     };
 
-    const handleManagePrompt = (email: string) => {
+    const handleManagePrompt = async (email: string) => {
         setSelectedEmail(email);
         setDefaultPrompt(''); // Reset the prompt when opening the modal
+        setDefaultAdminPrompt(''); // Reset the admin prompt (Re-added)
         setIsModalOpen(true);
+        // Fetch both prompts when opening the modal
+        await handleFetchPrompt(email); // Fetch user prompt
+        await handleFetchAdminPrompt(email); // Fetch admin prompt (Re-added)
     };
 
 
@@ -288,35 +293,111 @@ const CustomerSearch: React.FC = () => {
             setDefaultPrompt('');
             setSelectedEmail('');
             setSuccessMessage(data.message || 'Default prompt updated successfully');
-            setIsModalOpen(false);
         } catch (error) {
-            console.error('Error updating default prompt:', error);
-            setError(error instanceof Error ? error.message : 'An unexpected error occurred');
+            console.error('Error updating user default prompt:', error);
+            setError(error instanceof Error ? error.message : 'An unexpected error occurred while updating user prompt');
         } finally {
             setIsLoading(false);
         }
     };
 
-    const handleFetchPrompt = async () => {
-        try {
-            setIsLoading(true);
-            setError(null);
+    // Renamed and modified to accept email as argument for pre-fetching
+    const handleFetchPrompt = async (emailToFetch: string = selectedEmail) => {
+        // No separate loading state for individual fetches within modal for simplicity
+        // setError(null); // Clear previous errors if desired
 
+        if (!emailToFetch) {
+            console.warn('No email selected for fetching user prompt.');
+            return;
+        }
+
+        try {
             const response = await fetch(
-                `/api/admin/fetch-user-default-extra-details?email=${encodeURIComponent(selectedEmail)}`
+                `/api/admin/fetch-user-default-extra-details?email=${encodeURIComponent(emailToFetch)}`
             );
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.error || 'Failed to fetch default prompt');
+                throw new Error(data.error || 'Failed to fetch user default prompt');
             }
 
-            console.log('Fetched data:', data);
-
+            console.log('Fetched user prompt data:', data);
             setDefaultPrompt(data.defaultExtraDetails || '');
+
         } catch (error) {
-            console.error('Error fetching default prompt:', error);
-            setError(error instanceof Error ? error.message : 'An unexpected error occurred');
+            console.error('Error fetching user default prompt:', error);
+            setError(error instanceof Error ? error.message : 'An unexpected error occurred while fetching user prompt');
+            setDefaultPrompt(''); // Clear prompt on error
+        } finally {
+            // No individual loading state change here
+        }
+    };
+
+    // Re-added function to fetch admin details using the new endpoint
+    const handleFetchAdminPrompt = async (emailToFetch: string = selectedEmail) => {
+        if (!emailToFetch) {
+            console.warn('No email selected for fetching admin prompt.');
+            return;
+        }
+        try {
+            const response = await fetch(
+                `/api/admin/fetch-user-default-extra-admin-details?email=${encodeURIComponent(emailToFetch)}`
+            );
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                // Use error from response if available, otherwise provide a default
+                throw new Error(data.error || 'Failed to fetch admin default prompt');
+            }
+
+            console.log('Fetched admin prompt data:', data);
+            setDefaultAdminPrompt(data.defaultExtraAdminDetails || '');
+
+        } catch (error) {
+            console.error('Error fetching admin default prompt:', error);
+            // Display specific error to user
+            setError(error instanceof Error ? error.message : 'An unexpected error occurred while fetching admin prompt');
+            setDefaultAdminPrompt(''); // Clear prompt on error
+        }
+    };
+
+    // Re-added function to update admin details using the new endpoint
+    const handleUpdateAdminPrompt = async () => {
+        if (!selectedEmail) {
+            setError('Please select an email first.');
+            return;
+        }
+        // Note: No validation check if defaultAdminPrompt is empty, allowing it to be cleared
+
+        setIsLoading(true);
+        setError(null);
+        setSuccessMessage(null); // Clear previous success messages
+
+        try {
+            const response = await fetch('/api/admin/update-user-default-extra-admin-details', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email: selectedEmail, defaultExtraAdminDetails: defaultAdminPrompt }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                throw new Error(data.error || 'Failed to update admin default prompt');
+            }
+
+            alert(data.message || 'Admin default prompt updated successfully');
+            setSuccessMessage(data.message || 'Admin default prompt updated successfully');
+            // Optionally clear admin prompt state after successful update if desired
+            // setDefaultAdminPrompt('');
+            // Optionally close modal or keep it open
+            // setIsModalOpen(false);
+
+        } catch (error) {
+            console.error('Error updating admin default prompt:', error);
+            setError(error instanceof Error ? error.message : 'An unexpected error occurred while updating admin prompt');
         } finally {
             setIsLoading(false);
         }
@@ -330,8 +411,8 @@ const CustomerSearch: React.FC = () => {
     };
 
     return (
-        <div className="bg-white shadow-md rounded-lg overflow-hidden p-6 relative">
-            <h2 className="text-2xl font-bold mb-4">Customer Search</h2>
+        <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden p-6 relative">
+            <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">Customer Search</h2>
             <div>
                 <form onSubmit={handleSearch} className="mb-4">
                     <div className="flex mb-2">
@@ -340,35 +421,35 @@ const CustomerSearch: React.FC = () => {
                             placeholder="Search customers..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="flex-grow px-3 py-2 border rounded-l"
+                            className="flex-grow px-3 py-2 border rounded-l dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                         />
-                        <button type="submit" className="px-4 py-2 bg-black text-white rounded-r" disabled={isLoading}>
+                        <button type="submit" className="px-4 py-2 bg-black text-white rounded-r dark:bg-blue-600 dark:hover:bg-blue-700" disabled={isLoading}>
                             {isLoading ? 'Searching...' : 'Search'}
                         </button>
                     </div>
                     <button
                         type="button"
                         onClick={handleViewAll}
-                        className="w-full px-4 py-2 bg-gray-200 text-gray-800 rounded"
+                        className="w-full px-4 py-2 bg-gray-200 text-gray-800 rounded dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500"
                         disabled={isLoading}
                     >
                         {isLoading ? 'Loading...' : 'View All'}
                     </button>
                 </form>
 
-                {error && <p className="text-red-500 mb-4">{error}</p>}
+                {error && <p className="text-red-500 dark:text-red-400 mb-4">{error}</p>}
 
                 {searchResults.length > 0 && (
                     <div className="mt-6">
-                        <h3 className="text-lg font-semibold mb-2">Search Results</h3>
+                        <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Search Results</h3>
                         <ul className="space-y-2">
                             {searchResults.map((customer, index) => (
                                 <li
                                     key={index}
                                     className={`p-2 rounded ${
                                         selectedCustomer && selectedCustomer.email === customer.email
-                                            ? 'bg-emerald-500 text-white'
-                                            : 'bg-gray-100 hover:bg-gray-200'
+                                            ? 'bg-emerald-500 text-white' // Selected state remains the same
+                                            : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600'
                                     }`}
                                 >
                                     <div className="flex justify-between items-center">
@@ -376,16 +457,16 @@ const CustomerSearch: React.FC = () => {
                                             className="cursor-pointer"
                                             onClick={() => handleCustomerSelect(customer)}
                                         >
-                                            <p className={`text-sm ${selectedCustomer && selectedCustomer.email === customer.email ? 'text-white' : 'text-gray-600'}`}>
+                                            <p className={`text-sm ${selectedCustomer && selectedCustomer.email === customer.email ? 'text-white' : 'text-gray-600 dark:text-gray-300'}`}>
                                                 Email: {customer.email}
                                             </p>
-                                            <p className={`text-sm ${selectedCustomer && selectedCustomer.email === customer.email ? 'text-white' : 'text-gray-600'}`}>
+                                            <p className={`text-sm ${selectedCustomer && selectedCustomer.email === customer.email ? 'text-white' : 'text-gray-600 dark:text-gray-300'}`}>
                                                 Account ID: {customer.fbAccountId ?? 'Not assigned'}
                                             </p>
                                         </div>
                                         <button
                                             onClick={() => handleManagePrompt(customer.email)}
-                                            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                                            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700"
                                         >
                                             Manage Default Prompt
                                         </button>
@@ -402,20 +483,20 @@ const CustomerSearch: React.FC = () => {
                             placeholder="Assign Account ID"
                             value={fbAccountId}
                             onChange={(e) => setFbAccountId(e.target.value)}
-                            className="w-full px-3 py-2 border rounded"
+                            className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                         />
                         {selectedCustomer && selectedCustomer.fbAccountId === undefined && (
-                            <p className="text-red-500 text-sm">This user does not yet have a Facebook Account ID</p>
+                            <p className="text-red-500 dark:text-red-400 text-sm">This user does not yet have a Facebook Account ID</p>
                         )}
                         <button
                             type="submit"
-                            className="w-full px-4 py-2 text-white rounded bg-teal-600 hover:bg-teal-700"
+                            className="w-full px-4 py-2 text-white rounded bg-teal-600 hover:bg-teal-700 dark:bg-teal-700 dark:hover:bg-teal-800"
                             disabled={isLoading}
                         >
                             Assign Account ID
                         </button>
                         {successMessage && (
-                            <p className="text-green-500 text-sm">{successMessage}</p>
+                            <p className="text-green-500 dark:text-green-400 text-sm">{successMessage}</p>
                         )}
                     </form>
 
@@ -425,20 +506,20 @@ const CustomerSearch: React.FC = () => {
                             placeholder="Assign Page ID"
                             value={fbPageId}
                             onChange={(e) => setFbPageId(e.target.value)}
-                            className="w-full px-3 py-2 border rounded"
+                            className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                         />
                         {selectedCustomer && selectedCustomer.fbPageId === undefined && (
-                            <p className="text-red-500 text-sm">This user does not yet have a Facebook Page ID</p>
+                            <p className="text-red-500 dark:text-red-400 text-sm">This user does not yet have a Facebook Page ID</p>
                         )}
                         <button
                             type="submit"
-                            className="w-full px-4 py-2 text-white rounded bg-blue-600 hover:bg-blue-700"
+                            className="w-full px-4 py-2 text-white rounded bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
                             disabled={isLoading}
                         >
                             Assign Page ID
                         </button>
                         {pageIdSuccessMessage && (
-                            <p className="text-green-500 text-sm">{pageIdSuccessMessage}</p>
+                            <p className="text-green-500 dark:text-green-400 text-sm">{pageIdSuccessMessage}</p>
                         )}
                     </form>
                 </div>
@@ -446,20 +527,22 @@ const CustomerSearch: React.FC = () => {
 
             {/* Modal */}
             {isModalOpen && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                    <div className="bg-white p-6 rounded-lg w-full max-w-md">
-                        <h2 className="text-xl font-bold mb-4">Manage Default Prompt</h2>
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"> {/* Added z-50 */}
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-lg w-full max-w-md shadow-xl"> {/* Added shadow-xl */}
+                        <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-gray-100">Manage Default Prompt</h2>
                         <div className="mb-4">
-                            <label className="block text-sm font-medium text-gray-700">Email</label>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
                             <input
                                 type="text"
                                 value={selectedEmail}
                                 onChange={(e) => setSelectedEmail(e.target.value)}
-                                className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm"
+                                className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm dark:text-white"
+                                readOnly // Make email read-only in modal
                             />
                         </div>
+                        {/* Removed duplicate Default User Prompt section */}
                         <div className="mb-4">
-                            <label htmlFor="defaultPrompt" className="block text-sm font-medium text-gray-700">
+                            <label htmlFor="defaultPrompt" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                                 Default User Prompt
                             </label>
                             <textarea
@@ -467,29 +550,64 @@ const CustomerSearch: React.FC = () => {
                                 value={defaultPrompt}
                                 onChange={(e) => setDefaultPrompt(e.target.value)}
                                 rows={4}
-                                className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                                className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 dark:text-white"
                             />
                         </div>
-                        {error && <p className="text-red-500 mb-2">{error}</p>}
-                        {isLoading && <p className="text-blue-500 mb-2">Loading...</p>}
-                        <div className="flex justify-end space-x-2">
-                            <button
-                                onClick={handleFetchPrompt}
-                                className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
+                        {/* Re-added Textarea for Admin Default Prompt */}
+                        <div className="mb-4">
+                            <label htmlFor="defaultAdminPrompt" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Default Admin Prompt
+                            </label>
+                            <textarea
+                                id="defaultAdminPrompt"
+                                value={defaultAdminPrompt}
+                                onChange={(e) => setDefaultAdminPrompt(e.target.value)}
+                                rows={4}
+                                className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 dark:text-white"
+                            />
+                        </div>
+                        {error && <p className="text-red-500 dark:text-red-400 mb-2">{error}</p>}
+                        {successMessage && <p className="text-green-500 dark:text-green-400 mb-2">{successMessage}</p>}
+                        {isLoading && <p className="text-blue-500 dark:text-blue-400 mb-2">Loading...</p>}
+                        <div className="flex flex-col gap-4 justify-end mt-4"> {/* Added mt-4 */}
+                             {/* Fetch Button - Fetches both prompts */}
+                             <button
+                                onClick={async () => {
+                                    setIsLoading(true);
+                                    setError(null);
+                                    setSuccessMessage(null);
+                                    await handleFetchPrompt();
+                                    await handleFetchAdminPrompt(); // Re-added handleFetchAdminPrompt call
+                                    setIsLoading(false);
+                                }}
+                                className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500"
                                 disabled={isLoading}
                             >
-                                Fetch
+                                Fetch Both
                             </button>
+                            {/* Update User Prompt Button */}
                             <button
                                 onClick={handleUpdatePrompt}
-                                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                                className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700"
                                 disabled={isLoading}
                             >
-                                Update
+                                Update User Prompt
+                            </button>
+                             {/* Re-added Update Admin Prompt Button */}
+                            <button
+                                onClick={handleUpdateAdminPrompt}
+                                className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 dark:bg-purple-600 dark:hover:bg-purple-700"
+                                disabled={isLoading}
+                            >
+                                Update Admin Prompt
                             </button>
                             <button
-                                onClick={() => setIsModalOpen(false)}
-                                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                                onClick={() => {
+                                    setIsModalOpen(false);
+                                    setError(null); // Clear error when closing
+                                    setSuccessMessage(null); // Clear success message when closing
+                                }}
+                                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700"
                             >
                                 Close
                             </button>

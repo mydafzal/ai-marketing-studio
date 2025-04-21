@@ -20,6 +20,14 @@ import { useParams } from 'next/navigation'
 import { useAIState } from 'ai/rsc'
 import { Message } from '@/lib/types'
 import { getMimeType } from '@/lib/utils'
+import { 
+  Dialog, 
+  DialogTrigger, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle
+} from '@/components/ui/dialog'
+import { Zap, BarChart, PieChart, Download, DollarSign, Power, LifeBuoy, Plus } from 'lucide-react'
 
 export interface PromtFormProps {
   onSendMessage: (message: string, userContent?: (TextPart | ImagePart | FilePart)[]) => Promise<void>
@@ -27,6 +35,102 @@ export interface PromtFormProps {
 const MAX_IMAGE_SIZE = 4 * 1024 * 1024;
 const MAX_VIDEO_SIZE = 1 * 1024 * 1024 * 1024;
 const CHUNK_VIDEO_SIZE = 4 * 1024 * 1024;
+
+interface QuickActionProps {
+  icon: React.ReactNode;
+  label: string;
+  message: string;
+  onAction: (message: string) => Promise<void>;
+}
+
+function QuickAction({ icon, label, message, onAction }: QuickActionProps) {
+  return (
+    <button 
+      className="flex items-center gap-3 w-full p-3 text-left rounded-lg hover:bg-[#1E2336] transition-colors bg-[#151925] border border-[#2A2E3A]"
+      onClick={() => onAction(message)}
+    >
+      <div className="flex-shrink-0 w-9 h-9 rounded-full bg-[#0A0C14] flex items-center justify-center">
+        {icon}
+      </div>
+      <span className="text-white font-medium">{label}</span>
+    </button>
+  );
+}
+
+function QuickActionsDialog({ onSendMessage }: { onSendMessage: (message: string) => Promise<void> }) {
+  const [open, setOpen] = React.useState(false);
+  
+  const handleAction = async (message: string) => {
+    await onSendMessage(message);
+    setOpen(false);
+  };
+  
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button
+          variant="outline"
+          size="icon"
+          className="absolute left-0 top-[14px] size-8 rounded-full bg-light-container border-border-dark p-0 sm:left-4 hover:bg-light-container/80 hover:border-border-dark/80 transition-colors"
+        >
+          <Zap className="size-4 text-primary-green" />
+          <span className="sr-only">Quick Actions</span>
+        </Button>
+      </DialogTrigger>
+      
+      <DialogContent className="bg-[#1A1D29] border-[#2A2E3A] text-white">
+        <DialogHeader>
+          <DialogTitle className="text-xl font-semibold text-white">Quick Actions</DialogTitle>
+        </DialogHeader>
+        
+        <div className="mt-4 grid gap-3">
+          <QuickAction 
+            icon={<Plus className="size-5 text-primary-green" />}
+            label="Create a campaign" 
+            message="I want to create a campaign" 
+            onAction={handleAction}
+          />
+          <QuickAction 
+            icon={<BarChart className="size-5 text-primary-green" />}
+            label="View Campaign Results" 
+            message="What are the results of my campaign?" 
+            onAction={handleAction}
+          />
+          <QuickAction 
+            icon={<PieChart className="size-5 text-primary-green" />}
+            label="Analyse Campaign Results" 
+            message="Analyse my campaign results in detail" 
+            onAction={handleAction}
+          />
+          <QuickAction 
+            icon={<Download className="size-5 text-primary-green" />}
+            label="Download Leads of my Campaign" 
+            message="I want to download leads from my campaign" 
+            onAction={handleAction}
+          />
+          <QuickAction 
+            icon={<DollarSign className="size-5 text-primary-green" />}
+            label="Change my Campaign Budget" 
+            message="I would like to change my campaign budget" 
+            onAction={handleAction}
+          />
+          <QuickAction 
+            icon={<Power className="size-5 text-primary-green" />}
+            label="Turn my Campaign On/Off" 
+            message="I want to turn my campaign on/off" 
+            onAction={handleAction}
+          />
+          <QuickAction 
+            icon={<LifeBuoy className="size-5 text-primary-green" />}
+            label="Contact Support" 
+            message="I need help from support" 
+            onAction={handleAction}
+          />
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
  interface ChunkUploadProps {
   file_size?: number;
@@ -353,12 +457,13 @@ export function PromptForm({
           accept="video/*"
           onChange={handleVideoFileChange}
         />
+        {/* Hidden Upload Button */}
         <Popover open={openUploadMenu} onOpenChange={setOpenUploadMenu}>
           <PopoverTrigger asChild>
             <Button
               variant="outline"
               size="icon"
-              className="absolute left-0 top-[14px] size-8 rounded-full bg-light-container border-border-dark p-0 sm:left-4 hover:bg-light-container/80 hover:border-border-dark/80 transition-colors"
+              className="absolute left-0 top-[14px] size-8 rounded-full bg-light-container border-border-dark p-0 sm:left-4 hover:bg-light-container/80 hover:border-border-dark/80 transition-colors hidden"
               disabled={uploading}
               onClick={() => setOpenUploadMenu(!openUploadMenu)}
             >
@@ -390,6 +495,9 @@ export function PromptForm({
             </div>
           </PopoverContent>
         </Popover>
+        
+        {/* Quick Actions Button */}
+        <QuickActionsDialog onSendMessage={onSendMessage} />
         <Textarea
           ref={inputRef}
           disabled={isTextareaDisabled}

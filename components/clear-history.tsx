@@ -67,13 +67,25 @@ export function ClearHistory({
             onClick={event => {
               event.preventDefault()
               startTransition(async () => {
-                const result = await clearChats()
-                if (result && 'error' in result) {
-                  toast.error(result.error)
-                  return
+                try {
+                  const result = await clearChats()
+                  
+                  if (result && 'error' in result) {
+                    toast.error(result.error)
+                    return
+                  }
+                  
+                  // Success feedback
+                  toast.success('Chat history cleared')
+                  setOpen(false)
+                  
+                  // Force a complete page reload after a short delay to allow toast to show
+                  setTimeout(() => {
+                    window.location.href = '/'
+                  }, 300)
+                } catch (error: any) {
+                  toast.error(error.message || 'Failed to clear chat history')
                 }
-
-                setOpen(false)
               })
             }}
           >
