@@ -358,7 +358,7 @@ export function PromptForm({
             <Button
               variant="outline"
               size="icon"
-              className="absolute left-0 top-[14px] size-8 rounded-full bg-light-container border-border-dark p-0 sm:left-4 hover:bg-light-container/80 hover:border-border-dark/80 transition-colors"
+              className="absolute left-0 top-[14px] size-8 rounded-full bg-light-container border-border-dark p-0 sm:left-4 hover:bg-light-container/80 hover:border-border-dark/80 transition-colors hidden"
               disabled={uploading}
               onClick={() => setOpenUploadMenu(!openUploadMenu)}
             >
