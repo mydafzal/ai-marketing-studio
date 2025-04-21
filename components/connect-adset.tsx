@@ -152,12 +152,13 @@ export function ConnectAdsetForm({
                 await handleCreateAdset()
               }}
               className={cn(
-                'flex justify-center items-center gap-2 flex-1 h-12 px-6',
+                'justify-center items-center gap-2 flex-1 h-12 px-6',
                 'text-[#0A0C14] font-medium rounded-lg',
                 'bg-[#4BF29C] hover:bg-[#3AD88C]',
                 'transition-colors duration-200',
                 'disabled:opacity-50 disabled:cursor-not-allowed',
-                'focus:outline-none focus:ring-2 focus:ring-[#4BF29C]'
+                'focus:outline-none focus:ring-2 focus:ring-[#4BF29C]',
+                'hidden' // Hide the button since we're using the one below
               )}
             >
               {isCreating ? (
@@ -189,6 +190,7 @@ export function ConnectAdsetForm({
               'transition-colors duration-200',
               'disabled:opacity-50 disabled:cursor-not-allowed',
               'focus:outline-none focus:ring-2 focus:ring-[#4BF29C]'
+              // Removed the 'hidden' class that was conflicting with 'flex'
             )}
           >
             {isCreating ? (
