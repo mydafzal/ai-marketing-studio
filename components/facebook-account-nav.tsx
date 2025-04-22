@@ -312,16 +312,30 @@ const FacebookAccountNav = ({
               console.log('Paired Page ID:', pairedPageId);
               console.log('Current Page ID:', userDetails.fbPageId);
               
-              if (pairedPageId === userDetails.fbPageId) {
-                console.log('Looking for Instagram account with ID:', instagramId);
+              // Compare as strings to handle potential type differences
+              if (String(pairedPageId) === String(userDetails.fbPageId)) {
+                console.log('Page IDs match, looking for Instagram account with ID:', instagramId);
+                
+                // Log full detailed comparison for debugging
+                console.log('Instagram data type:', typeof data);
+                console.log('Instagram data structure sample:', data.length > 0 ? data[0] : 'No accounts');
+                console.log('Instagram id value format:', data.length > 0 ? typeof data[0].id : 'N/A');
+                console.log('Looking for exact match on:', instagramId, 'type:', typeof instagramId);
+                console.log('All available IDs:', data.map(acc => acc.id));
                 
                 // First try exact match
                 let instagramAccount = data.find((acc: Account) => acc.id === instagramId);
                 
                 // If not found, try with string conversion (in case of type mismatch)
                 if (!instagramAccount) {
+                  console.log('No exact match found, trying string comparison');
                   instagramAccount = data.find((acc: Account) => String(acc.id) === String(instagramId));
-                  console.log('Trying string comparison for Instagram account ID match');
+                  // Try case insensitive comparison as well
+                  if (!instagramAccount) {
+                    console.log('Trying case-insensitive comparison');
+                    instagramAccount = data.find((acc: Account) => 
+                      String(acc.id).toLowerCase() === String(instagramId).toLowerCase());
+                  }
                 }
                 
                 if (instagramAccount) {
@@ -330,9 +344,30 @@ const FacebookAccountNav = ({
                 } else {
                   console.log('Could not find Instagram account with ID:', instagramId);
                   console.log('Available Instagram account IDs:', data.map((acc: Account) => acc.id));
+                  
+                  // Additional attempt: Try searching through various potential ID formatting
+                  console.log('Trying additional Instagram ID matching methods');
+                  
+                  // Sometimes Instagram IDs have different formats in different APIs
+                  // Try matching just by digits if it's a numeric ID
+                  const numericInstagramId = String(instagramId).replace(/\D/g, '');
+                  const numericMatch = data.find((acc: Account) => 
+                    String(acc.id).replace(/\D/g, '') === numericInstagramId);
+                  
+                  if (numericMatch) {
+                    console.log('Found Instagram account by numeric ID match:', numericMatch);
+                    setSelectedInstagramAccount(numericMatch);
+                  } else {
+                    // If all else fails and we have accounts, select the first one
+                    if (data.length > 0) {
+                      console.log('No matching Instagram account found, using first account as fallback:', data[0]);
+                      setSelectedInstagramAccount(data[0]);
+                    }
+                  }
                 }
               } else {
-                console.log('Instagram pairing page ID doesn\'t match current page ID');
+                console.log(`Instagram pairing page ID (${pairedPageId}) doesn't match current page ID (${userDetails.fbPageId})`);
+                console.log('Type comparison:', typeof pairedPageId, typeof userDetails.fbPageId);
               }
             } else {
               console.log('Instagram pairing format invalid - should be "instagramId.fbPageId"');
