@@ -31,35 +31,63 @@ const FBAccountDropdown = ({ title, selectedAcccount, accounts, handleAccountCha
 
 	return (
         <div className={cn("mb-4", className)}>
-            <p className="text-black dark:text-white mb-1 text-xs font-medium">{title}</p>
+            {isNavBar ? (
+              <p className="text-zinc-500 dark:text-zinc-400 mb-1 text-[10px] uppercase font-medium tracking-wider">{title}</p>
+            ) : (
+              <p className="text-black dark:text-white mb-1 text-xs font-medium">{title}</p>
+            )}
             <DropdownMenu.Root>
                 <DropdownMenu.Trigger asChild>
                     <button
                         className={cn(
-                            "flex border px-2 py-1 items-center justify-between rounded bg-white text-black outline-none",
-                            "hover:bg-zinc-50 focus:shadow-[0_0_0_2px] focus:shadow-black dark:text-black",
-                            isNavBar ? "min-h-[40px] min-w-[180px]" : "min-h-[55px] min-w-[220px]"
+                            "flex items-center justify-between rounded outline-none transition-colors",
+                            isNavBar 
+                                ? "min-h-[32px] min-w-[150px] px-3 py-1 bg-transparent hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-800 dark:text-zinc-200" 
+                                : "min-h-[55px] min-w-[220px] px-2 py-1 border bg-white text-black hover:bg-zinc-50 dark:text-black focus:shadow-[0_0_0_2px] focus:shadow-black"
                         )}
                         aria-label={`Select ${title}`}
                     >
                         {selectedAcccount ? 
                             <div className="flex-1 text-left flex items-center gap-2 overflow-hidden">
-                                {selectedAcccount.profile_picture_url && (
+                                {selectedAcccount.profile_picture_url && isNavBar && (
                                   <img 
                                     src={selectedAcccount.profile_picture_url} 
                                     alt={selectedAcccount.name} 
-                                    className={cn("rounded-full object-cover", isNavBar ? "w-6 h-6" : "w-8 h-8")}
+                                    className="w-5 h-5 rounded-full object-cover"
+                                  />
+                                )}
+                                {selectedAcccount.profile_picture_url && !isNavBar && (
+                                  <img 
+                                    src={selectedAcccount.profile_picture_url} 
+                                    alt={selectedAcccount.name} 
+                                    className="w-8 h-8 rounded-full object-cover"
                                   />
                                 )}
                                 <div className="overflow-hidden">
-                                  <p className={cn("text-black truncate", isNavBar ? "text-sm" : "text-lg")}>{selectedAcccount.name}</p>
-                                  <p className="text-xs text-black truncate">{selectedAcccount.id}</p>
+                                  <p className={cn(
+                                    "truncate", 
+                                    isNavBar ? "text-xs font-medium text-zinc-800 dark:text-zinc-200" : "text-lg text-black"
+                                  )}>
+                                    {selectedAcccount.name}
+                                  </p>
+                                  {isNavBar ? (
+                                    <p className="text-[10px] text-zinc-500 dark:text-zinc-400 truncate">{selectedAcccount.id}</p>
+                                  ) : (
+                                    <p className="text-xs text-black truncate">{selectedAcccount.id}</p>
+                                  )}
                                 </div>
                             </div>
                             :
-                            <span className="text-black">{isNavBar ? "Select" : "Click to Select"}</span>
+                            <span className={cn(
+                              isNavBar ? "text-xs text-zinc-500 dark:text-zinc-400" : "text-black"
+                            )}>
+                              {isNavBar ? "Select" : "Click to Select"}
+                            </span>
                         }
-                        <ChevronDownIcon className="text-black ml-1 flex-shrink-0"/>
+                        <ChevronDownIcon className={cn(
+                          "ml-1 flex-shrink-0",
+                          isNavBar ? "h-3 w-3 text-zinc-500 dark:text-zinc-400" : "text-black"
+                        )}/>
                     </button>
                 </DropdownMenu.Trigger>
 

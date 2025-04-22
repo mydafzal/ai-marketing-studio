@@ -9,7 +9,7 @@ export default async function ChatLayout({ children }: ChatLayoutProps) {
   return (
     <>
       <FacebookAccountNavServer />
-      <div className="relative flex h-[calc(100vh_-_theme(spacing.32))] overflow-hidden mt-16">
+      <div className="relative flex h-[calc(100vh_-_theme(spacing.28))] overflow-hidden mt-12">
         <SidebarDesktop />
         {children}
       </div>
