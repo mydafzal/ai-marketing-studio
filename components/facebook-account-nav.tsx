@@ -395,112 +395,249 @@ const FacebookAccountNav = ({
 
   async function selectBusinessAccount(id: string) {
     if (fbBusinessAccs && userDetails) {
-      setSelectedFbBusinessAcc(fbBusinessAccs.find((acc) => acc.id === id))
-      await updateFbBusinessAcc(userDetails?.email, id)
-      
-      // Reset page and Instagram selection when business account changes
-      setSelectedFbPage(undefined)
-      setSelectedInstagramAccount(undefined)
-      setInstagramAccounts(undefined)
-      
-      // Fetch pages for the selected business account
-      await getFacebookPages(id)
+      console.log('Selecting business account:', id);
+      const selectedAcc = fbBusinessAccs.find((acc) => acc.id === id);
+      if (selectedAcc) {
+        console.log('Found business account to select:', selectedAcc);
+        setSelectedFbBusinessAcc(selectedAcc);
+        
+        try {
+          console.log('Updating business account in database...');
+          const result = await updateFbBusinessAcc(userDetails.email, id);
+          console.log('Business account update result:', result);
+          
+          // Reset page and Instagram selection when business account changes
+          setSelectedFbPage(undefined);
+          setSelectedInstagramAccount(undefined);
+          setInstagramAccounts(undefined);
+          
+          // Fetch pages for the selected business account
+          console.log('Fetching pages for newly selected business account');
+          await getFacebookPages(id);
+        } catch (error) {
+          console.error('Error updating business account ID in database:', error);
+        }
+      } else {
+        console.error('Could not find business account with ID:', id);
+      }
+    } else {
+      console.error('Cannot select business account - missing data:', { 
+        hasFbBusinessAccs: !!fbBusinessAccs, 
+        hasUserDetails: !!userDetails 
+      });
     }
   }
 
   async function selectAdAccount(id: string) {
     if (fbAdAccs && userDetails) {
-      setSelectedFbAdAcc(fbAdAccs.find((acc) => acc.id === id))
-      await updateFbAccountId(userDetails?.email, id)
+      console.log('Selecting ad account:', id);
+      const selectedAcc = fbAdAccs.find((acc) => acc.id === id);
+      if (selectedAcc) {
+        console.log('Found ad account to select:', selectedAcc);
+        setSelectedFbAdAcc(selectedAcc);
+        
+        try {
+          console.log('Updating ad account in database...');
+          const result = await updateFbAccountId(userDetails.email, id);
+          console.log('Ad account update result:', result);
+        } catch (error) {
+          console.error('Error updating ad account ID in database:', error);
+        }
+      } else {
+        console.error('Could not find ad account with ID:', id);
+      }
+    } else {
+      console.error('Cannot select ad account - missing data:', { 
+        hasFbAdAccs: !!fbAdAccs, 
+        hasUserDetails: !!userDetails 
+      });
     }
   }
   
   async function selectPage(id: string) {
     if (fbPages && userDetails) {
-      const selectedPage = fbPages.find((page) => page.id === id)
-      setSelectedFbPage(selectedPage)
-      
-      try {
-        const result = await updateFbPageId(userDetails.email, id)
+      console.log('Selecting Facebook page:', id);
+      const selectedPage = fbPages.find((page) => page.id === id);
+      if (selectedPage) {
+        console.log('Found page to select:', selectedPage);
+        setSelectedFbPage(selectedPage);
         
-        if (result.success) {
-          // When a Facebook page is selected, fetch Instagram accounts
-          await getInstagramAccounts()
+        try {
+          console.log('Updating page ID in database...');
+          const result = await updateFbPageId(userDetails.email, id);
+          console.log('Page update result:', result);
+          
+          if (result.success) {
+            console.log('Page ID updated successfully, fetching Instagram accounts');
+            // When a Facebook page is selected, fetch Instagram accounts
+            await getInstagramAccounts();
+          } else {
+            console.error('Failed to update page ID in database:', result);
+          }
+        } catch (error) {
+          console.error('Exception updating page ID:', error);
         }
-      } catch (error) {
-        console.error('Exception updating page ID:', error)
+      } else {
+        console.error('Could not find page with ID:', id);
       }
+    } else {
+      console.error('Cannot select page - missing data:', { 
+        hasFbPages: !!fbPages, 
+        hasUserDetails: !!userDetails 
+      });
     }
   }
   
   async function selectInstagramAccount(id: string) {
     if (instagramAccounts && userDetails && selectedFbPage) {
-      const selectedAccount = instagramAccounts.find((account) => account.id === id)
-      setSelectedInstagramAccount(selectedAccount)
-      
-      try {
-        const response = await fetch('/api/kv/update-instagram-account-id', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
+      console.log('Selecting Instagram account:', id);
+      const selectedAccount = instagramAccounts.find((account) => account.id === id);
+      if (selectedAccount) {
+        console.log('Found Instagram account to select:', selectedAccount);
+        setSelectedInstagramAccount(selectedAccount);
+        
+        try {
+          console.log('Updating Instagram account ID in database...');
+          console.log('Data being sent:', {
             email: userDetails.email,
             instagramAccountId: id,
             fbPageId: selectedFbPage.id
-          })
-        })
-        
-        if (!response.ok) {
-          const errorData = await response.json()
-          throw new Error(errorData.error || 'Failed to update Instagram account ID')
+          });
+          
+          const response = await fetch('/api/kv/update-instagram-account-id', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              email: userDetails.email,
+              instagramAccountId: id,
+              fbPageId: selectedFbPage.id
+            })
+          });
+          
+          if (!response.ok) {
+            const errorData = await response.json();
+            console.error('Server returned an error:', errorData);
+            throw new Error(errorData.error || 'Failed to update Instagram account ID');
+          }
+          
+          const result = await response.json();
+          console.log('Instagram account update result:', result);
+        } catch (error) {
+          console.error('Error updating Instagram account ID:', error);
         }
-      } catch (error) {
-        console.error('Error updating Instagram account ID:', error)
+      } else {
+        console.error('Could not find Instagram account with ID:', id);
       }
+    } else {
+      console.error('Cannot select Instagram account - missing data:', { 
+        hasInstagramAccounts: !!instagramAccounts, 
+        hasUserDetails: !!userDetails,
+        hasSelectedFbPage: !!selectedFbPage
+      });
     }
   }
+
+  // State to track save status
+  const [saveStatus, setSaveStatus] = useState<{
+    type: 'business' | 'ad' | 'page' | 'instagram' | null;
+    status: 'saving' | 'success' | 'error' | null;
+    message: string | null;
+  }>({ type: null, status: null, message: null });
+
+  // Function to show save status
+  const showSaveStatus = (type: 'business' | 'ad' | 'page' | 'instagram', status: 'saving' | 'success' | 'error', message: string = '') => {
+    setSaveStatus({ type, status, message });
+    
+    // Clear status after 3 seconds
+    setTimeout(() => {
+      setSaveStatus({ type: null, status: null, message: null });
+    }, 3000);
+  };
 
   return (
     <div className="fixed top-16 left-0 right-0 z-40 bg-gradient-to-r from-zinc-50 via-white to-zinc-50 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950 border-b border-zinc-200 dark:border-zinc-800 h-12 px-4 shadow-sm">
       <div className="max-w-screen-xl mx-auto h-full flex items-center justify-center">
         <div className="flex items-center justify-center gap-2 overflow-x-auto scrollbar-thin scrollbar-thumb-transparent hover:scrollbar-thumb-zinc-200 py-1 px-2 bg-white dark:bg-zinc-900 shadow-sm rounded-full mx-auto border border-zinc-100 dark:border-zinc-800">
-          <div className="flex items-center">
+          <div className="flex items-center relative">
             <span className="text-zinc-500 dark:text-zinc-400 text-[9px] font-medium tracking-wide mr-2 whitespace-nowrap">Business Account</span>
             <FBAccountDropdown
               title="Business"
               selectedAcccount={selectedFbBusinessAcc}
               accounts={fbBusinessAccs}
-              handleAccountChange={selectBusinessAccount}
+              handleAccountChange={(id) => {
+                showSaveStatus('business', 'saving', 'Updating business account...');
+                selectBusinessAccount(id)
+                  .then(() => showSaveStatus('business', 'success', 'Business account updated'))
+                  .catch(() => showSaveStatus('business', 'error', 'Failed to update business account'));
+              }}
               className="nav-bar m-0"
             />
+            {saveStatus.type === 'business' && saveStatus.status && (
+              <div className={`absolute -top-6 -right-2 text-[10px] font-medium py-1 px-2 rounded-md ${
+                saveStatus.status === 'saving' ? 'bg-yellow-100 text-yellow-800' :
+                saveStatus.status === 'success' ? 'bg-green-100 text-green-800' :
+                'bg-red-100 text-red-800'
+              }`}>
+                {saveStatus.message}
+              </div>
+            )}
           </div>
           
           <div className="h-4 w-px bg-zinc-200 dark:bg-zinc-700 mx-1"></div>
           
-          <div className="flex items-center">
+          <div className="flex items-center relative">
             <span className="text-zinc-500 dark:text-zinc-400 text-[9px] font-medium tracking-wide mr-2 whitespace-nowrap">Ad Account</span>
             <FBAccountDropdown
               title="Ads"
               selectedAcccount={selectedFbAdAcc}
               accounts={fbAdAccs}
-              handleAccountChange={selectAdAccount}
+              handleAccountChange={(id) => {
+                showSaveStatus('ad', 'saving', 'Updating ad account...');
+                selectAdAccount(id)
+                  .then(() => showSaveStatus('ad', 'success', 'Ad account updated'))
+                  .catch(() => showSaveStatus('ad', 'error', 'Failed to update ad account'));
+              }}
               className="nav-bar m-0"
             />
+            {saveStatus.type === 'ad' && saveStatus.status && (
+              <div className={`absolute -top-6 -right-2 text-[10px] font-medium py-1 px-2 rounded-md ${
+                saveStatus.status === 'saving' ? 'bg-yellow-100 text-yellow-800' :
+                saveStatus.status === 'success' ? 'bg-green-100 text-green-800' :
+                'bg-red-100 text-red-800'
+              }`}>
+                {saveStatus.message}
+              </div>
+            )}
           </div>
           
           {fbPages && (
             <>
               <div className="h-4 w-px bg-zinc-200 dark:bg-zinc-700 mx-1"></div>
-              <div className="flex items-center">
+              <div className="flex items-center relative">
                 <span className="text-zinc-500 dark:text-zinc-400 text-[9px] font-medium tracking-wide mr-2 whitespace-nowrap">FB Page</span>
                 <FBAccountDropdown
                   title="Page"
                   selectedAcccount={selectedFbPage}
                   accounts={fbPages}
-                  handleAccountChange={selectPage}
+                  handleAccountChange={(id) => {
+                    showSaveStatus('page', 'saving', 'Updating page...');
+                    selectPage(id)
+                      .then(() => showSaveStatus('page', 'success', 'Page updated'))
+                      .catch(() => showSaveStatus('page', 'error', 'Failed to update page'));
+                  }}
                   className="nav-bar m-0"
                 />
+                {saveStatus.type === 'page' && saveStatus.status && (
+                  <div className={`absolute -top-6 -right-2 text-[10px] font-medium py-1 px-2 rounded-md ${
+                    saveStatus.status === 'saving' ? 'bg-yellow-100 text-yellow-800' :
+                    saveStatus.status === 'success' ? 'bg-green-100 text-green-800' :
+                    'bg-red-100 text-red-800'
+                  }`}>
+                    {saveStatus.message}
+                  </div>
+                )}
               </div>
             </>
           )}
@@ -508,15 +645,29 @@ const FacebookAccountNav = ({
           {selectedFbPage && (
             <>
               <div className="h-4 w-px bg-zinc-200 dark:bg-zinc-700 mx-1"></div>
-              <div className="flex items-center">
+              <div className="flex items-center relative">
                 <span className="text-zinc-500 dark:text-zinc-400 text-[9px] font-medium tracking-wide mr-2 whitespace-nowrap">Instagram Account</span>
                 <FBAccountDropdown
                   title="Instagram"
                   selectedAcccount={selectedInstagramAccount}
                   accounts={instagramAccounts || []}
-                  handleAccountChange={selectInstagramAccount}
+                  handleAccountChange={(id) => {
+                    showSaveStatus('instagram', 'saving', 'Updating Instagram account...');
+                    selectInstagramAccount(id)
+                      .then(() => showSaveStatus('instagram', 'success', 'Instagram account updated'))
+                      .catch(() => showSaveStatus('instagram', 'error', 'Failed to update Instagram account'));
+                  }}
                   className="nav-bar m-0"
                 />
+                {saveStatus.type === 'instagram' && saveStatus.status && (
+                  <div className={`absolute -top-6 -right-2 text-[10px] font-medium py-1 px-2 rounded-md ${
+                    saveStatus.status === 'saving' ? 'bg-yellow-100 text-yellow-800' :
+                    saveStatus.status === 'success' ? 'bg-green-100 text-green-800' :
+                    'bg-red-100 text-red-800'
+                  }`}>
+                    {saveStatus.message}
+                  </div>
+                )}
               </div>
             </>
           )}
