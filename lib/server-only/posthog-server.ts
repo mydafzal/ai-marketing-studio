@@ -23,7 +23,7 @@ async function getServerPosthog(): Promise<PostHog> {
 const INTERNAL_EMAILS = ['@reeply.ai', '@reeply.net']
 // const INTERNAL_EMAILS = ['@gmail.com']
 
-export function isInternalUser(email: string) {
+export async function isInternalUser(email: string) {
   return INTERNAL_EMAILS.some((domain) =>
     email.toLowerCase().includes(domain)
   )
@@ -40,7 +40,7 @@ export async function trackServerEvent({
   user,
   properties = {}
 }: TrackServerEventArgs): Promise<void> {
-  if (isInternalUser(user.email)) return
+  if (await isInternalUser(user.email)) return
 
   const encryptedEmail = await encryptEmail(user.email)
   const posthog = await getServerPosthog()

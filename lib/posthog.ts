@@ -15,7 +15,7 @@ export const initPostHog = async () => {
   
   const config = await getConfig();
   if (typeof window !== 'undefined' && !posthog.__loaded) {
-    if (isInternalUser(session.user.email)) return
+    if (await isInternalUser(session.user.email)) return
     posthog.init(config.posthogApiKey, {
       api_host: 'https://eu.i.posthog.com',
       capture_pageview: true,
