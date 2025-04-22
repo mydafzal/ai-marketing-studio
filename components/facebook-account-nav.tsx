@@ -46,31 +46,82 @@ const FacebookAccountNav = ({
   const [instagramAccounts, setInstagramAccounts] = useState<Account[] | undefined>(undefined)
   const [selectedInstagramAccount, setSelectedInstagramAccount] = useState<Account | undefined>(undefined)
 
-  // Fetch business accounts on component mount
-  useEffect(() => {
-    async function getBusinessAPICall() {
-      if (userDetails?.fbMarketingApiKey) {
-        const data = await getFacebookBusinessAccounts(userDetails?.fbMarketingApiKey)
-        setFbBusinessAccs(data)
+  // Function to initialize all accounts based on user details
+  async function initializeAccounts() {
+    console.log('Initializing all accounts from user details:', userDetails);
+    
+    if (!userDetails) return;
+    
+    // First get business accounts
+    if (userDetails.fbMarketingApiKey) {
+      const businessAccounts = await getFacebookBusinessAccounts(userDetails.fbMarketingApiKey);
+      setFbBusinessAccs(businessAccounts);
+      console.log('Fetched business accounts:', businessAccounts);
+      
+      // Find and set selected business account
+      if (userDetails.fbBusinessAccId) {
+        const selectedBusiness = businessAccounts.find(acc => String(acc.id) === String(userDetails.fbBusinessAccId));
+        if (selectedBusiness) {
+          console.log('Setting selected business account:', selectedBusiness);
+          setSelectedFbBusinessAcc(selectedBusiness);
+          
+          // Next get ad accounts for this business
+          if (userDetails.fbMarketingApiKey) {
+            const adAccounts = await getFacebookAdAccounts(userDetails.fbMarketingApiKey, selectedBusiness.id);
+            setFbAdAccs(adAccounts);
+            console.log('Fetched ad accounts:', adAccounts);
+            
+            // Find and set selected ad account
+            if (userDetails.fbAccountId) {
+              const selectedAd = adAccounts.find(acc => String(acc.id) === String(userDetails.fbAccountId));
+              if (selectedAd) {
+                console.log('Setting selected ad account:', selectedAd);
+                setSelectedFbAdAcc(selectedAd);
+              }
+            }
+          }
+          
+          // Next get pages for this business
+          const pages = await getFacebookPages(selectedBusiness.id);
+          // The getFacebookPages function handles page selection and Instagram account fetching
+        }
       }
     }
-    getBusinessAPICall()
+  }
+
+  // Fetch business accounts on component mount
+  useEffect(() => {
+    if (userDetails?.fbMarketingApiKey) {
+      initializeAccounts();
+    }
   }, [userDetails])
 
   // Set selected business account from user details when fbBusinessAccs data is available
   useEffect(() => {
+    console.log('User details loaded:', userDetails);
+    if (userDetails) {
+      console.log('Business account ID:', userDetails.fbBusinessAccId);
+      console.log('Ad account ID:', userDetails.fbAccountId);
+      console.log('Page ID:', userDetails.fbPageId);
+      console.log('Instagram pairing:', userDetails.instagramFbPagePairing);
+    }
+    
     if (userDetails?.fbBusinessAccId && fbBusinessAccs) {
+      console.log('Business accounts available:', fbBusinessAccs.map(acc => ({ id: acc.id, name: acc.name })));
       const businessAcc = fbBusinessAccs.find((acc) => acc.id === `${userDetails?.fbBusinessAccId}`)
+      console.log('Selected business account:', businessAcc || 'Not found');
       setSelectedFbBusinessAcc(businessAcc)
       
       // Fetch pages for existing business account
       if (businessAcc && !fbPages) {
+        console.log('Fetching pages for business account:', businessAcc.id);
         getFacebookPages(businessAcc.id)
       }
     }
     
     // Keep existing simple setting for initial render
     if (userDetails?.fbAccountId && !fbAdAccs) {
+      console.log('Setting initial ad account ID:', userDetails.fbAccountId);
       setSelectedFbAdAcc({
         id: userDetails?.fbAccountId,
         name: userDetails?.fbAccountId.split("act_")[1] || "Loading..."
@@ -78,20 +129,44 @@ const FacebookAccountNav = ({
     }
   }, [fbBusinessAccs, userDetails, fbPages, fbAdAccs])
   
-  // Set selected page when fbPages changes
+  // We've moved the page selection logic to getFacebookPages function for immediate selection
+  // This useEffect is a backup in case the selection in getFacebookPages doesn't work
   useEffect(() => {
-    if (userDetails?.fbPageId && fbPages && fbPages.length > 0) {
-      const page = fbPages.find((page) => page.id === userDetails.fbPageId)
+    if (userDetails?.fbPageId && fbPages && fbPages.length > 0 && !selectedFbPage) {
+      console.log('Backup effect: trying to find page with ID:', userDetails.fbPageId);
+      console.log('Current fbPages:', fbPages.map(page => ({ id: page.id, name: page.name })));
+      
+      // First try exact match
+      let page = fbPages.find((page) => page.id === userDetails.fbPageId);
+      
+      // If not found, try with string conversion (in case of type mismatch)
+      if (!page) {
+        console.log('Trying string comparison for FB page ID match');
+        page = fbPages.find((page) => String(page.id) === String(userDetails.fbPageId));
+      }
+      
       if (page) {
-        setSelectedFbPage(page)
+        console.log('Backup effect: found page to select:', page);
+        setSelectedFbPage(page);
         
         // Fetch Instagram accounts if we have a selected page but no Instagram accounts yet
         if (!instagramAccounts) {
-          getInstagramAccounts()
+          console.log('Backup effect: fetching Instagram accounts for page:', page.id);
+          getInstagramAccounts();
         }
+      } else {
+        console.log('Backup effect: could not find page with ID:', userDetails.fbPageId);
+        console.log('Available page IDs:', fbPages.map((page) => page.id));
       }
+    } else {
+      console.log('Backup effect conditions not met:',
+        'userDetails?.fbPageId:', !!userDetails?.fbPageId,
+        'fbPages:', !!fbPages,
+        'fbPages.length > 0:', fbPages ? fbPages.length > 0 : false,
+        '!selectedFbPage:', !selectedFbPage
+      );
     }
-  }, [fbPages, userDetails?.fbPageId, instagramAccounts])
+  }, [fbPages, userDetails?.fbPageId, instagramAccounts, selectedFbPage])
 
   // Fetch ad accounts when business account changes
   useEffect(() => {
@@ -116,6 +191,7 @@ const FacebookAccountNav = ({
 
   async function getFacebookPages(businessAccountId: string) {
     try {
+      console.log('Get Facebook pages for business account:', businessAccountId);
       const response = await fetch('/api/fasty-bot/proxy-get-facebook-pages', {
         method: 'POST',
         headers: {
@@ -128,50 +204,157 @@ const FacebookAccountNav = ({
       
       if (!response.ok) {
         const errorData = await response.json()
+        console.error('Error response from get FB pages:', errorData);
         throw new Error(errorData.error || 'Failed to fetch Facebook pages')
       }
       
-      const data = await response.json()
-      setFbPages(data)
-      return data
+      // Get raw text first to see exact response
+      const responseText = await response.text();
+      console.log('Raw Facebook pages response:', responseText);
+      
+      // Parse JSON after logging the raw text
+      const data = JSON.parse(responseText);
+      console.log('Parsed Facebook Pages:', data);
+      
+      if (Array.isArray(data)) {
+        setFbPages(data);
+        
+        // Log all pages with their IDs for debugging
+        console.log('Page IDs in response:', data.map(page => ({ id: page.id, name: page.name })));
+        
+        // If user has a selected page ID, find and set it here when pages are first fetched
+        if (userDetails?.fbPageId) {
+          console.log('Looking for page with ID:', userDetails.fbPageId);
+          
+          // First try exact match
+          let page = data.find((page: Account) => page.id === userDetails.fbPageId);
+          
+          // If not found, try with string conversion (in case of type mismatch)
+          if (!page) {
+            page = data.find((page: Account) => String(page.id) === String(userDetails.fbPageId));
+            console.log('Trying string comparison for page ID match');
+          }
+          
+          if (page) {
+            console.log('Found page to autoselect:', page);
+            setSelectedFbPage(page);
+            
+            // Also fetch Instagram accounts if page is found and selected
+            console.log('Fetching Instagram accounts for page:', page.id);
+            getInstagramAccounts();
+          } else {
+            console.log('Page with ID not found in response:', userDetails.fbPageId);
+            console.log('Available page IDs:', data.map((page: Account) => page.id));
+          }
+        } else {
+          console.log('No page ID in user details to select');
+        }
+      } else {
+        console.error('Facebook pages response is not an array:', data);
+      }
+      
+      return data;
     } catch (error) {
-      console.error('Error fetching Facebook pages:', error)
-      return []
+      console.error('Error fetching Facebook pages:', error);
+      return [];
     }
   }
   
   async function getInstagramAccounts() {
     try {
+      console.log('Fetching Instagram accounts');
       const response = await fetch('/api/fasty-bot/proxy-get-instagram-pages', {
         method: 'GET',
       })
       
       if (!response.ok) {
         const errorData = await response.json()
+        console.error('Error response from Instagram accounts fetch:', errorData);
         throw new Error(errorData.error || 'Failed to fetch Instagram accounts')
       }
       
-      const data = await response.json()
-      setInstagramAccounts(data)
+      // Get raw text first to see exact response
+      const responseText = await response.text();
+      console.log('Raw Instagram accounts response:', responseText);
       
-      // Check if we have an Instagram account ID stored in the user data
-      if (userDetails?.instagramFbPagePairing && userDetails?.fbPageId) {
-        // Format is "instagramId.fbPageId"
-        const parts = userDetails.instagramFbPagePairing.split('.')
-        if (parts.length === 2 && parts[1] === userDetails.fbPageId) {
-          const instagramId = parts[0]
-          // Find the account in the fetched data
-          const instagramAccount = data.find((acc: Account) => acc.id === instagramId)
-          if (instagramAccount) {
-            setSelectedInstagramAccount(instagramAccount)
-          }
-        }
+      // Parse JSON after logging the raw text
+      let data;
+      try {
+        data = JSON.parse(responseText);
+        console.log('Parsed Instagram Accounts:', data);
+      } catch (parseError) {
+        console.error('Error parsing Instagram accounts response:', parseError);
+        data = [];
       }
       
-      return data
+      // Always set the accounts even if empty, so the dropdown knows whether to display
+      if (Array.isArray(data)) {
+        setInstagramAccounts(data);
+        
+        // Log all Instagram accounts with their IDs for debugging
+        console.log('Instagram account IDs in response:', data.map((acc: Account) => ({ id: acc.id, name: acc.name })));
+        
+        // Check if we have an Instagram account ID stored in the user data
+        if (userDetails?.instagramFbPagePairing && userDetails?.fbPageId) {
+          console.log('Instagram pairing found:', userDetails.instagramFbPagePairing);
+          
+          try {
+            // Format is "instagramId.fbPageId"
+            const pairingString = String(userDetails.instagramFbPagePairing);
+            const parts = pairingString.split('.');
+            console.log('Instagram pairing parts:', parts);
+            
+            if (parts.length === 2) {
+              const instagramId = parts[0];
+              const pairedPageId = parts[1];
+              
+              console.log('Extracted Instagram ID:', instagramId);
+              console.log('Paired Page ID:', pairedPageId);
+              console.log('Current Page ID:', userDetails.fbPageId);
+              
+              if (pairedPageId === userDetails.fbPageId) {
+                console.log('Looking for Instagram account with ID:', instagramId);
+                
+                // First try exact match
+                let instagramAccount = data.find((acc: Account) => acc.id === instagramId);
+                
+                // If not found, try with string conversion (in case of type mismatch)
+                if (!instagramAccount) {
+                  instagramAccount = data.find((acc: Account) => String(acc.id) === String(instagramId));
+                  console.log('Trying string comparison for Instagram account ID match');
+                }
+                
+                if (instagramAccount) {
+                  console.log('Found Instagram account to autoselect:', instagramAccount);
+                  setSelectedInstagramAccount(instagramAccount);
+                } else {
+                  console.log('Could not find Instagram account with ID:', instagramId);
+                  console.log('Available Instagram account IDs:', data.map((acc: Account) => acc.id));
+                }
+              } else {
+                console.log('Instagram pairing page ID doesn\'t match current page ID');
+              }
+            } else {
+              console.log('Instagram pairing format invalid - should be "instagramId.fbPageId"');
+            }
+          } catch (error) {
+            console.error('Error parsing Instagram account pairing:', error);
+          }
+        } else {
+          console.log('No Instagram pairing found in user details');
+        }
+      } else {
+        console.error('Instagram accounts response is not an array:', data);
+        setInstagramAccounts([]);
+      }
+      
+      return data;
     } catch (error) {
-      console.error('Error fetching Instagram accounts:', error)
-      return []
+      console.error('Error fetching Instagram accounts:', error);
+      // Return empty array but still set state to empty array
+      const emptyArray: Account[] = [];
+      setInstagramAccounts(emptyArray);
+      return emptyArray;
     }
   }
 
@@ -287,7 +470,7 @@ const FacebookAccountNav = ({
             </>
           )}
           
-          {instagramAccounts && (
+          {selectedFbPage && (
             <>
               <div className="h-4 w-px bg-zinc-200 dark:bg-zinc-700 mx-1"></div>
               <div className="flex items-center">
@@ -295,7 +478,7 @@ const FacebookAccountNav = ({
                 <FBAccountDropdown
                   title="Instagram"
                   selectedAcccount={selectedInstagramAccount}
-                  accounts={instagramAccounts}
+                  accounts={instagramAccounts || []}
                   handleAccountChange={selectInstagramAccount}
                   className="nav-bar m-0"
                 />
