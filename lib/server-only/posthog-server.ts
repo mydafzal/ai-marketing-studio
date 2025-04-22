@@ -20,10 +20,10 @@ async function getServerPosthog(): Promise<PostHog> {
   return serverPosthog
 }
 
-// const INTERNAL_EMAILS = ['@reeply.ai', '@reeply.net']
-const INTERNAL_EMAILS = ['@gmail.com']
+const INTERNAL_EMAILS = ['@reeply.ai', '@reeply.net']
+// const INTERNAL_EMAILS = ['@gmail.com']
 
-function isInternalUser(email: string) {
+export function isInternalUser(email: string) {
   return INTERNAL_EMAILS.some((domain) =>
     email.toLowerCase().includes(domain)
   )
