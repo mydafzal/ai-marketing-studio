@@ -55,33 +55,34 @@ const FBAccountDropdown = ({title,selectedAcccount,accounts,handleAccountChange}
                         className="z-[100] min-w-[220px] p-2 flex flex-col bg-white gap-2 rounded-md shadow-[0px_10px_38px_-10px_rgba(22,_23,_24,_0.35),_0px_10px_20px_-15px_rgba(22,_23,_24,_0.2)] will-change-[opacity,transform] data-[side=bottom]:animate-slideUpAndFade data-[side=left]:animate-slideRightAndFade data-[side=right]:animate-slideLeftAndFade data-[side=top]:animate-slideDownAndFade"
                         sideOffset={5}
                     >
-                        {
-                            accounts?accounts.map((account, index) => (
-                                    <div key={index}>
-                                        <DropdownMenu.Item 
-                                            onSelect={()=>handleSelect(account.id)}
-                                            className="mb-1 py-1 group bg-white relative flex select-none items-center rounded px-2 text-xs leading-none text-black outline-none data-[disabled]:pointer-events-none data-[highlighted]:bg-violet9 data-[disabled]:text-black data-[highlighted]:text-white">
-                                                <div className="flex-1 flex items-center gap-2">
-                                                    {account.profile_picture_url && (
-                                                      <img 
-                                                        src={account.profile_picture_url} 
-                                                        alt={account.name} 
-                                                        className="w-6 h-6 rounded-full object-cover"
-                                                      />
-                                                    )}
-                                                    <div>
-                                                      <p className="text-lg text-black data-[highlighted]:text-white">{account.name}</p>
-                                                      <p className="text-black data-[highlighted]:text-white">{account.id}</p>
+                        <div className="max-h-[240px] overflow-y-auto">
+                            {
+                                accounts?accounts.map((account, index) => (
+                                        <div key={index}>
+                                            <DropdownMenu.Item 
+                                                onSelect={()=>handleSelect(account.id)}
+                                                className="mb-1 py-1 group bg-white relative flex select-none items-center rounded px-2 text-xs leading-none text-black outline-none data-[disabled]:pointer-events-none data-[highlighted]:bg-violet9 data-[disabled]:text-black data-[highlighted]:text-white">
+                                                    <div className="flex-1 flex items-center gap-2">
+                                                        {account.profile_picture_url && (
+                                                          <img 
+                                                            src={account.profile_picture_url} 
+                                                            alt={account.name} 
+                                                            className="w-6 h-6 rounded-full object-cover"
+                                                          />
+                                                        )}
+                                                        <div>
+                                                          <p className="text-lg text-black data-[highlighted]:text-white">{account.name}</p>
+                                                          <p className="text-black data-[highlighted]:text-white">{account.id}</p>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                                {account.id==selectedAcccount?.id &&<CheckIcon className="h-4 w-4 text-black"/>}
-                                        </DropdownMenu.Item>
-                                        <div className="border-b border-[#e7e7e7]"></div>
-                                    </div>
-                                )
-                            ):<span className="text-black p-2">No account found</span>
-                        }
-                        
+                                                    {account.id==selectedAcccount?.id &&<CheckIcon className="h-4 w-4 text-black"/>}
+                                            </DropdownMenu.Item>
+                                            <div className="border-b border-[#e7e7e7]"></div>
+                                        </div>
+                                    )
+                                ):<span className="text-black p-2">No account found</span>
+                            }
+                        </div>
                     </DropdownMenu.Content>
                 </DropdownMenu.Portal>
             </DropdownMenu.Root>
