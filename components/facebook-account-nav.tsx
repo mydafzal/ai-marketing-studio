@@ -69,13 +69,14 @@ const FacebookAccountNav = ({
       }
     }
     
-    if (userDetails?.fbAccountId) {
+    // Keep existing simple setting for initial render
+    if (userDetails?.fbAccountId && !fbAdAccs) {
       setSelectedFbAdAcc({
         id: userDetails?.fbAccountId,
-        name: userDetails?.fbAccountId.split("act_")[1]
+        name: userDetails?.fbAccountId.split("act_")[1] || "Loading..."
       })
     }
-  }, [fbBusinessAccs, userDetails])
+  }, [fbBusinessAccs, userDetails, fbPages, fbAdAccs])
   
   // Set selected page when fbPages changes
   useEffect(() => {
@@ -83,9 +84,14 @@ const FacebookAccountNav = ({
       const page = fbPages.find((page) => page.id === userDetails.fbPageId)
       if (page) {
         setSelectedFbPage(page)
+        
+        // Fetch Instagram accounts if we have a selected page but no Instagram accounts yet
+        if (!instagramAccounts) {
+          getInstagramAccounts()
+        }
       }
     }
-  }, [fbPages, userDetails?.fbPageId])
+  }, [fbPages, userDetails?.fbPageId, instagramAccounts])
 
   // Fetch ad accounts when business account changes
   useEffect(() => {
@@ -97,6 +103,16 @@ const FacebookAccountNav = ({
     }
     getAdAccAPICall()
   }, [selectedFbBusinessAcc, userDetails])
+  
+  // Update ad account with proper name when fbAdAccs is loaded
+  useEffect(() => {
+    if (userDetails?.fbAccountId && fbAdAccs && fbAdAccs.length > 0) {
+      const adAccount = fbAdAccs.find(acc => acc.id === userDetails.fbAccountId)
+      if (adAccount) {
+        setSelectedFbAdAcc(adAccount)
+      }
+    }
+  }, [fbAdAccs, userDetails?.fbAccountId])
 
   async function getFacebookPages(businessAccountId: string) {
     try {
@@ -137,6 +153,21 @@ const FacebookAccountNav = ({
       
       const data = await response.json()
       setInstagramAccounts(data)
+      
+      // Check if we have an Instagram account ID stored in the user data
+      if (userDetails?.instagramFbPagePairing && userDetails?.fbPageId) {
+        // Format is "instagramId.fbPageId"
+        const parts = userDetails.instagramFbPagePairing.split('.')
+        if (parts.length === 2 && parts[1] === userDetails.fbPageId) {
+          const instagramId = parts[0]
+          // Find the account in the fetched data
+          const instagramAccount = data.find((acc: Account) => acc.id === instagramId)
+          if (instagramAccount) {
+            setSelectedInstagramAccount(instagramAccount)
+          }
+        }
+      }
+      
       return data
     } catch (error) {
       console.error('Error fetching Instagram accounts:', error)
