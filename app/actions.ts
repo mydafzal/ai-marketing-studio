@@ -1060,63 +1060,77 @@ export async function updateFbPageId(email: string, fbPageId: string) {
 }
 
 export async function updateFbBusinessAcc(email: string, accountId: string) {
-    console.log('updateFbBusinessAcc called with email:', email, 'accountId:', accountId);
-    const session = await auth()
-    console.log('Auth session:', session ? 'Session exists' : 'No session');
+  console.log('updateFbBusinessAcc called with email:', email, 'accountId:', accountId);
+  const session = await auth()
+  console.log('Auth session:', session ? 'Session exists' : 'No session');
 
-    if (!session || !session.user) {
-        console.error('User not authenticated in updateFbBusinessAcc');
-        return {
-            success: false,
-            error: 'User not authenticated'
-        }
+  if (!session || !session.user) {
+    console.error('User not authenticated in updateFbBusinessAcc');
+    return {
+      success: false,
+      error: 'User not authenticated'
+    }
+  }
+
+  try {
+    // Construct the user key using the email
+    const userKey = `user:${email}`;
+    console.log('User key for KV:', userKey);
+
+    // Check if the user exists
+    const existingUser = await kv.hgetall(userKey);
+    console.log('Existing user found:', existingUser ? 'Yes' : 'No');
+
+    if (!existingUser) {
+      console.error('User not found in KV');
+      return {
+        success: false,
+        error: 'User not found'
+      }
     }
 
-    try {
-        // Construct the user key using the email
-        const userKey = `user:${email}`;
-        console.log('User key for KV:', userKey);
+    console.log('Current fbBusinessAccId:', existingUser.fbBusinessAccId ?? 'not set');
+    console.log('Setting new fbBusinessAccId:', accountId);
 
-        // Check if the user exists
-        const existingUser = await kv.hgetall(userKey);
-        console.log('Existing user found:', existingUser ? 'Yes' : 'No');
+    // Update the accountId field
+    const result = await kv.hset(userKey, {fbBusinessAccId: accountId});
+    console.log('KV hset result:', result);
 
-        if (!existingUser) {
-            console.error('User not found in KV');
-            return {
-                success: false,
-                error: 'User not found'
-            }
-        }
+    // Verify the update was successful
+    const updatedUser = await kv.hgetall(userKey);
 
-        console.log('Current fbBusinessAccId:', existingUser.fbBusinessAccId);
-        console.log('Setting new fbBusinessAccId:', accountId);
-
-        // Update the accountId field
-        const result = await kv.hset(userKey, {fbBusinessAccId: accountId});
-        console.log('KV hset result:', result);
-
-        // Verify the update was successful
-        const updatedUser = await kv.hgetall(userKey);
-        console.log('Updated user data:', updatedUser);
-        console.log('New fbBusinessAccId from KV:', updatedUser.fbBusinessAccId);
-
-        if (updatedUser.fbBusinessAccId !== accountId) {
-            console.warn('Update verification failed - ID mismatch');
-        }
-
-        return {
-            success: true,
-            message: 'Facebook Business account id updated successfully',
-            newId: updatedUser.fbBusinessAccId
-        }
-    } catch (error) {
-        console.error(`Error updating Facebook Business account id for user ${email}:`, error)
-        return {
-            success: false,
-            error: 'Something went wrong'
-        }
+    // Check if updatedUser is null
+    if (!updatedUser) {
+      console.error('Failed to retrieve updated user data');
+      return {
+        success: false,
+        error: 'Failed to verify update'
+      }
     }
+
+    console.log('Updated user data:', updatedUser);
+    console.log('New fbBusinessAccId from KV:', updatedUser.fbBusinessAccId ?? 'not set');
+
+    if (updatedUser.fbBusinessAccId !== accountId) {
+      console.warn('Update verification failed - ID mismatch');
+      return {
+        success: false,
+        error: 'Update verification failed'
+      }
+    }
+
+    return {
+      success: true,
+      message: 'Facebook Business account id updated successfully',
+      newId: updatedUser.fbBusinessAccId
+    }
+  } catch (error) {
+    console.error(`Error updating Facebook Business account id for user ${email}:`, error)
+    return {
+      success: false,
+      error: 'Something went wrong'
+    }
+  }
 }
 
 export async function updateInstagramAccountId(email: string, instagramAccountId: string, fbPageId: string) {
