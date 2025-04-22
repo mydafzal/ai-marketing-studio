@@ -67,7 +67,7 @@ const FacebookAccountNav = ({
       
       // Priority 1: Use pending selection from session storage (if available)
       if (pendingBusinessAccId) {
-        businessToSelect = businessAccounts.find(acc => String(acc.id) === String(pendingBusinessAccId));
+        businessToSelect = businessAccounts.find((acc: Account) => String(acc.id) === String(pendingBusinessAccId));
         if (businessToSelect) {
           console.log('Using pending business account selection:', businessToSelect);
         }
@@ -75,7 +75,7 @@ const FacebookAccountNav = ({
       
       // Priority 2: Use current selection (to maintain UI state)
       if (!businessToSelect && currentBusinessAcc) {
-        businessToSelect = businessAccounts.find(acc => String(acc.id) === String(currentBusinessAcc.id));
+        businessToSelect = businessAccounts.find((acc: Account) => String(acc.id) === String(currentBusinessAcc.id));
         if (businessToSelect) {
           console.log('Maintaining current business account selection:', businessToSelect);
         }
@@ -83,7 +83,7 @@ const FacebookAccountNav = ({
       
       // Priority 3: Use user details from database
       if (!businessToSelect && userDetails.fbBusinessAccId) {
-        businessToSelect = businessAccounts.find(acc => String(acc.id) === String(userDetails.fbBusinessAccId));
+        businessToSelect = businessAccounts.find((acc: Account) => String(acc.id) === String(userDetails.fbBusinessAccId));
         if (businessToSelect) {
           console.log('Using database business account selection:', businessToSelect);
         }
@@ -102,7 +102,7 @@ const FacebookAccountNav = ({
           
           // Find and set selected ad account
           if (userDetails.fbAccountId) {
-            const selectedAd = adAccounts.find(acc => String(acc.id) === String(userDetails.fbAccountId));
+            const selectedAd = adAccounts.find((acc: Account) => String(acc.id) === String(userDetails.fbAccountId));
             if (selectedAd) {
               console.log('Setting selected ad account:', selectedAd);
               setSelectedFbAdAcc(selectedAd);
@@ -162,8 +162,8 @@ const FacebookAccountNav = ({
     }
     
     if (userDetails?.fbBusinessAccId && fbBusinessAccs) {
-      console.log('Business accounts available:', fbBusinessAccs.map(acc => ({ id: acc.id, name: acc.name })));
-      const businessAcc = fbBusinessAccs.find((acc) => acc.id === `${userDetails?.fbBusinessAccId}`)
+      console.log('Business accounts available:', fbBusinessAccs.map((acc: Account) => ({ id: acc.id, name: acc.name })));
+      const businessAcc = fbBusinessAccs.find((acc: Account) => acc.id === `${userDetails?.fbBusinessAccId}`)
       console.log('Selected business account:', businessAcc || 'Not found');
       setSelectedFbBusinessAcc(businessAcc)
       
@@ -189,15 +189,15 @@ const FacebookAccountNav = ({
   useEffect(() => {
     if (userDetails?.fbPageId && fbPages && fbPages.length > 0 && !selectedFbPage) {
       console.log('Backup effect: trying to find page with ID:', userDetails.fbPageId);
-      console.log('Current fbPages:', fbPages.map(page => ({ id: page.id, name: page.name })));
+      console.log('Current fbPages:', fbPages.map((page: Account) => ({ id: page.id, name: page.name })));
       
       // First try exact match
-      let page = fbPages.find((page) => page.id === userDetails.fbPageId);
+      let page = fbPages.find((page: Account) => page.id === userDetails.fbPageId);
       
       // If not found, try with string conversion (in case of type mismatch)
       if (!page) {
         console.log('Trying string comparison for FB page ID match');
-        page = fbPages.find((page) => String(page.id) === String(userDetails.fbPageId));
+        page = fbPages.find((page: Account) => String(page.id) === String(userDetails.fbPageId));
       }
       
       if (page) {
@@ -211,7 +211,7 @@ const FacebookAccountNav = ({
         }
       } else {
         console.log('Backup effect: could not find page with ID:', userDetails.fbPageId);
-        console.log('Available page IDs:', fbPages.map((page) => page.id));
+        console.log('Available page IDs:', fbPages.map((page: Account) => page.id));
       }
     } else {
       console.log('Backup effect conditions not met:',
@@ -237,7 +237,7 @@ const FacebookAccountNav = ({
   // Update ad account with proper name when fbAdAccs is loaded
   useEffect(() => {
     if (userDetails?.fbAccountId && fbAdAccs && fbAdAccs.length > 0) {
-      const adAccount = fbAdAccs.find(acc => acc.id === userDetails.fbAccountId)
+      const adAccount = fbAdAccs.find((acc: Account) => acc.id === userDetails.fbAccountId)
       if (adAccount) {
         setSelectedFbAdAcc(adAccount)
       }
@@ -271,11 +271,14 @@ const FacebookAccountNav = ({
       const data = JSON.parse(responseText);
       console.log('Parsed Facebook Pages:', data);
       
-      if (Array.isArray(data)) {
-        setFbPages(data);
+      if (Array.isArray(data) && data.length > 0) {
+        console.log('Setting Facebook pages with data length:', data.length);
+        // Explicitly cast data as Account[] to ensure correct typing
+        const typedData: Account[] = data;
+        setFbPages(typedData);
         
         // Log all pages with their IDs for debugging
-        console.log('Page IDs in response:', data.map(page => ({ id: page.id, name: page.name })));
+        console.log('Page IDs in response:', data.map((page: Account) => ({ id: page.id, name: page.name })));
         
         // If user has a selected page ID, find and set it here when pages are first fetched
         if (userDetails?.fbPageId) {
@@ -305,7 +308,9 @@ const FacebookAccountNav = ({
           console.log('No page ID in user details to select');
         }
       } else {
-        console.error('Facebook pages response is not an array:', data);
+        console.log('Facebook pages data is empty or not an array');
+        // Set to empty array rather than undefined to prevent conditional rendering issues
+        setFbPages([]);
       }
       
       return data;
@@ -343,8 +348,11 @@ const FacebookAccountNav = ({
       }
       
       // Always set the accounts even if empty, so the dropdown knows whether to display
-      if (Array.isArray(data)) {
-        setInstagramAccounts(data);
+      if (Array.isArray(data) && data.length > 0) {
+        console.log('Setting Instagram accounts with data length:', data.length);
+        // Explicitly cast data as Account[] to ensure correct typing
+        const typedData: Account[] = data;
+        setInstagramAccounts(typedData);
         
         // Log all Instagram accounts with their IDs for debugging
         console.log('Instagram account IDs in response:', data.map((acc: Account) => ({ id: acc.id, name: acc.name })));
@@ -376,7 +384,7 @@ const FacebookAccountNav = ({
                 console.log('Instagram data structure sample:', data.length > 0 ? data[0] : 'No accounts');
                 console.log('Instagram id value format:', data.length > 0 ? typeof data[0].id : 'N/A');
                 console.log('Looking for exact match on:', instagramId, 'type:', typeof instagramId);
-                console.log('All available IDs:', data.map(acc => acc.id));
+                console.log('All available IDs:', data.map((acc: Account) => acc.id));
                 
                 // First try exact match
                 let instagramAccount = data.find((acc: Account) => acc.id === instagramId);
@@ -434,7 +442,8 @@ const FacebookAccountNav = ({
           console.log('No Instagram pairing found in user details');
         }
       } else {
-        console.error('Instagram accounts response is not an array:', data);
+        console.log('Instagram accounts data is empty or not an array');
+        // Set to empty array rather than undefined to prevent conditional rendering issues
         setInstagramAccounts([]);
       }
       
@@ -451,7 +460,7 @@ const FacebookAccountNav = ({
   async function selectBusinessAccount(id: string) {
     if (fbBusinessAccs && userDetails) {
       console.log('Selecting business account:', id);
-      const selectedAcc = fbBusinessAccs.find((acc) => acc.id === id);
+      const selectedAcc = fbBusinessAccs.find((acc: Account) => acc.id === id);
       if (selectedAcc) {
         console.log('Found business account to select:', selectedAcc);
         // Set UI state first for better UX
@@ -486,7 +495,7 @@ const FacebookAccountNav = ({
           console.error('Error updating business account ID in database:', error);
           // Revert UI state on error
           if (userDetails.fbBusinessAccId) {
-            const originalAcc = fbBusinessAccs.find(acc => acc.id === userDetails.fbBusinessAccId);
+            const originalAcc = fbBusinessAccs.find((acc: Account) => acc.id === userDetails.fbBusinessAccId);
             if (originalAcc) {
               setSelectedFbBusinessAcc(originalAcc);
             }
@@ -511,7 +520,7 @@ const FacebookAccountNav = ({
   async function selectAdAccount(id: string) {
     if (fbAdAccs && userDetails) {
       console.log('Selecting ad account:', id);
-      const selectedAcc = fbAdAccs.find((acc) => acc.id === id);
+      const selectedAcc = fbAdAccs.find((acc: Account) => acc.id === id);
       if (selectedAcc) {
         console.log('Found ad account to select:', selectedAcc);
         setSelectedFbAdAcc(selectedAcc);
@@ -537,7 +546,7 @@ const FacebookAccountNav = ({
   async function selectPage(id: string) {
     if (fbPages && userDetails) {
       console.log('Selecting Facebook page:', id);
-      const selectedPage = fbPages.find((page) => page.id === id);
+      const selectedPage = fbPages.find((page: Account) => page.id === id);
       if (selectedPage) {
         console.log('Found page to select:', selectedPage);
         setSelectedFbPage(selectedPage);
@@ -571,7 +580,7 @@ const FacebookAccountNav = ({
   async function selectInstagramAccount(id: string) {
     if (instagramAccounts && userDetails && selectedFbPage) {
       console.log('Selecting Instagram account:', id);
-      const selectedAccount = instagramAccounts.find((account) => account.id === id);
+      const selectedAccount = instagramAccounts.find((account: Account) => account.id === id);
       if (selectedAccount) {
         console.log('Found Instagram account to select:', selectedAccount);
         setSelectedInstagramAccount(selectedAccount);
@@ -713,7 +722,7 @@ const FacebookAccountNav = ({
                         sessionStorage.setItem('pendingBusinessAccId', id);
                         
                         // Find the name from selected accounts
-                        const selectedAccount = fbBusinessAccs?.find(acc => acc.id === id);
+                        const selectedAccount = fbBusinessAccs?.find((acc: Account) => acc.id === id);
                         if (selectedAccount?.name) {
                           sessionStorage.setItem('pendingBusinessAccName', selectedAccount.name);
                         }
