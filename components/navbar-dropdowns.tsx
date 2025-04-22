@@ -375,6 +375,11 @@ const NavbarDropdowns = ({
     return null;
   }
   
+  // Function to refresh the page
+  const refreshPage = () => {
+    window.location.reload();
+  };
+
   return (
     <div className="flex items-center justify-center space-x-6 px-6 py-2 bg-dark-bg border-b border-border-dark w-full">
       <div className="flex items-center relative">
@@ -428,6 +433,14 @@ const NavbarDropdowns = ({
           darkMode={true}
         />
       </div>
+      
+      {/* Save Changes button - placed adjacent to the last dropdown */}
+      <button
+        onClick={refreshPage}
+        className="bg-primary-green hover:bg-primary-green/90 text-black text-xs font-medium py-1 px-3 rounded-full transition-colors"
+      >
+        Save Changes
+      </button>
     </div>
   )
 }
