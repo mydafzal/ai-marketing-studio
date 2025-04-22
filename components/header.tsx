@@ -147,19 +147,18 @@ export async function Header() {
         </div>
       </header>
       
-      {/* Secondary navbar for account dropdowns */}
+      {/* Secondary navbar for account dropdowns - only show on chat screens */}
       {session?.user && userDetails?.fbMarketingApiKey && (
-        <div className="w-full">
-          <NavbarDropdowns
-            userDetails={userDetails}
-            getFacebookBusinessAccounts={getFacebookBusinessAccounts}
-            getFacebookAdAccounts={getFacebookAdAccounts}
-            updateFbBusinessAcc={updateFbBusinessAcc}
-            updateFbAccountId={updateFbAccountId}
-            updateFbPageId={updateFbPageId}
-          />
-        </div>
+        <ClientNavbarHandler 
+          userDetails={userDetails}
+          updateFbBusinessAcc={updateFbBusinessAcc}
+          updateFbAccountId={updateFbAccountId}
+          updateFbPageId={updateFbPageId}
+        />
       )}
     </div>
   )
 }
+
+// Create a separate file for this client component
+const ClientNavbarHandler = dynamic(() => import('./client-navbar-handler'), { ssr: false });
