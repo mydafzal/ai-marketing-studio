@@ -2,7 +2,7 @@
 
 import posthog from 'posthog-js'
 import { getConfig } from '@/utils/config'
-import { isInternalUser } from '@/lib/server-only/posthog-server'
+import { isInternalUser } from '@/lib/posthog-utils'
 
 export const initPostHog = async (email: string) => {
   
