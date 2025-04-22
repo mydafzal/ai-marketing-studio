@@ -399,12 +399,23 @@ const FacebookAccountNav = ({
       const selectedAcc = fbBusinessAccs.find((acc) => acc.id === id);
       if (selectedAcc) {
         console.log('Found business account to select:', selectedAcc);
+        // Set UI state first for better UX
         setSelectedFbBusinessAcc(selectedAcc);
         
         try {
           console.log('Updating business account in database...');
           const result = await updateFbBusinessAcc(userDetails.email, id);
           console.log('Business account update result:', result);
+          
+          if (!result.success) {
+            console.error('Server returned error for business account update:', result.error);
+            throw new Error(result.error || 'Unknown error updating business account');
+          }
+          
+          // Verify that the database update was successful by checking the returned ID
+          if (result.newId !== id) {
+            console.warn(`Business account ID mismatch: expected ${id}, got ${result.newId}`);
+          }
           
           // Reset page and Instagram selection when business account changes
           setSelectedFbPage(undefined);
@@ -414,17 +425,31 @@ const FacebookAccountNav = ({
           // Fetch pages for the selected business account
           console.log('Fetching pages for newly selected business account');
           await getFacebookPages(id);
+          
+          return result;
         } catch (error) {
           console.error('Error updating business account ID in database:', error);
+          // Revert UI state on error
+          if (userDetails.fbBusinessAccId) {
+            const originalAcc = fbBusinessAccs.find(acc => acc.id === userDetails.fbBusinessAccId);
+            if (originalAcc) {
+              setSelectedFbBusinessAcc(originalAcc);
+            }
+          }
+          throw error; // Re-throw to propagate to the UI
         }
       } else {
-        console.error('Could not find business account with ID:', id);
+        const error = new Error(`Could not find business account with ID: ${id}`);
+        console.error(error);
+        throw error;
       }
     } else {
+      const error = new Error('Cannot select business account - missing user data or business accounts');
       console.error('Cannot select business account - missing data:', { 
         hasFbBusinessAccs: !!fbBusinessAccs, 
         hasUserDetails: !!userDetails 
       });
+      throw error;
     }
   }
 
@@ -555,22 +580,134 @@ const FacebookAccountNav = ({
       setSaveStatus({ type: null, status: null, message: null });
     }, 3000);
   };
+  
+  // Function to refresh the component's state from the server
+  const refreshUserDetails = async () => {
+    try {
+      if (!userDetails?.email) return;
+      
+      // Manual state refresh - fetch latest user data to confirm updates
+      console.log('Refreshing user details from server...');
+      
+      // This is a direct fetch to get the most current user data
+      const response = await fetch(`/api/admin/fetch-client-by-email?email=${encodeURIComponent(userDetails.email)}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log('Refreshed user details:', result);
+        
+        if (result.success && result.data) {
+          const refreshedData = result.data;
+          
+          // Check if business account ID has changed
+          if (refreshedData.fbBusinessAccId !== userDetails.fbBusinessAccId) {
+            console.log('Business account ID change detected:', {
+              current: userDetails.fbBusinessAccId,
+              new: refreshedData.fbBusinessAccId
+            });
+            
+            // Show a refresh notification before reloading
+            showSaveStatus('business', 'saving', 'Refreshing page...');
+            
+            // Create and show a toast-like notification
+            const notification = document.createElement('div');
+            notification.innerHTML = `
+              <div style="
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background-color: rgba(0, 0, 0, 0.8);
+                color: white;
+                padding: 16px 24px;
+                border-radius: 8px;
+                font-size: 16px;
+                z-index: 9999;
+                text-align: center;
+              ">
+                <div style="margin-bottom: 8px;">Refreshing page to update account changes</div>
+                <div style="display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(255,255,255,.3); border-radius: 50%; border-top-color: #fff; animation: spin 1s ease-in-out infinite;"></div>
+              </div>
+              <style>
+                @keyframes spin {
+                  to { transform: rotate(360deg); }
+                }
+              </style>
+            `;
+            document.body.appendChild(notification);
+            
+            // Force a page refresh to get the updated state from the server
+            setTimeout(() => {
+              window.location.reload();
+            }, 1500); // Wait 1.5s for the refresh notification to be visible
+          } else {
+            console.log('No changes detected in business account ID');
+          }
+        }
+      } else {
+        console.error('Failed to fetch user details:', await response.text());
+      }
+    } catch (error) {
+      console.error('Error refreshing user details:', error);
+    }
+  };
 
   return (
     <div className="fixed top-16 left-0 right-0 z-40 bg-gradient-to-r from-zinc-50 via-white to-zinc-50 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950 border-b border-zinc-200 dark:border-zinc-800 h-12 px-4 shadow-sm">
       <div className="max-w-screen-xl mx-auto h-full flex items-center justify-center">
         <div className="flex items-center justify-center gap-2 overflow-x-auto scrollbar-thin scrollbar-thumb-transparent hover:scrollbar-thumb-zinc-200 py-1 px-2 bg-white dark:bg-zinc-900 shadow-sm rounded-full mx-auto border border-zinc-100 dark:border-zinc-800">
-          <div className="flex items-center relative">
+          <div className="flex items-center relative" data-business-account-container>
             <span className="text-zinc-500 dark:text-zinc-400 text-[9px] font-medium tracking-wide mr-2 whitespace-nowrap">Business Account</span>
             <FBAccountDropdown
               title="Business"
               selectedAcccount={selectedFbBusinessAcc}
               accounts={fbBusinessAccs}
               handleAccountChange={(id) => {
+                console.log('Business account selected with ID:', id);
                 showSaveStatus('business', 'saving', 'Updating business account...');
                 selectBusinessAccount(id)
-                  .then(() => showSaveStatus('business', 'success', 'Business account updated'))
-                  .catch(() => showSaveStatus('business', 'error', 'Failed to update business account'));
+                  .then((result) => {
+                    console.log('Business account update result:', result);
+                    showSaveStatus('business', 'success', 'Business account updated - refreshing page soon');
+                    
+                    // Show a note about the page refreshing soon
+                    const infoMessage = document.createElement('div');
+                    infoMessage.style.cssText = `
+                      position: absolute;
+                      top: 30px;
+                      left: 0;
+                      width: 100%;
+                      padding: 4px 8px;
+                      background-color: rgba(255, 247, 223, 0.95);
+                      border: 1px solid #f0d48a;
+                      border-radius: 4px;
+                      font-size: 11px;
+                      z-index: 50;
+                      text-align: center;
+                      color: #a05e03;
+                    `;
+                    infoMessage.innerText = 'Page will refresh to apply changes';
+                    
+                    // Add the message to the UI
+                    const container = document.querySelector('[data-business-account-container]');
+                    if (container) {
+                      container.appendChild(infoMessage);
+                    }
+                    
+                    // Trigger a refresh to ensure the changes were applied
+                    setTimeout(() => {
+                      refreshUserDetails();
+                    }, 1500); // Wait longer to ensure changes have propagated and user has seen the message
+                  })
+                  .catch((error) => {
+                    console.error('Error updating business account:', error);
+                    showSaveStatus('business', 'error', 'Failed to update business account');
+                  });
               }}
               className="nav-bar m-0"
             />
