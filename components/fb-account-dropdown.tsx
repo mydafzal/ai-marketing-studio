@@ -55,7 +55,14 @@ const FBAccountDropdown = ({title,selectedAcccount,accounts,handleAccountChange}
                         className="z-[100] min-w-[220px] p-2 flex flex-col bg-white gap-2 rounded-md shadow-[0px_10px_38px_-10px_rgba(22,_23,_24,_0.35),_0px_10px_20px_-15px_rgba(22,_23,_24,_0.2)] will-change-[opacity,transform] data-[side=bottom]:animate-slideUpAndFade data-[side=left]:animate-slideRightAndFade data-[side=right]:animate-slideLeftAndFade data-[side=top]:animate-slideDownAndFade"
                         sideOffset={5}
                     >
-                        <div className="max-h-[240px] overflow-y-auto">
+                        <div 
+                            className="max-h-[240px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 hover:scrollbar-thumb-gray-400" 
+                            onWheel={(e) => {
+                                e.stopPropagation();
+                                const container = e.currentTarget;
+                                container.scrollTop += e.deltaY;
+                            }}
+                        >
                             {
                                 accounts?accounts.map((account, index) => (
                                         <div key={index}>
