@@ -31,9 +31,7 @@ const FBAccountDropdown = ({ title, selectedAcccount, accounts, handleAccountCha
 
 	return (
         <div className={cn("mb-4", className)}>
-            {isNavBar ? (
-              <p className="text-zinc-500 dark:text-zinc-400 mb-1 text-[10px] uppercase font-medium tracking-wider">{title}</p>
-            ) : (
+            {!isNavBar && (
               <p className="text-black dark:text-white mb-1 text-xs font-medium">{title}</p>
             )}
             <DropdownMenu.Root>
@@ -42,7 +40,7 @@ const FBAccountDropdown = ({ title, selectedAcccount, accounts, handleAccountCha
                         className={cn(
                             "flex items-center justify-between rounded outline-none transition-colors",
                             isNavBar 
-                                ? "min-h-[32px] min-w-[150px] px-3 py-1 bg-transparent hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-800 dark:text-zinc-200" 
+                                ? "min-h-[28px] min-w-[130px] px-2 py-0.5 bg-transparent hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-800 dark:text-zinc-200" 
                                 : "min-h-[55px] min-w-[220px] px-2 py-1 border bg-white text-black hover:bg-zinc-50 dark:text-black focus:shadow-[0_0_0_2px] focus:shadow-black"
                         )}
                         aria-label={`Select ${title}`}
