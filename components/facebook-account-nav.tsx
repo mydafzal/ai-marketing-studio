@@ -52,42 +52,97 @@ const FacebookAccountNav = ({
     
     if (!userDetails) return;
     
+    // Keep track of the current selection to avoid UI flicker
+    const currentBusinessAcc = selectedFbBusinessAcc;
+    const pendingBusinessAccId = typeof window !== 'undefined' ? sessionStorage.getItem('pendingBusinessAccId') : null;
+    
     // First get business accounts
     if (userDetails.fbMarketingApiKey) {
       const businessAccounts = await getFacebookBusinessAccounts(userDetails.fbMarketingApiKey);
       setFbBusinessAccs(businessAccounts);
       console.log('Fetched business accounts:', businessAccounts);
       
-      // Find and set selected business account
-      if (userDetails.fbBusinessAccId) {
-        const selectedBusiness = businessAccounts.find(acc => String(acc.id) === String(userDetails.fbBusinessAccId));
-        if (selectedBusiness) {
-          console.log('Setting selected business account:', selectedBusiness);
-          setSelectedFbBusinessAcc(selectedBusiness);
+      // Determine which business account to select
+      let businessToSelect: Account | undefined;
+      
+      // Priority 1: Use pending selection from session storage (if available)
+      if (pendingBusinessAccId) {
+        businessToSelect = businessAccounts.find(acc => String(acc.id) === String(pendingBusinessAccId));
+        if (businessToSelect) {
+          console.log('Using pending business account selection:', businessToSelect);
+        }
+      }
+      
+      // Priority 2: Use current selection (to maintain UI state)
+      if (!businessToSelect && currentBusinessAcc) {
+        businessToSelect = businessAccounts.find(acc => String(acc.id) === String(currentBusinessAcc.id));
+        if (businessToSelect) {
+          console.log('Maintaining current business account selection:', businessToSelect);
+        }
+      }
+      
+      // Priority 3: Use user details from database
+      if (!businessToSelect && userDetails.fbBusinessAccId) {
+        businessToSelect = businessAccounts.find(acc => String(acc.id) === String(userDetails.fbBusinessAccId));
+        if (businessToSelect) {
+          console.log('Using database business account selection:', businessToSelect);
+        }
+      }
+      
+      // If we found a business account to select
+      if (businessToSelect) {
+        console.log('Setting selected business account:', businessToSelect);
+        setSelectedFbBusinessAcc(businessToSelect);
+        
+        // Next get ad accounts for this business
+        if (userDetails.fbMarketingApiKey) {
+          const adAccounts = await getFacebookAdAccounts(userDetails.fbMarketingApiKey, businessToSelect.id);
+          setFbAdAccs(adAccounts);
+          console.log('Fetched ad accounts:', adAccounts);
           
-          // Next get ad accounts for this business
-          if (userDetails.fbMarketingApiKey) {
-            const adAccounts = await getFacebookAdAccounts(userDetails.fbMarketingApiKey, selectedBusiness.id);
-            setFbAdAccs(adAccounts);
-            console.log('Fetched ad accounts:', adAccounts);
-            
-            // Find and set selected ad account
-            if (userDetails.fbAccountId) {
-              const selectedAd = adAccounts.find(acc => String(acc.id) === String(userDetails.fbAccountId));
-              if (selectedAd) {
-                console.log('Setting selected ad account:', selectedAd);
-                setSelectedFbAdAcc(selectedAd);
-              }
+          // Find and set selected ad account
+          if (userDetails.fbAccountId) {
+            const selectedAd = adAccounts.find(acc => String(acc.id) === String(userDetails.fbAccountId));
+            if (selectedAd) {
+              console.log('Setting selected ad account:', selectedAd);
+              setSelectedFbAdAcc(selectedAd);
             }
           }
-          
-          // Next get pages for this business
-          const pages = await getFacebookPages(selectedBusiness.id);
-          // The getFacebookPages function handles page selection and Instagram account fetching
         }
+        
+        // Next get pages for this business
+        const pages = await getFacebookPages(businessToSelect.id);
+        // The getFacebookPages function handles page selection and Instagram account fetching
       }
     }
   }
+
+  // Check for pending account selections stored during refresh
+  useEffect(() => {
+    // Only run on client side, not during SSR
+    if (typeof window !== 'undefined') {
+      const pendingBusinessAccId = sessionStorage.getItem('pendingBusinessAccId');
+      const pendingBusinessAccName = sessionStorage.getItem('pendingBusinessAccName');
+      
+      // If we have pending selection from before a refresh
+      if (pendingBusinessAccId && pendingBusinessAccName) {
+        console.log('Found pending business account selection:', pendingBusinessAccId);
+        
+        // Create a temporary account object to show while data loads
+        const tempAccount: Account = {
+          id: pendingBusinessAccId,
+          name: pendingBusinessAccName
+        };
+        
+        // Set it immediately to prevent flicker
+        setSelectedFbBusinessAcc(tempAccount);
+        
+        // Clear the session storage
+        sessionStorage.removeItem('pendingBusinessAccId');
+        sessionStorage.removeItem('pendingBusinessAccName');
+      }
+    }
+  }, []);
 
   // Fetch business accounts on component mount
   useEffect(() => {
@@ -570,6 +625,9 @@ const FacebookAccountNav = ({
     status: 'saving' | 'success' | 'error' | null;
     message: string | null;
   }>({ type: null, status: null, message: null });
+  
+  // State to track if we're refreshing the business account
+  const [refreshingBusinessAccount, setRefreshingBusinessAccount] = useState(false);
 
   // Function to show save status
   const showSaveStatus = (type: 'business' | 'ad' | 'page' | 'instagram', status: 'saving' | 'success' | 'error', message: string = '') => {
@@ -584,76 +642,41 @@ const FacebookAccountNav = ({
   // Function to refresh the component's state from the server
   const refreshUserDetails = async () => {
     try {
-      if (!userDetails?.email) return;
-      
-      // Manual state refresh - fetch latest user data to confirm updates
-      console.log('Refreshing user details from server...');
-      
-      // This is a direct fetch to get the most current user data
-      const response = await fetch(`/api/admin/fetch-client-by-email?email=${encodeURIComponent(userDetails.email)}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
-      
-      if (response.ok) {
-        const result = await response.json();
-        console.log('Refreshed user details:', result);
-        
-        if (result.success && result.data) {
-          const refreshedData = result.data;
-          
-          // Check if business account ID has changed
-          if (refreshedData.fbBusinessAccId !== userDetails.fbBusinessAccId) {
-            console.log('Business account ID change detected:', {
-              current: userDetails.fbBusinessAccId,
-              new: refreshedData.fbBusinessAccId
-            });
-            
-            // Show a refresh notification before reloading
-            showSaveStatus('business', 'saving', 'Refreshing page...');
-            
-            // Create and show a toast-like notification
-            const notification = document.createElement('div');
-            notification.innerHTML = `
-              <div style="
-                position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                background-color: rgba(0, 0, 0, 0.8);
-                color: white;
-                padding: 16px 24px;
-                border-radius: 8px;
-                font-size: 16px;
-                z-index: 9999;
-                text-align: center;
-              ">
-                <div style="margin-bottom: 8px;">Refreshing page to update account changes</div>
-                <div style="display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(255,255,255,.3); border-radius: 50%; border-top-color: #fff; animation: spin 1s ease-in-out infinite;"></div>
-              </div>
-              <style>
-                @keyframes spin {
-                  to { transform: rotate(360deg); }
-                }
-              </style>
-            `;
-            document.body.appendChild(notification);
-            
-            // Force a page refresh to get the updated state from the server
-            setTimeout(() => {
-              window.location.reload();
-            }, 1500); // Wait 1.5s for the refresh notification to be visible
-          } else {
-            console.log('No changes detected in business account ID');
+      // Show the central refresh notification
+      const notification = document.createElement('div');
+      notification.innerHTML = `
+        <div style="
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          background-color: rgba(0, 0, 0, 0.8);
+          color: white;
+          padding: 16px 24px;
+          border-radius: 8px;
+          font-size: 16px;
+          z-index: 9999;
+          text-align: center;
+        ">
+          <div style="margin-bottom: 8px;">Refreshing page to update account changes</div>
+          <div style="display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(255,255,255,.3); border-radius: 50%; border-top-color: #fff; animation: spin 1s ease-in-out infinite;"></div>
+        </div>
+        <style>
+          @keyframes spin {
+            to { transform: rotate(360deg); }
           }
-        }
-      } else {
-        console.error('Failed to fetch user details:', await response.text());
-      }
+        </style>
+      `;
+      document.body.appendChild(notification);
+      
+      // Force a page refresh after a short delay to show the notification
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
     } catch (error) {
-      console.error('Error refreshing user details:', error);
+      console.error('Error during page refresh:', error);
+      // If there's an error, force refresh anyway
+      window.location.reload();
     }
   };
 
@@ -661,56 +684,54 @@ const FacebookAccountNav = ({
     <div className="fixed top-16 left-0 right-0 z-40 bg-gradient-to-r from-zinc-50 via-white to-zinc-50 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950 border-b border-zinc-200 dark:border-zinc-800 h-12 px-4 shadow-sm">
       <div className="max-w-screen-xl mx-auto h-full flex items-center justify-center">
         <div className="flex items-center justify-center gap-2 overflow-x-auto scrollbar-thin scrollbar-thumb-transparent hover:scrollbar-thumb-zinc-200 py-1 px-2 bg-white dark:bg-zinc-900 shadow-sm rounded-full mx-auto border border-zinc-100 dark:border-zinc-800">
-          <div className="flex items-center relative" data-business-account-container>
+          <div className="flex items-center relative">
             <span className="text-zinc-500 dark:text-zinc-400 text-[9px] font-medium tracking-wide mr-2 whitespace-nowrap">Business Account</span>
-            <FBAccountDropdown
-              title="Business"
-              selectedAcccount={selectedFbBusinessAcc}
-              accounts={fbBusinessAccs}
-              handleAccountChange={(id) => {
-                console.log('Business account selected with ID:', id);
-                showSaveStatus('business', 'saving', 'Updating business account...');
-                selectBusinessAccount(id)
-                  .then((result) => {
-                    console.log('Business account update result:', result);
-                    showSaveStatus('business', 'success', 'Business account updated - refreshing page soon');
-                    
-                    // Show a note about the page refreshing soon
-                    const infoMessage = document.createElement('div');
-                    infoMessage.style.cssText = `
-                      position: absolute;
-                      top: 30px;
-                      left: 0;
-                      width: 100%;
-                      padding: 4px 8px;
-                      background-color: rgba(255, 247, 223, 0.95);
-                      border: 1px solid #f0d48a;
-                      border-radius: 4px;
-                      font-size: 11px;
-                      z-index: 50;
-                      text-align: center;
-                      color: #a05e03;
-                    `;
-                    infoMessage.innerText = 'Page will refresh to apply changes';
-                    
-                    // Add the message to the UI
-                    const container = document.querySelector('[data-business-account-container]');
-                    if (container) {
-                      container.appendChild(infoMessage);
-                    }
-                    
-                    // Trigger a refresh to ensure the changes were applied
-                    setTimeout(() => {
-                      refreshUserDetails();
-                    }, 1500); // Wait longer to ensure changes have propagated and user has seen the message
-                  })
-                  .catch((error) => {
-                    console.error('Error updating business account:', error);
-                    showSaveStatus('business', 'error', 'Failed to update business account');
-                  });
-              }}
-              className="nav-bar m-0"
-            />
+            {/* When refreshing, show this instead of the dropdown */}
+            {refreshingBusinessAccount ? (
+              <div className="min-h-[28px] min-w-[130px] px-2 py-0.5 bg-transparent text-zinc-800 dark:text-zinc-200 flex items-center">
+                <div className="text-xs">Refreshing...</div>
+                <div className="ml-2 w-3 h-3 border-2 border-zinc-300 border-t-zinc-800 rounded-full animate-spin"></div>
+              </div>
+            ) : (
+              <FBAccountDropdown
+                title="Business"
+                selectedAcccount={selectedFbBusinessAcc}
+                accounts={fbBusinessAccs}
+                handleAccountChange={(id) => {
+                  console.log('Business account selected with ID:', id);
+                  showSaveStatus('business', 'saving', 'Updating business account...');
+                  selectBusinessAccount(id)
+                    .then((result) => {
+                      console.log('Business account update result:', result);
+                      showSaveStatus('business', 'success', 'Business account updated');
+                      
+                      // Show refreshing state and hide dropdown
+                      setRefreshingBusinessAccount(true);
+                      
+                      // Store selection in sessionStorage for potential recovery
+                      if (typeof window !== 'undefined') {
+                        sessionStorage.setItem('pendingBusinessAccId', id);
+                        
+                        // Find the name from selected accounts
+                        const selectedAccount = fbBusinessAccs?.find(acc => acc.id === id);
+                        if (selectedAccount?.name) {
+                          sessionStorage.setItem('pendingBusinessAccName', selectedAccount.name);
+                        }
+                      }
+                      
+                      // Trigger a refresh to ensure the changes were applied
+                      setTimeout(() => {
+                        refreshUserDetails();
+                      }, 1000); // Wait a second to ensure changes have propagated
+                    })
+                    .catch((error) => {
+                      console.error('Error updating business account:', error);
+                      showSaveStatus('business', 'error', 'Failed to update business account');
+                    });
+                }}
+                className="nav-bar m-0"
+              />
+            )}
             {saveStatus.type === 'business' && saveStatus.status && (
               <div className={`absolute -top-6 -right-2 text-[10px] font-medium py-1 px-2 rounded-md ${
                 saveStatus.status === 'saving' ? 'bg-yellow-100 text-yellow-800' :
