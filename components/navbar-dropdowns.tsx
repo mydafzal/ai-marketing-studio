@@ -10,6 +10,13 @@ type Account = {
   profile_picture_url?: string;
 }
 
+// Small loading spinner component
+const Spinner = () => (
+  <div className="absolute -top-2 left-1/2 transform -translate-x-1/2">
+    <div className="w-3 h-3 border-t-2 border-blue-500 rounded-full animate-spin"></div>
+  </div>
+)
+
 type NavbarDropdownsProps = {
   userDetails: any;
   getFacebookBusinessAccounts: (encryptedAccessToken: string) => Promise<any>;
@@ -35,6 +42,12 @@ const NavbarDropdowns = ({
   const [fbPages, setFbPages] = useState<Account[] | undefined>(undefined);
   const [instagramAccounts, setInstagramAccounts] = useState<Account[] | undefined>(undefined);
   const [selectedInstagramAccount, setSelectedInstagramAccount] = useState<Account | undefined>(undefined);
+  
+  // Loading states
+  const [businessAccLoading, setBusinessAccLoading] = useState(false);
+  const [adAccLoading, setAdAccLoading] = useState(false);
+  const [fbPageLoading, setFbPageLoading] = useState(false);
+  const [igAccountLoading, setIgAccountLoading] = useState(false);
 
   async function getBusinessAPICall() {
     if (userDetails?.fbMarketingApiKey) {
@@ -195,41 +208,84 @@ const NavbarDropdowns = ({
 
   async function selectBusinessAccount(id: string) {
     if (fbBusinessAccs && userDetails) {
+      // Set the selected account immediately for better UX
       setSelectedFbBusinessAcc(fbBusinessAccs.find((acc) => acc.id === id));
-      await updateFbBusinessAcc(userDetails?.email, id);
       
-      // Reset page and Instagram selection when business account changes
-      setSelectedFbPage(undefined);
-      setSelectedInstagramAccount(undefined);
-      setInstagramAccounts(undefined);
+      // Show loading indicator
+      setBusinessAccLoading(true);
       
-      // Fetch pages for the selected business account
-      await getFacebookPages(id);
+      try {
+        // Save the selection to the database
+        await updateFbBusinessAcc(userDetails?.email, id);
+        
+        // Reset page and Instagram selection when business account changes
+        setSelectedFbPage(undefined);
+        setSelectedInstagramAccount(undefined);
+        setInstagramAccounts(undefined);
+        
+        // Fetch pages for the selected business account
+        await getFacebookPages(id);
+      } catch (error) {
+        console.error('Error updating business account:', error);
+      } finally {
+        // Hide loading indicator regardless of success/failure
+        setBusinessAccLoading(false);
+      }
     }
   }
 
   async function selectAdAccount(id: string) {
     if (fbAdAccs && userDetails) {
+      // Set the selected account immediately for better UX
       setSelectedFbAdAcc(fbAdAccs.find((acc) => acc.id === id));
-      await updateFbAccountId(userDetails?.email, id);
+      
+      // Show loading indicator
+      setAdAccLoading(true);
+      
+      try {
+        // Save the selection to the database
+        await updateFbAccountId(userDetails?.email, id);
+      } catch (error) {
+        console.error('Error updating ad account:', error);
+      } finally {
+        // Hide loading indicator
+        setAdAccLoading(false);
+      }
     }
   }
   
   async function selectPage(id: string) {
     if (fbPages && userDetails) {
+      // Set the selected page immediately for better UX
       const selectedPage = fbPages.find((page) => page.id === id);
       setSelectedFbPage(selectedPage);
-      await updateFbPageId(userDetails.email, id);
       
-      // When a Facebook page is selected, fetch Instagram accounts
-      await getInstagramAccounts();
+      // Show loading indicator
+      setFbPageLoading(true);
+      
+      try {
+        // Save the selection to the database
+        await updateFbPageId(userDetails.email, id);
+        
+        // When a Facebook page is selected, fetch Instagram accounts
+        await getInstagramAccounts();
+      } catch (error) {
+        console.error('Error updating Facebook page:', error);
+      } finally {
+        // Hide loading indicator
+        setFbPageLoading(false);
+      }
     }
   }
   
   async function selectInstagramAccount(id: string) {
     if (instagramAccounts && userDetails && selectedFbPage) {
+      // Set the selected account immediately for better UX
       const selectedAccount = instagramAccounts.find((account) => account.id === id);
       setSelectedInstagramAccount(selectedAccount);
+      
+      // Show loading indicator
+      setIgAccountLoading(true);
       
       try {
         const response = await fetch('/api/kv/update-instagram-account-id', {
@@ -250,6 +306,9 @@ const NavbarDropdowns = ({
         }
       } catch (error) {
         console.error('Error updating Instagram account ID:', error);
+      } finally {
+        // Hide loading indicator
+        setIgAccountLoading(false);
       }
     }
   }
@@ -313,8 +372,9 @@ const NavbarDropdowns = ({
 
   return (
     <div className="flex items-center justify-center space-x-6 px-6 py-2 bg-dark-bg border-b border-border-dark w-full">
-      <div className="flex items-center">
+      <div className="flex items-center relative">
         <span className="text-xs text-zinc-400 mr-2">Business:</span>
+        {businessAccLoading && <Spinner />}
         <FBAccountDropdown
           title=""
           selectedAcccount={selectedFbBusinessAcc}
@@ -325,8 +385,9 @@ const NavbarDropdowns = ({
         />
       </div>
       
-      <div className="flex items-center">
+      <div className="flex items-center relative">
         <span className="text-xs text-zinc-400 mr-2">Ad Account:</span>
+        {adAccLoading && <Spinner />}
         <FBAccountDropdown
           title=""
           selectedAcccount={selectedFbAdAcc}
@@ -337,8 +398,9 @@ const NavbarDropdowns = ({
         />
       </div>
       
-      <div className="flex items-center">
+      <div className="flex items-center relative">
         <span className="text-xs text-zinc-400 mr-2">FB Page:</span>
+        {fbPageLoading && <Spinner />}
         <FBAccountDropdown
           title=""
           selectedAcccount={selectedFbPage}
@@ -349,8 +411,9 @@ const NavbarDropdowns = ({
         />
       </div>
       
-      <div className="flex items-center">
+      <div className="flex items-center relative">
         <span className="text-xs text-zinc-400 mr-2">IG Account:</span>
+        {igAccountLoading && <Spinner />}
         <FBAccountDropdown
           title=""
           selectedAcccount={selectedInstagramAccount}
