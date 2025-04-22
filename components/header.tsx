@@ -22,6 +22,12 @@ import FacebookAccountSettings from '@/components/facebook-account-settings'
 import { isFeatureToggleEnabled } from '@/lib/helpers/feature-toggle/feature-toggle-manager'
 import ProfileSettings from '@/components/profile-settings'
 import { ThemeToggle } from './theme-toggle'
+import dynamic from 'next/dynamic'
+
+// Use dynamic import for the client component
+const NavbarDropdowns = dynamic(() => import('@/components/navbar-dropdowns'), {
+  ssr: false
+})
 
 async function UserOrLogin() {
   const session = (await auth()) as Session
@@ -63,27 +69,19 @@ async function UserOrLogin() {
       <div className="flex items-center w-full">
         <IconSeparator className="size-6 text-border-dark" />
         {session?.user ? (
-          <div className="flex justify-between w-full">
+          <div className="flex flex-grow justify-between items-center">
             <UserMenu user={session.user} />
+            
             <div className="flex items-center">
-              <Link href="/" className={cn(buttonVariants({ variant: 'ghost' }), 'ml-8 text-text-white hover:text-primary-green hover:bg-dark-bg')}>
+              <Link href="/" className={cn(buttonVariants({ variant: 'ghost' }), 'ml-4 text-text-white hover:text-primary-green hover:bg-dark-bg')}>
                 AI Marketer
               </Link>
               <Link
                 href="/ai-content"
-                className={cn(buttonVariants({ variant: 'ghost' }), 'ml-8 text-text-white hover:text-primary-green hover:bg-dark-bg')}
+                className={cn(buttonVariants({ variant: 'ghost' }), 'ml-4 text-text-white hover:text-primary-green hover:bg-dark-bg')}
               >
                 AI Creatives Generator
               </Link>
-
-              {/* <Link
-                href="/content-folder"
-                className={cn(buttonVariants({ variant: 'ghost' }), 'ml-8')}
-              >
-                Content Library
-              </Link>*/}
-              
-              {/* Theme toggle removed */}
               
               <ProfileSettings
                 userDetails={userDetails}
@@ -108,34 +106,59 @@ async function UserOrLogin() {
 }
 
 export async function Header() {
+  const session = (await auth()) as Session
+  let userDetails
+
+  if (session?.user) {
+    const response = await getUserDetail()
+    if (response.success) {
+      userDetails = response.user
+    }
+  }
+
   return (
-    <header className="sticky top-0 z-50 flex items-center justify-between w-full h-16 px-4 border-b border-border-dark shrink-0 bg-dark-bg backdrop-blur-xl">
-      <div className="flex items-center w-full">
-        <React.Suspense fallback={<div className="flex-1 overflow-auto" />}>
-          {/* @ts-ignore */}
-          <UserOrLogin />
-        </React.Suspense>
-      </div>
-      <div className="flex items-center justify-end space-x-2">
-        <a
-          target="_blank"
-          href="https://github.com/vercel/nextjs-ai-chatbot/"
-          rel="noopener noreferrer"
-          className={cn(buttonVariants({ variant: 'outline' }))}
-          style={{ display: 'none' }}
-        >
-          <span className="ml-2">New Chat</span>
-        </a>
-        <a
-          href="https://vercel.com/templates/Next.js/nextjs-ai-chatbot"
-          target="_blank"
-          className={cn(buttonVariants())}
-          style={{ display: 'none' }}
-        >
-          <IconUser className="mr-2" />
-          <span className="block">My Account</span>
-        </a>
-      </div>
-    </header>
+    <div className="sticky top-0 z-50">
+      <header className="flex items-center justify-between w-full h-16 px-4 border-b border-border-dark shrink-0 bg-dark-bg backdrop-blur-xl">
+        <div className="flex items-center w-full">
+          <React.Suspense fallback={<div className="flex-1 overflow-auto" />}>
+            {/* @ts-ignore */}
+            <UserOrLogin />
+          </React.Suspense>
+        </div>
+        <div className="flex items-center justify-end space-x-2">
+          <a
+            target="_blank"
+            href="https://github.com/vercel/nextjs-ai-chatbot/"
+            rel="noopener noreferrer"
+            className={cn(buttonVariants({ variant: 'outline' }))}
+            style={{ display: 'none' }}
+          >
+            <span className="ml-2">New Chat</span>
+          </a>
+          <a
+            href="https://vercel.com/templates/Next.js/nextjs-ai-chatbot"
+            target="_blank"
+            className={cn(buttonVariants())}
+            style={{ display: 'none' }}
+          >
+            <IconUser className="mr-2" />
+            <span className="block">My Account</span>
+          </a>
+        </div>
+      </header>
+      
+      {/* Secondary navbar for account dropdowns - only show on chat screens */}
+      {session?.user && userDetails?.fbMarketingApiKey && (
+        <ClientNavbarHandler 
+          userDetails={userDetails}
+          updateFbBusinessAcc={updateFbBusinessAcc}
+          updateFbAccountId={updateFbAccountId}
+          updateFbPageId={updateFbPageId}
+        />
+      )}
+    </div>
   )
 }
+
+// Create a separate file for this client component
+const ClientNavbarHandler = dynamic(() => import('./client-navbar-handler'), { ssr: false });
