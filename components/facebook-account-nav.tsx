@@ -32,11 +32,6 @@ const FacebookAccountNav = ({
   const pathname = usePathname()
   const isChatPage = pathname.includes('/chat/')
 
-  // Skip rendering if not on chat page
-  if (!isChatPage || !userDetails?.fbMarketingApiKey) {
-    return null
-  }
-
   const [selectedFbBusinessAcc, setSelectedFbBusinessAcc] = useState<Account | undefined>()
   const [fbBusinessAccs, setFbBusinessAccs] = useState<Account[] | undefined>(undefined)
   const [selectedFbAdAcc, setSelectedFbAdAcc] = useState<Account | undefined>(undefined)
@@ -45,6 +40,11 @@ const FacebookAccountNav = ({
   const [fbPages, setFbPages] = useState<Account[] | undefined>(undefined)
   const [instagramAccounts, setInstagramAccounts] = useState<Account[] | undefined>(undefined)
   const [selectedInstagramAccount, setSelectedInstagramAccount] = useState<Account | undefined>(undefined)
+  
+  // Skip rendering if not on chat page
+  if (!isChatPage || !userDetails?.fbMarketingApiKey) {
+    return null
+  }
 
   // Function to initialize all accounts based on user details
   async function initializeAccounts() {
