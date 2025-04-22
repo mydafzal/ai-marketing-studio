@@ -1,13 +1,29 @@
 // lib/server-only/posthog-server.ts
 'use server'
 
-import posthog from 'posthog-js'
+import { PostHog } from 'posthog-node'
 import { encryptEmail } from '../email-encryption'
+import { getConfig } from '@/utils/config'
 
-const INTERNAL_EMAILS = ['@reeply.ai', '@reeply.net']
-// const INTERNAL_EMAILS = ['@gmail.com']
+let serverPosthog: PostHog | null = null
 
-export async function isInternalUser(email: string) {
+async function getServerPosthog(): Promise<PostHog> {
+  if (serverPosthog) return serverPosthog
+
+  const config = await getConfig()
+
+  serverPosthog = new PostHog(config.posthogApiKey, {
+    host: 'https://eu.i.posthog.com',
+    flushAt: 1
+  })
+
+  return serverPosthog
+}
+
+// const INTERNAL_EMAILS = ['@reeply.ai', '@reeply.net']
+const INTERNAL_EMAILS = ['@gmail.com']
+
+function isInternalUser(email: string) {
   return INTERNAL_EMAILS.some((domain) =>
     email.toLowerCase().includes(domain)
   )
@@ -24,13 +40,17 @@ export async function trackServerEvent({
   user,
   properties = {}
 }: TrackServerEventArgs): Promise<void> {
-  if (await isInternalUser(user.email)) return
+  if (isInternalUser(user.email)) return
 
   const encryptedEmail = await encryptEmail(user.email)
-  
-  posthog.capture(event, {
-    distinct_id: user.id,
-    email: encryptedEmail,
-    ...properties
+  const posthog = await getServerPosthog()
+
+  await posthog.capture({
+    distinctId: user.id,
+    event,
+    properties: {
+      email: encryptedEmail,
+      ...properties
+    }
   })
 }
