@@ -4,6 +4,7 @@ import {
 	CheckIcon,
 	ChevronDownIcon,
 } from "@radix-ui/react-icons";
+import { cn } from "@/lib/utils";
 
 type Account = {
     name: string;
@@ -11,42 +12,54 @@ type Account = {
     profile_picture_url?: string;
 }
 
-type FBAccountDropdownProps ={
-    title:string;
-    selectedAcccount:Account | undefined
+type FBAccountDropdownProps = {
+    title: string;
+    selectedAcccount: Account | undefined
     accounts: Account[] | undefined
-    handleAccountChange:(id:string)=>void;
+    handleAccountChange: (id: string) => void;
+    className?: string;
 }
 
-const FBAccountDropdown = ({title,selectedAcccount,accounts,handleAccountChange}:FBAccountDropdownProps) => {
+const FBAccountDropdown = ({ title, selectedAcccount, accounts, handleAccountChange, className }: FBAccountDropdownProps) => {
 
-    function handleSelect(id:string){
+    function handleSelect(id: string){
         handleAccountChange(id)
     }
 
+    // Check if we're in the navigation bar (based on className)
+    const isNavBar = className?.includes('nav-bar');
+
 	return (
-        <div className="mb-4">
-            <p className="text-black dark:text-white mb-1">{title}</p>
+        <div className={cn("mb-4", className)}>
+            <p className="text-black dark:text-white mb-1 text-xs font-medium">{title}</p>
             <DropdownMenu.Root>
                 <DropdownMenu.Trigger asChild>
                     <button
-                        className="min-h-[55px] flex min-w-[220px] border px-2 py-1 items-center justify-between rounded bg-white text-black outline-none hover:bg-violet3 focus:shadow-[0_0_0_2px] focus:shadow-black dark:text-black"
-                        aria-label="Customise options"
+                        className={cn(
+                            "flex border px-2 py-1 items-center justify-between rounded bg-white text-black outline-none",
+                            "hover:bg-zinc-50 focus:shadow-[0_0_0_2px] focus:shadow-black dark:text-black",
+                            isNavBar ? "min-h-[40px] min-w-[180px]" : "min-h-[55px] min-w-[220px]"
+                        )}
+                        aria-label={`Select ${title}`}
                     >
-                        {selectedAcccount ? <div className="flex-1 text-left flex items-center gap-2">
-                            {selectedAcccount.profile_picture_url && (
-                              <img 
-                                src={selectedAcccount.profile_picture_url} 
-                                alt={selectedAcccount.name} 
-                                className="w-8 h-8 rounded-full object-cover"
-                              />
-                            )}
-                            <div>
-                              <p className="text-lg text-black">{selectedAcccount.name}</p>
-                              <p className="text-xs text-black">{selectedAcccount.id}</p>
+                        {selectedAcccount ? 
+                            <div className="flex-1 text-left flex items-center gap-2 overflow-hidden">
+                                {selectedAcccount.profile_picture_url && (
+                                  <img 
+                                    src={selectedAcccount.profile_picture_url} 
+                                    alt={selectedAcccount.name} 
+                                    className={cn("rounded-full object-cover", isNavBar ? "w-6 h-6" : "w-8 h-8")}
+                                  />
+                                )}
+                                <div className="overflow-hidden">
+                                  <p className={cn("text-black truncate", isNavBar ? "text-sm" : "text-lg")}>{selectedAcccount.name}</p>
+                                  <p className="text-xs text-black truncate">{selectedAcccount.id}</p>
+                                </div>
                             </div>
-                        </div>:<span className="text-black">Click to Select</span>}
-                        <ChevronDownIcon className="text-black"/>
+                            :
+                            <span className="text-black">{isNavBar ? "Select" : "Click to Select"}</span>
+                        }
+                        <ChevronDownIcon className="text-black ml-1 flex-shrink-0"/>
                     </button>
                 </DropdownMenu.Trigger>
 
@@ -64,10 +77,10 @@ const FBAccountDropdown = ({title,selectedAcccount,accounts,handleAccountChange}
                             }}
                         >
                             {
-                                accounts?accounts.map((account, index) => (
+                                accounts ? accounts.map((account, index) => (
                                         <div key={index}>
                                             <DropdownMenu.Item 
-                                                onSelect={()=>handleSelect(account.id)}
+                                                onSelect={() => handleSelect(account.id)}
                                                 className="mb-1 py-1 group bg-white relative flex select-none items-center rounded px-2 text-xs leading-none text-black outline-none data-[disabled]:pointer-events-none data-[highlighted]:bg-violet9 data-[disabled]:text-black data-[highlighted]:text-white">
                                                     <div className="flex-1 flex items-center gap-2">
                                                         {account.profile_picture_url && (
@@ -82,20 +95,18 @@ const FBAccountDropdown = ({title,selectedAcccount,accounts,handleAccountChange}
                                                           <p className="text-black data-[highlighted]:text-white">{account.id}</p>
                                                         </div>
                                                     </div>
-                                                    {account.id==selectedAcccount?.id &&<CheckIcon className="h-4 w-4 text-black"/>}
+                                                    {account.id==selectedAcccount?.id && <CheckIcon className="h-4 w-4 text-black"/>}
                                             </DropdownMenu.Item>
                                             <div className="border-b border-[#e7e7e7]"></div>
                                         </div>
                                     )
-                                ):<span className="text-black p-2">No account found</span>
+                                ) : <span className="text-black p-2">No account found</span>
                             }
                         </div>
                     </DropdownMenu.Content>
                 </DropdownMenu.Portal>
             </DropdownMenu.Root>
-
         </div>
-
 	);
 };
 
