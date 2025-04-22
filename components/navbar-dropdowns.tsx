@@ -370,6 +370,11 @@ const NavbarDropdowns = ({
     }
   }, [selectedFbBusinessAcc]);
 
+  // Only render the navigation area if there's a valid Facebook Marketing API key
+  if (!userDetails?.fbMarketingApiKey) {
+    return null;
+  }
+  
   return (
     <div className="flex items-center justify-center space-x-6 px-6 py-2 bg-dark-bg border-b border-border-dark w-full">
       <div className="flex items-center relative">
