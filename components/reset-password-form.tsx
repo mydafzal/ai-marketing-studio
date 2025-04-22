@@ -157,7 +157,7 @@ export default function ResetPasswordForm() {
                 Reset Code
               </label>
               <p className="text-sm text-zinc-500 mb-4">
-                We've sent a reset code to {email}
+                We have sent a reset code to {email}
               </p>
               <div className="relative">
                 <input
