@@ -44,7 +44,8 @@ export async function POST(req: NextRequest) {
       video_ids = [],
       daily_campaign_budget, // Extract daily_campaign_budget as shown in documentation
       company_name,  // Make sure we extract company_name
-      instagram_account_id
+      instagram_account_id,
+      post_assessment_campaign_objective // Extract campaign objective if provided
     } = body
 
     console.log('📊 Request validation data:', {
@@ -53,7 +54,8 @@ export async function POST(req: NextRequest) {
       'Has Website Link': !!website_link,
       'Image hashes count': image_hashes.length,
       'Video IDs count': video_ids.length,
-      'Location data count': location_data?.length || 0
+      'Location data count': location_data?.length || 0,
+      'Campaign Objective': post_assessment_campaign_objective || 'Auto (not specified)'
     });
     
     // Log location data structure to help debug issues
@@ -137,7 +139,7 @@ export async function POST(req: NextRequest) {
     console.log('🎬 Final video IDs being sent to master flow:', JSON.stringify(processedVideoIds));
     
     // Prepare the request payload based on exact format from documentation example
-    const requestPayload = {
+    const requestPayload: any = {
       fb_account_id,
       campaign_flow_session_id,
       company_name: company_name || 'Reeply AI', // Add company_name field which is required
@@ -153,6 +155,13 @@ export async function POST(req: NextRequest) {
       instagram_account_id
     };
     
+    // Only add post_assessment_campaign_objective if it's provided and valid
+    if (post_assessment_campaign_objective && 
+        ['recruitment', 'lead_generation', 'conversions', 'awareness'].includes(post_assessment_campaign_objective)) {
+      console.log(`🎯 Adding campaign objective to request: ${post_assessment_campaign_objective}`);
+      requestPayload.post_assessment_campaign_objective = post_assessment_campaign_objective;
+    }
+    
     console.log('📤 Sending request to backend with params:', {
       'FB Account ID': fb_account_id,
       'Campaign Session ID': campaign_flow_session_id,
@@ -162,7 +171,8 @@ export async function POST(req: NextRequest) {
       'Videos': video_ids.length,
       'Locations': location_data?.length || 0,
       'Daily Campaign Budget': daily_campaign_budget,
-      'Website Link': website_link
+      'Website Link': website_link,
+      'Campaign Objective': post_assessment_campaign_objective || 'Auto (not specified)'
     });
     
     // Log detailed video_ids for debugging the video upload issues
@@ -212,7 +222,7 @@ export async function POST(req: NextRequest) {
     // Prepare headers - authorization is always required
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${process.env.FASTY_API_TOKEN || process.env.FASTYBOT_API_KEY}`
+      'Authorization': `Bearer ${process.env.FASTY_API_TOKEN}`
     };
     
     // Only add the fb-api-key header if a token exists
