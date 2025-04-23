@@ -60,10 +60,83 @@ interface IHistoricalMetrics {
 }
 
 /** Ad creatives metrics from the creative results component */
+/** Raw Creative structure */
+interface RawCreative {
+  id: string;
+  name: string;
+  status: string;
+  object_type: "VIDEO" | "IMAGE" | "SHARE";
+  thumbnail_url?: string;
+  video_url?: string;
+  object_story_spec: {
+    page_id: string;
+    video_data?: {
+      video_id: string;
+      title: string;
+      message: string;
+      image_url: string;
+      image_hash: string;
+    };
+    link_data?: {
+      name: string;
+      message: string;
+      link: string;
+      image_hash: string;
+    };
+  };
+}
+
+/** Calculate performance score for a creative - exact same logic as in campaignresults-creatives */
+function getPerformanceScore(creative: AdCreativeMetrics): number {
+  const m = creative.metrics;
+  // watchTime is in seconds
+  return (
+    m.engagement * 2 +
+    m.impressions * 0.3 +
+    m.watchTime * 0.03 +
+    m.reach * 0.1 -
+    m.costPerClick * 5
+  );
+}
+
+/** Gets the best performer ID for a specific metric - exact same logic as in campaignresults-creatives */
+function getBestPerformerIdForMetric(
+  creatives: AdCreativeMetrics[],
+  metric: string
+): string {
+  if (!creatives.length) return "";
+  
+  const costMetrics = [
+    "costPerClick",
+    "cpp",
+    "cpm",
+    "spend",
+    "costPerLead",
+    "costPerConversion",
+  ];
+  
+  const isLowerBetter = costMetrics.includes(metric);
+  
+  return [...creatives]
+    .sort((a, b) => {
+      return isLowerBetter
+        ? Number(a.metrics[metric as keyof typeof a.metrics] || 0) - 
+          Number(b.metrics[metric as keyof typeof b.metrics] || 0)
+        : Number(b.metrics[metric as keyof typeof b.metrics] || 0) - 
+          Number(a.metrics[metric as keyof typeof a.metrics] || 0);
+    })[0]?.id || "";
+}
+
+/** Ad Creative with metrics structure, matches exactly what's used in campaignresults-creatives */
 interface AdCreativeMetrics {
   id: string;
   name: string;
+  creativeName?: string;
+  status: string;
   type: "image" | "video";
+  url?: string;
+  videoId?: string;
+  object_story_spec: any;
   metrics: {
     impressions: number;
     reach: number;
@@ -119,6 +192,9 @@ const fetchingDataDict: Record<string, string> = {
   nl: "Even wat leuke inzichten in elkaar zetten! 🏗️"
 };
 
+// -------------- Constants ----------------------------------
+const FB_API_KEY = process.env.NEXT_PUBLIC_FB_API_KEY || "";
+
 // -------------- The Main Component --------------------------
 export default function AICampaignAnalysisBoard({
   campaignId,
@@ -134,6 +210,7 @@ export default function AICampaignAnalysisBoard({
   // Final data
   const [campaignSummary, setCampaignSummary] = useState<ICampaignSummary | null>(null);
   const [historicalMetrics, setHistoricalMetrics] = useState<IHistoricalMetrics | null>(null);
+  const [rawCreatives, setRawCreatives] = useState<RawCreative[]>([]);
   const [adCreativeMetrics, setAdCreativeMetrics] = useState<AdCreativeMetrics[]>([]);
   const [aiAnalysis, setAiAnalysis] = useState<IAIAnalysis | null>(null);
 
@@ -188,15 +265,103 @@ export default function AICampaignAnalysisBoard({
       const histData = await getCampaignHistoricalMetrics(campaignId, "last_year", true);
       setHistoricalMetrics(histData);
 
-      // 3) fetch ad creative metrics (same as in campaignresults-creatives)
+      // 3) fetch raw creatives first
       try {
-        const { adCreatives } = await getAllAdMetricsByCampaignId(campaignId);
-        setAdCreativeMetrics(adCreatives);
+        const res = await fetch(
+          `/api/fasty-bot/proxy-get-adcreatives?campaignId=${campaignId}`,
+          {
+            headers: {
+              "fb-api-key": FB_API_KEY,
+            },
+          }
+        );
+        
+        if (!res.ok) {
+          throw new Error(`Failed to fetch raw ad creatives: ${await res.text()}`);
+        }
+        
+        const data = await res.json();
+        
+        const items = data?.data?.data ?? [];
+        const flattened = items.map((item: any) => ({
+          id: item.id,
+          name: item.creative.name,
+          status: item.creative.status,
+          object_type: item.creative.object_type,
+          thumbnail_url: item.creative.thumbnail_url,
+          video_url: item.creative.video_url,
+          object_story_spec: item.creative.object_story_spec,
+        })) as RawCreative[];
+
+        setRawCreatives(flattened);
+        
+        // 4) Now fetch metrics and merge with raw creatives
+        const { adCreatives: metricsArray } = await getAllAdMetricsByCampaignId(campaignId);
+        
+        const merged = flattened.map((rc) => {
+          const match = metricsArray.find((m: any) => m.id === rc.id);
+          if (match) {
+            return {
+              id: rc.id,
+              name: match.name, // Use ad name from metrics
+              creativeName: rc.name, // Store original creative name
+              status: rc.status,
+              type: match.type,
+              url: rc.thumbnail_url,
+              videoId: rc.object_story_spec?.video_data?.video_id,
+              object_story_spec: rc.object_story_spec,
+              metrics: match.metrics,
+            };
+          } else {
+            const fallbackType: "video" | "image" =
+              rc.object_type === "VIDEO" ? "video" : "image";
+            return {
+              id: rc.id,
+              name: rc.name, // Fallback to creative name if no metrics match
+              creativeName: rc.name,
+              status: rc.status,
+              type: fallbackType,
+              url: rc.thumbnail_url,
+              videoId: rc.object_story_spec?.video_data?.video_id,
+              object_story_spec: rc.object_story_spec,
+              metrics: {
+                impressions: 0,
+                reach: 0,
+                spend: 0,
+                engagement: 0,
+                watchTime: 0,
+                conversionRate: 0,
+                clickThroughRate: 0,
+                costPerClick: 0,
+                frequency: 0,
+                cpp: 0,
+                cpm: 0,
+                inlineLinkClicks: 0,
+                inlineLinkClickRate: 0,
+                outboundClicks: 0,
+                outboundClickRate: 0,
+                uniqueClicks: 0,
+                uniqueClickRate: 0,
+                websiteCtr: 0,
+                leads: 0,
+                conversions: 0,
+                costPerLead: 0,
+                costPerConversion: 0,
+                conversionValue: 0,
+                roi: 0,
+                objective: "",
+                optimizationGoal: "",
+              },
+            };
+          }
+        });
+        
+        setAdCreativeMetrics(merged);
       } catch (adMetricsErr) {
-        console.error("Error fetching ad creative metrics:", adMetricsErr);
+        console.error("Error fetching and processing ad creative metrics:", adMetricsErr);
       }
 
-      // 4) AI: pass all data for analysis
+      // 5) AI: pass all data for analysis
       const aiText = await getRealAIAnalysis(summaryData, histData, userLang);
       setAiAnalysis({ shortText: aiText });
     } catch (err) {
@@ -220,33 +385,147 @@ export default function AICampaignAnalysisBoard({
     const advPlat = JSON.stringify(advData.platforms || {});
     const advDemo = JSON.stringify(advData.demographics || {});
 
-    // Determine campaign objective/type
-    const campaignObjective = summary.objective || 
-      (adCreativeMetrics.length > 0 ? adCreativeMetrics[0].metrics.objective : "");
+    // Determine campaign objective/type from either source
+    let campaignObjective = summary.objective || "";
+    if (!campaignObjective && adCreativeMetrics.length > 0 && adCreativeMetrics[0].metrics.objective) {
+      campaignObjective = adCreativeMetrics[0].metrics.objective;
+    }
     
-    // Format the ad creative metrics for the AI
-    const formattedAdCreatives = adCreativeMetrics.map(creative => ({
-      id: creative.id,
-      name: creative.name,
-      type: creative.type,
+    // Create combined metrics from all ad creatives (like in the types.ts getCombinedMetrics function)
+    const combinedCreativeMetrics = adCreativeMetrics.length > 0 ? 
+      adCreativeMetrics.reduce((combined, creative) => {
+        // Initialize with first creative's metrics if this is the first one
+        if (!combined) {
+          return { ...creative.metrics };
+        }
+        
+        // Add metrics from this creative
+        combined.impressions += creative.metrics.impressions || 0;
+        combined.reach += creative.metrics.reach || 0;
+        combined.spend += creative.metrics.spend || 0;
+        combined.engagement += creative.metrics.engagement || 0;
+        combined.watchTime += creative.metrics.watchTime || 0;
+        combined.inlineLinkClicks += creative.metrics.inlineLinkClicks || 0;
+        combined.outboundClicks += creative.metrics.outboundClicks || 0;
+        combined.uniqueClicks += creative.metrics.uniqueClicks || 0;
+        combined.leads += creative.metrics.leads || 0;
+        combined.conversions += creative.metrics.conversions || 0;
+        combined.conversionValue += creative.metrics.conversionValue || 0;
+        
+        // Return the updated combined metrics
+        return combined;
+      }, null as any) : null;
+    
+    // Identify top performers - exactly as done in the creative results component
+    const sortedByPerformance = [...adCreativeMetrics].sort(
+      (a, b) => getPerformanceScore(b) - getPerformanceScore(a)
+    );
+    const topPerformer = sortedByPerformance.length > 0 ? sortedByPerformance[0] : null;
+    const secondBest = sortedByPerformance.length > 1 ? sortedByPerformance[1] : null;
+
+    // Get best performers for specific important metrics
+    const bestCtrId = getBestPerformerIdForMetric(adCreativeMetrics, "clickThroughRate");
+    const bestCpcId = getBestPerformerIdForMetric(adCreativeMetrics, "costPerClick");
+    const bestCplId = getBestPerformerIdForMetric(adCreativeMetrics, "costPerLead");
+    const bestConversionRateId = getBestPerformerIdForMetric(adCreativeMetrics, "conversionRate");
+    
+    // Use proper message contents from ad creatives and add performance rankings
+    const adCreativeContents = adCreativeMetrics.map(creative => {
+      const message = creative.object_story_spec?.video_data?.message || 
+                      creative.object_story_spec?.link_data?.message || "";
+      
+      // Add performance info
+      const isTopPerformer = topPerformer && creative.id === topPerformer.id;
+      const isSecondBest = secondBest && creative.id === secondBest.id;
+      const isBestCtr = creative.id === bestCtrId;
+      const isBestCpc = creative.id === bestCpcId;
+      const isBestCpl = creative.id === bestCplId;
+      const isBestConversionRate = creative.id === bestConversionRateId;
+      
+      // Calculate performance score using the same formula
+      const performanceScore = getPerformanceScore(creative);
+                      
+      return {
+        id: creative.id,
+        name: creative.name,
+        creativeName: creative.creativeName,
+        type: creative.type,
+        status: creative.status,
+        message: message,
+        isTopPerformer: isTopPerformer,
+        isSecondBest: isSecondBest,
+        isBestCtr: isBestCtr, 
+        isBestCpc: isBestCpc,
+        isBestCpl: isBestCpl,
+        isBestConversionRate: isBestConversionRate,
+        performanceScore: performanceScore,
+        metrics: {
+          impressions: creative.metrics.impressions,
+          reach: creative.metrics.reach,
+          spend: creative.metrics.spend,
+          engagement: creative.metrics.engagement,
+          clickThroughRate: creative.metrics.clickThroughRate,
+          costPerClick: creative.metrics.costPerClick,
+          inlineLinkClicks: creative.metrics.inlineLinkClicks,
+          leads: creative.metrics.leads,
+          conversions: creative.metrics.conversions,
+          costPerLead: creative.metrics.costPerLead,
+          costPerConversion: creative.metrics.costPerConversion,
+          roi: creative.metrics.roi
+        }
+      };
+    });
+
+    // Create a clearer top performers summary
+    const topPerformerSummary = topPerformer ? {
+      id: topPerformer.id,
+      name: topPerformer.name,
+      type: topPerformer.type,
+      status: topPerformer.status,
+      isTopPerformer: true,
+      performanceScore: getPerformanceScore(topPerformer),
+      message: topPerformer.object_story_spec?.video_data?.message || 
+               topPerformer.object_story_spec?.link_data?.message || "",
       metrics: {
-        impressions: creative.metrics.impressions,
-        reach: creative.metrics.reach,
-        spend: creative.metrics.spend,
-        engagement: creative.metrics.engagement,
-        watchTime: creative.metrics.watchTime,
-        conversionRate: creative.metrics.conversionRate,
-        clickThroughRate: creative.metrics.clickThroughRate,
-        costPerClick: creative.metrics.costPerClick,
-        frequency: creative.metrics.frequency,
-        inlineLinkClicks: creative.metrics.inlineLinkClicks,
-        uniqueClicks: creative.metrics.uniqueClicks,
-        leads: creative.metrics.leads,
-        conversions: creative.metrics.conversions,
-        costPerLead: creative.metrics.costPerLead,
-        costPerConversion: creative.metrics.costPerConversion
+        impressions: topPerformer.metrics.impressions,
+        engagement: topPerformer.metrics.engagement,
+        reach: topPerformer.metrics.reach,
+        clickThroughRate: topPerformer.metrics.clickThroughRate,
+        costPerClick: topPerformer.metrics.costPerClick,
+        leads: topPerformer.metrics.leads,
+        conversions: topPerformer.metrics.conversions,
+        costPerLead: topPerformer.metrics.costPerLead,
+        costPerConversion: topPerformer.metrics.costPerConversion
       }
-    }));
+    } : null;
+    
+    const secondBestSummary = secondBest ? {
+      id: secondBest.id,
+      name: secondBest.name,
+      type: secondBest.type,
+      status: secondBest.status,
+      isSecondBest: true,
+      performanceScore: getPerformanceScore(secondBest),
+      message: secondBest.object_story_spec?.video_data?.message || 
+               secondBest.object_story_spec?.link_data?.message || "",
+      metrics: {
+        impressions: secondBest.metrics.impressions,
+        engagement: secondBest.metrics.engagement,
+        reach: secondBest.metrics.reach,
+        clickThroughRate: secondBest.metrics.clickThroughRate,
+        costPerClick: secondBest.metrics.costPerClick,
+        leads: secondBest.metrics.leads,
+        conversions: secondBest.metrics.conversions,
+        costPerLead: secondBest.metrics.costPerLead,
+        costPerConversion: secondBest.metrics.costPerConversion
+      }
+    } : null;
+
+    // Get metrics winners for clear highlighting
+    const bestCtrCreative = adCreativeMetrics.find(c => c.id === bestCtrId);
+    const bestCpcCreative = adCreativeMetrics.find(c => c.id === bestCpcId);
+    const bestCplCreative = adCreativeMetrics.find(c => c.id === bestCplId);
+    const bestConversionRateCreative = adCreativeMetrics.find(c => c.id === bestConversionRateId);
 
     const prompt = `
 Please respond in ${language}, using a friendly, informal tone${
@@ -263,14 +542,29 @@ Total leads: ${summary.total_leads}
 Total clicks: ${summary.clicks}
 Impressions: ${summary.impressions}
 
+IMPORTANT - TOP PERFORMING CREATIVES:
+-------------------------
+TOP PERFORMER: ${topPerformerSummary ? JSON.stringify(topPerformerSummary, null, 2) : "No top performer found"}
+-------------------------
+RUNNER-UP (SECOND BEST): ${secondBestSummary ? JSON.stringify(secondBestSummary, null, 2) : "No runner-up found"}
+-------------------------
+BEST CTR CREATIVE: ${bestCtrCreative ? bestCtrCreative.name + " (CTR: " + bestCtrCreative.metrics.clickThroughRate.toFixed(2) + "%)" : "None"}
+BEST COST-PER-CLICK CREATIVE: ${bestCpcCreative ? bestCpcCreative.name + " (CPC: $" + bestCpcCreative.metrics.costPerClick.toFixed(2) + ")" : "None"}
+BEST COST-PER-LEAD CREATIVE: ${bestCplCreative ? bestCplCreative.name + " (CPL: $" + bestCplCreative.metrics.costPerLead.toFixed(2) + ")" : "None"}
+BEST CONVERSION RATE CREATIVE: ${bestConversionRateCreative ? bestConversionRateCreative.name + " (Conv. Rate: " + bestConversionRateCreative.metrics.conversionRate.toFixed(2) + "%)" : "None"}
+-------------------------
+
 We also have advanced data on time-of-day, platforms, and demographics. 
 Here is the advanced data in JSON form (time_of_day, platforms, demographics):
 time_of_day: ${advTime}
 platforms: ${advPlat}
 demographics: ${advDemo}
 
-Ad Creative Metrics:
-${JSON.stringify(formattedAdCreatives, null, 2)}
+All Ad Creative Metrics (total: ${adCreativeMetrics.length}):
+${JSON.stringify(adCreativeContents, null, 2)}
+
+Combined Ad Creative Metrics (aggregated from all creatives):
+${JSON.stringify(combinedCreativeMetrics, null, 2)}
 
 Write a concise analysis, referencing key numbers, and giving actionable suggestions in ${language}.
 
@@ -279,17 +573,26 @@ IMPORTANT INSTRUCTIONS BASED ON CAMPAIGN TYPE:
 - If this is a lead generation campaign (objective contains "LEAD" or "FORM"), focus on leads, cost per lead, and lead quality metrics.
 - If this is a traffic or engagement campaign (objective contains "TRAFFIC", "ENGAGEMENT", "AWARENESS", "REACH"), focus on link clicks, impressions, and reach as the primary metrics. Do NOT discuss leads or conversions as primary metrics.
 
+CREATIVE PERFORMANCE ANALYSIS:
+- Each creative has "isTopPerformer" and "isSecondBest" flags to indicate overall performance.
+- Each creative also has flags for specific metrics: "isBestCtr", "isBestCpc", "isBestCpl", and "isBestConversionRate".
+- The "performanceScore" is a weighted calculation based on engagement, impressions, watch time, reach, and cost per click.
+- Make sure to clearly identify which ad creative is the top performer and explain why.
+- Compare the content and characteristics of top-performing creatives versus lower-performing ones.
+- Note any patterns in what makes creatives successful (e.g., video vs. image, messaging themes, etc.)
+
 The goal is that the user learns:
 - Which platform delivers best ROI based on campaign objective (for conversion campaigns: lowest cost per conversion; for lead campaigns: lowest cost per lead; for traffic: lowest cost per click).
 - Which time of day performs best for engagement/conversions.
 - Which demographics yield the best results.
-- How the different ad creatives compare in performance.
+- How the different ad creatives compare in performance and WHY certain creatives perform better than others.
 
 Then recommend:
-1. Which ad creatives should receive more budget allocation.
+1. Which specific ad creatives should receive more budget allocation (refer to them by name).
 2. Where to allocate more budget (platforms, demographics, or times).
 3. Specific adjustments or scaling strategies to improve performance.
-4. How to maximize KPIs relevant to the campaign objective for future campaigns.
+4. How to create future ad creatives based on what's working in the top-performing ads.
+5. How to maximize KPIs relevant to the campaign objective for future campaigns.
 `.trim();
 
     try {
