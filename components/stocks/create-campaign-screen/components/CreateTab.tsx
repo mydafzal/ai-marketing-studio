@@ -1,6 +1,14 @@
 import React, { useState } from 'react';
-import { Upload, Info, XCircle, Loader2, Plus, ChevronDown, ChevronRight } from 'lucide-react';
+import { Upload, Info, XCircle, Loader2, Plus, ChevronDown, ChevronRight, Settings } from 'lucide-react';
 import { MediaItem } from '../types';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogTrigger,
+  DialogClose
+} from '@/components/ui/dialog';
 
 interface CreateTabProps {
   mediaItems: MediaItem[];
@@ -33,7 +41,6 @@ export function CreateTab({
   handleReviewTransition,
   isLoading
 }: CreateTabProps) {
-  const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
 
   const objectives = [
     {
@@ -58,6 +65,7 @@ export function CreateTab({
     }
   ];
 
+  // Remove showAdvancedSettings state since we're using Dialog now
   return (
     <>
       {/* Upload area - smaller height + immediate display */}
@@ -169,47 +177,85 @@ export function CreateTab({
         />
       </div>
 
-      {/* Advanced Settings */}
+      {/* Advanced Settings Dialog */}
       <div className="mt-5">
-        <button 
-          className="flex items-center text-sm font-medium text-text-white hover:text-primary-green transition-colors"
-          onClick={() => setShowAdvancedSettings(!showAdvancedSettings)}
-        >
-          {showAdvancedSettings ? 
-            <ChevronDown className="mr-1" size={16} /> : 
-            <ChevronRight className="mr-1" size={16} />
-          }
-          Advanced Settings
-        </button>
-        
-        {showAdvancedSettings && (
-          <div className="mt-3 space-y-3 p-3 bg-dark-bg/50 rounded-lg border border-border-dark">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-text-white">Campaign Objective</label>
-              <div className="relative">
-                <select
-                  value={campaignObjective}
-                  onChange={e => setCampaignObjective(e.target.value)}
-                  className="w-full px-3 py-2.5 bg-dark-bg border border-border-dark text-text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-green focus:border-primary-green appearance-none"
-                >
-                  <option value="">Auto</option>
+        <Dialog>
+          <DialogTrigger asChild>
+            <button 
+              className="flex items-center text-sm font-medium text-text-white hover:text-primary-green transition-colors"
+            >
+              <Settings className="mr-1" size={16} />
+              Advanced Settings
+            </button>
+          </DialogTrigger>
+          <DialogContent className="bg-dark-bg border border-border-dark text-text-white">
+            <DialogHeader>
+              <DialogTitle className="text-text-white">Advanced Settings</DialogTitle>
+            </DialogHeader>
+            
+            <div className="mt-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-text-white">Campaign Objective</label>
+                
+                <div className="space-y-3 mt-2">
+                  {/* Auto Option */}
+                  <div className="flex items-start space-x-2">
+                    <div className="flex items-center h-5 mt-1">
+                      <input
+                        id="objective-auto"
+                        type="radio"
+                        value=""
+                        checked={campaignObjective === ""}
+                        onChange={() => setCampaignObjective("")}
+                        className="w-4 h-4 border-border-dark focus:ring-primary-green accent-primary-green"
+                      />
+                    </div>
+                    <div className="flex flex-col">
+                      <label htmlFor="objective-auto" className="text-sm font-medium text-text-white">
+                        Auto
+                      </label>
+                      <span className="text-xs text-text-light-gray">
+                        Let AI automatically select the best objective for your campaign.
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {/* Other Objectives */}
                   {objectives.map(objective => (
-                    <option key={objective.value} value={objective.value}>
-                      {objective.label}
-                    </option>
+                    <div key={objective.value} className="flex items-start space-x-2">
+                      <div className="flex items-center h-5 mt-1">
+                        <input
+                          id={`objective-${objective.value}`}
+                          type="radio"
+                          value={objective.value}
+                          checked={campaignObjective === objective.value}
+                          onChange={() => setCampaignObjective(objective.value)}
+                          className="w-4 h-4 border-border-dark focus:ring-primary-green accent-primary-green"
+                        />
+                      </div>
+                      <div className="flex flex-col">
+                        <label htmlFor={`objective-${objective.value}`} className="text-sm font-medium text-text-white">
+                          {objective.label}
+                        </label>
+                        <span className="text-xs text-text-light-gray">
+                          {objective.description}
+                        </span>
+                      </div>
+                    </div>
                   ))}
-                </select>
-                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                  <ChevronDown size={16} className="text-text-light-gray" />
                 </div>
               </div>
-              <div className="text-xs text-text-light-gray mt-1">
-                {objectives.find(o => o.value === campaignObjective)?.description || 
-                "Let AI automatically select the best objective for your campaign."}
-              </div>
             </div>
-          </div>
-        )}
+            
+            <div className="mt-6 flex justify-end">
+              <DialogClose asChild>
+                <button className="px-4 py-2 bg-primary-green text-deep-black font-medium rounded-md hover:bg-primary-green/90 transition-colors">
+                  Done
+                </button>
+              </DialogClose>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Next Step: Preview & Review */}
