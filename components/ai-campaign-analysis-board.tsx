@@ -32,6 +32,7 @@ interface ICampaignSummary {
   impressions: number;
   reach: number;
   unique_clicks: number;
+  objective?: string; // Added to support campaign objective checks
 }
 
 /** Historical metrics including advanced data. */
