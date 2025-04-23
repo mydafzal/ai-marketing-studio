@@ -6,7 +6,7 @@ export async function getConfig() {
   }
 
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const baseUrl = process.env.NEXT_PUBLIC_PRODUCTION_URL || 'http://localhost:3000';
     const response = await fetch(`${baseUrl}/api/config`);
     if (!response.ok) {
       throw new Error('Failed to fetch config');

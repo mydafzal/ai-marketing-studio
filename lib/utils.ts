@@ -135,7 +135,8 @@ export const builQueryString = (params: Record<string, any>) => {
 
 export async function trackEvent(event: string, user: { email: string; id: string }, properties: Record<string, any> = {}) {
   try {
-    await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/posthog-track`, {
+    const baseUrl = process.env.NEXT_PUBLIC_PRODUCTION_URL || 'http://localhost:3000';
+    await fetch(`${baseUrl}/api/posthog-track`, {
       method: 'POST',
       body: JSON.stringify({
         event,
