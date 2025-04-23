@@ -265,8 +265,10 @@ export default function AICampaignAnalysisBoard({
       const histData = await getCampaignHistoricalMetrics(campaignId, "last_year", true);
       setHistoricalMetrics(histData);
 
-      // 3) fetch raw creatives first
+      // 3) fetch raw creatives first - with proper error handling
+      let mergedCreatives: AdCreativeMetrics[] = [];
       try {
+        console.log("Fetching raw creatives for campaign:", campaignId);
         const res = await fetch(
           `/api/fasty-bot/proxy-get-adcreatives?campaignId=${campaignId}`,
           {
@@ -296,11 +298,21 @@ export default function AICampaignAnalysisBoard({
         setRawCreatives(flattened);
         
         // 4) Now fetch metrics and merge with raw creatives
-        const { adCreatives: metricsArray } = await getAllAdMetricsByCampaignId(campaignId);
+        console.log("Raw creatives fetched, now fetching metrics for campaign:", campaignId);
+        const metricsResponse = await getAllAdMetricsByCampaignId(campaignId);
         
-        const merged = flattened.map((rc) => {
+        if (!metricsResponse || !metricsResponse.adCreatives) {
+          console.error("Failed to get ad metrics, response:", metricsResponse);
+          throw new Error("Metrics array is empty or undefined");
+        }
+        
+        const metricsArray = metricsResponse.adCreatives;
+        console.log("Metrics fetched successfully, found", metricsArray.length, "ad metrics");
+        
+        mergedCreatives = flattened.map((rc) => {
           const match = metricsArray.find((m: any) => m.id === rc.id);
           if (match) {
+            console.log("Found matching metrics for creative:", rc.id, match.name);
             return {
               id: rc.id,
               name: match.name, // Use ad name from metrics
@@ -313,6 +325,7 @@ export default function AICampaignAnalysisBoard({
               metrics: match.metrics,
             };
           } else {
+            console.warn("No matching metrics found for creative:", rc.id, rc.name);
             const fallbackType: "video" | "image" =
               rc.object_type === "VIDEO" ? "video" : "image";
             return {
@@ -356,13 +369,40 @@ export default function AICampaignAnalysisBoard({
           }
         });
         
-        setAdCreativeMetrics(merged);
+        console.log("Successfully merged creatives with metrics, total:", mergedCreatives.length);
+        
+        // Check for zero metrics to help with debugging
+        const hasZeroMetrics = mergedCreatives.some(c => 
+          c.metrics.impressions === 0 && 
+          c.metrics.reach === 0 && 
+          c.metrics.spend === 0
+        );
+        
+        if (hasZeroMetrics) {
+          console.warn("Warning: Some creatives have zero metrics", 
+            mergedCreatives.filter(c => 
+              c.metrics.impressions === 0 && 
+              c.metrics.reach === 0 && 
+              c.metrics.spend === 0
+            ).map(c => c.name)
+          );
+        }
+        
+        // Set the merged creative metrics
+        setAdCreativeMetrics(mergedCreatives);
+        
       } catch (adMetricsErr) {
         console.error("Error fetching and processing ad creative metrics:", adMetricsErr);
+        // Still continue with the AI analysis even if creative metrics failed
       }
 
-      // 5) AI: pass all data for analysis
-      const aiText = await getRealAIAnalysis(summaryData, histData, userLang);
+      // 5) Add a short delay to ensure state updates have propagated
+      // This is important because getRealAIAnalysis uses the state directly
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // 6) AI: Get updated metrics data directly as a parameter rather than relying on state
+      console.log("Starting AI analysis with metrics for creatives:", mergedCreatives.length);
+      const aiText = await getRealAIAnalysis(summaryData, histData, userLang, mergedCreatives);
       setAiAnalysis({ shortText: aiText });
     } catch (err) {
       console.error("Error fetching campaign data or AI:", err);
@@ -377,23 +417,42 @@ export default function AICampaignAnalysisBoard({
   async function getRealAIAnalysis(
     summary: ICampaignSummary,
     hist: IHistoricalMetrics,
-    language: string
+    language: string,
+    creativeMetrics: AdCreativeMetrics[] = [] // Accept metrics directly
   ): Promise<string> {
     // Extract advanced data if present
     const advData = hist.advanced_metrics || {};
     const advTime = JSON.stringify(advData.time_of_day || {});
     const advPlat = JSON.stringify(advData.platforms || {});
     const advDemo = JSON.stringify(advData.demographics || {});
+    
+    // Use passed creatives if available, otherwise fall back to state
+    const effectiveCreatives = creativeMetrics.length > 0 ? creativeMetrics : adCreativeMetrics;
+    
+    console.log("AI Analysis using creatives count:", effectiveCreatives.length);
+    
+    // Log some metrics to verify data
+    if (effectiveCreatives.length > 0) {
+      console.log("Sample metrics from first creative:", 
+        JSON.stringify({
+          name: effectiveCreatives[0].name,
+          impressions: effectiveCreatives[0].metrics.impressions,
+          spend: effectiveCreatives[0].metrics.spend,
+          clicks: effectiveCreatives[0].metrics.inlineLinkClicks,
+          ctr: effectiveCreatives[0].metrics.clickThroughRate
+        })
+      );
+    }
 
     // Determine campaign objective/type from either source
     let campaignObjective = summary.objective || "";
-    if (!campaignObjective && adCreativeMetrics.length > 0 && adCreativeMetrics[0].metrics.objective) {
-      campaignObjective = adCreativeMetrics[0].metrics.objective;
+    if (!campaignObjective && effectiveCreatives.length > 0 && effectiveCreatives[0].metrics.objective) {
+      campaignObjective = effectiveCreatives[0].metrics.objective;
     }
     
     // Create combined metrics from all ad creatives (like in the types.ts getCombinedMetrics function)
-    const combinedCreativeMetrics = adCreativeMetrics.length > 0 ? 
-      adCreativeMetrics.reduce((combined, creative) => {
+    const combinedCreativeMetrics = effectiveCreatives.length > 0 ? 
+      effectiveCreatives.reduce((combined, creative) => {
         // Initialize with first creative's metrics if this is the first one
         if (!combined) {
           return { ...creative.metrics };
@@ -417,20 +476,20 @@ export default function AICampaignAnalysisBoard({
       }, null as any) : null;
     
     // Identify top performers - exactly as done in the creative results component
-    const sortedByPerformance = [...adCreativeMetrics].sort(
+    const sortedByPerformance = [...effectiveCreatives].sort(
       (a, b) => getPerformanceScore(b) - getPerformanceScore(a)
     );
     const topPerformer = sortedByPerformance.length > 0 ? sortedByPerformance[0] : null;
     const secondBest = sortedByPerformance.length > 1 ? sortedByPerformance[1] : null;
 
     // Get best performers for specific important metrics
-    const bestCtrId = getBestPerformerIdForMetric(adCreativeMetrics, "clickThroughRate");
-    const bestCpcId = getBestPerformerIdForMetric(adCreativeMetrics, "costPerClick");
-    const bestCplId = getBestPerformerIdForMetric(adCreativeMetrics, "costPerLead");
-    const bestConversionRateId = getBestPerformerIdForMetric(adCreativeMetrics, "conversionRate");
+    const bestCtrId = getBestPerformerIdForMetric(effectiveCreatives, "clickThroughRate");
+    const bestCpcId = getBestPerformerIdForMetric(effectiveCreatives, "costPerClick");
+    const bestCplId = getBestPerformerIdForMetric(effectiveCreatives, "costPerLead");
+    const bestConversionRateId = getBestPerformerIdForMetric(effectiveCreatives, "conversionRate");
     
     // Use proper message contents from ad creatives and add performance rankings
-    const adCreativeContents = adCreativeMetrics.map(creative => {
+    const adCreativeContents = effectiveCreatives.map(creative => {
       const message = creative.object_story_spec?.video_data?.message || 
                       creative.object_story_spec?.link_data?.message || "";
       
@@ -522,15 +581,34 @@ export default function AICampaignAnalysisBoard({
     } : null;
 
     // Get metrics winners for clear highlighting
-    const bestCtrCreative = adCreativeMetrics.find(c => c.id === bestCtrId);
-    const bestCpcCreative = adCreativeMetrics.find(c => c.id === bestCpcId);
-    const bestCplCreative = adCreativeMetrics.find(c => c.id === bestCplId);
-    const bestConversionRateCreative = adCreativeMetrics.find(c => c.id === bestConversionRateId);
+    const bestCtrCreative = effectiveCreatives.find(c => c.id === bestCtrId);
+    const bestCpcCreative = effectiveCreatives.find(c => c.id === bestCpcId);
+    const bestCplCreative = effectiveCreatives.find(c => c.id === bestCplId);
+    const bestConversionRateCreative = effectiveCreatives.find(c => c.id === bestConversionRateId);
 
+    // Log key information about top performers for diagnostics
+    console.log("Top performer information:", 
+      topPerformer ? {
+        id: topPerformer.id,
+        name: topPerformer.name,
+        performanceScore: getPerformanceScore(topPerformer),
+        metrics: {
+          impressions: topPerformer.metrics.impressions,
+          ctr: topPerformer.metrics.clickThroughRate
+        }
+      } : "No top performer found"
+    );
+    
+    // Check if the identified best creatives are valid
+    console.log("Best CTR Creative:", bestCtrCreative ? bestCtrCreative.name : "None");
+    console.log("Best CPC Creative:", bestCpcCreative ? bestCpcCreative.name : "None");
+  
     const prompt = `
 Please respond in ${language}, using a friendly, informal tone${
   language === "de" ? " (use 'Du' for the user)" : ""
 }, with some emojis. Analyze these campaign metrics:
+
+DIAGNOSTIC INFO (for debugging, ignore): Using ${effectiveCreatives.length} creatives, top performer: ${topPerformer?.name || "None"}
 
 Campaign name: ${summary.campaign_name}
 Campaign objective: ${campaignObjective || "Unknown"}
