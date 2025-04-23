@@ -1,5 +1,5 @@
-import React from 'react';
-import { Upload, Info, XCircle, Loader2, Plus } from 'lucide-react';
+import React, { useState } from 'react';
+import { Upload, Info, XCircle, Loader2, Plus, ChevronDown, ChevronRight } from 'lucide-react';
 import { MediaItem } from '../types';
 
 interface CreateTabProps {
@@ -33,6 +33,31 @@ export function CreateTab({
   handleReviewTransition,
   isLoading
 }: CreateTabProps) {
+  const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
+
+  const objectives = [
+    {
+      value: "awareness",
+      label: "Awareness",
+      description: "Increase awareness of your brand, products, or services."
+    },
+    {
+      value: "recruitment",
+      label: "Recruitment",
+      description: "Find potential candidates for job opportunities."
+    },
+    {
+      value: "conversions",
+      label: "Conversions",
+      description: "Drive valuable actions on your website or app."
+    },
+    {
+      value: "lead_generation",
+      label: "Lead Generation",
+      description: "Collect lead information from people interested in your business."
+    }
+  ];
+
   return (
     <>
       {/* Upload area - smaller height + immediate display */}
@@ -144,6 +169,48 @@ export function CreateTab({
         />
       </div>
 
+      {/* Advanced Settings */}
+      <div className="mt-5">
+        <button 
+          className="flex items-center text-sm font-medium text-text-white hover:text-primary-green transition-colors"
+          onClick={() => setShowAdvancedSettings(!showAdvancedSettings)}
+        >
+          {showAdvancedSettings ? 
+            <ChevronDown className="mr-1" size={16} /> : 
+            <ChevronRight className="mr-1" size={16} />
+          }
+          Advanced Settings
+        </button>
+        
+        {showAdvancedSettings && (
+          <div className="mt-3 space-y-3 p-3 bg-dark-bg/50 rounded-lg border border-border-dark">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-text-white">Campaign Objective</label>
+              <div className="relative">
+                <select
+                  value={campaignObjective}
+                  onChange={e => setCampaignObjective(e.target.value)}
+                  className="w-full px-3 py-2.5 bg-dark-bg border border-border-dark text-text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-green focus:border-primary-green appearance-none"
+                >
+                  <option value="">Auto</option>
+                  {objectives.map(objective => (
+                    <option key={objective.value} value={objective.value}>
+                      {objective.label}
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                  <ChevronDown size={16} className="text-text-light-gray" />
+                </div>
+              </div>
+              <div className="text-xs text-text-light-gray mt-1">
+                {objectives.find(o => o.value === campaignObjective)?.description || 
+                "Let AI automatically select the best objective for your campaign."}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Next Step: Preview & Review */}
       <div className="mt-8">
