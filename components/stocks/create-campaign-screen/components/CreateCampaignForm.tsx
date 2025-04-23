@@ -307,7 +307,14 @@ export function CreateCampaignForm() {
         preferred_language: userData.account?.preferred_language || "en",
         privacy_policy_link: userData.account?.privacy_policy_link || '',
         instagram_account_id: userData.account?.instagramAccountId || '',
+        post_assessment_campaign_objective: 'auto',
       };
+      
+      // Add post_assessment_campaign_objective parameter only if a specific objective is selected
+      if (campaignObjective && ['recruitment', 'lead_generation', 'conversions', 'awareness'].includes(campaignObjective)) {
+        console.log(`🎯 Adding specific campaign objective: ${campaignObjective}`);
+        requestPayload.post_assessment_campaign_objective = campaignObjective;
+      }
 
       console.log('📤 Sending request to master flow endpoint with payload:', JSON.stringify(requestPayload, null, 2));
       
