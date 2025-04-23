@@ -77,8 +77,11 @@ export default function LoginForm() {
         {isFeatureToggleEnabled('AddFbToLoginPage') &&
             <FacebookConnect/>
               }
-
-
+            <div className="text-right">
+              <Link href="/reset-password" className="text-sm text-[#4BF29C] hover:text-[#5cffad] hover:underline">
+                Forgot password?
+              </Link>
+          </div> 
       </div>
 
       <Link
