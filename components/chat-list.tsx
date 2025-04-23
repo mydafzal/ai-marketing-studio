@@ -55,10 +55,10 @@ export function ChatList({ messages, session, isShared }: ChatList) {
       {!isShared && !session && <LoginPrompt />}
 
       <div className="space-y-0">
-        {messages.map((message, index) => (
+        {messages.filter(message => !message.hidden).map((message, index, filteredMessages) => (
           <div key={message.id} className="relative py-2">
             {message.display}
-            {index < messages.length - 1 && (
+            {index < filteredMessages.length - 1 && (
               <Separator 
                 className={cn(
                   "my-6",

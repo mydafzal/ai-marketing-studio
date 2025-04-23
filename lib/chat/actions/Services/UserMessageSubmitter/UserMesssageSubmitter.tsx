@@ -269,47 +269,33 @@ export async function submitUserMessage(content: string, contentImages?: Array<T
     //  2) appendNewMessagesToConversationForForFollowUp(newMessages: Message[])
 
     const pushMessages = (messages: Message[]) => {
+        // Keep track of whether messages were submitted in silent mode
+        const enhancedMessages = messages.map(message => ({
+            ...message,
+            hidden: isSilent ? true : message.hidden // Preserve existing hidden flag or set based on isSilent
+        }));
 
         aiState.done({
-
             ...aiState.get(),
-
             messages: [
-
                 ...(!isSilent ? aiState.get().messages : aiState.get().messages.filter(
-
                     (message: any) => message.id !== messageId
-
                 )).map((message: any) => ({
-
                     id: message.id,
-
                     role: message.role,
-
                     content: message.content,
-
                     name: message.name,
-
-                    timestamp: message.timestamp
-
+                    timestamp: message.timestamp,
+                    hidden: message.hidden // Preserve hidden flag when mapping messages
                 })),
-
-                ...messages
-
+                ...enhancedMessages
             ]
-
         });
 
-
-
         if (isSilent) {
-
             console.log('isSilent', isSilent, messageId)
-
-            console.log('messages', aiState.get().messages.map(m => [m.id, m.content]))
-
+            console.log('messages', aiState.get().messages.map(m => [m.id, m.content, m.hidden]))
         }
-
     }
 
 

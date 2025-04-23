@@ -3,6 +3,7 @@ import { CoreMessage } from 'ai'
 export type Message = CoreMessage & {
   id: string
   timestamp: string
+  hidden?: boolean // Optional property to mark messages that should not be shown in chat history
 }
 
 export interface Chat extends Record<string, any> {
