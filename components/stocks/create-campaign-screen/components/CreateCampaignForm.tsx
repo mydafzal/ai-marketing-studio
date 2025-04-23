@@ -293,7 +293,7 @@ export function CreateCampaignForm() {
       console.log('🔄 Proceeding immediately with campaign creation');
       
       // Prepare request payload - based on exact API documentation format
-      const requestPayload: any = {
+      const requestPayload = {
         fb_account_id: userData.account?.fbAccountId || '',
         campaign_flow_session_id: sessionId,
         company_name: companyName, // Make sure company_name is always present
@@ -307,6 +307,7 @@ export function CreateCampaignForm() {
         preferred_language: userData.account?.preferred_language || "en",
         privacy_policy_link: userData.account?.privacy_policy_link || '',
         instagram_account_id: userData.account?.instagramAccountId || '',
+        post_assessment_campaign_objective: 'auto',
       };
       
       // Add post_assessment_campaign_objective parameter only if a specific objective is selected

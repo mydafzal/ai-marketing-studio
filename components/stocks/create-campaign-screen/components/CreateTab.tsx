@@ -204,9 +204,9 @@ export function CreateTab({
                       <input
                         id="objective-auto"
                         type="radio"
-                        value=""
-                        checked={campaignObjective === ""}
-                        onChange={() => setCampaignObjective("")}
+                        value="auto"
+                        checked={campaignObjective === "auto"}
+                        onChange={() => setCampaignObjective("auto")}
                         className="w-4 h-4 border-border-dark focus:ring-primary-green accent-primary-green"
                       />
                     </div>
