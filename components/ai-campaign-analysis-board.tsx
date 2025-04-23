@@ -1,20 +1,12 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer
-} from "recharts";
 import { IconSpinner } from "@/components/ui/icons";
 import { getCampaignSummary } from "@/lib/api/fasty-bot/get-campaign-summary";
 import { getCampaignHistoricalMetrics } from "@/lib/api/fasty-bot/helpers/get-campaign-historical-metrics";
+import { getAllAdMetricsByCampaignId } from "@/lib/api/fasty-bot/get-all-ad-metrics-by-campaign-id";
 import { format } from "date-fns";
 import ReactMarkdown from "react-markdown";
-import { Brain, BarChart2, AlertTriangle, ChevronRight, Globe2 } from "lucide-react";
+import { Brain, AlertTriangle, ChevronRight } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { getUserDetail } from "@/app/actions"; // Hypothetical server action
@@ -66,23 +58,44 @@ interface IHistoricalMetrics {
   };
 }
 
+/** Ad creatives metrics from the creative results component */
+interface AdCreativeMetrics {
+  id: string;
+  name: string;
+  type: "image" | "video";
+  metrics: {
+    impressions: number;
+    reach: number;
+    spend: number;
+    engagement: number;
+    watchTime: number;
+    conversionRate: number;
+    clickThroughRate: number;
+    costPerClick: number;
+    frequency: number;
+    cpp: number;
+    cpm: number;
+    inlineLinkClicks: number;
+    inlineLinkClickRate: number;
+    outboundClicks: number;
+    outboundClickRate: number;
+    uniqueClicks: number;
+    uniqueClickRate: number;
+    websiteCtr: number;
+    leads: number;
+    conversions: number;
+    costPerLead: number;
+    costPerConversion: number;
+    conversionValue: number;
+    roi: number;
+    objective: string;
+    optimizationGoal: string;
+  };
+}
+
 /** AI analysis shape. */
 interface IAIAnalysis {
   shortText: string;
-}
-
-// -------------- Helper: Retrieve top segments ---------------
-function getTopSegments(
-  segments: Record<string, { actions?: number }> | undefined,
-  topN: number
-) {
-  if (!segments) return [];
-  const arr = Object.entries(segments).map(([key, val]) => ({
-    segmentKey: key,
-    actions: val.actions || 0
-  }));
-  arr.sort((a, b) => b.actions - a.actions);
-  return arr.slice(0, topN);
 }
 
 // -------------- Localized “thinking” messages ---------------
@@ -120,14 +133,11 @@ export default function AICampaignAnalysisBoard({
   // Final data
   const [campaignSummary, setCampaignSummary] = useState<ICampaignSummary | null>(null);
   const [historicalMetrics, setHistoricalMetrics] = useState<IHistoricalMetrics | null>(null);
+  const [adCreativeMetrics, setAdCreativeMetrics] = useState<AdCreativeMetrics[]>([]);
   const [aiAnalysis, setAiAnalysis] = useState<IAIAnalysis | null>(null);
 
   // The user’s real language fallback to "en"
   const [userLang, setUserLang] = useState<string>("en");
-
-  // We have 3 sub-tabs for advanced data
-  type AdvancedTab = "timeOfDay" | "platforms" | "demographics";
-  const [advTab, setAdvTab] = useState<AdvancedTab>("timeOfDay");
 
   /** 1) Activation => get user language => start “thinking”. */
   useEffect(() => {
@@ -166,7 +176,7 @@ export default function AICampaignAnalysisBoard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [thinkingStep]);
 
-  /** Actually fetch aggregator, historical, AI. */
+  /** Actually fetch aggregator, historical, ad creative metrics and AI. */
   async function fetchAllData() {
     try {
       // 1) aggregator
@@ -177,7 +187,15 @@ export default function AICampaignAnalysisBoard({
       const histData = await getCampaignHistoricalMetrics(campaignId, "last_year", true);
       setHistoricalMetrics(histData);
 
-      // 3) AI: pass advanced data too
+      // 3) fetch ad creative metrics (same as in campaignresults-creatives)
+      try {
+        const { adCreatives } = await getAllAdMetricsByCampaignId(campaignId);
+        setAdCreativeMetrics(adCreatives);
+      } catch (adMetricsErr) {
+        console.error("Error fetching ad creative metrics:", adMetricsErr);
+      }
+
+      // 4) AI: pass all data for analysis
       const aiText = await getRealAIAnalysis(summaryData, histData, userLang);
       setAiAnalysis({ shortText: aiText });
     } catch (err) {
@@ -201,17 +219,48 @@ export default function AICampaignAnalysisBoard({
     const advPlat = JSON.stringify(advData.platforms || {});
     const advDemo = JSON.stringify(advData.demographics || {});
 
+    // Determine campaign objective/type
+    const campaignObjective = summary.objective || 
+      (adCreativeMetrics.length > 0 ? adCreativeMetrics[0].metrics.objective : "");
+    
+    // Format the ad creative metrics for the AI
+    const formattedAdCreatives = adCreativeMetrics.map(creative => ({
+      id: creative.id,
+      name: creative.name,
+      type: creative.type,
+      metrics: {
+        impressions: creative.metrics.impressions,
+        reach: creative.metrics.reach,
+        spend: creative.metrics.spend,
+        engagement: creative.metrics.engagement,
+        watchTime: creative.metrics.watchTime,
+        conversionRate: creative.metrics.conversionRate,
+        clickThroughRate: creative.metrics.clickThroughRate,
+        costPerClick: creative.metrics.costPerClick,
+        frequency: creative.metrics.frequency,
+        inlineLinkClicks: creative.metrics.inlineLinkClicks,
+        uniqueClicks: creative.metrics.uniqueClicks,
+        leads: creative.metrics.leads,
+        conversions: creative.metrics.conversions,
+        costPerLead: creative.metrics.costPerLead,
+        costPerConversion: creative.metrics.costPerConversion
+      }
+    }));
+
     const prompt = `
 Please respond in ${language}, using a friendly, informal tone${
   language === "de" ? " (use 'Du' for the user)" : ""
 }, with some emojis. Analyze these campaign metrics:
 
 Campaign name: ${summary.campaign_name}
-Total leads: ${summary.total_leads}
+Campaign objective: ${campaignObjective || "Unknown"}
 Total spent: ${summary.total_spent.toFixed(2)}
 CTR: ${summary.ctr.toFixed(2)}%
 Reach: ${summary.reach}
 Frequency: ${summary.frequency.toFixed(2)}
+Total leads: ${summary.total_leads}
+Total clicks: ${summary.clicks}
+Impressions: ${summary.impressions}
 
 We also have advanced data on time-of-day, platforms, and demographics. 
 Here is the advanced data in JSON form (time_of_day, platforms, demographics):
@@ -219,17 +268,27 @@ time_of_day: ${advTime}
 platforms: ${advPlat}
 demographics: ${advDemo}
 
+Ad Creative Metrics:
+${JSON.stringify(formattedAdCreatives, null, 2)}
+
 Write a concise analysis, referencing key numbers, and giving actionable suggestions in ${language}.
 
+IMPORTANT INSTRUCTIONS BASED ON CAMPAIGN TYPE:
+- If this is a sales/conversion campaign (objective contains "CONVERSIONS", "SALES", or "PURCHASE"), focus on conversions metrics and ROI. Do NOT focus on leads as the primary metric.
+- If this is a lead generation campaign (objective contains "LEAD" or "FORM"), focus on leads, cost per lead, and lead quality metrics.
+- If this is a traffic or engagement campaign (objective contains "TRAFFIC", "ENGAGEMENT", "AWARENESS", "REACH"), focus on link clicks, impressions, and reach as the primary metrics. Do NOT discuss leads or conversions as primary metrics.
+
 The goal is that the user learns:
-- Which platform delivers best ROI (lowest cost per lead, highest CTR).
+- Which platform delivers best ROI based on campaign objective (for conversion campaigns: lowest cost per conversion; for lead campaigns: lowest cost per lead; for traffic: lowest cost per click).
 - Which time of day performs best for engagement/conversions.
 - Which demographics yield the best results.
+- How the different ad creatives compare in performance.
 
 Then recommend:
-1. Where to allocate more budget (platforms, demographics, or times).
-2. Specific adjustments or scaling strategies to improve performance.
-3. How to maximize CTR and reduce costs for future campaigns.
+1. Which ad creatives should receive more budget allocation.
+2. Where to allocate more budget (platforms, demographics, or times).
+3. Specific adjustments or scaling strategies to improve performance.
+4. How to maximize KPIs relevant to the campaign objective for future campaigns.
 `.trim();
 
     try {
@@ -249,86 +308,7 @@ Then recommend:
     }
   }
 
-  // Render advanced data chart based on advTab
-  function renderAdvancedChart() {
-    if (!historicalMetrics?.advanced_metrics) {
-      return (
-        <div className="flex items-center justify-center h-64 bg-zinc-800/50 rounded-lg border border-zinc-700">
-          <p className="text-sm text-zinc-400">No advanced metrics available</p>
-        </div>
-      );
-    }
-
-    // Decide which data we show
-    let segments: Record<string, { actions?: number }> | undefined;
-    let labelTitle = "Time of Day";
-
-    if (advTab === "timeOfDay") {
-      segments = historicalMetrics.advanced_metrics.time_of_day;
-      labelTitle = "Time of Day";
-    } else if (advTab === "platforms") {
-      segments = historicalMetrics.advanced_metrics.platforms;
-      labelTitle = "Platforms";
-    } else {
-      segments = historicalMetrics.advanced_metrics.demographics;
-      labelTitle = "Demographics";
-    }
-
-    const data = getTopSegments(segments, 5);
-    if (data.length === 0) {
-      return (
-        <div className="flex items-center justify-center h-64 bg-zinc-800/50 rounded-lg border border-zinc-700">
-          <p className="text-sm text-zinc-400">No data available for {labelTitle}</p>
-        </div>
-      );
-    }
-
-    // Build chart data
-    const chartData = data.map((item) => ({
-      name: item.segmentKey,
-      leads: item.actions
-    }));
-
-    return (
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <p className="text-sm font-medium text-zinc-300">Top {labelTitle} Segments</p>
-          <span className="text-xs text-zinc-500">Top 5 by leads</span>
-        </div>
-        <div className="h-64 bg-zinc-800/50 p-4 rounded-lg border border-zinc-700">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#333" opacity={0.5} />
-              <XAxis
-                dataKey="name"
-                stroke="#666"
-                fontSize={12}
-                tickLine={false}
-                axisLine={{ stroke: "#666" }}
-              />
-              <YAxis
-                stroke="#666"
-                fontSize={12}
-                tickLine={false}
-                axisLine={{ stroke: "#666" }}
-              />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "#18181b",
-                  border: "1px solid #27272a",
-                  borderRadius: "8px",
-                  boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)"
-                }}
-                labelStyle={{ color: "#a1a1aa", marginBottom: "4px" }}
-                itemStyle={{ color: "#e4e4e7", padding: "2px 0" }}
-              />
-              <Bar dataKey="leads" fill="#22c55e" radius={[4, 4, 0, 0]} maxBarSize={50} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-    );
-  }
+  // Removed advanced data chart function
 
   // ----------------- Render Logic ------------------
 
@@ -392,107 +372,27 @@ Then recommend:
   // 5) Finally show results
   return (
     <div className="space-y-6 p-6 bg-zinc-950 text-zinc-100 rounded-lg">
-      {/* Campaign Info Card */}
-      <Card className="border-zinc-800/50 bg-gradient-to-b from-zinc-900 to-zinc-900/95 shadow-xl rounded-lg">
-        <CardHeader className="pb-2">
+      {/* AI Analysis - Only keeping the text analysis */}
+      <Card className="border-zinc-800/50 bg-zinc-900 shadow-xl rounded-lg">
+        <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="text-xl font-bold text-zinc-100">
-              {campaignSummary.campaign_name}
+            <CardTitle className="flex items-center gap-2 text-zinc-100">
+              <Brain className="size-5 text-blue-400" />
+              AI Campaign Analysis
             </CardTitle>
-            <div
-              className={cn(
-                "px-3 py-1 rounded-full text-xs font-medium",
-                campaignSummary.status === "ACTIVE"
-                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                  : "bg-amber-500/20 text-amber-400 border border-amber-500/30"
-              )}
-            >
-              {campaignSummary.status}
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <div className="space-y-1">
-              <p className="text-xs uppercase text-zinc-500">Created</p>
-              <p className="text-sm text-zinc-300">
-                {format(new Date(campaignSummary.creation_date), "MMM d, yyyy HH:mm")}
-              </p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs uppercase text-zinc-500">Performance</p>
-              <p className="text-sm">
-                <span className="text-emerald-400 font-medium">
-                  {campaignSummary.total_leads} leads
-                </span>
-                <span className="text-zinc-600 mx-2">|</span>
-                <span className="text-blue-400 font-medium">
-                  €{campaignSummary.total_spent.toFixed(2)}
-                </span>
-              </p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs uppercase text-zinc-500">Reach & CTR</p>
-              <p className="text-sm">
-                <span className="text-zinc-300">
-                  {campaignSummary.reach.toLocaleString()}
-                </span>
-                <span className="text-zinc-600 mx-2">|</span>
-                <span className="text-purple-300">
-                  {campaignSummary.ctr.toFixed(2)}%
-                </span>
-              </p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs uppercase text-zinc-500">Frequency</p>
-              <p className="text-sm text-zinc-300">
-                {campaignSummary.frequency.toFixed(1)} impressions/user
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Advanced Metrics Tabs */}
-      <Card className="border-zinc-800/50 bg-zinc-900 shadow-xl rounded-lg">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-zinc-100">
-            <Globe2 className="size-5 text-zinc-400" />
-            Advanced Metrics
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-2 mb-4">
-            {[
-              { id: "timeOfDay" as AdvancedTab, label: "Time of Day" },
-              { id: "platforms" as AdvancedTab, label: "Platforms" },
-              { id: "demographics" as AdvancedTab, label: "Demographics" }
-            ].map((tab) => (
-              <button
-                key={tab.id}
+            {campaignSummary && (
+              <div
                 className={cn(
-                  "px-4 py-2 rounded-lg text-sm font-medium transition-all",
-                  advTab === tab.id
-                    ? "bg-zinc-800 text-zinc-100 shadow-lg shadow-zinc-950/50"
-                    : "text-zinc-400 hover:bg-zinc-800/50"
+                  "px-3 py-1 rounded-full text-xs font-medium",
+                  campaignSummary.status === "ACTIVE"
+                    ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                    : "bg-amber-500/20 text-amber-400 border border-amber-500/30"
                 )}
-                onClick={() => setAdvTab(tab.id)}
               >
-                {tab.label}
-              </button>
-            ))}
+                {campaignSummary.status}
+              </div>
+            )}
           </div>
-          {renderAdvancedChart()}
-        </CardContent>
-      </Card>
-
-      {/* AI Analysis */}
-      <Card className="border-zinc-800/50 bg-zinc-900 shadow-xl rounded-lg">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-zinc-100">
-            <Brain className="size-5 text-blue-400" />
-            AI Campaign Analysis
-          </CardTitle>
         </CardHeader>
         <CardContent>
           {aiAnalysis ? (
