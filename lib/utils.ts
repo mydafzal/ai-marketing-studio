@@ -1,6 +1,7 @@
 import { clsx, type ClassValue } from 'clsx'
 import { customAlphabet } from 'nanoid'
 import { twMerge } from 'tailwind-merge'
+import {getBaseUrl} from "@/lib/helpers/vercel/get-base-url"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -135,7 +136,12 @@ export const builQueryString = (params: Record<string, any>) => {
 
 export async function trackEvent(event: string, user: { email: string; id: string }, properties: Record<string, any> = {}) {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_PRODUCTION_URL || 'http://localhost:3000';
+    let baseUrl = getBaseUrl();
+    if (baseUrl.includes('undefined')) {
+      baseUrl = "http://localhost:3000"
+    }
+
+    console.log(baseUrl);
     await fetch(`${baseUrl}/api/posthog-track`, {
       method: 'POST',
       body: JSON.stringify({
