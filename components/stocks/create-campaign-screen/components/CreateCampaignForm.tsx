@@ -293,7 +293,7 @@ export function CreateCampaignForm() {
       console.log('🔄 Proceeding immediately with campaign creation');
       
       // Prepare request payload - based on exact API documentation format
-      const requestPayload = {
+      const requestPayload: any = {
         fb_account_id: userData.account?.fbAccountId || '',
         campaign_flow_session_id: sessionId,
         company_name: companyName, // Make sure company_name is always present
@@ -308,6 +308,12 @@ export function CreateCampaignForm() {
         privacy_policy_link: userData.account?.privacy_policy_link || '',
         instagram_account_id: userData.account?.instagramAccountId || '',
       };
+      
+      // Add post_assessment_campaign_objective parameter only if a specific objective is selected
+      if (campaignObjective && ['recruitment', 'lead_generation', 'conversions', 'awareness'].includes(campaignObjective)) {
+        console.log(`🎯 Adding specific campaign objective: ${campaignObjective}`);
+        requestPayload.post_assessment_campaign_objective = campaignObjective;
+      }
 
       console.log('📤 Sending request to master flow endpoint with payload:', JSON.stringify(requestPayload, null, 2));
       
