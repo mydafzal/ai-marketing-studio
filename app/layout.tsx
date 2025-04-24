@@ -11,6 +11,7 @@ import { auth } from '@/auth'
 
 import { getUser } from '@/app/login/actions'
 import AnalyticsSetup from '@/components/analytics-setup'
+import MetaPixel from '@/components/meta-pixel'
 
 export const metadata = {
   metadataBase: process.env.VERCEL_URL
@@ -42,6 +43,9 @@ export default async function RootLayout({ children }: RootLayoutProps) {
 
   return (
     <html lang="en" suppressHydrationWarning className="dark">
+      <head>
+        <MetaPixel />
+      </head>
       <body
         className={cn(
           'font-sans antialiased',
