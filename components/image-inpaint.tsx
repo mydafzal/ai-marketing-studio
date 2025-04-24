@@ -102,24 +102,30 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
   /**
    * Once `baseImage` is loaded, draw it on the base canvas
    * and initialize the mask canvas to transparent.
+   * This also creates a smaller version for the API in the background.
    */
   useEffect(() => {
     if (!baseImage || !baseCanvasRef.current || !maskCanvasRef.current) return
 
-    // Draw onto base canvas
+    // Draw onto base canvas at FULL RESOLUTION for user display
     const baseCanvas = baseCanvasRef.current
     const baseCtx = baseCanvas.getContext("2d")
     
-    // Important: Set the canvas dimensions to match the actual image dimensions
+    // Set the canvas to FULL image dimensions for user display
     baseCanvas.width = baseImage.width
     baseCanvas.height = baseImage.height
     
-    // Store these dimensions for scaling calculations
+    // Store full dimensions for display and UI scaling
     setCanvasDimensions({ width: baseImage.width, height: baseImage.height })
     
-    baseCtx?.drawImage(baseImage, 0, 0)
+    // Draw the image at full resolution for the user
+    if (baseCtx) {
+      baseCtx.imageSmoothingEnabled = true
+      baseCtx.imageSmoothingQuality = 'high'
+      baseCtx.drawImage(baseImage, 0, 0, baseImage.width, baseImage.height)
+    }
 
-    // Initialize mask to transparent
+    // Initialize mask to transparent with matching dimensions
     const maskCanvas = maskCanvasRef.current
     const maskCtx = maskCanvas.getContext("2d")
     maskCanvas.width = baseImage.width
@@ -127,6 +133,9 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
     
     // Clear any previous content
     maskCtx?.clearRect(0, 0, baseImage.width, baseImage.height)
+    
+    // We won't show a resizing notification to the user since they see the full resolution image
+    // But we will resize in the background when sending to the API
   }, [baseImage])
 
   /** 
@@ -149,7 +158,12 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
     return { x, y }
   }
 
-  /** Brush painting logic: black => inpaint region, white => keep */
+  /** 
+   * Brush painting logic for OpenAI Edit API:
+   * - We paint with black on the mask canvas to indicate the areas the user wants to change
+   * - When preparing the final mask for the API, these black areas will be converted to transparent areas
+   * - In OpenAI's format, transparent areas in the mask = areas to be edited/replaced
+   */
   function handleMaskMouseDown(e: React.MouseEvent<HTMLCanvasElement>) {
     setIsDrawing(true)
     paintMask(e)
@@ -170,52 +184,182 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
     // Get the correct canvas coordinates using our conversion function
     const { x, y } = getCanvasCoordinates(e.clientX, e.clientY)
 
-    const ctx = maskCanvasRef.current.getContext("2d")
+    const ctx = maskCanvasRef.current.getContext("2d", { willReadFrequently: true })
     if (!ctx) return
 
-    // Set opacity for the brush strokes
-    ctx.globalAlpha = 0.5
+    // Use FULLY OPAQUE, PURE RED with no transparency to ensure detection
+    ctx.globalAlpha = 1.0
+    ctx.globalCompositeOperation = 'source-over'
     
-    // Paint semi-transparent black to indicate the region to inpaint
-    ctx.fillStyle = "#000000"
+    // Use pure, bright red (#FF0000) - this ensures maximum red channel value
+    ctx.fillStyle = "#FF0000"
     ctx.beginPath()
     
-    // Use the actual brush size scaled to match the canvas
-    const scaledBrushSize = brushSize / scaleFactor
-    ctx.arc(x, y, scaledBrushSize, 0, 2 * Math.PI)
+    // Draw the brush stroke at full resolution
+    ctx.arc(x, y, brushSize, 0, 2 * Math.PI)
     ctx.fill()
     
-    // Reset opacity for other operations
-    ctx.globalAlpha = 1.0
+    // Add a tiny black outline to the brush to make it more visible on different backgrounds
+    ctx.strokeStyle = "rgba(0,0,0,0.5)"
+    ctx.lineWidth = 1
+    ctx.stroke()
+
+    // Sample a pixel to check if the red is actually being drawn
+    try {
+      // Sample at the center of where we just painted
+      const pixel = ctx.getImageData(Math.round(x), Math.round(y), 1, 1).data;
+      console.log(`PAINTED RED: R:${pixel[0]}, G:${pixel[1]}, B:${pixel[2]}, A:${pixel[3]}`);
+      
+      // Verify the red channel is actually red (this helps detect canvas issues)
+      if (pixel[0] < 200 || pixel[1] > 100 || pixel[2] > 100) {
+        console.warn("Warning: Brush doesn't appear to be pure red as expected!");
+        console.warn(`Got: R:${pixel[0]}, G:${pixel[1]}, B:${pixel[2]}, A:${pixel[3]}`);
+      }
+    } catch(e) {
+      console.error("Couldn't sample pixel color:", e);
+    }
   }
 
-  /** Get mask canvas data URL */
+  /** 
+   * Get mask canvas data URL 
+   * For Ideogram (Replicate) inpainting:
+   * - BLACK areas indicate regions to EDIT/REPLACE
+   * - WHITE areas indicate regions to PRESERVE
+   */
   function getMaskCanvasDataURL() {
     if (!maskCanvasRef.current) return null
     
-    // For the mask, we need to prepare it for the API by making the brushed areas solid black
-    // and the untouched areas solid white
     const maskCanvas = maskCanvasRef.current
     const tempCanvas = document.createElement('canvas')
     tempCanvas.width = maskCanvas.width
     tempCanvas.height = maskCanvas.height
     
-    const tempCtx = tempCanvas.getContext('2d')
+    const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true, alpha: true })
     if (!tempCtx) return null
     
-    // Fill with white first (untouched areas)
+    // For Ideogram inpainting, we need white background (areas to preserve) with black brush marks (areas to inpaint)
     tempCtx.fillStyle = "#FFFFFF"
     tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height)
     
-    // Draw the mask canvas with full opacity
-    tempCtx.drawImage(maskCanvas, 0, 0)
+    // Now we need to get the mask data to create a transparency mask
+    const maskCtx = maskCanvas.getContext('2d', { willReadFrequently: true })
+    if (!maskCtx) return null
     
-    return tempCanvas.toDataURL("image/png")
+    // Get image data from our drawing canvas
+    const maskData = maskCtx.getImageData(0, 0, maskCanvas.width, maskCanvas.height)
+    const tempData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height)
+    
+    // First, check if we actually have any red pixels to detect
+    // We'll do a thorough scan of the entire image
+    let hasRedPixels = false;
+    let redPixelSample = { r: 0, g: 0, b: 0, a: 0, index: 0 };
+    let redPixelCount = 0;
+    
+    // Do a full scan of the entire image to count ALL red pixels
+    for (let i = 0; i < maskData.data.length; i += 4) {
+      // Look for ANY red-ish pixel with permissive thresholds
+      if (maskData.data[i] > 80 && 
+          maskData.data[i] > maskData.data[i+1] * 1.2 && 
+          maskData.data[i] > maskData.data[i+2] * 1.2) {
+        
+        redPixelCount++;
+        
+        if (!hasRedPixels) {
+          hasRedPixels = true;
+          redPixelSample = {
+            r: maskData.data[i],
+            g: maskData.data[i+1],
+            b: maskData.data[i+2],
+            a: maskData.data[i+3],
+            index: i
+          };
+        }
+      }
+    }
+    
+    console.log(`Full-res mask has ${redPixelCount} red pixels out of ${maskData.data.length/4} total pixels`);
+    
+    if (hasRedPixels) {
+      const x = (redPixelSample.index/4) % maskCanvas.width;
+      const y = Math.floor((redPixelSample.index/4) / maskCanvas.width);
+      console.log(`Sample red pixel at (${Math.floor(x)},${Math.floor(y)}): R:${redPixelSample.r}, G:${redPixelSample.g}, B:${redPixelSample.b}, A:${redPixelSample.a}`);
+    } else {
+      console.warn("NO RED PIXELS FOUND in the mask canvas - check your brush stroke color!");
+    }
+    
+    // For Ideogram inpainting:
+    // - Black areas indicate regions to EDIT/REPLACE
+    // - White areas indicate regions to PRESERVE
+    
+    let blackPixelCount = 0;
+    
+    // Process the mask - red brush strokes become BLACK (areas to inpaint)
+    for (let i = 0; i < maskData.data.length; i += 4) {
+      // Very permissive detection to catch any reddish pixels
+      const isRed = (maskData.data[i] > 80 && 
+                     maskData.data[i] > maskData.data[i+1] * 1.2 && 
+                     maskData.data[i] > maskData.data[i+2] * 1.2);
+      
+      if (isRed) {
+        // This was painted red - make it BLACK in the output (to be inpainted)
+        tempData.data[i] = 0;     // R = 0 (black)
+        tempData.data[i+1] = 0;   // G = 0 (black)
+        tempData.data[i+2] = 0;   // B = 0 (black)
+        tempData.data[i+3] = 255; // A = 255 (opaque)
+        blackPixelCount++;
+      }
+      // All other pixels remain WHITE (default background color) to be preserved
+    }
+    
+    console.log(`IDEOGRAM MASK: ${blackPixelCount} black pixels (areas to inpaint) of ${maskCanvas.width * maskCanvas.height} total (${(blackPixelCount / (maskCanvas.width * maskCanvas.height) * 100).toFixed(2)}%)`);
+    
+    // Small sanity check - warn if no pixels are marked to inpaint
+    if (blackPixelCount === 0) {
+      console.warn("WARNING: No black pixels found in mask! Nothing will be inpainted!");
+    } else if (blackPixelCount === (maskCanvas.width * maskCanvas.height)) {
+      console.warn("WARNING: Entire image is black! Everything will be replaced!");
+    }
+    
+    // Put the processed image data back to our temp canvas
+    tempCtx.putImageData(tempData, 0, 0)
+    
+    // DEBUG: Add visual confirmation - draw a border around the temp canvas
+    tempCtx.strokeStyle = 'red';
+    tempCtx.lineWidth = 2;
+    tempCtx.strokeRect(2, 2, tempCanvas.width-4, tempCanvas.height-4);
+    
+    // Return the mask as a PNG data URL with proper transparency
+    try {
+      // For transparency to work, we need to use PNG format
+      const dataUrl = tempCanvas.toDataURL("image/png");
+      console.log("Mask generated successfully with PNG format");
+      return dataUrl;
+    } catch (e) {
+      console.error("Error generating mask data URL:", e)
+      return null
+    }
+  }
+  
+  /**
+   * Get base canvas data URL with appropriate size constraints
+   */
+  function getBaseCanvasDataURL() {
+    if (!baseCanvasRef.current) return null
+    
+    try {
+      // Use a JPEG format for better compression when possible
+      return baseCanvasRef.current.toDataURL("image/jpeg", 0.7)
+    } catch (e) {
+      console.error("Error generating base canvas data URL:", e)
+      return null
+    }
   }
 
+  // No need for image resizing for Ideogram API
+  
   /** Call the server action to do inpainting */
   async function handleInpaint() {
-    if (!baseImageData) {
+    if (!baseCanvasRef.current) {
       showToast("Missing image", "Please upload and paint on an image first.", "error")
       return
     }
@@ -227,17 +371,111 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
     setIsProcessing(true)
 
     try {
-      // Make sure we have data URLs for both the image and mask
-      if (!baseImageData || !baseImageData.startsWith('data:')) {
-        throw new Error("Invalid base image format: must be a data URL")
+      // Get the full resolution mask
+      const mask = getMaskCanvasDataURL()
+      if (!mask || !mask.startsWith('data:')) {
+        throw new Error("Could not create mask data URL")
       }
       
-      const base64Mask = getMaskCanvasDataURL()
-      if (!base64Mask || !base64Mask.startsWith('data:')) {
-        throw new Error("Invalid mask format: must be a data URL")
+      // Get the full resolution base image
+      const baseImage = getBaseCanvasDataURL()
+      if (!baseImage || !baseImage.startsWith('data:')) {
+        throw new Error("Could not create base image data URL")
       }
-
-      const res = await inpaintImage(prompt, baseImageData, base64Mask)
+      
+      // Log info about the images
+      console.log(`Base image size: ~${Math.round(baseImage.length / 1024)}KB`)
+      console.log(`Mask size: ~${Math.round(mask.length / 1024)}KB`)
+      console.log(`Original dimensions: ${canvasDimensions.width}x${canvasDimensions.height}`)
+      
+      /* DEBUG visualization commented out as requested
+      // DEBUG: Create a simple visualization of the mask (optional)
+      // Create a container for our debug display
+      const debugContainer = document.createElement('div');
+      debugContainer.style.position = 'fixed';
+      debugContainer.style.bottom = '10px';
+      debugContainer.style.right = '10px';
+      debugContainer.style.zIndex = '9999';
+      debugContainer.style.padding = '10px';
+      debugContainer.style.backgroundColor = 'rgba(0,0,0,0.85)';
+      debugContainer.style.borderRadius = '8px';
+      debugContainer.style.display = 'flex';
+      debugContainer.style.flexDirection = 'column';
+      debugContainer.style.alignItems = 'center';
+      debugContainer.style.boxShadow = '0 0 10px rgba(0,0,0,0.5)';
+      debugContainer.style.maxWidth = '250px';
+      
+      // Create title
+      const debugTitle = document.createElement('div');
+      debugTitle.textContent = 'Ideogram Mask Preview';
+      debugTitle.style.color = 'white';
+      debugTitle.style.fontSize = '14px';
+      debugTitle.style.fontWeight = 'bold';
+      debugTitle.style.marginBottom = '8px';
+      debugContainer.appendChild(debugTitle);
+      
+      // Show the mask image
+      const debugMask = document.createElement('img');
+      debugMask.src = mask;
+      debugMask.style.width = '180px';
+      debugMask.style.height = '180px';
+      debugMask.style.border = '3px solid red';
+      debugMask.style.backgroundColor = '#fff'; // White background to match the mask
+      debugMask.style.objectFit = 'contain';
+      debugContainer.appendChild(debugMask);
+      
+      // Add info about the mask format
+      const pixelInfo = document.createElement('div');
+      pixelInfo.style.color = 'white';
+      pixelInfo.style.fontSize = '11px';
+      pixelInfo.style.marginTop = '8px';
+      pixelInfo.style.textAlign = 'center';
+      pixelInfo.style.lineHeight = '1.3';
+      
+      // Add clear explanatory text
+      pixelInfo.innerHTML = '<span style="color:#000000;font-weight:bold;background-color:#fff;padding:2px 4px;">BLACK AREAS = REGIONS TO CHANGE</span><br/>' +
+                          '<span style="color:#fff;font-weight:bold;background-color:#000;padding:2px 4px;margin-top:4px;display:inline-block">WHITE AREAS = REGIONS TO PRESERVE</span><br/><br/>' +
+                          'This mask is being sent to Ideogram for inpainting.';
+                          
+      debugContainer.appendChild(pixelInfo);
+      
+      // Add close button with better styling
+      const closeButton = document.createElement('button');
+      closeButton.textContent = 'Close Debug View';
+      closeButton.style.marginTop = '10px';
+      closeButton.style.padding = '5px 10px';
+      closeButton.style.fontSize = '12px';
+      closeButton.style.backgroundColor = '#444';
+      closeButton.style.color = 'white';
+      closeButton.style.border = 'none';
+      closeButton.style.borderRadius = '4px';
+      closeButton.style.cursor = 'pointer';
+      closeButton.onmouseover = () => { closeButton.style.backgroundColor = '#666'; };
+      closeButton.onmouseout = () => { closeButton.style.backgroundColor = '#444'; };
+      closeButton.onclick = () => {
+        try {
+          document.body.removeChild(debugContainer);
+        } catch (e) {
+          console.error("Error removing debug container:", e);
+        }
+      };
+      debugContainer.appendChild(closeButton);
+      
+      // Add to document
+      document.body.appendChild(debugContainer);
+      
+      // Auto-remove after 20 seconds
+      setTimeout(() => {
+        try {
+          document.body.removeChild(debugContainer);
+        } catch (e) {
+          console.error("Could not auto-remove debug visualization:", e);
+        }
+      }, 20000);
+      */
+      
+      // Call the inpainting API with our full resolution images
+      const res = await inpaintImage(prompt, baseImage, mask)
       if (res.success && res.image) {
         setInpaintResult(res.image)
         showToast("Success", "Inpainting completed!", "success")
@@ -246,7 +484,28 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
       }
     } catch (err) {
       console.error("Error in inpainting:", err)
-      showToast("Error", String(err), "error")
+      
+      // Format the error message to be more user-friendly
+      let errorMessage = String(err)
+      
+      // Check if it's an API Error and try to extract a more specific message
+      if (errorMessage.includes('API Error:')) {
+        // Try to make it more user-friendly
+        if (errorMessage.includes('Connection error')) {
+          errorMessage = 'Connection error. Please check your internet connection and try again.'
+        } else if (errorMessage.includes('insufficient_quota')) {
+          errorMessage = 'API quota exceeded. Please try again later.'
+        } else if (errorMessage.includes('invalid_request_error')) {
+          errorMessage = 'Invalid request. The image dimensions or format may be unsupported.'
+        }
+      }
+      
+      // Show a friendly error message to the user
+      showToast(
+        "Image processing failed", 
+        errorMessage.length > 100 ? errorMessage.substring(0, 100) + '...' : errorMessage, 
+        "error"
+      )
     } finally {
       setIsProcessing(false)
     }
@@ -265,20 +524,36 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
     showToast("Mask Reset", "You can now redraw your selection", "success")
   }
 
-  /** Download the inpainted result directly without page navigation */
-  function handleDownloadResult() {
+  /** Download the inpainted result directly as a file download */
+  async function handleDownloadResult() {
     if (!inpaintResult) return
     
-    // Create a temporary link and trigger download
-    const link = document.createElement('a')
-    link.href = inpaintResult
-    link.download = `inpainted-${new Date().getTime()}.png`
-    link.target = "_blank" // This prevents browser from navigating
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    
-    showToast("Download Started", "Your inpainted image is being downloaded", "success")
+    try {
+      // Fetch the image and create a blob from it
+      const response = await fetch(inpaintResult)
+      if (!response.ok) throw new Error("Failed to fetch image for download")
+      
+      const blob = await response.blob()
+      
+      // Create an object URL from the blob
+      const url = window.URL.createObjectURL(blob)
+      
+      // Create a temporary link and trigger download
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `inpainted-${new Date().getTime()}.png`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      
+      // Clean up by revoking the object URL
+      window.URL.revokeObjectURL(url)
+      
+      showToast("Download complete", "Inpainted image saved successfully to your device.", "success")
+    } catch (error) {
+      console.error("Error downloading inpainted image:", error)
+      showToast("Download failed", "Unable to download the inpainted image. Please try again.", "error")
+    }
   }
 
   /** Continue editing the inpainted result by making it the new base image */
@@ -477,13 +752,13 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
                     isDarkMode ? "text-text-white" : "text-gray-700"
                   }`}
                 >
-                  Describe your changes
+                  Describe what to add in the areas you painted red
                 </label>
                 <textarea
                   id="inpaintPrompt"
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
-                  placeholder='e.g. Remove the person on the left and fill with a background of skyscrapers'
+                  placeholder='e.g. A beautiful mountain landscape, or Replace with a bouquet of flowers, or Add a cute dog here'
                   className={`w-full min-h-[100px] resize-none p-3 rounded-md outline-none focus:ring-2 focus:ring-primary-green focus:border-primary-green ${
                     isDarkMode
                       ? "bg-dark-bg border-border-dark text-text-white placeholder-text-light-gray"
@@ -537,6 +812,22 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
                 {brushSize}px
               </span>
             </div>
+            
+            {/* Brush instructions */}
+            <div className="space-y-2">
+              <label
+                className={`block text-sm font-medium ${
+                  isDarkMode ? "text-text-white" : "text-gray-700"
+                }`}
+              >
+                Brush Instructions
+              </label>
+              <div className={`p-2 text-xs rounded-md ${
+                isDarkMode ? "bg-gray-700" : "bg-gray-100"
+              }`}>
+                Paint with red brush over areas you want to change. These areas will be replaced based on your prompt.
+              </div>
+            </div>
 
             {/* Reset and Inpaint buttons */}
             <div className="space-y-3">
@@ -587,7 +878,15 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
               }`}>
                 <div className="flex gap-2 items-start">
                   <Info className="size-4 mt-0.5 flex-shrink-0" />
-                  <p>Brush over the areas you want to replace or remove. These areas will appear darker.</p>
+                  <div>
+                    <p className="font-medium mb-1">How to use the inpainting tool:</p>
+                    <ol className="list-decimal ml-4 space-y-1">
+                      <li>Paint over the specific areas you want to replace (they will appear red)</li> 
+                      <li>Describe what should replace these red areas in the prompt field</li>
+                      <li>Click &ldquo;Inpaint&rdquo; to generate your edited image</li>
+                    </ol>
+                    <p className="mt-2 text-xs italic">Note: Only the red-painted areas will be changed with Ideogram&apos;s AI. The rest of the image will stay the same.</p>
+                  </div>
                 </div>
               </div>
             )}
@@ -733,18 +1032,7 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
           isDarkMode ? "bg-container-bg border-border-dark" : "bg-gray-50 border-gray-200"
         }`}
       >
-        {/* "powered by" section */}
-        <div className="flex items-center gap-2 text-xs">
-          <span className={isDarkMode ? "text-text-light-gray" : "text-gray-500"}>
-            Powered by Ideogram AI
-          </span>
-          <NextImage
-            src="/ideogramlogo.png"
-            alt="Ideogram Logo"
-            width={60}
-            height={60}
-          />
-        </div>
+        <div></div>
       </div>
     </div>
   )
