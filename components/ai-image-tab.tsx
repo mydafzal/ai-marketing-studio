@@ -1394,17 +1394,7 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
         <div className={`flex justify-between items-center border-t p-4 ${
           isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'
         }`}>
-          <div className="flex items-center text-xs text-gray-500">
-            <span className={`mr-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-              Powered by Ideogram AI
-            </span>
-            <NextImage
-              src="/ideogramlogo.png"
-              alt="Ideogram Logo"
-              width={60}
-              height={60}
-            />
-          </div>
+          <div></div>
           
           <button 
             type="button"
