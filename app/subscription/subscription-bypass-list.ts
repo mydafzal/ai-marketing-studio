@@ -6,7 +6,7 @@
 export const subscriptionBypassList: string[] = [
     'farzammdn@gmail.com',
     'madani.farzam@gmail.com',
-    // 'contact@reeply.net',
+    'contact@reeply.net',
     'maxnols@reeply.net',
     'maxnols@gmx.de',
     'xlinloke@gmail.com',
