@@ -283,7 +283,7 @@ const AdCreativesComparison: React.FC<{ campaignId?: string, skipAiThoughts?: bo
           const responseMessage = await submitUserMessage(systemMessage, [], true);
           
           // Add the AI's response to the UI state so it appears immediately
-          setMessages(currentMessages => [...currentMessages, responseMessage]);
+          setMessages((currentMessages: any[]) => [...currentMessages, responseMessage]);
           
           // Don't add to UI state - system messages should be invisible in chat history
         } catch (err) {
@@ -296,7 +296,7 @@ const AdCreativesComparison: React.FC<{ campaignId?: string, skipAiThoughts?: bo
           const fallbackResponse = await submitUserMessage(msg, [], true);
           
           // Add the fallback response to the UI state so it appears immediately
-          setMessages(currentMessages => [...currentMessages, fallbackResponse]);
+          setMessages((currentMessages: any[]) => [...currentMessages, fallbackResponse]);
           
           // Don't add to UI state - fallback system messages should also be invisible
         }
