@@ -3,7 +3,7 @@
 import React, { useState, useCallback, useEffect } from 'react'
 import { Country, Region, City } from '@/lib/types'
 import debounce from 'lodash/debounce'
-import { MapPin, Plus, X, Search, Loader2, Globe } from 'lucide-react'
+import { MapPin, X, Search, Loader2, Globe } from 'lucide-react'
 import { ComboBox } from '@/components/ui/combo-box'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -229,20 +229,6 @@ export default function OnboardingLocationSelector({
     }
   }
 
-  const handleAddCountry = () => {
-    console.log("[TEMPORARY DEBUG] Adding new country slot");
-    setSelectedGeoLocations((prev) => {
-      const newLocations = [...prev, {
-        country: null,
-        region: null,
-        cities: [],
-        regionData: [],
-        cityData: []
-      }];
-      console.log("[TEMPORARY DEBUG] New locations after add:", newLocations);
-      return newLocations;
-    });
-  }
 
   const handleRemoveCountry = (index: number) => {
     setSelectedGeoLocations((prev) => prev.filter((_, i) => i !== index))
@@ -1264,16 +1250,6 @@ export default function OnboardingLocationSelector({
         </Card>
       ))}
 
-      <Button
-        variant="outline"
-        disabled={isSubmitting}
-        onClick={handleAddCountry}
-        className="w-full bg-[#1A1D29] hover:bg-[#2A2E3A] border-gray-700 text-white"
-      >
-        <Plus className="size-4 mr-2" />
-        Add Location
-      </Button>
-      
       {/* Debug data is now hidden */}
     </div>
   )

@@ -12,6 +12,7 @@ import {
   Globe, 
   Loader2, 
   MapPin,
+  Save,
   Search, 
   Target, 
   User as UserIcon, 
@@ -375,6 +376,7 @@ function Onboarding({
     const [dbChangeRequested, setDbChangeRequested] = React.useState(false)
     const [showSuccessMessage, setShowSuccessMessage] = React.useState(false)
     const [currentStep, setCurrentStep] = React.useState(0)
+    const [isSaving, setIsSaving] = React.useState(false)
 
     // Track when the onboarding dialog is opened
     const [dialogOpenedAt, setDialogOpenedAt] = React.useState<number | null>(null);
@@ -490,6 +492,9 @@ function Onboarding({
 
     const handleSave = async () => {
         if (userDetails) {
+            // Set loading state
+            setIsSaving(true);
+            
             // Add temporary debug log for locations before saving
             console.log("[TEMPORARY DEBUG] Saving locations:", locations);
             
@@ -541,6 +546,7 @@ function Onboarding({
             
             if (hasErrors) {
                 setInputError(errors);
+                setIsSaving(false);
                 
                 // Find the first step with errors and navigate to it
                 for (let i = 0; i < STEPS.length - 1; i++) {
@@ -563,20 +569,28 @@ function Onboarding({
 
             setDbChangeRequested(true);
 
-            console.log("[TEMPORARY DEBUG] Saving locations data:", locations);
-            const resp = await updateOnboardingDetails(userDetails?.email, details);
-            console.log("[TEMPORARY DEBUG] Save response:", resp);
-            
-            if (resp.success) {
-                setDbChangeRequested(false);
-                setShowSuccessMessage(true);
+            try {
+                console.log("[TEMPORARY DEBUG] Saving locations data:", locations);
+                const resp = await updateOnboardingDetails(userDetails?.email, details);
+                console.log("[TEMPORARY DEBUG] Save response:", resp);
+                
+                if (resp.success) {
+                    setDbChangeRequested(false);
+                    setShowSuccessMessage(true);
 
-                // To update user details in header.tsx file
-                setTimeout(() => {
-                    window.location.reload();
-                }, 2000);
-            } else {
-                setError(resp.message)
+                    // Keep the loading state active during the page reload
+                    // The loading overlay will remain visible until the page refreshes
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 2000);
+                } else {
+                    setError(resp.message);
+                    setIsSaving(false); // Only disable loading state on error
+                }
+            } catch (error) {
+                setError("An error occurred while saving your profile.");
+                console.error("Save error:", error);
+                setIsSaving(false); // Only disable loading state on error
             }
         }
     }
@@ -586,6 +600,8 @@ function Onboarding({
             setError("Please complete your profile setup to proceed.")
         } else {
             setOpen(false)
+            // Reset loading state when dialog is closed
+            setIsSaving(false)
         }
     }
 
@@ -1096,6 +1112,8 @@ function Onboarding({
             <Dialog.Root open={open} onOpenChange={() => {
                 if (userDetails?.defaultExtraDetails) {
                     setOpen(!open)
+                    // Reset loading state when dialog is closed
+                    if (open) setIsSaving(false)
                 } else {
                     setError("Please complete your profile setup to proceed.")
                 }
@@ -1220,10 +1238,20 @@ function Onboarding({
                                     {currentStep === STEPS.length - 1 ? (
                                         <button
                                             onClick={handleSave}
-                                            className="px-6 py-3 rounded-lg flex items-center gap-2 bg-gradient-to-r from-[#4BF29C] to-[#38A169] hover:brightness-110 text-[#0F1117] font-medium transition-all duration-200 hover:scale-[1.02]"
+                                            disabled={isSaving}
+                                            className="px-6 py-3 rounded-lg flex items-center gap-2 bg-gradient-to-r from-[#4BF29C] to-[#38A169] hover:brightness-110 text-[#0F1117] font-medium transition-all duration-200 hover:scale-[1.02] disabled:opacity-70 disabled:pointer-events-none"
                                         >
-                                            Save Profile
-                                            <CheckCircle2 className="w-4 h-4" />
+                                            {isSaving ? (
+                                                <>
+                                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                                    Saving...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    Save Profile
+                                                    <CheckCircle2 className="w-4 h-4" />
+                                                </>
+                                            )}
                                         </button>
                                     ) : (
                                         <button
@@ -1242,6 +1270,25 @@ function Onboarding({
                                 <BenefitsPanel currentStep={currentStep} />
                             </div>
                         </div>
+                        
+                        {/* Full-screen loading overlay */}
+                        {isSaving && (
+                            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex flex-col items-center justify-center z-50">
+                                <div className="bg-[#1A1D29] p-8 rounded-xl flex flex-col items-center max-w-md mx-auto">
+                                    <div className="w-16 h-16 rounded-full bg-[#4BF29C]/20 flex items-center justify-center mb-4">
+                                        <Loader2 className="w-8 h-8 text-[#4BF29C] animate-spin" />
+                                    </div>
+                                    <h3 className="text-xl font-semibold text-white mb-2">Saving Your Profile</h3>
+                                    <p className="text-gray-400 text-center mb-6">
+                                        Please wait while we save your profile information. 
+                                        This will only take a moment.
+                                    </p>
+                                    <div className="w-full bg-[#151925] h-2 rounded-full overflow-hidden">
+                                        <div className="h-full bg-gradient-to-r from-purple-500 to-[#4BF29C] animate-pulse" style={{ width: '100%' }}></div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                         
                         {/* Close button */}
                         <Dialog.Close className="absolute top-4 right-4 p-2 rounded-full bg-[#1A1D29] text-gray-400 hover:text-white hover:bg-[#232736] transition-colors">
