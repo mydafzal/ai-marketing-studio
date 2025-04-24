@@ -32,7 +32,32 @@ interface ToolResult {
 
 export const getUIStateFromAIState = (aiState: Chat) => {
     return aiState.messages
-        .filter((message: Message) => message.role !== 'system')
+        .filter((message: Message) => {
+            // Filter out system messages
+            if (message.role === 'system') return false;
+            
+            // Filter out messages explicitly marked as hidden
+            if (message.hidden === true) return false;
+            
+            // Filter out any assistant messages containing ad creative results info
+            // This specifically targets the messages added by the campaignresults-creatives component
+            if (message.role === 'assistant' && 
+                typeof message.content === 'string' && 
+                (message.content.includes("ad creatives for campaign") || 
+                 message.content.includes("performance metrics are now displayed"))) {
+                return false;
+            }
+            
+            // Filter out any user messages sent in silent mode that contain "System:" prefix
+            // This handles the case of adcreative results messages sent with System: prefix
+            if ((message.role === 'user' || message.role === 'assistant') && 
+                typeof message.content === 'string' && 
+                message.content.startsWith("System:")) {
+                return false;
+            }
+            
+            return true;
+        })
         .map((message: Message, index: number) => ({
             id: `${aiState.chatId}-${index}`,
             display:

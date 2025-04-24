@@ -355,7 +355,9 @@ function ChatCore({ id, chat, className, session, missingKeys }: ChatProps) {
     }
 
     if (messages.length > 0) {
-      return <ChatList messages={messages} isShared={false} session={session} />
+      // Filter out any message marked as hidden before passing to ChatList
+      const visibleMessages = messages.filter(message => typeof message === 'object' && 'hidden' in message ? !message.hidden : true);
+      return <ChatList messages={visibleMessages} isShared={false} session={session} />
     }
 
     return <EmptyScreen />

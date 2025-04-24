@@ -53,12 +53,11 @@ export function ChatList({ messages, session, isShared }: ChatList) {
   return (
     <div className="w-full max-w-3xl px-4 pb-52 mx-auto">
       {!isShared && !session && <LoginPrompt />}
-
       <div className="space-y-0">
-        {messages.map((message, index) => (
+        {messages.map((message, index, allMessages) => (
           <div key={message.id} className="relative py-2">
             {message.display}
-            {index < messages.length - 1 && (
+            {index < allMessages.length - 1 && (
               <Separator 
                 className={cn(
                   "my-6",

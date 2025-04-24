@@ -275,46 +275,30 @@ const AdCreativesComparison: React.FC<{ campaignId?: string, skipAiThoughts?: bo
           // Format the message using our new action
           const formattedMessage = await formatAdCreativeResults(campaignName, merged);
           
-          // Submit the message to chat using submitUserMessage (like in campaignresultsnew)
-          const resp = await submitUserMessage(formattedMessage, [], true);
+          // Add System: prefix like other components that work properly
+          const systemMessage = `System: ${formattedMessage}`;
           
-          // Update the UI state with the new message
-          setMessages((old: any[]) => [...old, resp]);
+          // Use silent mode to send message to the AI but ensure it's not visible in chat
+          // The message will also be filtered out in FetchApplicableUI based on "System:" prefix
+          const responseMessage = await submitUserMessage(systemMessage, [], true);
           
-          // Also update AI state to maintain compatibility with other code
-          const { nanoid } = await import("@/lib/utils");
-          setAIState({
-            ...aiState,
-            messages: [
-              ...aiState.messages,
-              {
-                id: nanoid(),
-                role: 'assistant',
-                content: formattedMessage,
-                timestamp: new Date().toISOString()
-              }
-            ]
-          });
+          // Add the AI's response to the UI state so it appears immediately
+          setMessages((currentMessages: any[]) => [...currentMessages, responseMessage]);
+          
+          // Don't add to UI state - system messages should be invisible in chat history
         } catch (err) {
           console.error("Error formatting ad creative results:", err);
           
-          // Fallback to basic message if formatting fails
-          let msg = `I've analyzed ${merged.length} ad creatives from your campaign.`;
+          // Fallback to basic message if formatting fails - with System: prefix
+          let msg = `System: I've analyzed ${merged.length} ad creatives from your campaign.`;
           
-          // Add fallback message as AI message
-          const { nanoid } = await import("@/lib/utils");
-          setAIState({
-            ...aiState,
-            messages: [
-              ...aiState.messages,
-              {
-                id: nanoid(),
-                role: 'assistant',
-                content: msg,
-                timestamp: new Date().toISOString()
-              }
-            ]
-          });
+          // ONLY use submitUserMessage for the fallback too - don't add to UI state
+          const fallbackResponse = await submitUserMessage(msg, [], true);
+          
+          // Add the fallback response to the UI state so it appears immediately
+          setMessages((currentMessages: any[]) => [...currentMessages, fallbackResponse]);
+          
+          // Don't add to UI state - fallback system messages should also be invisible
         }
       }
     } catch (err) {
