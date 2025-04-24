@@ -15,8 +15,8 @@
  export default function AnalyticsSetup({ user }: AnalyticsSetupProps) {
    useEffect(() => {
      const setupAnalytics = async () => {
-       initPostHog()
        const encryptedEmail = await encryptEmail(user.email)
+       initPostHog(user.email)
        posthog.identify(encryptedEmail, {
          email: encryptedEmail,
          name: user.name,

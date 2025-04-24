@@ -1,3 +1,5 @@
+import {getBaseUrl} from "@/lib/helpers/vercel/get-base-url"
+
 let configCache: any = null;
 
 export async function getConfig() {
@@ -6,7 +8,11 @@ export async function getConfig() {
   }
 
   try {
-    const response = await fetch('/api/config');
+    let baseUrl = getBaseUrl();
+    if (baseUrl.includes('undefined')) {
+      baseUrl = "http://localhost:3000"
+    }
+    const response = await fetch(`${baseUrl}/api/config`);
     if (!response.ok) {
       throw new Error('Failed to fetch config');
     }

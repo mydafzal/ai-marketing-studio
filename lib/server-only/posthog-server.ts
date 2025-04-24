@@ -4,6 +4,7 @@
 import { PostHog } from 'posthog-node'
 import { encryptEmail } from '../email-encryption'
 import { getConfig } from '@/utils/config'
+import { isInternalUser } from '../posthog-utils'
 
 let serverPosthog: PostHog | null = null
 
@@ -18,16 +19,6 @@ async function getServerPosthog(): Promise<PostHog> {
   })
 
   return serverPosthog
-}
-
-const INTERNAL_EMAILS = ['@reeply.ai', '@reeply.net'] 
-// TODO: vinayak@reeply.ai needs tracking enabled as it is always the account used for FB verification
-// const INTERNAL_EMAILS = ['@gmail.com']
-
-function isInternalUser(email: string) {
-  return INTERNAL_EMAILS.some((domain) =>
-    email.toLowerCase().includes(domain)
-  )
 }
 
 interface TrackServerEventArgs {

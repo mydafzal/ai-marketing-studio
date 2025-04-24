@@ -1,6 +1,14 @@
-import React from 'react';
-import { Upload, Info, XCircle, Loader2, Plus } from 'lucide-react';
+import React, { useState } from 'react';
+import { Upload, Info, XCircle, Loader2, Plus, ChevronDown, ChevronRight, Settings } from 'lucide-react';
 import { MediaItem } from '../types';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogTrigger,
+  DialogClose
+} from '@/components/ui/dialog';
 
 interface CreateTabProps {
   mediaItems: MediaItem[];
@@ -33,6 +41,31 @@ export function CreateTab({
   handleReviewTransition,
   isLoading
 }: CreateTabProps) {
+
+  const objectives = [
+    {
+      value: "awareness",
+      label: "Awareness",
+      description: "Increase awareness of your brand, products, or services."
+    },
+    {
+      value: "recruitment",
+      label: "Recruitment",
+      description: "Find potential candidates for job opportunities."
+    },
+    {
+      value: "conversions",
+      label: "Conversions",
+      description: "Drive valuable actions on your website or app."
+    },
+    {
+      value: "lead_generation",
+      label: "Lead Generation",
+      description: "Collect lead information from people interested in your business."
+    }
+  ];
+
+  // Remove showAdvancedSettings state since we're using Dialog now
   return (
     <>
       {/* Upload area - smaller height + immediate display */}
@@ -144,6 +177,86 @@ export function CreateTab({
         />
       </div>
 
+      {/* Advanced Settings Dialog */}
+      <div className="mt-5">
+        <Dialog>
+          <DialogTrigger asChild>
+            <button 
+              className="flex items-center text-sm font-medium text-text-white hover:text-primary-green transition-colors"
+            >
+              <Settings className="mr-1" size={16} />
+              Advanced Settings
+            </button>
+          </DialogTrigger>
+          <DialogContent className="bg-dark-bg border border-border-dark text-text-white">
+            <DialogHeader>
+              <DialogTitle className="text-text-white">Advanced Settings</DialogTitle>
+            </DialogHeader>
+            
+            <div className="mt-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-text-white">Campaign Objective</label>
+                
+                <div className="space-y-3 mt-2">
+                  {/* Auto Option */}
+                  <div className="flex items-start space-x-2">
+                    <div className="flex items-center h-5 mt-1">
+                      <input
+                        id="objective-auto"
+                        type="radio"
+                        value="auto"
+                        checked={campaignObjective === "auto"}
+                        onChange={() => setCampaignObjective("auto")}
+                        className="w-4 h-4 border-border-dark focus:ring-primary-green accent-primary-green"
+                      />
+                    </div>
+                    <div className="flex flex-col">
+                      <label htmlFor="objective-auto" className="text-sm font-medium text-text-white">
+                        Auto
+                      </label>
+                      <span className="text-xs text-text-light-gray">
+                        Let AI automatically select the best objective for your campaign.
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {/* Other Objectives */}
+                  {objectives.map(objective => (
+                    <div key={objective.value} className="flex items-start space-x-2">
+                      <div className="flex items-center h-5 mt-1">
+                        <input
+                          id={`objective-${objective.value}`}
+                          type="radio"
+                          value={objective.value}
+                          checked={campaignObjective === objective.value}
+                          onChange={() => setCampaignObjective(objective.value)}
+                          className="w-4 h-4 border-border-dark focus:ring-primary-green accent-primary-green"
+                        />
+                      </div>
+                      <div className="flex flex-col">
+                        <label htmlFor={`objective-${objective.value}`} className="text-sm font-medium text-text-white">
+                          {objective.label}
+                        </label>
+                        <span className="text-xs text-text-light-gray">
+                          {objective.description}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-6 flex justify-end">
+              <DialogClose asChild>
+                <button className="px-4 py-2 bg-primary-green text-deep-black font-medium rounded-md hover:bg-primary-green/90 transition-colors">
+                  Done
+                </button>
+              </DialogClose>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
 
       {/* Next Step: Preview & Review */}
       <div className="mt-8">
