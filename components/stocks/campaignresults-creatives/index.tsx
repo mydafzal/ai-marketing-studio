@@ -280,7 +280,10 @@ const AdCreativesComparison: React.FC<{ campaignId?: string, skipAiThoughts?: bo
           
           // Use silent mode to send message to the AI but ensure it's not visible in chat
           // The message will also be filtered out in FetchApplicableUI based on "System:" prefix
-          await submitUserMessage(systemMessage, [], true);
+          const responseMessage = await submitUserMessage(systemMessage, [], true);
+          
+          // Add the AI's response to the UI state so it appears immediately
+          setMessages(currentMessages => [...currentMessages, responseMessage]);
           
           // Don't add to UI state - system messages should be invisible in chat history
         } catch (err) {
@@ -290,7 +293,10 @@ const AdCreativesComparison: React.FC<{ campaignId?: string, skipAiThoughts?: bo
           let msg = `System: I've analyzed ${merged.length} ad creatives from your campaign.`;
           
           // ONLY use submitUserMessage for the fallback too - don't add to UI state
-          await submitUserMessage(msg, [], true);
+          const fallbackResponse = await submitUserMessage(msg, [], true);
+          
+          // Add the fallback response to the UI state so it appears immediately
+          setMessages(currentMessages => [...currentMessages, fallbackResponse]);
           
           // Don't add to UI state - fallback system messages should also be invisible
         }
