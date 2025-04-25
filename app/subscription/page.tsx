@@ -59,9 +59,8 @@ export default async function SubscriptionPage({ searchParams }: { searchParams:
     redirect('/login')
   }
 
-  if (userEmail && subscriptionBypassList.includes(userEmail)) {
-    redirect('/')
-  }
+  // Allow users in bypass list to see the subscription page
+  // instead of redirecting them away
   
   // Check for cancelled checkout and handle it
   if (searchParams.canceled === 'true') {
