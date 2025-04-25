@@ -1,6 +1,5 @@
 'use client'
 import { useState } from 'react'
-import { useToast } from '../ui/use-toast'
 
 export interface MonthlyPricingProps {
   currentPlanTag: string
@@ -48,54 +47,14 @@ const DiamondIcon = () => (
   </svg>
 )
 
-// Coupon component
-const CouponPromotion = () => {
-  const { toast } = useToast();
-  const [copied, setCopied] = useState(false);
-  
-  const copyCouponCode = () => {
-    navigator.clipboard.writeText('WELCOME33');
-    setCopied(true);
-    toast({
-      title: "Coupon copied!",
-      description: "Discount code copied to clipboard",
-    });
-    
-    // Reset the button after 2 seconds
-    setTimeout(() => {
-      setCopied(false);
-    }, 2000);
-  };
-
-  return (
-    <div className="bg-[#252A3A] border-2 border-dashed border-[#4BF29C] rounded-lg p-4 mb-6 text-center">
-      <h3 className="text-[#4BF29C] text-xl font-bold mb-2">🎉 GET 33% OFF YOUR FIRST 3 MONTHS 🎉</h3>
-      <p className="text-white mb-3">Use this coupon code during checkout:</p>
-      <div className="bg-[#0F1117] py-3 px-4 rounded-md inline-flex items-center border border-[#4BF29C]">
-        <span className="font-mono font-bold text-xl text-[#4BF29C]">WELCOME33</span>
-        <button 
-          onClick={copyCouponCode} 
-          className="ml-3 bg-[#4BF29C] text-[#0A0C14] px-2 py-1 rounded text-xs font-medium hover:bg-[#3AD88C] transition-colors min-w-[50px]"
-        >
-          {copied ? 'Copied!' : 'Copy'}
-        </button>
-      </div>
-      <p className="text-white text-xs mt-4 italic">* Limited-time offer</p>
-    </div>
-  );
-}
-
 export function MonthlyPricing({ currentPlanTag }: MonthlyPricingProps) {
   return (
     <div className="bg-[#0F1117] dark:bg-[#0F1117] py-12">
       <div className="max-w-7xl mx-auto px-4">
-        {/* Coupon Promotion */}
-        <CouponPromotion />
-        
-        {/* Removed discount banner */}
+        {/* Header - removed the annual discount message */}
 
-        {/* Cards with Improved Spacing */}
-        <div className="flex justify-center mt-10">
+        {/* Single Card */}
+        <div className="flex justify-center mt-6">
           {/* AI Marketer Suite Plan */}
           <div className="border-2 border-[#4BF29C] rounded-lg p-6 flex flex-col flex-grow bg-[#1A1D29] dark:bg-[#1A1D29] text-white dark:text-white shadow-md max-w-lg w-full">
             <div className="flex items-center mb-4">
@@ -114,15 +73,18 @@ export function MonthlyPricing({ currentPlanTag }: MonthlyPricingProps) {
               AI Marketer Suite
             </h3>
             <div className="flex flex-col">
-              <div className="bg-[#252A3A] px-4 py-2 rounded-full text-[#4BF29C] text-base font-bold self-start mb-2">
-                START WITH 7-DAY FREE TRIAL
-              </div>
-              <p className="text-4xl font-bold text-white dark:text-white">€99</p>
-              <p className="text-[#8A8F99] dark:text-[#8A8F99] text-sm">/ Month</p>
             </div>
             <hr className="my-4 border-[#2A2E3A] dark:border-[#2A2E3A]" />
-            <p className="font-medium mb-4 text-white dark:text-white">AI Marketer + Ad Creatives Generator:</p>
-            <ul className="text-sm space-y-2 grow text-[#ADB0B8] dark:text-[#ADB0B8]">
+            <div className="flex flex-wrap gap-3 mb-6">
+              <div className="bg-[#151925] px-4 py-2 rounded-full text-[#4BF29C] text-sm border border-[#2A2E3A]">
+                AI Marketer
+              </div>
+              <div className="bg-[#151925] px-4 py-2 rounded-full text-[#4BF29C] text-sm border border-[#2A2E3A]">
+                AI Creatives Generator
+              </div>
+            </div>
+            
+            <ul className="text-sm space-y-2 grow text-[#ADB0B8] dark:text-[#ADB0B8] mb-4">
               <li className="flex items-center"><BadgeIcon /> Campaign creation from scratch</li>
               <li className="flex items-center"><BadgeIcon /> Conversational campaign management</li>
               <li className="flex items-center"><BadgeIcon /> Meta Ad Campaign analysis</li>
@@ -141,7 +103,7 @@ export function MonthlyPricing({ currentPlanTag }: MonthlyPricingProps) {
               <form action="/api/stripe/create-checkout-session" method="POST">
                 <input type="hidden" name="lookup_key" value={monthlyProPlanLookupKey} />
                 <button className="mt-6 w-full bg-[#4BF29C] dark:bg-[#4BF29C] text-[#0A0C14] py-2 rounded-lg font-medium hover:bg-[#3AD88C] transition-colors" type="submit">
-                  Start your free trial
+                  Start Free 7-Day Trial
                 </button>
               </form>
             )}
