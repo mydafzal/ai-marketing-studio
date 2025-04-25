@@ -543,7 +543,7 @@ export default function AiCreativeDirectorTab({ improvePrompt }: AiCreativeDirec
             </div>
           </div>
           
-          {/* Right panel: Generated images display */}
+          {/* Right panel: Generated images display. */}
           <div className="lg:col-span-2">
             {generatedImages.length === 0 ? (
               <div className={`border border-dashed rounded-lg p-8 flex flex-col items-center justify-center h-full min-h-[300px] text-center ${
