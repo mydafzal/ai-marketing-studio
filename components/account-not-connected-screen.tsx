@@ -33,7 +33,7 @@ export function HomePageInfoCard({ adAccountConnected, awaitingToGetReady, isSub
 
           <div className="space-y-4 text-center">
             <h1 className="text-2xl font-bold text-gray-800">
-              Welcome to Reeply AI
+              AI Marketing Assistant
             </h1>
 
             <div className="space-y-3">
