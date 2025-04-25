@@ -29,8 +29,7 @@ interface TrackServerEventArgs {
 
 export async function trackServerEvent({
   event,
-  user,
-  properties = {}
+  user
 }: TrackServerEventArgs): Promise<void> {
   if (isInternalUser(user.email)) return
 
@@ -38,11 +37,10 @@ export async function trackServerEvent({
   const posthog = await getServerPosthog()
 
   await posthog.capture({
-    distinctId: user.id,
+    distinctId: encryptedEmail,
     event,
     properties: {
       email: encryptedEmail,
-      ...properties
     }
   })
 }
