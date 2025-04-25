@@ -87,11 +87,8 @@ export function Subscription({
           {!user.sub_status || (user.sub_status !== 'active' && user.sub_status !== 'trialing') ? (
             <div className="text-center">
               <h1 className="text-[40px] font-bold text-white dark:text-white">
-                Simple, <span className="text-[#4BF29C] dark:text-[#4BF29C]">transparent</span> pricing
+                Start <span className="text-[#4BF29C] dark:text-[#4BF29C]">Free</span>. Power Your Marketing with AI.
               </h1>
-              <p className="my-4 text-[#ADB0B8] dark:text-[#ADB0B8] text-[16px] leading-[22.89px]">
-                Choose the perfect plan to accelerate your marketing efforts with the power of AI
-              </p>
             </div>
           ) : (
             <div className="text-center">
