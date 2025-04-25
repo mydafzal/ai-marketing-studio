@@ -3,6 +3,7 @@ import AdminForm from './AdminForm';
 import Link from 'next/link';
 import CustomerSearch from "@/app/admin/CustomerSearch";
 import CustomerInformer from "@/app/admin/CustomerInformer"; // Import the CustomerInformer component
+import PosthogDecrypter from "@/app/admin/PosthogDecrypter"; // Import the PosthogDecrypter component
 
 export default function AdminPage() {
     return (
@@ -55,6 +56,14 @@ export default function AdminPage() {
                     <h2 className="text-xl font-semibold text-gray-800">Customer Informer</h2>
                 </div>
                 <CustomerInformer />
+            </div>
+
+            {/* New Section for PostHog ID Decryption */}
+            <div className="mt-12 bg-white shadow-md rounded-lg overflow-hidden">
+                <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
+                    <h2 className="text-xl font-semibold text-gray-800">PostHog ID Decrypter</h2>
+                </div>
+                <PosthogDecrypter />
             </div>
         </div>
     );
