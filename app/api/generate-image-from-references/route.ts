@@ -37,7 +37,8 @@ export async function POST(req: Request) {
     
     // Get all reference images from form data
     const referenceImages: File[] = []
-    for (const [key, value] of formData.entries()) {
+    const entries = Array.from(formData.entries())
+    for (const [key, value] of entries) {
       if (key.startsWith('referenceImage') && value instanceof File) {
         referenceImages.push(value)
       }
