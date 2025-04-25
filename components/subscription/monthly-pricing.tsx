@@ -51,7 +51,7 @@ const DiamondIcon = () => (
 const CouponPromotion = () => (
   <div className="bg-[#252A3A] border-2 border-dashed border-[#4BF29C] rounded-lg p-4 mb-6 text-center">
     <h3 className="text-[#4BF29C] text-xl font-bold mb-2">🎉 GET 33% OFF YOUR FIRST 3 MONTHS 🎉</h3>
-    <p className="text-white mb-3">Save with our limited-time coupon during checkout:</p>
+    <p className="text-white mb-3">Use the coupon below – limited-time offer:</p>
     <div className="bg-[#0F1117] py-3 px-4 rounded-md inline-block border border-[#4BF29C]">
       <span className="font-mono font-bold text-xl text-[#4BF29C]">WELCOME33</span>
     </div>
