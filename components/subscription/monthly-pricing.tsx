@@ -47,10 +47,24 @@ const DiamondIcon = () => (
   </svg>
 )
 
+// Coupon component
+const CouponPromotion = () => (
+  <div className="bg-[#252A3A] border-2 border-dashed border-[#4BF29C] rounded-lg p-4 mb-6 text-center">
+    <h3 className="text-[#4BF29C] text-xl font-bold mb-2">🎉 GET 33% OFF YOUR FIRST 3 MONTHS 🎉</h3>
+    <p className="text-white mb-3">Save with our limited-time coupon during checkout:</p>
+    <div className="bg-[#0F1117] py-3 px-4 rounded-md inline-block border border-[#4BF29C]">
+      <span className="font-mono font-bold text-xl text-[#4BF29C]">WELCOME33</span>
+    </div>
+  </div>
+)
+
 export function MonthlyPricing({ currentPlanTag }: MonthlyPricingProps) {
   return (
     <div className="bg-[#0F1117] dark:bg-[#0F1117] py-12">
       <div className="max-w-7xl mx-auto px-4">
+        {/* Coupon Promotion */}
+        <CouponPromotion />
+        
         {/* Header */}
         <div className="flex items-center justify-center">
           <button className="bg-[#1A1D29] dark:bg-[#1A1D29] text-green-500 dark:text-green-500 px-4 py-2 rounded-full font-medium flex items-center border border-gray-800 dark:border-gray-800">
