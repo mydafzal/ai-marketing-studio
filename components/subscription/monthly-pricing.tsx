@@ -75,8 +75,19 @@ export function MonthlyPricing({ currentPlanTag }: MonthlyPricingProps) {
             <div className="flex flex-col">
             </div>
             <hr className="my-4 border-[#2A2E3A] dark:border-[#2A2E3A]" />
-            <p className="font-medium mb-4 text-white dark:text-white">AI Marketer + Ad Creatives Generator:</p>
-            <ul className="text-sm space-y-2 grow text-[#ADB0B8] dark:text-[#ADB0B8]">
+            <div className="flex flex-wrap gap-3 mb-6">
+              <div className="bg-[#151925] px-4 py-2 rounded-full text-[#4BF29C] text-sm border border-[#2A2E3A]">
+                AI Marketer
+              </div>
+              <div className="bg-[#151925] px-4 py-2 rounded-full text-[#4BF29C] text-sm border border-[#2A2E3A]">
+                AI Creatives Generator
+              </div>
+              <div className="bg-[#151925] px-4 py-2 rounded-full text-[#4BF29C] text-sm border border-[#2A2E3A]">
+                Automatic Access to Updates
+              </div>
+            </div>
+            
+            <ul className="text-sm space-y-2 grow text-[#ADB0B8] dark:text-[#ADB0B8] mb-4">
               <li className="flex items-center"><BadgeIcon /> Campaign creation from scratch</li>
               <li className="flex items-center"><BadgeIcon /> Conversational campaign management</li>
               <li className="flex items-center"><BadgeIcon /> Meta Ad Campaign analysis</li>
