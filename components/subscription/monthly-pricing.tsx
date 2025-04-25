@@ -82,9 +82,6 @@ export function MonthlyPricing({ currentPlanTag }: MonthlyPricingProps) {
               <div className="bg-[#151925] px-4 py-2 rounded-full text-[#4BF29C] text-sm border border-[#2A2E3A]">
                 AI Creatives Generator
               </div>
-              <div className="bg-[#151925] px-4 py-2 rounded-full text-[#4BF29C] text-sm border border-[#2A2E3A]">
-                Automatic Access to Updates
-              </div>
             </div>
             
             <ul className="text-sm space-y-2 grow text-[#ADB0B8] dark:text-[#ADB0B8] mb-4">
