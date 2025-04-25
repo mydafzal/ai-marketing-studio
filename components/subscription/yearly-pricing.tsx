@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import { useToast } from '../ui/use-toast'
 
 export interface YearlyPricingProps {
   currentPlanTag: string
@@ -47,18 +48,52 @@ const DiamondIcon = () => (
   </svg>
 )
 
+// Coupon component
+const CouponPromotion = () => {
+  const { toast } = useToast();
+  const [copied, setCopied] = useState(false);
+  
+  const copyCouponCode = () => {
+    navigator.clipboard.writeText('WELCOME33');
+    setCopied(true);
+    toast({
+      title: "Coupon copied!",
+      description: "Discount code copied to clipboard",
+    });
+    
+    // Reset the button after 2 seconds
+    setTimeout(() => {
+      setCopied(false);
+    }, 2000);
+  };
+
+  return (
+    <div className="bg-[#252A3A] border-2 border-dashed border-[#4BF29C] rounded-lg p-4 mb-6 text-center">
+      <h3 className="text-[#4BF29C] text-xl font-bold mb-2">🎉 GET 33% OFF YOUR FIRST 3 MONTHS 🎉</h3>
+      <p className="text-white mb-3">Use this coupon code during checkout:</p>
+      <div className="bg-[#0F1117] py-3 px-4 rounded-md inline-flex items-center border border-[#4BF29C]">
+        <span className="font-mono font-bold text-xl text-[#4BF29C]">WELCOME33</span>
+        <button 
+          onClick={copyCouponCode} 
+          className="ml-3 bg-[#4BF29C] text-[#0A0C14] px-2 py-1 rounded text-xs font-medium hover:bg-[#3AD88C] transition-colors min-w-[50px]"
+        >
+          {copied ? 'Copied!' : 'Copy'}
+        </button>
+      </div>
+      <p className="text-white text-xs mt-4 italic">* Limited-time offer</p>
+    </div>
+  );
+}
+
 export function YearlyPricing({ currentPlanTag }: YearlyPricingProps) {
   return (
     <div className="px-4 pb-4 bg-[#0F1117] dark:bg-[#0F1117] text-white dark:text-white">
       <div className="bg-[#0F1117] dark:bg-[#0F1117] py-12">
         <div className="max-w-7xl mx-auto px-4">
-          {/* Header */}
-          <div className="flex items-center justify-center">
-            <button className="bg-[#1A1D29] dark:bg-[#1A1D29] text-green-500 dark:text-green-500 px-4 py-2 rounded-full font-medium flex items-center border border-gray-800 dark:border-gray-800">
-              <DiamondIcon />
-              Save up to 16% with the Annual Subscriptions Package
-            </button>
-          </div>
+          {/* Coupon Promotion */}
+          <CouponPromotion />
+          
+          {/* Removed discount banner */}
 
           {/* Cards */}
           <div className="flex justify-center mt-10">
