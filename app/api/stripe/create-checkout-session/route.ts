@@ -115,14 +115,17 @@ export async function POST(req: NextRequest) {
       status: 'pending',
       price_id: prices.data[0].id,
       product_id: prices.data[0].product,
-      had_trial: !hasHadTrialBefore
+      includes_trial: !hasHadTrialBefore
     })
     
-    // If this checkout will include a trial, mark this user as having had a trial immediately
-    // This prevents users from starting multiple checkout sessions to get multiple trials
+    // Store the checkout session ID in the user record for tracking
+    // We'll only mark has_had_trial true when checkout completes
     if (!hasHadTrialBefore) {
-      await kv.hset(userKey, { has_had_trial: true })
-      console.log(`Preemptively marking ${customerEmail} as having had a trial for this checkout session`)
+      await kv.hset(userKey, { 
+        pending_trial_checkout_session: stripeSession.id,
+        pending_trial_checkout_created: new Date().toISOString()
+      })
+      console.log(`Created pending trial checkout session ${stripeSession.id} for ${customerEmail}`)
     }
 
     console.log('stripeSessionUrl ', stripeSession.url)

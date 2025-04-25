@@ -233,6 +233,9 @@ const handleCheckoutSessionCompleted = async (event: Stripe.Event) => {
       return
     }
 
+    const userKey = `user:${session.customer_email}`
+    const userData = await kv.hgetall(userKey) || {}
+    
     // If there's a subscription, fetch it and update details
     if (session.subscription) {
       const subscription = await stripe.subscriptions.retrieve(
@@ -243,11 +246,16 @@ const handleCheckoutSessionCompleted = async (event: Stripe.Event) => {
       if (subscription) {
         await persistSubscription(subscription)
         
-        // Double-check: Make sure the user is marked as having had a trial if this subscription has a trial
+        // Now is the proper time to mark the user as having had a trial
+        // This ensures we only set has_had_trial when checkout is completed successfully
         if (subscription.trial_start !== null || subscription.trial_end !== null) {
-          const userKey = `user:${session.customer_email}`
-          await kv.hset(userKey, { has_had_trial: true })
-          console.log(`Confirmed trial status for ${session.customer_email} after checkout completion`)
+          await kv.hset(userKey, { 
+            has_had_trial: true,
+            // Clean up the pending checkout data
+            pending_trial_checkout_session: null,
+            pending_trial_checkout_created: null
+          })
+          console.log(`Marked ${session.customer_email} as having had a trial after successful checkout`)
         }
         
         console.log(
@@ -262,7 +270,15 @@ const handleCheckoutSessionCompleted = async (event: Stripe.Event) => {
       await kv.hset(`checkout:${session.id}`, {
         ...checkoutSessionData,
         status: 'completed',
+        completed_at: new Date().toISOString()
       })
+    }
+    
+    // If this was a pending trial checkout, clean up even if there's no trial in the subscription
+    if (userData.pending_trial_checkout_session === session.id) {
+      // Remove the pending checkout session data regardless of trial status
+      await kv.hdel(userKey, 'pending_trial_checkout_session', 'pending_trial_checkout_created')
+      console.log(`Cleared pending trial checkout data for ${session.customer_email}`)
     }
 
     console.log(`Handled checkout session completed for ${session.id}`)
@@ -273,6 +289,42 @@ const handleCheckoutSessionCompleted = async (event: Stripe.Event) => {
 
 const handleEntitlementSummaryUpdated = async (event: Stripe.Event) => {
   // Handle entitlement summary updates if needed
+}
+
+const handleCheckoutSessionExpired = async (event: Stripe.Event) => {
+  try {
+    const session = event.data.object as Stripe.Checkout.Session
+    
+    if (!session.customer_email) {
+      console.log('Missing customer email in expired checkout session')
+      return
+    }
+    
+    const userKey = `user:${session.customer_email}`
+    const userData = await kv.hgetall(userKey) || {}
+    
+    // If this was a pending trial checkout that expired, clear the pending trial data
+    // and ensure the user is NOT marked as having had a trial
+    if (userData.pending_trial_checkout_session === session.id) {
+      // Remove pending trial data without setting has_had_trial
+      await kv.hdel(userKey, 'pending_trial_checkout_session', 'pending_trial_checkout_created')
+      console.log(`Cleared pending trial data for expired checkout ${session.id} for user ${session.customer_email}`)
+    }
+    
+    // Update the checkout session status in KV
+    const checkoutSessionData = await kv.hgetall(`checkout:${session.id}`)
+    if (checkoutSessionData) {
+      await kv.hset(`checkout:${session.id}`, {
+        ...checkoutSessionData,
+        status: 'expired',
+        expired_at: new Date().toISOString()
+      })
+    }
+    
+    console.log(`Handled checkout session expired for ${session.id}`)
+  } catch (error) {
+    console.error('Error handling checkout session expired event:', error)
+  }
 }
 
 const handleUnhandledEventType = (event: Stripe.Event) => {
@@ -309,6 +361,10 @@ export async function POST(req: Request) {
     switch (event.type) {
       case 'checkout.session.completed':
         await handleCheckoutSessionCompleted(event)
+        break
+        
+      case 'checkout.session.expired':
+        await handleCheckoutSessionExpired(event)
         break
 
       case 'customer.subscription.updated':
