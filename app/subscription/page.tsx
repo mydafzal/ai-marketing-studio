@@ -84,10 +84,7 @@ export default async function SubscriptionPage({ searchParams }: { searchParams:
     redirect('/login')
   }
   
-  // If user has active subscription, redirect to home
-  if (user.sub_status === 'active') {
-    redirect('/')
-  }
+  // Remove the redirect - allow users with active/trial subscriptions to access this page
 
   const invoices = await fetchInvoices(user?.sub_stripe_customer_id)
   
