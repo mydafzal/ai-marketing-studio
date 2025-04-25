@@ -132,7 +132,12 @@ export function Subscription({
                         : 'text-[#8A8F99] dark:text-[#8A8F99] hover:text-white transition-colors'
                     }`}
                   >
-                    <span>Yearly (16% discount)</span>
+                    <span>Yearly</span>
+                    {!isMonthly && (
+                      <span className="ml-2 text-[#FF7D5A] dark:text-[#FF7D5A] text-xs">
+                        Save up to 16%
+                      </span>
+                    )}
                   </button>
                 </div>
               </div>
