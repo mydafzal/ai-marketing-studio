@@ -445,7 +445,9 @@ export default function AiCreativeDirectorTab({ improvePrompt }: AiCreativeDirec
                     <input
                       type="file"
                       accept="image/*"
-                      ref={el => fileInputRefs.current[index] = el}
+                      ref={(el) => {
+                        fileInputRefs.current[index] = el;
+                      }}
                       onChange={handleReferenceImageUpload(index)}
                       className="hidden"
                     />
@@ -552,7 +554,7 @@ export default function AiCreativeDirectorTab({ improvePrompt }: AiCreativeDirec
                 </div>
                 <h3 className={`text-lg font-medium mb-1 ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>No images generated yet</h3>
                 <p className={`text-sm max-w-md mb-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                  Upload reference images, enter a descriptive prompt and click "Create images" to generate AI images inspired by your references.
+                  Upload reference images, enter a descriptive prompt and click &quot;Create images&quot; to generate AI images inspired by your references.
                 </p>
               </div>
             ) : (
