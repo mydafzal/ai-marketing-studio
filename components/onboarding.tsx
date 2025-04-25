@@ -119,50 +119,51 @@ const STEPS = [
     },
 ];
 
-// Benefits panel component for the right side of the dialog
+// Benefits panel component for the right side of the dialog on desktop
+// Or for displaying at the bottom of each step on mobile
 const BenefitsPanel = ({ currentStep }: { currentStep: number }) => {
   switch(currentStep) {
     case 0: // Personal Information
       return (
-        <div className="space-y-6">
-          <div className="bg-[#1A1D29] rounded-xl border border-gray-700 p-6">
-            <div className="flex items-center gap-3 mb-3">
-              <Clock className="size-5 text-[#4BF29C]" />
-              <h3 className="text-lg font-semibold text-white">30x Faster Campaign Creation</h3>
+        <div className="space-y-4 sm:space-y-6">
+          <div className="bg-[#1A1D29] rounded-xl border border-gray-700 p-4 sm:p-6">
+            <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+              <Clock className="size-4 sm:size-5 text-[#4BF29C]" />
+              <h3 className="text-base sm:text-lg font-semibold text-white">30x Faster Campaign Creation</h3>
             </div>
-            <p className="text-gray-300 mb-4">
+            <p className="text-gray-300 text-sm sm:text-base mb-3 sm:mb-4">
               Traditional campaign setup takes 30+ minutes. Reeply AI does it all automatically in seconds.
             </p>
-            <div className="flex items-center justify-between bg-[#151925] p-3 rounded-lg">
-              <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between bg-[#151925] p-2 sm:p-3 rounded-lg text-xs sm:text-sm">
+              <div className="flex items-center gap-1 sm:gap-2">
                 <div className="text-gray-400">Traditional:</div>
                 <div className="text-white font-medium">30+ min</div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 sm:gap-2">
                 <div className="text-gray-400">Reeply AI:</div>
                 <div className="text-[#4BF29C] font-semibold">60 sec</div>
               </div>
             </div>
           </div>
           
-          <div className="bg-[#151925] rounded-xl border border-gray-700 p-6">
-            <div className="flex items-center gap-2 mb-3">
+          <div className="bg-[#151925] rounded-xl border border-gray-700 p-4 sm:p-6">
+            <div className="flex items-center gap-1 sm:gap-2 mb-2 sm:mb-3">
               <div className="flex">
                 {[1, 2, 3, 4, 5].map(star => (
-                  <svg key={star} className="w-4 h-4 text-[#4BF29C]" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                  <svg key={star} className="w-3 h-3 sm:w-4 sm:h-4 text-[#4BF29C]" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                     <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
                   </svg>
                 ))}
               </div>
             </div>
-            <p className="text-white italic mb-4">
+            <p className="text-white italic text-xs sm:text-sm mb-3 sm:mb-4">
               &ldquo;We now generate 80% of our leads through campaigns managed with Reeply AI. Thanks to the consistently excellent support, we look forward to planning and executing more projects with Max and Reeply AI in the future.&rdquo;
             </p>
-            <div className="flex items-center gap-3">
-              <img src="/Christian.png" alt="Christian Schmitt" className="w-8 h-8 rounded-full object-cover" />
+            <div className="flex items-center gap-2 sm:gap-3">
+              <img src="/Christian.png" alt="Christian Schmitt" className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-cover" />
               <div>
-                <div className="text-white text-sm font-medium">Christian Schmitt</div>
-                <div className="text-gray-400 text-xs">Business owner at Boldbrands</div>
+                <div className="text-white text-xs sm:text-sm font-medium">Christian Schmitt</div>
+                <div className="text-gray-400 text-[10px] sm:text-xs">Business owner at Boldbrands</div>
               </div>
             </div>
           </div>
@@ -171,23 +172,23 @@ const BenefitsPanel = ({ currentStep }: { currentStep: number }) => {
       
     case 1: // Company Information
       return (
-        <div className="space-y-6">
-          <div className="bg-[#1A1D29] rounded-xl border border-gray-700 p-6">
-            <div className="flex items-center gap-3 mb-3">
-              <Search className="size-5 text-[#4BF29C]" />
-              <h3 className="text-lg font-semibold text-white">Smart Website Analysis</h3>
+        <div className="space-y-4 sm:space-y-6">
+          <div className="bg-[#1A1D29] rounded-xl border border-gray-700 p-4 sm:p-6">
+            <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+              <Search className="size-4 sm:size-5 text-[#4BF29C]" />
+              <h3 className="text-base sm:text-lg font-semibold text-white">Smart Website Analysis</h3>
             </div>
-            <p className="text-gray-300">
+            <p className="text-gray-300 text-sm sm:text-base">
               Reeply AI scans your website URL to understand your business, audience, and products—automatically selecting the perfect campaign type for your goals.
             </p>
           </div>
           
-          <div className="bg-[#1A1D29] rounded-xl border border-gray-700 p-6">
-            <div className="flex items-center gap-3 mb-3">
-              <FileText className="size-5 text-[#4BF29C]" />
-              <h3 className="text-lg font-semibold text-white">AI-Generated Ad Copy</h3>
+          <div className="bg-[#1A1D29] rounded-xl border border-gray-700 p-4 sm:p-6">
+            <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+              <FileText className="size-4 sm:size-5 text-[#4BF29C]" />
+              <h3 className="text-base sm:text-lg font-semibold text-white">AI-Generated Ad Copy</h3>
             </div>
-            <p className="text-gray-300">
+            <p className="text-gray-300 text-sm sm:text-base">
               Based on your company description, our AI writes compelling ad text that resonates with your audience and highlights your unique value proposition.
             </p>
           </div>
@@ -196,40 +197,40 @@ const BenefitsPanel = ({ currentStep }: { currentStep: number }) => {
       
     case 2: // Website Details
       return (
-        <div className="space-y-6">
-          <div className="bg-[#1A1D29] rounded-xl border border-gray-700 p-6">
-            <h3 className="text-lg font-semibold text-white mb-4">Streamlined Process</h3>
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-[#151925] flex items-center justify-center text-white">1</div>
+        <div className="space-y-4 sm:space-y-6">
+          <div className="bg-[#1A1D29] rounded-xl border border-gray-700 p-4 sm:p-6">
+            <h3 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4">Streamlined Process</h3>
+            <div className="space-y-3 sm:space-y-4">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-[#151925] flex items-center justify-center text-white text-xs sm:text-sm">1</div>
                 <div>
-                  <div className="text-white font-medium">Website Link</div>
-                  <div className="text-gray-400 text-sm">You provide your website</div>
+                  <div className="text-white font-medium text-sm sm:text-base">Website Link</div>
+                  <div className="text-gray-400 text-xs sm:text-sm">You provide your website</div>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-[#151925] flex items-center justify-center text-white">2</div>
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-[#151925] flex items-center justify-center text-white text-xs sm:text-sm">2</div>
                 <div>
-                  <div className="text-white font-medium">Smart Analysis</div>
-                  <div className="text-gray-400 text-sm">AI analyzes your website</div>
+                  <div className="text-white font-medium text-sm sm:text-base">Smart Analysis</div>
+                  <div className="text-gray-400 text-xs sm:text-sm">AI analyzes your website</div>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-[#151925] flex items-center justify-center text-white">3</div>
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-[#151925] flex items-center justify-center text-white text-xs sm:text-sm">3</div>
                 <div>
-                  <div className="text-white font-medium">Ad Creation</div>
-                  <div className="text-gray-400 text-sm">AI creates your ad campaign</div>
+                  <div className="text-white font-medium text-sm sm:text-base">Ad Creation</div>
+                  <div className="text-gray-400 text-xs sm:text-sm">AI creates your ad campaign</div>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-[#151925] flex items-center justify-center text-white">4</div>
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-[#151925] flex items-center justify-center text-white text-xs sm:text-sm">4</div>
                 <div>
-                  <div className="text-white font-medium">Lead Generation</div>
-                  <div className="text-gray-400 text-sm">You get leads immediately</div>
+                  <div className="text-white font-medium text-sm sm:text-base">Lead Generation</div>
+                  <div className="text-gray-400 text-xs sm:text-sm">You get leads immediately</div>
                 </div>
               </div>
             </div>
-            <div className="mt-4 pt-4 border-t border-gray-700">
+            <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-700 text-xs sm:text-sm">
               <div className="flex justify-between items-center">
                 <div className="text-gray-400">Traditional:</div>
                 <div className="text-white">30-60+ min</div>
@@ -245,23 +246,23 @@ const BenefitsPanel = ({ currentStep }: { currentStep: number }) => {
       
     case 3: // Preferences
       return (
-        <div className="space-y-6">
-          <div className="bg-[#1A1D29] rounded-xl border border-gray-700 p-6">
-            <div className="flex items-center gap-3 mb-3">
-              <Globe className="size-5 text-[#4BF29C]" />
-              <h3 className="text-lg font-semibold text-white">Intelligent Geo-Targeting</h3>
+        <div className="space-y-4 sm:space-y-6">
+          <div className="bg-[#1A1D29] rounded-xl border border-gray-700 p-4 sm:p-6">
+            <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+              <Globe className="size-4 sm:size-5 text-[#4BF29C]" />
+              <h3 className="text-base sm:text-lg font-semibold text-white">Intelligent Geo-Targeting</h3>
             </div>
-            <p className="text-gray-300">
+            <p className="text-gray-300 text-sm sm:text-base">
               Reeply AI determines optimal geolocation targeting from your website and profile preferences, ensuring your ads reach the right audience in the right locations.
             </p>
           </div>
           
-          <div className="bg-[#1A1D29] rounded-xl border border-gray-700 p-6">
-            <div className="flex items-center gap-3 mb-3">
-              <Target className="size-5 text-[#4BF29C]" />
-              <h3 className="text-lg font-semibold text-white">Advanced Audience Targeting</h3>
+          <div className="bg-[#1A1D29] rounded-xl border border-gray-700 p-4 sm:p-6">
+            <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+              <Target className="size-4 sm:size-5 text-[#4BF29C]" />
+              <h3 className="text-base sm:text-lg font-semibold text-white">Advanced Audience Targeting</h3>
             </div>
-            <p className="text-gray-300">
+            <p className="text-gray-300 text-sm sm:text-base">
               Our AI agent researches the best potential filters on Meta Ads to target your ideal audience, finding hidden opportunities other marketers might miss.
             </p>
           </div>
@@ -270,31 +271,31 @@ const BenefitsPanel = ({ currentStep }: { currentStep: number }) => {
 
     case 4: // Locations
       return (
-        <div className="space-y-6">
-          <div className="bg-[#1A1D29] rounded-xl border border-gray-700 p-6">
-            <div className="flex items-center gap-3 mb-3">
-              <MapPin className="size-5 text-[#4BF29C]" />
-              <h3 className="text-lg font-semibold text-white">Targeted Local Advertising</h3>
+        <div className="space-y-4 sm:space-y-6">
+          <div className="bg-[#1A1D29] rounded-xl border border-gray-700 p-4 sm:p-6">
+            <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+              <MapPin className="size-4 sm:size-5 text-[#4BF29C]" />
+              <h3 className="text-base sm:text-lg font-semibold text-white">Targeted Local Advertising</h3>
             </div>
-            <p className="text-gray-300">
+            <p className="text-gray-300 text-sm sm:text-base">
               By setting your preferred locations, you help our AI target your campaigns more effectively to the regions that matter most to your business.
             </p>
           </div>
           
-          <div className="bg-[#1A1D29] rounded-xl border border-gray-700 p-6">
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-white mb-1">Benefits of Location Targeting</h3>
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-[#151925] flex items-center justify-center text-[#4BF29C]">✓</div>
-                <div className="text-gray-300">Higher conversion rates from local audiences</div>
+          <div className="bg-[#1A1D29] rounded-xl border border-gray-700 p-4 sm:p-6">
+            <div className="space-y-3 sm:space-y-4">
+              <h3 className="text-base sm:text-lg font-semibold text-white mb-1">Benefits of Location Targeting</h3>
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-[#151925] flex items-center justify-center text-[#4BF29C] text-xs sm:text-base">✓</div>
+                <div className="text-gray-300 text-xs sm:text-sm">Higher conversion rates from local audiences</div>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-[#151925] flex items-center justify-center text-[#4BF29C]">✓</div>
-                <div className="text-gray-300">Reduced ad spend wastage on irrelevant regions</div>
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-[#151925] flex items-center justify-center text-[#4BF29C] text-xs sm:text-base">✓</div>
+                <div className="text-gray-300 text-xs sm:text-sm">Reduced ad spend wastage on irrelevant regions</div>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-[#151925] flex items-center justify-center text-[#4BF29C]">✓</div>
-                <div className="text-gray-300">More relevant messaging for specific geographic areas</div>
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-[#151925] flex items-center justify-center text-[#4BF29C] text-xs sm:text-base">✓</div>
+                <div className="text-gray-300 text-xs sm:text-sm">More relevant messaging for specific geographic areas</div>
               </div>
             </div>
           </div>
@@ -303,34 +304,34 @@ const BenefitsPanel = ({ currentStep }: { currentStep: number }) => {
       
     case 5: // Confirmation
       return (
-        <div className="space-y-6">
-          <div className="bg-[#1A1D29] rounded-xl border border-[#4BF29C]/30 p-6">
-            <div className="flex flex-col items-center text-center gap-3 mb-6">
-              <div className="w-16 h-16 rounded-full bg-[#4BF29C]/20 flex items-center justify-center">
-                <CheckCheck className="size-8 text-[#4BF29C]" />
+        <div className="space-y-4 sm:space-y-6">
+          <div className="bg-[#1A1D29] rounded-xl border border-[#4BF29C]/30 p-4 sm:p-6">
+            <div className="flex flex-col items-center text-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-[#4BF29C]/20 flex items-center justify-center">
+                <CheckCheck className="size-6 sm:size-8 text-[#4BF29C]" />
               </div>
-              <h3 className="text-xl font-semibold text-white">Your Profile is Ready!</h3>
-              <p className="text-gray-300">
+              <h3 className="text-lg sm:text-xl font-semibold text-white">Your Profile is Ready!</h3>
+              <p className="text-gray-300 text-sm sm:text-base">
                 You&apos;re all set to create your first AI-powered campaign in 60 seconds.
               </p>
             </div>
             
-            <div className="bg-[#151925] rounded-lg p-4">
+            <div className="bg-[#151925] rounded-lg p-3 sm:p-4">
               <div className="flex">
                 {[1, 2, 3, 4, 5].map(star => (
-                  <svg key={star} className="w-4 h-4 text-[#4BF29C]" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                  <svg key={star} className="w-3 h-3 sm:w-4 sm:h-4 text-[#4BF29C]" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                     <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
                   </svg>
                 ))}
               </div>
-              <p className="text-white italic my-3">
+              <p className="text-white italic text-xs sm:text-sm my-2 sm:my-3">
                 &ldquo;I loved working with the Reeply team - dedicated, patient, professional. They are experienced and were able to jump in to problem solve, no matter how big or small the problem. I enjoyed using the Reeply platform to help me get started on my Meta ads journey. It&apos;s simple and easy to use. They helped me to launch my very first lead generation, awareness, and conversion ads. It was easy to see all my campaign results in one handy interface. I managed to gain half a million views on one of my videos in just a few days. I also gained a lot of insights on what kind of ads worked, and what didn&apos;t work. Thank you Reeply.&rdquo;
               </p>
-              <div className="flex items-center gap-3">
-                <img src="/lin.png" alt="Lin Loke" className="w-8 h-8 rounded-full object-cover" />
+              <div className="flex items-center gap-2 sm:gap-3">
+                <img src="/lin.png" alt="Lin Loke" className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-cover" />
                 <div>
-                  <div className="text-white text-sm font-medium">Lin Loke</div>
-                  <div className="text-gray-400 text-xs">Founder of Nuwa Wellness</div>
+                  <div className="text-white text-xs sm:text-sm font-medium">Lin Loke</div>
+                  <div className="text-gray-400 text-[10px] sm:text-xs">Founder of Nuwa Wellness</div>
                 </div>
               </div>
             </div>
@@ -976,58 +977,58 @@ function Onboarding({
     // Render confirmation step
     const renderConfirmation = () => {
         return (
-            <div className="space-y-6">
-                <div className="bg-[#1A1D29] dark:bg-[#1A1D29] p-6 rounded-xl border border-gray-700">
-                    <h3 className="text-lg font-semibold text-white mb-4">Personal Information</h3>
-                    <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-4 sm:space-y-6">
+                <div className="bg-[#1A1D29] dark:bg-[#1A1D29] p-4 sm:p-6 rounded-xl border border-gray-700">
+                    <h3 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4">Personal Information</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                         <div>
-                            <p className="text-sm text-gray-400">First Name</p>
-                            <p className="text-white">{firstName}</p>
+                            <p className="text-xs sm:text-sm text-gray-400">First Name</p>
+                            <p className="text-sm sm:text-base text-white">{firstName}</p>
                         </div>
                         <div>
-                            <p className="text-sm text-gray-400">Last Name</p>
-                            <p className="text-white">{lastName}</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <div className="bg-[#1A1D29] dark:bg-[#1A1D29] p-6 rounded-xl border border-gray-700">
-                    <h3 className="text-lg font-semibold text-white mb-4">Company Information</h3>
-                    <div className="space-y-4">
-                        <div>
-                            <p className="text-sm text-gray-400">Company Name</p>
-                            <p className="text-white">{companyName}</p>
-                        </div>
-                        <div>
-                            <p className="text-sm text-gray-400">Company Segment</p>
-                            <p className="text-white">{SEGMENT_OPTIONS[companySegment as keyof typeof SEGMENT_OPTIONS] || 'Not specified'}</p>
-                        </div>
-                        <div>
-                            <p className="text-sm text-gray-400">Company Description</p>
-                            <p className="text-white">{companyDescription}</p>
+                            <p className="text-xs sm:text-sm text-gray-400">Last Name</p>
+                            <p className="text-sm sm:text-base text-white">{lastName}</p>
                         </div>
                     </div>
                 </div>
                 
-                <div className="bg-[#1A1D29] dark:bg-[#1A1D29] p-6 rounded-xl border border-gray-700">
-                    <h3 className="text-lg font-semibold text-white mb-4">Website Details</h3>
-                    <div className="space-y-4">
+                <div className="bg-[#1A1D29] dark:bg-[#1A1D29] p-4 sm:p-6 rounded-xl border border-gray-700">
+                    <h3 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4">Company Information</h3>
+                    <div className="space-y-3 sm:space-y-4">
                         <div>
-                            <p className="text-sm text-gray-400">Website Link</p>
-                            <p className="text-white">{websiteLink}</p>
+                            <p className="text-xs sm:text-sm text-gray-400">Company Name</p>
+                            <p className="text-sm sm:text-base text-white">{companyName}</p>
                         </div>
                         <div>
-                            <p className="text-sm text-gray-400">Privacy Policy Link</p>
-                            <p className="text-white">{privacyPolicyLink}</p>
+                            <p className="text-xs sm:text-sm text-gray-400">Company Segment</p>
+                            <p className="text-sm sm:text-base text-white">{SEGMENT_OPTIONS[companySegment as keyof typeof SEGMENT_OPTIONS] || 'Not specified'}</p>
+                        </div>
+                        <div>
+                            <p className="text-xs sm:text-sm text-gray-400">Company Description</p>
+                            <p className="text-sm sm:text-base text-white">{companyDescription}</p>
                         </div>
                     </div>
                 </div>
                 
-                <div className="bg-[#1A1D29] dark:bg-[#1A1D29] p-6 rounded-xl border border-gray-700">
-                    <h3 className="text-lg font-semibold text-white mb-4">Preferences</h3>
+                <div className="bg-[#1A1D29] dark:bg-[#1A1D29] p-4 sm:p-6 rounded-xl border border-gray-700">
+                    <h3 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4">Website Details</h3>
+                    <div className="space-y-3 sm:space-y-4">
+                        <div>
+                            <p className="text-xs sm:text-sm text-gray-400">Website Link</p>
+                            <p className="text-sm sm:text-base text-white break-words">{websiteLink}</p>
+                        </div>
+                        <div>
+                            <p className="text-xs sm:text-sm text-gray-400">Privacy Policy Link</p>
+                            <p className="text-sm sm:text-base text-white break-words">{privacyPolicyLink}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div className="bg-[#1A1D29] dark:bg-[#1A1D29] p-4 sm:p-6 rounded-xl border border-gray-700">
+                    <h3 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4">Preferences</h3>
                     <div>
-                        <p className="text-sm text-gray-400">Preferred Language</p>
-                        <p className="text-white">{
+                        <p className="text-xs sm:text-sm text-gray-400">Preferred Language</p>
+                        <p className="text-sm sm:text-base text-white">{
                             preferredLanguage === 'en' ? 'English' :
                             preferredLanguage === 'nl' ? 'Dutch' :
                             preferredLanguage === 'de' ? 'German' :
@@ -1040,32 +1041,32 @@ function Onboarding({
                 
                 
                 {/* Always show a locations section, with debug info if no locations */}
-                <div className="bg-[#1A1D29] dark:bg-[#1A1D29] p-6 rounded-xl border border-gray-700">
-                    <h3 className="text-lg font-semibold text-white mb-4">
+                <div className="bg-[#1A1D29] dark:bg-[#1A1D29] p-4 sm:p-6 rounded-xl border border-gray-700">
+                    <h3 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4">
                         <span className="flex items-center gap-2">
-                            <MapPin className="h-5 w-5 text-[#4BF29C]" />
+                            <MapPin className="h-4 w-4 sm:h-5 sm:w-5 text-[#4BF29C]" />
                             Preferred Locations
                         </span>
                     </h3>
                     
                     {(!locations || locations.length === 0) ? (
-                        <div className="py-3 px-4 bg-[#151925] rounded-lg">
-                            <p className="text-gray-400 text-sm">No locations selected</p>
+                        <div className="py-2 sm:py-3 px-3 sm:px-4 bg-[#151925] rounded-lg">
+                            <p className="text-gray-400 text-xs sm:text-sm">No locations selected</p>
                         </div>
                     ) : (
-                        <div className="space-y-4">
+                        <div className="space-y-3 sm:space-y-4">
                             {locations.map((loc, idx) => (
                                 <div key={idx} className="border-b border-gray-700 pb-3 last:border-0 last:pb-0">
-                                    <p className="text-white font-medium">{loc.country.name}</p>
+                                    <p className="text-sm sm:text-base text-white font-medium">{loc.country.name}</p>
                                     {loc.regions.map((region, regionIdx) => (
-                                        <div key={regionIdx} className="ml-4 mt-2">
-                                            <p className="text-gray-300">{region.name}</p>
+                                        <div key={regionIdx} className="ml-3 sm:ml-4 mt-2">
+                                            <p className="text-xs sm:text-sm text-gray-300">{region.name}</p>
                                             {region.cities && region.cities.length > 0 && (
-                                                <div className="ml-4 mt-1 flex flex-wrap gap-2">
+                                                <div className="ml-3 sm:ml-4 mt-1 flex flex-wrap gap-1 sm:gap-2">
                                                     {region.cities.map((city, cityIdx) => (
                                                         <span 
                                                             key={cityIdx} 
-                                                            className="inline-flex items-center px-2 py-1 rounded-md text-xs bg-[#232736] text-gray-300"
+                                                            className="inline-flex items-center px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md text-[10px] sm:text-xs bg-[#232736] text-gray-300"
                                                         >
                                                             {city.name}
                                                         </span>
@@ -1087,24 +1088,24 @@ function Onboarding({
         <>
             {showSuccessMessage && (
                 <div className={cn(
-                    "my-4 flex items-center gap-2 p-4 text-sm rounded-lg",
+                    "my-2 sm:my-4 flex items-center gap-1 sm:gap-2 p-3 sm:p-4 text-xs sm:text-sm rounded-lg",
                     "bg-green-50 text-green-800 dark:bg-green-950/50 dark:text-green-400",
                     "border border-green-200 dark:border-green-900/50",
                     "animate-in fade-in-0 duration-300"
                 )}>
-                    <CheckCircle2 className="size-4 shrink-0"/>
+                    <CheckCircle2 className="size-3 sm:size-4 shrink-0"/>
                     <span>Your profile has been updated successfully</span>
                 </div>
             )}
 
             {!open && dbChangeRequested && (
                 <div className={cn(
-                    "my-4 flex items-center gap-2 p-4 text-sm rounded-lg",
+                    "my-2 sm:my-4 flex items-center gap-1 sm:gap-2 p-3 sm:p-4 text-xs sm:text-sm rounded-lg",
                     "bg-yellow-50 text-yellow-800 dark:bg-yellow-950/50 dark:text-yellow-400",
                     "border border-yellow-200 dark:border-yellow-900/50",
                     "animate-in fade-in-0 duration-300"
                 )}>
-                    <Loader2 className="size-4 shrink-0 animate-spin"/>
+                    <Loader2 className="size-3 sm:size-4 shrink-0 animate-spin"/>
                     <span>Updating your profile. This may take a few seconds...</span>
                 </div>
             )}
@@ -1148,12 +1149,12 @@ function Onboarding({
                         )}
                     >
                         {/* Split screen layout */}
-                        <div className="flex h-full w-full max-w-[1400px] mx-auto">
-                            {/* Left column - Form (60%) */}
-                            <div className="w-3/5 h-full flex flex-col p-8 overflow-auto">
+                        <div className="flex flex-col lg:flex-row h-full w-full max-w-[1400px] mx-auto">
+                            {/* Left column - Form (100% on mobile, 60% on desktop) */}
+                            <div className="w-full lg:w-3/5 h-full flex flex-col p-4 sm:p-6 lg:p-8 overflow-auto">
                                 {/* Progress indicator */}
-                                <div className="w-full mb-8">
-                                    <div className="flex justify-between items-center w-full mb-2">
+                                <div className="w-full mb-6 lg:mb-8">
+                                    <div className="hidden sm:flex justify-between items-center w-full mb-2">
                                         {STEPS.map((step, index) => (
                                             <button 
                                                 key={step.id}
@@ -1165,7 +1166,7 @@ function Onboarding({
                                                 )}
                                             >
                                                 <div className={cn(
-                                                    "rounded-full flex items-center justify-center w-8 h-8 mb-2",
+                                                    "rounded-full flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 mb-1 sm:mb-2",
                                                     "border-2 transition-all duration-200",
                                                     currentStep > index 
                                                         ? "bg-[#4BF29C] border-[#4BF29C]" 
@@ -1174,15 +1175,21 @@ function Onboarding({
                                                             : "border-gray-700 text-gray-500"
                                                 )}>
                                                     {currentStep > index ? (
-                                                        <CheckCircle2 className="w-4 h-4 text-[#0F1117]" />
+                                                        <CheckCircle2 className="w-3 h-3 sm:w-4 sm:h-4 text-[#0F1117]" />
                                                     ) : (
                                                         <span>{index + 1}</span>
                                                     )}
                                                 </div>
-                                                <span className="text-xs font-medium">{step.title}</span>
+                                                <span className="text-[10px] sm:text-xs font-medium hidden sm:block">{step.title}</span>
                                             </button>
                                         ))}
                                     </div>
+                                    
+                                    {/* Mobile Stepper - Just show current step */}
+                                    <div className="flex sm:hidden items-center justify-center mb-4">
+                                        <span className="text-sm text-gray-400">Step {currentStep + 1} of {STEPS.length}</span>
+                                    </div>
+                                    
                                     <div className="w-full bg-gray-700 h-1 rounded-full overflow-hidden">
                                         <div 
                                             className="bg-gradient-to-r from-purple-500 to-[#4BF29C] h-full transition-all duration-300 ease-in-out" 
@@ -1191,23 +1198,23 @@ function Onboarding({
                                     </div>
                                 </div>
                                 
-                                <Dialog.Title className="text-3xl font-bold tracking-tight text-white mb-4">
-                                    {STEPS[currentStep].title} (Step {currentStep + 1}/{STEPS.length})
+                                <Dialog.Title className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-white mb-2 sm:mb-4">
+                                    {STEPS[currentStep].title} <span className="text-sm sm:text-base text-gray-400">(Step {currentStep + 1}/{STEPS.length})</span>
                                 </Dialog.Title>
 
-                                <Dialog.Description className="text-lg text-gray-400 mb-8">
+                                <Dialog.Description className="text-sm sm:text-base lg:text-lg text-gray-400 mb-4 sm:mb-6 lg:mb-8">
                                     {currentStep === STEPS.length - 1 
                                         ? "Please review your information before saving."
                                         : "Complete your profile to get the most out of our platform."}
                                 </Dialog.Description>
 
                                 {error && (
-                                    <div className="mb-6 p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-400 text-center">
+                                    <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-400 text-center text-sm sm:text-base">
                                         {error}
                                     </div>
                                 )}
 
-                                <div className="flex-1 space-y-6 overflow-y-auto pr-4 custom-scrollbar">
+                                <div className="flex-1 space-y-4 sm:space-y-6 overflow-y-auto pr-2 sm:pr-4 custom-scrollbar">
                                     {/* Debug information */}
                                     
                                     {currentStep === STEPS.length - 1 
@@ -1220,18 +1227,18 @@ function Onboarding({
                                     }
                                 </div>
 
-                                <div className="flex justify-between mt-8 pt-4 border-t border-gray-800">
+                                <div className="flex justify-between mt-6 sm:mt-8 pt-4 border-t border-gray-800">
                                     <button
                                         onClick={handlePrevStep}
                                         className={cn(
-                                            "px-6 py-3 rounded-lg flex items-center gap-2",
+                                            "px-3 sm:px-4 lg:px-6 py-2 sm:py-3 rounded-lg flex items-center gap-1 sm:gap-2 text-sm sm:text-base",
                                             "bg-[#1A1D29] text-white border border-gray-700",
                                             "transition-all duration-200 hover:bg-[#232736] hover:scale-[1.02]",
                                             currentStep === 0 && "opacity-50 cursor-not-allowed"
                                         )}
                                         disabled={currentStep === 0}
                                     >
-                                        <ArrowLeft className="w-4 h-4" />
+                                        <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4" />
                                         Previous
                                     </button>
                                     
@@ -1239,51 +1246,56 @@ function Onboarding({
                                         <button
                                             onClick={handleSave}
                                             disabled={isSaving}
-                                            className="px-6 py-3 rounded-lg flex items-center gap-2 bg-gradient-to-r from-[#4BF29C] to-[#38A169] hover:brightness-110 text-[#0F1117] font-medium transition-all duration-200 hover:scale-[1.02] disabled:opacity-70 disabled:pointer-events-none"
+                                            className="px-3 sm:px-4 lg:px-6 py-2 sm:py-3 rounded-lg flex items-center gap-1 sm:gap-2 text-sm sm:text-base bg-gradient-to-r from-[#4BF29C] to-[#38A169] hover:brightness-110 text-[#0F1117] font-medium transition-all duration-200 hover:scale-[1.02] disabled:opacity-70 disabled:pointer-events-none"
                                         >
                                             {isSaving ? (
                                                 <>
-                                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                                    <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" />
                                                     Saving...
                                                 </>
                                             ) : (
                                                 <>
                                                     Save Profile
-                                                    <CheckCircle2 className="w-4 h-4" />
+                                                    <CheckCircle2 className="w-3 h-3 sm:w-4 sm:h-4" />
                                                 </>
                                             )}
                                         </button>
                                     ) : (
                                         <button
                                             onClick={handleNextStep}
-                                            className="px-6 py-3 rounded-lg flex items-center gap-2 bg-gradient-to-r from-[#4BF29C] to-[#38A169] hover:brightness-110 text-[#0F1117] font-medium transition-all duration-200 hover:scale-[1.02]"
+                                            className="px-3 sm:px-4 lg:px-6 py-2 sm:py-3 rounded-lg flex items-center gap-1 sm:gap-2 text-sm sm:text-base bg-gradient-to-r from-[#4BF29C] to-[#38A169] hover:brightness-110 text-[#0F1117] font-medium transition-all duration-200 hover:scale-[1.02]"
                                         >
                                             Next
-                                            <ArrowRight className="w-4 h-4" />
+                                            <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4" />
                                         </button>
                                     )}
                                 </div>
                             </div>
                             
-                            {/* Right column - Benefits (40%) */}
-                            <div className="w-2/5 h-full bg-[#151925] p-8 border-l border-[#2A2E3A] overflow-y-auto">
+                            {/* Right column - Benefits (hidden on mobile, 40% on desktop) */}
+                            <div className="hidden lg:block lg:w-2/5 h-full bg-[#151925] p-8 border-l border-[#2A2E3A] overflow-y-auto">
                                 <BenefitsPanel currentStep={currentStep} />
                             </div>
+                        </div>
+                        
+                        {/* Mobile benefits panel - shown below content on mobile screens */}
+                        <div className="lg:hidden w-full bg-[#151925] p-4 sm:p-6 border-t border-[#2A2E3A]">
+                            <BenefitsPanel currentStep={currentStep} />
                         </div>
                         
                         {/* Full-screen loading overlay */}
                         {isSaving && (
                             <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex flex-col items-center justify-center z-50">
-                                <div className="bg-[#1A1D29] p-8 rounded-xl flex flex-col items-center max-w-md mx-auto">
-                                    <div className="w-16 h-16 rounded-full bg-[#4BF29C]/20 flex items-center justify-center mb-4">
-                                        <Loader2 className="w-8 h-8 text-[#4BF29C] animate-spin" />
+                                <div className="bg-[#1A1D29] p-5 sm:p-8 rounded-xl flex flex-col items-center max-w-xs sm:max-w-md mx-auto m-4">
+                                    <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-[#4BF29C]/20 flex items-center justify-center mb-3 sm:mb-4">
+                                        <Loader2 className="w-6 h-6 sm:w-8 sm:h-8 text-[#4BF29C] animate-spin" />
                                     </div>
-                                    <h3 className="text-xl font-semibold text-white mb-2">Saving Your Profile</h3>
-                                    <p className="text-gray-400 text-center mb-6">
+                                    <h3 className="text-lg sm:text-xl font-semibold text-white mb-1 sm:mb-2">Saving Your Profile</h3>
+                                    <p className="text-gray-400 text-center text-sm sm:text-base mb-4 sm:mb-6">
                                         Please wait while we save your profile information. 
                                         This will only take a moment.
                                     </p>
-                                    <div className="w-full bg-[#151925] h-2 rounded-full overflow-hidden">
+                                    <div className="w-full bg-[#151925] h-1.5 sm:h-2 rounded-full overflow-hidden">
                                         <div className="h-full bg-gradient-to-r from-purple-500 to-[#4BF29C] animate-pulse" style={{ width: '100%' }}></div>
                                     </div>
                                 </div>
@@ -1291,8 +1303,8 @@ function Onboarding({
                         )}
                         
                         {/* Close button */}
-                        <Dialog.Close className="absolute top-4 right-4 p-2 rounded-full bg-[#1A1D29] text-gray-400 hover:text-white hover:bg-[#232736] transition-colors">
-                            <Cross2Icon className="size-4" />
+                        <Dialog.Close className="absolute top-3 sm:top-4 right-3 sm:right-4 p-1.5 sm:p-2 rounded-full bg-[#1A1D29] text-gray-400 hover:text-white hover:bg-[#232736] transition-colors z-10">
+                            <Cross2Icon className="size-3 sm:size-4" />
                         </Dialog.Close>
                     </Dialog.Content>
                 </Dialog.Portal>
