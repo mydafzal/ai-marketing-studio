@@ -29,7 +29,8 @@ interface TrackServerEventArgs {
 
 export async function trackServerEvent({
   event,
-  user
+  user,
+  properties = {}
 }: TrackServerEventArgs): Promise<void> {
   if (isInternalUser(user.email)) return
 
