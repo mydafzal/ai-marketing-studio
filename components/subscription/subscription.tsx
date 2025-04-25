@@ -93,7 +93,7 @@ export function Subscription({
               </h1>
               {checkoutCanceled && (
                 <div className="mt-4 p-3 bg-[#1A1D29] rounded-lg border border-[#2A2E3A] text-white">
-                  Your checkout was canceled. You can try again when you're ready.
+                  Your checkout was canceled. You can try again when you&apos;re ready.
                 </div>
               )}
             </div>
