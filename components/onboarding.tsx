@@ -378,6 +378,23 @@ function Onboarding({
     const [showSuccessMessage, setShowSuccessMessage] = React.useState(false)
     const [currentStep, setCurrentStep] = React.useState(0)
     const [isSaving, setIsSaving] = React.useState(false)
+    const [isMobile, setIsMobile] = React.useState(false)
+
+    // Check if the device is mobile
+    React.useEffect(() => {
+        const checkIfMobile = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+        
+        // Initial check
+        checkIfMobile();
+        
+        // Listen for resize events
+        window.addEventListener('resize', checkIfMobile);
+        
+        // Cleanup
+        return () => window.removeEventListener('resize', checkIfMobile);
+    }, []);
 
     // Track when the onboarding dialog is opened
     const [dialogOpenedAt, setDialogOpenedAt] = React.useState<number | null>(null);
@@ -483,12 +500,20 @@ function Onboarding({
         if (validateStep()) {
             const nextStep = Math.min(currentStep + 1, STEPS.length - 1);
             setCurrentStep(nextStep);
+            // Scroll to top when changing steps on mobile
+            if (isMobile) {
+                window.scrollTo(0, 0);
+            }
         }
     };
 
     const handlePrevStep = () => {
         const prevStep = Math.max(currentStep - 1, 0);
         setCurrentStep(prevStep);
+        // Scroll to top when changing steps on mobile
+        if (isMobile) {
+            window.scrollTo(0, 0);
+        }
     };
 
     const handleSave = async () => {
@@ -1145,13 +1170,13 @@ function Onboarding({
                             "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
                             "data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%]",
                             "data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]",
-                            "overflow-hidden"
+                            "overflow-y-auto overflow-x-hidden"
                         )}
                     >
                         {/* Split screen layout */}
-                        <div className="flex flex-col lg:flex-row h-full w-full max-w-[1400px] mx-auto">
-                            {/* Left column - Form (100% on mobile, 60% on desktop) */}
-                            <div className="w-full lg:w-3/5 h-full flex flex-col p-4 sm:p-6 lg:p-8 overflow-auto">
+                        <div className="flex flex-col md:flex-row h-full w-full max-w-[1400px] mx-auto">
+                            {/* Left column - Form (100% on mobile, 60% on tablet/desktop) */}
+                            <div className="w-full md:w-3/5 h-full flex flex-col p-4 sm:p-6 lg:p-8 overflow-auto">
                                 {/* Progress indicator */}
                                 <div className="w-full mb-6 lg:mb-8">
                                     <div className="hidden sm:flex justify-between items-center w-full mb-2">
@@ -1214,9 +1239,54 @@ function Onboarding({
                                     </div>
                                 )}
 
-                                <div className="flex-1 space-y-4 sm:space-y-6 overflow-y-auto pr-2 sm:pr-4 custom-scrollbar">
-                                    {/* Debug information */}
-                                    
+                                {/* Navigation buttons - mobile positioning at top */}
+                                {isMobile && (
+                                    <div className="flex justify-between mb-6 sticky top-0 z-30 bg-[#0F1117] py-3">
+                                        <button
+                                            onClick={handlePrevStep}
+                                            className={cn(
+                                                "px-3 py-2 rounded-lg flex items-center gap-1 text-sm",
+                                                "bg-[#1A1D29] text-white border border-gray-700",
+                                                "transition-all duration-200 hover:bg-[#232736]",
+                                                currentStep === 0 && "opacity-50 cursor-not-allowed"
+                                            )}
+                                            disabled={currentStep === 0}
+                                        >
+                                            <ArrowLeft className="w-3 h-3" />
+                                            Back
+                                        </button>
+                                        
+                                        {currentStep === STEPS.length - 1 ? (
+                                            <button
+                                                onClick={handleSave}
+                                                disabled={isSaving}
+                                                className="px-3 py-2 rounded-lg flex items-center gap-1 text-sm bg-gradient-to-r from-[#4BF29C] to-[#38A169] hover:brightness-110 text-[#0F1117] font-medium transition-all duration-200 disabled:opacity-70 disabled:pointer-events-none"
+                                            >
+                                                {isSaving ? (
+                                                    <>
+                                                        <Loader2 className="w-3 h-3 animate-spin" />
+                                                        Saving...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        Save
+                                                        <CheckCircle2 className="w-3 h-3" />
+                                                    </>
+                                                )}
+                                            </button>
+                                        ) : (
+                                            <button
+                                                onClick={handleNextStep}
+                                                className="px-3 py-2 rounded-lg flex items-center gap-1 text-sm bg-gradient-to-r from-[#4BF29C] to-[#38A169] hover:brightness-110 text-[#0F1117] font-medium transition-all duration-200"
+                                            >
+                                                Next
+                                                <ArrowRight className="w-3 h-3" />
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+
+                                <div className="flex-1 space-y-4 sm:space-y-6 overflow-y-auto pr-2 sm:pr-4 custom-scrollbar min-h-[200px] pb-20">
                                     {currentStep === STEPS.length - 1 
                                         ? renderConfirmation()
                                         : STEPS[currentStep].fields.map(field => (
@@ -1227,60 +1297,58 @@ function Onboarding({
                                     }
                                 </div>
 
-                                <div className="flex justify-between mt-6 sm:mt-8 pt-4 border-t border-gray-800">
-                                    <button
-                                        onClick={handlePrevStep}
-                                        className={cn(
-                                            "px-3 sm:px-4 lg:px-6 py-2 sm:py-3 rounded-lg flex items-center gap-1 sm:gap-2 text-sm sm:text-base",
-                                            "bg-[#1A1D29] text-white border border-gray-700",
-                                            "transition-all duration-200 hover:bg-[#232736] hover:scale-[1.02]",
-                                            currentStep === 0 && "opacity-50 cursor-not-allowed"
-                                        )}
-                                        disabled={currentStep === 0}
-                                    >
-                                        <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4" />
-                                        Previous
-                                    </button>
-                                    
-                                    {currentStep === STEPS.length - 1 ? (
+                                {/* Navigation buttons - desktop positioning */}
+                                {!isMobile && (
+                                    <div className="flex justify-between border-t border-gray-800 pt-4 mt-6 relative z-10">
                                         <button
-                                            onClick={handleSave}
-                                            disabled={isSaving}
-                                            className="px-3 sm:px-4 lg:px-6 py-2 sm:py-3 rounded-lg flex items-center gap-1 sm:gap-2 text-sm sm:text-base bg-gradient-to-r from-[#4BF29C] to-[#38A169] hover:brightness-110 text-[#0F1117] font-medium transition-all duration-200 hover:scale-[1.02] disabled:opacity-70 disabled:pointer-events-none"
-                                        >
-                                            {isSaving ? (
-                                                <>
-                                                    <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" />
-                                                    Saving...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    Save Profile
-                                                    <CheckCircle2 className="w-3 h-3 sm:w-4 sm:h-4" />
-                                                </>
+                                            onClick={handlePrevStep}
+                                            className={cn(
+                                                "px-3 sm:px-4 lg:px-6 py-2 sm:py-3 rounded-lg flex items-center gap-1 sm:gap-2 text-sm sm:text-base",
+                                                "bg-[#1A1D29] text-white border border-gray-700",
+                                                "transition-all duration-200 hover:bg-[#232736] hover:scale-[1.02]",
+                                                currentStep === 0 && "opacity-50 cursor-not-allowed"
                                             )}
-                                        </button>
-                                    ) : (
-                                        <button
-                                            onClick={handleNextStep}
-                                            className="px-3 sm:px-4 lg:px-6 py-2 sm:py-3 rounded-lg flex items-center gap-1 sm:gap-2 text-sm sm:text-base bg-gradient-to-r from-[#4BF29C] to-[#38A169] hover:brightness-110 text-[#0F1117] font-medium transition-all duration-200 hover:scale-[1.02]"
+                                            disabled={currentStep === 0}
                                         >
-                                            Next
-                                            <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4" />
+                                            <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4" />
+                                            Previous
                                         </button>
-                                    )}
-                                </div>
+                                        
+                                        {currentStep === STEPS.length - 1 ? (
+                                            <button
+                                                onClick={handleSave}
+                                                disabled={isSaving}
+                                                className="px-3 sm:px-4 lg:px-6 py-2 sm:py-3 rounded-lg flex items-center gap-1 sm:gap-2 text-sm sm:text-base bg-gradient-to-r from-[#4BF29C] to-[#38A169] hover:brightness-110 text-[#0F1117] font-medium transition-all duration-200 hover:scale-[1.02] disabled:opacity-70 disabled:pointer-events-none"
+                                            >
+                                                {isSaving ? (
+                                                    <>
+                                                        <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" />
+                                                        Saving...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        Save Profile
+                                                        <CheckCircle2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                                                    </>
+                                                )}
+                                            </button>
+                                        ) : (
+                                            <button
+                                                onClick={handleNextStep}
+                                                className="px-3 sm:px-4 lg:px-6 py-2 sm:py-3 rounded-lg flex items-center gap-1 sm:gap-2 text-sm sm:text-base bg-gradient-to-r from-[#4BF29C] to-[#38A169] hover:brightness-110 text-[#0F1117] font-medium transition-all duration-200 hover:scale-[1.02]"
+                                            >
+                                                Next
+                                                <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4" />
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                             
-                            {/* Right column - Benefits (hidden on mobile, 40% on desktop) */}
-                            <div className="hidden lg:block lg:w-2/5 h-full bg-[#151925] p-8 border-l border-[#2A2E3A] overflow-y-auto">
+                            {/* Right column - Benefits (hidden on mobile phones, 40% on tablet/desktop) */}
+                            <div className="hidden md:block md:w-2/5 h-full bg-[#151925] p-8 border-l border-[#2A2E3A] overflow-y-auto">
                                 <BenefitsPanel currentStep={currentStep} />
                             </div>
-                        </div>
-                        
-                        {/* Mobile benefits panel - shown below content on mobile screens */}
-                        <div className="lg:hidden w-full bg-[#151925] p-4 sm:p-6 border-t border-[#2A2E3A]">
-                            <BenefitsPanel currentStep={currentStep} />
                         </div>
                         
                         {/* Full-screen loading overlay */}
