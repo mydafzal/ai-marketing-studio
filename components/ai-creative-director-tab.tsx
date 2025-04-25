@@ -191,18 +191,29 @@ export default function AiCreativeDirectorTab({ improvePrompt }: AiCreativeDirec
       if (approachMethod === "text-only") {
         // Text-only approach - use standard image generation without references
         console.log("Using text-only approach method")
-        const result = await generateImages(imagePrompt, imageFormat, 10)
+        const result = await generateImages(imagePrompt, imageFormat, 4) // Reduced from 10 to 4 for faster processing
         
         if (result.success && result.images) {
           const validUrls = result.images.filter((url: unknown) => typeof url === "string") as string[]
           setGeneratedImages(validUrls)
           setSelectedImages([])
+          setLogoPositions({}) // Reset custom logo positions for new images
+          setCombinedPreviews([]) // Reset combined previews
           
           showToast(
             "Images generated", 
             `Created ${validUrls.length} image${validUrls.length !== 1 ? 's' : ''} based on your text prompt`, 
             "success"
           )
+          
+          // Move to the next step automatically when images are generated
+          if (currentStep === 3) {
+            setTimeout(() => {
+              if (validUrls.length > 0) {
+                goToNextStep();
+              }
+            }, 1000);
+          }
         } else {
           throw new Error(result.error || "Failed to generate images from text.")
         }
@@ -214,7 +225,7 @@ export default function AiCreativeDirectorTab({ improvePrompt }: AiCreativeDirec
         const formData = new FormData()
         formData.append('prompt', imagePrompt)
         formData.append('aspectRatio', imageFormat)
-        formData.append('numberOfImages', '10')
+        formData.append('numberOfImages', '4') // Reduced from 10 to 4 for faster processing
         
         // Add reference images to the form data
         filledReferenceImages.forEach((img, index) => {
@@ -248,12 +259,23 @@ export default function AiCreativeDirectorTab({ improvePrompt }: AiCreativeDirec
           const validUrls = result.images.filter((url: unknown) => typeof url === "string") as string[]
           setGeneratedImages(validUrls)
           setSelectedImages([])
+          setLogoPositions({}) // Reset custom logo positions for new images
+          setCombinedPreviews([]) // Reset combined previews
           
           showToast(
             "Images generated", 
             `Created ${validUrls.length} image${validUrls.length !== 1 ? 's' : ''} based on your references`, 
             "success"
           )
+          
+          // Move to the next step automatically when images are generated
+          if (currentStep === 3) {
+            setTimeout(() => {
+              if (validUrls.length > 0) {
+                goToNextStep();
+              }
+            }, 1000);
+          }
         } else {
           throw new Error(result.error || "Failed to generate images with references.")
         }
@@ -1138,7 +1160,9 @@ export default function AiCreativeDirectorTab({ improvePrompt }: AiCreativeDirec
               type="file"
               accept="image/*"
               multiple
-              ref={el => fileInputRefs.current[0] = el}
+              ref={(el: HTMLInputElement | null) => {
+                if (el) fileInputRefs.current[0] = el;
+              }}
               onChange={handleReferenceImagesUpload}
               className="hidden"
               id="referenceImagesInput"
@@ -1243,21 +1267,34 @@ export default function AiCreativeDirectorTab({ improvePrompt }: AiCreativeDirec
             Image Description
           </label>
           <div className="relative">
-            <input 
-              type="text"
-              id="imagePrompt"
-              placeholder={approachMethod === "text-only" 
-                ? "Describe the image you want the AI to generate..." 
-                : "Describe what you want to create based on your reference images..."}
-              value={imagePrompt}
-              onChange={(e) => setImagePrompt(e.target.value)}
-              className={`w-full p-3 rounded-md focus:ring-2 focus:ring-primary-green focus:border-primary-green outline-none border-2 z-10 ${
-                isDarkMode 
-                  ? 'bg-dark-bg border-border-dark text-text-white placeholder-text-light-gray' 
-                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
-              }`}
-              style={{ position: "relative" }}
-            />
+            {approachMethod === "text-only" ? (
+              <textarea 
+                id="imagePrompt"
+                placeholder="Describe the image you want the AI to generate..."
+                value={imagePrompt}
+                onChange={(e) => setImagePrompt(e.target.value)}
+                className={`w-full p-3 rounded-md focus:ring-2 focus:ring-primary-green focus:border-primary-green outline-none border-2 z-10 min-h-[120px] ${
+                  isDarkMode 
+                    ? 'bg-dark-bg border-border-dark text-text-white placeholder-text-light-gray' 
+                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
+                }`}
+                style={{ position: "relative" }}
+              />
+            ) : (
+              <input 
+                type="text"
+                id="imagePrompt"
+                placeholder="Describe what you want to create based on your reference images..."
+                value={imagePrompt}
+                onChange={(e) => setImagePrompt(e.target.value)}
+                className={`w-full p-3 rounded-md focus:ring-2 focus:ring-primary-green focus:border-primary-green outline-none border-2 z-10 ${
+                  isDarkMode 
+                    ? 'bg-dark-bg border-border-dark text-text-white placeholder-text-light-gray' 
+                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
+                }`}
+                style={{ position: "relative" }}
+              />
+            )}
           </div>
         </div>
 
@@ -1354,8 +1391,8 @@ export default function AiCreativeDirectorTab({ improvePrompt }: AiCreativeDirec
           type="button"
           onClick={handleGenerateImages}
           disabled={isGeneratingImages}
-          className={`flex justify-center items-center w-full py-2 px-4 rounded-md text-sm font-medium 
-            ${isGeneratingImages 
+          className={`flex justify-center items-center w-full py-2 px-4 rounded-md text-sm font-medium ${
+            isGeneratingImages 
               ? isDarkMode
                 ? 'bg-primary-green/50 cursor-not-allowed text-text-white/70'
                 : 'bg-blue-300 cursor-not-allowed text-white'
@@ -1369,6 +1406,21 @@ export default function AiCreativeDirectorTab({ improvePrompt }: AiCreativeDirec
             ? "Generating..." 
             : `Create ${approachMethod === "text-only" ? "AI Images" : "Images from References"}`}
         </button>
+
+        {/* Additional information for text-only mode */}
+        {approachMethod === "text-only" && !generatedImages.length && !isGeneratingImages && (
+          <div className={`mt-3 p-3 rounded-lg border ${
+            isDarkMode 
+              ? 'bg-blue-900/20 border-blue-800/40 text-blue-200' 
+              : 'bg-blue-50 border-blue-200 text-blue-700'
+          }`}>
+            <p className="text-sm">
+              <Info className="inline-block mr-1.5 size-4 align-text-bottom" />
+              When using the Text-Only mode, you can create AI-generated images based purely on your text description. 
+              Be as detailed as possible for best results.
+            </p>
+          </div>
+        )}
 
         {generatedImages.length > 0 && (
           <div className="mt-3">
@@ -1408,8 +1460,8 @@ export default function AiCreativeDirectorTab({ improvePrompt }: AiCreativeDirec
               type="button"
               onClick={() => handleSaveSelectedImagesToLibrary(false)}
               disabled={selectedImages.length === 0 || isSaving}
-              className={`flex items-center justify-center w-full gap-2 py-2 px-4 rounded-md text-sm font-medium mb-3 
-                ${selectedImages.length === 0 || isSaving
+              className={`flex items-center justify-center w-full gap-2 py-2 px-4 rounded-md text-sm font-medium mb-3 ${
+                selectedImages.length === 0 || isSaving
                   ? isDarkMode
                     ? 'bg-blue-800 cursor-not-allowed text-blue-300'
                     : 'bg-blue-300 cursor-not-allowed text-white'
@@ -1418,6 +1470,21 @@ export default function AiCreativeDirectorTab({ improvePrompt }: AiCreativeDirec
               <Save className="size-4" />
               {isSaving ? 'Saving...' : `Save ${selectedImages.length > 0 ? selectedImages.length : ''} to Library`}
             </button>
+
+            {/* Display loading or processing message while generating */}
+            {isGeneratingImages && (
+              <div className={`mt-3 flex items-center justify-center p-3 rounded-md ${
+                isDarkMode ? 'bg-gray-800 text-text-white' : 'bg-gray-100 text-gray-700'
+              }`}>
+                <div className="animate-spin mr-2">
+                  <svg className="size-5" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                </div>
+                <span>Processing your request...</span>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -1461,183 +1528,246 @@ export default function AiCreativeDirectorTab({ improvePrompt }: AiCreativeDirec
           Step 4: Add Your Logo (Optional)
         </h3>
         <p className={`text-sm ${isDarkMode ? 'text-text-light-gray' : 'text-gray-500'}`}>
-          Customize your images with your brand logo
+          Customize your AI-generated images with your brand logo
         </p>
       </div>
 
-      <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <button 
-            type="button"
-            onClick={handleLogoButtonClick}
-            className={`flex items-center justify-center py-1.5 px-3 text-sm font-medium rounded-md flex-1 
-              ${logoUrl 
-                ? isDarkMode
-                  ? 'bg-dark-bg text-text-white border border-border-dark hover:bg-light-container'
-                  : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                : isDarkMode
-                  ? 'bg-primary-green hover:bg-primary-green/90 text-deep-black'
-                  : 'bg-blue-600 hover:bg-blue-700 text-white'
-              }`}
-          >
-            <Upload className="mr-2 size-4" />
-            {logoUrl ? "Change logo" : "Upload logo"}
-          </button>
-          
-          {logoUrl && (
-            <button
+      {/* Show message if no images have been generated */}
+      {generatedImages.length === 0 ? (
+        <div className={`p-4 border rounded-md ${
+          isDarkMode ? 'bg-amber-900/20 border-amber-800/30 text-amber-200' : 'bg-amber-50 border-amber-200 text-amber-800'
+        }`}>
+          <div className="flex items-start gap-2">
+            <AlertCircle className="size-5 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-medium">No images to customize</p>
+              <p className="text-sm mt-1">Please go back to step 3 and generate some images first.</p>
+              <button
+                type="button"
+                onClick={() => setCurrentStep(3)}
+                className={`mt-3 px-3 py-1.5 text-sm rounded-md ${
+                  isDarkMode
+                    ? 'bg-amber-800/30 hover:bg-amber-800/50 text-amber-100'
+                    : 'bg-amber-100 hover:bg-amber-200 text-amber-800'
+                }`}
+              >
+                Go to image generation
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <button 
               type="button"
-              onClick={handleClearLogo}
-              className={`py-1.5 px-3 text-sm font-medium rounded-md ${
-                isDarkMode
-                  ? 'bg-dark-bg text-text-white border border-border-dark hover:bg-light-container'
-                  : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-              }`}
+              onClick={handleLogoButtonClick}
+              className={`flex items-center justify-center py-1.5 px-3 text-sm font-medium rounded-md flex-1 
+                ${logoUrl 
+                  ? isDarkMode
+                    ? 'bg-dark-bg text-text-white border border-border-dark hover:bg-light-container'
+                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                  : isDarkMode
+                    ? 'bg-primary-green hover:bg-primary-green/90 text-deep-black'
+                    : 'bg-blue-600 hover:bg-blue-700 text-white'
+                }`}
             >
-              Clear
+              <Upload className="mr-2 size-4" />
+              {logoUrl ? "Change logo" : "Upload logo"}
             </button>
+            
+            {logoUrl && (
+              <button
+                type="button"
+                onClick={handleClearLogo}
+                className={`py-1.5 px-3 text-sm font-medium rounded-md ${
+                  isDarkMode
+                    ? 'bg-dark-bg text-text-white border border-border-dark hover:bg-light-container'
+                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                Clear
+              </button>
+            )}
+            
+            <input 
+              type="file" 
+              accept="image/*" 
+              ref={logoFileInputRef}
+              onChange={handleLogoUpload} 
+              className="hidden"
+              id="logoInput"
+            />
+          </div>
+          
+          {!logoUrl && (
+            <div className={`p-3 rounded-md ${
+              isDarkMode ? 'bg-gray-700 border border-gray-600' : 'bg-gray-50 border border-gray-200'
+            }`}>
+              <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                <Info className="inline-block mr-1.5 size-4 align-text-bottom" />
+                Adding your logo to AI-generated images helps establish brand consistency and recognition. 
+                Upload your logo file to get started.
+              </p>
+            </div>
           )}
           
-          <input 
-            type="file" 
-            accept="image/*" 
-            ref={logoFileInputRef}
-            onChange={handleLogoUpload} 
-            className="hidden"
-            id="logoInput"
-          />
-        </div>
-        
-        {logoUrl && (
-          <div className={`mt-3 p-3 rounded-md ${
-            isDarkMode ? 'bg-gray-700 border border-gray-600' : 'bg-gray-50 border border-gray-200'
-          }`}>
-            <div className="flex items-center gap-3">
-              <div className={`relative size-16 rounded-md overflow-hidden ${
-                isDarkMode ? 'bg-gray-800 border border-gray-600' : 'bg-white border border-gray-200'
-              }`}>
-                <NextImage
-                  src={logoUrl}
-                  alt="Your logo"
-                  fill
-                  sizes="64px"
-                  className="object-contain"
-                />
-              </div>
-              <div className="flex-1">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label htmlFor="logo-position" className={`text-xs block mb-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Position</label>
-                    <select 
-                      id="logo-position" 
-                      value={overlayPosition} 
-                      onChange={handlePositionChange}
-                      className={`w-full h-8 px-2 py-1 text-sm rounded-md ${
-                        isDarkMode
-                          ? 'bg-gray-800 border-gray-600 text-gray-200'
-                          : 'bg-white border-gray-300 text-gray-700'
-                      }`}
-                    >
-                      <option value="top-left">Top Left</option>
-                      <option value="top-center">Top Center</option>
-                      <option value="top-right">Top Right</option>
-                      <option value="middle-center">Center</option>
-                      <option value="bottom-left">Bottom Left</option>
-                      <option value="bottom-center">Bottom Center</option>
-                      <option value="bottom-right">Bottom Right</option>
-                      <option value="custom">Custom (Drag & Drop)</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label htmlFor="logo-size" className={`text-xs block mb-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Size (%)</label>
-                    <select 
-                      id="logo-size" 
-                      value={logoSize.toString()} 
-                      onChange={handleLogoSizeChange}
-                      className={`w-full h-8 px-2 py-1 text-sm rounded-md ${
-                        isDarkMode
-                          ? 'bg-gray-800 border-gray-600 text-gray-200'
-                          : 'bg-white border-gray-300 text-gray-700'
-                      }`}
-                    >
-                      <option value="5">5%</option>
-                      <option value="10">10%</option>
-                      <option value="15">15%</option>
-                      <option value="20">20%</option>
-                      <option value="25">25%</option>
-                      <option value="30">30%</option>
-                      <option value="40">40%</option>
-                      <option value="50">50%</option>
-                    </select>
+          {logoUrl && (
+            <div className={`mt-3 p-3 rounded-md ${
+              isDarkMode ? 'bg-gray-700 border border-gray-600' : 'bg-gray-50 border border-gray-200'
+            }`}>
+              <div className="flex items-center gap-3">
+                <div className={`relative size-16 rounded-md overflow-hidden ${
+                  isDarkMode ? 'bg-gray-800 border border-gray-600' : 'bg-white border border-gray-200'
+                }`}>
+                  <NextImage
+                    src={logoUrl}
+                    alt="Your logo"
+                    fill
+                    sizes="64px"
+                    className="object-contain"
+                  />
+                </div>
+                <div className="flex-1">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label htmlFor="logo-position" className={`text-xs block mb-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Position</label>
+                      <select 
+                        id="logo-position" 
+                        value={overlayPosition} 
+                        onChange={handlePositionChange}
+                        className={`w-full h-8 px-2 py-1 text-sm rounded-md ${
+                          isDarkMode
+                            ? 'bg-gray-800 border-gray-600 text-gray-200'
+                            : 'bg-white border-gray-300 text-gray-700'
+                        }`}
+                      >
+                        <option value="top-left">Top Left</option>
+                        <option value="top-center">Top Center</option>
+                        <option value="top-right">Top Right</option>
+                        <option value="middle-center">Center</option>
+                        <option value="bottom-left">Bottom Left</option>
+                        <option value="bottom-center">Bottom Center</option>
+                        <option value="bottom-right">Bottom Right</option>
+                        <option value="custom">Custom (Drag & Drop)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label htmlFor="logo-size" className={`text-xs block mb-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Size (%)</label>
+                      <select 
+                        id="logo-size" 
+                        value={logoSize.toString()} 
+                        onChange={handleLogoSizeChange}
+                        className={`w-full h-8 px-2 py-1 text-sm rounded-md ${
+                          isDarkMode
+                            ? 'bg-gray-800 border-gray-600 text-gray-200'
+                            : 'bg-white border-gray-300 text-gray-700'
+                        }`}
+                      >
+                        <option value="5">5%</option>
+                        <option value="10">10%</option>
+                        <option value="15">15%</option>
+                        <option value="20">20%</option>
+                        <option value="25">25%</option>
+                        <option value="30">30%</option>
+                        <option value="40">40%</option>
+                        <option value="50">50%</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
               </div>
+              
+              {isCustomPosition && (
+                <div className={`mt-2 p-2 rounded ${
+                  isDarkMode ? 'bg-blue-900/30 border border-blue-800 text-blue-200' : 'bg-blue-50 border border-blue-100 text-blue-700'
+                }`}>
+                  <p className="text-xs flex items-center">
+                    <Info className="size-3 mr-1 flex-shrink-0" />
+                    Click and drag to position your logo on each image
+                  </p>
+                </div>
+              )}
             </div>
-            
-            {isCustomPosition && (
-              <div className={`mt-2 p-2 rounded ${
-                isDarkMode ? 'bg-blue-900/30 border border-blue-800 text-blue-200' : 'bg-blue-50 border border-blue-100 text-blue-700'
-              }`}>
-                <p className="text-xs flex items-center">
-                  <Info className="size-3 mr-1 flex-shrink-0" />
-                  Click and drag to position your logo on each image
-                </p>
-              </div>
-            )}
-          </div>
-        )}
-        
-        {combinedPreviews.length > 0 && (
-          <div className="mt-3">
-            <div className="flex items-center justify-between mb-2">
-              <div className={`text-sm font-medium ${isDarkMode ? 'text-text-white' : 'text-gray-700'}`}>
-                {selectedImages.length} of {combinedPreviews.length} selected
-              </div>
-              <div className="flex items-center gap-2">
-                <button 
-                  type="button"
-                  onClick={selectAll}
-                  className={`py-1 px-2 text-xs font-medium rounded border ${
-                    isDarkMode
-                      ? 'bg-gray-700 text-gray-300 hover:bg-gray-600 border-gray-600'
-                      : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-300'
-                  }`}
-                >
-                  Select all
-                </button>
-                {selectedImages.length > 0 && (
+          )}
+          
+          {combinedPreviews.length > 0 && (
+            <div className="mt-3">
+              <div className="flex items-center justify-between mb-2">
+                <div className={`text-sm font-medium ${isDarkMode ? 'text-text-white' : 'text-gray-700'}`}>
+                  {selectedImages.length} of {combinedPreviews.length} selected
+                </div>
+                <div className="flex items-center gap-2">
                   <button 
                     type="button"
-                    onClick={clearSelections}
-                    className={`py-1 px-2 text-xs font-medium rounded ${
+                    onClick={selectAll}
+                    className={`py-1 px-2 text-xs font-medium rounded border ${
                       isDarkMode
-                        ? 'bg-gray-700 text-gray-300 hover:bg-gray-600 border border-gray-600'
-                        : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+                        ? 'bg-gray-700 text-gray-300 hover:bg-gray-600 border-gray-600'
+                        : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-300'
                     }`}
                   >
-                    Clear
+                    Select all
                   </button>
-                )}
+                  {selectedImages.length > 0 && (
+                    <button 
+                      type="button"
+                      onClick={clearSelections}
+                      className={`py-1 px-2 text-xs font-medium rounded ${
+                        isDarkMode
+                          ? 'bg-gray-700 text-gray-300 hover:bg-gray-600 border border-gray-600'
+                          : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+                      }`}
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
 
-            <button 
-              type="button"
-              onClick={() => handleSaveSelectedImagesToLibrary(true)}
-              disabled={selectedImages.length === 0 || isSaving}
-              className={`flex items-center justify-center w-full gap-2 py-2 px-4 rounded-md text-sm font-medium mb-3 
-                ${selectedImages.length === 0 || isSaving
-                  ? isDarkMode
-                    ? 'bg-blue-800 cursor-not-allowed text-blue-300'
-                    : 'bg-blue-300 cursor-not-allowed text-white'
-                  : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
-            >
-              <Save className="size-4" />
-              {isSaving ? 'Saving...' : `Save ${selectedImages.length > 0 ? selectedImages.length : ''} to Library with Logo`}
-            </button>
-          </div>
-        )}
-      </div>
+              <button 
+                type="button"
+                onClick={() => handleSaveSelectedImagesToLibrary(true)}
+                disabled={selectedImages.length === 0 || isSaving}
+                className={`flex items-center justify-center w-full gap-2 py-2 px-4 rounded-md text-sm font-medium mb-3 
+                  ${selectedImages.length === 0 || isSaving
+                    ? isDarkMode
+                      ? 'bg-blue-800 cursor-not-allowed text-blue-300'
+                      : 'bg-blue-300 cursor-not-allowed text-white'
+                    : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
+              >
+                <Save className="size-4" />
+                {isSaving ? 'Saving...' : `Save ${selectedImages.length > 0 ? selectedImages.length : ''} to Library with Logo`}
+              </button>
+            </div>
+          )}
+          
+          {logoUrl && combinedPreviews.length === 0 && isProcessing && (
+            <div className={`mt-3 flex items-center justify-center p-3 rounded-md ${
+              isDarkMode ? 'bg-gray-800 text-text-white' : 'bg-gray-100 text-gray-700'
+            }`}>
+              <div className="animate-spin mr-2">
+                <svg className="size-5" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              </div>
+              <span>Generating logo previews...</span>
+            </div>
+          )}
+          
+          {logoUrl && generatedImages.length > 0 && combinedPreviews.length === 0 && !isProcessing && (
+            <div className={`mt-3 p-3 rounded-md border ${
+              isDarkMode ? 'bg-amber-900/20 border-amber-800/30 text-amber-200' : 'bg-amber-50 border-amber-200 text-amber-800'
+            }`}>
+              <p className="text-sm flex items-center">
+                <AlertCircle className="size-4 mr-1.5 flex-shrink-0" />
+                Logo preview generation is taking longer than expected. Please wait a moment.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="flex justify-between pt-4">
         <button
@@ -1651,6 +1781,26 @@ export default function AiCreativeDirectorTab({ improvePrompt }: AiCreativeDirec
         >
           Back
         </button>
+        
+        {logoUrl && combinedPreviews.length > 0 && (
+          <button
+            type="button"
+            onClick={() => handleSaveSelectedImagesToLibrary(true)}
+            disabled={selectedImages.length === 0 || isSaving}
+            className={`flex items-center justify-center gap-2 px-4 py-2 rounded-md ${
+              selectedImages.length === 0 || isSaving
+                ? isDarkMode
+                  ? 'bg-green-800 cursor-not-allowed text-green-300'
+                  : 'bg-green-300 cursor-not-allowed text-white'
+                : isDarkMode
+                  ? 'bg-green-600 hover:bg-green-700 text-white'
+                  : 'bg-green-600 hover:bg-green-700 text-white'
+            }`}
+          >
+            <Save className="size-4" />
+            Finalize & Save to Library
+          </button>
+        )}
       </div>
     </div>
   )
