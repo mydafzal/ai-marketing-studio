@@ -22,6 +22,9 @@ import AiImageTab from "@/components/ai-image-tab"
 
 // NEW import for your inpainting component
 import ImageImpaint from "@/components/image-inpaint"
+
+// NEW import for Creative Director component
+import AiCreativeDirectorTab from "@/components/ai-creative-director-tab"
 import {useRouter} from "next/navigation";
 import {getSubscriptionInfo} from "@/app/actions";
 import {IconSpinner} from "@/components/ui/icons";
@@ -40,7 +43,7 @@ const PLATFORMS = [
 export default function AiContentPage() {
   // Track the current platform for prompt optimization
   const [platform, setPlatform] = useState("instagram")
-  const [activeTab, setActiveTab] = useState("video")
+  const [activeTab, setActiveTab] = useState("video") // Default tab is "video"
 
 
   const [subStatus, setSubStatus] = useState<string | undefined>(undefined)
@@ -86,7 +89,14 @@ export default function AiContentPage() {
 
   // Enhanced prompt improver that passes platform context
   const enhancedImprovePrompt = async (promptText: string): Promise<string> => {
-    const contentType = activeTab === "video" ? "video" : "image"
+    // Determine content type based on active tab
+    let contentType = "image"
+    if (activeTab === "video") {
+      contentType = "video"
+    } else if (activeTab === "creative-director") {
+      contentType = "image-with-reference"
+    }
+    
     return improvePrompt(promptText, platform, contentType)
   }
 
@@ -150,9 +160,10 @@ export default function AiContentPage() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="video">AI Video Creation</TabsTrigger>
             <TabsTrigger value="image">AI Image Creatives</TabsTrigger>
+            <TabsTrigger value="creative-director">AI Creative Director</TabsTrigger>
           </TabsList>
 
           {/* VIDEO TAB */}
@@ -169,6 +180,11 @@ export default function AiContentPage() {
 
             {/* Your new inpainting component */}
             <ImageImpaint />
+          </TabsContent>
+          
+          {/* CREATIVE DIRECTOR TAB */}
+          <TabsContent value="creative-director">
+            <AiCreativeDirectorTab improvePrompt={enhancedImprovePrompt} />
           </TabsContent>
         </Tabs>
 

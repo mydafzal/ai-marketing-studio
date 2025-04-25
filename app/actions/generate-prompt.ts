@@ -12,7 +12,7 @@ const openai = new OpenAI({
  * 
  * @param currentPrompt The user's original prompt text
  * @param platform Optional platform context 
- * @param contentType Optional content type ("video" or "image")
+ * @param contentType Optional content type ("video", "image", or "image-with-reference")
  * @returns A slightly improved prompt for better AI generation
  */
 export async function improvePrompt(
@@ -34,14 +34,18 @@ Guidelines:
 3. ADD MINIMAL VISUAL DETAILS: Add only essential details about lighting, perspective, or style if they're missing.
 4. MAINTAIN BREVITY: Keep the prompt concise and focused.
 5. AVOID OVEREMBELLISHMENT: Do not add dramatic narrative elements, storylines, or marketing language unless specifically in the original prompt.
+${contentType === "image-with-reference" ? `
+6. REFERENCE IMAGE GUIDANCE: Since this prompt will be used with reference images, focus on describing how elements from those references should be combined or emphasized. Include details about which aspects to preserve and how to adapt them.` : ""}
 
 Your output should be a slightly refined version of the user's input that will help image/video generation models produce better results without changing the user's original vision.`
         },
         {
           role: "user",
-          content: `Here's my description for a ${contentType}: "${currentPrompt}"
+          content: `Here's my description for a ${contentType === "image-with-reference" ? "image that will be created using reference images" : contentType}: "${currentPrompt}"
 
-Please make minimal improvements to help image/video generation models understand it better, while staying true to my original description.`
+${contentType === "image-with-reference" 
+  ? "Please make minimal improvements to help the AI understand how to combine elements from multiple reference images, while staying true to my original description."
+  : "Please make minimal improvements to help image/video generation models understand it better, while staying true to my original description."}`
         }
       ],
       temperature: 0.3, // Lower temperature for more conservative, predictable outputs
