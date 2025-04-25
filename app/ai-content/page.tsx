@@ -16,14 +16,8 @@ import { Info as InfoIcon, Sparkles as SparklesIcon } from "lucide-react"
 // Actions
 import { improvePrompt } from "@/app/actions/generate-prompt"
 
-// Existing tab components
+// Tab components
 import AiVideoTab from "@/components/ai-video-tab"
-import AiImageTab from "@/components/ai-image-tab"
-
-// NEW import for your inpainting component
-import ImageImpaint from "@/components/image-inpaint"
-
-// NEW import for Creative Director component
 import AiCreativeDirectorTab from "@/components/ai-creative-director-tab"
 import {useRouter} from "next/navigation";
 import {getSubscriptionInfo} from "@/app/actions";
@@ -43,7 +37,7 @@ const PLATFORMS = [
 export default function AiContentPage() {
   // Track the current platform for prompt optimization
   const [platform, setPlatform] = useState("instagram")
-  const [activeTab, setActiveTab] = useState("video") // Default tab is "video"
+  const [activeTab, setActiveTab] = useState("creative-director") // Set Creative Director as default tab
 
 
   const [subStatus, setSubStatus] = useState<string | undefined>(undefined)
@@ -160,29 +154,17 @@ export default function AiContentPage() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="video">AI Video Creation</TabsTrigger>
-            <TabsTrigger value="image">AI Image Creatives</TabsTrigger>
-            <TabsTrigger value="creative-director">AI Creative Director</TabsTrigger>
+            <TabsTrigger value="creative-director">AI Image Creator</TabsTrigger>
           </TabsList>
 
           {/* VIDEO TAB */}
           <TabsContent value="video">
             <AiVideoTab improvePrompt={enhancedImprovePrompt} />
           </TabsContent>
-
-          {/* IMAGE TAB */}
-          <TabsContent value="image">
-            {/* Keep or remove this AiImageTab depending on what you want */}
-            <AiImageTab improvePrompt={enhancedImprovePrompt} />
-
-            <hr className="my-6" />
-
-            {/* Your new inpainting component */}
-            <ImageImpaint />
-          </TabsContent>
           
-          {/* CREATIVE DIRECTOR TAB */}
+          {/* CREATIVE DIRECTOR TAB - Now the main image generation tab */}
           <TabsContent value="creative-director">
             <AiCreativeDirectorTab improvePrompt={enhancedImprovePrompt} />
           </TabsContent>
