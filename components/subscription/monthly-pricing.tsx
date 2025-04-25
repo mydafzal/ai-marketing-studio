@@ -51,16 +51,10 @@ export function MonthlyPricing({ currentPlanTag }: MonthlyPricingProps) {
   return (
     <div className="bg-[#0F1117] dark:bg-[#0F1117] py-12">
       <div className="max-w-7xl mx-auto px-4">
-        {/* Header */}
-        <div className="flex items-center justify-center">
-          <button className="bg-[#1A1D29] dark:bg-[#1A1D29] text-green-500 dark:text-green-500 px-4 py-2 rounded-full font-medium flex items-center border border-gray-800 dark:border-gray-800">
-            <DiamondIcon />
-            Save up to 16% with the Annual Subscriptions Package
-          </button>
-        </div>
+        {/* Header - removed the annual discount message */}
 
-        {/* Cards with Improved Spacing */}
-        <div className="flex justify-center mt-10">
+        {/* Single Card */}
+        <div className="flex justify-center mt-6">
           {/* AI Marketer Suite Plan */}
           <div className="border-2 border-[#4BF29C] rounded-lg p-6 flex flex-col flex-grow bg-[#1A1D29] dark:bg-[#1A1D29] text-white dark:text-white shadow-md max-w-lg w-full">
             <div className="flex items-center mb-4">
@@ -79,11 +73,9 @@ export function MonthlyPricing({ currentPlanTag }: MonthlyPricingProps) {
               AI Marketer Suite
             </h3>
             <div className="flex flex-col">
-              <div className="bg-[#252A3A] px-4 py-2 rounded-full text-[#4BF29C] text-base font-bold self-start mb-2">
+              <div className="bg-[#252A3A] px-4 py-2 rounded-full text-[#4BF29C] text-base font-bold self-start mb-6">
                 START WITH 7-DAY FREE TRIAL
               </div>
-              <p className="text-4xl font-bold text-white dark:text-white">€99</p>
-              <p className="text-[#8A8F99] dark:text-[#8A8F99] text-sm">/ Month</p>
             </div>
             <hr className="my-4 border-[#2A2E3A] dark:border-[#2A2E3A]" />
             <p className="font-medium mb-4 text-white dark:text-white">AI Marketer + Ad Creatives Generator:</p>
@@ -106,7 +98,7 @@ export function MonthlyPricing({ currentPlanTag }: MonthlyPricingProps) {
               <form action="/api/stripe/create-checkout-session" method="POST">
                 <input type="hidden" name="lookup_key" value={monthlyProPlanLookupKey} />
                 <button className="mt-6 w-full bg-[#4BF29C] dark:bg-[#4BF29C] text-[#0A0C14] py-2 rounded-lg font-medium hover:bg-[#3AD88C] transition-colors" type="submit">
-                  Start your free trial
+                  Start your 7-day free trial
                 </button>
               </form>
             )}

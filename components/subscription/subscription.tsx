@@ -1,7 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { MonthlyPricing } from '@/components/subscription/monthly-pricing'
-import { YearlyPricing } from '@/components/subscription/yearly-pricing'
 import { Card } from '@/components/subscription/card'
 import { InvoiceItem, PaymentHistory } from './payment-history'
 import { User } from '@/lib/types'
@@ -31,7 +30,7 @@ export function Subscription({
   const router = useRouter()
   const searchParams = useSearchParams()
   const [user, setUser] = useState(initialUser)
-  const [isMonthly, setIsMonthly] = useState(!user.sub_interval || user.sub_interval === 'month')
+  // Removed yearly pricing option
   const [openModal, setOpenModal] = useState(false)
   const [previousStatus, setPreviousStatus] = useState(initialUser.sub_status)
 
@@ -112,41 +111,8 @@ export function Subscription({
             </div>
           ) : (
             <>
-              <div className="flex items-center justify-center">
-                <div className="flex bg-[#151925] dark:bg-[#151925] rounded-lg p-1">
-                  <button
-                    onClick={() => setIsMonthly(true)}
-                    className={`px-6 py-2 text-sm font-medium rounded-lg ${
-                      isMonthly 
-                        ? 'bg-[#4BF29C] dark:bg-[#4BF29C] text-[#0A0C14]' 
-                        : 'text-[#8A8F99] dark:text-[#8A8F99] hover:text-white transition-colors'
-                    }`}
-                  >
-                    Monthly
-                  </button>
-                  <button
-                    onClick={() => setIsMonthly(false)}
-                    className={`px-6 py-2 text-sm font-medium rounded-lg flex items-center ${
-                      !isMonthly 
-                        ? 'bg-[#4BF29C] dark:bg-[#4BF29C] text-[#0A0C14]' 
-                        : 'text-[#8A8F99] dark:text-[#8A8F99] hover:text-white transition-colors'
-                    }`}
-                  >
-                    <span>Yearly</span>
-                    {!isMonthly && (
-                      <span className="ml-2 text-[#FF7D5A] dark:text-[#FF7D5A] text-xs">
-                        Save up to 16%
-                      </span>
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              {isMonthly ? (
-                <MonthlyPricing currentPlanTag={getCurrentPlanTag(user)} />
-              ) : (
-                <YearlyPricing currentPlanTag={getCurrentPlanTag(user)} />
-              )}
+              {/* Removed pricing tabs */}
+              <MonthlyPricing currentPlanTag={getCurrentPlanTag(user)} />
             </>
           )}
         </div>
