@@ -12,6 +12,7 @@ export interface SubscriptionProps {
   user: User
   invoices: InvoiceItem[]
   handleCancelSubscription: () => void
+  checkoutCanceled?: boolean
 }
 
 const getCurrentPlanTag = (user: User) => {
@@ -25,7 +26,8 @@ const getCurrentPlanTag = (user: User) => {
 export function Subscription({
   user: initialUser,
   invoices,
-  handleCancelSubscription
+  handleCancelSubscription,
+  checkoutCanceled = false
 }: SubscriptionProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -89,6 +91,11 @@ export function Subscription({
               <h1 className="text-[40px] font-bold text-white dark:text-white">
                 Start <span className="text-[#4BF29C] dark:text-[#4BF29C]">Free</span>. Power Your Marketing with AI.
               </h1>
+              {checkoutCanceled && (
+                <div className="mt-4 p-3 bg-[#1A1D29] rounded-lg border border-[#2A2E3A] text-white">
+                  Your checkout was canceled. You can try again when you&apos;re ready.
+                </div>
+              )}
             </div>
           ) : (
             <div className="text-center">
