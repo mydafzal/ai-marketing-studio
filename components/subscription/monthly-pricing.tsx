@@ -73,9 +73,6 @@ export function MonthlyPricing({ currentPlanTag }: MonthlyPricingProps) {
               AI Marketer Suite
             </h3>
             <div className="flex flex-col">
-              <div className="bg-[#252A3A] px-4 py-2 rounded-full text-[#4BF29C] text-base font-bold self-start mb-6">
-                START WITH 7-DAY FREE TRIAL
-              </div>
             </div>
             <hr className="my-4 border-[#2A2E3A] dark:border-[#2A2E3A]" />
             <p className="font-medium mb-4 text-white dark:text-white">AI Marketer + Ad Creatives Generator:</p>
@@ -98,7 +95,7 @@ export function MonthlyPricing({ currentPlanTag }: MonthlyPricingProps) {
               <form action="/api/stripe/create-checkout-session" method="POST">
                 <input type="hidden" name="lookup_key" value={monthlyProPlanLookupKey} />
                 <button className="mt-6 w-full bg-[#4BF29C] dark:bg-[#4BF29C] text-[#0A0C14] py-2 rounded-lg font-medium hover:bg-[#3AD88C] transition-colors" type="submit">
-                  Start your 7-day free trial
+                  Start Free 7-Day Trial
                 </button>
               </form>
             )}
