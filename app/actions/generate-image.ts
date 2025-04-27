@@ -165,9 +165,9 @@ export async function generateImageVariants(
       // We can also add a mask if needed for selective editing
       // For reference image editing, we're not using a mask
     } else {
-      // Multiple images - use correctly indexed array format for each image
+      // Multiple images - use array format for each image
       imageBuffers.forEach((buffer, index) => {
-        form.append(`image[${index}]`, buffer, {
+        form.append('image[]', buffer, {
           filename: `reference-image-${index + 1}.png`,
           contentType: 'image/png'
         });
@@ -365,7 +365,7 @@ export async function generateImageVariation(
       // Multiple images case - use array format for each image
       imageBuffers.forEach((buffer, index) => {
         // For multiple images with the images/edits endpoint, we use 'image[]'
-        form.append(`image[${index}]`, buffer, {
+        form.append('image[]', buffer, {
           filename: `reference-image-${index + 1}.png`,
           contentType: 'image/png'
         });
