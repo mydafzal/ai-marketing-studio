@@ -165,9 +165,9 @@ export async function generateImageVariants(
       // We can also add a mask if needed for selective editing
       // For reference image editing, we're not using a mask
     } else {
-      // Multiple images - use 'image[]' for each image
+      // Multiple images - use correctly indexed array format for each image
       imageBuffers.forEach((buffer, index) => {
-        form.append('image[]', buffer, {
+        form.append(`image[${index}]`, buffer, {
           filename: `reference-image-${index + 1}.png`,
           contentType: 'image/png'
         });
@@ -235,7 +235,20 @@ export async function generateImageVariants(
       throw new Error(errorMessage);
     }
     
-    const result = await response.json();
+    // Get response text first to inspect it
+    const responseText = await response.text();
+    console.log("Response text length:", responseText.length);
+    
+    let result;
+    try {
+      // Parse the response text as JSON
+      result = JSON.parse(responseText);
+    } catch (jsonError) {
+      console.error("Failed to parse response as JSON:", jsonError);
+      console.error("Response text snippet:", responseText.substring(0, 200) + "...");
+      throw new Error("Failed to parse API response as JSON");
+    }
+    
     console.log("Variant generation complete, received results");
     
     // Add some debug info about the response structure
@@ -341,14 +354,23 @@ export async function generateImageVariation(
     form.append('quality', 'high');
     // Note: response_format is not used for gpt-image-1 as it always returns base64 images
 
-    // Add each reference image with the correct format
-    imageBuffers.forEach((buffer, index) => {
-      // For multiple images with the images/edits endpoint, we need to use 'image[]'
-      form.append('image[]', buffer, {
-        filename: `reference-image-${index + 1}.png`,
+    // Add reference images with the correct format based on whether we have one or multiple
+    if (imageBuffers.length === 1) {
+      // Single image case - use 'image' parameter
+      form.append('image', imageBuffers[0], {
+        filename: 'reference-image.png',
         contentType: 'image/png'
       });
-    });
+    } else {
+      // Multiple images case - use array format for each image
+      imageBuffers.forEach((buffer, index) => {
+        // For multiple images with the images/edits endpoint, we use 'image[]'
+        form.append(`image[${index}]`, buffer, {
+          filename: `reference-image-${index + 1}.png`,
+          contentType: 'image/png'
+        });
+      });
+    }
 
     console.log("Sending request to OpenAI API with", imageBuffers.length, "reference images");
     
@@ -387,7 +409,20 @@ export async function generateImageVariation(
         throw new Error(errorMessage);
       }
       
-      const result = await response.json();
+      // Get response text first to inspect it
+      const responseText = await response.text();
+      console.log("Response text length:", responseText.length);
+      
+      let result;
+      try {
+        // Parse the response text as JSON
+        result = JSON.parse(responseText);
+      } catch (jsonError) {
+        console.error("Failed to parse response as JSON:", jsonError);
+        console.error("Response text snippet:", responseText.substring(0, 200) + "...");
+        throw new Error("Failed to parse API response as JSON");
+      }
+      
       console.log("Image creation complete, received results");
       
       // Add some debug info about the response structure
