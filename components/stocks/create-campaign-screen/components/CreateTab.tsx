@@ -178,6 +178,7 @@ export function CreateTab({
         {/* Upload instructions */}
         <div className="mt-2 text-xs text-text-light-gray">
           <p>• Upload one media file at a time</p>
+          <p>• Images should be below 4MB in size. We suggest videos to be below 80MB.</p>
           <p>• Cooldown after each upload: 5s → 10s → 15s</p>
         </div>
       </div>
