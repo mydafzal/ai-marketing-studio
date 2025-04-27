@@ -88,24 +88,26 @@ export function CreateTab({
             }
           }}
         >
-          {/* Upload status overlay for in-progress upload or cooldown */}
-          {(isUploading || cooldownActive) && (
+          {/* Status bar for cooldown - no overlay for uploads to keep percentages visible */}
+          {cooldownActive && (
             <div className="absolute inset-0 bg-dark-bg/90 rounded-lg flex items-center justify-center z-10">
-              {isUploading ? (
-                <div className="flex flex-col items-center text-amber-500">
-                  <Loader2 className="animate-spin mb-2" size={24} />
-                  <span className="text-sm font-medium">Upload in progress...</span>
-                  <span className="text-xs mt-1 text-text-light-gray">Please wait for the upload to complete</span>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center text-amber-500">
-                  <Clock className="mb-2" size={24} />
-                  <span className="text-sm font-medium">Cooldown period active</span>
-                  <span className="text-xs mt-1 text-text-light-gray">
-                    Please wait {cooldownTimeRemaining} seconds before uploading again
-                  </span>
-                </div>
-              )}
+              <div className="flex flex-col items-center text-amber-500">
+                <Clock className="mb-2" size={24} />
+                <span className="text-sm font-medium">Cooldown period active</span>
+                <span className="text-xs mt-1 text-text-light-gray">
+                  Please wait {cooldownTimeRemaining} seconds before uploading again
+                </span>
+              </div>
+            </div>
+          )}
+          
+          {/* Upload in progress banner instead of overlay */}
+          {isUploading && !cooldownActive && (
+            <div className="absolute top-0 inset-x-0 bg-amber-500/20 border-b border-amber-500 p-1 rounded-t-lg text-center">
+              <div className="flex items-center justify-center text-amber-500 text-xs">
+                <Loader2 className="animate-spin mr-1" size={12} />
+                <span>Upload in progress - please wait</span>
+              </div>
             </div>
           )}
 

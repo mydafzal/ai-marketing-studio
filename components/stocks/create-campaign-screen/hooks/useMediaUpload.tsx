@@ -262,16 +262,65 @@ export function useMediaUpload() {
           )
       );
 
+      // Set up a progress animation to simulate incremental progress during upload wait
+      // This helps prevent the appearance of a frozen upload
+      const progressInterval = setInterval(() => {
+        setMediaItems(prev => {
+          return prev.map(item => {
+            if (item.id === newMediaId && item.progress && item.progress >= 40 && item.progress < 70) {
+              // Increment progress by a small amount until we reach 70%
+              return { ...item, progress: Math.min(item.progress + 1, 69) };
+            }
+            return item;
+          });
+        });
+      }, 500); // Update every half second
+
       console.log('📤 Sending image upload request to /api/upload-image');
-      const response = await fetch('/api/upload-image', {
-        method: 'POST',
-        body: formData,
-        headers: {
-          'fb_api_key': '' // Empty string will make the backend use its internal API key
-        }
-      });
+      let response;
+      try {
+        // Create an AbortController for the fetch request to handle timeouts
+        const abortController = new AbortController();
+        const timeoutId = setTimeout(() => abortController.abort(), 60000); // 60 second timeout
+        
+        response = await fetch('/api/upload-image', {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'fb_api_key': '' // Empty string will make the backend use its internal API key
+          },
+          signal: abortController.signal
+        });
+        
+        // Clear the timeout if the response arrived
+        clearTimeout(timeoutId);
+      } catch (error) {
+        console.error('❌ Network error during image upload:', error);
+        // Clear the progress animation
+        clearInterval(progressInterval);
+        // Set progress to error state
+        setMediaItems(prev =>
+            prev.map(item =>
+                item.id === newMediaId ? { ...item, progress: -1, error: 'Network error' } : item
+            )
+        );
+        throw error;
+      }
+
+      // Clear the progress animation
+      clearInterval(progressInterval);
 
       console.log('📡 Image upload response status:', response.status);
+      if (!response.ok) {
+        console.error('❌ Server error during image upload:', response.status, response.statusText);
+        setMediaItems(prev =>
+            prev.map(item =>
+                item.id === newMediaId ? { ...item, progress: -1, error: `Server error: ${response.status}` } : item
+            )
+        );
+        throw new Error(`Server error: ${response.status}`);
+      }
+
       console.log('🔄 Updating progress to 70%');
       setMediaItems(prev =>
           prev.map(item =>
@@ -420,18 +469,62 @@ export function useMediaUpload() {
         campaignSessionId: campaignSessionId || 'none'
       });
 
+      // Set up a progress animation to simulate incremental progress during upload wait
+      // This helps prevent the appearance of a frozen upload
+      const progressAnimationInterval = setInterval(() => {
+        setMediaItems(prev => {
+          return prev.map(item => {
+            if (item.id === newMediaId && item.progress && item.progress >= 10 && item.progress < 20) {
+              // Increment progress by a small amount 
+              return { ...item, progress: Math.min(item.progress + 0.5, 19) };
+            }
+            return item;
+          });
+        });
+      }, 500); // Update every half second
+
       // Initialize upload session with the API
       console.log('📤 Sending video initialization request to /api/upload-video');
-      const initResponse = await fetch('/api/upload-video', {
-        method: 'POST',
-        body: initFormData
-      });
+      let initResponse;
+      try {
+        // Create an AbortController for the fetch request to handle timeouts
+        const abortController = new AbortController();
+        const timeoutId = setTimeout(() => abortController.abort(), 60000); // 60 second timeout
+        
+        initResponse = await fetch('/api/upload-video', {
+          method: 'POST',
+          body: initFormData,
+          signal: abortController.signal
+        });
+        
+        // Clear the timeout if the response arrived
+        clearTimeout(timeoutId);
+      } catch (error) {
+        console.error('❌ Network error during video initialization:', error);
+        // Clear the progress animation
+        clearInterval(progressAnimationInterval);
+        // Set progress to error state
+        setMediaItems(prev =>
+            prev.map(item =>
+                item.id === newMediaId ? { ...item, progress: -1, error: 'Network error' } : item
+            )
+        );
+        throw error;
+      }
+
+      // Clear the initialization progress animation
+      clearInterval(progressAnimationInterval);
 
       // Handle response errors
       console.log('📡 Video init response status:', initResponse.status);
       if (!initResponse.ok) {
         const errorText = await initResponse.text();
         console.error('❌ Video init error response:', errorText);
+        setMediaItems(prev =>
+            prev.map(item =>
+                item.id === newMediaId ? { ...item, progress: -1, error: 'Failed to initialize upload' } : item
+            )
+        );
         throw new Error(`Failed to initialize video upload session: ${errorText}`);
       }
 
@@ -543,18 +636,74 @@ export function useMediaUpload() {
           });
         }
 
+        // Create an interval for this chunk's progress updates
+        const chunkProgressInterval = setInterval(() => {
+          // Calculate progress for this specific chunk
+          // Start from current progress, aim for the next percentage milestone
+          const progressStart = 20 + Math.floor((chunkCount / totalChunks) * 70);
+          const progressEnd = 20 + Math.floor(((chunkCount + 1) / totalChunks) * 70);
+          const progressRange = progressEnd - progressStart;
+          
+          setMediaItems(prev => {
+            return prev.map(item => {
+              if (item.id === newMediaId) {
+                const currentProgress = item.progress || 0;
+                // Only update if current progress is less than the target for this chunk
+                if (currentProgress >= progressStart && currentProgress < progressEnd - 1) {
+                  return { ...item, progress: currentProgress + 0.5 };
+                }
+              }
+              return item;
+            });
+          });
+        }, 300); // Update more frequently for chunks
+
         // Upload the chunk
         console.log('📤 Sending chunk to /api/upload-video');
-        const chunkResponse = await fetch('/api/upload-video', {
-          method: 'POST',
-          body: chunkFormData
-        });
-
-        console.log('📡 Chunk upload response status:', chunkResponse.status);
-        if (!chunkResponse.ok) {
-          const errorText = await chunkResponse.text();
-          console.error(`❌ Failed to upload video chunk ${chunkCount + 1}/${totalChunks}:`, errorText);
-          throw new Error(`Failed to upload video chunk ${chunkCount + 1}/${totalChunks}: ${errorText}`);
+        let chunkResponse;
+        try {
+          // Create an AbortController for the fetch request to handle timeouts
+          const abortController = new AbortController();
+          const timeoutId = setTimeout(() => abortController.abort(), 60000); // 60 second timeout
+          
+          chunkResponse = await fetch('/api/upload-video', {
+            method: 'POST',
+            body: chunkFormData,
+            signal: abortController.signal
+          });
+          
+          // Clear the timeout if the response arrived
+          clearTimeout(timeoutId);
+          
+          // Clear the progress interval for this chunk
+          clearInterval(chunkProgressInterval);
+          
+          console.log('📡 Chunk upload response status:', chunkResponse.status);
+          if (!chunkResponse.ok) {
+            const errorText = await chunkResponse.text();
+            console.error(`❌ Failed to upload video chunk ${chunkCount + 1}/${totalChunks}:`, errorText);
+            
+            setMediaItems(prev =>
+                prev.map(item =>
+                    item.id === newMediaId ? { ...item, progress: -1, error: `Failed at chunk ${chunkCount + 1}` } : item
+                )
+            );
+            
+            throw new Error(`Failed to upload video chunk ${chunkCount + 1}/${totalChunks}: ${errorText}`);
+          }
+        } catch (error) {
+          // Clear the progress interval for this chunk
+          clearInterval(chunkProgressInterval);
+          
+          console.error(`❌ Network error uploading chunk ${chunkCount + 1}/${totalChunks}:`, error);
+          
+          setMediaItems(prev =>
+              prev.map(item =>
+                  item.id === newMediaId ? { ...item, progress: -1, error: 'Network error during upload' } : item
+              )
+          );
+          
+          throw error;
         }
 
         const chunkResult = await chunkResponse.json();
