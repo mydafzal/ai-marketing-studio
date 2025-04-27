@@ -51,7 +51,7 @@ async function UserOrLogin() {
           <SidebarToggle />
         </>
       ) : (
-        <Link href="/new" rel="nofollow">
+        <Link href="https://reeply.ai/" rel="nofollow">
           <img
             src="/Reeply-logo-schwarz.png"
             alt="Reeply Logo"
