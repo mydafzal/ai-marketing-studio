@@ -58,7 +58,7 @@ const LoadingScreen = ({ isDarkMode, generationMode, numImages }: { isDarkMode: 
   }
   
   return (
-    <div className={`flex flex-col items-center justify-center h-full min-h-[400px] w-full ${
+    <div className={`flex flex-col items-center justify-center size-full min-h-[400px] ${
       isDarkMode ? 'bg-gray-800/50' : 'bg-gray-100/50'
     } rounded-lg border ${
       isDarkMode ? 'border-gray-700' : 'border-gray-300'
@@ -184,10 +184,10 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
   }, [combinedPreviews.length])
 
   // Show toast notification
-  const showToast = (title: string, description: string, type: 'success' | 'error') => {
+  const showToast = useCallback((title: string, description: string, type: 'success' | 'error') => {
     setToastMessage({ title, description, type })
     setTimeout(() => setToastMessage(null), 3000)
-  }
+  }, [])
 
   // Toggle selection for a given image index
   function toggleImageSelected(index: number) {
@@ -337,16 +337,16 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
   }
   
   // Remove a reference image
-  function handleRemoveReferenceImage(index: number) {
+  const handleRemoveReferenceImage = useCallback((index: number) => {
     setReferenceImages(prev => prev.filter((_, i) => i !== index))
     setReferenceImagePreviews(prev => prev.filter((_, i) => i !== index))
-  }
+  }, [])
   
   // Clear all reference images
-  function handleClearReferenceImages() {
+  const handleClearReferenceImages = useCallback(() => {
     setReferenceImages([])
     setReferenceImagePreviews([])
-  }
+  }, [])
 
   // Start dragging the logo - with improved update prevention
   const handleLogoMouseDown = (e: React.MouseEvent, imageIndex: number) => {
@@ -761,67 +761,7 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
   }
   
   // Handle adding reference images for variations
-  function handleReferenceImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    if (e.target.files && e.target.files.length > 0) {
-      const files = Array.from(e.target.files)
-      
-      // Validate file types for gpt-image-1
-      const validFileTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp']
-      const validFiles = files.filter(file => {
-        if (!validFileTypes.includes(file.type)) {
-          showToast(
-            "Unsupported file type", 
-            `File "${file.name}" must be PNG, JPEG, or WebP format.`,
-            "error"
-          )
-          return false
-        }
-        
-        // Validate file size (20MB is within the GPT-Image-1 limit of 25MB)
-        if (file.size > 20 * 1024 * 1024) {
-          showToast(
-            "File too large", 
-            `File "${file.name}" must be smaller than 20MB.`,
-            "error"
-          )
-          return false
-        }
-        
-        return true
-      })
-      
-      if (validFiles.length === 0) return
-      
-      // Add to existing reference images (up to 4 total)
-      const newReferenceImages = [...referenceImages, ...validFiles].slice(0, 4)
-      setReferenceImages(newReferenceImages)
-      
-      // Generate previews for the new images
-      Promise.all(
-        newReferenceImages.map(file => fileToDataURL(file))
-      ).then(dataUrls => {
-        setReferenceImagePreviews(dataUrls)
-      })
-      
-      showToast(
-        "Reference images uploaded", 
-        `${validFiles.length} image${validFiles.length !== 1 ? 's' : ''} added (max 4). Click 'Create variations' to generate images.`,
-        "success"
-      )
-    }
-  }
-  
-  // Remove a reference image
-  function handleRemoveReferenceImage(index: number) {
-    setReferenceImages(prev => prev.filter((_, i) => i !== index))
-    setReferenceImagePreviews(prev => prev.filter((_, i) => i !== index))
-  }
-  
-  // Clear all reference images
-  function handleClearReferenceImages() {
-    setReferenceImages([])
-    setReferenceImagePreviews([])
-  }
+  // This is intentionally empty as we're removing the duplicate function
   
   // Clear the source image for variations
   // Function removed
