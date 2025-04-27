@@ -70,6 +70,15 @@ export function useMediaUpload() {
     // Update the ref when the state changes
     campaignSessionIdRef.current = campaignSessionId;
   }, [campaignSessionId]);
+  
+  // Track retry status changes to properly manage the global uploading state
+  useEffect(() => {
+    console.log("🔄 State Update - Retry Status:", retryStatus ? "Active" : "Inactive");
+    // If retry is active, make sure uploading state is true
+    if (retryStatus && retryStatus.isRetrying) {
+      setIsUploading(true);
+    }
+  }, [retryStatus]);
 
   useEffect(() => {
     console.log("🔄 State Update - FB Account ID:", fbAccountId);
@@ -127,12 +136,18 @@ export function useMediaUpload() {
     }
   };
 
+  // Detect if we are in a retry cycle
+  const isInRetryState = () => {
+    return retryStatus !== null && retryStatus.isRetrying;
+  };
+  
+  // Normal file upload handler - only used for initial uploads, not retries
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     console.log('📤 File upload triggered');
 
-    // Check if an upload is already in progress
-    if (isUploading) {
-      console.warn('⚠️ Upload already in progress. Please wait for it to complete.');
+    // Check if an upload is already in progress or in retry state
+    if (isUploading || isInRetryState()) {
+      console.warn('⚠️ Upload or retry already in progress. Please wait for it to complete.');
       // Clear the file input so they can try again later
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
@@ -160,15 +175,15 @@ export function useMediaUpload() {
       // Create a new media ID for tracking this upload
       const newMediaId = Math.random().toString(36).substring(7);
       console.log('🆔 Generated media ID:', newMediaId);
-
+      
       try {
         // Handle different file types
         if (file.type.includes('image')) {
           console.log('🖼️ Handling as image upload');
-          await handleImageUpload(file, newMediaId);
+          await handleImageUpload(file, newMediaId, false);
         } else if (file.type.includes('video')) {
           console.log('🎬 Handling as video upload');
-          await handleVideoUpload(file, newMediaId);
+          await handleVideoUpload(file, newMediaId, false);
         } else {
           console.error('❌ Unsupported file type:', file.type);
           throw new Error('Unsupported file type');
@@ -179,8 +194,10 @@ export function useMediaUpload() {
       } catch (error) {
         console.error('❌ Error during file upload:', error);
       } finally {
-        // Reset upload state
-        setIsUploading(false);
+        // Only reset upload state if not in retry cycle
+        if (!isInRetryState()) {
+          setIsUploading(false);
+        }
         
         // Clear the file input for next upload
         if (fileInputRef.current) {
@@ -200,18 +217,30 @@ export function useMediaUpload() {
     const detectedRatio = await calculateAspectRatio(file);
     console.log('📏 Detected image aspect ratio:', detectedRatio);
 
-    // Create a temporary media item with progress indicator
-    const newMedia: MediaItem = {
-      id: newMediaId,
-      type: 'image',
-      url: URL.createObjectURL(file),
-      aspectRatio: detectedRatio,
-      progress: 0
-    };
+    // Check if we're in a retry - if so, we don't create a new media item again
+    // because it already exists in the list
+    if (!isRetry) {
+      // Create a temporary media item with progress indicator
+      const newMedia: MediaItem = {
+        id: newMediaId,
+        type: 'image',
+        url: URL.createObjectURL(file),
+        aspectRatio: detectedRatio,
+        progress: 0
+      };
 
-    // Add the item to the list with initial progress
-    console.log('➕ Adding new image to media items with 0% progress');
-    setMediaItems(prev => [...prev, newMedia]);
+      // Add the item to the list with initial progress
+      console.log('➕ Adding new image to media items with 0% progress');
+      setMediaItems(prev => [...prev, newMedia]);
+    } else {
+      console.log('🔄 Retry in progress - using existing media item with ID:', newMediaId);
+      // Just update the progress of the existing item
+      setMediaItems(prev =>
+        prev.map(item =>
+          item.id === newMediaId ? { ...item, progress: 0 } : item
+        )
+      );
+    }
 
     // Determine format category based on aspect ratio
     const formatCategory = detectedRatio === '9:16' ? '9:16' : '1:1';
@@ -466,18 +495,29 @@ export function useMediaUpload() {
     const detectedRatio = await calculateVideoAspectRatio(file);
     console.log('📏 Detected video aspect ratio:', detectedRatio);
 
-    // Create a temporary media item with progress indicator
-    const newMedia: MediaItem = {
-      id: newMediaId,
-      type: 'video',
-      url: URL.createObjectURL(file),
-      aspectRatio: detectedRatio,
-      progress: 0
-    };
+    // Check if we're in a retry - if so, we don't create a new media item again
+    if (!isRetry) {
+      // Create a temporary media item with progress indicator
+      const newMedia: MediaItem = {
+        id: newMediaId,
+        type: 'video',
+        url: URL.createObjectURL(file),
+        aspectRatio: detectedRatio,
+        progress: 0
+      };
 
-    // Add the item to the list with initial progress
-    console.log('➕ Adding new video to media items with 0% progress');
-    setMediaItems(prev => [...prev, newMedia]);
+      // Add the item to the list with initial progress
+      console.log('➕ Adding new video to media items with 0% progress');
+      setMediaItems(prev => [...prev, newMedia]);
+    } else {
+      console.log('🔄 Retry in progress - using existing video media item with ID:', newMediaId);
+      // Just update the progress of the existing item
+      setMediaItems(prev =>
+        prev.map(item =>
+          item.id === newMediaId ? { ...item, progress: 0 } : item
+        )
+      );
+    }
 
     // Determine format category based on aspect ratio
     const formatCategory = detectedRatio === '9:16' ? '9:16' : '1:1';
@@ -1039,7 +1079,7 @@ export function useMediaUpload() {
               )
           );
           
-          // Execute the retry
+          // Execute the retry - IMPORTANT: Still use the same mediaId to avoid duplicates
           if (file.type.includes('image')) {
             handleImageUpload(file, mediaId, true, retryAttempt);
           } else if (file.type.includes('video')) {
