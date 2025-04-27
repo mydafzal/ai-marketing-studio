@@ -2,6 +2,15 @@ import { useState, useRef, useEffect } from 'react';
 import { MediaItem } from '../types';
 import { calculateAspectRatio, calculateVideoAspectRatio } from '../utils';
 
+// Define retry status type
+type RetryStatus = {
+  isRetrying: boolean;
+  timeRemaining: number;
+  mediaId: string;
+  file: File;
+  retryAttempt: number;
+};
+
 // Response interfaces
 interface UploadImageResponse {
   success: boolean;
@@ -52,6 +61,8 @@ export function useMediaUpload() {
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [cooldownActive, setCooldownActive] = useState<boolean>(false);
   const [cooldownTimeRemaining, setCooldownTimeRemaining] = useState<number>(0);
+  // Add state for retry mechanism
+  const [retryStatus, setRetryStatus] = useState<RetryStatus | null>(null);
 
   // Log any changes to important state variables
   useEffect(() => {
@@ -163,11 +174,8 @@ export function useMediaUpload() {
           throw new Error('Unsupported file type');
         }
 
-        // Check if we need to start cooldown (more than 2 media items)
-        const completedUploads = mediaItems.filter(item => item.progress === 100).length + 1; // +1 for current
-        if (completedUploads > 2) {
-          startCooldown();
-        }
+        // Don't start cooldown here - we'll start it in the specific upload handlers
+        // when we know the upload was actually successful
       } catch (error) {
         console.error('❌ Error during file upload:', error);
       } finally {
@@ -185,8 +193,8 @@ export function useMediaUpload() {
   };
 
   // Handle image uploads
-  const handleImageUpload = async (file: File, newMediaId: string) => {
-    console.log('📸 Starting image upload process for ID:', newMediaId);
+  const handleImageUpload = async (file: File, newMediaId: string, isRetry = false) => {
+    console.log(`📸 ${isRetry ? 'Retrying' : 'Starting'} image upload process for ID:`, newMediaId);
 
     // Calculate the actual aspect ratio
     const detectedRatio = await calculateAspectRatio(file);
@@ -298,12 +306,22 @@ export function useMediaUpload() {
         console.error('❌ Network error during image upload:', error);
         // Clear the progress animation
         clearInterval(progressInterval);
-        // Set progress to error state
-        setMediaItems(prev =>
-            prev.map(item =>
-                item.id === newMediaId ? { ...item, progress: -1, error: 'Network error' } : item
-            )
-        );
+        
+        // Check if this is already a retry attempt
+        if (isRetry) {
+          console.error('❌ Retry also failed for image upload');
+          // Mark as failed after retry
+          setMediaItems(prev =>
+              prev.map(item =>
+                  item.id === newMediaId ? { ...item, progress: -1, error: 'Failed after retry' } : item
+              )
+          );
+        } else {
+          // Start retry process
+          console.log('🔄 Starting retry process for failed image upload');
+          startRetry(newMediaId, file);
+        }
+        
         throw error;
       }
 
@@ -313,11 +331,26 @@ export function useMediaUpload() {
       console.log('📡 Image upload response status:', response.status);
       if (!response.ok) {
         console.error('❌ Server error during image upload:', response.status, response.statusText);
-        setMediaItems(prev =>
-            prev.map(item =>
-                item.id === newMediaId ? { ...item, progress: -1, error: `Server error: ${response.status}` } : item
-            )
-        );
+        
+        // Check if this is already a retry attempt
+        if (isRetry) {
+          console.error('❌ Retry also failed for image upload');
+          // Mark as failed after retry
+          setMediaItems(prev =>
+              prev.map(item =>
+                  item.id === newMediaId ? { 
+                    ...item, 
+                    progress: -1, 
+                    error: `Failed after retry (${response.status})` 
+                  } : item
+              )
+          );
+        } else {
+          // Start retry process
+          console.log('🔄 Starting retry process for failed image upload');
+          startRetry(newMediaId, file);
+        }
+        
         throw new Error(`Server error: ${response.status}`);
       }
 
@@ -352,39 +385,66 @@ export function useMediaUpload() {
                 } : item
             )
         );
+        
+        // Start cooldown after successful upload
+        console.log('🔄 Starting cooldown after successful image upload');
+        startCooldown();
       } else {
         console.error('❌ Failed to upload image:', result.error);
-        // Update the media item to show error
-        console.log('🔄 Setting error state for media item');
+        
+        // Check if this is already a retry attempt
+        if (isRetry) {
+          console.error('❌ Retry also failed for image upload');
+          // Update the media item to show error
+          console.log('🔄 Setting error state for media item after retry');
+          setMediaItems(prev =>
+              prev.map(item =>
+                  item.id === newMediaId ? {
+                    ...item,
+                    progress: -1, // Use negative number to indicate error
+                    error: 'Failed after retry'
+                  } : item
+              )
+          );
+        } else {
+          // Start retry process
+          console.log('🔄 Starting retry process for failed image upload');
+          startRetry(newMediaId, file);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Exception during image upload:', error);
+      
+      // Only handle errors that weren't already handled by the other catch blocks
+      // This is to avoid double-handling errors
+      if (!isRetry) {
+        // Check if retry is already initiated by the other catch blocks
+        // We can check this by looking at the current progress of the media item
+        const mediaItem = mediaItems.find(item => item.id === newMediaId);
+        if (mediaItem && mediaItem.progress !== -2) { // -2 is our retry status code
+          // Start retry process
+          console.log('🔄 Starting retry process for failed image upload (from main catch block)');
+          startRetry(newMediaId, file);
+        }
+      } else {
+        // Update the media item to show error after retry
+        console.log('🔄 Setting error state for media item after retry failed');
         setMediaItems(prev =>
             prev.map(item =>
                 item.id === newMediaId ? {
                   ...item,
-                  progress: -1, // Use negative number to indicate error
-                  error: result.error || 'Upload failed'
+                  progress: -1,
+                  error: 'Failed after retry'
                 } : item
             )
         );
       }
-    } catch (error) {
-      console.error('❌ Exception during image upload:', error);
-      // Update the media item to show error
-      console.log('🔄 Setting error state for media item due to exception');
-      setMediaItems(prev =>
-          prev.map(item =>
-              item.id === newMediaId ? {
-                ...item,
-                progress: -1,
-                error: 'Upload failed'
-              } : item
-          )
-      );
     }
   };
 
   // Handle video uploads using the chunked approach
-  const handleVideoUpload = async (file: File, newMediaId: string) => {
-    console.log('🎥 Starting video upload process for ID:', newMediaId);
+  const handleVideoUpload = async (file: File, newMediaId: string, isRetry = false) => {
+    console.log(`🎥 ${isRetry ? 'Retrying' : 'Starting'} video upload process for ID:`, newMediaId);
 
     // Calculate the video aspect ratio
     const detectedRatio = await calculateVideoAspectRatio(file);
@@ -503,12 +563,22 @@ export function useMediaUpload() {
         console.error('❌ Network error during video initialization:', error);
         // Clear the progress animation
         clearInterval(progressAnimationInterval);
-        // Set progress to error state
-        setMediaItems(prev =>
-            prev.map(item =>
-                item.id === newMediaId ? { ...item, progress: -1, error: 'Network error' } : item
-            )
-        );
+        
+        // Check if this is already a retry attempt
+        if (isRetry) {
+          console.error('❌ Retry also failed for video initialization');
+          // Mark as failed after retry
+          setMediaItems(prev =>
+              prev.map(item =>
+                  item.id === newMediaId ? { ...item, progress: -1, error: 'Failed after retry' } : item
+              )
+          );
+        } else {
+          // Start retry process
+          console.log('🔄 Starting retry process for failed video initialization');
+          startRetry(newMediaId, file);
+        }
+        
         throw error;
       }
 
@@ -520,11 +590,21 @@ export function useMediaUpload() {
       if (!initResponse.ok) {
         const errorText = await initResponse.text();
         console.error('❌ Video init error response:', errorText);
-        setMediaItems(prev =>
-            prev.map(item =>
-                item.id === newMediaId ? { ...item, progress: -1, error: 'Failed to initialize upload' } : item
-            )
-        );
+        
+        // Check if this is already a retry attempt
+        if (isRetry) {
+          console.error('❌ Retry also failed for video initialization');
+          setMediaItems(prev =>
+              prev.map(item =>
+                  item.id === newMediaId ? { ...item, progress: -1, error: 'Failed after retry' } : item
+              )
+          );
+        } else {
+          // Start retry process
+          console.log('🔄 Starting retry process for failed video initialization');
+          startRetry(newMediaId, file);
+        }
+        
         throw new Error(`Failed to initialize video upload session: ${errorText}`);
       }
 
@@ -784,20 +864,36 @@ export function useMediaUpload() {
               } : item
           )
       );
+      
+      // Start cooldown after successful upload
+      console.log('🔄 Starting cooldown after successful video upload');
+      startCooldown();
 
     } catch (error) {
       console.error('❌ Exception during video upload:', error);
-      // Update the media item to show error
-      console.log('🔄 Setting error state for media item due to exception');
-      setMediaItems(prev =>
-          prev.map(item =>
-              item.id === newMediaId ? {
-                ...item,
-                progress: -1,
-                error: 'Video upload failed'
-              } : item
-          )
-      );
+      
+      // Only handle errors that weren't already handled by the other catch blocks
+      if (!isRetry) {
+        // Check if retry is already initiated by the other catch blocks
+        const mediaItem = mediaItems.find(item => item.id === newMediaId);
+        if (mediaItem && mediaItem.progress !== -2) { // -2 is our retry status code
+          // Start retry process
+          console.log('🔄 Starting retry process for failed video upload (from main catch block)');
+          startRetry(newMediaId, file);
+        }
+      } else {
+        // Update the media item to show error after retry
+        console.log('🔄 Setting error state for media item after retry failed');
+        setMediaItems(prev =>
+            prev.map(item =>
+                item.id === newMediaId ? {
+                  ...item,
+                  progress: -1,
+                  error: 'Failed after retry'
+                } : item
+            )
+        );
+      }
     }
   };
 
@@ -806,11 +902,33 @@ export function useMediaUpload() {
     setMediaItems(prev => prev.filter(m => m.id !== id));
   };
 
-  // Function to start the cooldown timer
+  // Function to start the cooldown timer with progressive duration
   const startCooldown = () => {
-    console.log('⏱️ Starting 15 second cooldown timer');
+    // Get the current number of completed uploads including the one that just finished
+    // Add 1 to count since this function is called right as an upload completes but before the state updates
+    const uploadCount = mediaItems.filter(item => item.progress === 100).length + 1;
+    
+    console.log(`🔢 Upload count for cooldown calculation: ${uploadCount}`);
+    
+    // Progressive cooldown duration:
+    // 1st upload completed: 5 seconds
+    // 2nd upload completed: 10 seconds
+    // 3rd+ upload completed: 15 seconds
+    let cooldownTime = 15; // default max cooldown
+    
+    if (uploadCount === 1) {
+      cooldownTime = 5;
+      console.log('✅ First upload - setting 5 second cooldown');
+    } else if (uploadCount === 2) {
+      cooldownTime = 10;
+      console.log('✅ Second upload - setting 10 second cooldown');
+    } else {
+      console.log(`✅ Upload #${uploadCount} - setting 15 second cooldown`);
+    }
+    
+    console.log(`⏱️ Starting ${cooldownTime} second cooldown timer after upload #${uploadCount}`);
     setCooldownActive(true);
-    setCooldownTimeRemaining(15);
+    setCooldownTimeRemaining(cooldownTime);
     
     // Start the countdown
     const intervalId = setInterval(() => {
@@ -826,16 +944,90 @@ export function useMediaUpload() {
     }, 1000);
   };
 
-  // Effect to check if any uploads are in progress
+  // Effect to check if any uploads are in progress or retrying
   useEffect(() => {
     // Check if any media items have a progress between 0 and 100 (in progress)
-    const hasInProgressUploads = mediaItems.some(item => item.progress > 0 && item.progress < 100);
+    // or progress === -2 (retrying)
+    const hasInProgressUploads = mediaItems.some(
+      item => (item.progress > 0 && item.progress < 100) || item.progress === -2
+    );
     
     if (hasInProgressUploads !== isUploading) {
       setIsUploading(hasInProgressUploads);
     }
   }, [mediaItems, isUploading]);
 
+  // Function to start the retry countdown and handle retry
+  const startRetry = (mediaId: string, file: File) => {
+    console.log(`🔄 Starting retry process for media ID: ${mediaId}`);
+    
+    // Set initial retry status
+    setRetryStatus({
+      isRetrying: true,
+      timeRemaining: 10,
+      mediaId,
+      file,
+      retryAttempt: 1
+    });
+    
+    // Update media item to show retrying status
+    setMediaItems(prev =>
+        prev.map(item =>
+            item.id === mediaId ? {
+              ...item,
+              progress: -2, // Special status code for retrying
+              error: 'Retrying in 10s'
+            } : item
+        )
+    );
+    
+    // Start the countdown timer
+    const intervalId = setInterval(() => {
+      setRetryStatus(prev => {
+        if (!prev) return null;
+        
+        const newTime = prev.timeRemaining - 1;
+        if (newTime <= 0) {
+          clearInterval(intervalId);
+          // Update UI to show retry in progress
+          setMediaItems(prevItems =>
+              prevItems.map(item =>
+                  item.id === mediaId ? {
+                    ...item,
+                    progress: 0,
+                    error: 'Retry in progress'
+                  } : item
+              )
+          );
+          
+          // Execute the retry
+          if (file.type.includes('image')) {
+            handleImageUpload(file, mediaId, true);
+          } else if (file.type.includes('video')) {
+            handleVideoUpload(file, mediaId, true);
+          }
+          
+          return null; // Clear retry status once retry starts
+        }
+        
+        // Update media item with new countdown
+        setMediaItems(prevItems =>
+            prevItems.map(item =>
+                item.id === mediaId ? {
+                  ...item,
+                  error: `Retrying in ${newTime}s`
+                } : item
+            )
+        );
+        
+        return {
+          ...prev,
+          timeRemaining: newTime
+        };
+      });
+    }, 1000);
+  };
+  
   return {
     mediaItems,
     setMediaItems,
@@ -847,6 +1039,7 @@ export function useMediaUpload() {
     fbPageId,
     isUploading,
     cooldownActive,
-    cooldownTimeRemaining
+    cooldownTimeRemaining,
+    retryStatus
   };
 }

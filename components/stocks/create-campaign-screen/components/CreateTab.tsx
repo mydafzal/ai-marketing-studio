@@ -129,6 +129,8 @@ export function CreateTab({
                     <div className="w-4 h-4 rounded-full bg-red-500 flex items-center justify-center">
                       <span className="text-xs text-white">✗</span>
                     </div>
+                  ) : item.progress === -2 ? (
+                    <Loader2 className="animate-spin text-amber-500" size={16} />
                   ) : (
                     <div className="w-4 h-4 rounded-full bg-primary-green flex items-center justify-center">
                       <span className="text-xs text-deep-black">✓</span>
@@ -138,7 +140,9 @@ export function CreateTab({
                     {item.type.toUpperCase()} ({item.aspectRatio})
                   </span>
                   <span className="text-xs text-text-light-gray">
-                    {item.progress === -1 ? 'Failed' : `${item.progress ?? 0}%`}
+                    {item.progress === -1 ? 'Failed' : 
+                     item.progress === -2 ? (item.error || 'Retrying...') : 
+                     `${item.progress ?? 0}%`}
                   </span>
                   <button
                     onClick={e => {
@@ -174,9 +178,7 @@ export function CreateTab({
         {/* Upload instructions */}
         <div className="mt-2 text-xs text-text-light-gray">
           <p>• Upload one media file at a time</p>
-          {mediaItems.length >= 2 && (
-            <p>• After uploading 2 files, a 15-second cooldown applies between uploads</p>
-          )}
+          <p>• Cooldown after each upload: 5s → 10s → 15s</p>
         </div>
       </div>
 
