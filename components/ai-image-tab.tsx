@@ -12,8 +12,10 @@ import {
   Sparkles,
   Layers,
   Trash2,
-  Wand2
+  Wand2,
+  ZoomIn
 } from "lucide-react"
+import ImagePreviewModal from "@/components/image-preview-modal"
 import { useTheme } from "next-themes"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 // Import the AspectRatio type along with the server actions
@@ -635,27 +637,37 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
       )
       
       // Generate the variants using the OpenAI edit endpoint with multiple reference images
-      const result = await generateImageVariants(
-        imagePrompt, 
-        referenceDataUrls, 
-        imageFormat as AspectRatio,
-        numGeneratedImages
-      )
-      
-      if (result.success && result.images) {
-        const validUrls = result.images.filter((url: unknown) => typeof url === "string") as string[]
-        setGeneratedImages(validUrls)
-        setCombinedPreviews([])
-        setSelectedImages([])
-        setLogoPositions({}) // Reset custom logo positions for new images
-        
-        showToast(
-          "Variants generated", 
-          `Created ${validUrls.length} image variant${validUrls.length !== 1 ? 's' : ''} successfully`, 
-          "success"
+      console.log(`Calling generateImageVariants with ${referenceDataUrls.length} reference images`)
+      try {
+        const result = await generateImageVariants(
+          imagePrompt, 
+          referenceDataUrls, 
+          imageFormat as AspectRatio,
+          numGeneratedImages
         )
-      } else {
-        throw new Error(result.error || "Failed to generate image variants.")
+        
+        if (!result) {
+          throw new Error("No result returned from image generation")
+        }
+        
+        if (result.success && result.images) {
+          const validUrls = result.images.filter((url: unknown) => typeof url === "string") as string[]
+          setGeneratedImages(validUrls)
+          setCombinedPreviews([])
+          setSelectedImages([])
+          setLogoPositions({}) // Reset custom logo positions for new images
+          
+          showToast(
+            "Variants generated", 
+            `Created ${validUrls.length} image variant${validUrls.length !== 1 ? 's' : ''} successfully`, 
+            "success"
+          )
+        } else {
+          throw new Error(result.error || "Failed to generate image variants.")
+        }
+      } catch (innerErr) {
+        console.error("Inner error in variant generation:", innerErr)
+        throw innerErr
       }
     } catch (err) {
       console.error("Error generating image variants:", err)
@@ -775,6 +787,24 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
             <div className={`${getAspectRatioClass(imageFormat)} rounded-md overflow-hidden border ${
               isDarkMode ? 'border-gray-700' : 'border-gray-300'
             }`}>
+              <div className="absolute inset-0 z-10">
+                <ImagePreviewModal
+                  imageUrl={preview}
+                  altText={`Reference image ${index+1}`}
+                  className="absolute inset-0 z-20"
+                >
+                  <NextImage
+                    src={preview}
+                    alt={`Reference image ${index+1}`}
+                    fill
+                    className="object-cover"
+                  />
+                  <div className="absolute top-2 right-2 bg-black/50 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                    <ZoomIn className="size-3" />
+                  </div>
+                </ImagePreviewModal>
+              </div>
+              
               <NextImage
                 src={preview}
                 alt={`Reference image ${index+1}`}
@@ -833,27 +863,37 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
       
       // Pass the image data to the server action for processing using images.edit
       // Include the prompt if provided, otherwise use the default one in the function
-      const result = await generateImageVariation(
-        referenceDataUrls,
-        imageFormat as AspectRatio,
-        numGeneratedImages,
-        imagePrompt.trim() || undefined // Use undefined to get the default prompt if empty
-      )
-      
-      if (result.success && result.images) {
-        const validUrls = result.images.filter((url: unknown) => typeof url === "string") as string[]
-        setGeneratedImages(validUrls)
-        setCombinedPreviews([])
-        setSelectedImages([])
-        setLogoPositions({}) // Reset custom logo positions for new images
-        
-        showToast(
-          "Images generated", 
-          `Created ${validUrls.length} image${validUrls.length !== 1 ? 's' : ''} successfully based on your reference images`, 
-          "success"
+      console.log(`Calling generateImageVariation with ${referenceDataUrls.length} reference images`)
+      try {
+        const result = await generateImageVariation(
+          referenceDataUrls,
+          imageFormat as AspectRatio,
+          numGeneratedImages,
+          imagePrompt.trim() || undefined // Use undefined to get the default prompt if empty
         )
-      } else {
-        throw new Error(result.error || "Failed to generate images with reference images.")
+        
+        if (!result) {
+          throw new Error("No result returned from image generation")
+        }
+        
+        if (result.success && result.images) {
+          const validUrls = result.images.filter((url: unknown) => typeof url === "string") as string[]
+          setGeneratedImages(validUrls)
+          setCombinedPreviews([])
+          setSelectedImages([])
+          setLogoPositions({}) // Reset custom logo positions for new images
+          
+          showToast(
+            "Images generated", 
+            `Created ${validUrls.length} image${validUrls.length !== 1 ? 's' : ''} successfully based on your reference images`, 
+            "success"
+          )
+        } else {
+          throw new Error(result.error || "Failed to generate images with reference images.")
+        }
+      } catch (innerErr) {
+        console.error("Inner error in variation generation:", innerErr)
+        throw innerErr
       }
     } catch (err) {
       console.error("Error generating images with reference:", err)
@@ -1743,6 +1783,25 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
                                 }`}
                                 onClick={() => toggleImageSelected(i)}
                               >
+                                <div className="absolute inset-0 z-10">
+                                  <ImagePreviewModal
+                                    imageUrl={imgUrl}
+                                    altText={`Generated image ${i+1}`}
+                                    className="absolute inset-0 z-20"
+                                  >
+                                    <NextImage
+                                      src={imgUrl}
+                                      alt={`Generated image ${i+1}`}
+                                      fill
+                                      sizes="(max-width: 768px) 100vw, 448px"
+                                      className="object-contain"
+                                    />
+                                    <div className="absolute top-2 right-2 bg-black/50 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <ZoomIn className="size-4" />
+                                    </div>
+                                  </ImagePreviewModal>
+                                </div>
+                                
                                 <NextImage
                                   src={imgUrl}
                                   alt={`Generated image ${i+1}`}
@@ -1798,6 +1857,25 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
                                 onClick={() => toggleImageSelected(i)}
                                 style={{ touchAction: isCustomPosition ? 'none' : 'auto' }}
                               >
+                                <div className="absolute inset-0 z-10">
+                                  <ImagePreviewModal
+                                    imageUrl={previewUrl}
+                                    altText={`Branded image ${i+1}`}
+                                    className="absolute inset-0 z-20"
+                                  >
+                                    <NextImage
+                                      src={previewUrl}
+                                      alt={`Branded image ${i+1}`}
+                                      fill
+                                      sizes="(max-width: 768px) 100vw, 448px"
+                                      className="object-contain"
+                                    />
+                                    <div className="absolute top-2 right-2 bg-black/50 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <ZoomIn className="size-4" />
+                                    </div>
+                                  </ImagePreviewModal>
+                                </div>
+                                
                                 <NextImage
                                   src={previewUrl}
                                   alt={`Branded image ${i+1}`}
