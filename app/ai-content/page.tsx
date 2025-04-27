@@ -86,7 +86,12 @@ export default function AiContentPage() {
 
   // Enhanced prompt improver that passes platform context
   const enhancedImprovePrompt = async (promptText: string): Promise<string> => {
-    const contentType = activeTab === "video" ? "video" : "image"
+    let contentType = "image"
+    if (activeTab === "video") {
+      contentType = "video"
+    } else if (activeTab === "inpaint") {
+      contentType = "image" // Using "image" content type for inpainting as well
+    }
     return improvePrompt(promptText, platform, contentType)
   }
 
@@ -150,9 +155,10 @@ export default function AiContentPage() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="video">AI Video Creation</TabsTrigger>
-            <TabsTrigger value="image">AI Image Creatives</TabsTrigger>
+            <TabsTrigger value="image">AI Creatives Director</TabsTrigger>
+            <TabsTrigger value="inpaint">Image Inpainting</TabsTrigger>
           </TabsList>
 
           {/* VIDEO TAB */}
@@ -162,13 +168,12 @@ export default function AiContentPage() {
 
           {/* IMAGE TAB */}
           <TabsContent value="image">
-            {/* Keep or remove this AiImageTab depending on what you want */}
             <AiImageTab improvePrompt={enhancedImprovePrompt} />
+          </TabsContent>
 
-            <hr className="my-6" />
-
-            {/* Your new inpainting component */}
-            <ImageImpaint />
+          {/* INPAINTING TAB */}
+          <TabsContent value="inpaint">
+            <ImageImpaint improvePrompt={enhancedImprovePrompt} />
           </TabsContent>
         </Tabs>
 
