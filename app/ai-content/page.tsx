@@ -157,7 +157,7 @@ export default function AiContentPage() {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="video">AI Video Creation</TabsTrigger>
-            <TabsTrigger value="image">AI Image Creatives</TabsTrigger>
+            <TabsTrigger value="image">AI Creatives Director</TabsTrigger>
             <TabsTrigger value="inpaint">Image Inpainting</TabsTrigger>
           </TabsList>
 

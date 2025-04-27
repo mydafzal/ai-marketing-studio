@@ -2,13 +2,28 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react"
 import NextImage from "next/image"
-import { AlertCircle, Download, ImagePlus, Save, Upload, Info, CheckCircle2 } from "lucide-react"
-import { useTheme } from "next-themes" // You'll need to install next-themes
-// Import the AspectRatio type along with the server action
-import { generateImages } from "@/app/actions/generate-image"
-// Import the AspectRatio type - add this to your file
+import { 
+  AlertCircle, 
+  Download, 
+  ImagePlus, 
+  Upload, 
+  Info, 
+  CheckCircle2, 
+  Sparkles,
+  Layers,
+  Trash2,
+  Wand2
+} from "lucide-react"
+import { useTheme } from "next-themes"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+// Import the AspectRatio type along with the server actions
+import { 
+  generateImages, 
+  generateImageVariants,
+  generateImageVariation
+} from "@/app/actions/generate-image"
+// Import the AspectRatio type
 import type { AspectRatio } from "@/app/actions/generate-image"
-// ----- Server Actions (or adjust your imports as needed) -----
 
 // Simple Magic Icon component
 const Magic = ({ className }: { className?: string }) => (
@@ -26,23 +41,47 @@ const Magic = ({ className }: { className?: string }) => (
   </svg>
 )
 
-// Simple Sparkles Icon component
-const Sparkles = ({ className }: { className?: string }) => (
-  <svg 
-    xmlns="http://www.w3.org/2000/svg" 
-    viewBox="0 0 24 24" 
-    fill="none" 
-    stroke="currentColor" 
-    strokeWidth="2" 
-    strokeLinecap="round" 
-    strokeLinejoin="round" 
-    className={className}
-  >
-    <path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/>
-    <path d="M5 3l.9 2.6L9 7l-3.1 1.4L5 11l-.9-2.6L1 7l3.1-1.4z"/>
-    <path d="M18 3l.9 2.6L22 7l-3.1 1.4L18 11l-.9-2.6L14 7l3.1-1.4z"/>
-  </svg>
-)
+// Loading screen component
+const LoadingScreen = ({ isDarkMode, generationMode, numImages }: { isDarkMode: boolean, generationMode: 'text' | 'variations', numImages: number }) => {
+  let statusText = '';
+  let icon = null;
+  
+  switch(generationMode) {
+    case 'text':
+      statusText = `Creating ${numImages} images from your description...`;
+      icon = <ImagePlus className={`size-10 mb-4 ${isDarkMode ? 'text-primary-green' : 'text-blue-500'}`} />;
+      break;
+    case 'variations':
+      statusText = `Creating ${numImages} variations of your image...`;
+      icon = <Magic className={`size-10 mb-4 ${isDarkMode ? 'text-primary-green' : 'text-blue-500'}`} />;
+      break;
+  }
+  
+  return (
+    <div className={`flex flex-col items-center justify-center h-full min-h-[400px] w-full ${
+      isDarkMode ? 'bg-gray-800/50' : 'bg-gray-100/50'
+    } rounded-lg border ${
+      isDarkMode ? 'border-gray-700' : 'border-gray-300'
+    }`}>
+      {icon}
+      
+      <div className={`text-lg font-medium mb-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
+        {statusText}
+      </div>
+      
+      <div className="relative w-48 h-2 bg-gray-300 rounded-full overflow-hidden">
+        <div className={`absolute top-0 left-0 h-full ${
+          isDarkMode ? 'bg-primary-green' : 'bg-blue-500'
+        } animate-loading-bar`}></div>
+      </div>
+      
+      <div className={`mt-6 text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+        <p>This may take a few moments...</p>
+        <p className="mt-1">Please don&apos;t refresh the page.</p>
+      </div>
+    </div>
+  );
+}
 
 interface AiImageTabProps {
   improvePrompt: (prompt: string) => Promise<string>
@@ -70,6 +109,22 @@ async function urlToFile(url: string, fileName: string): Promise<File> {
   return new File([blob], fileName, { type })
 }
 
+// Function to convert a File to a base64 data URL
+function fileToDataURL(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      if (reader.result && typeof reader.result === 'string') {
+        resolve(reader.result)
+      } else {
+        reject(new Error('Failed to convert file to data URL'))
+      }
+    }
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+}
+
 // Function to map aspect ratios to CSS classes
 function getAspectRatioClass(format: string): string {
   switch(format) {
@@ -87,9 +142,11 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
   const { theme } = useTheme()
   const isDarkMode = theme === "dark"
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const multiImageFileInputRef = useRef<HTMLInputElement>(null)
   const previewRefs = useRef<(HTMLDivElement | null)[]>([])
 
   // State management
+  const [generationMode, setGenerationMode] = useState<'text' | 'variations'>('text')
   const [imagePrompt, setImagePrompt] = useState("")
   const [isGeneratingImages, setIsGeneratingImages] = useState(false)
   const [generatedImages, setGeneratedImages] = useState<string[]>([])
@@ -99,11 +156,15 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
   const [combinedPreviews, setCombinedPreviews] = useState<string[]>([])
   const [selectedImages, setSelectedImages] = useState<number[]>([])
   const [activeTab, setActiveTab] = useState("original")
-  const [isSaving, setIsSaving] = useState(false)
   const [promptHistory, setPromptHistory] = useState<string[]>([])
   const [logoSize, setLogoSize] = useState(20) // As percentage of image width
   const [toastMessage, setToastMessage] = useState<{title: string, description: string, type: 'success' | 'error'} | null>(null)
   const [imageFormat, setImageFormat] = useState("1:1") // Default to square
+  const [numGeneratedImages, setNumGeneratedImages] = useState<5 | 10>(5)
+  
+  // Reference images state
+  const [referenceImages, setReferenceImages] = useState<File[]>([])
+  const [referenceImagePreviews, setReferenceImagePreviews] = useState<string[]>([])
   
   // Drag and drop state
   const [customLogoPosition, setCustomLogoPosition] = useState({ x: 0, y: 0 })
@@ -112,11 +173,8 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
   const [isCustomPosition, setIsCustomPosition] = useState(false)
   const [draggedImageIndex, setDraggedImageIndex] = useState<number | null>(null)
   const [logoPositions, setLogoPositions] = useState<{ [key: number]: { x: number, y: number } }>({})
-  // Add this to track if we're currently dragging to prevent preview updates
   const [isDragUpdatePending, setIsDragUpdatePending] = useState(false)
-  // Add this to track processing state for preview generation
   const [isProcessing, setIsProcessing] = useState(false)
-  // Add state to track when logo size is changing for smooth transitions
   const [isResizingLogo, setIsResizingLogo] = useState(false)
 
   // Initialize previewRefs when images change
@@ -205,6 +263,89 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
         setIsDragUpdatePending(false)
       }
     }, 250) // Slightly longer than the CSS transition
+  }
+
+  // Handle adding reference images for variants
+  function handleReferenceImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    if (e.target.files && e.target.files.length > 0) {
+      const files = Array.from(e.target.files)
+      
+      // First validate file types - only allow image types that work well with the API
+      const validTypeFiles = files.filter(file => {
+        // Check MIME type
+        if (!file.type.match(/^image\/(jpeg|png|webp|gif)$/)) {
+          showToast(
+            "Unsupported file type", 
+            `${file.name} has unsupported type (${file.type}). Please use PNG or JPEG.`, 
+            "error"
+          )
+          return false
+        }
+        return true
+      })
+      
+      // Then validate file sizes (4MB max each - lower than before to avoid issues)
+      const validFiles = validTypeFiles.filter(file => {
+        if (file.size > 4 * 1024 * 1024) {
+          showToast(
+            "File too large", 
+            `${file.name} is larger than 4MB and won't be used. Please resize the image.`, 
+            "error"
+          )
+          return false
+        }
+        return true
+      })
+      
+      if (validFiles.length === 0) return
+      
+      // Add to existing reference images (up to 4 total)
+      const newReferenceImages = [...referenceImages, ...validFiles].slice(0, 4)
+      setReferenceImages(newReferenceImages)
+      
+      // Generate previews for the new images
+      Promise.all(
+        newReferenceImages.map(file => fileToDataURL(file))
+      ).then(dataUrls => {
+        setReferenceImagePreviews(dataUrls)
+      }).catch(error => {
+        console.error("Error generating image previews:", error)
+        showToast(
+          "Preview error", 
+          "Failed to create image previews. Please try different images.",
+          "error"
+        )
+      })
+      
+      showToast(
+        "Images uploaded", 
+        `${validFiles.length} reference image${validFiles.length !== 1 ? 's' : ''} uploaded successfully.`, 
+        "success"
+      )
+      
+      // If we have at least one valid image, provide guidance
+      if (validFiles.length > 0 && !imagePrompt.trim()) {
+        setTimeout(() => {
+          showToast(
+            "Next step", 
+            "Now enter a descriptive prompt about what you want to create with these images.",
+            "success"
+          )
+        }, 3500) // Show this message after the first toast disappears
+      }
+    }
+  }
+  
+  // Remove a reference image
+  function handleRemoveReferenceImage(index: number) {
+    setReferenceImages(prev => prev.filter((_, i) => i !== index))
+    setReferenceImagePreviews(prev => prev.filter((_, i) => i !== index))
+  }
+  
+  // Clear all reference images
+  function handleClearReferenceImages() {
+    setReferenceImages([])
+    setReferenceImagePreviews([])
   }
 
   // Start dragging the logo - with improved update prevention
@@ -386,7 +527,7 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
     }
   }, [isCustomPosition, isDraggingLogo, handleLogoMouseMove, handleLogoMouseUp, handleLogoTouchMove, handleLogoTouchEnd, handleMouseLeave])
 
-  // Image generation
+  // Image generation from text prompt
   async function handleImageGenerate() {
     if (!imagePrompt.trim()) {
       showToast("Missing prompt", "Please enter an image description first.", "error")
@@ -398,8 +539,8 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
     try {
       savePromptToHistory(imagePrompt)
       
-      // Pass the imageFormat as the second parameter
-      const result = await generateImages(imagePrompt, imageFormat as AspectRatio)
+      // Pass the imageFormat as the second parameter and number of images as third parameter
+      const result = await generateImages(imagePrompt, imageFormat as AspectRatio, numGeneratedImages)
       if (result.success && result.images) {
         const validUrls = result.images.filter((url: unknown) => typeof url === "string") as string[]
         setGeneratedImages(validUrls)
@@ -427,7 +568,130 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
     }
   }
 
-  // Improve prompt
+  // Generate image variants from reference images
+  async function handleGenerateVariants() {
+    if (!imagePrompt.trim()) {
+      showToast("Missing prompt", "Please enter a description for the variants.", "error")
+      return
+    }
+    
+    if (referenceImages.length === 0) {
+      showToast("No reference images", "Please upload at least one reference image.", "error")
+      return
+    }
+    
+    setIsGeneratingImages(true)
+    
+    try {
+      savePromptToHistory(imagePrompt)
+      
+      // Validate images before sending
+      // OpenAI requires image formats to be PNG, JPEG or WebP for gpt-image-1
+      // Size should be less than 25MB per image
+      const validFileTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp']
+      
+      // Pre-process images to ensure they're valid
+      const processedImages = referenceImages.filter(file => {
+        // Check file type
+        if (!validFileTypes.includes(file.type)) {
+          showToast(
+            "Unsupported file format", 
+            `File "${file.name}" has type "${file.type}" which is not supported. Only PNG, JPEG and WebP are allowed.`, 
+            "error"
+          )
+          return false
+        }
+        
+        // Check file size (24MB to be safe)
+        if (file.size > 24 * 1024 * 1024) {
+          showToast(
+            "File too large", 
+            `File "${file.name}" is larger than 24MB. Please use smaller images.`, 
+            "error"
+          )
+          return false
+        }
+        
+        return true
+      })
+      
+      // Check if we have at least one valid image
+      if (processedImages.length === 0) {
+        throw new Error("No valid reference images found after filtering. Please upload PNG, JPEG or WebP images under 24MB each.")
+      }
+      
+      // Convert all reference images to data URLs 
+      const referenceDataUrls = await Promise.all(
+        processedImages.map(file => fileToDataURL(file))
+      )
+      
+      console.log(`Sending ${referenceDataUrls.length} reference images for variant generation`)
+      
+      // Show detailed information to the user
+      showToast(
+        "Processing images", 
+        `Creating variants from ${referenceDataUrls.length} reference image${referenceDataUrls.length > 1 ? 's' : ''}...`, 
+        "success"
+      )
+      
+      // Generate the variants using the OpenAI edit endpoint with multiple reference images
+      const result = await generateImageVariants(
+        imagePrompt, 
+        referenceDataUrls, 
+        imageFormat as AspectRatio,
+        numGeneratedImages
+      )
+      
+      if (result.success && result.images) {
+        const validUrls = result.images.filter((url: unknown) => typeof url === "string") as string[]
+        setGeneratedImages(validUrls)
+        setCombinedPreviews([])
+        setSelectedImages([])
+        setLogoPositions({}) // Reset custom logo positions for new images
+        
+        showToast(
+          "Variants generated", 
+          `Created ${validUrls.length} image variant${validUrls.length !== 1 ? 's' : ''} successfully`, 
+          "success"
+        )
+      } else {
+        throw new Error(result.error || "Failed to generate image variants.")
+      }
+    } catch (err) {
+      console.error("Error generating image variants:", err)
+      
+      // Extract a more meaningful error message if possible
+      let errorMessage = "Unable to create variants. Please try again with different images or prompt.";
+      
+      if (err instanceof Error) {
+        // Clean up common API error messages to make them more user-friendly
+        const msg = err.message;
+        
+        if (msg.includes("Invalid input image type")) {
+          errorMessage = "One or more reference images has an invalid format. Try using PNG or JPEG images.";
+        } else if (msg.includes("insufficient tokens")) {
+          errorMessage = "API usage limit exceeded. Please try again later.";
+        } else if (msg.includes("content policy") || msg.includes("content filter")) {
+          errorMessage = "Your prompt or images may violate content policies. Please modify and try again.";
+        } else if (msg.includes("network")) {
+          errorMessage = "Network error occurred. Please check your internet connection and try again.";
+        } else if (msg.length < 150) {
+          // Only use API error message if it's reasonably short
+          errorMessage = msg;
+        }
+      }
+      
+      showToast(
+        "Generation failed", 
+        errorMessage, 
+        "error"
+      )
+    } finally {
+      setIsGeneratingImages(false)
+    }
+  }
+
+  // Improve prompt with AI
   async function handleImproveImagePrompt() {
     if (!imagePrompt.trim()) {
       showToast("No prompt to improve", "Please enter an image description first.", "error")
@@ -486,6 +750,198 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
   function handleLogoButtonClick() {
     if (fileInputRef.current) {
       fileInputRef.current.click()
+    }
+  }
+  
+  // Trigger multi-image file input click
+  function handleReferenceImageButtonClick() {
+    if (multiImageFileInputRef.current) {
+      multiImageFileInputRef.current.click()
+    }
+  }
+  
+  // Handle adding reference images for variations
+  function handleReferenceImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    if (e.target.files && e.target.files.length > 0) {
+      const files = Array.from(e.target.files)
+      
+      // Validate file types for gpt-image-1
+      const validFileTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp']
+      const validFiles = files.filter(file => {
+        if (!validFileTypes.includes(file.type)) {
+          showToast(
+            "Unsupported file type", 
+            `File "${file.name}" must be PNG, JPEG, or WebP format.`,
+            "error"
+          )
+          return false
+        }
+        
+        // Validate file size (20MB is within the GPT-Image-1 limit of 25MB)
+        if (file.size > 20 * 1024 * 1024) {
+          showToast(
+            "File too large", 
+            `File "${file.name}" must be smaller than 20MB.`,
+            "error"
+          )
+          return false
+        }
+        
+        return true
+      })
+      
+      if (validFiles.length === 0) return
+      
+      // Add to existing reference images (up to 4 total)
+      const newReferenceImages = [...referenceImages, ...validFiles].slice(0, 4)
+      setReferenceImages(newReferenceImages)
+      
+      // Generate previews for the new images
+      Promise.all(
+        newReferenceImages.map(file => fileToDataURL(file))
+      ).then(dataUrls => {
+        setReferenceImagePreviews(dataUrls)
+      })
+      
+      showToast(
+        "Reference images uploaded", 
+        `${validFiles.length} image${validFiles.length !== 1 ? 's' : ''} added (max 4). Click 'Create variations' to generate images.`,
+        "success"
+      )
+    }
+  }
+  
+  // Remove a reference image
+  function handleRemoveReferenceImage(index: number) {
+    setReferenceImages(prev => prev.filter((_, i) => i !== index))
+    setReferenceImagePreviews(prev => prev.filter((_, i) => i !== index))
+  }
+  
+  // Clear all reference images
+  function handleClearReferenceImages() {
+    setReferenceImages([])
+    setReferenceImagePreviews([])
+  }
+  
+  // Clear the source image for variations
+  // Function removed
+  
+  // Render reference image thumbnails
+  const renderReferenceImages = () => {
+    return (
+      <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3">
+        {referenceImagePreviews.map((preview, index) => (
+          <div key={index} className="relative group">
+            <div className={`${getAspectRatioClass(imageFormat)} rounded-md overflow-hidden border ${
+              isDarkMode ? 'border-gray-700' : 'border-gray-300'
+            }`}>
+              <NextImage
+                src={preview}
+                alt={`Reference image ${index+1}`}
+                fill
+                className="object-cover"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => handleRemoveReferenceImage(index)}
+              className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+            >
+              <Trash2 className="size-3" />
+            </button>
+          </div>
+        ))}
+        
+        {referenceImages.length < 4 && (
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className={`flex flex-col items-center justify-center ${getAspectRatioClass(imageFormat)} rounded-md border-2 border-dashed ${
+              isDarkMode 
+                ? 'border-gray-700 hover:border-gray-600 bg-gray-800/30' 
+                : 'border-gray-300 hover:border-gray-400 bg-gray-50'
+            }`}
+          >
+            <Upload className={`size-6 mb-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+            <span className={`text-xs font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+              Add image
+            </span>
+          </button>
+        )}
+      </div>
+    )
+  }
+
+  // Generate image variations from reference images
+  async function handleGenerateVariations() {
+    if (referenceImages.length === 0) {
+      showToast(
+        "No reference images", 
+        "Please upload at least one image to create variations.", 
+        "error"
+      )
+      return
+    }
+    
+    setIsGeneratingImages(true)
+    
+    try {
+      // Convert all reference images to data URLs
+      const referenceDataUrls = await Promise.all(
+        referenceImages.map(file => fileToDataURL(file))
+      )
+      
+      // Pass the image data to the server action for processing using images.edit
+      // Include the prompt if provided, otherwise use the default one in the function
+      const result = await generateImageVariation(
+        referenceDataUrls,
+        imageFormat as AspectRatio,
+        numGeneratedImages,
+        imagePrompt.trim() || undefined // Use undefined to get the default prompt if empty
+      )
+      
+      if (result.success && result.images) {
+        const validUrls = result.images.filter((url: unknown) => typeof url === "string") as string[]
+        setGeneratedImages(validUrls)
+        setCombinedPreviews([])
+        setSelectedImages([])
+        setLogoPositions({}) // Reset custom logo positions for new images
+        
+        showToast(
+          "Images generated", 
+          `Created ${validUrls.length} image${validUrls.length !== 1 ? 's' : ''} successfully based on your reference images`, 
+          "success"
+        )
+      } else {
+        throw new Error(result.error || "Failed to generate images with reference images.")
+      }
+    } catch (err) {
+      console.error("Error generating images with reference:", err)
+      
+      // Extract a more meaningful error message if possible
+      let errorMessage = "Unable to create images. Please try again with different reference images.";
+      
+      if (err instanceof Error) {
+        // Clean up common API error messages
+        const msg = err.message;
+        
+        if (msg.includes("content policy") || msg.includes("content filter")) {
+          errorMessage = "Your request may violate content policies. Please try different reference images.";
+        } else if (msg.includes("network") || msg.includes("connection")) {
+          errorMessage = "Network error occurred. Please check your internet connection and try again.";
+        } else if (msg.includes("Bad Request") || msg.includes("invalid")) {
+          errorMessage = "Invalid request format. Please try with different images or resize them.";
+        } else if (msg.includes("Too Many Requests")) {
+          errorMessage = "Rate limit exceeded. Please try again in a few minutes.";
+        } else if (msg.length < 150) {
+          // Only use API error message if it's reasonably short
+          errorMessage = msg;
+        }
+      }
+      
+      showToast("Generation failed", errorMessage, "error")
+    } finally {
+      setIsGeneratingImages(false)
     }
   }
 
@@ -692,63 +1148,7 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
     }
   }
 
-  // Save to library
-  async function handleSaveSelectedImagesToLibrary() {
-    if (selectedImages.length === 0) {
-      showToast("No images selected", "Please select at least one image to save to your library.", "error")
-      return
-    }
-
-    setIsSaving(true)
-
-    try {
-      const formData = new FormData()
-      formData.append("userId", "user123")
-      formData.append("type", "image")
-
-      // Use images from the active tab (original or with logo)
-      const sourceArray = activeTab === "withLogo" && combinedPreviews.length > 0 
-        ? combinedPreviews 
-        : generatedImages
-
-      for (let i = 0; i < selectedImages.length; i++) {
-        const index = selectedImages[i]
-        const img = sourceArray[index]
-
-        if (img.startsWith("data:image")) {
-          const file = dataURLtoFile(img, `selected_${Date.now()}_${index}.png`, "image/png")
-          formData.append("files", file)
-        } else {
-          const file = await urlToFile(img, `selected_${Date.now()}_${index}.png`)
-          formData.append("files", file)
-        }
-      }
-
-      const res = await fetch("/api/content-library-upload", {
-        method: "POST",
-        body: formData,
-      })
-
-      if (!res.ok) {
-        throw new Error(`Upload failed: ${res.statusText}`)
-      }
-
-      await res.json()
-      
-      showToast(
-        "Saved to library", 
-        `${selectedImages.length} image${selectedImages.length !== 1 ? 's' : ''} saved to your content library.`, 
-        "success"
-      )
-
-      clearSelections()
-    } catch (err) {
-      console.error("Error saving images:", err)
-      showToast("Save failed", "Unable to save images to your library. Please try again.", "error")
-    } finally {
-      setIsSaving(false)
-    }
-  }
+  // Library functions have been removed
 
   // Improved LogoDragIndicator component with exact size matching
   const LogoDragIndicator = ({ imageIndex }: { imageIndex: number }) => {
@@ -852,6 +1252,10 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
     )
   }
 
+  // Function removed to fix duplicate definition
+  
+  // Removed old renderVariationSourceImage function
+
   return (
     <div className={`w-full shadow-sm rounded-lg border ${isDarkMode ? 'bg-container-bg border-border-dark' : 'bg-white border-gray-200'}`}>
       {/* Toast notification */}
@@ -887,11 +1291,11 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
       <div className={`flex items-center justify-between p-6 border-b ${isDarkMode ? 'border-border-dark' : 'border-gray-200'}`}>
         <div>
           <h2 className="flex items-center gap-2 text-xl font-bold">
-            <ImagePlus className={`size-5 ${isDarkMode ? 'text-primary-green' : 'text-blue-600'}`} />
-            <span className={isDarkMode ? 'text-text-white' : 'text-gray-900'}>AI Image Generator</span>
+            <Wand2 className={`size-5 ${isDarkMode ? 'text-primary-green' : 'text-blue-600'}`} />
+            <span className={isDarkMode ? 'text-text-white' : 'text-gray-900'}>AI Creatives Director</span>
           </h2>
           <p className={`text-sm mt-1.5 ${isDarkMode ? 'text-text-light-gray' : 'text-gray-500'}`}>
-            Create professional images with AI and customize them with your branding
+            Create professional images using AI from text descriptions or reference images
           </p>
         </div>
         
@@ -908,15 +1312,81 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
       
       <hr className={isDarkMode ? 'border-border-dark' : 'border-gray-200'} />
       
+      {/* Mode Selection Tabs */}
+      <div className="px-6 pt-4">
+        <Tabs value={generationMode} onValueChange={(value) => setGenerationMode(value as 'text' | 'variations')} className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-4">
+            <TabsTrigger value="text" className="flex gap-2 items-center">
+              <ImagePlus className="size-4" />
+              Text to Image
+            </TabsTrigger>
+            <TabsTrigger value="variations" className="flex gap-2 items-center">
+              <Magic className="size-4" />
+              Reference Images
+            </TabsTrigger>
+          </TabsList>
+          
+          {/* Text to Image Tab Content */}
+          <TabsContent value="text">
+            <div className="text-sm text-muted-foreground mb-4">
+              <div className={`p-3 rounded-lg ${isDarkMode ? 'bg-gray-800/50' : 'bg-gray-50'}`}>
+                <p>Describe the image you want to create, and our AI will generate it for you. Be as detailed as possible for best results.</p>
+              </div>
+            </div>
+          </TabsContent>
+          
+          {/* Image Variations Tab Content */}
+          <TabsContent value="variations">
+            <div className="text-sm text-muted-foreground mb-4">
+              <div className={`p-3 rounded-lg ${isDarkMode ? 'bg-gray-800/50' : 'bg-gray-50'}`}>
+                <p>Upload up to 4 reference images and our AI will generate creative images inspired by them. Perfect for creating variations of your ads, combining elements from competitor creatives, or generating gift baskets with your products.</p>
+                <p className="mt-2 text-xs font-medium">
+                  <span className={isDarkMode ? 'text-amber-400' : 'text-amber-600'}>Note:</span> Upload PNG, JPEG, or WebP images (max 20MB each). You can add up to 4 reference images.
+                </p>
+              </div>
+            </div>
+            
+            {/* Source image uploader for variations */}
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <label className={`text-sm font-medium ${isDarkMode ? 'text-text-white' : 'text-gray-700'}`}>
+                  Reference Images (1-4)
+                </label>
+                {referenceImages.length > 0 && (
+                  <button 
+                    type="button"
+                    onClick={handleClearReferenceImages}
+                    className={`text-xs ${isDarkMode ? 'text-red-400 hover:text-red-300' : 'text-red-500 hover:text-red-600'}`}
+                  >
+                    Clear all
+                  </button>
+                )}
+              </div>
+              
+              <input 
+                type="file" 
+                accept="image/png,image/jpeg,image/jpg,image/webp" 
+                multiple
+                ref={fileInputRef}
+                onChange={handleReferenceImageUpload} 
+                className="hidden" 
+              />
+              
+              {renderReferenceImages()}
+            </div>
+          </TabsContent>
+        </Tabs>
+      </div>
+      
       {/* Main content */}
-      <div className="p-6">
+      <div className="p-6 pt-0">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left panel: Prompt input and controls */}
           <div className="lg:col-span-1 space-y-5">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <label htmlFor="imagePrompt" className={`text-sm font-medium ${isDarkMode ? 'text-text-white' : 'text-gray-700'}`}>
-                  Describe the image you want
+                  {generationMode === 'text' ? 'Describe the image you want' : 'Describe what to create from reference images'}
                 </label>
                 
                 <button 
@@ -932,7 +1402,9 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
                 id="imagePrompt"
                 value={imagePrompt}
                 onChange={(e) => setImagePrompt(e.target.value)}
-                placeholder="A professional image of a business person working in a modern office, soft lighting, deep focus..."
+                placeholder={generationMode === 'text' 
+                  ? "A professional image of a business person working in a modern office, soft lighting, deep focus..." 
+                  : "Create a cohesive collection combining elements from the reference images in a professional style..."}
                 className={`w-full min-h-[120px] resize-none p-3 rounded-md focus:ring-2 focus:ring-primary-green focus:border-primary-green outline-none ${
                   isDarkMode 
                     ? 'bg-dark-bg border-border-dark text-text-white placeholder-text-light-gray' 
@@ -942,9 +1414,38 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
 
               <div className="flex flex-col gap-3">
                 <div className={`space-y-2 ${isDarkMode ? 'text-text-white' : 'text-gray-700'}`}>
-                  <label htmlFor="imageFormat" className="block text-sm font-medium">
-                    Image Format
-                  </label>
+                  <div className="flex justify-between items-center">
+                    <label htmlFor="imageFormat" className="block text-sm font-medium">
+                      Image Format
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <label className="text-sm">Number of images:</label>
+                      <div className="flex">
+                        <button 
+                          type="button"
+                          onClick={() => setNumGeneratedImages(5)}
+                          className={`px-2 py-1 text-xs font-medium rounded-l-md ${
+                            numGeneratedImages === 5 
+                              ? isDarkMode ? 'bg-primary-green text-black' : 'bg-blue-600 text-white' 
+                              : isDarkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-gray-600'
+                          }`}
+                        >
+                          5
+                        </button>
+                        <button 
+                          type="button"
+                          onClick={() => setNumGeneratedImages(10)}
+                          className={`px-2 py-1 text-xs font-medium rounded-r-md ${
+                            numGeneratedImages === 10 
+                              ? isDarkMode ? 'bg-primary-green text-black' : 'bg-blue-600 text-white' 
+                              : isDarkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-gray-600'
+                          }`}
+                        >
+                          10
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                   <select
                     id="imageFormat"
                     value={imageFormat}
@@ -1014,10 +1515,20 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
 
               <button
                 type="button"
-                onClick={handleImageGenerate}
-                disabled={!imagePrompt.trim() || isGeneratingImages}
+                onClick={
+                  generationMode === 'text' 
+                    ? handleImageGenerate 
+                    : handleGenerateVariations
+                }
+                disabled={
+                  (generationMode === 'text' && !imagePrompt.trim()) || 
+                  isGeneratingImages || 
+                  (generationMode === 'variations' && referenceImages.length === 0)
+                }
                 className={`flex justify-center items-center w-full py-2 px-4 rounded-md text-sm font-medium 
-                  ${!imagePrompt.trim() || isGeneratingImages 
+                  ${(generationMode === 'text' && !imagePrompt.trim()) || 
+                    isGeneratingImages || 
+                    (generationMode === 'variations' && referenceImages.length === 0)
                     ? isDarkMode
                       ? 'bg-primary-green/50 cursor-not-allowed text-text-white/70'
                       : 'bg-blue-300 cursor-not-allowed text-white'
@@ -1026,8 +1537,16 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
                       : 'bg-blue-600 hover:bg-blue-700 text-white'
                   }`}
               >
-                <ImagePlus className="mr-2 size-4" />
-                {isGeneratingImages ? "Generating..." : "Create images"}
+                {generationMode === 'text' 
+                  ? <ImagePlus className="mr-2 size-4" />
+                  : <Magic className="mr-2 size-4" />
+                }
+                {isGeneratingImages 
+                  ? "Generating..." 
+                  : generationMode === 'text' 
+                    ? `Create ${numGeneratedImages} images`
+                    : `Create ${numGeneratedImages} images from references`
+                }
               </button>
             </div>
             
@@ -1163,7 +1682,13 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
           
           {/* Right panel: Generated images display */}
           <div className="lg:col-span-2">
-            {generatedImages.length === 0 ? (
+            {isGeneratingImages ? (
+              <LoadingScreen 
+                isDarkMode={isDarkMode} 
+                generationMode={generationMode} 
+                numImages={numGeneratedImages} 
+              />
+            ) : generatedImages.length === 0 ? (
               <div className={`border border-dashed rounded-lg p-8 flex flex-col items-center justify-center h-full min-h-[300px] text-center ${
                 isDarkMode ? 'border-gray-700' : 'border-gray-200'
               }`}>
@@ -1172,7 +1697,10 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
                 </div>
                 <h3 className={`text-lg font-medium mb-1 ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>No images generated yet</h3>
                 <p className={`text-sm max-w-md mb-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                  Enter a descriptive prompt and click &ldquo;Create images&rdquo; to generate AI images for your project.
+                  {generationMode === 'text' 
+                    ? "Enter a descriptive prompt and click \"Create images\" to generate AI images for your project."
+                    : "Upload a source image and click \"Create variations\" to generate AI variations of your image."
+                  }
                 </p>
               </div>
             ) : (
@@ -1256,11 +1784,13 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
                       
                     <div className="mt-3">
                       {activeTab === "original" && (
-                        <div className={`grid grid-cols-2 md:grid-cols-2 gap-3 ${
+                        <div className={`grid grid-cols-2 ${
                           imageFormat === "9:16" || imageFormat === "2:3" || imageFormat === "3:4" 
-                            ? "md:grid-cols-3" // More columns for portrait images
-                            : "md:grid-cols-2" // Fewer columns for landscape images
-                        }`}>
+                            ? "md:grid-cols-3" // 3 columns for portrait images
+                            : numGeneratedImages === 10 
+                              ? "md:grid-cols-5" // 5 columns for landscape/square with 10 images 
+                              : "md:grid-cols-5" // 5 columns for landscape/square with 5 images
+                        } gap-3`}>
                           {generatedImages.map((imgUrl, i) => {
                             const isSelected = selectedImages.includes(i)
                             return (
@@ -1307,11 +1837,13 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
                       )}
                       
                       {activeTab === "withLogo" && logoUrl && combinedPreviews.length > 0 && (
-                        <div className={`grid grid-cols-2 md:grid-cols-2 gap-3 ${
+                        <div className={`grid grid-cols-2 ${
                           imageFormat === "9:16" || imageFormat === "2:3" || imageFormat === "3:4" 
-                            ? "md:grid-cols-3" // More columns for portrait images
-                            : "md:grid-cols-2" // Fewer columns for landscape images
-                        }`}>
+                            ? "md:grid-cols-3" // 3 columns for portrait images
+                            : numGeneratedImages === 10 
+                              ? "md:grid-cols-5" // 5 columns for landscape/square with 10 images 
+                              : "md:grid-cols-5" // 5 columns for landscape/square with 5 images
+                        } gap-3`}>
                           {combinedPreviews.map((previewUrl, i) => {
                             const isSelected = selectedImages.includes(i)
                             return (
@@ -1390,28 +1922,7 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
         </div>
       </div>
       
-      {generatedImages.length > 0 && (
-        <div className={`flex justify-between items-center border-t p-4 ${
-          isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'
-        }`}>
-          <div></div>
-          
-          <button 
-            type="button"
-            onClick={handleSaveSelectedImagesToLibrary}
-            disabled={selectedImages.length === 0 || isSaving}
-            className={`flex items-center gap-2 py-2 px-4 rounded-md text-sm font-medium 
-              ${selectedImages.length === 0 || isSaving
-                ? isDarkMode
-                  ? 'bg-blue-800 cursor-not-allowed text-blue-300'
-                  : 'bg-blue-300 cursor-not-allowed text-white'
-                : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
-          >
-            <Save className="size-4" />
-            {isSaving ? 'Saving...' : `Save ${selectedImages.length > 0 ? selectedImages.length : ''} to Library`}
-          </button>
-        </div>
-      )}
+      {/* Footer section has been removed */}
     </div>
   )
 }
