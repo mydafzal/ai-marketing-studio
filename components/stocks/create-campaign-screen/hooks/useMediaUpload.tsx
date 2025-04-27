@@ -48,6 +48,10 @@ export function useMediaUpload() {
   const campaignSessionIdRef = useRef<string | null>(null);
   const [fbAccountId, setFbAccountId] = useState<string>('');
   const [fbPageId, setFbPageId] = useState<string>('');
+  // Add state for tracking if an upload is in progress and cooldown
+  const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [cooldownActive, setCooldownActive] = useState<boolean>(false);
+  const [cooldownTimeRemaining, setCooldownTimeRemaining] = useState<number>(0);
 
   // Log any changes to important state variables
   useEffect(() => {
@@ -115,23 +119,65 @@ export function useMediaUpload() {
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     console.log('📤 File upload triggered');
 
+    // Check if an upload is already in progress
+    if (isUploading) {
+      console.warn('⚠️ Upload already in progress. Please wait for it to complete.');
+      // Clear the file input so they can try again later
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      return;
+    }
+
+    // Check if cooldown is active
+    if (cooldownActive) {
+      console.warn(`⚠️ Cooldown active. Please wait ${cooldownTimeRemaining} seconds before uploading again.`);
+      // Clear the file input so they can try again later
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      return;
+    }
+
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
       console.log('📄 File selected:', file.name, 'Type:', file.type, 'Size:', file.size);
+
+      // Set uploading state to true
+      setIsUploading(true);
 
       // Create a new media ID for tracking this upload
       const newMediaId = Math.random().toString(36).substring(7);
       console.log('🆔 Generated media ID:', newMediaId);
 
-      // Handle different file types
-      if (file.type.includes('image')) {
-        console.log('🖼️ Handling as image upload');
-        await handleImageUpload(file, newMediaId);
-      } else if (file.type.includes('video')) {
-        console.log('🎬 Handling as video upload');
-        await handleVideoUpload(file, newMediaId);
-      } else {
-        console.error('❌ Unsupported file type:', file.type);
+      try {
+        // Handle different file types
+        if (file.type.includes('image')) {
+          console.log('🖼️ Handling as image upload');
+          await handleImageUpload(file, newMediaId);
+        } else if (file.type.includes('video')) {
+          console.log('🎬 Handling as video upload');
+          await handleVideoUpload(file, newMediaId);
+        } else {
+          console.error('❌ Unsupported file type:', file.type);
+          throw new Error('Unsupported file type');
+        }
+
+        // Check if we need to start cooldown (more than 2 media items)
+        const completedUploads = mediaItems.filter(item => item.progress === 100).length + 1; // +1 for current
+        if (completedUploads > 2) {
+          startCooldown();
+        }
+      } catch (error) {
+        console.error('❌ Error during file upload:', error);
+      } finally {
+        // Reset upload state
+        setIsUploading(false);
+        
+        // Clear the file input for next upload
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
       }
     } else {
       console.warn('⚠️ No files selected');
@@ -611,6 +657,36 @@ export function useMediaUpload() {
     setMediaItems(prev => prev.filter(m => m.id !== id));
   };
 
+  // Function to start the cooldown timer
+  const startCooldown = () => {
+    console.log('⏱️ Starting 15 second cooldown timer');
+    setCooldownActive(true);
+    setCooldownTimeRemaining(15);
+    
+    // Start the countdown
+    const intervalId = setInterval(() => {
+      setCooldownTimeRemaining(prev => {
+        const newTime = prev - 1;
+        if (newTime <= 0) {
+          clearInterval(intervalId);
+          setCooldownActive(false);
+          return 0;
+        }
+        return newTime;
+      });
+    }, 1000);
+  };
+
+  // Effect to check if any uploads are in progress
+  useEffect(() => {
+    // Check if any media items have a progress between 0 and 100 (in progress)
+    const hasInProgressUploads = mediaItems.some(item => item.progress > 0 && item.progress < 100);
+    
+    if (hasInProgressUploads !== isUploading) {
+      setIsUploading(hasInProgressUploads);
+    }
+  }, [mediaItems, isUploading]);
+
   return {
     mediaItems,
     setMediaItems,
@@ -619,6 +695,9 @@ export function useMediaUpload() {
     removeMediaItem,
     campaignSessionId,
     fbAccountId,
-    fbPageId
+    fbPageId,
+    isUploading,
+    cooldownActive,
+    cooldownTimeRemaining
   };
 }
