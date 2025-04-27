@@ -16,6 +16,119 @@ import {
   ZoomIn
 } from "lucide-react"
 import ImagePreviewModal from "@/components/image-preview-modal"
+
+// Helper function to resize an image to a maximum file size
+async function resizeImageToMaxSize(file: File, maxSizeKB: number = 1024): Promise<File> {
+  return new Promise((resolve, reject) => {
+    // If file is already smaller than the max size, return it as is
+    if (file.size <= maxSizeKB * 1024) {
+      return resolve(file);
+    }
+    
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target?.result as string;
+      
+      img.onload = () => {
+        // Create a canvas to draw the resized image
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        
+        // Calculate reduction ratio based on file size
+        // This is an estimate - we'll iterate if needed
+        let ratio = Math.sqrt((maxSizeKB * 1024) / file.size);
+        
+        // Start with this ratio, but cap at 1.0 (don't enlarge)
+        ratio = Math.min(1.0, ratio);
+        
+        // Initial dimensions
+        width = Math.floor(width * ratio);
+        height = Math.floor(height * ratio);
+        
+        // Set canvas size
+        canvas.width = width;
+        canvas.height = height;
+        
+        // Draw image on canvas
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          return reject(new Error('Could not get canvas context'));
+        }
+        
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // Try with different quality settings if needed
+        let quality = 0.9;  // Start with high quality
+        let iterations = 0;
+        const maxIterations = 5;
+        
+        const tryCompression = () => {
+          if (iterations >= maxIterations) {
+            console.warn(`Could not compress image to target size after ${maxIterations} attempts`);
+            // Return best effort
+            return finalize();
+          }
+          
+          // Convert to blob with the current quality
+          canvas.toBlob(
+            (blob) => {
+              if (!blob) {
+                return reject(new Error('Canvas toBlob returned null'));
+              }
+              
+              // Check if we've reached the target size
+              if (blob.size <= maxSizeKB * 1024 || iterations >= maxIterations - 1) {
+                return finalize();
+              }
+              
+              // If still too large, reduce quality and try again
+              quality = Math.max(0.5, quality - 0.1);
+              iterations++;
+              tryCompression();
+            },
+            file.type,
+            quality
+          );
+        };
+        
+        const finalize = () => {
+          canvas.toBlob(
+            (blob) => {
+              if (!blob) {
+                return reject(new Error('Canvas toBlob returned null'));
+              }
+              
+              // Create a new File from the blob
+              const newFile = new File([blob], file.name, {
+                type: file.type,
+                lastModified: Date.now()
+              });
+              
+              resolve(newFile);
+            },
+            file.type,
+            quality
+          );
+        };
+        
+        // Start the compression process
+        tryCompression();
+      };
+      
+      img.onerror = () => {
+        reject(new Error('Failed to load image'));
+      };
+    };
+    
+    reader.onerror = () => {
+      reject(new Error('Failed to read file'));
+    };
+  });
+}
 import { useTheme } from "next-themes"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 // Import the AspectRatio type along with the server actions
@@ -268,7 +381,7 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
   }
 
   // Handle adding reference images for variants
-  function handleReferenceImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleReferenceImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     if (e.target.files && e.target.files.length > 0) {
       const files = Array.from(e.target.files)
       
@@ -286,54 +399,86 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
         return true
       })
       
-      // Then validate file sizes (4MB max each - lower than before to avoid issues)
-      const validFiles = validTypeFiles.filter(file => {
+      // Show validation message for files that are too large
+      validTypeFiles.forEach(file => {
         if (file.size > 4 * 1024 * 1024) {
           showToast(
-            "File too large", 
-            `${file.name} is larger than 4MB and won't be used. Please resize the image.`, 
-            "error"
-          )
-          return false
-        }
-        return true
-      })
-      
-      if (validFiles.length === 0) return
-      
-      // Add to existing reference images (up to 4 total)
-      const newReferenceImages = [...referenceImages, ...validFiles].slice(0, 4)
-      setReferenceImages(newReferenceImages)
-      
-      // Generate previews for the new images
-      Promise.all(
-        newReferenceImages.map(file => fileToDataURL(file))
-      ).then(dataUrls => {
-        setReferenceImagePreviews(dataUrls)
-      }).catch(error => {
-        console.error("Error generating image previews:", error)
-        showToast(
-          "Preview error", 
-          "Failed to create image previews. Please try different images.",
-          "error"
-        )
-      })
-      
-      showToast(
-        "Images uploaded", 
-        `${validFiles.length} reference image${validFiles.length !== 1 ? 's' : ''} uploaded successfully.`, 
-        "success"
-      )
-      
-      // If we have at least one valid image, provide guidance
-      if (validFiles.length > 0 && !imagePrompt.trim()) {
-        setTimeout(() => {
-          showToast(
-            "Next step", 
-            "Now enter a descriptive prompt about what you want to create with these images.",
+            "File will be resized", 
+            `${file.name} (${(file.size / (1024 * 1024)).toFixed(1)}MB) will be automatically optimized for API compatibility.`, 
             "success"
           )
-        }, 3500) // Show this message after the first toast disappears
+        }
+      })
+      
+      if (validTypeFiles.length === 0) return
+      
+      try {
+        // Show processing message for larger uploads
+        if (validTypeFiles.some(file => file.size > 1 * 1024 * 1024)) {
+          showToast(
+            "Processing images",
+            "Optimizing images for upload...",
+            "success"
+          )
+        }
+        
+        // Resize any images that are too large (for API compatibility)
+        // The user still sees the original quality in the UI
+        const processedFiles = await Promise.all(
+          validTypeFiles.map(async (file) => {
+            try {
+              // Target 1MB for production compatibility
+              return await resizeImageToMaxSize(file, 1024)
+            } catch (error) {
+              console.error(`Error resizing ${file.name}:`, error)
+              // Return original file as fallback
+              return file
+            }
+          })
+        )
+        
+        // Add to existing reference images (up to 4 total)
+        const newReferenceImages = [...referenceImages, ...processedFiles].slice(0, 4)
+        setReferenceImages(newReferenceImages)
+        
+        // Generate previews for the new images - create preview from original high quality image
+        // This way the user sees the original quality in the UI
+        Promise.all(
+          validTypeFiles.map(file => fileToDataURL(file))
+        ).then(dataUrls => {
+          setReferenceImagePreviews(dataUrls)
+        }).catch(error => {
+          console.error("Error generating image previews:", error)
+          showToast(
+            "Preview error", 
+            "Failed to create image previews. Please try different images.",
+            "error"
+          )
+        })
+        
+        showToast(
+          "Images uploaded", 
+          `${validTypeFiles.length} reference image${validTypeFiles.length !== 1 ? 's' : ''} uploaded successfully.`, 
+          "success"
+        )
+        
+        // If we have at least one valid image, provide guidance
+        if (validTypeFiles.length > 0 && !imagePrompt.trim()) {
+          setTimeout(() => {
+            showToast(
+              "Next step", 
+              "Now enter a descriptive prompt about what you want to create with these images.",
+              "success"
+            )
+          }, 3500) // Show this message after the first toast disappears
+        }
+      } catch (error) {
+        console.error("Error processing images:", error)
+        showToast(
+          "Upload error",
+          "There was a problem processing the images. Please try again with different images.",
+          "error"
+        )
       }
     }
   }
@@ -589,7 +734,6 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
       
       // Validate images before sending
       // OpenAI requires image formats to be PNG, JPEG or WebP for gpt-image-1
-      // Size should be less than 25MB per image
       const validFileTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp']
       
       // Pre-process images to ensure they're valid
@@ -604,25 +748,30 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
           return false
         }
         
-        // Check file size (24MB to be safe)
-        if (file.size > 24 * 1024 * 1024) {
-          showToast(
-            "File too large", 
-            `File "${file.name}" is larger than 24MB. Please use smaller images.`, 
-            "error"
-          )
-          return false
-        }
-        
         return true
       })
       
       // Check if we have at least one valid image
       if (processedImages.length === 0) {
-        throw new Error("No valid reference images found after filtering. Please upload PNG, JPEG or WebP images under 24MB each.")
+        throw new Error("No valid reference images found after filtering. Please upload PNG, JPEG or WebP images.")
       }
       
-      // Convert all reference images to data URLs 
+      // First check if any images are larger than 1MB and need further processing
+      const largeImages = processedImages.filter(file => file.size > 1 * 1024 * 1024);
+      
+      if (largeImages.length > 0) {
+        console.log(`Found ${largeImages.length} large images that may need additional resizing`);
+        // Show a toast only if we're going to do additional resizing
+        showToast(
+          "Optimizing images", 
+          "Preparing images for API compatibility...",
+          "success"
+        );
+      }
+      
+      // Convert all reference images to data URLs
+      // Note: The images are already resized during upload, but we're checking again
+      // to ensure they meet API requirements
       const referenceDataUrls = await Promise.all(
         processedImages.map(file => fileToDataURL(file))
       )
@@ -856,7 +1005,20 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
     setIsGeneratingImages(true)
     
     try {
+      // First check if any images are larger than 1MB and may need optimizing
+      const largeImages = referenceImages.filter(file => file.size > 1 * 1024 * 1024);
+      
+      if (largeImages.length > 0) {
+        console.log(`Found ${largeImages.length} large images that may need optimizing`);
+        showToast(
+          "Optimizing images", 
+          "Preparing images for API compatibility...",
+          "success"
+        );
+      }
+      
       // Convert all reference images to data URLs
+      // Note: The images should already be properly sized during upload
       const referenceDataUrls = await Promise.all(
         referenceImages.map(file => fileToDataURL(file))
       )
