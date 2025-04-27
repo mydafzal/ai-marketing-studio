@@ -815,7 +815,7 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
             <button
               type="button"
               onClick={() => handleRemoveReferenceImage(index)}
-              className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+              className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity z-20"
             >
               <Trash2 className="size-3" />
             </button>
