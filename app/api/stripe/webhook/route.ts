@@ -1,6 +1,7 @@
 import Stripe from 'stripe'
 import { kv } from '@vercel/kv'
 import { NextResponse } from 'next/server'
+import { trackEvent } from "@/lib/utils"
 
 // Define types
 interface SubPayload {
@@ -169,6 +170,12 @@ const handleSubscriptionDeleted = async (event: Stripe.Event) => {
     }
 
     await deleteSubscriptionDetails(stripeCustomer.email)
+
+    // Track event in PostHog
+    await trackEvent('Subscription Deleted',
+      { email: stripeCustomer.email ?? '', id: subscription.customer as string },
+      { subscription_id: subscription.id, status: subscription.status }
+    )
   } catch (error) {
     console.error('Error handling subscription deleted event:', error)
   }
@@ -178,6 +185,20 @@ const handleSubscriptionCreated = async (event: Stripe.Event) => {
   try {
     const subscription = event.data.object as Stripe.Subscription
     await persistSubscription(subscription)
+
+    // Fetch customer for email
+    const stripeCustomer = await fetchStripeCustomer(subscription.customer as string)
+
+    if (!stripeCustomer.email) {
+      console.error(`No email found for customer ID: ${subscription.customer}`)
+      return
+    }    
+
+    // Track event in PostHog
+    await trackEvent('Subscription Created', 
+      { email: stripeCustomer.email ?? '', id: subscription.customer as string },
+      { subscription_id: subscription.id, status: subscription.status }
+    )
   } catch (error) {
     console.error('Error handling subscription created event:', error)
   }
@@ -200,6 +221,20 @@ const handleSubscriptionUpdated = async (event: Stripe.Event) => {
     }
 
     await persistSubscription(subscription)
+
+    // Fetch customer for email
+    const stripeCustomer = await fetchStripeCustomer(subscription.customer as string)
+
+    if (!stripeCustomer.email) {
+      console.error(`No email found for customer ID: ${subscription.customer}`)
+      return
+    }    
+
+    // Track event in PostHog
+    await trackEvent('Subscription Updated',
+      { email: stripeCustomer.email ?? '', id: subscription.customer as string },
+      { subscription_id: subscription.id, status: subscription.status }
+    )
   } catch (error) {
     console.error('Error handling subscription updated event:', error)
   }
@@ -217,6 +252,20 @@ const handleInvoicePaymentSucceeded = async (event: Stripe.Event) => {
       await persistSubscription(subscription)
       console.log(
           `Handled invoice payment succeeded for subscription ${invoice.subscription}`
+      )
+
+      // Fetch customer for email
+      const stripeCustomer = await fetchStripeCustomer(subscription.customer as string)
+
+      if (!stripeCustomer.email) {
+        console.error(`No email found for customer ID: ${subscription.customer}`)
+        return
+      }    
+
+      // Track event in PostHog
+      await trackEvent('Invoice Payment Succeeded',
+        { email: stripeCustomer.email ?? '', id: subscription.customer as string },
+        { subscription_id: subscription.id, status: subscription.status }
       )
     }
   } catch (error) {
