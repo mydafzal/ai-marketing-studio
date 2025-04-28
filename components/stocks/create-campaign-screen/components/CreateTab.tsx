@@ -93,9 +93,9 @@ export function CreateTab({
             <div className="absolute inset-0 bg-dark-bg/90 rounded-lg flex items-center justify-center z-10">
               <div className="flex flex-col items-center text-amber-500">
                 <Clock className="mb-2" size={24} />
-                <span className="text-sm font-medium">Cooldown period active</span>
+                <span className="text-sm font-medium">Thanks, give me a second to check this</span>
                 <span className="text-xs mt-1 text-text-light-gray">
-                  Please wait {cooldownTimeRemaining} seconds before uploading again
+                  Please wait {cooldownTimeRemaining} seconds before uploading the next creative
                 </span>
               </div>
             </div>
