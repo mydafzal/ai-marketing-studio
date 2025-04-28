@@ -13,7 +13,8 @@ import {
   DialogFooter
 } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Gender, MasterFlowResponse, AdPlacements } from '../types';
+import { Gender, MasterFlowResponse, AdPlacements, LocationsFullDetails } from '../types';
+import AudienceLocationSelector from '@/components/audience-locations-selector';
 
 // Extended interface with union from both LibCreative and our additional fields
 interface ExtendedCreative extends Partial<LibCreative> {
@@ -75,6 +76,89 @@ export function AdSetupModal({
   const [editedDescription, setEditedDescription] = useState(
       masterFlowData?.ad_creative_text?.ad_creative_description || adText
   );
+
+  // Initialize with empty array if data is not present
+  // console.log("This is second ", masterFlowData?.audiences?.[1])
+  const [audienceOneLocations, setAudienceOneLocations] = useState<LocationsFullDetails>(
+    masterFlowData?.audiences.audiences?.[0]?.location_full_details || []
+  );
+  const [audienceTwoLocations, setAudienceTwoLocations] = useState<LocationsFullDetails>(
+    masterFlowData?.audiences?.audiences?.[1]?.location_full_details || []
+  );
+
+  useEffect(()=>{console.log("\n\n\n\n\nUdpated",audienceOneLocations)},[audienceOneLocations])
+  
+  // Function to save audience locations to the API
+  const saveAudienceLocations = async () => {
+    setIsSubmitting(true);
+    
+    try {
+      // Get required fields from masterFlowData
+      const campaign_session_id = masterFlowData?.campaign_flow_session_id;
+      
+      if (!campaign_session_id) {
+        throw new Error('Missing campaign session ID');
+      }
+      
+      console.log("[TEMPORARY DEBUG] Saving audience locations for both audiences using data:", audienceOneLocations);
+
+      // --- Call API for Audience 1 ---
+      const payloadAudience1 = {
+        campaign_session_uuid: campaign_session_id, // API expects campaign_session_uuid
+        audience_nr: 1,
+        locations: audienceOneLocations // API expects 'locations'
+        // TODO: Add other optional fields like age, gender if needed from masterFlowData?.audiences.audiences?.[0]
+      };
+      console.log("[TEMPORARY DEBUG] Sending payload for Audience 1:", payloadAudience1);
+
+      const response1 = await fetch('/api/fasty-bot/proxy-update-audience', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payloadAudience1),
+      });
+      const data1 = await response1.json();
+
+      if (!response1.ok || !data1.success) {
+        const errorMessage = data1.message || data1.error || 'Failed to save locations for Audience 1';
+        console.error('API error (Audience 1):', data1);
+        throw new Error(errorMessage);
+      }
+      console.log('Audience 1 locations saved successfully!', data1);
+
+      // --- Call API for Audience 2 ---
+       const payloadAudience2 = {
+        campaign_session_uuid: campaign_session_id, // API expects campaign_session_uuid
+        audience_nr: 2,
+        locations: audienceOneLocations // Use the same locations for Audience 2
+         // TODO: Add other optional fields like age, gender if needed from masterFlowData?.audiences.audiences?.[1]
+      };
+      console.log("[TEMPORARY DEBUG] Sending payload for Audience 2:", payloadAudience2);
+
+      const response2 = await fetch('/api/fasty-bot/proxy-update-audience', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payloadAudience2),
+      });
+      const data2 = await response2.json();
+
+      if (!response2.ok || !data2.success) {
+        const errorMessage = data2.message || data2.error || 'Failed to save locations for Audience 2';
+        console.error('API error (Audience 2):', data2);
+        throw new Error(errorMessage);
+      }
+      console.log('Audience 2 locations saved successfully!', data2);
+
+      // Show success message after both calls succeed
+      alert('Locations saved successfully for both audiences!');
+      
+    } catch (err) {
+      console.error('Error saving audience locations:', err);
+      alert(`Error: ${err instanceof Error ? err.message : 'Failed to save locations'}`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
   
   // Track original values to detect changes
   const [originalHeadline, setOriginalHeadline] = useState(
@@ -90,6 +174,7 @@ export function AdSetupModal({
   // Track save operation state
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Track updated creatives from the API response
   const [updatedCreatives, setUpdatedCreatives] = useState<ExtendedCreative[]>([]);
@@ -1501,6 +1586,30 @@ export function AdSetupModal({
                                 ? formatObjectsForDisplay(masterFlowData.selected_locations)
                                 : targetedLocations.join(', ')}
                           </p>
+                          {audienceOneLocations && (
+                            <div className="mt-4">
+                              <AudienceLocationSelector locations={audienceOneLocations} setLocations={setAudienceOneLocations}/>
+                              <div className="mt-4 flex justify-end">
+                                <button
+                                  onClick={saveAudienceLocations}
+                                  disabled={isSubmitting}
+                                  className="px-4 py-2 bg-[#4BF29C] text-[#151925] font-medium rounded-lg hover:bg-[#3ad889] transition-colors flex items-center gap-2"
+                                >
+                                  {isSubmitting ? (
+                                    <>
+                                      <span className="animate-spin h-4 w-4 border-2 border-[#151925] border-t-transparent rounded-full"></span>
+                                      Saving...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Save className="size-4" />
+                                      Save Locations
+                                    </>
+                                  )}
+                                </button>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
 
