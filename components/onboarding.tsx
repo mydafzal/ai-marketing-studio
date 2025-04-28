@@ -3,6 +3,7 @@ import * as Dialog from "@radix-ui/react-dialog"
 import {type User} from '@/lib/types'
 import {Cross2Icon} from "@radix-ui/react-icons"
 import {Button} from '@/components/ui/button'
+import {subscriptionBypassList} from '@/app/subscription/subscription-bypass-list'
 import {
   AlertCircle, 
   ArrowLeft, 
@@ -607,11 +608,16 @@ function Onboarding({
                     // Keep the loading state active during the page reload
                     // The loading overlay will remain visible until the page refreshes
                     setTimeout(() => {
-                        // Only redirect to onboarding-complete if user is not subscribed
-                        if (userDetails?.sub_status !== 'active' && userDetails?.sub_status !== 'trialing') {
+                        // Check if user is in bypass list
+                        const isInBypassList = userDetails?.email ? subscriptionBypassList.includes(userDetails.email) : false;
+                        
+                        // Only redirect to onboarding-complete if user is not subscribed and not in bypass list
+                        if (userDetails?.sub_status !== 'active' && 
+                            userDetails?.sub_status !== 'trialing' && 
+                            !isInBypassList) {
                             window.location.href = '/onboarding-complete';
                         } else {
-                            // If user is already subscribed, redirect to main app
+                            // If user is already subscribed or in bypass list, redirect to main app
                             window.location.href = '/';
                         }
                     }, 2000);

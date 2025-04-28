@@ -6,6 +6,7 @@ import { SidebarDesktop } from '@/components/sidebar-desktop'
 import Link from 'next/link'
 import VideoCarousel from '@/components/video-carousel'
 import SupportCalendarButton from '@/components/support-calendar-button'
+import { subscriptionBypassList } from '@/app/subscription/subscription-bypass-list'
 
 export const metadata = {
   title: 'Reeply - Start Your Journey'
@@ -32,8 +33,10 @@ export default async function OnboardingCompletePage() {
     redirect('/login')
   }
   
-  // If user is already subscribed, redirect to main app
-  if (user.sub_status === 'active' || user.sub_status === 'trialing') {
+  // If user is already subscribed or in the bypass list, redirect to main app
+  const isInBypassList = userEmail ? subscriptionBypassList.includes(userEmail) : false;
+  
+  if (user.sub_status === 'active' || user.sub_status === 'trialing' || isInBypassList) {
     redirect('/')
   }
   
