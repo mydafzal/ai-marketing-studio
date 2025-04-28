@@ -118,8 +118,11 @@ export function Subscription({
             </div>
           ) : (
             <>
-              {/* Only show pricing */}
-              <MonthlyPricing currentPlanTag={getCurrentPlanTag(user)} />
+              {/* Only show pricing with back button to onboarding-complete for non-subscribed users */}
+              <MonthlyPricing 
+                currentPlanTag={getCurrentPlanTag(user)} 
+                showBackButton={!user.sub_status || (user.sub_status !== 'active' && user.sub_status !== 'trialing')} 
+              />
             </>
           )}
         </div>
