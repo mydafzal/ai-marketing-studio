@@ -22,10 +22,11 @@ export default function LoginForm() {
         toast.error(getMessageFromCode(result.resultCode))
       } else {
         toast.success(getMessageFromCode(result.resultCode))
-        router.refresh()
+        // Force a full page reload to ensure all components reinitialize properly
+        window.location.href = '/'
       }
     }
-  }, [result, router])
+  }, [result])
 
   return (
     <form
