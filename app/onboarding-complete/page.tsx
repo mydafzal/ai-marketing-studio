@@ -50,7 +50,7 @@ export default async function OnboardingCompletePage() {
               You&apos;re all set up! Watch the videos below to see what Reeply can do for you, then start your free trial.
             </p>
             <p className="mt-2 sm:mt-3 text-[#ADB0B8] dark:text-[#ADB0B8] text-[14px] sm:text-[16px] leading-[20px] sm:leading-[24px] max-w-2xl mx-auto px-2">
-              Start your 7-day free trial today. You can cancel anytime during the trial with no charges. After your trial, the subscription can be cancelled on a monthly basis.
+              You can cancel anytime during the trial with no charges. After your trial, the subscription can be cancelled on a monthly basis.
             </p>
             
             <Link href="/subscription" className="mt-6 sm:mt-8 inline-block bg-[#4BF29C] dark:bg-[#4BF29C] text-[#0A0C14] px-5 sm:px-8 py-2.5 sm:py-3 rounded-lg font-medium hover:bg-[#3AD88C] transition-colors text-base sm:text-lg">
