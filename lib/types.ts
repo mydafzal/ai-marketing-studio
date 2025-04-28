@@ -42,6 +42,7 @@ export interface User extends Record<string, any> {
   email: string;
   password: string;
   salt: string;
+  created_at: string; // UTC timestamp in ISO format
   defaultExtraDetails?: string;
   fbAccountId?: string;
   fbMarketingApiKey?: string;

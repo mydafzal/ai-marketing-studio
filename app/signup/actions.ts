@@ -24,7 +24,8 @@ export async function createUser(
       id: crypto.randomUUID(),
       email,
       password: hashedPassword,
-      salt
+      salt,
+      created_at: new Date().toISOString() // Adding UTC timestamp
     }
 
     await kv.hmset(`user:${email}`, user)
