@@ -69,9 +69,10 @@ export function MonthlyPricing({ currentPlanTag }: MonthlyPricingProps) {
                 )}
               </div>
             </div>
-            <h3 className="ml-2 mb-4 font-bold text-[#4BF29C] dark:text-[#4BF29C] text-[18px]">
+            <h3 className="ml-2 mb-1 font-bold text-[#4BF29C] dark:text-[#4BF29C] text-[18px]">
               AI Marketer Suite
             </h3>
+            <p className="ml-2 mb-4 font-bold text-white text-[16px]">39.95 EUR per month</p>
             <div className="flex flex-col">
             </div>
             <hr className="my-4 border-[#2A2E3A] dark:border-[#2A2E3A]" />

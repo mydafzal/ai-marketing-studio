@@ -607,7 +607,13 @@ function Onboarding({
                     // Keep the loading state active during the page reload
                     // The loading overlay will remain visible until the page refreshes
                     setTimeout(() => {
-                        window.location.reload();
+                        // Only redirect to onboarding-complete if user is not subscribed
+                        if (userDetails?.sub_status !== 'active' && userDetails?.sub_status !== 'trialing') {
+                            window.location.href = '/onboarding-complete';
+                        } else {
+                            // If user is already subscribed, redirect to main app
+                            window.location.href = '/';
+                        }
                     }, 2000);
                 } else {
                     setError(resp.message);

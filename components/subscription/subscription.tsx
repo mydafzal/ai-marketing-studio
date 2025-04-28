@@ -91,6 +91,9 @@ export function Subscription({
               <h1 className="text-[40px] font-bold text-white dark:text-white">
                 Start <span className="text-[#4BF29C] dark:text-[#4BF29C]">Free</span>. Power Your Marketing with AI.
               </h1>
+              <p className="mt-3 max-w-2xl mx-auto text-[#ADB0B8] dark:text-[#ADB0B8] text-lg">
+                Start your 7-day free trial today. You can cancel anytime during the trial with no charges. After your trial, the subscription can be cancelled on a monthly basis.
+              </p>
               {checkoutCanceled && (
                 <div className="mt-4 p-3 bg-[#1A1D29] rounded-lg border border-[#2A2E3A] text-white">
                   Your checkout was canceled. You can try again when you&apos;re ready.
@@ -115,7 +118,7 @@ export function Subscription({
             </div>
           ) : (
             <>
-              {/* Removed pricing tabs */}
+              {/* Only show pricing */}
               <MonthlyPricing currentPlanTag={getCurrentPlanTag(user)} />
             </>
           )}
