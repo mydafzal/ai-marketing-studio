@@ -52,6 +52,44 @@ export default async function OnboardingCompletePage() {
             <p className="mt-2 sm:mt-3 text-[#ADB0B8] dark:text-[#ADB0B8] text-[14px] sm:text-[16px] leading-[20px] sm:leading-[24px] max-w-2xl mx-auto px-2">
               You can cancel anytime during the trial with no charges. After your trial, the subscription can be cancelled on a monthly basis.
             </p>
+
+            {/* Customer Review Images */}
+            <div className="mt-6 flex justify-center">
+              <a href="#testimonials" className="block relative">
+                <div className="flex items-center justify-center">
+                  {/* Overlapping Images */}
+                  <div className="flex -space-x-4">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 border-[#4BF29C] bg-[#1A1D29] overflow-hidden relative z-30">
+                      <img src="/Christian.png" alt="Christian Schmitt" className="w-full h-full object-cover" />
+                    </div>
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 border-[#4BF29C] bg-[#1A1D29] overflow-hidden relative z-20">
+                      <img src="/lin.png" alt="Lin Loke" className="w-full h-full object-cover" />
+                    </div>
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 border-[#4BF29C] bg-[#1A1D29] overflow-hidden relative z-10">
+                      <img src="/yip.png" alt="Yip ThyDiep Ta" className="w-full h-full object-cover" />
+                    </div>
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 border-[#4BF29C] bg-[#1A1D29] overflow-hidden relative z-0">
+                      <img src="/steffen.png" alt="Steffen Pfannebecker" className="w-full h-full object-cover" />
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Stars Rating */}
+                <div className="flex justify-center mt-2">
+                  <div className="flex">
+                    {[1, 2, 3, 4, 5].map(star => (
+                      <svg key={star} className="w-4 h-4 sm:w-5 sm:h-5 text-[#4BF29C]" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                      </svg>
+                    ))}
+                  </div>
+                </div>
+                
+                <p className="text-xs sm:text-sm text-[#ADB0B8] text-center mt-1 hover:text-[#4BF29C] transition-colors">
+                  Read customer success stories
+                </p>
+              </a>
+            </div>
             
             <Link href="/subscription" className="mt-6 sm:mt-8 inline-block bg-[#4BF29C] dark:bg-[#4BF29C] text-[#0A0C14] px-5 sm:px-8 py-2.5 sm:py-3 rounded-lg font-medium hover:bg-[#3AD88C] transition-colors text-base sm:text-lg">
               Start Your Free 7-Day Trial
@@ -141,7 +179,97 @@ export default async function OnboardingCompletePage() {
             </div>
           </div>
           
-          <div className="text-center mt-6 sm:mt-10 mb-8 sm:mb-0">
+          {/* Testimonials Section */}
+          <div id="testimonials" className="mt-16 mb-12 scroll-mt-6">
+            <h2 className="text-2xl sm:text-3xl font-bold text-white text-center mb-8">Customer Success Stories</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Christian's Review */}
+              <div className="bg-[#1A1D29] rounded-lg border border-[#2A2E3A] p-5 sm:p-6">
+                <div className="flex">
+                  {[1, 2, 3, 4, 5].map(star => (
+                    <svg key={star} className="w-4 h-4 text-[#4BF29C]" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                    </svg>
+                  ))}
+                </div>
+                <p className="text-white italic text-sm sm:text-base my-4">
+                  &ldquo;We now generate 80% of our leads through campaigns managed with Reeply AI. Thanks to the consistently excellent support, we look forward to planning and executing more projects with Max and Reeply AI in the future.&rdquo;
+                </p>
+                <div className="flex items-center gap-3">
+                  <img src="/Christian.png" alt="Christian Schmitt" className="w-10 h-10 rounded-full object-cover border-2 border-[#4BF29C]" />
+                  <div>
+                    <div className="text-white text-sm sm:text-base font-medium">Christian Schmitt</div>
+                    <div className="text-[#ADB0B8] text-xs sm:text-sm">Business owner at Boldbrands</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Lin's Review */}
+              <div className="bg-[#1A1D29] rounded-lg border border-[#2A2E3A] p-5 sm:p-6">
+                <div className="flex">
+                  {[1, 2, 3, 4, 5].map(star => (
+                    <svg key={star} className="w-4 h-4 text-[#4BF29C]" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                    </svg>
+                  ))}
+                </div>
+                <p className="text-white italic text-sm sm:text-base my-4">
+                  &ldquo;I loved working with the Reeply team - dedicated, patient, professional. They helped me to launch my very first lead generation, awareness, and conversion ads. It was easy to see all my campaign results in one handy interface. I managed to gain half a million views on one of my videos in just a few days.&rdquo;
+                </p>
+                <div className="flex items-center gap-3">
+                  <img src="/lin.png" alt="Lin Loke" className="w-10 h-10 rounded-full object-cover border-2 border-[#4BF29C]" />
+                  <div>
+                    <div className="text-white text-sm sm:text-base font-medium">Lin Loke</div>
+                    <div className="text-[#ADB0B8] text-xs sm:text-sm">Founder of Nuwa Wellness</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Yip's Review */}
+              <div className="bg-[#1A1D29] rounded-lg border border-[#2A2E3A] p-5 sm:p-6">
+                <div className="flex">
+                  {[1, 2, 3, 4, 5].map(star => (
+                    <svg key={star} className="w-4 h-4 text-[#4BF29C]" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                    </svg>
+                  ))}
+                </div>
+                <p className="text-white italic text-sm sm:text-base my-4">
+                  &ldquo;Our campaigns consistently deliver a stream of leads since using Reeply AI. The platform is intuitive, and the team at Reeply has been very supportive throughout. Highly recommended for any business looking to scale their marketing efforts without the usual overhead.&rdquo;
+                </p>
+                <div className="flex items-center gap-3">
+                  <img src="/yip.png" alt="Yip ThyDiep Ta" className="w-10 h-10 rounded-full object-cover border-2 border-[#4BF29C]" />
+                  <div>
+                    <div className="text-white text-sm sm:text-base font-medium">Yip ThyDiep Ta</div>
+                    <div className="text-[#ADB0B8] text-xs sm:text-sm">CEO at J3dAI House of Collaboration Davos</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Steffen's Review */}
+              <div className="bg-[#1A1D29] rounded-lg border border-[#2A2E3A] p-5 sm:p-6">
+                <div className="flex">
+                  {[1, 2, 3, 4, 5].map(star => (
+                    <svg key={star} className="w-4 h-4 text-[#4BF29C]" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                    </svg>
+                  ))}
+                </div>
+                <p className="text-white italic text-sm sm:text-base my-4">
+                  &ldquo;I hired 2 employees in 2 weeks thanks to Reeply. I was able to set up efficient recruiting campaigns in no time, generating numerous leads without wasting time on complex ad platforms.&rdquo;
+                </p>
+                <div className="flex items-center gap-3">
+                  <img src="/steffen.png" alt="Steffen Pfannebecker" className="w-10 h-10 rounded-full object-cover border-2 border-[#4BF29C]" />
+                  <div>
+                    <div className="text-white text-sm sm:text-base font-medium">Steffen Pfannebecker</div>
+                    <div className="text-[#ADB0B8] text-xs sm:text-sm">CEO at Digilytics</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="text-center mt-10 mb-8 sm:mb-0">
             <Link href="/subscription" className="inline-block bg-[#4BF29C] dark:bg-[#4BF29C] text-[#0A0C14] px-5 sm:px-8 py-2.5 sm:py-3 rounded-lg font-medium hover:bg-[#3AD88C] transition-colors text-base sm:text-lg">
               Start Your Free 7-Day Trial Now
             </Link>
