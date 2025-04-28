@@ -14,7 +14,17 @@ import { CampaignSettingsModal } from './CampaignSettingsModal';
 
 export function CreateCampaignForm() {
   // Media upload state
-  const { mediaItems, setMediaItems, fileInputRef, handleFileUpload, removeMediaItem, campaignSessionId } = useMediaUpload();
+  const { 
+    mediaItems, 
+    setMediaItems, 
+    fileInputRef, 
+    handleFileUpload, 
+    removeMediaItem, 
+    campaignSessionId,
+    isUploading,
+    cooldownActive,
+    cooldownTimeRemaining
+  } = useMediaUpload();
   
   // Main states
   const [link, setLink] = useState('');
@@ -750,6 +760,9 @@ export function CreateCampaignForm() {
             setAiGuidance={setAiGuidance}
             handleReviewTransition={handleReviewTransition}
             isLoading={isLoading}
+            isUploading={isUploading}
+            cooldownActive={cooldownActive}
+            cooldownTimeRemaining={cooldownTimeRemaining}
           />
         ) : (
           <ReviewScreen 

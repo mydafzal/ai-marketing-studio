@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Upload, Info, XCircle, Loader2, Plus, ChevronDown, ChevronRight, Settings } from 'lucide-react';
+import { Upload, Info, XCircle, Loader2, Plus, ChevronDown, ChevronRight, Settings, Clock } from 'lucide-react';
 import { MediaItem } from '../types';
 import { 
   Dialog, 
@@ -24,6 +24,9 @@ interface CreateTabProps {
   setAiGuidance: React.Dispatch<React.SetStateAction<string>>;
   handleReviewTransition: () => void;
   isLoading: boolean;
+  isUploading?: boolean;
+  cooldownActive?: boolean;
+  cooldownTimeRemaining?: number;
 }
 
 export function CreateTab({
@@ -39,7 +42,10 @@ export function CreateTab({
   aiGuidance,
   setAiGuidance,
   handleReviewTransition,
-  isLoading
+  isLoading,
+  isUploading = false,
+  cooldownActive = false,
+  cooldownTimeRemaining = 0
 }: CreateTabProps) {
 
   const objectives = [
@@ -71,9 +77,40 @@ export function CreateTab({
       {/* Upload area - smaller height + immediate display */}
       <div className="mb-5">
         <div
-          className="relative flex flex-wrap items-center gap-3 p-3 w-full border-2 border-dashed border-border-dark rounded-lg hover:border-primary-green transition-all duration-200 cursor-pointer h-20"
-          onClick={() => fileInputRef.current?.click()}
+          className={`relative flex flex-wrap items-center gap-3 p-3 w-full border-2 border-dashed ${
+            isUploading || cooldownActive ? 'border-amber-500' : 'border-border-dark hover:border-primary-green'
+          } rounded-lg transition-all duration-200 ${
+            isUploading || cooldownActive ? 'cursor-not-allowed' : 'cursor-pointer'
+          } h-auto min-h-20`}
+          onClick={() => {
+            if (!isUploading && !cooldownActive) {
+              fileInputRef.current?.click();
+            }
+          }}
         >
+          {/* Status bar for cooldown - no overlay for uploads to keep percentages visible */}
+          {cooldownActive && (
+            <div className="absolute inset-0 bg-dark-bg/90 rounded-lg flex items-center justify-center z-10">
+              <div className="flex flex-col items-center text-amber-500">
+                <Clock className="mb-2" size={24} />
+                <span className="text-sm font-medium">Cooldown period active</span>
+                <span className="text-xs mt-1 text-text-light-gray">
+                  Please wait {cooldownTimeRemaining} seconds before uploading again
+                </span>
+              </div>
+            </div>
+          )}
+          
+          {/* Upload in progress banner instead of overlay */}
+          {isUploading && !cooldownActive && (
+            <div className="absolute top-0 inset-x-0 bg-amber-500/20 border-b border-amber-500 p-1 rounded-t-lg text-center">
+              <div className="flex items-center justify-center text-amber-500 text-xs">
+                <Loader2 className="animate-spin mr-1" size={12} />
+                <span>Upload in progress - please wait</span>
+              </div>
+            </div>
+          )}
+
           {mediaItems.length === 0 ? (
             <div className="flex flex-col items-center text-text-light-gray mx-auto">
               <Upload className="mb-1" size={20} />
@@ -86,8 +123,14 @@ export function CreateTab({
                   key={item.id}
                   className="flex items-center space-x-2 bg-dark-bg rounded-lg p-2 border border-border-dark"
                 >
-                  {item.progress !== undefined && item.progress < 100 ? (
+                  {item.progress !== undefined && item.progress < 100 && item.progress >= 0 ? (
                     <Loader2 className="animate-spin text-primary-green" size={16} />
+                  ) : item.progress === -1 ? (
+                    <div className="w-4 h-4 rounded-full bg-red-500 flex items-center justify-center">
+                      <span className="text-xs text-white">✗</span>
+                    </div>
+                  ) : item.progress === -2 ? (
+                    <Loader2 className="animate-spin text-amber-500" size={16} />
                   ) : (
                     <div className="w-4 h-4 rounded-full bg-primary-green flex items-center justify-center">
                       <span className="text-xs text-deep-black">✓</span>
@@ -97,22 +140,30 @@ export function CreateTab({
                     {item.type.toUpperCase()} ({item.aspectRatio})
                   </span>
                   <span className="text-xs text-text-light-gray">
-                    {item.progress ?? 0}%
+                    {item.progress === -1 ? 'Failed' : 
+                     item.progress === -2 ? (item.error || 'Retrying...') : 
+                     `${item.progress ?? 0}%`}
                   </span>
                   <button
                     onClick={e => {
                       e.stopPropagation();
                       setMediaItems(prev => prev.filter(m => m.id !== item.id));
                     }}
+                    disabled={isUploading}
                   >
-                    <XCircle size={16} className="text-text-light-gray hover:text-red-500 transition-colors" />
+                    <XCircle 
+                      size={16} 
+                      className={`${isUploading ? 'text-text-light-gray/50' : 'text-text-light-gray hover:text-red-500'} transition-colors`} 
+                    />
                   </button>
                 </div>
               ))}
-              <div className="flex items-center space-x-2 bg-dark-bg rounded-lg p-2 border border-border-dark hover:border-primary-green transition-all duration-200">
-                <Plus size={16} className="text-text-light-gray" />
-                <span className="text-sm text-text-light-gray">Add more media</span>
-              </div>
+              {!isUploading && !cooldownActive && (
+                <div className="flex items-center space-x-2 bg-dark-bg rounded-lg p-2 border border-border-dark hover:border-primary-green transition-all duration-200">
+                  <Plus size={16} className="text-text-light-gray" />
+                  <span className="text-sm text-text-light-gray">Add more media</span>
+                </div>
+              )}
             </>
           )}
           <input
@@ -120,7 +171,15 @@ export function CreateTab({
             ref={fileInputRef}
             className="hidden"
             accept="image/*,video/*"
+            disabled={isUploading || cooldownActive}
           />
+        </div>
+        
+        {/* Upload instructions */}
+        <div className="mt-2 text-xs text-text-light-gray">
+          <p>• Upload one media file at a time</p>
+          <p>• Images should be below 4MB in size. We suggest videos to be below 80MB.</p>
+          <p>• Cooldown after each upload: 3s</p>
         </div>
       </div>
 
