@@ -3,7 +3,7 @@
 import { decryptToken } from '@/app/cryptoUtils'
 
 // Todo: this logic needs to be moved to the backend!
-const FACEBOOK_API_URL = 'https://graph.facebook.com/v19.0/'
+const FACEBOOK_API_URL = 'https://graph.facebook.com/v22.0/'
 
 export async function getFacebookBusinessAccounts(
   encryptedAccessToken: string
@@ -18,20 +18,8 @@ export async function getFacebookAdAccounts(
   business_acc_id: string
 ) {
   const token = await decryptToken(encryptedAccessToken)
-
-  const resp = await fetch(
-    `${FACEBOOK_API_URL}/${business_acc_id}/owned_ad_accounts?access_token=${token}&fields=id,name`,
-    {
-      method: 'GET'
-    }
-  )
-  const data = await resp.json()
-
-  if (data.error) {
-    throw Error(data.error.message)
-  }
-
-  return data.data
+  const url = `${FACEBOOK_API_URL}/${business_acc_id}/owned_ad_accounts?access_token=${token}&fields=id,name`
+  return await fetchAllPaginatedPages(url)
 }
 
 async function fetchAllPaginatedPages(initialUrl: string): Promise<any[]> {
