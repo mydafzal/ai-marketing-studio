@@ -1002,7 +1002,7 @@ export function useMediaUpload() {
     // Check if any media items have a progress between 0 and 100 (in progress)
     // or progress === -2 (retrying)
     const hasInProgressUploads = mediaItems.some(
-      item => (item.progress > 0 && item.progress < 100) || item.progress === -2
+      item => (item.progress !== undefined && ((item.progress > 0 && item.progress < 100) || item.progress === -2))
     );
     
     if (hasInProgressUploads !== isUploading) {
