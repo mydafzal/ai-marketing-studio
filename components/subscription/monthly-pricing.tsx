@@ -1,8 +1,11 @@
 'use client'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 export interface MonthlyPricingProps {
   currentPlanTag: string
+  showBackButton?: boolean
 }
 
 const monthlyBasicPlanLookupKey =
@@ -47,11 +50,31 @@ const DiamondIcon = () => (
   </svg>
 )
 
-export function MonthlyPricing({ currentPlanTag }: MonthlyPricingProps) {
+// Back Arrow Icon
+const BackArrowIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+    <path d="M19 12H5"></path>
+    <path d="M12 19l-7-7 7-7"></path>
+  </svg>
+)
+
+export function MonthlyPricing({ currentPlanTag, showBackButton = true }: MonthlyPricingProps) {
+  const router = useRouter()
   return (
     <div className="bg-[#0F1117] dark:bg-[#0F1117] py-12">
       <div className="max-w-7xl mx-auto px-4">
-        {/* Header - removed the annual discount message */}
+        {/* Back Button */}
+        {showBackButton && (
+          <div className="mb-6 flex justify-center">
+            <Link 
+              href="/onboarding-complete" 
+              className="flex items-center justify-center text-[#ADB0B8] hover:text-[#4BF29C] transition-colors"
+            >
+              <BackArrowIcon />
+              <span>Back to Video Guides</span>
+            </Link>
+          </div>
+        )}
 
         {/* Single Card */}
         <div className="flex justify-center mt-6">
@@ -69,9 +92,10 @@ export function MonthlyPricing({ currentPlanTag }: MonthlyPricingProps) {
                 )}
               </div>
             </div>
-            <h3 className="ml-2 mb-4 font-bold text-[#4BF29C] dark:text-[#4BF29C] text-[18px]">
+            <h3 className="ml-2 mb-1 font-bold text-[#4BF29C] dark:text-[#4BF29C] text-[18px]">
               AI Marketer Suite
             </h3>
+            <p className="ml-2 mb-4 font-bold text-white text-[16px]">39.95 EUR per month</p>
             <div className="flex flex-col">
             </div>
             <hr className="my-4 border-[#2A2E3A] dark:border-[#2A2E3A]" />
