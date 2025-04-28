@@ -13,8 +13,9 @@ import {
   DialogFooter
 } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Gender, MasterFlowResponse, AdPlacements, LocationsFullDetails } from '../types';
+import { Gender, MasterFlowResponse, AdPlacements, LocationsFullDetails, AudienceFilters as OldAudienceFilters, AudienceFilterData } from '../types'; // Renamed imported AudienceFilters
 import AudienceLocationSelector from '@/components/audience-locations-selector';
+import AudienceTargetingSelector, { AudienceTargeting, TargetingFilters, FilterDetail } from './AudienceTargetingSelector'; // Import new types
 
 // Extended interface with union from both LibCreative and our additional fields
 interface ExtendedCreative extends Partial<LibCreative> {
@@ -86,8 +87,49 @@ export function AdSetupModal({
     masterFlowData?.audiences?.audiences?.[1]?.location_full_details || []
   );
 
+  // Helper function to map initial data structure to the new structure
+  const mapInitialFilters = (initialData?: { type: string; filters?: OldAudienceFilters }): AudienceTargeting | null => {
+    if (!initialData?.filters) {
+      return { type: "custom", filters: {} }; // Return empty structure if no initial filters
+    }
+
+    const mappedFilters: TargetingFilters = {};
+
+    const mapCategory = (
+      categoryData: Record<string, AudienceFilterData> | undefined,
+      type: 'interest' | 'demographics' | 'behaviors'
+    ): { [key: string]: FilterDetail } | undefined => {
+      if (!categoryData) return undefined;
+      const mappedCategory: { [key: string]: FilterDetail } = {};
+      Object.entries(categoryData).forEach(([name, data]) => {
+        // Use name as key, generate ID, set type. Path is not available in initial data.
+        mappedCategory[name] = {
+          id: `${type}:${name}`, // Generate a simple ID based on type and name
+          name: name,
+          type: type,
+          // path: undefined // Path is not available in the initial structure
+        };
+      });
+      return mappedCategory;
+    };
+
+    mappedFilters.interest_filters = mapCategory(initialData.filters.interest_filters, 'interest');
+    mappedFilters.demographic_filters = mapCategory(initialData.filters.demographic_filters, 'demographics');
+    mappedFilters.behaviour_filters = mapCategory(initialData.filters.behaviour_filters, 'behaviors');
+
+    return { type: "custom", filters: mappedFilters };
+  };
+
+
+  // State using the new AudienceTargeting type from AudienceTargetingSelector
+  const [targetingFilters, setTargetingFilters] = useState<AudienceTargeting | null>(
+    // Initialize by mapping the data from masterFlowData
+    mapInitialFilters(masterFlowData?.audiences.audiences?.[0]?.targeting_filters)
+  );
+
+
   useEffect(()=>{console.log("\n\n\n\n\nUdpated",audienceOneLocations)},[audienceOneLocations])
-  
+
   // Function to save audience locations to the API
   const saveAudienceLocations = async () => {
     setIsSubmitting(true);
@@ -1632,7 +1674,12 @@ export function AdSetupModal({
                       </div>
                     </div>
 
-                    <div className="bg-dark-bg rounded-lg p-4 border border-border-dark">
+                    <AudienceTargetingSelector 
+                      targetingFilters={targetingFilters} 
+                      setTargetingFilters={setTargetingFilters}
+                    />
+
+                    {/* <div className="bg-dark-bg rounded-lg p-4 border border-border-dark">
                       <div className="flex items-start mb-3">
                         <Target className="size-5 text-primary-green mr-3 mt-1" />
                         <div className="w-full">
@@ -1695,7 +1742,7 @@ export function AdSetupModal({
                           </div>
                         </div>
                       </div>
-                    </div>
+                    </div> */}
 
                     {masterFlowData?.age_gender_decision_reason && (
                         <div className="bg-dark-bg/80 rounded-lg p-4 border border-primary-green/30">
