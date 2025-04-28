@@ -47,7 +47,7 @@ export default async function OnboardingCompletePage() {
               Ready to <span className="text-[#4BF29C] dark:text-[#4BF29C]">Transform</span> Your Marketing?
             </h1>
             <p className="mt-3 sm:mt-4 text-[#ADB0B8] dark:text-[#ADB0B8] text-[16px] sm:text-[18px] leading-[22px] sm:leading-[26px] max-w-3xl mx-auto px-2">
-              You're all set up! Watch the videos below to see what Reeply can do for you, then start your free trial.
+              You&apos;re all set up! Watch the videos below to see what Reeply can do for you, then start your free trial.
             </p>
             <p className="mt-2 sm:mt-3 text-[#ADB0B8] dark:text-[#ADB0B8] text-[14px] sm:text-[16px] leading-[20px] sm:leading-[24px] max-w-2xl mx-auto px-2">
               Start your 7-day free trial today. You can cancel anytime during the trial with no charges. After your trial, the subscription can be cancelled on a monthly basis.
@@ -100,7 +100,7 @@ export default async function OnboardingCompletePage() {
               
               <div className="p-4 sm:p-6">
                 <h3 className="font-medium text-white text-base sm:text-lg mb-1.5 sm:mb-2">Can I cancel anytime?</h3>
-                <p className="text-[#ADB0B8] text-sm sm:text-base">Yes. You're fully in control. You can cancel whenever you want—no strings attached.</p>
+                <p className="text-[#ADB0B8] text-sm sm:text-base">Yes. You&apos;re fully in control. You can cancel whenever you want—no strings attached.</p>
               </div>
               
               <div className="p-4 sm:p-6">
@@ -116,7 +116,7 @@ export default async function OnboardingCompletePage() {
                     
                     <li className="flex items-start">
                       <span className="text-[#4BF29C] mr-2">2.</span>
-                      <span>Book a 15-minute demo training session by asking our AI to "Get support" or "Open the support interface".</span>
+                      <span>Book a 15-minute demo training session by asking our AI to &quot;Get support&quot; or &quot;Open the support interface&quot;.</span>
                     </li>
                   </ol>
                   
@@ -131,7 +131,7 @@ export default async function OnboardingCompletePage() {
               
               <div className="p-4 sm:p-6">
                 <h3 className="font-medium text-white text-base sm:text-lg mb-1.5 sm:mb-2">How fast can I launch my first campaign?</h3>
-                <p className="text-[#ADB0B8] text-sm sm:text-base">In under 5 minutes. Reeply is built to be fast and simple, even if you've never run ads before.</p>
+                <p className="text-[#ADB0B8] text-sm sm:text-base">In under 5 minutes. Reeply is built to be fast and simple, even if you&apos;ve never run ads before.</p>
               </div>
               
               <div className="p-4 sm:p-6">
