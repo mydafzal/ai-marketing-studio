@@ -476,6 +476,7 @@ const NavbarDropdowns = ({
       
       {/* Refresh & Save Changes buttons */}
       <div className="flex space-x-2">
+        {/*
         <button
           onClick={() => {
             setBusinessAccLoading(true);
@@ -485,6 +486,7 @@ const NavbarDropdowns = ({
         >
           Refresh Assets
         </button>
+        */}
         <button
           onClick={refreshPage}
           className="bg-primary-green hover:bg-primary-green/90 text-black text-xs font-medium py-1 px-3 rounded-full transition-colors"
