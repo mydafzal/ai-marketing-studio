@@ -169,6 +169,30 @@ export function useMediaUpload() {
       const file = e.target.files[0];
       console.log('📄 File selected:', file.name, 'Type:', file.type, 'Size:', file.size);
 
+      // File size validation
+      const fileSizeInMB = file.size / (1024 * 1024);
+      if (file.type.includes('image') && fileSizeInMB > 4) {
+        console.error('❌ Image file too large:', fileSizeInMB.toFixed(2), 'MB');
+        alert('This image should be less than 4MB in size. Please compress and try again.');
+        
+        // Clear the file input so they can try again
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+        return;
+      }
+      
+      if (file.type.includes('video') && fileSizeInMB > 300) {
+        console.error('❌ Video file too large:', fileSizeInMB.toFixed(2), 'MB');
+        alert('The video should be less than 300MB in size. Please compress and try again.');
+        
+        // Clear the file input so they can try again
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+        return;
+      }
+
       // Set uploading state to true
       setIsUploading(true);
 
