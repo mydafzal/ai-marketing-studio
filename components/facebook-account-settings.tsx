@@ -77,6 +77,8 @@ const FacebookAccountSettings = ({
             setError("Please select a Facebook Page before proceeding");
           } else {
             setOpen(false);
+            // Force page refresh to ensure Facebook data is reloaded
+            window.location.reload();
           }
         } else {
           setError("Please complete Ad Account selection before proceeding");
@@ -86,6 +88,8 @@ const FacebookAccountSettings = ({
       }
     } else {
       setOpen(false);
+      // Force page refresh to ensure Facebook data is reloaded
+      window.location.reload();
     }
   }
 
@@ -285,7 +289,13 @@ const FacebookAccountSettings = ({
   }
 
   return (
-    <Dialog.Root modal={true} open={open} onOpenChange={() => null}>
+    <Dialog.Root modal={true} open={open} onOpenChange={(isOpen) => {
+      if (!isOpen) {
+        // When dialog is closing through Escape key or clicking outside,
+        // ensure we trigger our custom close handler for proper refresh
+        handleClose();
+      }
+    }}>
       <Dialog.Trigger asChild>
         <Button 
           variant="ghost" 
@@ -449,7 +459,7 @@ const FacebookAccountSettings = ({
             </div>
           </div>
 
-          <Dialog.Close asChild>
+          {/* Using regular button instead of Dialog.Close to ensure our handler runs */}
             <button
               onClick={handleClose}
               className={cn(
@@ -462,7 +472,6 @@ const FacebookAccountSettings = ({
               <Cross2Icon className="size-4" />
               <span className="sr-only">Close</span>
             </button>
-          </Dialog.Close>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

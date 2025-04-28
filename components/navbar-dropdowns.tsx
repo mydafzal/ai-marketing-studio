@@ -314,38 +314,78 @@ const NavbarDropdowns = ({
   }
 
   // Fetch user's API token info to get saved account information first
+  // Mount/initialization effect - runs once when component mounts
   useEffect(() => {
-    const fetchUserTokenInfo = async () => {
+    console.log('NavbarDropdowns: Component mounted');
+    const fetchInitialData = async () => {
       try {
-        const response = await fetch('/api/kv/fetch-api-token');
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success && data.account) {
-            // Store Instagram account ID in userDetails for later use
-            if (data.account.instagramAccountId) {
-              userDetails.instagramAccountId = data.account.instagramAccountId;
-            }
-            
-            // Make sure we have the latest values from KV store
-            if (data.account.fbPageId) {
-              userDetails.fbPageId = data.account.fbPageId;
-            }
-            
-            // After getting the latest data, trigger the business accounts fetch
-            if (userDetails?.fbMarketingApiKey) {
-              getBusinessAPICall();
-            }
-          }
+        // Track loading state
+        setBusinessAccLoading(true);
+        
+        // Run both data fetching operations in parallel
+        const promises = [];
+        
+        // 1. Start API token info fetch
+        if (userDetails?.email) {
+          promises.push(
+            fetch('/api/kv/fetch-api-token')
+              .then(response => response.ok ? response.json() : null)
+              .then(data => {
+                if (data?.success && data?.account) {
+                  // Update local state with the latest values from KV store
+                  if (data.account.instagramAccountId) {
+                    userDetails.instagramAccountId = data.account.instagramAccountId;
+                  }
+                  if (data.account.fbPageId) {
+                    userDetails.fbPageId = data.account.fbPageId;
+                  }
+                  if (data.account.fbBusinessAccId) {
+                    userDetails.fbBusinessAccId = data.account.fbBusinessAccId;
+                  }
+                  return data.account;
+                }
+                return null;
+              })
+          );
         }
+        
+        // 2. Start business accounts fetch in parallel
+        if (userDetails?.fbMarketingApiKey) {
+          promises.push(getBusinessAPICall());
+        }
+        
+        // Wait for all promises to resolve
+        await Promise.all(promises);
       } catch (error) {
-        console.error('Error fetching API token info:', error);
+        console.error('Error initializing navbar data:', error);
+      } finally {
+        setBusinessAccLoading(false);
       }
     };
 
-    if (userDetails?.email) {
-      fetchUserTokenInfo();
-    } else if (userDetails?.fbMarketingApiKey) {
-      // If we don't need to fetch user token info, still load business accounts
+    // Run the initialization immediately
+    fetchInitialData();
+    
+    // Add an event listener for page visibility to refresh data when tab becomes visible
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('Page became visible, refreshing navbar data');
+        fetchInitialData();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Cleanup
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []); // Empty dependency array means this runs once on mount
+  
+  // Effect that runs when userDetails change
+  useEffect(() => {
+    console.log('NavbarDropdowns: userDetails changed');
+    if (userDetails?.fbMarketingApiKey) {
       getBusinessAPICall();
     }
   }, [userDetails?.email, userDetails?.fbMarketingApiKey]);
@@ -434,13 +474,26 @@ const NavbarDropdowns = ({
         />
       </div>
       
-      {/* Save Changes button - placed adjacent to the last dropdown */}
-      <button
-        onClick={refreshPage}
-        className="bg-primary-green hover:bg-primary-green/90 text-black text-xs font-medium py-1 px-3 rounded-full transition-colors"
-      >
-        Save Changes
-      </button>
+      {/* Refresh & Save Changes buttons */}
+      <div className="flex space-x-2">
+        {/*
+        <button
+          onClick={() => {
+            setBusinessAccLoading(true);
+            getBusinessAPICall().finally(() => setBusinessAccLoading(false));
+          }}
+          className="bg-zinc-700 hover:bg-zinc-600 text-white text-xs font-medium py-1 px-3 rounded-full transition-colors"
+        >
+          Refresh Assets
+        </button>
+        */}
+        <button
+          onClick={refreshPage}
+          className="bg-primary-green hover:bg-primary-green/90 text-black text-xs font-medium py-1 px-3 rounded-full transition-colors"
+        >
+          Save Changes
+        </button>
+      </div>
     </div>
   )
 }
