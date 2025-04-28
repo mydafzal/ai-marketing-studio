@@ -974,31 +974,12 @@ export function useMediaUpload() {
     setMediaItems(prev => prev.filter(m => m.id !== id));
   };
 
-  // Function to start the cooldown timer with progressive duration
+  // Function to start the cooldown timer with fixed 3 second duration
   const startCooldown = () => {
-    // Get the current number of completed uploads including the one that just finished
-    // Add 1 to count since this function is called right as an upload completes but before the state updates
-    const uploadCount = mediaItems.filter(item => item.progress === 100).length + 1;
+    // Always use a fixed 3 second cooldown regardless of upload count
+    const cooldownTime = 3;
     
-    console.log(`🔢 Upload count for cooldown calculation: ${uploadCount}`);
-    
-    // Progressive cooldown duration:
-    // 1st upload completed: 5 seconds
-    // 2nd upload completed: 10 seconds
-    // 3rd+ upload completed: 15 seconds
-    let cooldownTime = 15; // default max cooldown
-    
-    if (uploadCount === 1) {
-      cooldownTime = 5;
-      console.log('✅ First upload - setting 5 second cooldown');
-    } else if (uploadCount === 2) {
-      cooldownTime = 10;
-      console.log('✅ Second upload - setting 10 second cooldown');
-    } else {
-      console.log(`✅ Upload #${uploadCount} - setting 15 second cooldown`);
-    }
-    
-    console.log(`⏱️ Starting ${cooldownTime} second cooldown timer after upload #${uploadCount}`);
+    console.log(`⏱️ Starting ${cooldownTime} second cooldown timer after successful upload`);
     setCooldownActive(true);
     setCooldownTimeRemaining(cooldownTime);
     
