@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { X, Search, Plus, Target, Filter, Users, Loader2, AlertCircle } from 'lucide-react';
-import type { LocalSearchResult } from '@/lib/data/targetingFiltersData'; // Keep type import
 
 // Define the structure for the fetched filter data (matching proxy route)
 interface TargetingFiltersDataStructure {
@@ -40,13 +39,21 @@ export interface AudienceTargeting {
   filters: TargetingFilters;
 }
 
+// Define the LocalSearchResult type directly here
+type LocalSearchResult = {
+  id: string;
+  name: string;
+  type: 'interest' | 'demographics' | 'behaviors';
+  path: string[];
+};
+
 // Props for the component
 interface AudienceTargetingSelectorProps {
   targetingFilters: AudienceTargeting | null;
   setTargetingFilters: React.Dispatch<React.SetStateAction<AudienceTargeting | null>>;
 }
 
-// Type for search results - now using the imported type
+// Type for search results - now using the locally defined type
 type SearchResult = LocalSearchResult;
 
 // --- Component Implementation ---
@@ -126,7 +133,7 @@ export default function AudienceTargetingSelector({
     const maxResults = 20;
 
     // Use the fetched data from state, return if not loaded or error
-    const dataToSearch = allFiltersData;
+    const dataToSearch = allFiltersData; // Use state variable
     if (!dataToSearch || filtersError) {
         console.log("Search skipped: filter data not loaded or error occurred.");
         if (type === 'interest') setInterestResults([]);
@@ -145,7 +152,7 @@ export default function AudienceTargetingSelector({
 
     if (type === 'interest' && dataToSearch.interest_filters) {
       for (const category in dataToSearch.interest_filters) {
-        dataToSearch.interest_filters[category]?.forEach(item => { // Add null check
+        dataToSearch.interest_filters[category]?.forEach((item: string) => { // Add type for item
           if (item.toLowerCase().includes(searchTermLower) && results.length < maxResults) {
             results.push({
               id: `interest:${category}:${item}`,
@@ -161,7 +168,7 @@ export default function AudienceTargetingSelector({
       const demoFilters = dataToSearch.demographic_filters;
       if (demoFilters.life_events) {
         for (const category in demoFilters.life_events) {
-          demoFilters.life_events[category]?.forEach(item => { // Add null check
+          demoFilters.life_events[category]?.forEach((item: string) => { // Add type for item
             if (item.toLowerCase().includes(searchTermLower) && results.length < maxResults) {
               results.push({ id: `demographics:life_events:${category}:${item}`, name: item, type: 'demographics', path: ['Demographics', 'Life Events', category] });
             }
@@ -169,21 +176,21 @@ export default function AudienceTargetingSelector({
         }
       }
       if (demoFilters.family_statuses) {
-        demoFilters.family_statuses?.forEach(item => { // Add null check
+        demoFilters.family_statuses?.forEach((item: string) => { // Add type for item
           if (item.toLowerCase().includes(searchTermLower) && results.length < maxResults) {
             results.push({ id: `demographics:family_statuses:${item}`, name: item, type: 'demographics', path: ['Demographics', 'Family Statuses'] });
           }
         });
       }
       if (demoFilters.industries) {
-        demoFilters.industries?.forEach(item => { // Add null check
+        demoFilters.industries?.forEach((item: string) => { // Add type for item
           if (item.toLowerCase().includes(searchTermLower) && results.length < maxResults) {
             results.push({ id: `demographics:industries:${item}`, name: item, type: 'demographics', path: ['Demographics', 'Industries'] });
           }
         });
       }
        if (demoFilters.income) {
-         demoFilters.income?.forEach(item => { // Add null check
+         demoFilters.income?.forEach((item: string) => { // Add type for item
            if (item.toLowerCase().includes(searchTermLower) && results.length < maxResults) {
              results.push({ id: `demographics:income:${item}`, name: item, type: 'demographics', path: ['Demographics', 'Income'] });
            }
@@ -192,7 +199,7 @@ export default function AudienceTargetingSelector({
       setDemographicResults(results);
     } else if (type === 'behaviors' && dataToSearch.behaviour_filters) {
       for (const category in dataToSearch.behaviour_filters) {
-        dataToSearch.behaviour_filters[category]?.forEach(item => { // Add null check
+        dataToSearch.behaviour_filters[category]?.forEach((item: string) => { // Add type for item
           if (item.toLowerCase().includes(searchTermLower) && results.length < maxResults) {
             results.push({
               id: `behaviors:${category}:${item}`,
@@ -249,11 +256,11 @@ export default function AudienceTargetingSelector({
     type: 'interest' | 'demographics' | 'behaviors'
   ) => {
     // Show loading/error state for the list area as well
-    if (isLoadingFilters) return <p className="text-sm text-text-light-gray italic">Loading filters...</p>;
-    if (filtersError && (!filters || Object.keys(filters).length === 0)) return <p className="text-sm text-coral italic">Could not load filters.</p>; // Show error if list is empty due to error
+    if (isLoadingFilters) return <p className="text-sm text-text-light-gray italic mt-2">Loading filters...</p>; // Added mt-2
+    if (filtersError && (!filters || Object.keys(filters).length === 0)) return <p className="text-sm text-coral italic mt-2">Could not load filters.</p>; // Added mt-2
 
     if (!filters || Object.keys(filters).length === 0) {
-      return <p className="text-sm text-text-light-gray italic">No {type} filters selected.</p>; // Changed from gray-500
+      return <p className="text-sm text-text-light-gray italic mt-2">No {type} filters selected.</p>; // Added mt-2
     }
     return (
       <div className="flex flex-wrap gap-2 mt-2">
@@ -282,7 +289,6 @@ export default function AudienceTargetingSelector({
      searchTerm: string
    ) => {
      // Don't render if loading, error, or search term too short
-     // Keep isLoadingFilters check here to prevent dropdown during initial load
      if (isLoadingFilters || !searchTerm || searchTerm.length < 2) return null;
 
      // Only show dropdown if there are results OR if term is long enough but no results found
@@ -363,7 +369,7 @@ export default function AudienceTargetingSelector({
                searchLocalFilters(term, 'interest');
              }}
              className="pl-10 pr-4 py-2 w-full bg-container-bg border border-border-dark rounded-lg text-text-white placeholder:text-text-light-gray focus:outline-none focus:border-primary-green focus:ring-1 focus:ring-primary-green"
-             disabled={!allFiltersData} // Disable input if data isn't loaded (redundant due to main loading check, but safe)
+             disabled={!allFiltersData} // Disable input if data isn't loaded
            />
             <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
               <Search className="size-4 text-text-light-gray" />
