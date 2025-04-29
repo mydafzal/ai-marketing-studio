@@ -116,11 +116,6 @@ const STEPS = [
         fields: ['locations'] 
     },
     { 
-        id: 'facebook', 
-        title: 'Connect Facebook', 
-        fields: ['facebook_connect'] 
-    },
-    { 
         id: 'confirm', 
         title: 'Confirm & Save', 
         fields: [] 

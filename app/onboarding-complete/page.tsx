@@ -102,7 +102,7 @@ export default async function OnboardingCompletePage() {
             </div>
             
             <div className="flex justify-center items-center">
-              <Link href="/" className="mt-6 sm:mt-8 inline-block bg-[#4BF29C] dark:bg-[#4BF29C] text-[#0A0C14] px-8 sm:px-10 py-3 sm:py-4 rounded-lg font-medium hover:bg-[#3AD88C] transition-colors text-lg sm:text-xl">
+              <Link href="/facebook-connect" className="mt-6 sm:mt-8 inline-block bg-[#4BF29C] dark:bg-[#4BF29C] text-[#0A0C14] px-8 sm:px-10 py-3 sm:py-4 rounded-lg font-medium hover:bg-[#3AD88C] transition-colors text-lg sm:text-xl">
                 Let&apos;s start!
               </Link>
             </div>
@@ -286,7 +286,7 @@ export default async function OnboardingCompletePage() {
           </div>
           
           <div className="text-center mt-10 mb-8 sm:mb-0 flex justify-center items-center">
-            <Link href="/" className="inline-block bg-[#4BF29C] dark:bg-[#4BF29C] text-[#0A0C14] px-8 sm:px-10 py-3 sm:py-4 rounded-lg font-medium hover:bg-[#3AD88C] transition-colors text-lg sm:text-xl">
+            <Link href="/facebook-connect" className="inline-block bg-[#4BF29C] dark:bg-[#4BF29C] text-[#0A0C14] px-8 sm:px-10 py-3 sm:py-4 rounded-lg font-medium hover:bg-[#3AD88C] transition-colors text-lg sm:text-xl">
               Let&apos;s start!
             </Link>
           </div>
