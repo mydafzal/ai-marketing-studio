@@ -200,7 +200,7 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
       // Save prediction ID for polling - store in a local const to capture it
       const predId = startResult.predictionId
       console.log(`[CLIENT_GEN] Setting prediction ID for polling: ${predId}`)
-      setPredictionId(predId)
+      setPredictionId(predId || null)
       
       // Show initial toast
       showToast(
@@ -223,7 +223,7 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
           console.log(`[CLIENT_POLL] Polling for prediction: ${predId}`)
           setPollCount(count => count + 1)
           
-          const result = await checkVideoStatus(predId)
+          const result = await checkVideoStatus(predId!)
           console.log(`[CLIENT_POLL] Status for ${predId}: ${result.status}`)
           
           // Handle error case
