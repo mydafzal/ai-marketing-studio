@@ -118,7 +118,7 @@ const UserExporter: React.FC = () => {
   return (
     <div className="p-6">
       <p className="text-gray-600 mb-4">
-        Export users created in the last month who do not have an active or trialing subscription.
+        Export users created in the last month who do not have an active or trialing subscription. Excludes @reeply.ai and @reeply.net test accounts.
       </p>
       
       <div className="flex flex-col space-y-4">
