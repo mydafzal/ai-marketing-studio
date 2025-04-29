@@ -103,7 +103,7 @@ export default async function FacebookConnectPage() {
             
             <div className="border-t border-[#2A2E3A] pt-6">
               <p className="text-[#ADB0B8] text-sm mb-6">
-                By connecting, you'll grant Reeply AI access to:
+                By connecting, you&apos;ll grant Reeply AI access to:
               </p>
               <ul className="list-disc list-inside text-[#ADB0B8] text-sm space-y-1 mb-6">
                 <li>Receive your email address</li>
