@@ -29,6 +29,12 @@ export async function GET() {
                 const user = await kv.hgetall<User>(key)
                 
                 if (user && user.email) {
+                    // Skip test accounts (@reeply.ai and @reeply.net)
+                    if (user.email.includes('@reeply.ai') || user.email.includes('@reeply.net')) {
+                        console.log(`Skipping test account: ${user.email}`)
+                        continue
+                    }
+                    
                     // Skip users that don't have created_at field
                     if (!user.created_at) {
                         console.log(`User ${user.email} has no created_at field, skipping`)

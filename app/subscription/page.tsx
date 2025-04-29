@@ -59,8 +59,10 @@ export default async function SubscriptionPage({ searchParams }: { searchParams:
     redirect('/login')
   }
 
-  // Allow users in bypass list to see the subscription page
-  // instead of redirecting them away
+  // Redirect bypassed users back to previous page or home
+  if (subscriptionBypassList.includes(userEmail)) {
+    redirect('/')
+  }
   
   // Check for cancelled checkout and handle it
   if (searchParams.canceled === 'true') {
@@ -83,7 +85,7 @@ export default async function SubscriptionPage({ searchParams }: { searchParams:
     redirect('/login')
   }
   
-  // Remove the redirect - allow users with active/trial subscriptions to access this page
+  // Only allow users with active/trial subscriptions to access this page
 
   const invoices = await fetchInvoices(user?.sub_stripe_customer_id)
   
