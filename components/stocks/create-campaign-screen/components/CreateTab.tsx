@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Upload, Info, XCircle, Loader2, Plus, ChevronDown, ChevronRight, Settings, Clock } from 'lucide-react';
+import { Upload, Info, XCircle, Loader2, Plus, ChevronDown, ChevronRight, Settings, Clock, AlertTriangle } from 'lucide-react';
 import { MediaItem } from '../types';
 import { 
   Dialog, 
@@ -9,6 +9,7 @@ import {
   DialogTrigger,
   DialogClose
 } from '@/components/ui/dialog';
+import { Switch } from '@/components/ui/switch';
 
 interface CreateTabProps {
   mediaItems: MediaItem[];
@@ -47,6 +48,7 @@ export function CreateTab({
   cooldownActive = false,
   cooldownTimeRemaining = 0
 }: CreateTabProps) {
+  const [enforceAdvantageAudience, setEnforceAdvantageAudience] = useState(true);
 
   const objectives = [
     {
@@ -291,9 +293,56 @@ export function CreateTab({
                         />
                       </div>
                       <div className="flex flex-col">
-                        <label htmlFor={`objective-${objective.value}`} className="text-sm font-medium text-text-white">
-                          {objective.label}
-                        </label>
+                        <div className="flex items-center gap-2">
+                          <label htmlFor={`objective-${objective.value}`} className="text-sm font-medium text-text-white">
+                            {objective.label}
+                          </label>
+                          
+                          {/* Gear icon for Recruitment objective */}
+                          {objective.value === "recruitment" && (
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <button className="text-text-light-gray hover:text-primary-green transition-colors">
+                                  <Settings size={14} />
+                                </button>
+                              </DialogTrigger>
+                              <DialogContent className="bg-dark-bg border border-border-dark text-text-white max-w-md">
+                                <DialogHeader>
+                                  <DialogTitle className="text-text-white">Recruitment Campaign Settings</DialogTitle>
+                                </DialogHeader>
+                                
+                                <div className="mt-4 space-y-4">
+                                  <div className="space-y-3">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-sm font-medium text-text-white">Enforce Advantage+ audience targeting</span>
+                                      <Switch 
+                                        checked={enforceAdvantageAudience} 
+                                        onCheckedChange={setEnforceAdvantageAudience} 
+                                        className="data-[state=checked]:bg-primary-green"
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <p className="text-xs text-text-light-gray">
+                                        <strong>When to enable this enforcement:</strong> If you want to ensure that your campaign is fully compliant with regional recruitment targeting filter restrictions.
+                                      </p>
+                                      <p className="text-xs text-text-light-gray">
+                                        <strong>When to disable this enforcement:</strong> If you will yourself login to Ads Manager after campaign creation and use the button on the campaign to auto correct any potential targeting filter that is restricted. (Our tool cannot detect these restricted filters and it is highly likely that some of its suggestions are not available for certain regions)
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+                                
+                                <div className="mt-6 flex justify-end">
+                                  <DialogClose asChild>
+                                    <button className="px-4 py-2 bg-primary-green text-deep-black font-medium rounded-md hover:bg-primary-green/90 transition-colors">
+                                      Done
+                                    </button>
+                                  </DialogClose>
+                                </div>
+                              </DialogContent>
+                            </Dialog>
+                          )}
+                        </div>
                         <span className="text-xs text-text-light-gray">
                           {objective.description}
                         </span>
