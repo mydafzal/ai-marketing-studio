@@ -65,13 +65,13 @@ export function CreateCampaignForm() {
   const [newLocation, setNewLocation] = useState('');
 
   // Renamed from "Interests" to "Filters" but still storing in same arrays:
-  const [targetedInterests, setTargetedInterests] = useState(['Technology', 'Innovation']);
+  const [targetedInterests, setTargetedInterests] = useState(['Advantage Plus']);
   const [newInterest, setNewInterest] = useState('');
   const [gender, setGender] = useState<Gender>('All');
 
   // Additional filters - changed to string arrays instead of booleans
-  const [behavioralFilters, setBehavioralFilters] = useState<string[]>(['Engaged Shoppers']);
-  const [demographicFilters, setDemographicFilters] = useState<string[]>(['Small Business Owner']);
+  const [behavioralFilters, setBehavioralFilters] = useState<string[]>(['Advantage Plus']);
+  const [demographicFilters, setDemographicFilters] = useState<string[]>(['Advantage Plus']);
 
   // AI Guidance
   const [aiGuidance, setAiGuidance] = useState('');
