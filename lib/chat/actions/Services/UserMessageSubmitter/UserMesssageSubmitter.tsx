@@ -3,6 +3,7 @@ import {ImagePart, TextPart} from "ai";
 
 import AdCreativesComparison from '@/components/stocks/campaignresults-creatives';
 import { SidebarContentWrapper } from '@/components/sidebar-content-wrapper';
+import { checkUsageLimit, incrementUsageCounter } from '@/app/actions';
 
 import {getChatIdFromUrl} from "@/lib/api/fasty-bot/helpers/chat-id-from-url-helper";
 
@@ -124,7 +125,11 @@ export async function submitUserMessage(content: string, contentImages?: Array<T
 
     'use server'
 
-
+    // Check usage limit before processing the message
+    const usageLimitCheck = await checkUsageLimit('messages');
+    if (usageLimitCheck.success && usageLimitCheck.limitReached) {
+        throw new Error("Free plan message limit reached. Please upgrade your subscription to continue.");
+    }
 
     const aiState = getMutableAIState<typeof AI>();
 
@@ -2626,12 +2631,12 @@ export async function submitUserMessage(content: string, contentImages?: Array<T
 
 
 
+    // Increment the message counter after successful processing
+    await incrementUsageCounter('messages');
+
     return {
-
         id: nanoid(),
-
         display: result.value
-
     }
 
 }

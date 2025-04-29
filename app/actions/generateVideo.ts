@@ -2,6 +2,7 @@
 import 'server-only'
 import Replicate from 'replicate'
 import { createReplicateClient } from "@/lib/replicate-client"
+import { checkUsageLimit, incrementUsageCounter } from "@/app/actions"
 
 interface GenerateVideoOptions {
   prompt: string
@@ -18,10 +19,20 @@ export async function startVideoGeneration({
   duration,
   startImageDataUrl,
   aspectRatio = "16:9",
-}: GenerateVideoOptions): Promise<{ success: boolean; predictionId: string; status: string }> {
+}: GenerateVideoOptions): Promise<{ success: boolean; predictionId?: string; status: string; error?: string }> {
   // Ensure REPLICATE_API_TOKEN is set
   if (!process.env.REPLICATE_API_TOKEN) {
     throw new Error("REPLICATE_API_TOKEN is not set in your environment.")
+  }
+  
+  // Check if user has reached the free tier video limit
+  const usageCheck = await checkUsageLimit('videos')
+  if (usageCheck.success && usageCheck.limitReached) {
+    return {
+      success: false,
+      status: "error",
+      error: "Free plan video generation limit reached. Please upgrade your subscription to continue generating videos."
+    }
   }
 
   const replicate = createReplicateClient(process.env.REPLICATE_API_TOKEN)
@@ -58,6 +69,9 @@ export async function startVideoGeneration({
     console.log(`[VIDEO_GEN] Initial prediction state: ${prediction.status}`)
     console.log(`[VIDEO_GEN] Creation timestamp: ${new Date().toISOString()}`)
 
+    // Increment video usage counter on successful start
+    await incrementUsageCounter('videos')
+    
     return {
       success: true,
       status: 'processing',

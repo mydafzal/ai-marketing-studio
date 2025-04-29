@@ -4,6 +4,7 @@ import { useActions, useAIState, useUIState } from 'ai/rsc' // Add useActions he
 import React, { useCallback, useContext, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { trackEvent } from '@/lib/utils'
+import { useUsageStore } from '@/app/store/useUsageStore'
 
 import {
   fetchChatFbAdsetId,
@@ -108,6 +109,9 @@ function ChatCore({ id, chat, className, session, missingKeys }: ChatProps) {
 
   const router = useRouter()
 
+  // Get usage store methods
+  const { fetchUsageData, setIsSubscribed } = useUsageStore()
+  
   useEffect(() => {
     const fetchSubscription = async () => {
       setIsFetchingSub(true)
@@ -117,23 +121,33 @@ function ChatCore({ id, chat, className, session, missingKeys }: ChatProps) {
 
         if (result && result.success) {
           // Ensure result is not null before accessing properties
+          const isActive = result.sub_status === 'active' || result.sub_status === 'trialing'
+          
           setSubStatus(result.sub_status ?? '') // Default to empty string if missing
           setSubbedPackage(result.sub_offer ?? '') // Default to empty string if missing
+          
+          // Update subscription status in usage store
+          setIsSubscribed(isActive)
+          
+          // Also fetch usage data after getting subscription status
+          await fetchUsageData()
         } else {
           setSubStatus('') // Default if result is null
           setSubbedPackage('')
+          setIsSubscribed(false)
         }
       } catch (error) {
         console.error('Error fetching subscription info:', error)
         setSubStatus('') // Handle errors gracefully
         setSubbedPackage('')
+        setIsSubscribed(false)
       }
 
       setIsFetchingSub(false)
     }
 
     fetchSubscription()
-  }, [])
+  }, [fetchUsageData, setIsSubscribed])
 
   // Add sendMessage function
   const sendMessage = React.useCallback(
@@ -317,11 +331,14 @@ function ChatCore({ id, chat, className, session, missingKeys }: ChatProps) {
 
     let email = session?.user?.email ?? '' // Ensure email is always a string
 
-    if (subStatus !== 'active' && subStatus !== 'trialing' && !subscriptionBypassList.includes(email)) {
-      window.location.href = '/subscription' // Hard redirect
-    } else {
-      setSubStatus('active') // Mark as active for bypassed users and trialing users
+    // With our new free plan, we don't redirect non-subscribed users - they can use the app with limits
+    // Only redirect if we couldn't determine subscription status at all (error case)
+    if (subStatus === undefined || subStatus === null) {
+      window.location.href = '/subscription' // Hard redirect only in error case
+    } else if (subStatus === 'active' || subStatus === 'trialing' || subscriptionBypassList.includes(email)) {
+      setSubStatus('active') // Mark as active for subscribed users and bypass list
     }
+    // Otherwise, user is on free plan with usage limits handled by useUsageStore
   }, [isFetchingSub, subStatus, session?.user?.email, router])
 
   const renderContent = () => {
@@ -332,11 +349,9 @@ function ChatCore({ id, chat, className, session, missingKeys }: ChatProps) {
         </div>
       )
     }
-
-    if (subStatus !== 'active' && subStatus !== 'trialing') {
-      // for bypassed users we dont redirect
-      return null // Prevent rendering while redirecting
-    }
+    
+    // With the new free plan, we allow all users to access the app
+    // The usage limits are enforced through useUsageStore when actions are performed
 
     if (!isFbAccountConnected && subbedPackage == 'AI Content Creator') {
       // you are subscibed to use the AI Content Creator. To access the AI marketer tool they need to upgrade their plan.

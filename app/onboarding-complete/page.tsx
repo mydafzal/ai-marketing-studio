@@ -60,7 +60,7 @@ export default async function OnboardingCompletePage() {
               You&apos;re all set up! Watch the videos below to see what Reeply can do for you.
             </p>
             <p className="mt-2 sm:mt-3 text-[#ADB0B8] dark:text-[#ADB0B8] text-[14px] sm:text-[16px] leading-[20px] sm:leading-[24px] max-w-2xl mx-auto px-2">
-              You can start using our free plan right away with limited access to core features. You'll get 5 AI messages, 5 AI-generated images, 1 video, and 1 image inpainting session to explore what Reeply can do for you.
+              You can start using our free plan right away with limited access to core features. You&apos;ll get 5 AI messages, 5 AI-generated images, 1 video, and 1 image inpainting session to explore what Reeply can do for you.
             </p>
 
             {/* Customer Review Images */}
@@ -103,11 +103,10 @@ export default async function OnboardingCompletePage() {
             
             <div className="flex justify-center items-center">
               <Link href="/" className="mt-6 sm:mt-8 inline-block bg-[#4BF29C] dark:bg-[#4BF29C] text-[#0A0C14] px-8 sm:px-10 py-3 sm:py-4 rounded-lg font-medium hover:bg-[#3AD88C] transition-colors text-lg sm:text-xl">
-                Let's start!
+                Let&apos;s start!
               </Link>
             </div>
           </div>
-          
           {/* Video Explainers Section with Carousel */}
           <div className="mt-10 sm:mt-16">
             <h2 className="text-2xl sm:text-3xl font-bold text-white text-center mb-5 sm:mb-8 px-2">See Reeply AI in Action</h2>
@@ -140,7 +139,7 @@ export default async function OnboardingCompletePage() {
             <div className="bg-[#1A1D29] border border-[#2A2E3A] rounded-lg divide-y divide-[#2A2E3A]">
               <div className="p-4 sm:p-6">
                 <h3 className="font-medium text-white text-base sm:text-lg mb-1.5 sm:mb-2">Is Reeply really free to start?</h3>
-                <p className="text-[#ADB0B8] text-sm sm:text-base">Yes! You can use our free plan with limited features to get a feel for the platform. Our free plan includes limited access to core features. When you're ready for more, you can upgrade to a premium plan anytime.</p>
+                <p className="text-[#ADB0B8] text-sm sm:text-base">Yes! You can use our free plan with limited features to get a feel for the platform. Our free plan includes limited access to core features. When you&apos;re ready for more, you can upgrade to a premium plan anytime.</p>
               </div>
               
               <div className="p-4 sm:p-6">
@@ -155,7 +154,7 @@ export default async function OnboardingCompletePage() {
               
               <div className="p-4 sm:p-6">
                 <h3 className="font-medium text-white text-base sm:text-lg mb-1.5 sm:mb-2">What are the free plan limitations?</h3>
-                <p className="text-[#ADB0B8] text-sm sm:text-base">The free plan includes 5 AI messages, 5 AI-generated images, 1 video generation, and 1 image inpainting session. You'll receive an upgrade prompt when you reach these limits. You can upgrade to the premium plan anytime to get unlimited usage of all features.</p>
+                <p className="text-[#ADB0B8] text-sm sm:text-base">The free plan includes 5 AI messages, 5 AI-generated images, 1 video generation, and 1 image inpainting session. You&apos;ll receive an upgrade prompt when you reach these limits. You can upgrade to the premium plan anytime to get unlimited usage of all features.</p>
               </div>
               
               <div className="p-4 sm:p-6">
@@ -288,7 +287,7 @@ export default async function OnboardingCompletePage() {
           
           <div className="text-center mt-10 mb-8 sm:mb-0 flex justify-center items-center">
             <Link href="/" className="inline-block bg-[#4BF29C] dark:bg-[#4BF29C] text-[#0A0C14] px-8 sm:px-10 py-3 sm:py-4 rounded-lg font-medium hover:bg-[#3AD88C] transition-colors text-lg sm:text-xl">
-              Let's start!
+              Let&apos;s start!
             </Link>
           </div>
         </div>
