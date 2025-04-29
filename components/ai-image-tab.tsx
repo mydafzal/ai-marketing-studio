@@ -1107,16 +1107,7 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
     } catch (err) {
       console.error("Error generating images with reference:", err)
       
-      // Check if error is due to free plan limit
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      if (errorMessage.includes("Free plan image generation limit reached")) {
-        // Show the upgrade modal if limit is reached
-        setShowUpgradeModal(true)
-        return; // Exit early to prevent showing the error toast
-      }
-      
       // Extract error message
-      let errorMessage = "Unable to create images. Please try again with different reference images.";
       const rawErrorMessage = err instanceof Error ? err.message : String(err);
       
       // Check if error is due to free plan limit
@@ -1127,25 +1118,27 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
       }
       
       // For other types of errors, clean up and display a helpful message
+      let displayErrorMessage = "Unable to create images. Please try again with different reference images.";
+      
       if (err instanceof Error) {
         // Clean up common API error messages
         const msg = err.message;
         
         if (msg.includes("content policy") || msg.includes("content filter")) {
-          errorMessage = "Your request may violate content policies. Please try different reference images.";
+          displayErrorMessage = "Your request may violate content policies. Please try different reference images.";
         } else if (msg.includes("network") || msg.includes("connection")) {
-          errorMessage = "Network error occurred. Please check your internet connection and try again.";
+          displayErrorMessage = "Network error occurred. Please check your internet connection and try again.";
         } else if (msg.includes("Bad Request") || msg.includes("invalid")) {
-          errorMessage = "Invalid request format. Please try with different images or resize them.";
+          displayErrorMessage = "Invalid request format. Please try with different images or resize them.";
         } else if (msg.includes("Too Many Requests")) {
-          errorMessage = "Rate limit exceeded. Please try again in a few minutes.";
+          displayErrorMessage = "Rate limit exceeded. Please try again in a few minutes.";
         } else if (msg.length < 150) {
           // Only use API error message if it's reasonably short
-          errorMessage = msg;
+          displayErrorMessage = msg;
         }
       }
       
-      showToast("Generation failed", errorMessage, "error")
+      showToast("Generation failed", displayErrorMessage, "error")
     } finally {
       setIsGeneratingImages(false)
     }
