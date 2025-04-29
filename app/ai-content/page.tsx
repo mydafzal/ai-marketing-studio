@@ -103,10 +103,8 @@ export default function AiContentPage() {
     )
   }
 
-  if (subStatus !== 'active' && subStatus !== 'trialing')
-  {
-    return <HomePageInfoCard upgradeToUseContentCreator={true} />
-  }
+  // Allow all users to access the AI Creatives with usage limits for free plan users
+  // The usage limits are enforced in the respective components
 
   return (
     <div className="container mx-auto p-6">
