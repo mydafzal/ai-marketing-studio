@@ -28,6 +28,8 @@ import {
   DialogTitle
 } from '@/components/ui/dialog'
 import { Zap, BarChart, PieChart, Download, DollarSign, Power, LifeBuoy, Plus } from 'lucide-react'
+import { useUsageStore } from '@/app/store/useUsageStore'
+import { UpgradeModal } from '@/components/upgrade-modal'
 
 export interface PromtFormProps {
   onSendMessage: (message: string, userContent?: (TextPart | ImagePart | FilePart)[]) => Promise<void>
@@ -59,76 +61,113 @@ function QuickAction({ icon, label, message, onAction }: QuickActionProps) {
 
 function QuickActionsDialog({ onSendMessage }: { onSendMessage: (message: string) => Promise<void> }) {
   const [open, setOpen] = React.useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = React.useState(false);
+  
+  // Get message limit status from usage store
+  const { 
+    isMessageLimitReached, 
+    messageCount,
+    incrementMessageCount
+  } = useUsageStore();
   
   const handleAction = async (message: string) => {
+    // Check if message limit has been reached before sending
+    if (isMessageLimitReached) {
+      setShowUpgradeModal(true);
+      setOpen(false);
+      return;
+    }
+    
     await onSendMessage(message);
+    await incrementMessageCount();
     setOpen(false);
   };
   
+  // Function to handle dialog open - show upgrade modal instead if at limit
+  const handleDialogOpenChange = (newOpenState: boolean) => {
+    if (newOpenState && isMessageLimitReached) {
+      // If trying to open dialog but at message limit, show upgrade modal instead
+      setShowUpgradeModal(true);
+    } else {
+      // Otherwise just toggle dialog state
+      setOpen(newOpenState);
+    }
+  };
+  
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button
-          variant="outline"
-          size="icon"
-          className="absolute left-0 top-[14px] size-8 rounded-full bg-light-container border-border-dark p-0 sm:left-4 hover:bg-light-container/80 hover:border-border-dark/80 transition-colors"
-        >
-          <Zap className="size-4 text-primary-green" />
-          <span className="sr-only">Quick Actions</span>
-        </Button>
-      </DialogTrigger>
+    <>
+      {/* Upgrade Modal */}
+      <UpgradeModal 
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        usageType="messages"
+        currentCount={messageCount}
+      />
       
-      <DialogContent className="bg-[#1A1D29] border-[#2A2E3A] text-white">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-semibold text-white">Quick Actions</DialogTitle>
-        </DialogHeader>
+      <Dialog open={open} onOpenChange={handleDialogOpenChange}>
+        <DialogTrigger asChild>
+          <Button
+            variant="outline"
+            size="icon"
+            className="absolute left-0 top-[14px] size-8 rounded-full bg-light-container border-border-dark p-0 sm:left-4 hover:bg-light-container/80 hover:border-border-dark/80 transition-colors"
+          >
+            <Zap className="size-4 text-primary-green" />
+            <span className="sr-only">Quick Actions</span>
+          </Button>
+        </DialogTrigger>
         
-        <div className="mt-4 grid gap-3">
-          <QuickAction 
-            icon={<Plus className="size-5 text-primary-green" />}
-            label="Create a campaign" 
-            message="I want to create a campaign" 
-            onAction={handleAction}
-          />
-          <QuickAction 
-            icon={<BarChart className="size-5 text-primary-green" />}
-            label="View Campaign Results" 
-            message="What are the results of my campaign?" 
-            onAction={handleAction}
-          />
-          <QuickAction 
-            icon={<PieChart className="size-5 text-primary-green" />}
-            label="Analyse Campaign Results" 
-            message="Analyse my campaign results in detail" 
-            onAction={handleAction}
-          />
-          <QuickAction 
-            icon={<Download className="size-5 text-primary-green" />}
-            label="Download Leads of my Campaign" 
-            message="I want to download leads from my campaign" 
-            onAction={handleAction}
-          />
-          <QuickAction 
-            icon={<DollarSign className="size-5 text-primary-green" />}
-            label="Change my Campaign Budget" 
-            message="I would like to change my campaign budget" 
-            onAction={handleAction}
-          />
-          <QuickAction 
-            icon={<Power className="size-5 text-primary-green" />}
-            label="Turn my Campaign On/Off" 
-            message="I want to turn my campaign on/off" 
-            onAction={handleAction}
-          />
-          <QuickAction 
-            icon={<LifeBuoy className="size-5 text-primary-green" />}
-            label="Contact Support" 
-            message="I need help from support" 
-            onAction={handleAction}
-          />
-        </div>
-      </DialogContent>
-    </Dialog>
+        <DialogContent className="bg-[#1A1D29] border-[#2A2E3A] text-white">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold text-white">Quick Actions</DialogTitle>
+          </DialogHeader>
+          
+          <div className="mt-4 grid gap-3">
+            <QuickAction 
+              icon={<Plus className="size-5 text-primary-green" />}
+              label="Create a campaign" 
+              message="I want to create a campaign" 
+              onAction={handleAction}
+            />
+            <QuickAction 
+              icon={<BarChart className="size-5 text-primary-green" />}
+              label="View Campaign Results" 
+              message="What are the results of my campaign?" 
+              onAction={handleAction}
+            />
+            <QuickAction 
+              icon={<PieChart className="size-5 text-primary-green" />}
+              label="Analyse Campaign Results" 
+              message="Analyse my campaign results in detail" 
+              onAction={handleAction}
+            />
+            <QuickAction 
+              icon={<Download className="size-5 text-primary-green" />}
+              label="Download Leads of my Campaign" 
+              message="I want to download leads from my campaign" 
+              onAction={handleAction}
+            />
+            <QuickAction 
+              icon={<DollarSign className="size-5 text-primary-green" />}
+              label="Change my Campaign Budget" 
+              message="I would like to change my campaign budget" 
+              onAction={handleAction}
+            />
+            <QuickAction 
+              icon={<Power className="size-5 text-primary-green" />}
+              label="Turn my Campaign On/Off" 
+              message="I want to turn my campaign on/off" 
+              onAction={handleAction}
+            />
+            <QuickAction 
+              icon={<LifeBuoy className="size-5 text-primary-green" />}
+              label="Contact Support" 
+              message="I need help from support" 
+              onAction={handleAction}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
@@ -156,6 +195,22 @@ export function PromptForm({
   const [openUploadMenu, setOpenUploadMenu] = React.useState(false);
   const [videoUploadDataInfo, setVideoUploadDataInfo] = React.useState<ChunkUploadProps>({});
 
+  // Usage limits state
+  const { 
+    fetchUsageData, 
+    incrementMessageCount, 
+    incrementImageCount, 
+    incrementVideoCount,
+    isMessageLimitReached,
+    isImageLimitReached,
+    isVideoLimitReached,
+    messageCount
+  } = useUsageStore()
+  
+  // Modal for upgrade prompt
+  const [showUpgradeModal, setShowUpgradeModal] = React.useState(false)
+  const [limitType, setLimitType] = React.useState<'messages' | 'images' | 'videos' | 'inpainting'>('messages')
+
   const [progressBar, setProgressBar] = React.useState<ProgressBarProps>({
     isShow: false,
     value: 0,
@@ -165,6 +220,11 @@ export function PromptForm({
   const videoInputRef = React.useRef<HTMLInputElement>(null)
 
   const [uploading, setUploading] = React.useState(false)
+  
+  // Fetch usage data on component mount
+  React.useEffect(() => {
+    fetchUsageData()
+  }, [])
 
   const handleImageFileChange = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -177,6 +237,14 @@ export function PromptForm({
       )
       return
     }
+    
+    // Check if image limit has been reached
+    if (isImageLimitReached) {
+      setLimitType('images')
+      setShowUpgradeModal(true)
+      return
+    }
+    
     let checkSize = true;
     Array.from(files).forEach(file => {
       if (file) {
@@ -271,6 +339,7 @@ export function PromptForm({
 
       console.log('userContent', userContent);
       // await onSendMessage(textPrompt, userContent);
+      await incrementImageCount()
       toast.success('Images uploaded successfully!')
     } catch (error) {
       toast.error('Failed to upload the image. Please try again.')
@@ -300,6 +369,13 @@ export function PromptForm({
     const files = event.target.files
     if (!files || files.length !== 1) return
     let file = files[0]
+    
+    // Check if video limit has been reached
+    if (isVideoLimitReached) {
+      setLimitType('videos')
+      setShowUpgradeModal(true)
+      return
+    }
 
     if (file.size >= MAX_VIDEO_SIZE) {
       toast.error(
@@ -361,6 +437,7 @@ export function PromptForm({
           ]
 
           await onSendMessage(textPrompt, userContent)
+          await incrementVideoCount()
           toast.success('Videos uploaded successfully!')
         } else {
           toast.error('Failed to upload the video. Please try again.')
@@ -418,9 +495,18 @@ export function PromptForm({
   }, [isTextareaDisabled]);
 
   return (
-    <form
-      ref={formRef}
-      onSubmit={async (e: any) => {
+    <>
+      {/* Upgrade Modal for main form */}
+      <UpgradeModal 
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        usageType={limitType}
+        currentCount={limitType === 'messages' ? messageCount : 0}
+      />
+      
+      <form
+        ref={formRef}
+        onSubmit={async (e: any) => {
         e.preventDefault()
 
         // Blur focus on mobile
@@ -434,9 +520,17 @@ export function PromptForm({
           setIsDisabled(true)
         }
         if (!value) return
+        
+        // Check if message limit reached
+        if (isMessageLimitReached) {
+          setLimitType('messages')
+          setShowUpgradeModal(true)
+          return
+        }
 
         setIsHandling(true)
         await onSendMessage(value)
+        await incrementMessageCount()
         setIsHandling(false)
       }}
     >
@@ -533,5 +627,6 @@ export function PromptForm({
         </div>
       </div>
     </form>
+    </>
   )
 }
