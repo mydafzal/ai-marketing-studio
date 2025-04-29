@@ -358,11 +358,7 @@ function ChatCore({ id, chat, className, session, missingKeys }: ChatProps) {
       return <HomePageInfoCard isSubscribedToAIContent={true} />
     }
 
-    if (!isFbAccountConnected && subbedPackage == 'AI Marketer Suite') {
-      // They have AI marketer subscription but their facebook account is not connected yet.
-      // Contact contact@reeply.net to get started with connecting your facebook account.
-      return <HomePageInfoCard awaitingToGetReady={true} />
-    }
+    // Facebook connection is now handled via redirect to facebook-connect page
 
     if (isFbAccountConnected && subbedPackage == 'AI Content Creator') {
       // You have to upgrade their package via stripe if this scenario happens where we add facebook account ids manually.

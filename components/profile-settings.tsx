@@ -134,6 +134,28 @@ export default function ProfileSettings({
             </svg>
             Billing
           </button>
+          
+          <button
+            className="inline-flex items-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:text-accent-foreground h-9 px-4 py-2 w-full justify-start gap-2 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            type="button"
+            onClick={() => setOpenFacebookSettings(true)}
+          >
+            <div className="bg-black dark:bg-white rounded-full size-6 flex items-center justify-center">
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                width="16" 
+                height="16" 
+                viewBox="0 0 24 24" 
+                className="text-white dark:text-black"
+              >
+                <path 
+                  fill="currentColor" 
+                  d="M9.198 21.5h4v-8.01h3.604l.396-3.98h-4V7.5a1 1 0 0 1 1-1h3v-4h-3a5 5 0 0 0-5 5v2.01h-2l-.396 3.98h2.396v8.01Z" 
+                />
+              </svg>
+            </div>
+            Facebook Settings
+          </button>
 
           <Onboarding
             userDetails={userDetails}
