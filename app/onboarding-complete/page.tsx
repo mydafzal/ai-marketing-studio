@@ -33,6 +33,13 @@ export default async function OnboardingCompletePage() {
     redirect('/login')
   }
   
+  // Define new "Start with Free Plan" button
+  const StartWithFreePlanButton = () => (
+    <Link href="/" className="mt-6 sm:mt-8 inline-block bg-[#151925] text-[#4BF29C] border border-[#4BF29C] px-5 sm:px-8 py-2.5 sm:py-3 rounded-lg font-medium hover:bg-[#1E2336] transition-colors text-base sm:text-lg mr-4">
+      Start with Free Plan
+    </Link>
+  );
+  
   // If user is already subscribed or in the bypass list, redirect to main app
   const isInBypassList = userEmail ? subscriptionBypassList.includes(userEmail) : false;
   
@@ -50,10 +57,10 @@ export default async function OnboardingCompletePage() {
               Ready to <span className="text-[#4BF29C] dark:text-[#4BF29C]">Transform</span> Your Marketing?
             </h1>
             <p className="mt-3 sm:mt-4 text-[#ADB0B8] dark:text-[#ADB0B8] text-[16px] sm:text-[18px] leading-[22px] sm:leading-[26px] max-w-3xl mx-auto px-2">
-              You&apos;re all set up! Watch the videos below to see what Reeply can do for you, then start your free trial.
+              You&apos;re all set up! Watch the videos below to see what Reeply can do for you.
             </p>
             <p className="mt-2 sm:mt-3 text-[#ADB0B8] dark:text-[#ADB0B8] text-[14px] sm:text-[16px] leading-[20px] sm:leading-[24px] max-w-2xl mx-auto px-2">
-              You can cancel anytime during the trial with no charges. After your trial, the subscription can be cancelled on a monthly basis.
+              You can start using our free plan right away with limited access to core features. You'll get 5 AI messages, 5 AI-generated images, 1 video, and 1 image inpainting session to explore what Reeply can do for you.
             </p>
 
             {/* Customer Review Images */}
@@ -94,9 +101,11 @@ export default async function OnboardingCompletePage() {
               </a>
             </div>
             
-            <Link href="/subscription" className="mt-6 sm:mt-8 inline-block bg-[#4BF29C] dark:bg-[#4BF29C] text-[#0A0C14] px-5 sm:px-8 py-2.5 sm:py-3 rounded-lg font-medium hover:bg-[#3AD88C] transition-colors text-base sm:text-lg">
-              Start Your Free 7-Day Trial
-            </Link>
+            <div className="flex justify-center items-center">
+              <Link href="/" className="mt-6 sm:mt-8 inline-block bg-[#4BF29C] dark:bg-[#4BF29C] text-[#0A0C14] px-8 sm:px-10 py-3 sm:py-4 rounded-lg font-medium hover:bg-[#3AD88C] transition-colors text-lg sm:text-xl">
+                Let's start!
+              </Link>
+            </div>
           </div>
           
           {/* Video Explainers Section with Carousel */}
@@ -131,17 +140,22 @@ export default async function OnboardingCompletePage() {
             <div className="bg-[#1A1D29] border border-[#2A2E3A] rounded-lg divide-y divide-[#2A2E3A]">
               <div className="p-4 sm:p-6">
                 <h3 className="font-medium text-white text-base sm:text-lg mb-1.5 sm:mb-2">Is Reeply really free to start?</h3>
-                <p className="text-[#ADB0B8] text-sm sm:text-base">Yes. You get a 7-day free trial to test all features. You can cancel anytime during the trial with no charges.</p>
+                <p className="text-[#ADB0B8] text-sm sm:text-base">Yes! You can use our free plan with limited features to get a feel for the platform. Our free plan includes limited access to core features. When you're ready for more, you can upgrade to a premium plan anytime.</p>
               </div>
               
               <div className="p-4 sm:p-6">
                 <h3 className="font-medium text-white text-base sm:text-lg mb-1.5 sm:mb-2">What happens after I sign up?</h3>
-                <p className="text-[#ADB0B8] text-sm sm:text-base">You get immediate access to all features including AI-powered ad campaign creation, AI image generation, video creation, and campaign analysis. You can start creating immediately.</p>
+                <p className="text-[#ADB0B8] text-sm sm:text-base">You can start immediately with our free plan, which includes limited access to AI-powered campaign creation, image generation, and video creation. For unlimited usage, you can upgrade to our premium plan at any time.</p>
               </div>
               
               <div className="p-4 sm:p-6">
                 <h3 className="font-medium text-white text-base sm:text-lg mb-1.5 sm:mb-2">Can I cancel anytime?</h3>
                 <p className="text-[#ADB0B8] text-sm sm:text-base">Yes. You&apos;re fully in control. You can cancel whenever you want—no strings attached.</p>
+              </div>
+              
+              <div className="p-4 sm:p-6">
+                <h3 className="font-medium text-white text-base sm:text-lg mb-1.5 sm:mb-2">What are the free plan limitations?</h3>
+                <p className="text-[#ADB0B8] text-sm sm:text-base">The free plan includes 5 AI messages, 5 AI-generated images, 1 video generation, and 1 image inpainting session. You'll receive an upgrade prompt when you reach these limits. You can upgrade to the premium plan anytime to get unlimited usage of all features.</p>
               </div>
               
               <div className="p-4 sm:p-6">
@@ -272,9 +286,9 @@ export default async function OnboardingCompletePage() {
             </div>
           </div>
           
-          <div className="text-center mt-10 mb-8 sm:mb-0">
-            <Link href="/subscription" className="inline-block bg-[#4BF29C] dark:bg-[#4BF29C] text-[#0A0C14] px-5 sm:px-8 py-2.5 sm:py-3 rounded-lg font-medium hover:bg-[#3AD88C] transition-colors text-base sm:text-lg">
-              Start Your Free 7-Day Trial Now
+          <div className="text-center mt-10 mb-8 sm:mb-0 flex justify-center items-center">
+            <Link href="/" className="inline-block bg-[#4BF29C] dark:bg-[#4BF29C] text-[#0A0C14] px-8 sm:px-10 py-3 sm:py-4 rounded-lg font-medium hover:bg-[#3AD88C] transition-colors text-lg sm:text-xl">
+              Let's start!
             </Link>
           </div>
         </div>
