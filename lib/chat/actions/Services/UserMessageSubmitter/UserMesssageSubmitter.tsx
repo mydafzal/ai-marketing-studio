@@ -1,4 +1,4 @@
-// This is the completely clean and fixed version of UserMessageSubmitter.tsx with the updated showAdBudgetUI tool
+// This is the completely clean and fixed  version of UserMessageSubmitter.tsx with the updated showAdBudgetUI tool
 import {ImagePart, TextPart} from "ai";
 
 import AdCreativesComparison from '@/components/stocks/campaignresults-creatives';
