@@ -93,7 +93,7 @@ export function UpgradeModal({
             Upgrade Your Plan
           </DialogTitle>
           <DialogDescription className="pt-2 text-base text-gray-700">
-            You've used {currentCount} out of {getLimit()} free {getFeatureName()}.
+            You&apos;ve used {currentCount} out of {getLimit()} free {getFeatureName()}.
           </DialogDescription>
         </DialogHeader>
 
