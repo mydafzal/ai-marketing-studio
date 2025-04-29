@@ -298,3 +298,29 @@ export interface City {
   supports_city: boolean
   supports_region: boolean
 }
+
+export interface Persona {
+  id: string; 
+  owner_id: string; 
+  company_name: string;
+  website_link: string;
+  website_data?: string;
+  location_data?: {
+    country: {
+      name: string;
+      code: string;
+    };
+    regions: Array<{
+      key: number;
+      name: string;
+      cities: Array<{
+        key: number;
+        name: string;
+      }>;
+    }>;
+  }[];
+  privacy_policy_link: string;
+  preferred_language: string;
+  created_at?: string; 
+  updated_at?: string;
+}

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import FBAccountDropdown from './fb-account-dropdown'
 import { cn } from '@/lib/utils'
+import Link from 'next/link'
 
 type Account = {
   name: string;
@@ -494,6 +495,13 @@ const NavbarDropdowns = ({
           Save Changes
         </button>
       </div>
+      <Link href="/manage-persona">
+        <button
+          className="bg-primary-green hover:bg-primary-green/90 text-black text-xs font-medium py-1 px-3 rounded-full transition-colors"
+        >
+          Manage Persona
+        </button>
+      </Link>
     </div>
   )
 }
