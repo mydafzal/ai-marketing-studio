@@ -1677,6 +1677,20 @@ export function AdSetupModal({
                     <AudienceTargetingSelector 
                       targetingFilters={targetingFilters} 
                       setTargetingFilters={setTargetingFilters}
+                      campaignSessionId={masterFlowData?.campaign_flow_session_id}
+                      audienceNumber={1}
+                      campaignObjective={masterFlowData?.campaign_objective || campaignObjective}
+                      updateMasterFlowData={(data) => {
+                        console.log("Updating master flow data with:", data);
+                        // If masterFlowData exists, update it with the new data
+                        if (masterFlowData) {
+                          const updatedData = {
+                            ...masterFlowData,
+                            ...data
+                          };
+                          console.log("Updated master flow data:", updatedData);
+                        }
+                      }}
                     />
 
                     {/* <div className="bg-dark-bg rounded-lg p-4 border border-border-dark">
