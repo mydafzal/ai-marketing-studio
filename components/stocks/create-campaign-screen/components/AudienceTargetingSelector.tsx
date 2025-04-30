@@ -554,7 +554,7 @@ export default function AudienceTargetingSelector({
        <div className="absolute z-10 mt-1 w-full bg-dark-bg border border-border-dark rounded-md shadow-lg max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-border-dark scrollbar-track-dark-bg">
          <div className="py-1">
            {results.length === 0 && searchTerm.length >= 2 && (
-             <div className="px-4 py-2 text-sm text-text-light-gray italic">No results found for "{searchTerm}"</div>
+             <div className="px-4 py-2 text-sm text-text-light-gray italic">No results found for &quot{searchTerm}&quot</div>
            )}
            {results.map((result) => (
              <button
