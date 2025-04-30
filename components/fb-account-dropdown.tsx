@@ -80,9 +80,11 @@ const FBAccountDropdown = ({
                             </div>
                             : <span className={cn(
                                 compact ? "text-xs" : "text-sm", 
-                                darkMode ? "text-zinc-400" : "text-zinc-600"
+                                darkMode ? "text-zinc-300" : "text-zinc-600",
+                                "relative font-medium"
                               )}>
                                 Select
+                                <span className="absolute inset-0 animate-pulse-green rounded-full ring-3 ring-[#4BF29C] shadow-[0_0_8px_2px_rgba(75,242,156,0.7)] ring-offset-1 ring-offset-[#1a1a1a]"></span>
                               </span>
                         }
                         <ChevronDownIcon className={cn(

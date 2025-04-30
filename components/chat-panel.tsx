@@ -17,6 +17,8 @@ import { FloatingButton } from './floating-button'
 import { TaskPalette } from './task-palette'
 import {isFeatureToggleEnabled} from "@/lib/helpers/feature-toggle/feature-toggle-manager";
 import useAccountStore from "@/app/store/useAccountStore";
+import { useUsageStore } from "@/app/store/useUsageStore";
+import { UpgradeModal } from '@/components/upgrade-modal';
 
 
 const exampleMessages = [
@@ -66,8 +68,26 @@ export function ChatPanel({
   const { submitUserMessage } = useActions()
   const [shareDialogOpen, setShareDialogOpen] = React.useState(false)
   const [isTaskPaletteOpen, setIsTaskPaletteOpen] = React.useState(false)
+  const [showUpgradeModal, setShowUpgradeModal] = React.useState(false)
+  
   let isUserGuideButtonEnabled = isFeatureToggleEnabled("userGuideFloatingButton")
+  const { isFbAccountConnected } = useAccountStore();
+  
+  // Usage store for checking message limits
+  const { 
+    isMessageLimitReached, 
+    messageCount,
+    incrementMessageCount 
+  } = useUsageStore();
+  
   const sendMessage = React.useCallback(async (message: string, userContent?: (TextPart | ImagePart | FilePart)[]) => {
+    // Check for message limit in PromptForm now handles this check separately
+    // This is just a safeguard for programmatic calls
+    if (isMessageLimitReached) {
+      setShowUpgradeModal(true);
+      return;
+    }
+    
     // Optimistically add user message UI
     setMessages(currentMessages => [
       ...currentMessages,
@@ -91,25 +111,53 @@ export function ChatPanel({
     )
 
     setMessages(currentMessages => [...currentMessages, responseMessage])
-  }, [])
+    
+    // Note: incrementMessageCount is handled by the calling component to avoid double counting
+    // The PromptForm component handles incrementing for normal input
+    // The example buttons and showMe functions handle incrementing for those cases
+  }, [isMessageLimitReached, setShowUpgradeModal, session, id, submitUserMessage, setMessages])
 
-  const handleShowMe = (prompt: string) => {
-    sendMessage(prompt)
+  const handleShowMe = async (prompt: string) => {
+    // Check if message limit has been reached
+    if (isMessageLimitReached) {
+      // Show upgrade modal instead of sending message
+      setShowUpgradeModal(true);
+      return;
+    }
+    
+    // Send message and increment counter
+    await sendMessage(prompt);
+    await incrementMessageCount();
   }
 
-  const { isFbAccountConnected } = useAccountStore();
-
   const handleExampleClick = React.useCallback(async (example: string) => {
+    // Check if message limit has been reached
+    if (isMessageLimitReached) {
+      // Show upgrade modal instead of sending message
+      setShowUpgradeModal(true);
+      return;
+    }
 
     await trackEvent('example_message_clicked', 
       { email: session?.user?.email || '', id: session?.user?.id || '' },
       { message: example }
-    )
-    sendMessage(example)
-  }, [sendMessage, session])
+    );
+    
+    // Send message and increment counter
+    await sendMessage(example);
+    await incrementMessageCount();
+  }, [sendMessage, session, isMessageLimitReached, incrementMessageCount])
 
   return (
     <>
+      {/* Upgrade Modal */}
+      <UpgradeModal 
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        usageType="messages"
+        currentCount={messageCount}
+      />
+      
       <div className="fixed inset-x-0 bottom-0 w-full bg-gradient-to-b from-deep-black/90 from-0% to-deep-black to-50% duration-300 ease-in-out animate-in peer-[[data-state=open]]:group-[]:lg:pl-[250px] peer-[[data-state=open]]:group-[]:xl:pl-[300px]">
         <ButtonScrollToBottom
           isAtBottom={isAtBottom}

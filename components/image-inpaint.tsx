@@ -5,6 +5,8 @@ import NextImage from "next/image"
 import { useTheme } from "next-themes"
 import { AlertCircle, CheckCircle2, Brush, Upload, RefreshCw, Download, ArrowLeft, Info, Repeat } from "lucide-react"
 import { inpaintImage } from "@/app/actions/generate-image" // Same file as generateImages
+import { useUsageStore } from "@/app/store/useUsageStore"
+import { UpgradeModal } from "@/components/upgrade-modal"
 
 // If you want to let the user enhance the prompt, pass `improvePrompt` prop
 interface AiImageInpaintProps {
@@ -14,6 +16,17 @@ interface AiImageInpaintProps {
 export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
   const { theme } = useTheme()
   const isDarkMode = theme === "dark"
+  
+  // Usage tracking
+  const { 
+    fetchUsageData, 
+    incrementInpaintingCount, 
+    isInpaintingLimitReached,
+    inpaintingCount
+  } = useUsageStore()
+  
+  // Modal for upgrade prompt
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
 
   // Refs for base canvas & mask
   const baseCanvasRef = useRef<HTMLCanvasElement>(null)
@@ -367,6 +380,12 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
       showToast("Missing prompt", "Describe how to inpaint your image.", "error")
       return
     }
+    
+    // Check if inpainting limit reached - Check this early before starting processing
+    if (isInpaintingLimitReached) {
+      setShowUpgradeModal(true)
+      return
+    }
 
     setIsProcessing(true)
 
@@ -477,6 +496,7 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
       // Call the inpainting API with our full resolution images
       const res = await inpaintImage(prompt, baseImage, mask)
       if (res.success && res.image) {
+        await incrementInpaintingCount()
         setInpaintResult(res.image)
         showToast("Success", "Inpainting completed!", "success")
       } else {
@@ -618,6 +638,11 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
     }
   }
 
+  // Fetch usage data on component mount
+  useEffect(() => {
+    fetchUsageData()
+  }, [])
+  
   // The design below mimics your existing AiImageTab style:
   return (
     <div
@@ -625,6 +650,14 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
         isDarkMode ? "bg-container-bg border-border-dark" : "bg-white border-gray-200"
       }`}
     >
+      {/* Upgrade Modal */}
+      <UpgradeModal 
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        usageType="inpainting"
+        currentCount={inpaintingCount}
+      />
+      
       {/* Toast notification */}
       {toastMessage && (
         <div

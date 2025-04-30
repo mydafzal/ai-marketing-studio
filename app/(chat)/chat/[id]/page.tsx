@@ -2,7 +2,7 @@ import { type Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
 
 import { auth } from '@/auth'
-import { getChat, getMissingKeys } from '@/app/actions'
+import { getChat, getMissingKeys, getUserDetail } from '@/app/actions'
 import { Chat } from '@/components/chat'
 import { AI } from '@/lib/chat/AIManager'
 import { Session } from '@/lib/types'
@@ -42,6 +42,14 @@ export default async function ChatPage({ params }: ChatPageProps) {
 
   if (chat && chat.userId !== session?.user?.id) {
     notFound()
+  }
+  
+  // Check if Facebook account is connected - if not, redirect to connect page
+  if (session.user.email) {
+    const userDetail = await getUserDetail();
+    if (userDetail.success && userDetail.user && !userDetail.user.fbMarketingApiKey) {
+      redirect('/facebook-connect')
+    }
   }
 
   return (

@@ -16,6 +16,8 @@ import {
   ZoomIn
 } from "lucide-react"
 import ImagePreviewModal from "@/components/image-preview-modal"
+import { useUsageStore } from "@/app/store/useUsageStore"
+import { UpgradeModal } from "@/components/upgrade-modal"
 
 // Helper function to resize an image to a maximum file size
 async function resizeImageToMaxSize(file: File, maxSizeKB: number = 1024): Promise<File> {
@@ -254,6 +256,21 @@ function getAspectRatioClass(format: string): string {
 }
 
 export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
+  // Usage tracking
+  const { 
+    fetchUsageData, 
+    incrementImageCount, 
+    isImageLimitReached,
+    imageCount
+  } = useUsageStore()
+  
+  // Modal for upgrade prompt
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  
+  // Fetch usage data on component mount
+  useEffect(() => {
+    fetchUsageData()
+  }, [fetchUsageData])
   const { theme } = useTheme()
   const isDarkMode = theme === "dark"
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -681,6 +698,12 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
       return
     }
     
+    // Check if image limit reached
+    if (isImageLimitReached) {
+      setShowUpgradeModal(true)
+      return
+    }
+    
     setIsGeneratingImages(true)
     
     try {
@@ -705,11 +728,20 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
       }
     } catch (err) {
       console.error("Error generating images:", err)
-      showToast(
-        "Generation failed", 
-        "Unable to create images. Please try again with a different prompt.", 
-        "error"
-      )
+      
+      // Check if error is due to free plan limit
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      if (errorMessage.includes("Free plan image generation limit reached")) {
+        // Show the upgrade modal if limit is reached
+        setShowUpgradeModal(true)
+      } else {
+        // Show regular error for other types of errors
+        showToast(
+          "Generation failed", 
+          "Unable to create images. Please try again with a different prompt.", 
+          "error"
+        )
+      }
     } finally {
       setIsGeneratingImages(false)
     }
@@ -1002,6 +1034,12 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
       return
     }
     
+    // Check if image limit reached
+    if (isImageLimitReached) {
+      setShowUpgradeModal(true)
+      return
+    }
+    
     setIsGeneratingImages(true)
     
     try {
@@ -1055,33 +1093,52 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
         }
       } catch (innerErr) {
         console.error("Inner error in variation generation:", innerErr)
+        
+        // Check if error is due to free plan limit
+        const innerErrorMessage = innerErr instanceof Error ? innerErr.message : String(innerErr);
+        if (innerErrorMessage.includes("Free plan image generation limit reached")) {
+          // Show the upgrade modal if limit is reached
+          setShowUpgradeModal(true)
+          return; // Exit early to prevent propagation
+        }
+        
         throw innerErr
       }
     } catch (err) {
       console.error("Error generating images with reference:", err)
       
-      // Extract a more meaningful error message if possible
-      let errorMessage = "Unable to create images. Please try again with different reference images.";
+      // Extract error message
+      const rawErrorMessage = err instanceof Error ? err.message : String(err);
+      
+      // Check if error is due to free plan limit
+      if (rawErrorMessage.includes("Free plan image generation limit reached")) {
+        // Show the upgrade modal if limit is reached
+        setShowUpgradeModal(true)
+        return; // Exit early to prevent showing the error toast
+      }
+      
+      // For other types of errors, clean up and display a helpful message
+      let displayErrorMessage = "Unable to create images. Please try again with different reference images.";
       
       if (err instanceof Error) {
         // Clean up common API error messages
         const msg = err.message;
         
         if (msg.includes("content policy") || msg.includes("content filter")) {
-          errorMessage = "Your request may violate content policies. Please try different reference images.";
+          displayErrorMessage = "Your request may violate content policies. Please try different reference images.";
         } else if (msg.includes("network") || msg.includes("connection")) {
-          errorMessage = "Network error occurred. Please check your internet connection and try again.";
+          displayErrorMessage = "Network error occurred. Please check your internet connection and try again.";
         } else if (msg.includes("Bad Request") || msg.includes("invalid")) {
-          errorMessage = "Invalid request format. Please try with different images or resize them.";
+          displayErrorMessage = "Invalid request format. Please try with different images or resize them.";
         } else if (msg.includes("Too Many Requests")) {
-          errorMessage = "Rate limit exceeded. Please try again in a few minutes.";
+          displayErrorMessage = "Rate limit exceeded. Please try again in a few minutes.";
         } else if (msg.length < 150) {
           // Only use API error message if it's reasonably short
-          errorMessage = msg;
+          displayErrorMessage = msg;
         }
       }
       
-      showToast("Generation failed", errorMessage, "error")
+      showToast("Generation failed", displayErrorMessage, "error")
     } finally {
       setIsGeneratingImages(false)
     }
@@ -1400,6 +1457,13 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
 
   return (
     <div className={`w-full shadow-sm rounded-lg border ${isDarkMode ? 'bg-container-bg border-border-dark' : 'bg-white border-gray-200'}`}>
+      {/* Upgrade Modal */}
+      <UpgradeModal 
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        usageType="images"
+        currentCount={imageCount}
+      />
       {/* Toast notification */}
       {toastMessage && (
         <div className={`fixed top-4 right-4 z-50 p-4 rounded-md shadow-md transition-all ${
