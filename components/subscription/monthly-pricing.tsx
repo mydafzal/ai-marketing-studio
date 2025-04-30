@@ -127,7 +127,7 @@ export function MonthlyPricing({ currentPlanTag, showBackButton = true }: Monthl
               <form action="/api/stripe/create-checkout-session" method="POST">
                 <input type="hidden" name="lookup_key" value={monthlyProPlanLookupKey} />
                 <button className="mt-6 w-full bg-[#4BF29C] dark:bg-[#4BF29C] text-[#0A0C14] py-2 rounded-lg font-medium hover:bg-[#3AD88C] transition-colors" type="submit">
-                  Start Free 7-Day Trial
+                  Start Now
                 </button>
               </form>
             )}
