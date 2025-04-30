@@ -13,9 +13,13 @@ const FACEBOOK_REDIRECT_URI = process.env.FACEBOOK_REDIRECT_URI;
 
 function getProductionURL(){
   if(process.env.VERCEL_PROJECT_PRODUCTION_URL?.includes("localhost")){
-    return "http://"+process.env.VERCEL_PROJECT_PRODUCTION_URL;
-
+    return "http://"+process.env.VERCEL_PROJECT_PRODUCTION_URL; // localhost. can be adjusted for ngrok.
   }
+
+  if(process.env.FACEBOOK_REDIRECT_URI?.includes("staging-ddfb.reeply.ai")){
+    return "https://staging-ddfb.reeply.ai/"; // staging environment attached to staging branch
+  }
+
   return "https://"+process.env.VERCEL_PROJECT_PRODUCTION_URL;
 }
 
