@@ -512,7 +512,13 @@ function Onboarding({
         
         // Handle special case for locations step
         if (STEPS[currentStep].id === 'locations') {
-            return true; // Locations are optional, so always allow proceeding
+            // Check if at least one location is selected
+            if (!locations || locations.length === 0) {
+                errors.locations = "Please select at least one location";
+                setInputError(errors);
+                return false;
+            }
+            return true;
         }
         
         // Validate other fields
@@ -575,6 +581,19 @@ function Onboarding({
             // Add temporary debug log for locations before saving
             console.log("[TEMPORARY DEBUG] Saving locations:", locations);
             
+            // If somehow locations is empty at this point, set a default for USA
+            let saveLocations = locations;
+            if (!saveLocations || saveLocations.length === 0) {
+                saveLocations = [{
+                    country: {
+                        name: "United States",
+                        code: "US"
+                    },
+                    regions: []
+                }];
+                console.log("[TEMPORARY DEBUG] Using default USA location:", saveLocations);
+            }
+            
             const details = {
                 first_name: firstName,
                 last_name: lastName,
@@ -585,7 +604,7 @@ function Onboarding({
                 preferred_language: preferredLanguage,
                 goal: goal,
                 company_segment: companySegment,
-                locations: locations
+                locations: saveLocations
             }
 
             // Manually set goal since it's removed from the form
@@ -1054,6 +1073,12 @@ function Onboarding({
                             locations={locations || []}
                             setLocations={setLocations as React.Dispatch<React.SetStateAction<LocationData>>}
                         />
+                        {fieldError && (
+                            <p className="text-sm text-red-500 flex items-center gap-1">
+                                <AlertCircle className="size-3"/>
+                                {fieldError}
+                            </p>
+                        )}
                     </div>
                 );
             case 'facebook_connect':
