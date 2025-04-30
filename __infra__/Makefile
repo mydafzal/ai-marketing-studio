@@ -15,20 +15,14 @@ adminer-help:
 	@echo "Password:      password"
 	@echo "Database name: ai_marketing_manager_db"
 
-.PHONY: create-local-db
-create-local-db:
-	@echo "📦 This will create your local database using Drizzle."
-	@echo "🚨 Make sure your PostgreSQL server (e.g., via Docker) is running before continuing."
+.PHONY: migrate-local-db
+migrate-local-db:
+	@echo "🔧 This will apply all pending Drizzle migrations to your local database."
+	@echo "🚨 Ensure your PostgreSQL server (e.g., Docker) is running and .env is configured."
 	@echo "👉 Choose a package manager: [pnpm/npm]"
 	@read pm; \
 	if [ "$$pm" = "pnpm" ] || [ "$$pm" = "npm" ]; then \
-		cd .. && $$pm drizzle-kit push; \
+		cd .. && $$pm run drizzle-migrate; \
 	else \
 		echo "❌ Invalid package manager. Please type 'pnpm' or 'npm'."; \
 	fi
-
-.PHONY: generate-package-lock
-generate-package-lock:
-	@echo "🔒 Generating package-lock.json inside a clean Node/npm container..."
-	docker compose -f docker-compose.npm.yml up --abort-on-container-exit --remove-orphans
-	@echo "✅ Done. package-lock.json is ready."

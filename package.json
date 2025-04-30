@@ -14,7 +14,9 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "drizzle-migrate": "drizzle-kit migrate",
+    "drizzle-generate": "drizzle-kit generate"
   },
   "dependencies": {
     "@ai-sdk/openai": "^0.0.34",

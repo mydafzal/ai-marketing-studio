@@ -12,7 +12,7 @@ config({ path: path.resolve(__dirname, envPath) });
 
 export default {
   schema: './db/schema.ts',
-  out: './drizzle',
+  out: './db/migrations',
   dialect: 'postgresql',
   dbCredentials: {
     url: process.env.AI_MARKETING_MANAGER_DATABASE_URL || '',
