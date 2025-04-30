@@ -154,7 +154,7 @@ export default async function OnboardingCompletePage() {
               
               <div className="p-4 sm:p-6">
                 <h3 className="font-medium text-white text-base sm:text-lg mb-1.5 sm:mb-2">How can I access all features?</h3>
-                <p className="text-[#ADB0B8] text-sm sm:text-base">You can upgrade to the premium plan anytime to get unlimited usage of all features. You'll be prompted to upgrade when you reach usage limits.</p>
+                <p className="text-[#ADB0B8] text-sm sm:text-base">You can upgrade to the premium plan anytime to get unlimited usage of all features. You&apos;ll be prompted to upgrade when you reach usage limits.</p>
               </div>
               
               <div className="p-4 sm:p-6">
