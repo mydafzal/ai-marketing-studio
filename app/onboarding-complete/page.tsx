@@ -33,10 +33,10 @@ export default async function OnboardingCompletePage() {
     redirect('/login')
   }
   
-  // Define new "Start with Free Plan" button
+  // Define new "Start for Free" button
   const StartWithFreePlanButton = () => (
     <Link href="/" className="mt-6 sm:mt-8 inline-block bg-[#151925] text-[#4BF29C] border border-[#4BF29C] px-5 sm:px-8 py-2.5 sm:py-3 rounded-lg font-medium hover:bg-[#1E2336] transition-colors text-base sm:text-lg mr-4">
-      Start with Free Plan
+      Get Started
     </Link>
   );
   
@@ -60,7 +60,7 @@ export default async function OnboardingCompletePage() {
               You&apos;re all set up! Watch the videos below to see what Reeply can do for you.
             </p>
             <p className="mt-2 sm:mt-3 text-[#ADB0B8] dark:text-[#ADB0B8] text-[14px] sm:text-[16px] leading-[20px] sm:leading-[24px] max-w-2xl mx-auto px-2">
-              You can start using our free plan right away with limited access to core features. You&apos;ll get 5 AI messages, 5 AI-generated images, 1 video, and 1 image inpainting session to explore what Reeply can do for you.
+              Free to get started.
             </p>
 
             {/* Customer Review Images */}
@@ -139,12 +139,12 @@ export default async function OnboardingCompletePage() {
             <div className="bg-[#1A1D29] border border-[#2A2E3A] rounded-lg divide-y divide-[#2A2E3A]">
               <div className="p-4 sm:p-6">
                 <h3 className="font-medium text-white text-base sm:text-lg mb-1.5 sm:mb-2">Is Reeply really free to start?</h3>
-                <p className="text-[#ADB0B8] text-sm sm:text-base">Yes! You can use our free plan with limited features to get a feel for the platform. Our free plan includes limited access to core features. When you&apos;re ready for more, you can upgrade to a premium plan anytime.</p>
+                <p className="text-[#ADB0B8] text-sm sm:text-base">Yes! Free to get started and explore what Reeply can do for you. When you&apos;re ready for more, you can upgrade to a premium plan anytime.</p>
               </div>
               
               <div className="p-4 sm:p-6">
                 <h3 className="font-medium text-white text-base sm:text-lg mb-1.5 sm:mb-2">What happens after I sign up?</h3>
-                <p className="text-[#ADB0B8] text-sm sm:text-base">You can start immediately with our free plan, which includes limited access to AI-powered campaign creation, image generation, and video creation. For unlimited usage, you can upgrade to our premium plan at any time.</p>
+                <p className="text-[#ADB0B8] text-sm sm:text-base">You can start immediately with basic access. For unlimited usage, you can upgrade to our premium plan at any time.</p>
               </div>
               
               <div className="p-4 sm:p-6">
@@ -153,8 +153,8 @@ export default async function OnboardingCompletePage() {
               </div>
               
               <div className="p-4 sm:p-6">
-                <h3 className="font-medium text-white text-base sm:text-lg mb-1.5 sm:mb-2">What are the free plan limitations?</h3>
-                <p className="text-[#ADB0B8] text-sm sm:text-base">The free plan includes 5 AI messages, 5 AI-generated images, 1 video generation, and 1 image inpainting session. You&apos;ll receive an upgrade prompt when you reach these limits. You can upgrade to the premium plan anytime to get unlimited usage of all features.</p>
+                <h3 className="font-medium text-white text-base sm:text-lg mb-1.5 sm:mb-2">How can I access all features?</h3>
+                <p className="text-[#ADB0B8] text-sm sm:text-base">You can upgrade to the premium plan anytime to get unlimited usage of all features. You'll be prompted to upgrade when you reach usage limits.</p>
               </div>
               
               <div className="p-4 sm:p-6">
