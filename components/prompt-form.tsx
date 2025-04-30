@@ -468,6 +468,46 @@ export function PromptForm({
       inputRef.current.focus()
     }
   }, []);
+  
+  // Add visual viewport height adjustment for mobile keyboards
+  React.useEffect(() => {
+    // Only needed for mobile devices
+    if (typeof window === 'undefined' || window.innerWidth >= 768) return;
+    
+    // Function to adjust the view when the keyboard appears
+    const handleVisualViewportResize = () => {
+      const visualViewport = window.visualViewport;
+      if (!visualViewport) return;
+      
+      // Get the form element
+      const form = formRef.current;
+      if (!form) return;
+      
+      // When keyboard is open, viewport height is reduced
+      // Adjust the position of the form to be visible above the keyboard
+      if (visualViewport.height < window.innerHeight * 0.8) {
+        form.style.position = 'fixed';
+        form.style.bottom = `${window.innerHeight - visualViewport.height - visualViewport.offsetTop}px`;
+      } else {
+        // Reset when keyboard is closed
+        form.style.position = '';
+        form.style.bottom = '';
+      }
+    };
+
+    // Add listener for viewport changes (keyboard opening/closing)
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleVisualViewportResize);
+      window.visualViewport.addEventListener('scroll', handleVisualViewportResize);
+    }
+    
+    return () => {
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', handleVisualViewportResize);
+        window.visualViewport.removeEventListener('scroll', handleVisualViewportResize);
+      }
+    };
+  }, []);
   React.useEffect(() => {
     console.log("progressBar", progressBar);
   }, [progressBar]);
