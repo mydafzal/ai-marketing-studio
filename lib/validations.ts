@@ -8,9 +8,6 @@ export const validateUrl = (url: string): { isValid: boolean; error: string } =>
     if (!urlObj.protocol.startsWith('https')) {
       return { isValid: false, error: 'URL must start with https://' }
     }
-    if (!urlObj.hostname.startsWith('www.')) {
-      return { isValid: false, error: 'URL must include www.' }
-    }
     return { isValid: true, error: '' }
   } catch {
     return { isValid: false, error: 'Please enter a valid URL' }
