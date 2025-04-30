@@ -380,6 +380,12 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
       showToast("Missing prompt", "Describe how to inpaint your image.", "error")
       return
     }
+    
+    // Check if inpainting limit reached - Check this early before starting processing
+    if (isInpaintingLimitReached) {
+      setShowUpgradeModal(true)
+      return
+    }
 
     setIsProcessing(true)
 
@@ -486,13 +492,6 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
         }
       }, 20000);
       */
-      
-      // Check if inpainting limit reached
-      if (isInpaintingLimitReached) {
-        setShowUpgradeModal(true)
-        setIsProcessing(false)
-        return
-      }
       
       // Call the inpainting API with our full resolution images
       const res = await inpaintImage(prompt, baseImage, mask)

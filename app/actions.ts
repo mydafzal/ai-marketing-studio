@@ -1595,6 +1595,9 @@ export async function getFreePlanLimits() {
     return FREE_PLAN_LIMITS;
 }
 
+// Import subscription bypass list
+import { subscriptionBypassList } from '@/app/subscription/subscription-bypass-list';
+
 export async function getSubscriptionInfo(): Promise<{ 
     success?: boolean; 
     sub_offer?: string; 
@@ -1639,14 +1642,20 @@ export async function getSubscriptionInfo(): Promise<{
             inpainting: parseInt(String(usageCounts.inpainting || 0), 10)
         };
 
+        // Check if user is in the bypass list
+        const userEmail = session.user.email as string;
+        const isInBypassList = subscriptionBypassList.includes(userEmail);
+
         // Determine subscription status
-        const isOnFreePlan = !user.sub_status || user.sub_status === 'inactive';
-        const isSubscribed = user.sub_status === 'active' || user.sub_status === 'trialing';
+        // Set as active if user is in bypass list or has an active subscription
+        let userSubStatus = isInBypassList ? 'active' : String(user.sub_status || '');
+        const isOnFreePlan = !isInBypassList && (!userSubStatus || userSubStatus === 'inactive');
+        const isSubscribed = isInBypassList || userSubStatus === 'active' || userSubStatus === 'trialing';
 
         return {
             success: true,
             sub_offer: String(user.sub_offer || ''), // Ensure empty string instead of undefined
-            sub_status: String(user.sub_status || ''), // Ensure empty string instead of undefined
+            sub_status: isInBypassList ? 'active' : String(user.sub_status || ''), // Override status for bypass users
             usageCounts: parsedUsageCounts,
             isFreePlan: isOnFreePlan
         };
@@ -1677,6 +1686,20 @@ export async function incrementUsageCounter(
     }
 
     try {
+        const userEmail = session.user.email as string;
+        
+        // Check if user is in the bypass list
+        const isInBypassList = subscriptionBypassList.includes(userEmail);
+        
+        // If user is in the bypass list, treat them as subscribed and don't increment counters
+        if (isInBypassList) {
+            return { 
+                success: true,
+                newCount: 0,
+                limitReached: false
+            };
+        }
+        
         // Get subscription status first to check if we need to track
         const subscription = await getSubscriptionInfo();
         
@@ -1689,7 +1712,6 @@ export async function incrementUsageCounter(
             };
         }
 
-        const userEmail = session.user.email as string;
         const usageKey = `usage:${userEmail}`;
         
         // Get current count
@@ -1753,6 +1775,21 @@ export async function checkUsageLimit(
     }
 
     try {
+        const userEmail = session.user.email as string;
+        
+        // Check if user is in the bypass list
+        const isInBypassList = subscriptionBypassList.includes(userEmail);
+        
+        // If user is in the bypass list, treat them as subscribed and don't apply limits
+        if (isInBypassList) {
+            return { 
+                success: true,
+                limitReached: false,
+                currentCount: 0,
+                maxCount: Infinity
+            };
+        }
+        
         // Get subscription status first
         const subscription = await getSubscriptionInfo();
         
@@ -1766,7 +1803,6 @@ export async function checkUsageLimit(
             };
         }
 
-        const userEmail = session.user.email as string;
         const usageKey = `usage:${userEmail}`;
         
         // Get current count
