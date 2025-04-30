@@ -424,8 +424,15 @@ const NavbarDropdowns = ({
     <div className="flex flex-col w-full">
       {/* Show CTA notice when user has fbMarketingApiKey but no valid fbBusinessAccId */}
       {userDetails?.fbMarketingApiKey && (!userDetails?.fbBusinessAccId || userDetails.fbBusinessAccId === "null" || isNaN(Number(userDetails.fbBusinessAccId))) && (
-        <div className="bg-[#447e60] text-white px-4 py-3 text-center w-full">
-          <p className="font-medium text-sm">You&#39;re almost there! Choose your Page and accounts below, then click &quot;Save changes&quot;.</p>
+        <div className="bg-[#447e60] bg-opacity-95 text-white px-6 py-3 text-center w-full shadow-md border-b border-[#447e60]/30 flex items-center justify-center">
+          <div className="flex items-center space-x-2 max-w-3xl">
+            <svg className="w-5 h-5 text-white opacity-90" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="font-medium text-sm tracking-wide">
+              <span className="font-semibold">Facebook connected.</span> <span className="opacity-90">Please select your assets from the dropdowns below and click Save Changes.</span>
+            </p>
+          </div>
         </div>
       )}
       
