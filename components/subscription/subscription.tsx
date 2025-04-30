@@ -92,7 +92,7 @@ export function Subscription({
                 Start <span className="text-[#4BF29C] dark:text-[#4BF29C]">Free</span>. Power Your Marketing with AI.
               </h1>
               <p className="mt-3 max-w-2xl mx-auto text-[#ADB0B8] dark:text-[#ADB0B8] text-lg">
-                Start your 7-day free trial today. You can cancel anytime during the trial with no charges. After your trial, the subscription can be cancelled on a monthly basis.
+                Start today with our monthly subscription. You can cancel anytime on a monthly basis. Yearly subscriptions include a 7-day free trial.
               </p>
               {checkoutCanceled && (
                 <div className="mt-4 p-3 bg-[#1A1D29] rounded-lg border border-[#2A2E3A] text-white">
