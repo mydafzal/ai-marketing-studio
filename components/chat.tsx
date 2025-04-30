@@ -177,7 +177,12 @@ function ChatCore({ id, chat, className, session, missingKeys }: ChatProps) {
 
       // Submit and get response message
       const responseMessage = await submitUserMessage(message, userContent)
-      setMessages(currentMessages => [...currentMessages, responseMessage])
+      
+      // Add a data attribute to help identify when new AI message is added
+      setMessages(currentMessages => [...currentMessages, {
+        ...responseMessage,
+        id: `ai-response-${Date.now()}`  // Add unique timestamp to ensure DOM changes
+      }])
     },
     [id, session]
   )
