@@ -421,78 +421,87 @@ const NavbarDropdowns = ({
   };
 
   return (
-    <div className="flex items-center justify-center space-x-6 px-6 py-2 bg-dark-bg border-b border-border-dark w-full">
-      <div className="flex items-center relative">
-        <span className="text-xs text-zinc-400 mr-2">Business:</span>
-        {businessAccLoading && <Spinner />}
-        <FBAccountDropdown
-          title=""
-          selectedAcccount={selectedFbBusinessAcc}
-          accounts={fbBusinessAccs}
-          handleAccountChange={selectBusinessAccount}
-          compact={true}
-          darkMode={true}
-        />
-      </div>
+    <div className="flex flex-col w-full">
+      {/* Show CTA notice when user has fbMarketingApiKey but no valid fbBusinessAccId */}
+      {userDetails?.fbMarketingApiKey && (!userDetails?.fbBusinessAccId || userDetails.fbBusinessAccId === "null" || isNaN(Number(userDetails.fbBusinessAccId))) && (
+        <div className="bg-[#447e60] text-white px-4 py-3 text-center w-full">
+          <p className="font-medium text-sm">You&#39;re almost there! Choose your Page and accounts below, then click &quot;Save changes&quot;.</p>
+        </div>
+      )}
       
-      <div className="flex items-center relative">
-        <span className="text-xs text-zinc-400 mr-2">Ad Account:</span>
-        {adAccLoading && <Spinner />}
-        <FBAccountDropdown
-          title=""
-          selectedAcccount={selectedFbAdAcc}
-          accounts={fbAdAccs}
-          handleAccountChange={selectAdAccount}
-          compact={true}
-          darkMode={true}
-        />
-      </div>
-      
-      <div className="flex items-center relative">
-        <span className="text-xs text-zinc-400 mr-2">FB Page:</span>
-        {fbPageLoading && <Spinner />}
-        <FBAccountDropdown
-          title=""
-          selectedAcccount={selectedFbPage}
-          accounts={fbPages}
-          handleAccountChange={selectPage}
-          compact={true}
-          darkMode={true}
-        />
-      </div>
-      
-      <div className="flex items-center relative">
-        <span className="text-xs text-zinc-400 mr-2">IG Account:</span>
-        {igAccountLoading && <Spinner />}
-        <FBAccountDropdown
-          title=""
-          selectedAcccount={selectedInstagramAccount}
-          accounts={instagramAccounts}
-          handleAccountChange={selectInstagramAccount}
-          compact={true}
-          darkMode={true}
-        />
-      </div>
-      
-      {/* Refresh & Save Changes buttons */}
-      <div className="flex space-x-2">
-        {/*
-        <button
-          onClick={() => {
-            setBusinessAccLoading(true);
-            getBusinessAPICall().finally(() => setBusinessAccLoading(false));
-          }}
-          className="bg-zinc-700 hover:bg-zinc-600 text-white text-xs font-medium py-1 px-3 rounded-full transition-colors"
-        >
-          Refresh Assets
-        </button>
-        */}
-        <button
-          onClick={refreshPage}
-          className="bg-primary-green hover:bg-primary-green/90 text-black text-xs font-medium py-1 px-3 rounded-full transition-colors"
-        >
-          Save Changes
-        </button>
+      <div className="flex items-center justify-center space-x-6 px-6 py-2 bg-dark-bg border-b border-border-dark w-full">
+        <div className="flex items-center relative">
+          <span className="text-xs text-zinc-400 mr-2">Business:</span>
+          {businessAccLoading && <Spinner />}
+          <FBAccountDropdown
+            title=""
+            selectedAcccount={selectedFbBusinessAcc}
+            accounts={fbBusinessAccs}
+            handleAccountChange={selectBusinessAccount}
+            compact={true}
+            darkMode={true}
+          />
+        </div>
+        
+        <div className="flex items-center relative">
+          <span className="text-xs text-zinc-400 mr-2">Ad Account:</span>
+          {adAccLoading && <Spinner />}
+          <FBAccountDropdown
+            title=""
+            selectedAcccount={selectedFbAdAcc}
+            accounts={fbAdAccs}
+            handleAccountChange={selectAdAccount}
+            compact={true}
+            darkMode={true}
+          />
+        </div>
+        
+        <div className="flex items-center relative">
+          <span className="text-xs text-zinc-400 mr-2">FB Page:</span>
+          {fbPageLoading && <Spinner />}
+          <FBAccountDropdown
+            title=""
+            selectedAcccount={selectedFbPage}
+            accounts={fbPages}
+            handleAccountChange={selectPage}
+            compact={true}
+            darkMode={true}
+          />
+        </div>
+        
+        <div className="flex items-center relative">
+          <span className="text-xs text-zinc-400 mr-2">IG Account:</span>
+          {igAccountLoading && <Spinner />}
+          <FBAccountDropdown
+            title=""
+            selectedAcccount={selectedInstagramAccount}
+            accounts={instagramAccounts}
+            handleAccountChange={selectInstagramAccount}
+            compact={true}
+            darkMode={true}
+          />
+        </div>
+        
+        {/* Refresh & Save Changes buttons */}
+        <div className="flex space-x-2">
+          {/*
+          <button
+            onClick={() => {
+              setBusinessAccLoading(true);
+              getBusinessAPICall().finally(() => setBusinessAccLoading(false));
+            }}
+            className="bg-zinc-700 hover:bg-zinc-600 text-white text-xs font-medium py-1 px-3 rounded-full transition-colors"
+          >
+            Refresh Assets
+          </button>
+          */}
+          <button
+            onClick={refreshPage}
+            className="bg-primary-green hover:bg-primary-green/90 text-black text-xs font-medium py-1 px-3 rounded-full transition-colors"
+          >
+            Save Changes
+          </button>
+        </div>
       </div>
     </div>
   )
