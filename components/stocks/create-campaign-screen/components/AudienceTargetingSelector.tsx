@@ -5,17 +5,23 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { X, Search, Plus, Target, Filter, Users, Loader2, AlertCircle, Save } from 'lucide-react';
 
+// Define the structure for individual filter items from the API
+interface FilterItem {
+  name: string;
+  id: string;
+}
+
 // Define the structure for the fetched filter data (matching proxy route)
 interface TargetingFiltersDataStructure {
-  interest_filters: { [category: string]: string[] };
+  interest_filters: { [category: string]: FilterItem[] };
   demographic_filters: {
-    life_events: { [category: string]: string[] };
-    family_statuses: string[];
-    industries: string[];
-    household_income: { [country: string]: string[] };
-    income: string[];
+    life_events: { [category: string]: FilterItem[] };
+    family_statuses: FilterItem[];
+    industries: FilterItem[];
+    household_income: { [country: string]: FilterItem[] };
+    income: FilterItem[];
   };
-  behaviour_filters: { [category: string]: string[] };
+  behaviour_filters: { [category: string]: FilterItem[] };
 }
 
 // Structure for individual filter details stored in state
@@ -73,7 +79,8 @@ export default function AudienceTargetingSelector({
   updateMasterFlowData
 }: AudienceTargetingSelectorProps) {
   // Check if filters should be read-only (for recruiting campaigns)
-  const isReadOnly = campaignObjective?.toLowerCase() === 'recruiting';
+  // const isReadOnly = campaignObjective?.toLowerCase() === 'recruiting';
+  const isReadOnly = true; // TODO: hard codeded for now
 
   // Internal state to manage filters derived from props
   const [internalFilters, setInternalFilters] = useState<TargetingFilters>({});
@@ -186,38 +193,45 @@ export default function AudienceTargetingSelector({
       return;
     }
 
-    // Generate a random numeric ID for demonstration purposes
-    // In a real implementation, these IDs would come from the API
-    const generateNumericId = () => {
-      return Math.floor(Math.random() * 9000000000000) + 1000000000000;
-    };
+    console.log(`Searching for ${type} with term: ${term}`);
+    console.log("Filter data structure:", allFiltersData);
 
     if (type === 'interest' && allFiltersData.interest_filters) {
       for (const category in allFiltersData.interest_filters) {
-        allFiltersData.interest_filters[category]?.forEach((item: string) => { // Add type for item
-          if (item.toLowerCase().includes(searchTermLower) && results.length < maxResults) {
-            // Generate a numeric ID for this interest
-            const numericId = generateNumericId().toString();
+        console.log(`Processing interest category: ${category}`, allFiltersData.interest_filters[category]);
+        allFiltersData.interest_filters[category]?.forEach((item: any) => {
+          console.log("Interest item:", item);
+          // Check if item is a string or an object with name/id properties
+          const itemName = typeof item === 'string' ? item : item.name;
+          const itemId = item.id;
+          
+          if (itemName.toLowerCase().includes(searchTermLower) && results.length < maxResults) {
             results.push({
-              id: numericId,
-              name: item,
+              id: itemId,
+              name: itemName,
               type: 'interest',
               path: ['Interest', category]
             });
           }
         });
       }
+      console.log(`Found ${results.length} interest results:`, results);
       setInterestResults(results);
     } else if (type === 'demographics' && allFiltersData.demographic_filters) {
       const demoFilters = allFiltersData.demographic_filters;
       if (demoFilters.life_events) {
         for (const category in demoFilters.life_events) {
-          demoFilters.life_events[category]?.forEach((item: string) => { // Add type for item
-            if (item.toLowerCase().includes(searchTermLower) && results.length < maxResults) {
-              const numericId = generateNumericId().toString();
+          console.log(`Processing demographic life_events category: ${category}`);
+          demoFilters.life_events[category]?.forEach((item: any) => {
+            console.log("Demographic life_event item:", item);
+            // Check if item is a string or an object with name/id properties
+            const itemName = typeof item === 'string' ? item : item.name;
+            const itemId = item.id;
+            
+            if (itemName.toLowerCase().includes(searchTermLower) && results.length < maxResults) {
               results.push({ 
-                id: numericId, 
-                name: item, 
+                id: itemId, 
+                name: itemName, 
                 type: 'demographics', 
                 path: ['Demographics', 'Life Events', category] 
               });
@@ -226,12 +240,17 @@ export default function AudienceTargetingSelector({
         }
       }
       if (demoFilters.family_statuses) {
-        demoFilters.family_statuses?.forEach((item: string) => { // Add type for item
-          if (item.toLowerCase().includes(searchTermLower) && results.length < maxResults) {
-            const numericId = generateNumericId().toString();
+        console.log("Processing demographic family_statuses");
+        demoFilters.family_statuses?.forEach((item: any) => {
+          console.log("Demographic family_status item:", item);
+          // Check if item is a string or an object with name/id properties
+          const itemName = typeof item === 'string' ? item : item.name;
+          const itemId = item.id;
+          
+          if (itemName.toLowerCase().includes(searchTermLower) && results.length < maxResults) {
             results.push({ 
-              id: numericId, 
-              name: item, 
+              id: itemId, 
+              name: itemName, 
               type: 'demographics', 
               path: ['Demographics', 'Family Statuses'] 
             });
@@ -239,46 +258,63 @@ export default function AudienceTargetingSelector({
         });
       }
       if (demoFilters.industries) {
-        demoFilters.industries?.forEach((item: string) => { // Add type for item
-          if (item.toLowerCase().includes(searchTermLower) && results.length < maxResults) {
-            const numericId = generateNumericId().toString();
+        console.log("Processing demographic industries");
+        demoFilters.industries?.forEach((item: any) => {
+          console.log("Demographic industry item:", item);
+          // Check if item is a string or an object with name/id properties
+          const itemName = typeof item === 'string' ? item : item.name;
+          const itemId = item.id;
+          
+          if (itemName.toLowerCase().includes(searchTermLower) && results.length < maxResults) {
             results.push({ 
-              id: numericId, 
-              name: item, 
+              id: itemId, 
+              name: itemName, 
               type: 'demographics', 
               path: ['Demographics', 'Industries'] 
             });
           }
         });
       }
-       if (demoFilters.income) {
-         demoFilters.income?.forEach((item: string) => { // Add type for item
-           if (item.toLowerCase().includes(searchTermLower) && results.length < maxResults) {
-            const numericId = generateNumericId().toString();
-             results.push({ 
-              id: numericId, 
-              name: item, 
+      if (demoFilters.income) {
+        console.log("Processing demographic income");
+        demoFilters.income?.forEach((item: any) => {
+          console.log("Demographic income item:", item);
+          // Check if item is a string or an object with name/id properties
+          const itemName = typeof item === 'string' ? item : item.name;
+          const itemId = item.id;
+          
+          if (itemName.toLowerCase().includes(searchTermLower) && results.length < maxResults) {
+            results.push({ 
+              id: itemId, 
+              name: itemName, 
               type: 'demographics', 
               path: ['Demographics', 'Income'] 
             });
-           }
-         });
-       }
+          }
+        });
+      }
+      console.log(`Found ${results.length} demographic results:`, results);
       setDemographicResults(results);
     } else if (type === 'behaviors' && allFiltersData.behaviour_filters) {
       for (const category in allFiltersData.behaviour_filters) {
-        allFiltersData.behaviour_filters[category]?.forEach((item: string) => { // Add type for item
-          if (item.toLowerCase().includes(searchTermLower) && results.length < maxResults) {
-            const numericId = generateNumericId().toString();
+        console.log(`Processing behavior category: ${category}`);
+        allFiltersData.behaviour_filters[category]?.forEach((item: any) => {
+          console.log("Behavior item:", item);
+          // Check if item is a string or an object with name/id properties
+          const itemName = typeof item === 'string' ? item : item.name;
+          const itemId = item.id;
+          
+          if (itemName.toLowerCase().includes(searchTermLower) && results.length < maxResults) {
             results.push({
-              id: numericId,
-              name: item,
+              id: itemId,
+              name: itemName,
               type: 'behaviors',
               path: ['Behaviors', category]
             });
           }
         });
       }
+      console.log(`Found ${results.length} behavior results:`, results);
       setBehaviorResults(results);
     }
   };
@@ -363,28 +399,6 @@ export default function AudienceTargetingSelector({
     console.log("Internal filters updated:", internalFilters);
   }, [internalFilters]);
 
-  // Helper function to generate a random numeric ID
-  const generateNumericId = () => {
-    return Math.floor(Math.random() * 9000000000000) + 1000000000000;
-  };
-
-  // Helper function to ensure an ID is numeric
-  const ensureNumericId = (id: string): string => {
-    // If the ID is already numeric, return it
-    if (/^\d+$/.test(id)) {
-      return id;
-    }
-    
-    // If the ID contains a numeric part, extract and return it
-    const idParts = id.split(':');
-    const numericPart = idParts.find(part => /^\d+$/.test(part));
-    if (numericPart) {
-      return numericPart;
-    }
-    
-    // Otherwise, generate a new numeric ID
-    return generateNumericId().toString();
-  };
 
   // Function to save targeting filters to the API
   const saveTargetingFilters = async () => {
@@ -394,20 +408,24 @@ export default function AudienceTargetingSelector({
     
     try {
       // Format filters according to the expected schema with min_reach and max_reach
-      const formattedFilters: TargetingFilters = {
+      // The backend expects only id, min_reach, and max_reach for each filter
+      const formattedFilters: any = {
         interest_filters: {},
         demographic_filters: {},
-        behaviour_filters: {}
+        behaviour_filters: {},
+        combined_reach: {
+          min_reach: 1000,
+          max_reach: 1000
+        }
       };
       
       // Process interest filters
       if (internalFilters.interest_filters) {
         Object.entries(internalFilters.interest_filters).forEach(([name, filter]) => {
-          formattedFilters.interest_filters![name] = {
-            ...filter,
-            id: ensureNumericId(filter.id), // Ensure ID is numeric
-            min_reach: filter.min_reach || 0,
-            max_reach: filter.max_reach || 0
+          formattedFilters.interest_filters[name] = {
+            id: filter.id, // Ensure ID is numeric
+            min_reach: filter.min_reach || 90000,
+            max_reach: filter.max_reach || 105900
           };
         });
       }
@@ -415,11 +433,10 @@ export default function AudienceTargetingSelector({
       // Process demographic filters
       if (internalFilters.demographic_filters) {
         Object.entries(internalFilters.demographic_filters).forEach(([name, filter]) => {
-          formattedFilters.demographic_filters![name] = {
-            ...filter,
-            id: ensureNumericId(filter.id), // Ensure ID is numeric
-            min_reach: filter.min_reach || 0,
-            max_reach: filter.max_reach || 0
+          formattedFilters.demographic_filters[name] = {
+            id: filter.id, // Ensure ID is numeric
+            min_reach: filter.min_reach || 1000,
+            max_reach: filter.max_reach || 1000
           };
         });
       }
@@ -427,17 +444,16 @@ export default function AudienceTargetingSelector({
       // Process behavior filters
       if (internalFilters.behaviour_filters) {
         Object.entries(internalFilters.behaviour_filters).forEach(([name, filter]) => {
-          formattedFilters.behaviour_filters![name] = {
-            ...filter,
-            id: ensureNumericId(filter.id), // Ensure ID is numeric
-            min_reach: filter.min_reach || 0,
-            max_reach: filter.max_reach || 0
+          formattedFilters.behaviour_filters[name] = {
+            id:filter.id, // Ensure ID is numeric
+            min_reach: filter.min_reach || 26000,
+            max_reach: filter.max_reach || 30600
           };
         });
       }
       
       // Create the targeting object with the formatted filters
-      const targetingObject: AudienceTargeting = { type: "custom", filters: formattedFilters }; // TODO: formattedFilters do not contain filter ID. becuase list api is not including it. Need to change backend API,
+      const targetingObject: AudienceTargeting = { type: "custom", filters: formattedFilters as any };
       
       // Update parent component state
       setTargetingFilters(targetingObject);
@@ -536,7 +552,7 @@ export default function AudienceTargetingSelector({
       </div>
     );
   };
-
+ 
    // --- Helper to render search results ---
    const renderSearchResults = (
      results: LocalSearchResult[],
@@ -639,13 +655,13 @@ export default function AudienceTargetingSelector({
         )}
       </div>
       
-      {isReadOnly && (
+      {/*{isReadOnly && (
         <div className="bg-amber-900/20 p-3 rounded-md border border-amber-500/30 mb-4">
           <p className="text-amber-400 text-sm">
             <strong>Note:</strong> For Facebook compliance, targeting filters for recruiting campaigns are read-only.
           </p>
         </div>
-      )}
+      )}*/}
       
       <div className="border-b border-border-dark mb-4"></div>
 
