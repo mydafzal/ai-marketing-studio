@@ -123,13 +123,6 @@ export default async function FacebookConnectPage() {
               </div>
             </div>
           </div>
-          
-          <div className="flex justify-center gap-4">
-            <Link href="/" 
-              className="px-6 py-3 rounded-lg bg-[#151925] text-white border border-[#2A2E3A] hover:bg-[#1A1D29] transition-colors">
-              Skip for now
-            </Link>
-          </div>
         </div>
       </div>
     </div>
