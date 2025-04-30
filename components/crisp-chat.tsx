@@ -33,10 +33,21 @@ export default function CrispChat({ user }: CrispChatProps) {
         script.onload = () => {
           if (user?.email) {
             window.$crisp.push(['set', 'user:email', [user.email]])
-          if (user.name) {
+            if (user.name) {
               window.$crisp.push(['set', 'user:nickname', [user.name]])
             }
           }
+          
+          // Add CSS to hide Crisp on mobile devices
+          const style = document.createElement('style')
+          style.textContent = `
+            @media (max-width: 768px) {
+              .crisp-client {
+                display: none !important;
+              }
+            }
+          `
+          document.head.appendChild(style)
         }
       }
     }
