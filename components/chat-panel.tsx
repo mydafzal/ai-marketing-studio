@@ -158,7 +158,7 @@ export function ChatPanel({
         currentCount={messageCount}
       />
       
-      <div className="fixed inset-x-0 bottom-0 w-full bg-gradient-to-b from-deep-black/90 from-0% to-deep-black to-50% duration-300 ease-in-out animate-in peer-[[data-state=open]]:group-[]:lg:pl-[250px] peer-[[data-state=open]]:group-[]:xl:pl-[300px]">
+      <div className="fixed inset-x-0 bottom-0 w-full bg-gradient-to-b from-deep-black/90 from-0% to-deep-black to-50% duration-300 ease-in-out animate-in peer-[[data-state=open]]:group-[]:lg:pl-[250px] peer-[[data-state=open]]:group-[]:xl:pl-[300px] md:pb-0">
         <ButtonScrollToBottom
           isAtBottom={isAtBottom}
           scrollToBottom={scrollToBottom}
