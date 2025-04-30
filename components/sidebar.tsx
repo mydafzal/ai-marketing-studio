@@ -13,8 +13,15 @@ export function Sidebar({ className, children }: SidebarProps) {
   return (
     <div
       data-state={isSidebarOpen && !isLoading ? 'open' : 'closed'}
-      className={cn(className, 'h-full flex-col bg-[#0A0C14]')}
+      className={cn(className, 'h-full flex-col bg-[#0A0C14] overflow-hidden')}
     >
+      {/* Visible overlay when sidebar is open on mobile */}
+      {isSidebarOpen && (
+        <div 
+          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-20" 
+          onClick={() => useSidebar().toggleSidebar()}
+        />
+      )}
       {children}
     </div>
   )

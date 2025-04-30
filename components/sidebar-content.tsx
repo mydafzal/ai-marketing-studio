@@ -12,7 +12,7 @@ export default function SidebarContent({ userId }: { userId: string }) {
   }
 
   return (
-    <Sidebar className="peer absolute inset-y-0 z-30 hidden -translate-x-full border-r border-[#2A2E3A] duration-300 ease-in-out data-[state=open]:translate-x-0 lg:flex lg:w-[250px] xl:w-[300px]">
+    <Sidebar className="peer absolute inset-y-0 z-30 -translate-x-full border-r border-[#2A2E3A] duration-300 ease-in-out data-[state=open]:translate-x-0 flex lg:flex w-[85%] sm:w-[300px] lg:w-[250px] xl:w-[300px]">
       <ChatHistory userId={userId} />
     </Sidebar>
   )

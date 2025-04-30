@@ -2,6 +2,7 @@ import * as React from 'react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { auth } from '@/auth'
+import { headers } from 'next/headers'
 import { Button, buttonVariants } from '@/components/ui/button'
 import {
   IconGitHub,
@@ -45,9 +46,11 @@ async function UserOrLogin() {
     <>
       {session?.user ? (
         <>
-          <SidebarMobile>
-            <ChatHistory userId={session.user.id} />
-          </SidebarMobile>
+          <div className="hidden-on-non-chat-pages">
+            <SidebarMobile>
+              <ChatHistory userId={session.user.id} />
+            </SidebarMobile>
+          </div>
           <SidebarToggle />
         </>
       ) : (
@@ -73,14 +76,14 @@ async function UserOrLogin() {
             <UserMenu user={session.user} />
             
             <div className="flex items-center">
-              <Link href="/" className={cn(buttonVariants({ variant: 'ghost' }), 'ml-4 text-text-white hover:text-primary-green hover:bg-dark-bg')}>
+              <Link href="/" className={cn(buttonVariants({ variant: 'ghost' }), 'ml-1 sm:ml-4 text-xs sm:text-sm text-text-white hover:text-primary-green hover:bg-dark-bg')}>
                 AI Marketer
               </Link>
               <Link
                 href="/ai-content"
-                className={cn(buttonVariants({ variant: 'ghost' }), 'ml-4 text-text-white hover:text-primary-green hover:bg-dark-bg')}
+                className={cn(buttonVariants({ variant: 'ghost' }), 'ml-1 sm:ml-4 text-xs sm:text-sm text-text-white hover:text-primary-green hover:bg-dark-bg')}
               >
-                AI Creatives Generator
+                AI Creatives
               </Link>
               
               <ProfileSettings
@@ -118,7 +121,7 @@ export async function Header() {
 
   return (
     <div className="sticky top-0 z-50">
-      <header className="flex items-center justify-between w-full h-16 px-4 border-b border-border-dark shrink-0 bg-dark-bg backdrop-blur-xl">
+      <header className="flex items-center justify-between w-full h-16 px-2 sm:px-4 border-b border-border-dark shrink-0 bg-dark-bg backdrop-blur-xl">
         <div className="flex items-center w-full">
           <React.Suspense fallback={<div className="flex-1 overflow-auto" />}>
             {/* @ts-ignore */}
