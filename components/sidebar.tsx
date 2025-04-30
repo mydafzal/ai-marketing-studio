@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils'
 export interface SidebarProps extends React.ComponentProps<'div'> {}
 
 export function Sidebar({ className, children }: SidebarProps) {
-  const { isSidebarOpen, isLoading } = useSidebar()
+  const { isSidebarOpen, isLoading, toggleSidebar } = useSidebar()
 
   return (
     <div
@@ -19,7 +19,7 @@ export function Sidebar({ className, children }: SidebarProps) {
       {isSidebarOpen && (
         <div 
           className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-20" 
-          onClick={() => useSidebar().toggleSidebar()}
+          onClick={toggleSidebar}
         />
       )}
       {children}
