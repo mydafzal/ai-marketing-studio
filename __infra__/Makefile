@@ -27,3 +27,8 @@ create-local-db:
 		echo "❌ Invalid package manager. Please type 'pnpm' or 'npm'."; \
 	fi
 
+.PHONY: generate-package-lock
+generate-package-lock:
+	@echo "🔒 Generating package-lock.json inside a clean Node/npm container..."
+	docker compose -f docker-compose.npm.yml up --abort-on-container-exit --remove-orphans
+	@echo "✅ Done. package-lock.json is ready."
