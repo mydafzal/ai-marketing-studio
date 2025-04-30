@@ -34,7 +34,7 @@ export function SidebarToggle() {
   return (
     <Button
       variant="ghost"
-      className={`-ml-2 size-9 p-0 flex ${isSidebarOpen ? 'lg:flex' : 'inline-flex'}`}
+      className={`-ml-2 size-9 p-0 hidden lg:flex ${isSidebarOpen ? 'lg:flex' : 'lg:inline-flex'}`}
       onClick={() => {
         toggleSidebar()
       }}
