@@ -1,0 +1,26 @@
+version: '3.9'
+# for local setup only
+services:
+
+  ai_marketing_manager_postgres_db:
+    image: postgres
+    restart: always
+    # set shared memory limit when using docker-compose
+    shm_size: 128mb
+    environment:
+      POSTGRES_DB: ai_marketing_manager_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - 5433:5432
+
+  ai_marketing_manager_adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
+
+volumes:
+  db_data:
