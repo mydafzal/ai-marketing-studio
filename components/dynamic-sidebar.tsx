@@ -63,30 +63,30 @@ export function DynamicSidebar() {
 
   return (
     <div 
-      className={`fixed top-0 right-0 z-50 h-full w-[500px] transform bg-[#1A1D29] shadow-lg 
+      className={`fixed top-0 right-0 z-50 h-full w-full sm:w-[90%] md:w-[500px] max-w-full transform bg-[#1A1D29] shadow-lg 
                  border-l border-[#2A2E3A] transition-transform duration-300 ease-in-out ${animationClass} pointer-events-none`}
     >
       <div className="flex h-full flex-col pointer-events-auto">
         <div className="flex items-center justify-between border-b border-[#2A2E3A] p-4">
-          <h2 className="text-lg font-semibold text-white">{effectiveTitle}</h2>
+          <h2 className="text-lg font-semibold text-white truncate max-w-[200px] sm:max-w-full">{effectiveTitle}</h2>
           <div className="flex gap-2">
             <Button 
               variant="ghost" 
               size="sm" 
               onClick={handleMinimize}
-              className="text-[#ADB0B8] hover:text-white hover:bg-[#151925] transition-colors"
+              className="text-[#ADB0B8] hover:text-white hover:bg-[#151925] transition-colors p-2 sm:p-3"
               title="Minimize sidebar"
             >
-              <Minimize2 className="h-4 w-4" />
+              <Minimize2 className="h-5 w-5" />
             </Button>
             <Button 
               variant="ghost" 
               size="sm" 
               onClick={handleClose}
-              className="text-[#ADB0B8] hover:text-white hover:bg-[#151925] transition-colors"
+              className="text-[#ADB0B8] hover:text-white hover:bg-[#151925] transition-colors p-2 sm:p-3"
               title="Close sidebar"
             >
-              <X className="h-5 w-5" />
+              <X className="h-6 w-6" />
             </Button>
           </div>
         </div>
@@ -113,10 +113,10 @@ export function RestoreSidebarButton() {
       onClick={handleRestore}
       variant="outline"
       size="icon"
-      className="fixed bottom-24 right-6 z-40 rounded-full bg-[#1A1D29] border-[#2A2E3A] hover:bg-[#212534] text-white shadow-lg transition-colors"
+      className="fixed bottom-24 right-6 z-40 rounded-full bg-[#1A1D29] border-[#2A2E3A] hover:bg-[#212534] text-white shadow-lg transition-colors p-3 h-14 w-14 sm:h-12 sm:w-12 sm:p-2"
       title="Restore sidebar"
     >
-      <Maximize2 className="h-5 w-5" />
+      <Maximize2 className="h-7 w-7 sm:h-5 sm:w-5" />
     </Button>
   )
 }

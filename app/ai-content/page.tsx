@@ -92,24 +92,33 @@ export default function AiContentPage() {
   // The usage limits are enforced in the respective components
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="flex flex-col space-y-6">
-        <div className="flex flex-col space-y-3">
+    <div className="container mx-auto p-3 sm:p-6 ai-content-page">
+      <div className="flex flex-col space-y-4 sm:space-y-6">
+        <div className="flex flex-col space-y-2 sm:space-y-3">
           <div className="flex items-center justify-between">
-            <h1 className="text-3xl font-bold">Social Media Content Studio</h1>
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">Social Media Content Studio</h1>
           </div>
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-            <p className="text-muted-foreground md:max-w-lg">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 sm:gap-3">
+            <p className="text-xs sm:text-sm text-muted-foreground md:max-w-lg">
               Create professional AI-generated content optimized for social media engagement and conversions
             </p>
           </div>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="video">AI Video Creation</TabsTrigger>
-            <TabsTrigger value="image">AI Creatives Director</TabsTrigger>
-            <TabsTrigger value="inpaint">Image Inpainting</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3 overflow-x-auto">
+            <TabsTrigger value="video" className="text-xs sm:text-sm">
+              <span className="hidden sm:inline">AI Video Creation</span>
+              <span className="inline sm:hidden">Video</span>
+            </TabsTrigger>
+            <TabsTrigger value="image" className="text-xs sm:text-sm">
+              <span className="hidden sm:inline">AI Creatives Director</span>
+              <span className="inline sm:hidden">Images</span>
+            </TabsTrigger>
+            <TabsTrigger value="inpaint" className="text-xs sm:text-sm">
+              <span className="hidden sm:inline">Image Inpainting</span>
+              <span className="inline sm:hidden">Inpainting</span>
+            </TabsTrigger>
           </TabsList>
 
           {/* VIDEO TAB */}

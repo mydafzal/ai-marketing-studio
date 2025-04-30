@@ -46,7 +46,7 @@ const FBAccountDropdown = ({
                                 ? "bg-[#1a1a1a] border-[#2a2a2a] text-white hover:bg-[#252525]" 
                                 : "bg-white border-gray-200 text-black hover:bg-gray-100/80",
                             compact 
-                                ? "min-h-[32px] min-w-[140px] px-3 py-0.5 text-xs" 
+                                ? "min-h-[32px] min-w-[120px] sm:min-w-[140px] px-2 sm:px-3 py-0.5 text-xs" 
                                 : "min-h-[48px] min-w-[220px] px-4 py-1"
                         )}
                         aria-label="Select account"
@@ -63,7 +63,7 @@ const FBAccountDropdown = ({
                                 <div>
                                   <p className={cn(
                                     compact ? "text-xs" : "text-sm", 
-                                    "truncate max-w-[100px]",
+                                    "truncate max-w-[60px] sm:max-w-[100px]",
                                     darkMode ? "text-white" : "text-black"
                                   )}>
                                     {selectedAcccount.name}
