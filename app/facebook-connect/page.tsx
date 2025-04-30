@@ -117,9 +117,19 @@ export default async function FacebookConnectPage() {
               
               <div className="flex flex-col items-center">
                 <FacebookConnect />
-                <p className="mt-4 text-[#ADB0B8] text-sm">
-                  You can always connect later in Settings if you prefer.
-                </p>
+                <div className="mt-4 text-center">
+                  <p className="text-[#ADB0B8] text-sm">
+                    You can always connect later in Settings if you prefer.
+                  </p>
+                  <a 
+                    href="https://reeply-ai.crisp.help/en/article/how-to-connect-your-account-to-facebook-mr0zul/?bust=1745830471053" 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="text-sm text-[#4BF29C] hover:underline mt-2 inline-block"
+                  >
+                    Need help? View connection guide
+                  </a>
+                </div>
               </div>
             </div>
           </div>
