@@ -39,6 +39,7 @@ interface ReviewScreenProps {
   budget: string;
   adHeadline: string;
   adText: string;
+  link?: string; // Website URL
   openEditModal: (section: string) => void;
   handlePublish: () => void;
   masterFlowData?: MasterFlowResponse | null;
@@ -59,6 +60,7 @@ export function ReviewScreen({
   budget,
   adHeadline,
   adText,
+  link,
   openEditModal,
   handlePublish,
   masterFlowData
@@ -530,6 +532,7 @@ export function ReviewScreen({
         demographicFilters={demographicFilters}
         adPlacements={adPlacements}
         budget={budget}
+        websiteUrl={link}
         creatives={updatedCreatives.length > 0 ? updatedCreatives : creatives}
         onCreativesUpdated={handleUpdatedCreatives}
         onLeadFormUpdated={handleLeadFormUpdated}
