@@ -48,23 +48,25 @@ export function AccountConnectionModal({ isOpen, onClose }: AccountConnectionMod
                 </svg>
               </div>
             </div>
-            <DialogTitle className="text-center text-lg sm:text-xl text-white">Meta Business Connection Required</DialogTitle>
+            <DialogTitle className="text-center text-lg sm:text-xl text-white">⚠️ Facebook Configuration Issue Detected</DialogTitle>
           </DialogHeader>
           
           <div className="text-[#ADB0B8] leading-relaxed text-sm sm:text-base">
             <p className="mb-3 sm:mb-4">
-              <strong className="text-[#4BF29C]">Your Facebook account is connected!</strong> However, no Meta Business Manager is available in the dropdown navigation.
+              <strong className="text-[#4BF29C]">Your Facebook account is connected</strong>, but our AI can&apos;t work properly because there&apos;s a <strong className="text-white">misconfiguration in your Facebook Business setup</strong>.
             </p>
             
             <p className="mb-4 sm:mb-6">
-              We want to help you get onboarded as quickly as possible. Our team can guide you through setting up the necessary Meta Business Manager to start using our AI Marketing Assistant right away.
+              Don&apos;t worry! Our team can <strong className="text-white">quickly solve this for you</strong>. After a brief 5-minute fix, you&apos;ll be able to start generating campaigns in just minutes. We&apos;re experts at resolving these common Facebook setup issues.
             </p>
             
             <div className="text-xs sm:text-sm text-[#8A8F99] p-3 sm:p-4 bg-[#151925] rounded-lg border border-[#2A2E3A] mb-4 sm:mb-6">
-              <p className="font-medium mb-1 sm:mb-2 text-white">Why am I seeing this?</p>
+              <p className="font-medium mb-1 sm:mb-2 text-white">What&apos;s wrong with my setup?</p>
               <p>
-                To use our AI Marketing Assistant effectively, you need access to a Meta Business Manager. 
-                Our team can help you set this up or troubleshoot any connection issues you&apos;re experiencing.
+                Our AI needs access to your complete Facebook marketing structure: Meta Business Manager, Ad Account, Facebook Page, and Instagram Account. One or more of these connections is missing or misconfigured.
+              </p>
+              <p className="mt-2 font-medium text-[#4BF29C]">
+                Please contact us via chat or book a quick call, mentioning that you saw this popup. We&apos;ll fix this for you right away so you can start using our AI Marketing Assistant.
               </p>
             </div>
           </div>

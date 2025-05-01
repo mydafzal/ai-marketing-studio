@@ -397,13 +397,33 @@ const NavbarDropdowns = ({
   
   // Check if we should show the connection modal
   useEffect(() => {
-    // Show modal only if Facebook is connected but no business accounts are available
-    if (userDetails?.fbMarketingApiKey && fbBusinessAccs && fbBusinessAccs.length === 0) {
-      setShowConnectionModal(true);
+    // First, make sure Facebook is connected
+    if (userDetails?.fbMarketingApiKey) {
+      // Check all dropdown items for any that might have no fetchable results
+      const hasNoBusinessAccounts = fbBusinessAccs && fbBusinessAccs.length === 0;
+      const hasNoAdAccounts = selectedFbBusinessAcc && fbAdAccs && fbAdAccs.length === 0;
+      const hasNoFbPages = selectedFbBusinessAcc && fbPages && fbPages.length === 0;
+      const hasNoInstagramAccounts = selectedFbPage && instagramAccounts && instagramAccounts.length === 0;
+      
+      // Show modal if any of these conditions are true
+      if (hasNoBusinessAccounts || hasNoAdAccounts || hasNoFbPages || hasNoInstagramAccounts) {
+        setShowConnectionModal(true);
+      } else {
+        setShowConnectionModal(false);
+      }
     } else {
+      // Facebook not connected, don't show modal
       setShowConnectionModal(false);
     }
-  }, [userDetails?.fbMarketingApiKey, fbBusinessAccs]);
+  }, [
+    userDetails?.fbMarketingApiKey, 
+    fbBusinessAccs, 
+    selectedFbBusinessAcc, 
+    fbAdAccs,
+    fbPages,
+    selectedFbPage, 
+    instagramAccounts
+  ]);
 
   // When business accounts are loaded, set the selected business account and fetch FB pages
   useEffect(() => {
