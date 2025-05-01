@@ -41,7 +41,17 @@ export default function AiContentPage() {
       setIsFetchingSub(true)
 
       try {
-        const { isBypassed } = await getEmailAndBypassStatus()
+        // First check if user is logged in by getting email
+        const emailResult = await getEmailAndBypassStatus()
+        
+        // If email is empty or null, user is not authenticated
+        if (!emailResult || !emailResult.email) {
+          console.error('User not authenticated, redirecting to login')
+          router.push('/login')
+          return
+        }
+        
+        const { isBypassed } = emailResult
 
         if (isBypassed) {
           setSubStatus('active') // Override with bypass
@@ -60,6 +70,9 @@ export default function AiContentPage() {
         console.error('Error fetching subscription info or email:', error)
         setSubStatus('')
         setSubbedPackage('')
+        // If there was an error getting user info, redirect to login
+        router.push('/login')
+        return
       }
 
       setIsFetchingSub(false)
