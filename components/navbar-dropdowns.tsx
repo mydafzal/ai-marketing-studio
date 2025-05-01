@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import FBAccountDropdown from './fb-account-dropdown'
+import { AccountConnectionModal } from './account-not-connected-screen'
 import { cn } from '@/lib/utils'
 
 type Account = {
@@ -51,6 +52,7 @@ const NavbarDropdowns = ({
   
   // Move this useState hook before any conditional returns to fix the ESLint error
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showConnectionModal, setShowConnectionModal] = useState(false);
 
   async function getBusinessAPICall() {
     if (userDetails?.fbMarketingApiKey) {
@@ -392,6 +394,16 @@ const NavbarDropdowns = ({
       getBusinessAPICall();
     }
   }, [userDetails?.email, userDetails?.fbMarketingApiKey]);
+  
+  // Check if we should show the connection modal
+  useEffect(() => {
+    // Show modal only if Facebook is connected but no business accounts are available
+    if (userDetails?.fbMarketingApiKey && fbBusinessAccs && fbBusinessAccs.length === 0) {
+      setShowConnectionModal(true);
+    } else {
+      setShowConnectionModal(false);
+    }
+  }, [userDetails?.fbMarketingApiKey, fbBusinessAccs]);
 
   // When business accounts are loaded, set the selected business account and fetch FB pages
   useEffect(() => {
@@ -425,6 +437,11 @@ const NavbarDropdowns = ({
   
   return (
     <>
+      {/* Connection Modal */}
+      <AccountConnectionModal 
+        isOpen={showConnectionModal} 
+        onClose={() => setShowConnectionModal(false)} 
+      />
       {/* Desktop View - Standard Horizontal Layout */}
       <div className="hidden md:block">
         <div className="flex flex-nowrap items-center justify-center space-x-4 lg:space-x-6 px-6 py-2 bg-dark-bg border-b border-border-dark w-full">
