@@ -89,7 +89,7 @@ export function HomePageInfoCard({ adAccountConnected, awaitingToGetReady, isSub
                     <strong>
                       Click{' '}
                       <a
-                        href="https://reeply-ai.crisp.help/en/article/how-to-connect-your-account-to-facebook-mr0zul/"
+                        href="https://joyous-brow-6da.notion.site/How-to-connect-to-Facebook-1e616186aac980c0a054f5452b53be7e"
                         className="text-blue-600 underline"
                         target="_blank"
                         rel="noopener noreferrer"
