@@ -26,6 +26,11 @@ async function fetchAllPaginatedPages(initialUrl: string): Promise<any[]> {
   let url: string | null = initialUrl
   const allData: any[] = []
 
+  const baseUrl = initialUrl.split('?')[0]
+  const searchParams = new URL(initialUrl).searchParams
+  const accessToken = searchParams.get('access_token') || ''
+  const fields = searchParams.get('fields') || ''
+
   while (url) {
     const resp = await fetch(url, { method: 'GET' })
     const data = await resp.json()
@@ -40,7 +45,7 @@ async function fetchAllPaginatedPages(initialUrl: string): Promise<any[]> {
 
     const after: any = data.paging?.cursors?.after
     url = after
-      ? `${initialUrl.split('?')[0]}?access_token=${new URL(url).searchParams.get('access_token') || ''}&after=${after}`
+      ? `${baseUrl}?access_token=${accessToken}&fields=${fields}&after=${after}`
       : null
   }
 
