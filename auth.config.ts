@@ -11,13 +11,22 @@ export const authConfig = {
       const isLoggedIn = !!auth?.user
       const isOnLoginPage = nextUrl.pathname.startsWith('/login')
       const isOnSignupPage = nextUrl.pathname.startsWith('/signup')
+      const isOnAIContentPage = nextUrl.pathname.startsWith('/ai-content')
 
+      // If user is logged in and trying to access login/signup pages, redirect to home
       if (isLoggedIn) {
         if (isOnLoginPage || isOnSignupPage) {
           return Response.redirect(new URL('/', nextUrl))
         }
+        return true
       }
 
+      // If user is not logged in and trying to access AI Content page, redirect to login
+      if (!isLoggedIn && isOnAIContentPage) {
+        return Response.redirect(new URL('/login', nextUrl))
+      }
+
+      // For other public routes, allow access
       return true
     },
     async jwt({ token, user }) {
