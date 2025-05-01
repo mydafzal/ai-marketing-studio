@@ -25,6 +25,11 @@ import ProfileSettings from '@/components/profile-settings'
 import { ThemeToggle } from './theme-toggle'
 import dynamic from 'next/dynamic'
 
+// Dynamic import for the mobile Crisp launcher
+const CrispMobileLauncher = dynamic(() => import('@/components/crisp-mobile-launcher').then(mod => mod.CrispMobileLauncher), {
+  ssr: false
+})
+
 // Use dynamic import for the client component
 const NavbarDropdowns = dynamic(() => import('@/components/navbar-dropdowns'), {
   ssr: false
@@ -73,7 +78,14 @@ async function UserOrLogin() {
         <IconSeparator className="size-6 text-border-dark" />
         {session?.user ? (
           <div className="flex flex-grow justify-between items-center">
-            <UserMenu user={session.user} />
+            <div className="flex items-center">
+              <UserMenu user={session.user} />
+              {/* Mobile Crisp Chat Button - only shows on mobile */}
+              <CrispMobileLauncher 
+                userEmail={session.user.email} 
+                userName={session.user.email.split('@')[0]} 
+              />
+            </div>
             
             <div className="flex items-center">
               <Link href="/" className={cn(buttonVariants({ variant: 'ghost' }), 'ml-1 sm:ml-4 text-xs sm:text-sm text-text-white hover:text-primary-green hover:bg-dark-bg')}>

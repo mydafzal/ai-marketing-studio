@@ -158,12 +158,7 @@ function QuickActionsDialog({ onSendMessage }: { onSendMessage: (message: string
               message="I want to turn my campaign on/off" 
               onAction={handleAction}
             />
-            <QuickAction 
-              icon={<LifeBuoy className="size-5 text-primary-green" />}
-              label="Contact Support" 
-              message="I need help from support" 
-              onAction={handleAction}
-            />
+            {/* Support action removed - now using Crisp chat in the navbar */}
           </div>
         </DialogContent>
       </Dialog>
