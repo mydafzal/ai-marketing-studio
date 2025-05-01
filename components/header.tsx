@@ -83,7 +83,7 @@ async function UserOrLogin() {
               {/* Mobile Crisp Chat Button - only shows on mobile */}
               <CrispMobileLauncher 
                 userEmail={session.user.email} 
-                userName={session.user.name || session.user.email.split('@')[0]} 
+                userName={session.user.email.split('@')[0]} 
               />
             </div>
             
