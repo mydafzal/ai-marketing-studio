@@ -413,6 +413,38 @@ function Onboarding({
         goal: "",
         company_segment: ""
     })
+    
+    // Check if a URL is valid (has a TLD after adding https://)
+    const isValidfUrl = (url: string) => {
+      if (!url || url.trim() === '') return false;
+      
+      try {
+        // Ensure URL has protocol before checking
+        const urlWithProtocol = url.match(/^https?:\/\//i) ? url : `https://${url}`;
+        const urlObj = new URL(urlWithProtocol);
+        
+        // Check for a valid domain with at least one dot (to ensure there's a TLD)
+        return urlObj.hostname.includes('.') && urlObj.hostname.split('.').pop()!.length > 0;
+      } catch (e) {
+        return false;
+      }
+    };
+    
+    // URL validation to ensure all links have https:// but no www.
+    const validateAndFixUrl = (url: string) => {
+      if (!url || url.trim() === '') return url;
+      
+      // Remove www. if present
+      let cleanUrl = url.replace(/^(https?:\/\/)?(www\.)/i, '');
+      
+      // Add https:// if not present
+      if (!cleanUrl.match(/^https?:\/\//i)) {
+        return `https://${cleanUrl}`;
+      }
+      
+      return cleanUrl;
+    };
+    
 
     const [firstName, setFirstName] = React.useState<string>(userDetails?.first_name || "")
     const [lastName, setLastName] = React.useState<string>(userDetails?.last_name || "")
@@ -529,8 +561,40 @@ function Onboarding({
                 case 'last_name': value = lastName; break;
                 case 'company_name': value = companyName; break;
                 case 'company_description': value = companyDescription; break;
-                case 'website_link': value = websiteLink; break;
-                case 'privacy_policy_link': value = privacyPolicyLink; break;
+                case 'website_link': 
+                    value = websiteLink; 
+                    // Apply validation for website_link
+                    if (value) {
+                        const fixedUrl = validateAndFixUrl(value);
+                        if (fixedUrl !== value) {
+                            setWebsiteLink(fixedUrl);
+                            value = fixedUrl;
+                        }
+                        
+                        if (!isValidfUrl(value) && value.trim() !== "") {
+                            errors[field] = "Please enter a valid URL";
+                            hasErrors = true;
+                            return;
+                        }
+                    }
+                    break;
+                case 'privacy_policy_link': 
+                    value = privacyPolicyLink;
+                    // Apply validation for privacy_policy_link
+                    if (value) {
+                        const fixedUrl = validateAndFixUrl(value);
+                        if (fixedUrl !== value) {
+                            setPrivacyPolicyLink(fixedUrl);
+                            value = fixedUrl;
+                        }
+                        
+                        if (!isValidfUrl(value) && value.trim() !== "") {
+                            errors[field] = "Please enter a valid URL";
+                            hasErrors = true;
+                            return;
+                        }
+                    }
+                    break;
                 case 'preferred_language': value = preferredLanguage; break;
                 case 'goal': value = goal; break;
                 case 'company_segment': value = companySegment; break;
@@ -599,8 +663,8 @@ function Onboarding({
                 last_name: lastName,
                 company_name: companyName,
                 company_description: companyDescription,
-                website_link: websiteLink,
-                privacy_policy_link: privacyPolicyLink,
+                website_link: validateAndFixUrl(websiteLink),
+                privacy_policy_link: validateAndFixUrl(privacyPolicyLink),
                 preferred_language: preferredLanguage,
                 goal: goal,
                 company_segment: companySegment,
@@ -917,6 +981,17 @@ function Onboarding({
                                 }
                                 setWebsiteLink(e.target.value)
                             }}
+                            onBlur={(e) => {
+                                const fixedUrl = validateAndFixUrl(e.target.value);
+                                if (fixedUrl !== e.target.value) {
+                                    setWebsiteLink(fixedUrl);
+                                }
+                                if (!isValidfUrl(fixedUrl) && fixedUrl.length > 0) {
+                                    setInputError({...inputError, website_link: "Please enter a valid URL"})
+                                } else {
+                                    setInputError({...inputError, website_link: ""})
+                                }
+                            }}
                         />
                         {fieldError && (
                             <p className="text-sm text-red-500 flex items-center gap-1">
@@ -954,6 +1029,17 @@ function Onboarding({
                                     setInputError({...inputError, privacy_policy_link: ""})
                                 }
                                 setPrivacyPolicyLink(e.target.value)
+                            }}
+                            onBlur={(e) => {
+                                const fixedUrl = validateAndFixUrl(e.target.value);
+                                if (fixedUrl !== e.target.value) {
+                                    setPrivacyPolicyLink(fixedUrl);
+                                }
+                                if (!isValidfUrl(fixedUrl) && fixedUrl.length > 0) {
+                                    setInputError({...inputError, privacy_policy_link: "Please enter a valid URL"})
+                                } else {
+                                    setInputError({...inputError, privacy_policy_link: ""})
+                                }
                             }}
                         />
                         {fieldError && (
