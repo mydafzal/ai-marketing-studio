@@ -32,12 +32,19 @@ export function CreateCampaignForm() {
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-  // URL validation to ensure all links have https://
+  // URL validation to ensure all links have https:// but no www.
   const validateAndFixUrl = (url: string) => {
-    if (url && url.trim() !== '' && !url.match(/^https?:\/\//i)) {
-      return `https://${url}`;
+    if (!url || url.trim() === '') return url;
+    
+    // Remove www. if present
+    let cleanUrl = url.replace(/^(https?:\/\/)?(www\.)/i, '');
+    
+    // Add https:// if not present
+    if (!cleanUrl.match(/^https?:\/\//i)) {
+      return `https://${cleanUrl}`;
     }
-    return url;
+    
+    return cleanUrl;
   };
 
   const [activeTab, setActiveTab] = useState<CampaignTab>('create');
