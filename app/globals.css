@@ -166,3 +166,17 @@ input[type="range"]::-webkit-slider-thumb {
 .animate-loading-bar {
   animation: loading-bar 2s infinite;
 }
+
+/* Mobile keyboard handling */
+@media (max-width: 767px) {
+  /* Add extra padding at the bottom of the chat to ensure last message visibility */
+  .flex-1.overflow-y-auto.keyboard-open {
+    padding-bottom: 180px !important;
+  }
+
+  /* Style last AI message to make it more visible */
+  .group.relative.mb-6.flex:last-child {
+    position: relative;
+    z-index: 10;
+  }
+}

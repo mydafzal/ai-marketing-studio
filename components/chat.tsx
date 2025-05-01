@@ -383,6 +383,7 @@ function ChatCore({ id, chat, className, session, missingKeys }: ChatProps) {
     <div className="w-full max-w-3xl flex flex-col h-full overflow-hidden">
       <div
         className="flex-1 overflow-y-auto hide-scrollbar"
+        id="chat-messages-container"
         ref={scrollRef}
       >
         <div className={cn("pt-4 md:pt-10", className)} ref={messagesRef}>

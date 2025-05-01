@@ -486,12 +486,37 @@ export function PromptForm({
       // When keyboard is open, viewport height is reduced
       // Adjust the position of the form to be visible above the keyboard
       if (visualViewport.height < window.innerHeight * 0.8) {
+        // Keyboard is open
         form.style.position = 'fixed';
         form.style.bottom = `${window.innerHeight - visualViewport.height - visualViewport.offsetTop}px`;
+        
+        // Create space for the last message by adding padding to ensure visibility
+        const messagesContainer = document.getElementById('chat-messages-container');
+        if (messagesContainer) {
+          // Add padding to ensure content is pushed up enough to be visible above keyboard
+          messagesContainer.setAttribute('style', 'padding-bottom: 180px');
+          messagesContainer.classList.add('keyboard-open');
+        }
+        
+        // Find the last AI message - use a more precise selector based on chat message structure
+        const lastAIMessage = document.querySelector('.group.relative.mb-6.flex:last-child');
+        if (lastAIMessage) {
+          // Scroll the last message into view with some space above it
+          setTimeout(() => {
+            lastAIMessage.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }, 150);
+        }
       } else {
         // Reset when keyboard is closed
         form.style.position = '';
         form.style.bottom = '';
+        
+        // Remove the extra padding when keyboard is closed
+        const messagesContainer = document.getElementById('chat-messages-container');
+        if (messagesContainer) {
+          messagesContainer.removeAttribute('style');
+          messagesContainer.classList.remove('keyboard-open');
+        }
       }
     };
 
