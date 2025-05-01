@@ -101,10 +101,12 @@ export function AdSetupModal({
   
   // Debug the lead form content structure
   useEffect(() => {
-    if (leadFormContent) {
+    if (leadFormContent && leadFormContent !== null) {
       console.log('Lead form content structure:', leadFormContent);
+    } else if (masterFlowData?.lead_form_content === null) {
+      console.log('Lead form content is null - this campaign is not eligible for a lead form');
     }
-  }, [leadFormContent]);
+  }, [leadFormContent, masterFlowData?.lead_form_content]);
   
   // Handle the nested structure of lead form data
   const getLeadFormValue = (field: string) => {
@@ -1187,7 +1189,11 @@ export function AdSetupModal({
   };
 
   const hasPlacementData = masterFlowData?.hasOwnProperty('placements');
-  const hasLeadFormData = masterFlowData?.lead_form_content !== undefined;
+  // Check if lead form content exists, is not null, and is not an empty object
+  const hasLeadFormData = masterFlowData?.lead_form_content !== undefined && 
+                         masterFlowData?.lead_form_content !== null && 
+                         !(typeof masterFlowData?.lead_form_content === 'object' && 
+                           Object.keys(masterFlowData?.lead_form_content).length === 0);
 
   // Extract lead form data
   const processLeadFormQuestions = () => {
