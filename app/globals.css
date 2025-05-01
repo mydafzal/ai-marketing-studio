@@ -179,4 +179,23 @@ input[type="range"]::-webkit-slider-thumb {
     position: relative;
     z-index: 10;
   }
+  
+  /* Hide Crisp chat widget on mobile devices */
+  .crisp-client {
+    display: none !important;
+  }
+  
+  /* Ensure bottom space for chat input isn't covered by Crisp */
+  .fixed.inset-x-0.bottom-0 {
+    z-index: 50 !important;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+}
+
+/* Desktop-only Crisp chat */
+@media (min-width: 768px) {
+  /* Show Crisp chat only on desktop */
+  .crisp-client {
+    display: block !important;
+  }
 }
