@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Upload, Info, XCircle, Loader2, Plus, ChevronDown, ChevronRight, Settings, Clock } from 'lucide-react';
 import { MediaItem } from '../types';
 import { 
@@ -9,6 +9,12 @@ import {
   DialogTrigger,
   DialogClose
 } from '@/components/ui/dialog';
+
+interface LeadForm {
+  id: string;
+  name: string;
+  page: string;
+}
 
 interface CreateTabProps {
   mediaItems: MediaItem[];
@@ -47,6 +53,16 @@ export function CreateTab({
   cooldownActive = false,
   cooldownTimeRemaining = 0
 }: CreateTabProps) {
+  // Add state for selected lead form
+  const [selectedLeadForm, setSelectedLeadForm] = useState<string>("");
+  // Add state for showing/hiding lead form dropdown
+  const [showLeadFormDropdown, setShowLeadFormDropdown] = useState<boolean>(false);
+  // Add state for lead forms
+  const [leadForms, setLeadForms] = useState<LeadForm[]>([]);
+  // Add state for loading lead forms
+  const [loadingLeadForms, setLoadingLeadForms] = useState<boolean>(false);
+  // Add state for lead form errors
+  const [leadFormError, setLeadFormError] = useState<string | null>(null);
 
   const objectives = [
     {
@@ -70,6 +86,46 @@ export function CreateTab({
       description: "Collect lead information from people interested in your business."
     }
   ];
+
+  // Fetch lead forms when dialog opens
+  useEffect(() => {
+    if (showLeadFormDropdown && leadForms.length === 0 && !loadingLeadForms) {
+      getFbLeadForms();
+    }
+  }, [showLeadFormDropdown]);
+
+  async function getFbLeadForms() {
+    setLoadingLeadForms(true);
+    setLeadFormError(null);
+    
+    try {
+      const response = await fetch('/api/fasty-bot/proxy-get-facebook-lead-forms', {
+        method: 'GET',
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch lead forms');
+      }
+      
+      const data = await response.json();
+      // Transform the data to match our interface if needed
+      const formattedLeadForms: LeadForm[] = data.map((form: any) => ({
+        id: form.id || form.form_id,
+        name: form.name || form.form_name,
+        page: form.page_name || 'Unknown Page'
+      }));
+      
+      setLeadForms(formattedLeadForms);
+      return formattedLeadForms;
+    } catch (error) {
+      console.error('Error fetching lead forms:', error);
+      setLeadFormError('Failed to fetch lead forms. Please try again.');
+      return [];
+    } finally {
+      setLoadingLeadForms(false);
+    }
+  }
 
   // Remove showAdvancedSettings state since we're using Dialog now
   return (
@@ -300,6 +356,74 @@ export function CreateTab({
                       </div>
                     </div>
                   ))}
+                </div>
+              </div>
+              
+              <div className="mt-4 pt-2">
+                <h4 className="text-sm font-medium text-text-white mb-3">
+                  Select Lead Form
+                </h4>
+                
+                {/* Custom Dropdown */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    className="w-full bg-dark-bg border border-border-dark rounded-md py-2 px-3 text-left text-sm text-text-white flex justify-between items-center"
+                    onClick={() => setShowLeadFormDropdown(!showLeadFormDropdown)}
+                  >
+                    <span>
+                      {selectedLeadForm ? 
+                        leadForms.find(form => form.id === selectedLeadForm)?.name :
+                        "Select a lead form..."}
+                    </span>
+                    <ChevronDown size={16} className="text-text-light-gray" />
+                  </button>
+                  
+                  {/* Dropdown content */}
+                  {showLeadFormDropdown && (
+                    <div className="absolute z-10 mt-1 w-full bg-dark-bg rounded-md shadow-lg border border-border-dark">
+                      {loadingLeadForms ? (
+                        <div className="py-4 text-center">
+                          <Loader2 className="animate-spin mx-auto mb-2" size={20} />
+                          <p className="text-sm text-text-light-gray">Loading lead forms...</p>
+                        </div>
+                      ) : leadFormError ? (
+                        <div className="py-4 text-center">
+                          <p className="text-sm text-red-500">{leadFormError}</p>
+                          <button 
+                            className="mt-2 text-xs text-primary-green hover:underline"
+                            onClick={() => getFbLeadForms()}
+                          >
+                            Try again
+                          </button>
+                        </div>
+                      ) : leadForms.length === 0 ? (
+                        <div className="py-4 text-center">
+                          <p className="text-sm text-text-light-gray">No lead forms found</p>
+                        </div>
+                      ) : (
+                        <ul className="py-1 max-h-56 overflow-auto">
+                          {leadForms.map(form => (
+                            <li 
+                              key={form.id}
+                              className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-800 ${
+                                selectedLeadForm === form.id ? 'bg-gray-800' : ''
+                              }`}
+                              onClick={() => {
+                                setSelectedLeadForm(form.id);
+                                setShowLeadFormDropdown(false);
+                              }}
+                            >
+                              <div className="flex flex-col">
+                                <span className="text-text-white">{form.name}</span>
+                                <span className="text-xs text-text-light-gray">{form.page}</span>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
