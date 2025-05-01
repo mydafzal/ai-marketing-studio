@@ -32,6 +32,14 @@ export function CreateCampaignForm() {
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
+  // URL validation to ensure all links have https://
+  const validateAndFixUrl = (url: string) => {
+    if (url && url.trim() !== '' && !url.match(/^https?:\/\//i)) {
+      return `https://${url}`;
+    }
+    return url;
+  };
+
   const [activeTab, setActiveTab] = useState<CampaignTab>('create');
   const [activePreviewTab, setActivePreviewTab] = useState<PreviewTab>('instagram_stories');
   const [currentEditSection, setCurrentEditSection] = useState<EditSection>(null);
@@ -100,6 +108,11 @@ export function CreateCampaignForm() {
   // Handle transition to review screen with loading sequence and API call
   const handleReviewTransition = async () => {
     console.log('🔍 Starting review transition process');
+    
+    // Ensure link has https:// before submission
+    if (link) {
+      setLink(validateAndFixUrl(link));
+    }
     
     // Check for required fields
     if (mediaItems.length === 0 || !link || !budget) {

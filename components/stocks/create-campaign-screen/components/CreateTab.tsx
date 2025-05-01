@@ -193,6 +193,12 @@ export function CreateTab({
           type="text"
           value={link}
           onChange={e => setLink(e.target.value)}
+          onBlur={() => {
+            // Get the parent component's validateAndFixUrl function to ensure URL has https://
+            setLink(prev => prev.trim() !== '' && !prev.match(/^https?:\/\//i) 
+              ? `https://${prev}`
+              : prev);
+          }}
           placeholder="Enter the link to what you'd like to advertise"
           className="w-full px-3 py-2.5 bg-dark-bg border border-border-dark text-text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-green focus:border-primary-green placeholder:text-text-light-gray transition-all duration-200"
         />
