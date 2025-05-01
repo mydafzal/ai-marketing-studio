@@ -122,7 +122,7 @@ export default async function FacebookConnectPage() {
                     You can always connect later in Settings if you prefer.
                   </p>
                   <a 
-                    href="https://reeply-ai.crisp.help/en/article/how-to-connect-your-account-to-facebook-mr0zul/?bust=1745830471053" 
+                    href="https://joyous-brow-6da.notion.site/How-to-connect-to-Facebook-1e616186aac980c0a054f5452b53be7e"
                     target="_blank" 
                     rel="noopener noreferrer" 
                     className="text-sm text-[#4BF29C] hover:underline mt-2 inline-block"
