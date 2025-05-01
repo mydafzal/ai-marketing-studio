@@ -44,6 +44,7 @@ interface AdSetupModalProps {
   adPlacements: AdPlacements;
   budget: string;
   creatives: any[];
+  websiteUrl?: string;
   onCreativesUpdated?: (creatives: ExtendedCreative[]) => void;
   onLeadFormUpdated?: (updatedFields: any) => void;
 }
@@ -65,6 +66,7 @@ export function AdSetupModal({
                                adPlacements,
                                budget,
                                creatives,
+                               websiteUrl,
                                onCreativesUpdated,
                                onLeadFormUpdated
                              }: AdSetupModalProps) {
@@ -180,7 +182,7 @@ export function AdSetupModal({
     getLeadFormValue("company_name") || ""
   );
   const [editedFollowUpUrl, setEditedFollowUpUrl] = useState(
-    getLeadFormValue("follow_up_url") || ""
+    getLeadFormValue("follow_up_url") || websiteUrl || ""
   );
   const [editedLocale, setEditedLocale] = useState(
     getLeadFormValue("lead_form_locale") || getLeadFormValue("locale") || "en_US"
@@ -250,7 +252,7 @@ export function AdSetupModal({
     getLeadFormValue("company_name") || ""
   );
   const [originalFollowUpUrl, setOriginalFollowUpUrl] = useState(
-    getLeadFormValue("follow_up_url") || ""
+    getLeadFormValue("follow_up_url") || websiteUrl || ""
   );
   const [originalLocale, setOriginalLocale] = useState(
     getLeadFormValue("lead_form_locale") || getLeadFormValue("locale") || "en_US"
@@ -504,6 +506,21 @@ export function AdSetupModal({
   
   const handleFollowUpUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEditedFollowUpUrl(e.target.value);
+  };
+
+  // URL validation to ensure all links have https:// but no www.
+  const validateAndFixUrl = (url: string) => {
+    if (!url || url.trim() === '') return url;
+    
+    // Remove www. if present
+    let cleanUrl = url.replace(/^(https?:\/\/)?(www\.)/i, '');
+    
+    // Add https:// if not present
+    if (!cleanUrl.match(/^https?:\/\//i)) {
+      return `https://${cleanUrl}`;
+    }
+    
+    return cleanUrl;
   };
   
   // Handler for locale change
@@ -2381,6 +2398,11 @@ export function AdSetupModal({
                                 type="text"
                                 value={editedFollowUpUrl}
                                 onChange={handleFollowUpUrlChange}
+                                onBlur={() => {
+                                  if (editedFollowUpUrl) {
+                                    setEditedFollowUpUrl(validateAndFixUrl(editedFollowUpUrl));
+                                  }
+                                }}
                                 className={`w-full bg-white p-3 rounded-lg border ${
                                   editedFollowUpUrl !== originalFollowUpUrl 
                                     ? 'border-yellow-400' 

@@ -808,6 +808,7 @@ export function CreateCampaignForm() {
             budget={budget}
             adHeadline={masterFlowData?.ad_creative_text?.ad_creative_title || adHeadline}
             adText={masterFlowData?.ad_creative_text?.ad_creative_description || adText}
+            link={link}
             openEditModal={openEditModal}
             handlePublish={handlePublish}
             masterFlowData={masterFlowData}
