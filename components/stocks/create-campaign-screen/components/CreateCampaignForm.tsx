@@ -46,6 +46,22 @@ export function CreateCampaignForm() {
     
     return cleanUrl;
   };
+  
+  // Check if a URL is valid (has a TLD after adding https://)
+  const isValidUrl = (url: string) => {
+    if (!url || url.trim() === '') return false;
+    
+    try {
+      // Ensure URL has protocol before checking
+      const urlWithProtocol = url.match(/^https?:\/\//i) ? url : `https://${url}`;
+      const urlObj = new URL(urlWithProtocol);
+      
+      // Check for a valid domain with at least one dot (to ensure there's a TLD)
+      return urlObj.hostname.includes('.') && urlObj.hostname.split('.').pop()!.length > 0;
+    } catch (e) {
+      return false;
+    }
+  };
 
   const [activeTab, setActiveTab] = useState<CampaignTab>('create');
   const [activePreviewTab, setActivePreviewTab] = useState<PreviewTab>('instagram_stories');
@@ -128,6 +144,13 @@ export function CreateCampaignForm() {
         'Link provided': !!link,
         'Budget provided': !!budget
       });
+      return;
+    }
+    
+    // Validate that link has a TLD
+    if (link && !isValidUrl(link)) {
+      console.warn('⚠️ Invalid URL format - missing TLD:', link);
+      setError('Please enter a valid website URL with a domain extension (e.g. .com, .org)');
       return;
     }
     

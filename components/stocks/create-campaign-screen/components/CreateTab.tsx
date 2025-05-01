@@ -193,13 +193,13 @@ export function CreateTab({
           type="text"
           value={link}
           onChange={e => setLink(e.target.value)}
-          onBlur={() => {
+          onBlur={(e) => {
             // Format URL: remove www. and add https:// if needed
-            setLink(prev => {
-              if (!prev || prev.trim() === '') return prev;
+            const formattedUrl = (() => {
+              if (!link || link.trim() === '') return link;
               
               // Remove www. if present
-              let cleanUrl = prev.replace(/^(https?:\/\/)?(www\.)/i, '');
+              let cleanUrl = link.replace(/^(https?:\/\/)?(www\.)/i, '');
               
               // Add https:// if not present
               if (!cleanUrl.match(/^https?:\/\//i)) {
@@ -207,7 +207,29 @@ export function CreateTab({
               }
               
               return cleanUrl;
-            });
+            })();
+            
+            setLink(formattedUrl);
+
+            // Check if URL has a valid format with TLD
+            try {
+              const urlObj = new URL(formattedUrl.match(/^https?:\/\//i) ? formattedUrl : `https://${formattedUrl}`);
+              // Check if domain has a TLD (at least one dot in hostname)
+              if (!urlObj.hostname.includes('.') || urlObj.hostname.split('.').pop()!.length === 0) {
+                // Invalid domain
+                e.currentTarget.classList.add('border-red-500', 'focus:ring-red-500', 'focus:border-red-500');
+                e.currentTarget.title = "Please enter a valid URL with a domain extension (e.g. .com)";
+              } else {
+                e.currentTarget.classList.remove('border-red-500', 'focus:ring-red-500', 'focus:border-red-500');
+                e.currentTarget.title = "";
+              }
+            } catch (error) {
+              // Invalid URL
+              if (formattedUrl.trim() !== '') {
+                e.currentTarget.classList.add('border-red-500', 'focus:ring-red-500', 'focus:border-red-500');
+                e.currentTarget.title = "Please enter a valid URL";
+              }
+            }
           }}
           placeholder="Enter the link to what you'd like to advertise"
           className="w-full px-3 py-2.5 bg-dark-bg border border-border-dark text-text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-green focus:border-primary-green placeholder:text-text-light-gray transition-all duration-200"
