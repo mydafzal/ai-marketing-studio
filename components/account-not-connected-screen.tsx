@@ -28,16 +28,16 @@ export function AccountConnectionModal({ isOpen, onClose }: AccountConnectionMod
       <Dialog open={isOpen} onOpenChange={(open) => {
         if (!open) onClose();
       }}>
-        <DialogContent className="max-w-md bg-[#1A1D29] border border-[#2A2E3A] text-white shadow-xl">
-          <DialogHeader>
-            <div className="flex items-center justify-center mb-4">
-              <div className="rounded-full bg-[#151925] p-3 border border-[#2A2E3A]">
+        <DialogContent className="w-[90vw] max-w-md bg-[#1A1D29] border border-[#2A2E3A] text-white shadow-xl p-4 sm:p-6">
+          <DialogHeader className="space-y-2 sm:space-y-4">
+            <div className="flex items-center justify-center mb-2 sm:mb-4">
+              <div className="rounded-full bg-[#151925] p-2 sm:p-3 border border-[#2A2E3A]">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
-                  className="h-8 w-8 text-[#4BF29C]"
+                  className="h-6 w-6 sm:h-8 sm:w-8 text-[#4BF29C]"
                 >
                   <path
                     strokeLinecap="round"
@@ -48,47 +48,46 @@ export function AccountConnectionModal({ isOpen, onClose }: AccountConnectionMod
                 </svg>
               </div>
             </div>
-            <DialogTitle className="text-center text-xl text-white">Meta Business Connection Required</DialogTitle>
+            <DialogTitle className="text-center text-lg sm:text-xl text-white">Meta Business Connection Required</DialogTitle>
           </DialogHeader>
           
-          <div className="text-[#ADB0B8] leading-relaxed">
-            <p className="mb-4">
-              <strong className="text-[#4BF29C]">Your Facebook account is connected!</strong> However, no Meta Business Manager is selected in the dropdown navigation above.
+          <div className="text-[#ADB0B8] leading-relaxed text-sm sm:text-base">
+            <p className="mb-3 sm:mb-4">
+              <strong className="text-[#4BF29C]">Your Facebook account is connected!</strong> However, no Meta Business Manager is available in the dropdown navigation.
             </p>
             
-            <p className="mb-6">
-              We want to help you get onboarded as quickly as possible. Our team can guide you through selecting or setting up the necessary Meta Business Manager to start using our AI Marketing Assistant right away.
+            <p className="mb-4 sm:mb-6">
+              We want to help you get onboarded as quickly as possible. Our team can guide you through setting up the necessary Meta Business Manager to start using our AI Marketing Assistant right away.
             </p>
             
-            <div className="text-sm text-[#8A8F99] p-4 bg-[#151925] rounded-lg border border-[#2A2E3A] mb-6">
-              <p className="font-medium mb-2 text-white">Why am I seeing this?</p>
+            <div className="text-xs sm:text-sm text-[#8A8F99] p-3 sm:p-4 bg-[#151925] rounded-lg border border-[#2A2E3A] mb-4 sm:mb-6">
+              <p className="font-medium mb-1 sm:mb-2 text-white">Why am I seeing this?</p>
               <p>
-                To use our AI Marketing Assistant effectively, you need to select a Meta Business Manager from the green dropdown menu above. 
-                If you don't see any options in the dropdown, our team can help you set these up or troubleshoot any connection issues you're experiencing.
+                To use our AI Marketing Assistant effectively, you need access to a Meta Business Manager. 
+                Our team can help you set this up or troubleshoot any connection issues you&apos;re experiencing.
               </p>
             </div>
           </div>
-          
-          <DialogFooter className="flex flex-col sm:flex-row gap-3 mt-4">
+          <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:gap-3 mt-3 sm:mt-4">
             <button
               onClick={() => {
                 openCrispChat();
                 onClose();
               }}
-              className="inline-flex items-center justify-center rounded-lg bg-[#3B82F6] px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-[#2563EB] focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:ring-offset-2 w-full sm:w-auto"
+              className="inline-flex items-center justify-center rounded-lg bg-[#3B82F6] px-3 sm:px-5 py-2 sm:py-3 text-xs sm:text-sm font-medium text-white transition-colors hover:bg-[#2563EB] focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:ring-offset-2 w-full"
             >
               Chat with Support
-              <svg xmlns="http://www.w3.org/2000/svg" className="ml-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg xmlns="http://www.w3.org/2000/svg" className="ml-2 h-3 w-3 sm:h-4 sm:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
               </svg>
             </button>
             
             <button
               onClick={() => setShowCalendarModal(true)}
-              className="inline-flex items-center justify-center rounded-lg bg-[#4BF29C] px-5 py-3 text-sm font-medium text-black transition-colors hover:bg-[#3BD080] focus:outline-none focus:ring-2 focus:ring-[#3BD080] focus:ring-offset-2 w-full sm:w-auto"
+              className="inline-flex items-center justify-center rounded-lg bg-[#4BF29C] px-3 sm:px-5 py-2 sm:py-3 text-xs sm:text-sm font-medium text-black transition-colors hover:bg-[#3BD080] focus:outline-none focus:ring-2 focus:ring-[#3BD080] focus:ring-offset-2 w-full"
             >
               Book Quick Call
-              <svg xmlns="http://www.w3.org/2000/svg" className="ml-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg xmlns="http://www.w3.org/2000/svg" className="ml-2 h-3 w-3 sm:h-4 sm:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </button>
@@ -100,24 +99,29 @@ export function AccountConnectionModal({ isOpen, onClose }: AccountConnectionMod
       <Dialog open={showCalendarModal} onOpenChange={(open) => {
         if (!open) setShowCalendarModal(false);
       }}>
-        <DialogContent className="max-w-lg bg-[#1A1D29] border border-[#2A2E3A] text-white shadow-xl">
+        <DialogContent className="w-[95vw] max-w-lg bg-[#1A1D29] border border-[#2A2E3A] text-white shadow-xl p-3 sm:p-6">
           <DialogHeader>
-            <DialogTitle className="text-center text-xl text-white">Schedule a Support Call</DialogTitle>
+            <DialogTitle className="text-center text-lg sm:text-xl text-white">Schedule a Support Call</DialogTitle>
           </DialogHeader>
           
-          <div className="mt-4 p-4 rounded-lg border border-[#2A2E3A]">
+          <div className="mt-3 sm:mt-4 p-2 sm:p-4 rounded-lg border border-[#2A2E3A]">
             <iframe 
               src="https://tidycal.com/max-reeply-ai/support" 
               frameBorder="0" 
-              style={{ width: '100%', height: '420px', overflow: 'visible' }}
+              style={{ 
+                width: '100%', 
+                height: '350px', 
+                overflow: 'visible',
+                maxHeight: '70vh'
+              }}
               allowFullScreen
             ></iframe>
           </div>
           
-          <DialogFooter className="mt-4">
+          <DialogFooter className="mt-3 sm:mt-4">
             <button
               onClick={() => setShowCalendarModal(false)}
-              className="inline-flex items-center justify-center rounded-lg bg-[#2A2E3A] px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-[#222630] focus:outline-none focus:ring-2 focus:ring-[#222630] focus:ring-offset-2"
+              className="inline-flex items-center justify-center rounded-lg bg-[#2A2E3A] px-3 sm:px-5 py-2 sm:py-3 text-xs sm:text-sm font-medium text-white transition-colors hover:bg-[#222630] focus:outline-none focus:ring-2 focus:ring-[#222630] focus:ring-offset-2 w-full sm:w-auto"
             >
               Close Calendar
             </button>
@@ -288,7 +292,7 @@ export function HomePageInfoCard({ adAccountConnected, awaitingToGetReady, isSub
                     <p className="font-medium mb-2">Why am I seeing this?</p>
                     <p>
                       To use our AI Marketing Assistant effectively, you need to select a Meta Business Manager from the green dropdown menu above. 
-                      If you don't see any options in the dropdown, our team can help you set these up or troubleshoot any connection issues you're experiencing.
+                      If you don&apos;t see any options in the dropdown, our team can help you set these up or troubleshoot any connection issues you&apos;re experiencing.
                     </p>
                   </div>
                 </div>
