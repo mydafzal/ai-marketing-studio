@@ -88,30 +88,6 @@ export interface AudienceLocations {
   regions: { key: string }[];
 }
 
-interface City {
-  key: number;
-  name: string;
-}
-
-interface Region {
-  key: number;
-  name: string;
-  cities: City[];
-}
-
-interface Country {
-  name: string;
-  code: string;
-}
-
-interface CountryData {
-  country: Country;
-  regions: Region[];
-}
-
-// The type for the entire JSON array would be:
-export type LocationsFullDetails = CountryData[];
-
 export interface Audience {
   audience_nr: number;
   budget: number;
@@ -125,7 +101,6 @@ export interface Audience {
   };
   placements: AudiencePlacement;
   locations: AudienceLocations;
-  location_full_details:LocationsFullDetails;
 }
 
 export interface Audiences {

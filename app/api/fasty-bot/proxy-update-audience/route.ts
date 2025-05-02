@@ -19,7 +19,13 @@ export async function POST(req: NextRequest) {
     // Validate required fields
     const {
       campaign_session_uuid,
-      audience_nr
+      audience_nr,
+      min_age,
+      max_age,
+      male,
+      female,
+      budget,
+      locations
     } = body
 
     // Make sure required fields are present
@@ -56,9 +62,18 @@ export async function POST(req: NextRequest) {
     }
     
     const response = await fetch(apiUrl, {
-      method: 'PUT',
+      method: 'POST',
       headers,
-      body: JSON.stringify(body),
+      body: JSON.stringify({
+        campaign_session_uuid,
+        audience_nr,
+        min_age,
+        max_age,
+        male,
+        female,
+        budget,
+        locations
+      }),
     })
 
     if (!response.ok) {
