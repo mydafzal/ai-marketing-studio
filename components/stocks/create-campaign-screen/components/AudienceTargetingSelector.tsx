@@ -88,6 +88,10 @@ export default function AudienceTargetingSelector({
   const [isModified, setIsModified] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  
+  // Ref to track when we're in the process of saving
+  // This helps prevent race conditions with useEffect hooks
+  const savingRef = React.useRef(false);
 
   // State for search terms
   const [interestSearchTerm, setInterestSearchTerm] = useState('');
@@ -160,13 +164,32 @@ export default function AudienceTargetingSelector({
     // Skip the initial render
     if (Object.keys(originalFilters).length === 0) return;
     
-    // Compare current filters with original filters
-    const isChanged = JSON.stringify(internalFilters) !== JSON.stringify(originalFilters);
-    setIsModified(isChanged);
+    // Skip if we're in the process of saving
+    if (savingRef.current) return;
     
-    // Reset success message when filters are modified again
-    if (isChanged && saveSuccess) {
+    // Create a copy of originalFilters without the combined_reach property for comparison
+    const originalFiltersForComparison = {
+      interest_filters: originalFilters.interest_filters || {},
+      demographic_filters: originalFilters.demographic_filters || {},
+      behaviour_filters: originalFilters.behaviour_filters || {}
+    };
+    // Compare current filters with original filters (excluding combined_reach)
+    const isChanged = JSON.stringify(internalFilters) !== JSON.stringify(originalFiltersForComparison);
+    
+    console.log("Comparing filters:", 
+      JSON.stringify(internalFilters).substring(0, 50) + "...", 
+      JSON.stringify(originalFiltersForComparison).substring(0, 50) + "..."
+    );
+    console.log("Are filters changed:", isChanged);
+    
+    // Only update isModified if we're not in a success state
+    // This prevents the button from showing as modified right after a successful save
+    if (!saveSuccess) {
+      setIsModified(isChanged);
+    } else if (isChanged) {
+      // If filters changed while in success state, clear success and show modified
       setSaveSuccess(false);
+      setIsModified(true);
     }
   }, [internalFilters, originalFilters, saveSuccess]);
 
@@ -374,6 +397,9 @@ export default function AudienceTargetingSelector({
       console.error(`ERROR: ID is already prefixed: ${originalId}`);
     }
 
+    // Clear any success state when adding a filter
+    setSaveSuccess(false);
+    
     // Store the ID directly without any type prefix
     setInternalFilters(prevFilters => {
       const updatedCategory = {
@@ -389,6 +415,11 @@ export default function AudienceTargetingSelector({
       };
       return { ...prevFilters, [filterTypeKey]: updatedCategory };
     });
+    
+    // Force the modified state to true when adding a filter
+    // This ensures the save button shows as needing to be clicked
+
+    setIsModified(true);
 
     if (filter.type === 'interest') { setInterestSearchTerm(''); setInterestResults([]); }
     if (filter.type === 'demographics') { setDemographicSearchTerm(''); setDemographicResults([]); }
@@ -414,11 +445,20 @@ export default function AudienceTargetingSelector({
     
     console.log(`Removing ${type} filter: ${filterName}`);
     
+    // Clear any success state when removing a filter
+    setSaveSuccess(false);
+    
     setInternalFilters(prevFilters => {
       const categoryFilters = { ...(prevFilters[filterTypeKey] || {}) };
       delete categoryFilters[filterName];
       return { ...prevFilters, [filterTypeKey]: categoryFilters };
     });
+    
+    // Force the modified state to true when removing a filter
+    // This ensures the save button shows as needing to be clicked
+    console.log("here4")
+
+    setIsModified(true);
   };
 
   // Use effect to update parent component state when internal filters change
@@ -431,6 +471,8 @@ export default function AudienceTargetingSelector({
   const saveTargetingFilters = async () => {
     if (!isModified) return;
     
+    // Set saving state and ref
+    savingRef.current = true;
     setIsSaving(true);
     
     try {
@@ -637,12 +679,26 @@ export default function AudienceTargetingSelector({
         console.log('No campaign session ID provided, skipping API save');
       }
       
-      // Update original filters to match current filters
+      // Create a copy of the formatted filters for internal state
+      // This ensures both states have the same structure
+      const internalFormattedFilters = {
+        interest_filters: { ...formattedFilters.interest_filters },
+        demographic_filters: { ...formattedFilters.demographic_filters },
+        behaviour_filters: { ...formattedFilters.behaviour_filters }
+      };
+      
+      // Update internal filters to match the saved state
+      setInternalFilters(internalFormattedFilters);
+      
+      // Update original filters to match the saved state (including combined_reach)
       setOriginalFilters(JSON.parse(JSON.stringify(formattedFilters)));
       
-      // Mark as no longer modified and save as successful
-      setIsModified(false);
+      // First set success state, then reset modified state
       setSaveSuccess(true);
+      setIsModified(false);
+      
+      console.log("After save - Internal filters:", JSON.stringify(internalFormattedFilters));
+      console.log("After save - Original filters:", JSON.stringify(formattedFilters));
       
       // Reset success message after 3 seconds
       setTimeout(() => {
@@ -655,6 +711,7 @@ export default function AudienceTargetingSelector({
       alert(`Error: ${err instanceof Error ? err.message : 'Failed to save changes'}`);
     } finally {
       setIsSaving(false);
+      savingRef.current = false;
     }
   };
 
@@ -768,11 +825,16 @@ export default function AudienceTargetingSelector({
               onClick={saveTargetingFilters}
               disabled={!isModified || isSaving}
               className={`transition-colors relative ${
+                saveSuccess ? 'text-green-400 hover:text-green-300' :
                 isSaving ? 'opacity-50 cursor-not-allowed' : 
                 isModified ? 'text-yellow-400 hover:text-yellow-300' : 
                 'text-primary-green hover:text-white'
               }`}
-              title={isModified ? "Save changes" : "No changes to save"}
+              title={
+                saveSuccess ? "Saved successfully" :
+                isModified ? "Save changes" : 
+                "No changes to save"
+              }
             >
               <Save className="w-5 h-5" />
               {isSaving && (
@@ -783,7 +845,7 @@ export default function AudienceTargetingSelector({
             </button>
             
             {/* Status indicator text */}
-            {isModified && (
+            {isModified && !saveSuccess && (
               <span className="text-yellow-400 text-xs mt-1">Click to save</span>
             )}
             {saveSuccess && (
