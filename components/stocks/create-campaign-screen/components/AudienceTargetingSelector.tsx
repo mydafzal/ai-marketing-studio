@@ -27,8 +27,8 @@ interface TargetingFiltersDataStructure {
 // Structure for individual filter details stored in state
 export interface FilterDetail {
   id: string;
-  name: string;
-  type: 'interest' | 'demographics' | 'behaviors';
+  name?: string;
+  type?: 'interest' | 'demographics' | 'behaviors';
   path?: string[];
   min_reach?: number;
   max_reach?: number;
@@ -79,8 +79,8 @@ export default function AudienceTargetingSelector({
   updateMasterFlowData
 }: AudienceTargetingSelectorProps) {
   // Check if filters should be read-only (for recruiting campaigns)
-  // const isReadOnly = campaignObjective?.toLowerCase() === 'recruiting';
-  const isReadOnly = true; // TODO: hard codeded for now
+  const isReadOnly = campaignObjective?.toLowerCase() === 'recruiting';
+  // const isReadOnly = true; // TODO: hard codeded for now
 
   // Internal state to manage filters derived from props
   const [internalFilters, setInternalFilters] = useState<TargetingFilters>({});
@@ -206,8 +206,16 @@ export default function AudienceTargetingSelector({
           const itemId = item.id;
           
           if (itemName.toLowerCase().includes(searchTermLower) && results.length < maxResults) {
+            // Log the original ID from the API response
+            console.log(`Found interest match: ${itemName} with original ID: ${itemId}`);
+            
+            // Make sure we're using the numeric ID from the API response
+            if (!itemId || typeof itemId !== 'string') {
+              console.error(`ERROR: Invalid ID for ${itemName}:`, itemId);
+            }
+            
             results.push({
-              id: itemId,
+              id: itemId, // Use the original ID directly from the API response
               name: itemName,
               type: 'interest',
               path: ['Interest', category]
@@ -229,8 +237,11 @@ export default function AudienceTargetingSelector({
             const itemId = item.id;
             
             if (itemName.toLowerCase().includes(searchTermLower) && results.length < maxResults) {
+              // Log the original ID from the API response
+              console.log(`Found demographic life_event match: ${itemName} with original ID: ${itemId}`);
+              
               results.push({ 
-                id: itemId, 
+                id: itemId, // Use the original ID directly from the API response
                 name: itemName, 
                 type: 'demographics', 
                 path: ['Demographics', 'Life Events', category] 
@@ -248,8 +259,11 @@ export default function AudienceTargetingSelector({
           const itemId = item.id;
           
           if (itemName.toLowerCase().includes(searchTermLower) && results.length < maxResults) {
+            // Log the original ID from the API response
+            console.log(`Found demographic family_status match: ${itemName} with original ID: ${itemId}`);
+            
             results.push({ 
-              id: itemId, 
+              id: itemId, // Use the original ID directly from the API response
               name: itemName, 
               type: 'demographics', 
               path: ['Demographics', 'Family Statuses'] 
@@ -266,8 +280,11 @@ export default function AudienceTargetingSelector({
           const itemId = item.id;
           
           if (itemName.toLowerCase().includes(searchTermLower) && results.length < maxResults) {
+            // Log the original ID from the API response
+            console.log(`Found demographic industry match: ${itemName} with original ID: ${itemId}`);
+            
             results.push({ 
-              id: itemId, 
+              id: itemId, // Use the original ID directly from the API response
               name: itemName, 
               type: 'demographics', 
               path: ['Demographics', 'Industries'] 
@@ -284,8 +301,11 @@ export default function AudienceTargetingSelector({
           const itemId = item.id;
           
           if (itemName.toLowerCase().includes(searchTermLower) && results.length < maxResults) {
+            // Log the original ID from the API response
+            console.log(`Found demographic income match: ${itemName} with original ID: ${itemId}`);
+            
             results.push({ 
-              id: itemId, 
+              id: itemId, // Use the original ID directly from the API response
               name: itemName, 
               type: 'demographics', 
               path: ['Demographics', 'Income'] 
@@ -305,8 +325,11 @@ export default function AudienceTargetingSelector({
           const itemId = item.id;
           
           if (itemName.toLowerCase().includes(searchTermLower) && results.length < maxResults) {
+            // Log the original ID from the API response
+            console.log(`Found behavior match: ${itemName} with original ID: ${itemId}`);
+            
             results.push({
-              id: itemId,
+              id: itemId, // Use the original ID directly from the API response
               name: itemName,
               type: 'behaviors',
               path: ['Behaviors', category]
@@ -339,20 +362,24 @@ export default function AudienceTargetingSelector({
     
     const filterName = filter.name;
     
-    // Extract the actual ID from the filter.id string
-    // The format is typically "type:category:name" or "type:name"
-    // We need to extract just the ID part if it exists, otherwise use the whole string
-    const idParts = filter.id.split(':');
-    // If the ID contains a numeric part, use that, otherwise use the original ID
-    const actualId = idParts.find(part => /^\d+$/.test(part)) || filter.id;
-    
-    console.log(`Adding ${filter.type} filter: ${filterName} with ID: ${actualId}`);
+    // IMPORTANT: Log the original ID to verify it's correct
+    console.log(`Adding ${filter.type} filter: ${filterName} with ORIGINAL ID: ${filter.id}`);
 
+    console.log("\n\nHERE\n\n\n",filter)
+    
+    // Make sure we're not accidentally prefixing the ID
+    const originalId = filter.id;
+    if (originalId && typeof originalId === 'string' && 
+        (originalId.startsWith('interest:') || originalId.startsWith('demographics:') || originalId.startsWith('behaviors:'))) {
+      console.error(`ERROR: ID is already prefixed: ${originalId}`);
+    }
+
+    // Store the ID directly without any type prefix
     setInternalFilters(prevFilters => {
       const updatedCategory = {
         ...(prevFilters[filterTypeKey] || {}),
         [filterName]: {
-          id: actualId, // Use the extracted numeric ID if available
+          id: originalId, // Use the original ID without any modification
           name: filterName,
           type: filter.type,
           path: filter.path,
@@ -422,8 +449,34 @@ export default function AudienceTargetingSelector({
       // Process interest filters
       if (internalFilters.interest_filters) {
         Object.entries(internalFilters.interest_filters).forEach(([name, filter]) => {
+          // Log the ID to verify it's correct
+          console.log(`Processing interest filter: ${name} with ID: ${filter.id}`);
+          
+          // Check if ID is already prefixed and log an error
+          if (filter.id && typeof filter.id === 'string' && 
+              (filter.id.startsWith('interest:') || filter.id.startsWith('demographics:') || filter.id.startsWith('behaviors:'))) {
+            console.error(`ERROR: ID is already prefixed: ${filter.id}`);
+          }
+          
+          // Find the matching filter in the original data to get the correct ID
+          let correctId = filter.id;
+          
+          // Look up the correct ID from the original data
+          if (allFiltersData && allFiltersData.interest_filters) {
+            for (const category in allFiltersData.interest_filters) {
+              const matchingFilter = allFiltersData.interest_filters[category]?.find(
+                (item: any) => item.name === name
+              );
+              if (matchingFilter) {
+                correctId = matchingFilter.id;
+                console.log(`Found correct ID for ${name}: ${correctId}`);
+                break;
+              }
+            }
+          }
+          
           formattedFilters.interest_filters[name] = {
-            id: filter.id, // Ensure ID is numeric
+            id: correctId, // Use the correct ID from the original data
             min_reach: filter.min_reach || 90000,
             max_reach: filter.max_reach || 105900
           };
@@ -433,8 +486,64 @@ export default function AudienceTargetingSelector({
       // Process demographic filters
       if (internalFilters.demographic_filters) {
         Object.entries(internalFilters.demographic_filters).forEach(([name, filter]) => {
+          // Log the ID to verify it's correct
+          console.log(`Processing demographic filter: ${name} with ID: ${filter.id}`);
+          
+          // Check if ID is already prefixed and log an error
+          if (filter.id && typeof filter.id === 'string' && 
+              (filter.id.startsWith('interest:') || filter.id.startsWith('demographics:') || filter.id.startsWith('behaviors:'))) {
+            console.error(`ERROR: ID is already prefixed: ${filter.id}`);
+          }
+          
+          // Find the matching filter in the original data to get the correct ID
+          let correctId = filter.id;
+          
+          // Look up the correct ID from the original data
+          if (allFiltersData && allFiltersData.demographic_filters) {
+            // Check family_statuses
+            const matchingFamilyStatus = allFiltersData.demographic_filters.family_statuses?.find(
+              (item: any) => item.name === name
+            );
+            if (matchingFamilyStatus) {
+              correctId = matchingFamilyStatus.id;
+              console.log(`Found correct ID for ${name}: ${correctId}`);
+            }
+            
+            // Check industries
+            const matchingIndustry = allFiltersData.demographic_filters.industries?.find(
+              (item: any) => item.name === name
+            );
+            if (matchingIndustry) {
+              correctId = matchingIndustry.id;
+              console.log(`Found correct ID for ${name}: ${correctId}`);
+            }
+            
+            // Check income
+            const matchingIncome = allFiltersData.demographic_filters.income?.find(
+              (item: any) => item.name === name
+            );
+            if (matchingIncome) {
+              correctId = matchingIncome.id;
+              console.log(`Found correct ID for ${name}: ${correctId}`);
+            }
+            
+            // Check life_events
+            if (allFiltersData.demographic_filters.life_events) {
+              for (const category in allFiltersData.demographic_filters.life_events) {
+                const matchingLifeEvent = allFiltersData.demographic_filters.life_events[category]?.find(
+                  (item: any) => item.name === name
+                );
+                if (matchingLifeEvent) {
+                  correctId = matchingLifeEvent.id;
+                  console.log(`Found correct ID for ${name}: ${correctId}`);
+                  break;
+                }
+              }
+            }
+          }
+          
           formattedFilters.demographic_filters[name] = {
-            id: filter.id, // Ensure ID is numeric
+            id: correctId, // Use the correct ID from the original data
             min_reach: filter.min_reach || 1000,
             max_reach: filter.max_reach || 1000
           };
@@ -444,8 +553,34 @@ export default function AudienceTargetingSelector({
       // Process behavior filters
       if (internalFilters.behaviour_filters) {
         Object.entries(internalFilters.behaviour_filters).forEach(([name, filter]) => {
+          // Log the ID to verify it's correct
+          console.log(`Processing behavior filter: ${name} with ID: ${filter.id}`);
+          
+          // Check if ID is already prefixed and log an error
+          if (filter.id && typeof filter.id === 'string' && 
+              (filter.id.startsWith('interest:') || filter.id.startsWith('demographics:') || filter.id.startsWith('behaviors:'))) {
+            console.error(`ERROR: ID is already prefixed: ${filter.id}`);
+          }
+          
+          // Find the matching filter in the original data to get the correct ID
+          let correctId = filter.id;
+          
+          // Look up the correct ID from the original data
+          if (allFiltersData && allFiltersData.behaviour_filters) {
+            for (const category in allFiltersData.behaviour_filters) {
+              const matchingFilter = allFiltersData.behaviour_filters[category]?.find(
+                (item: any) => item.name === name
+              );
+              if (matchingFilter) {
+                correctId = matchingFilter.id;
+                console.log(`Found correct ID for ${name}: ${correctId}`);
+                break;
+              }
+            }
+          }
+          
           formattedFilters.behaviour_filters[name] = {
-            id:filter.id, // Ensure ID is numeric
+            id: correctId, // Use the correct ID from the original data
             min_reach: filter.min_reach || 26000,
             max_reach: filter.max_reach || 30600
           };
@@ -454,6 +589,9 @@ export default function AudienceTargetingSelector({
       
       // Create the targeting object with the formatted filters
       const targetingObject: AudienceTargeting = { type: "custom", filters: formattedFilters as any };
+      
+      // Log the final targeting object to verify IDs are correct
+      console.log("Final targeting object:", JSON.stringify(targetingObject, null, 2));
       
       // Update parent component state
       setTargetingFilters(targetingObject);
@@ -469,7 +607,7 @@ export default function AudienceTargetingSelector({
           targeting_filters: targetingObject
         };
         
-        console.log("Sending payload:", payload);
+        console.log("Sending payload:", JSON.stringify(payload, null, 2));
         
         // Call the API to save the targeting filters
         const response = await fetch('/api/fasty-bot/proxy-update-audience', {
@@ -655,13 +793,13 @@ export default function AudienceTargetingSelector({
         )}
       </div>
       
-      {/*{isReadOnly && (
+      {isReadOnly && (
         <div className="bg-amber-900/20 p-3 rounded-md border border-amber-500/30 mb-4">
           <p className="text-amber-400 text-sm">
             <strong>Note:</strong> For Facebook compliance, targeting filters for recruiting campaigns are read-only.
           </p>
         </div>
-      )}*/}
+      )}
       
       <div className="border-b border-border-dark mb-4"></div>
 

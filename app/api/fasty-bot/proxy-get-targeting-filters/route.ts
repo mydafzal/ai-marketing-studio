@@ -2,17 +2,22 @@ import { NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 
 // Define the expected structure of the backend response's filters
-// This should match the structure previously defined in targetingFiltersData.ts
+// This should match the structure used in AudienceTargetingSelector.tsx
+interface FilterItem {
+  name: string;
+  id: string;
+}
+
 interface TargetingFiltersDataStructure {
-  interest_filters: { [category: string]: string[] };
+  interest_filters: { [category: string]: FilterItem[] };
   demographic_filters: {
-    life_events: { [category: string]: string[] };
-    family_statuses: string[];
-    industries: string[];
-    household_income: { [country: string]: string[] };
-    income: string[];
+    life_events: { [category: string]: FilterItem[] };
+    family_statuses: FilterItem[];
+    industries: FilterItem[];
+    household_income: { [country: string]: FilterItem[] };
+    income: FilterItem[];
   };
-  behaviour_filters: { [category: string]: string[] };
+  behaviour_filters: { [category: string]: FilterItem[] };
 }
 
 interface BackendResponse {
@@ -31,7 +36,6 @@ export async function GET(req: Request) {
 //     console.error('Authentication failed: No token or access token found');
 //     return NextResponse.json({ success: false, message: 'Authentication required.' }, { status: 401 });
 //   }
-
   const backendUrl = process.env.FASTY_API_URL;
   if (!backendUrl) {
     console.error('Server configuration error: FASTY_API_URL is not set.');
@@ -48,11 +52,12 @@ export async function GET(req: Request) {
         'Content-Type': 'application/json',
         // 'Authorization': `Bearer ${token.accessToken}`,
       },
-      // cache: 'no-store' // Ensure fresh data is fetched every time
+      cache: 'no-store' // Ensure fresh data is fetched every time
     });
 
-    console.log(`Backend response status: ${response.status}`);
-    const data: BackendResponse = await response.json();
+    console.log(`Backend response status: ${response.status} ${targetUrl}`);
+    const json_response = await response.json()
+    const data: BackendResponse = json_response;
     console.log('Backend response data received (structure check):', { success: data.success, hasFilters: !!data.filters });
 
 
