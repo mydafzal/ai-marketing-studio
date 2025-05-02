@@ -162,8 +162,8 @@ export async function Header() {
         </div>
       </header>
       
-      {/* Secondary navbar for account dropdowns - only show on chat screens */}
-      {session?.user && userDetails?.fbMarketingApiKey && (
+      {/* Secondary navbar for account dropdowns - show for all logged in users */}
+      {session?.user && (
         <ClientNavbarHandler 
           userDetails={userDetails}
           updateFbBusinessAcc={updateFbBusinessAcc}

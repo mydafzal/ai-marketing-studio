@@ -18,6 +18,8 @@ const NON_CHAT_PATHS = [
   '/content-folder',
   '/admin',
   '/subscription'
+  // Note: We're intentionally NOT adding '/manage-persona' here
+  // so that the persona dropdown is visible on the persona management pages
 ]
 
 export default function ClientNavbarHandler({

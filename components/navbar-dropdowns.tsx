@@ -5,6 +5,7 @@ import FBAccountDropdown from './fb-account-dropdown'
 import { AccountConnectionModal } from './account-not-connected-screen'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
+import { Persona } from '@/lib/types'
 
 type Account = {
   name: string;
@@ -44,16 +45,65 @@ const NavbarDropdowns = ({
   const [fbPages, setFbPages] = useState<Account[] | undefined>(undefined);
   const [instagramAccounts, setInstagramAccounts] = useState<Account[] | undefined>(undefined);
   const [selectedInstagramAccount, setSelectedInstagramAccount] = useState<Account | undefined>(undefined);
+  const [personas, setPersonas] = useState<Account[] | undefined>(undefined);
+  const [selectedPersona, setSelectedPersona] = useState<Account | undefined>(undefined);
   
   // Loading states
   const [businessAccLoading, setBusinessAccLoading] = useState(false);
   const [adAccLoading, setAdAccLoading] = useState(false);
   const [fbPageLoading, setFbPageLoading] = useState(false);
   const [igAccountLoading, setIgAccountLoading] = useState(false);
+  const [personaLoading, setPersonaLoading] = useState(false);
   
   // Move this useState hook before any conditional returns to fix the ESLint error
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showConnectionModal, setShowConnectionModal] = useState(false);
+  
+  // Fetch personas
+  async function getPersonas() {
+    setPersonaLoading(true);
+    try {
+      const response = await fetch('/api/persona');
+      if (!response.ok) {
+        throw new Error('Failed to fetch personas');
+      }
+      
+      const data = await response.json();
+      if (data.success) {
+        // Convert personas to Account format for dropdown
+        const formattedPersonas = data.data.map((persona: any) => ({
+          id: persona.id,
+          name: persona.company_name,
+          profile_picture_url: undefined
+        }));
+        
+        setPersonas(formattedPersonas);
+        
+        // If we have personas, select the first one by default
+        if (formattedPersonas.length > 0 && !selectedPersona) {
+          setSelectedPersona(formattedPersonas[0]);
+        }
+        
+        return formattedPersonas;
+      }
+      return [];
+    } catch (error) {
+      console.error('Error fetching personas:', error);
+      return [];
+    } finally {
+      setPersonaLoading(false);
+    }
+  }
+  
+  // Function to select a persona
+  async function selectPersona(id: string) {
+    if (personas) {
+      const persona = personas.find(p => p.id === id);
+      setSelectedPersona(persona);
+      // Here you could add logic to switch contexts or update user preferences
+      // based on the selected persona
+    }
+  }
 
   async function getBusinessAPICall() {
     if (userDetails?.fbMarketingApiKey) {
@@ -328,7 +378,7 @@ const NavbarDropdowns = ({
         // Track loading state
         setBusinessAccLoading(true);
         
-        // Run both data fetching operations in parallel
+        // Run all data fetching operations in parallel
         const promises = [];
         
         // 1. Start API token info fetch
@@ -359,6 +409,9 @@ const NavbarDropdowns = ({
         if (userDetails?.fbMarketingApiKey) {
           promises.push(getBusinessAPICall());
         }
+        
+        // 3. Fetch personas
+        promises.push(getPersonas());
         
         // Wait for all promises to resolve
         await Promise.all(promises);
@@ -451,10 +504,8 @@ const NavbarDropdowns = ({
     window.location.reload();
   };
 
-  // Only render the navigation area if there's a valid Facebook Marketing API key
-  if (!userDetails?.fbMarketingApiKey) {
-    return null;
-  }
+  // We now show the navbar even without Facebook connected, so users can access personas
+  // Facebook-specific dropdowns will be conditionally rendered
   
   return (
     <>
@@ -467,59 +518,88 @@ const NavbarDropdowns = ({
       <div className="hidden md:block">
         <div className="flex flex-nowrap items-center justify-center space-x-4 lg:space-x-6 px-6 py-2 bg-dark-bg border-b border-border-dark w-full">
           <div className="flex items-center relative">
-            <span className="text-xs text-zinc-400 mr-2 whitespace-nowrap">Business:</span>
-            {businessAccLoading && <Spinner />}
+            <span className="text-xs text-zinc-400 mr-2 whitespace-nowrap">Persona:</span>
+            {personaLoading && <Spinner />}
             <FBAccountDropdown
               title=""
-              selectedAcccount={selectedFbBusinessAcc}
-              accounts={fbBusinessAccs}
-              handleAccountChange={selectBusinessAccount}
+              selectedAcccount={selectedPersona}
+              accounts={personas}
+              handleAccountChange={selectPersona}
               compact={true}
               darkMode={true}
             />
           </div>
           
-          <div className="flex items-center relative">
-            <span className="text-xs text-zinc-400 mr-2 whitespace-nowrap">Ad Acc:</span>
-            {adAccLoading && <Spinner />}
-            <FBAccountDropdown
-              title=""
-              selectedAcccount={selectedFbAdAcc}
-              accounts={fbAdAccs}
-              handleAccountChange={selectAdAccount}
-              compact={true}
-              darkMode={true}
-            />
-          </div>
+          {userDetails?.fbMarketingApiKey && (
+            <>
+              <div className="flex items-center relative">
+                <span className="text-xs text-zinc-400 mr-2 whitespace-nowrap">Business:</span>
+                {businessAccLoading && <Spinner />}
+                <FBAccountDropdown
+                  title=""
+                  selectedAcccount={selectedFbBusinessAcc}
+                  accounts={fbBusinessAccs}
+                  handleAccountChange={selectBusinessAccount}
+                  compact={true}
+                  darkMode={true}
+                />
+              </div>
+              
+              <div className="flex items-center relative">
+                <span className="text-xs text-zinc-400 mr-2 whitespace-nowrap">Ad Acc:</span>
+                {adAccLoading && <Spinner />}
+                <FBAccountDropdown
+                  title=""
+                  selectedAcccount={selectedFbAdAcc}
+                  accounts={fbAdAccs}
+                  handleAccountChange={selectAdAccount}
+                  compact={true}
+                  darkMode={true}
+                />
+              </div>
+              
+              <div className="flex items-center relative">
+                <span className="text-xs text-zinc-400 mr-2 whitespace-nowrap">FB Page:</span>
+                {fbPageLoading && <Spinner />}
+                <FBAccountDropdown
+                  title=""
+                  selectedAcccount={selectedFbPage}
+                  accounts={fbPages}
+                  handleAccountChange={selectPage}
+                  compact={true}
+                  darkMode={true}
+                />
+              </div>
+              
+              <div className="flex items-center relative">
+                <span className="text-xs text-zinc-400 mr-2 whitespace-nowrap">IG Acc:</span>
+                {igAccountLoading && <Spinner />}
+                <FBAccountDropdown
+                  title=""
+                  selectedAcccount={selectedInstagramAccount}
+                  accounts={instagramAccounts}
+                  handleAccountChange={selectInstagramAccount}
+                  compact={true}
+                  darkMode={true}
+                />
+              </div>
+            </>
+          )}
           
-          <div className="flex items-center relative">
-            <span className="text-xs text-zinc-400 mr-2 whitespace-nowrap">FB Page:</span>
-            {fbPageLoading && <Spinner />}
-            <FBAccountDropdown
-              title=""
-              selectedAcccount={selectedFbPage}
-              accounts={fbPages}
-              handleAccountChange={selectPage}
-              compact={true}
-              darkMode={true}
-            />
-          </div>
-          
-          <div className="flex items-center relative">
-            <span className="text-xs text-zinc-400 mr-2 whitespace-nowrap">IG Acc:</span>
-            {igAccountLoading && <Spinner />}
-            <FBAccountDropdown
-              title=""
-              selectedAcccount={selectedInstagramAccount}
-              accounts={instagramAccounts}
-              handleAccountChange={selectInstagramAccount}
-              compact={true}
-              darkMode={true}
-            />
-          </div>
-          
-          {/* Refresh & Save Changes buttons */}
+          {/* Persona management and other buttons */}
           <div className="flex space-x-2">
+            <Link 
+              href="/manage-persona" 
+              className="bg-gray-700 hover:bg-gray-600 text-white text-xs font-medium py-1 px-3 rounded-full transition-colors whitespace-nowrap"
+            >
+              Manage Personas
+            </Link>
+            <Link 
+              href="/manage-persona/create" 
+              className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium py-1 px-3 rounded-full transition-colors whitespace-nowrap"
+            >
+              New Persona
+            </Link>
             <button
               onClick={refreshPage}
               className="bg-primary-green hover:bg-primary-green/90 text-black text-xs font-medium py-1 px-3 rounded-full transition-colors whitespace-nowrap"
@@ -539,8 +619,8 @@ const NavbarDropdowns = ({
             className="flex items-center justify-between space-x-2 text-white"
           >
             <span className="text-sm font-medium relative">
-              {selectedFbBusinessAcc ? `Business: ${selectedFbBusinessAcc.name}` : 'Select Accounts'}
-              {!selectedFbBusinessAcc && (
+              {selectedPersona ? `Persona: ${selectedPersona.name}` : userDetails?.fbMarketingApiKey ? 'Select Accounts' : 'Persona Settings'}
+              {!selectedPersona && (
                 <span className="absolute inset-0 animate-pulse-green rounded-full ring-2 ring-[#4BF29C] shadow-[0_0_8px_2px_rgba(75,242,156,0.7)] ring-offset-1 ring-offset-[#1a1a1a]"></span>
               )}
             </span>
@@ -564,71 +644,113 @@ const NavbarDropdowns = ({
         </div>
         
         {/* Expandable Mobile Menu Panel */}
-        <div className={`${mobileMenuOpen ? 'max-h-[500px]' : 'max-h-0'} transition-all duration-300 overflow-hidden bg-[#1A1D29] border-b border-border-dark`}>
+        <div className={`${mobileMenuOpen ? 'max-h-[600px]' : 'max-h-0'} transition-all duration-300 overflow-hidden bg-[#1A1D29] border-b border-border-dark`}>
           <div className="p-4 pb-8 flex flex-col space-y-6">
-            {/* Business Account */}
+            {/* Persona */}
             <div className="w-full">
               <div className="flex items-center mb-2">
-                <span className="text-sm text-zinc-400">Business Account</span>
-                {businessAccLoading && <Spinner />}
+                <span className="text-sm text-zinc-400">Persona</span>
+                {personaLoading && <Spinner />}
               </div>
               <FBAccountDropdown
                 title=""
-                selectedAcccount={selectedFbBusinessAcc}
-                accounts={fbBusinessAccs}
-                handleAccountChange={selectBusinessAccount}
+                selectedAcccount={selectedPersona}
+                accounts={personas}
+                handleAccountChange={selectPersona}
                 compact={false}
                 darkMode={true}
               />
+              {personas && personas.length === 0 && (
+                <div className="mt-2">
+                  <Link 
+                    href="/manage-persona/create" 
+                    className="text-xs text-[#4BF29C] hover:underline"
+                  >
+                    Create new persona
+                  </Link>
+                </div>
+              )}
             </div>
             
-            {/* Ad Account */}
-            <div className="w-full">
-              <div className="flex items-center mb-2">
-                <span className="text-sm text-zinc-400">Ad Account</span>
-                {adAccLoading && <Spinner />}
-              </div>
-              <FBAccountDropdown
-                title=""
-                selectedAcccount={selectedFbAdAcc}
-                accounts={fbAdAccs}
-                handleAccountChange={selectAdAccount}
-                compact={false}
-                darkMode={true}
-              />
-            </div>
+            {userDetails?.fbMarketingApiKey && (
+              <>
+                {/* Business Account */}
+                <div className="w-full">
+                  <div className="flex items-center mb-2">
+                    <span className="text-sm text-zinc-400">Business Account</span>
+                    {businessAccLoading && <Spinner />}
+                  </div>
+                  <FBAccountDropdown
+                    title=""
+                    selectedAcccount={selectedFbBusinessAcc}
+                    accounts={fbBusinessAccs}
+                    handleAccountChange={selectBusinessAccount}
+                    compact={false}
+                    darkMode={true}
+                  />
+                </div>
+                
+                {/* Ad Account */}
+                <div className="w-full">
+                  <div className="flex items-center mb-2">
+                    <span className="text-sm text-zinc-400">Ad Account</span>
+                    {adAccLoading && <Spinner />}
+                  </div>
+                  <FBAccountDropdown
+                    title=""
+                    selectedAcccount={selectedFbAdAcc}
+                    accounts={fbAdAccs}
+                    handleAccountChange={selectAdAccount}
+                    compact={false}
+                    darkMode={true}
+                  />
+                </div>
+                
+                {/* Facebook Page */}
+                <div className="w-full">
+                  <div className="flex items-center mb-2">
+                    <span className="text-sm text-zinc-400">Facebook Page</span>
+                    {fbPageLoading && <Spinner />}
+                  </div>
+                  <FBAccountDropdown
+                    title=""
+                    selectedAcccount={selectedFbPage}
+                    accounts={fbPages}
+                    handleAccountChange={selectPage}
+                    compact={false}
+                    darkMode={true}
+                  />
+                </div>
+                
+                {/* Instagram Account */}
+                <div className="w-full">
+                  <div className="flex items-center mb-2">
+                    <span className="text-sm text-zinc-400">Instagram Account</span>
+                    {igAccountLoading && <Spinner />}
+                  </div>
+                  <FBAccountDropdown
+                    title=""
+                    selectedAcccount={selectedInstagramAccount}
+                    accounts={instagramAccounts}
+                    handleAccountChange={selectInstagramAccount}
+                    compact={false}
+                    darkMode={true}
+                  />
+                </div>
+              </>
+            )}
             
-            {/* Facebook Page */}
-            <div className="w-full">
-              <div className="flex items-center mb-2">
-                <span className="text-sm text-zinc-400">Facebook Page</span>
-                {fbPageLoading && <Spinner />}
+            {!userDetails?.fbMarketingApiKey && (
+              <div className="w-full">
+                <Link 
+                  href="/facebook-connect" 
+                  className="bg-[#1A77F2] hover:bg-[#0A67E2] text-white text-sm font-medium py-2 px-4 rounded flex items-center justify-center gap-2 transition-colors"
+                >
+                  <Facebook className="w-4 h-4" />
+                  Connect Facebook
+                </Link>
               </div>
-              <FBAccountDropdown
-                title=""
-                selectedAcccount={selectedFbPage}
-                accounts={fbPages}
-                handleAccountChange={selectPage}
-                compact={false}
-                darkMode={true}
-              />
-            </div>
-            
-            {/* Instagram Account */}
-            <div className="w-full">
-              <div className="flex items-center mb-2">
-                <span className="text-sm text-zinc-400">Instagram Account</span>
-                {igAccountLoading && <Spinner />}
-              </div>
-              <FBAccountDropdown
-                title=""
-                selectedAcccount={selectedInstagramAccount}
-                accounts={instagramAccounts}
-                handleAccountChange={selectInstagramAccount}
-                compact={false}
-                darkMode={true}
-              />
-            </div>
+            )}
           </div>
         </div>
       </div>
