@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Upload, Info, XCircle, Loader2, Plus, ChevronDown, ChevronRight, Settings, Clock } from 'lucide-react';
 import { MediaItem } from '../types';
 import { 
@@ -9,6 +9,7 @@ import {
   DialogTrigger,
   DialogClose
 } from '@/components/ui/dialog';
+import { BudgetSettings } from './BudgetSettings';
 
 interface CreateTabProps {
   mediaItems: MediaItem[];
@@ -236,7 +237,7 @@ export function CreateTab({
         />
       </div>
 
-      {/* Budget */}
+      {/* Budget with Currency and Minimum Budget Handling */}
       <div className="space-y-2 mt-5">
         <div className="flex items-center justify-between">
           <label className="text-sm font-medium text-text-white flex items-center">
@@ -244,18 +245,7 @@ export function CreateTab({
             <Info size={16} className="ml-2 text-text-light-gray" />
           </label>
         </div>
-        <div className="relative">
-          <input
-            type="text"
-            value={budget}
-            onChange={e => setBudget(e.target.value)}
-            placeholder="Enter daily budget"
-            className="w-full px-3 py-2.5 bg-dark-bg border border-border-dark text-text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-green focus:border-primary-green placeholder:text-text-light-gray transition-all duration-200 pr-16"
-          />
-          <div className="absolute inset-y-0 right-0 flex items-center pr-3 text-text-light-gray pointer-events-none">
-            <span>USD</span>
-          </div>
-        </div>
+        <BudgetSettings budget={budget} setBudget={setBudget} />
       </div>
 
       {/* Optional AI guidance */}
