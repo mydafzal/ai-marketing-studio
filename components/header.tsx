@@ -97,6 +97,18 @@ async function UserOrLogin() {
               >
                 AI Creatives
               </Link>
+              <Link
+                href="/ai-creative-director"
+                className={cn(buttonVariants({ variant: 'ghost' }), 'ml-1 sm:ml-4 text-xs sm:text-sm text-text-white hover:text-primary-green hover:bg-dark-bg')}
+              >
+                AI Creative Director
+              </Link>
+              <Link
+                href="/campaign-connect"
+                className={cn(buttonVariants({ variant: 'ghost' }), 'ml-1 sm:ml-4 text-xs sm:text-sm text-text-white hover:text-primary-green hover:bg-dark-bg')}
+              >
+                Campaign Connect
+              </Link>
               
               <ProfileSettings
                 userDetails={userDetails}

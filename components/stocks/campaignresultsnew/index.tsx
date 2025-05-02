@@ -336,6 +336,7 @@ export function Stock({ campaignId, isActive }: IStockProps) {
 // ----------------------------------------------------------------
 // 4) Helper Sub-Components
 // ----------------------------------------------------------------
+// Interface for MetricCard component props
 interface MetricCardProps {
   title: string
   value: string | number
