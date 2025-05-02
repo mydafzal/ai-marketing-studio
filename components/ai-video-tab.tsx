@@ -6,6 +6,8 @@ import { AlertCircle, Download, ImagePlus, Save, Upload, Info, CheckCircle2, Vid
 import { useTheme } from "next-themes"
 import confetti from "canvas-confetti"
 import { startVideoGeneration, checkVideoStatus } from "@/app/actions/generateVideo"
+import { useUsageStore } from "@/app/store/useUsageStore"
+import { UpgradeModal } from "@/components/upgrade-modal"
 
 // Helper functions
 const fileToDataURL = async (file: File): Promise<string> => {
@@ -41,6 +43,22 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
   const { theme } = useTheme()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const isDarkMode = theme === "dark"
+
+  // Usage tracking
+  const { 
+    fetchUsageData, 
+    incrementVideoCount, 
+    isVideoLimitReached,
+    videoCount
+  } = useUsageStore()
+  
+  // Modal for upgrade prompt
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  
+  // Fetch usage data on component mount
+  useEffect(() => {
+    fetchUsageData()
+  }, [fetchUsageData])
 
   // State management
   const [videoPrompt, setVideoPrompt] = useState("")
@@ -157,6 +175,12 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
       return
     }
     
+    // Check if video limit reached
+    if (isVideoLimitReached) {
+      setShowUpgradeModal(true)
+      return
+    }
+    
     setIsGeneratingVideo(true)
     setVideoGenerated(false)
     setVideoUrl("")
@@ -200,7 +224,7 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
       // Save prediction ID for polling - store in a local const to capture it
       const predId = startResult.predictionId
       console.log(`[CLIENT_GEN] Setting prediction ID for polling: ${predId}`)
-      setPredictionId(predId)
+      setPredictionId(predId || null)
       
       // Show initial toast
       showToast(
@@ -223,7 +247,7 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
           console.log(`[CLIENT_POLL] Polling for prediction: ${predId}`)
           setPollCount(count => count + 1)
           
-          const result = await checkVideoStatus(predId)
+          const result = await checkVideoStatus(predId!)
           console.log(`[CLIENT_POLL] Status for ${predId}: ${result.status}`)
           
           // Handle error case
@@ -247,6 +271,9 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
             setVideoUrl(result.videoUrl)
             setVideoGenerated(true)
             setGeneratedVideos(prev => [...prev, result.videoUrl] as string[])
+            
+            // Increment video usage count
+            await incrementVideoCount()
             
             showToast("Success", "Your AI video has been generated!", "success")
             setIsGeneratingVideo(false)
@@ -491,6 +518,14 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
 
   return (
     <div className="w-full shadow-sm rounded-lg border border-[#2A2E3A] bg-[#151925]">
+      {/* Upgrade Modal */}
+      <UpgradeModal 
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        usageType="videos"
+        currentCount={videoCount}
+      />
+      
       {/* Toast notification */}
       {toastMessage && (
         <div className={`fixed top-4 right-4 z-50 p-4 rounded-md shadow-md transition-all ${

@@ -89,10 +89,10 @@ export function Subscription({
           {!user.sub_status || (user.sub_status !== 'active' && user.sub_status !== 'trialing') ? (
             <div className="text-center">
               <h1 className="text-[40px] font-bold text-white dark:text-white">
-                Start <span className="text-[#4BF29C] dark:text-[#4BF29C]">Free</span>. Power Your Marketing with AI.
+                Power Your Marketing with AI for <span className="text-[#4BF29C] dark:text-[#4BF29C]">€39.95</span>/month
               </h1>
               <p className="mt-3 max-w-2xl mx-auto text-[#ADB0B8] dark:text-[#ADB0B8] text-lg">
-                Start your 7-day free trial today. You can cancel anytime during the trial with no charges. After your trial, the subscription can be cancelled on a monthly basis.
+                Start today with our monthly subscription. You can cancel anytime on a monthly basis.
               </p>
               {checkoutCanceled && (
                 <div className="mt-4 p-3 bg-[#1A1D29] rounded-lg border border-[#2A2E3A] text-white">

@@ -147,3 +147,55 @@ input[type="range"]::-webkit-slider-thumb {
 .hide-scrollbar::-webkit-scrollbar {
   display: none; /* Chrome, Safari, and Opera */
 }
+
+/* Hide sidebar on specific pages */
+[href*="/ai-content"] ~ .hidden-on-non-chat-pages,
+[href*="/content-folder"] ~ .hidden-on-non-chat-pages,
+[href*="/admin"] ~ .hidden-on-non-chat-pages,
+[href*="/subscription"] ~ .hidden-on-non-chat-pages {
+  display: none !important;
+}
+
+/* Adding loading bar animation */
+@keyframes loading-bar {
+  0% { width: 0; }
+  50% { width: 50%; }
+  100% { width: 100%; }
+}
+
+.animate-loading-bar {
+  animation: loading-bar 2s infinite;
+}
+
+/* Mobile keyboard handling */
+@media (max-width: 767px) {
+  /* Add extra padding at the bottom of the chat to ensure last message visibility */
+  .flex-1.overflow-y-auto.keyboard-open {
+    padding-bottom: 180px !important;
+  }
+
+  /* Style last AI message to make it more visible */
+  .group.relative.mb-6.flex:last-child {
+    position: relative;
+    z-index: 10;
+  }
+  
+  /* Hide Crisp chat widget on mobile devices */
+  .crisp-client {
+    display: none !important;
+  }
+  
+  /* Ensure bottom space for chat input isn't covered by Crisp */
+  .fixed.inset-x-0.bottom-0 {
+    z-index: 50 !important;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+}
+
+/* Desktop-only Crisp chat */
+@media (min-width: 768px) {
+  /* Show Crisp chat only on desktop */
+  .crisp-client {
+    display: block !important;
+  }
+}

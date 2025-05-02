@@ -44,6 +44,7 @@ interface AdSetupModalProps {
   adPlacements: AdPlacements;
   budget: string;
   creatives: any[];
+  websiteUrl?: string;
   onCreativesUpdated?: (creatives: ExtendedCreative[]) => void;
   onLeadFormUpdated?: (updatedFields: any) => void;
 }
@@ -65,6 +66,7 @@ export function AdSetupModal({
                                adPlacements,
                                budget,
                                creatives,
+                               websiteUrl,
                                onCreativesUpdated,
                                onLeadFormUpdated
                              }: AdSetupModalProps) {
@@ -99,10 +101,12 @@ export function AdSetupModal({
   
   // Debug the lead form content structure
   useEffect(() => {
-    if (leadFormContent) {
+    if (leadFormContent && leadFormContent !== null) {
       console.log('Lead form content structure:', leadFormContent);
+    } else if (masterFlowData?.lead_form_content === null) {
+      console.log('Lead form content is null - this campaign is not eligible for a lead form');
     }
-  }, [leadFormContent]);
+  }, [leadFormContent, masterFlowData?.lead_form_content]);
   
   // Handle the nested structure of lead form data
   const getLeadFormValue = (field: string) => {
@@ -180,7 +184,7 @@ export function AdSetupModal({
     getLeadFormValue("company_name") || ""
   );
   const [editedFollowUpUrl, setEditedFollowUpUrl] = useState(
-    getLeadFormValue("follow_up_url") || ""
+    getLeadFormValue("follow_up_url") || websiteUrl || ""
   );
   const [editedLocale, setEditedLocale] = useState(
     getLeadFormValue("lead_form_locale") || getLeadFormValue("locale") || "en_US"
@@ -250,7 +254,7 @@ export function AdSetupModal({
     getLeadFormValue("company_name") || ""
   );
   const [originalFollowUpUrl, setOriginalFollowUpUrl] = useState(
-    getLeadFormValue("follow_up_url") || ""
+    getLeadFormValue("follow_up_url") || websiteUrl || ""
   );
   const [originalLocale, setOriginalLocale] = useState(
     getLeadFormValue("lead_form_locale") || getLeadFormValue("locale") || "en_US"
@@ -504,6 +508,21 @@ export function AdSetupModal({
   
   const handleFollowUpUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEditedFollowUpUrl(e.target.value);
+  };
+
+  // URL validation to ensure all links have https:// but no www.
+  const validateAndFixUrl = (url: string) => {
+    if (!url || url.trim() === '') return url;
+    
+    // Remove www. if present
+    let cleanUrl = url.replace(/^(https?:\/\/)?(www\.)/i, '');
+    
+    // Add https:// if not present
+    if (!cleanUrl.match(/^https?:\/\//i)) {
+      return `https://${cleanUrl}`;
+    }
+    
+    return cleanUrl;
   };
   
   // Handler for locale change
@@ -1170,7 +1189,11 @@ export function AdSetupModal({
   };
 
   const hasPlacementData = masterFlowData?.hasOwnProperty('placements');
-  const hasLeadFormData = masterFlowData?.lead_form_content !== undefined;
+  // Check if lead form content exists, is not null, and is not an empty object
+  const hasLeadFormData = masterFlowData?.lead_form_content !== undefined && 
+                         masterFlowData?.lead_form_content !== null && 
+                         !(typeof masterFlowData?.lead_form_content === 'object' && 
+                           Object.keys(masterFlowData?.lead_form_content).length === 0);
 
   // Extract lead form data
   const processLeadFormQuestions = () => {
@@ -2381,6 +2404,11 @@ export function AdSetupModal({
                                 type="text"
                                 value={editedFollowUpUrl}
                                 onChange={handleFollowUpUrlChange}
+                                onBlur={() => {
+                                  if (editedFollowUpUrl) {
+                                    setEditedFollowUpUrl(validateAndFixUrl(editedFollowUpUrl));
+                                  }
+                                }}
                                 className={`w-full bg-white p-3 rounded-lg border ${
                                   editedFollowUpUrl !== originalFollowUpUrl 
                                     ? 'border-yellow-400' 

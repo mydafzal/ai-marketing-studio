@@ -18,11 +18,13 @@ import {
   Target, 
   User as UserIcon, 
   FileText, 
-  CheckCheck
+  CheckCheck,
+  Facebook
 } from 'lucide-react'
 import {cn} from '@/lib/utils'
 import OnboardingLocationSelector, { LocationData } from './onboarding-location-selector'
 import posthog from 'posthog-js'
+import FacebookConnect from '@/components/facebook-connect'
 
 type Details = {
     first_name: string | null
@@ -303,7 +305,55 @@ const BenefitsPanel = ({ currentStep }: { currentStep: number }) => {
         </div>
       );
       
-    case 5: // Confirmation
+    case 5: // Facebook Connect
+      return (
+        <div className="space-y-4 sm:space-y-6">
+          <div className="bg-[#1A1D29] rounded-xl border border-gray-700 p-4 sm:p-6">
+            <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                width="20" 
+                height="20" 
+                viewBox="0 0 24 24" 
+                className="text-[#4BF29C]"
+              >
+                <path 
+                  fill="currentColor" 
+                  d="M9.198 21.5h4v-8.01h3.604l.396-3.98h-4V7.5a1 1 0 0 1 1-1h3v-4h-3a5 5 0 0 0-5 5v2.01h-2l-.396 3.98h2.396v8.01Z" 
+                />
+              </svg>
+              <h3 className="text-base sm:text-lg font-semibold text-white">Seamless Facebook Integration</h3>
+            </div>
+            <p className="text-gray-300 text-sm sm:text-base">
+              Connect your Facebook account to unlock the full potential of Reeply AI. Create and manage campaigns directly without switching between platforms.
+            </p>
+          </div>
+          
+          <div className="bg-[#1A1D29] rounded-xl border border-gray-700 p-4 sm:p-6">
+            <div className="space-y-3 sm:space-y-4">
+              <h3 className="text-base sm:text-lg font-semibold text-white mb-1">Why Connect with Facebook?</h3>
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-[#151925] flex items-center justify-center text-[#4BF29C] text-xs sm:text-base">✓</div>
+                <div className="text-gray-300 text-xs sm:text-sm">One-click campaign creation and management</div>
+              </div>
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-[#151925] flex items-center justify-center text-[#4BF29C] text-xs sm:text-base">✓</div>
+                <div className="text-gray-300 text-xs sm:text-sm">Access detailed analytics and performance metrics</div>
+              </div>
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-[#151925] flex items-center justify-center text-[#4BF29C] text-xs sm:text-base">✓</div>
+                <div className="text-gray-300 text-xs sm:text-sm">Auto-optimize campaigns based on real-time data</div>
+              </div>
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-[#151925] flex items-center justify-center text-[#4BF29C] text-xs sm:text-base">✓</div>
+                <div className="text-gray-300 text-xs sm:text-sm">Manage leads directly from within Reeply AI</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+      
+    case 6: // Confirmation
       return (
         <div className="space-y-4 sm:space-y-6">
           <div className="bg-[#1A1D29] rounded-xl border border-[#4BF29C]/30 p-4 sm:p-6">
@@ -363,6 +413,38 @@ function Onboarding({
         goal: "",
         company_segment: ""
     })
+    
+    // Check if a URL is valid (has a TLD after adding https://)
+    const isValidfUrl = (url: string) => {
+      if (!url || url.trim() === '') return false;
+      
+      try {
+        // Ensure URL has protocol before checking
+        const urlWithProtocol = url.match(/^https?:\/\//i) ? url : `https://${url}`;
+        const urlObj = new URL(urlWithProtocol);
+        
+        // Check for a valid domain with at least one dot (to ensure there's a TLD)
+        return urlObj.hostname.includes('.') && urlObj.hostname.split('.').pop()!.length > 0;
+      } catch (e) {
+        return false;
+      }
+    };
+    
+    // URL validation to ensure all links have https:// but no www.
+    const validateAndFixUrl = (url: string) => {
+      if (!url || url.trim() === '') return url;
+      
+      // Remove www. if present
+      let cleanUrl = url.replace(/^(https?:\/\/)?(www\.)/i, '');
+      
+      // Add https:// if not present
+      if (!cleanUrl.match(/^https?:\/\//i)) {
+        return `https://${cleanUrl}`;
+      }
+      
+      return cleanUrl;
+    };
+    
 
     const [firstName, setFirstName] = React.useState<string>(userDetails?.first_name || "")
     const [lastName, setLastName] = React.useState<string>(userDetails?.last_name || "")
@@ -462,7 +544,13 @@ function Onboarding({
         
         // Handle special case for locations step
         if (STEPS[currentStep].id === 'locations') {
-            return true; // Locations are optional, so always allow proceeding
+            // Check if at least one location is selected
+            if (!locations || locations.length === 0) {
+                errors.locations = "Please select at least one location";
+                setInputError(errors);
+                return false;
+            }
+            return true;
         }
         
         // Validate other fields
@@ -473,8 +561,40 @@ function Onboarding({
                 case 'last_name': value = lastName; break;
                 case 'company_name': value = companyName; break;
                 case 'company_description': value = companyDescription; break;
-                case 'website_link': value = websiteLink; break;
-                case 'privacy_policy_link': value = privacyPolicyLink; break;
+                case 'website_link': 
+                    value = websiteLink; 
+                    // Apply validation for website_link
+                    if (value) {
+                        const fixedUrl = validateAndFixUrl(value);
+                        if (fixedUrl !== value) {
+                            setWebsiteLink(fixedUrl);
+                            value = fixedUrl;
+                        }
+                        
+                        if (!isValidfUrl(value) && value.trim() !== "") {
+                            errors[field] = "Please enter a valid URL";
+                            hasErrors = true;
+                            return;
+                        }
+                    }
+                    break;
+                case 'privacy_policy_link': 
+                    value = privacyPolicyLink;
+                    // Apply validation for privacy_policy_link
+                    if (value) {
+                        const fixedUrl = validateAndFixUrl(value);
+                        if (fixedUrl !== value) {
+                            setPrivacyPolicyLink(fixedUrl);
+                            value = fixedUrl;
+                        }
+                        
+                        if (!isValidfUrl(value) && value.trim() !== "") {
+                            errors[field] = "Please enter a valid URL";
+                            hasErrors = true;
+                            return;
+                        }
+                    }
+                    break;
                 case 'preferred_language': value = preferredLanguage; break;
                 case 'goal': value = goal; break;
                 case 'company_segment': value = companySegment; break;
@@ -525,17 +645,30 @@ function Onboarding({
             // Add temporary debug log for locations before saving
             console.log("[TEMPORARY DEBUG] Saving locations:", locations);
             
+            // If somehow locations is empty at this point, set a default for USA
+            let saveLocations = locations;
+            if (!saveLocations || saveLocations.length === 0) {
+                saveLocations = [{
+                    country: {
+                        name: "United States",
+                        code: "US"
+                    },
+                    regions: []
+                }];
+                console.log("[TEMPORARY DEBUG] Using default USA location:", saveLocations);
+            }
+            
             const details = {
                 first_name: firstName,
                 last_name: lastName,
                 company_name: companyName,
                 company_description: companyDescription,
-                website_link: websiteLink,
-                privacy_policy_link: privacyPolicyLink,
+                website_link: validateAndFixUrl(websiteLink),
+                privacy_policy_link: validateAndFixUrl(privacyPolicyLink),
                 preferred_language: preferredLanguage,
                 goal: goal,
                 company_segment: companySegment,
-                locations: locations
+                locations: saveLocations
             }
 
             // Manually set goal since it's removed from the form
@@ -848,6 +981,17 @@ function Onboarding({
                                 }
                                 setWebsiteLink(e.target.value)
                             }}
+                            onBlur={(e) => {
+                                const fixedUrl = validateAndFixUrl(e.target.value);
+                                if (fixedUrl !== e.target.value) {
+                                    setWebsiteLink(fixedUrl);
+                                }
+                                if (!isValidfUrl(fixedUrl) && fixedUrl.length > 0) {
+                                    setInputError({...inputError, website_link: "Please enter a valid URL"})
+                                } else {
+                                    setInputError({...inputError, website_link: ""})
+                                }
+                            }}
                         />
                         {fieldError && (
                             <p className="text-sm text-red-500 flex items-center gap-1">
@@ -885,6 +1029,17 @@ function Onboarding({
                                     setInputError({...inputError, privacy_policy_link: ""})
                                 }
                                 setPrivacyPolicyLink(e.target.value)
+                            }}
+                            onBlur={(e) => {
+                                const fixedUrl = validateAndFixUrl(e.target.value);
+                                if (fixedUrl !== e.target.value) {
+                                    setPrivacyPolicyLink(fixedUrl);
+                                }
+                                if (!isValidfUrl(fixedUrl) && fixedUrl.length > 0) {
+                                    setInputError({...inputError, privacy_policy_link: "Please enter a valid URL"})
+                                } else {
+                                    setInputError({...inputError, privacy_policy_link: ""})
+                                }
                             }}
                         />
                         {fieldError && (
@@ -1004,6 +1159,58 @@ function Onboarding({
                             locations={locations || []}
                             setLocations={setLocations as React.Dispatch<React.SetStateAction<LocationData>>}
                         />
+                        {fieldError && (
+                            <p className="text-sm text-red-500 flex items-center gap-1">
+                                <AlertCircle className="size-3"/>
+                                {fieldError}
+                            </p>
+                        )}
+                    </div>
+                );
+            case 'facebook_connect':
+                return (
+                    <div className="space-y-4">
+                        <div className="rounded-xl border border-[#1A77F2]/20 bg-[#1A1D29] p-6">
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="w-10 h-10 rounded-full bg-[#1A77F2]/20 flex items-center justify-center">
+                                    <svg 
+                                        xmlns="http://www.w3.org/2000/svg" 
+                                        width="24" 
+                                        height="24" 
+                                        viewBox="0 0 24 24" 
+                                        className="text-[#1A77F2]"
+                                    >
+                                        <path 
+                                            fill="currentColor" 
+                                            d="M9.198 21.5h4v-8.01h3.604l.396-3.98h-4V7.5a1 1 0 0 1 1-1h3v-4h-3a5 5 0 0 0-5 5v2.01h-2l-.396 3.98h2.396v8.01Z" 
+                                        />
+                                    </svg>
+                                </div>
+                                <h3 className="text-xl font-semibold text-white">Connect with Facebook</h3>
+                            </div>
+                            
+                            <div className="mb-6">
+                                <p className="text-gray-300 text-sm mb-4">
+                                    To easily create and manage campaigns, you&apos;ll need to connect with Facebook and grant Reeply AI software the following access rights:
+                                </p>
+                                <ul className="list-disc list-inside text-gray-300 text-sm space-y-1 mb-4">
+                                    <li>Receive your email address</li>
+                                    <li>Manage ads for ad accounts that you have access to</li>
+                                    <li>Access your Facebook ads and related stats</li>
+                                    <li>Manage your business</li>
+                                    <li>Access leads for your Pages</li>
+                                    <li>Create and manage ads for your Page</li>
+                                    <li>Show a list of the Pages you manage</li>
+                                </ul>
+                                <p className="text-gray-300 text-sm mb-4">
+                                    You can always connect your Facebook account later if you prefer.
+                                </p>
+                            </div>
+                            
+                            <div className="flex justify-center">
+                                <FacebookConnect />
+                            </div>
+                        </div>
                     </div>
                 );
             default:
@@ -1075,7 +1282,46 @@ function Onboarding({
                         }</p>
                     </div>
                 </div>
-                
+
+                <div className="bg-[#1A1D29] dark:bg-[#1A1D29] p-4 sm:p-6 rounded-xl border border-gray-700">
+                    <h3 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4">
+                        <span className="flex items-center gap-2">
+                            <svg 
+                                xmlns="http://www.w3.org/2000/svg" 
+                                width="20" 
+                                height="20" 
+                                viewBox="0 0 24 24" 
+                                className="text-[#1A77F2]"
+                            >
+                                <path 
+                                    fill="currentColor" 
+                                    d="M9.198 21.5h4v-8.01h3.604l.396-3.98h-4V7.5a1 1 0 0 1 1-1h3v-4h-3a5 5 0 0 0-5 5v2.01h-2l-.396 3.98h2.396v8.01Z" 
+                                />
+                            </svg>
+                            Facebook Connection
+                        </span>
+                    </h3>
+                    <div>
+                        <p className="text-xs sm:text-sm text-gray-400">Status</p>
+                        <p className="text-sm sm:text-base text-white flex items-center gap-2">
+                            {userDetails?.fbMarketingApiKey ? (
+                                <>
+                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400 border border-green-500/30">
+                                        <CheckCircle2 className="w-3 h-3 mr-1" />
+                                        Connected
+                                    </span>
+                                </>
+                            ) : (
+                                <>
+                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
+                                        Not Connected
+                                    </span>
+                                    <span className="text-xs text-gray-400">(You can connect later in Settings)</span>
+                                </>
+                            )}
+                        </p>
+                    </div>
+                </div>
                 
                 {/* Always show a locations section, with debug info if no locations */}
                 <div className="bg-[#1A1D29] dark:bg-[#1A1D29] p-4 sm:p-6 rounded-xl border border-gray-700">

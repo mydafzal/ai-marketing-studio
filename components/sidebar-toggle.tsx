@@ -7,12 +7,34 @@ import { Button } from '@/components/ui/button'
 import { IconSidebar } from '@/components/ui/icons'
 
 export function SidebarToggle() {
-  const { toggleSidebar } = useSidebar()
+  const { toggleSidebar, isSidebarOpen } = useSidebar()
+  const [isNonSidebarPage, setIsNonSidebarPage] = React.useState(false)
+  
+  // Client-side check for non-sidebar pages
+  React.useEffect(() => {
+    const nonSidebarPaths = ['/ai-content', '/content-folder', '/admin', '/subscription']
+    const currentPath = window.location.pathname
+    const isNonSidebar = nonSidebarPaths.some(path => currentPath.includes(path))
+    setIsNonSidebarPage(isNonSidebar)
+    
+    // Listen for route changes
+    const handleRouteChange = () => {
+      const path = window.location.pathname
+      const isNonSidebar = nonSidebarPaths.some(p => path.includes(p))
+      setIsNonSidebarPage(isNonSidebar)
+    }
+    
+    window.addEventListener('popstate', handleRouteChange)
+    return () => window.removeEventListener('popstate', handleRouteChange)
+  }, [])
+  
+  // Don't render on non-sidebar pages
+  if (isNonSidebarPage) return null
 
   return (
     <Button
       variant="ghost"
-      className="-ml-2 hidden size-9 p-0 lg:flex"
+      className={`-ml-2 size-9 p-0 hidden lg:flex ${isSidebarOpen ? 'lg:flex' : 'lg:inline-flex'}`}
       onClick={() => {
         toggleSidebar()
       }}

@@ -2,6 +2,7 @@
 
 import OpenAI from "openai"
 import Replicate from "replicate"
+import { checkUsageLimit, incrementUsageCounter } from "@/app/actions"
 // Note: We dynamically import FormData and node-fetch when needed
 // This is to avoid issues with Next.js server components
 
@@ -44,6 +45,15 @@ export async function generateImages(
     if (!process.env.OPENAI_API_KEY) {
       throw new Error("OPENAI_API_KEY is not configured")
     }
+    
+    // Check if user has reached the free tier image limit
+    const usageCheck = await checkUsageLimit('images')
+    if (usageCheck.success && usageCheck.limitReached) {
+      return {
+        success: false,
+        error: "Free plan image generation limit reached. Please upgrade your subscription to continue generating images."
+      }
+    }
 
     console.log(`Starting image generation with prompt: "${prompt}" and aspect ratio: ${aspectRatio}`)
     
@@ -74,6 +84,9 @@ export async function generateImages(
     if (imageUrls.length === 0) {
       throw new Error("No images were generated")
     }
+    
+    // Increment the usage counter for successful generations
+    await incrementUsageCounter('images')
 
     const response = {
       success: true,
@@ -116,6 +129,15 @@ export async function generateImageVariants(
   try {
     if (!process.env.OPENAI_API_KEY) {
       throw new Error("OPENAI_API_KEY is not configured")
+    }
+    
+    // Check if user has reached the free tier image limit
+    const usageCheck = await checkUsageLimit('images')
+    if (usageCheck.success && usageCheck.limitReached) {
+      return {
+        success: false,
+        error: "Free plan image generation limit reached. Please upgrade your subscription to continue generating images."
+      }
     }
 
     console.log(`Starting image variant generation with prompt: "${prompt}" and ${referenceImages.length} reference images`)
@@ -274,6 +296,9 @@ export async function generateImageVariants(
     if (imageUrls.length === 0) {
       throw new Error("No image variants were generated");
     }
+    
+    // Increment the usage counter for successful generations
+    await incrementUsageCounter('images')
 
     return {
       success: true,
@@ -311,6 +336,15 @@ export async function generateImageVariation(
   try {
     if (!process.env.OPENAI_API_KEY) {
       throw new Error("OPENAI_API_KEY is not configured")
+    }
+    
+    // Check if user has reached the free tier image limit
+    const usageCheck = await checkUsageLimit('images')
+    if (usageCheck.success && usageCheck.limitReached) {
+      return {
+        success: false,
+        error: "Free plan image generation limit reached. Please upgrade your subscription to continue generating images."
+      }
     }
 
     console.log(`Starting image generation with ${Array.isArray(referenceImages) ? referenceImages.length : 1} reference images using GPT-Image-1`)
@@ -448,6 +482,9 @@ export async function generateImageVariation(
       if (imageUrls.length === 0) {
         throw new Error("No images were generated");
       }
+      
+      // Increment the usage counter for successful generations
+      await incrementUsageCounter('images')
 
       return {
         success: true,
@@ -478,6 +515,15 @@ export async function inpaintImage(
   try {
     if (!process.env.REPLICATE_API_TOKEN) {
       throw new Error("REPLICATE_API_TOKEN is not configured")
+    }
+    
+    // Check if user has reached the free tier inpainting limit
+    const usageCheck = await checkUsageLimit('inpainting')
+    if (usageCheck.success && usageCheck.limitReached) {
+      return {
+        success: false,
+        error: "Free plan image inpainting limit reached. Please upgrade your subscription to continue using inpainting."
+      }
     }
 
     console.log("Starting inpainting with prompt:", prompt)
@@ -548,6 +594,9 @@ export async function inpaintImage(
       if (!imageUrl) {
         throw new Error("No image URL in prediction output");
       }
+      
+      // Increment the usage counter for successful inpainting
+      await incrementUsageCounter('inpainting')
 
       return {
         success: true,

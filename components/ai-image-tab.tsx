@@ -16,6 +16,8 @@ import {
   ZoomIn
 } from "lucide-react"
 import ImagePreviewModal from "@/components/image-preview-modal"
+import { useUsageStore } from "@/app/store/useUsageStore"
+import { UpgradeModal } from "@/components/upgrade-modal"
 
 // Helper function to resize an image to a maximum file size
 async function resizeImageToMaxSize(file: File, maxSizeKB: number = 1024): Promise<File> {
@@ -173,24 +175,24 @@ const LoadingScreen = ({ isDarkMode, generationMode, numImages }: { isDarkMode: 
   }
   
   return (
-    <div className={`flex flex-col items-center justify-center size-full min-h-[400px] ${
+    <div className={`flex flex-col items-center justify-center size-full min-h-[300px] sm:min-h-[400px] ${
       isDarkMode ? 'bg-gray-800/50' : 'bg-gray-100/50'
     } rounded-lg border ${
       isDarkMode ? 'border-gray-700' : 'border-gray-300'
     }`}>
       {icon}
       
-      <div className={`text-lg font-medium mb-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
+      <div className={`text-base sm:text-lg font-medium mb-2 px-4 text-center ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
         {statusText}
       </div>
       
-      <div className="relative w-48 h-2 bg-gray-300 rounded-full overflow-hidden">
+      <div className="relative w-32 sm:w-48 h-2 bg-gray-300 rounded-full overflow-hidden">
         <div className={`absolute top-0 left-0 h-full ${
           isDarkMode ? 'bg-primary-green' : 'bg-blue-500'
         } animate-loading-bar`}></div>
       </div>
       
-      <div className={`mt-6 text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+      <div className={`mt-4 sm:mt-6 text-xs sm:text-sm px-4 text-center ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
         <p>This may take a few moments...</p>
         <p className="mt-1">Please don&apos;t refresh the page.</p>
       </div>
@@ -254,6 +256,21 @@ function getAspectRatioClass(format: string): string {
 }
 
 export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
+  // Usage tracking
+  const { 
+    fetchUsageData, 
+    incrementImageCount, 
+    isImageLimitReached,
+    imageCount
+  } = useUsageStore()
+  
+  // Modal for upgrade prompt
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  
+  // Fetch usage data on component mount
+  useEffect(() => {
+    fetchUsageData()
+  }, [fetchUsageData])
   const { theme } = useTheme()
   const isDarkMode = theme === "dark"
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -681,6 +698,12 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
       return
     }
     
+    // Check if image limit reached
+    if (isImageLimitReached) {
+      setShowUpgradeModal(true)
+      return
+    }
+    
     setIsGeneratingImages(true)
     
     try {
@@ -705,11 +728,20 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
       }
     } catch (err) {
       console.error("Error generating images:", err)
-      showToast(
-        "Generation failed", 
-        "Unable to create images. Please try again with a different prompt.", 
-        "error"
-      )
+      
+      // Check if error is due to free plan limit
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      if (errorMessage.includes("Free plan image generation limit reached")) {
+        // Show the upgrade modal if limit is reached
+        setShowUpgradeModal(true)
+      } else {
+        // Show regular error for other types of errors
+        showToast(
+          "Generation failed", 
+          "Unable to create images. Please try again with a different prompt.", 
+          "error"
+        )
+      }
     } finally {
       setIsGeneratingImages(false)
     }
@@ -1002,6 +1034,12 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
       return
     }
     
+    // Check if image limit reached
+    if (isImageLimitReached) {
+      setShowUpgradeModal(true)
+      return
+    }
+    
     setIsGeneratingImages(true)
     
     try {
@@ -1055,33 +1093,52 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
         }
       } catch (innerErr) {
         console.error("Inner error in variation generation:", innerErr)
+        
+        // Check if error is due to free plan limit
+        const innerErrorMessage = innerErr instanceof Error ? innerErr.message : String(innerErr);
+        if (innerErrorMessage.includes("Free plan image generation limit reached")) {
+          // Show the upgrade modal if limit is reached
+          setShowUpgradeModal(true)
+          return; // Exit early to prevent propagation
+        }
+        
         throw innerErr
       }
     } catch (err) {
       console.error("Error generating images with reference:", err)
       
-      // Extract a more meaningful error message if possible
-      let errorMessage = "Unable to create images. Please try again with different reference images.";
+      // Extract error message
+      const rawErrorMessage = err instanceof Error ? err.message : String(err);
+      
+      // Check if error is due to free plan limit
+      if (rawErrorMessage.includes("Free plan image generation limit reached")) {
+        // Show the upgrade modal if limit is reached
+        setShowUpgradeModal(true)
+        return; // Exit early to prevent showing the error toast
+      }
+      
+      // For other types of errors, clean up and display a helpful message
+      let displayErrorMessage = "Unable to create images. Please try again with different reference images.";
       
       if (err instanceof Error) {
         // Clean up common API error messages
         const msg = err.message;
         
         if (msg.includes("content policy") || msg.includes("content filter")) {
-          errorMessage = "Your request may violate content policies. Please try different reference images.";
+          displayErrorMessage = "Your request may violate content policies. Please try different reference images.";
         } else if (msg.includes("network") || msg.includes("connection")) {
-          errorMessage = "Network error occurred. Please check your internet connection and try again.";
+          displayErrorMessage = "Network error occurred. Please check your internet connection and try again.";
         } else if (msg.includes("Bad Request") || msg.includes("invalid")) {
-          errorMessage = "Invalid request format. Please try with different images or resize them.";
+          displayErrorMessage = "Invalid request format. Please try with different images or resize them.";
         } else if (msg.includes("Too Many Requests")) {
-          errorMessage = "Rate limit exceeded. Please try again in a few minutes.";
+          displayErrorMessage = "Rate limit exceeded. Please try again in a few minutes.";
         } else if (msg.length < 150) {
           // Only use API error message if it's reasonably short
-          errorMessage = msg;
+          displayErrorMessage = msg;
         }
       }
       
-      showToast("Generation failed", errorMessage, "error")
+      showToast("Generation failed", displayErrorMessage, "error")
     } finally {
       setIsGeneratingImages(false)
     }
@@ -1400,6 +1457,13 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
 
   return (
     <div className={`w-full shadow-sm rounded-lg border ${isDarkMode ? 'bg-container-bg border-border-dark' : 'bg-white border-gray-200'}`}>
+      {/* Upgrade Modal */}
+      <UpgradeModal 
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        usageType="images"
+        currentCount={imageCount}
+      />
       {/* Toast notification */}
       {toastMessage && (
         <div className={`fixed top-4 right-4 z-50 p-4 rounded-md shadow-md transition-all ${
@@ -1850,12 +1914,12 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
                 <div className="flex items-center justify-between">
                   <div className="flex flex-col w-full">
                     <div className={`border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
                         <div className="flex">
                           <button
                             type="button"
                             onClick={() => setActiveTab("original")}
-                            className={`py-2 px-4 text-sm font-medium border-b-2 ${
+                            className={`py-2 px-3 sm:px-4 text-xs sm:text-sm font-medium border-b-2 ${
                               activeTab === "original" 
                                 ? isDarkMode
                                   ? 'border-blue-500 text-blue-400'
@@ -1872,7 +1936,7 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
                             <button
                               type="button"
                               onClick={() => setActiveTab("withLogo")}
-                              className={`py-2 px-4 text-sm font-medium border-b-2 ${
+                              className={`py-2 px-3 sm:px-4 text-xs sm:text-sm font-medium border-b-2 ${
                                 activeTab === "withLogo" 
                                   ? isDarkMode
                                     ? 'border-blue-500 text-blue-400'
@@ -1979,10 +2043,11 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
                                       e.stopPropagation();
                                       handleDownload(imgUrl, i);
                                     }}
-                                    className="absolute bottom-2 right-2 py-1 px-3 text-xs font-medium bg-white text-gray-700 rounded-md shadow hover:bg-gray-50 flex items-center"
+                                    className="absolute bottom-2 right-2 py-1 px-2 sm:px-3 text-xs font-medium bg-white text-gray-700 rounded-md shadow hover:bg-gray-50 flex items-center z-30 pointer-events-auto"
                                   >
-                                    <Download className="mr-1 size-4" />
-                                    Download
+                                    <Download className="mr-0.5 sm:mr-1 size-3 sm:size-4" />
+                                    <span className="hidden sm:inline">Download</span>
+                                    <span className="inline sm:hidden">DL</span>
                                   </button>
                                 </div>
                                 
@@ -2056,10 +2121,11 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
                                       e.stopPropagation();
                                       handleDownloadWithLogo(generatedImages[i], i);
                                     }}
-                                    className="absolute bottom-2 right-2 py-1 px-3 text-xs font-medium bg-white text-gray-700 rounded-md shadow hover:bg-gray-50 flex items-center"
+                                    className="absolute bottom-2 right-2 py-1 px-2 sm:px-3 text-xs font-medium bg-white text-gray-700 rounded-md shadow hover:bg-gray-50 flex items-center z-30 pointer-events-auto"
                                   >
-                                    <Download className="mr-1 size-4" />
-                                    Download
+                                    <Download className="mr-0.5 sm:mr-1 size-3 sm:size-4" />
+                                    <span className="hidden sm:inline">Download</span>
+                                    <span className="inline sm:hidden">DL</span>
                                   </button>
                                 </div>
                                 

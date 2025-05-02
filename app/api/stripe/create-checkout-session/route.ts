@@ -98,8 +98,8 @@ export async function POST(req: NextRequest) {
       cancel_url: `${billingPageUrl}?canceled=true`,
     }
 
-    // Only add trial if customer never had one before
-    if (!hasHadTrialBefore) {
+    // Only add trial for yearly plans, not for monthly plans
+    if (!hasHadTrialBefore && lookupKey.includes('yearly')) {
       checkoutParams.subscription_data = {
         trial_period_days: 7
       }
@@ -115,12 +115,12 @@ export async function POST(req: NextRequest) {
       status: 'pending',
       price_id: prices.data[0].id,
       product_id: prices.data[0].product,
-      includes_trial: !hasHadTrialBefore
+      includes_trial: !hasHadTrialBefore && lookupKey.includes('yearly')
     })
     
     // Store the checkout session ID in the user record for tracking
     // We'll only mark has_had_trial true when checkout completes
-    if (!hasHadTrialBefore) {
+    if (!hasHadTrialBefore && lookupKey.includes('yearly')) {
       await kv.hset(userKey, { 
         pending_trial_checkout_session: stripeSession.id,
         pending_trial_checkout_created: new Date().toISOString()

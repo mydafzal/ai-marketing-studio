@@ -7,17 +7,20 @@ export interface SupportParams {
     title?: string;
 }
 
+// Support module is deprecated - now using Crisp chat in the navbar
 export const supportModule = new ModuleConfigBuilder('showSupportUI')
-    .setDescription('Show Reeply AI Support scheduling interface in the sidebar')
+    .setDescription('Support is now available via the Crisp chat in the navbar')
     .setParameters(z.object({
-        title: z.string().optional().describe('Optional custom title for the support component')
+        title: z.string().optional().describe('Optional custom title (deprecated)')
     }))
+    // Disable module by setting visibility to false
+    .setVisibility(() => false)  
     .setComponent(async ({ title }: SupportParams) => {
         return (
             <>
                 <BotCard>
                     <p>
-                        I have opened our support scheduling tool in the sidebar. You can book a meeting with our support team at your convenience.
+                        For support, please use the chat button in the top navigation bar.
                     </p>
                 </BotCard>
             </>

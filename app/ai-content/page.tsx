@@ -2,16 +2,7 @@
 
 import React, {useEffect, useState} from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { Info as InfoIcon, Sparkles as SparklesIcon } from "lucide-react"
 
 // Actions
 import { improvePrompt } from "@/app/actions/generate-prompt"
@@ -28,14 +19,8 @@ import {IconSpinner} from "@/components/ui/icons";
 import {HomePageInfoCard} from "@/components/account-not-connected-screen";
 import {getEmailAndBypassStatus} from "@/lib/auth/get-user-email";
 
-// Platform options for social media content
-const PLATFORMS = [
-  { value: "instagram", label: "Instagram" },
-  { value: "tiktok", label: "TikTok" },
-  { value: "youtube", label: "YouTube Shorts" },
-  { value: "facebook", label: "Facebook" },
-  { value: "linkedin", label: "LinkedIn" }
-]
+// Default platform for content optimization (not visible to users)
+// Keeping this since it's used in the enhancedImprovePrompt function
 
 export default function AiContentPage() {
   // Track the current platform for prompt optimization
@@ -56,7 +41,17 @@ export default function AiContentPage() {
       setIsFetchingSub(true)
 
       try {
-        const { isBypassed } = await getEmailAndBypassStatus()
+        // First check if user is logged in by getting email
+        const emailResult = await getEmailAndBypassStatus()
+        
+        // If email is empty or null, user is not authenticated
+        if (!emailResult || !emailResult.email) {
+          console.error('User not authenticated, redirecting to login')
+          router.push('/login')
+          return
+        }
+        
+        const { isBypassed } = emailResult
 
         if (isBypassed) {
           setSubStatus('active') // Override with bypass
@@ -75,6 +70,9 @@ export default function AiContentPage() {
         console.error('Error fetching subscription info or email:', error)
         setSubStatus('')
         setSubbedPackage('')
+        // If there was an error getting user info, redirect to login
+        router.push('/login')
+        return
       }
 
       setIsFetchingSub(false)
@@ -103,62 +101,37 @@ export default function AiContentPage() {
     )
   }
 
-  if (subStatus !== 'active' && subStatus !== 'trialing')
-  {
-    return <HomePageInfoCard upgradeToUseContentCreator={true} />
-  }
+  // Allow all users to access the AI Creatives with usage limits for free plan users
+  // The usage limits are enforced in the respective components
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="flex flex-col space-y-6">
-        <div className="flex flex-col space-y-3">
+    <div className="container mx-auto p-3 sm:p-6 ai-content-page">
+      <div className="flex flex-col space-y-4 sm:space-y-6">
+        <div className="flex flex-col space-y-2 sm:space-y-3">
           <div className="flex items-center justify-between">
-            <h1 className="text-3xl font-bold">Social Media Content Studio</h1>
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">Social Media Content Studio</h1>
           </div>
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-            <p className="text-muted-foreground md:max-w-lg">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 sm:gap-3">
+            <p className="text-xs sm:text-sm text-muted-foreground md:max-w-lg">
               Create professional AI-generated content optimized for social media engagement and conversions
             </p>
-            
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Optimize for:
-              </span>
-              <Select value={platform} onValueChange={setPlatform}>
-                <SelectTrigger className="w-[160px]">
-                  <SelectValue placeholder="Platform" />
-                </SelectTrigger>
-                <SelectContent>
-                  {PLATFORMS.map(platform => (
-                    <SelectItem key={platform.value} value={platform.value}>
-                      {platform.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <InfoIcon className="h-4 w-4 text-muted-foreground cursor-help" />
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-sm">
-                    <p>
-                      Content will be optimized for this platform&apos;s audience, algorithm 
-                      preferences, and engagement patterns.
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
           </div>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="video">AI Video Creation</TabsTrigger>
-            <TabsTrigger value="image">AI Creatives Director</TabsTrigger>
-            <TabsTrigger value="inpaint">Image Inpainting</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3 overflow-x-auto">
+            <TabsTrigger value="video" className="text-xs sm:text-sm">
+              <span className="hidden sm:inline">AI Video Creation</span>
+              <span className="inline sm:hidden">Video</span>
+            </TabsTrigger>
+            <TabsTrigger value="image" className="text-xs sm:text-sm">
+              <span className="hidden sm:inline">AI Creatives Director</span>
+              <span className="inline sm:hidden">Images</span>
+            </TabsTrigger>
+            <TabsTrigger value="inpaint" className="text-xs sm:text-sm">
+              <span className="hidden sm:inline">Image Inpainting</span>
+              <span className="inline sm:hidden">Inpainting</span>
+            </TabsTrigger>
           </TabsList>
 
           {/* VIDEO TAB */}
@@ -176,19 +149,6 @@ export default function AiContentPage() {
             <ImageImpaint improvePrompt={enhancedImprovePrompt} />
           </TabsContent>
         </Tabs>
-
-        <div className="rounded-lg border bg-card text-card-foreground p-5 mt-3 text-sm text-muted-foreground">
-          <h3 className="font-medium text-foreground mb-2 flex items-center gap-1.5">
-            <SparklesIcon className="h-4 w-4 text-blue-500" />
-            About Content Optimization
-          </h3>
-          <p>
-            Our AI content studio enhances your prompts for maximum engagement on {PLATFORMS.find(p => p.value === platform)?.label || platform}. 
-            The system analyzes platform-specific trends, audience preferences, and content algorithms to help 
-            create material more likely to perform well. For best results, start with a clear idea and let our AI 
-            enhance it with platform-specific details.
-          </p>
-        </div>
       </div>
     </div>
   )
