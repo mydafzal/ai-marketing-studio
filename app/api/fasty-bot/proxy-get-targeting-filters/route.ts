@@ -50,7 +50,7 @@ export async function GET(req: Request) {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        // 'Authorization': `Bearer ${token.accessToken}`,
+        Authorization: `Bearer ${process.env.FASTY_API_TOKEN}`,
       },
       cache: 'no-store' // Ensure fresh data is fetched every time
     });
