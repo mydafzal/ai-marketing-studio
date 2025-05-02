@@ -1,13 +1,33 @@
 'use client';
 
-import { useState } from 'react';
-import { encryptToken } from '@/app/cryptoUtils';
+import { useState, useEffect } from 'react';
+import NextCrypto from '@/app/next-crypto';
 
 export default function TokenEncrypter() {
   const [token, setToken] = useState('');
   const [encryptedToken, setEncryptedToken] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [encryptionKey, setEncryptionKey] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Fetch encryption key from config API
+    const fetchEncryptionKey = async () => {
+      try {
+        const response = await fetch('/api/config');
+        const data = await response.json();
+        if (data.encryptionKey) {
+          setEncryptionKey(data.encryptionKey);
+        } else {
+          setError('Encryption key not found in server config');
+        }
+      } catch (err) {
+        setError('Error fetching encryption key: ' + (err instanceof Error ? err.message : String(err)));
+      }
+    };
+
+    fetchEncryptionKey();
+  }, []);
 
   const handleEncrypt = async () => {
     if (!token.trim()) {
@@ -15,10 +35,19 @@ export default function TokenEncrypter() {
       return;
     }
 
+    if (!encryptionKey) {
+      setError('Encryption key not available');
+      return;
+    }
+
     try {
       setIsLoading(true);
       setError('');
-      const encrypted = await encryptToken(token);
+      
+      // Create crypto instance with the fetched key
+      const crypto = new NextCrypto(encryptionKey);
+      const encrypted = await crypto.encrypt(token);
+      
       setEncryptedToken(encrypted);
     } catch (err) {
       setError('Error encrypting token: ' + (err instanceof Error ? err.message : String(err)));
@@ -60,7 +89,7 @@ export default function TokenEncrypter() {
       {encryptedToken && (
         <div className="mt-4">
           <h3 className="text-md font-medium text-gray-700 mb-2">Encrypted Token:</h3>
-          <div className="bg-gray-50 p-3 rounded border border-gray-200 break-all">
+          <div className="bg-dark-bg p-3 rounded border border-gray-200 break-all">
             {encryptedToken}
           </div>
         </div>
