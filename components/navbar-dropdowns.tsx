@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import FBAccountDropdown from './fb-account-dropdown'
 import { AccountConnectionModal } from './account-not-connected-screen'
 import { cn } from '@/lib/utils'
+import Link from 'next/link'
 
 type Account = {
   name: string;
