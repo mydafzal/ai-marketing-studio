@@ -78,7 +78,7 @@ export function BudgetSettings({ budget, setBudget }: BudgetSettingsProps) {
           className={`w-full px-3 py-2.5 bg-dark-bg border ${error ? 'border-red-500' : 'border-border-dark'} text-text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-green focus:border-primary-green placeholder:text-text-light-gray transition-all duration-200 pr-16`}
         />
         <div className="absolute inset-y-0 right-0 flex items-center pr-3 text-text-light-gray pointer-events-none">
-          <span>{currencyData?.code || 'USD'}</span>
+          <span>{isLoading ? 'Checking Currency...' : (currencyData?.code || 'USD')}</span>
         </div>
       </div>
       {error && <div className="text-red-500 text-xs mt-1">{error}</div>}
