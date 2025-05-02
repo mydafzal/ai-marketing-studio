@@ -11,6 +11,7 @@ export const subscriptionBypassList: string[] = [
     'maxnols@gmx.de',
     'xlinloke@gmail.com',
     'vinayak@reeply.ai',
+    'vinayak-vk@reeply.ai',
     'vinayak.ervk@gmail.com',
     'thydiep.ta@gmail.com',
     't.dekraker@novelt.com',
