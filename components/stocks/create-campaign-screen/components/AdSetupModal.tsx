@@ -47,6 +47,7 @@ interface AdSetupModalProps {
   websiteUrl?: string;
   onCreativesUpdated?: (creatives: ExtendedCreative[]) => void;
   onLeadFormUpdated?: (updatedFields: any) => void;
+  currency?: string;
 }
 
 export function AdSetupModal({
@@ -68,7 +69,8 @@ export function AdSetupModal({
                                creatives,
                                websiteUrl,
                                onCreativesUpdated,
-                               onLeadFormUpdated
+                               onLeadFormUpdated,
+                               currency
                              }: AdSetupModalProps) {
   // States for editable headline/description
   const [editedHeadline, setEditedHeadline] = useState(
@@ -1344,7 +1346,7 @@ export function AdSetupModal({
                           </span>
                         )}
                       </button>
-                      
+
                       {/* Status indicator text */}
                       {isTextModified && (
                         <span className="text-yellow-400 text-xs mt-1">Click to save</span>
@@ -1485,7 +1487,7 @@ export function AdSetupModal({
                         <Calendar className="size-5 text-coral mr-3 mt-1" />
                         <div>
                           <h4 className="font-medium text-text-white">Budget</h4>
-                          <p className="text-text-light-gray">Daily: ${budget} USD</p>
+                          <p className="text-text-light-gray">Daily: {budget} {currency}</p>
                         </div>
                       </div>
                     </div>
@@ -1634,10 +1636,10 @@ export function AdSetupModal({
                 {(() => {
                   // Use updated creatives if available, otherwise fall back to props
                   const effectiveCreatives = updatedCreatives.length > 0 ? updatedCreatives : creatives;
-                  
+
                   // If updated creatives exist, show an indicator
                   const hasUpdatedCreatives = updatedCreatives.length > 0;
-                  
+
                   return effectiveCreatives.length > 1 ? (
                     <Tabs
                         defaultValue="creative-0"
@@ -1653,7 +1655,7 @@ export function AdSetupModal({
                           </p>
                         </div>
                       )}
-                    
+
                       <TabsList className="w-full bg-dark-bg text-text-light-gray mb-4 flex overflow-x-auto border border-border-dark rounded-lg">
                         {effectiveCreatives.map((_, index) => (
                             <TabsTrigger
@@ -1672,7 +1674,7 @@ export function AdSetupModal({
                           <TabsContent key={`creative-content-${index}`} value={`creative-${index}`} className="space-y-4">
                             <div className="bg-dark-bg rounded-lg p-4 border border-border-dark">
                               <h4 className="text-lg font-medium mb-4 text-primary-green">
-                                Ad Creative {index + 1} Details 
+                                Ad Creative {index + 1} Details
                                 {hasUpdatedCreatives && <span className="text-xs text-green-400 ml-2">(Updated)</span>}
                               </h4>
 
@@ -1699,7 +1701,7 @@ export function AdSetupModal({
                                     </p>
                                   </div>
                                 </div>
-                                
+
                                 <div>
                                   <h5 className="font-medium text-text-white mb-2">Creative ID</h5>
                                   <div className="bg-container-bg p-3 rounded-lg border border-border-dark">
@@ -1778,7 +1780,7 @@ export function AdSetupModal({
                           </p>
                         </div>
                       )}
-                      
+
                       <h4 className="text-lg font-medium mb-4 text-primary-green">
                         Ad Creative Details
                         {hasUpdatedCreatives && <span className="text-xs text-green-400 ml-2">(Updated)</span>}
@@ -1810,7 +1812,7 @@ export function AdSetupModal({
                             </p>
                           </div>
                         </div>
-                        
+
                         <div>
                           <h5 className="font-medium text-text-white mb-2">Creative ID</h5>
                           <div className="bg-container-bg p-3 rounded-lg border border-border-dark">
@@ -1935,7 +1937,7 @@ export function AdSetupModal({
                         <div className="bg-white rounded-lg p-5 border border-[#d3d3d3] shadow-sm">
                           <div className="flex items-center justify-between mb-4">
                             <h4 className="text-[22px] font-medium text-[#292929]">Step 1: Lead Form</h4>
-                            
+
                             {/* Save button with status indicators */}
                             <div className="flex flex-col items-end">
                               <button
@@ -1955,7 +1957,7 @@ export function AdSetupModal({
                                   </span>
                                 )}
                               </button>
-                              
+
                               {/* Status indicator text */}
                               {isLeadFormModified && (
                                 <span className="text-yellow-400 text-xs mt-1">Click to save</span>
@@ -2000,7 +2002,7 @@ export function AdSetupModal({
                                 <p className="text-red-500 text-xs mt-1">{formTitleError}</p>
                               )}
                             </div>
-                            
+
                             {/* Form Description */}
                             <div>
                               <label className="font-medium text-[#292929] mb-2 block">Form Description</label>
@@ -2033,7 +2035,7 @@ export function AdSetupModal({
                                 <p className="text-red-500 text-xs mt-1">{formDescriptionError}</p>
                               )}
                             </div>
-                            
+
                             {/* Company Name */}
                             <div>
                               <label className="font-medium text-[#292929] mb-2 block">Company Name</label>
@@ -2049,7 +2051,7 @@ export function AdSetupModal({
                                 placeholder="Enter your company name"
                               />
                             </div>
-                            
+
                             {/* Form Locale (editable dropdown) */}
                             <div>
                               <label className="font-medium text-[#292929] mb-2 block">Form Locale</label>
@@ -2069,7 +2071,7 @@ export function AdSetupModal({
                                 ))}
                               </select>
                             </div>
-                            
+
                             {/* Form Preview */}
                             <div className="mt-8 bg-white rounded-lg overflow-hidden shadow-lg border border-[#d3d3d3]">
                               <div className="bg-[#333333] p-4">
@@ -2106,7 +2108,7 @@ export function AdSetupModal({
                         <div className="bg-white rounded-lg p-5 border border-[#d3d3d3] shadow-sm">
                           <div className="flex items-center justify-between mb-4">
                             <h4 className="text-[22px] font-medium text-[#292929]">Step 2: Questions</h4>
-                            
+
                             {/* Save button for tab consistency */}
                             <div className="flex flex-col items-end">
                               <button
@@ -2126,7 +2128,7 @@ export function AdSetupModal({
                                   </span>
                                 )}
                               </button>
-                              
+
                               {isLeadFormModified && (
                                 <span className="text-yellow-400 text-xs mt-1">Click to save</span>
                               )}
@@ -2135,13 +2137,13 @@ export function AdSetupModal({
                               )}
                             </div>
                           </div>
-                          
+
                           <div className="mb-6">
                             <h5 className="font-medium text-[#292929] mb-2">Default Questions</h5>
                             <p className="text-[#767676] mb-4">
                               These default questions are always included and cannot be modified.
                             </p>
-                            
+
                             <div className="space-y-2 mb-6">
                               <div className="p-3 border border-[#d3d3d3] rounded bg-[#f9f9f9]">
                                 <p className="font-medium text-[#292929]">First Name</p>
@@ -2157,13 +2159,13 @@ export function AdSetupModal({
                               </div>
                             </div>
                           </div>
-                          
+
                           <div>
                             <h5 className="font-medium text-[#292929] mb-2">Custom Questions</h5>
                             <p className="text-[#767676] mb-4">
                               Add custom questions to collect additional information from your leads.
                             </p>
-                            
+
                             {/* Input field to add new custom questions */}
                             <div className="flex gap-2 mb-4">
                               <div className="flex-1">
@@ -2202,17 +2204,17 @@ export function AdSetupModal({
                                 Add
                               </button>
                             </div>
-                            
+
                             {/* Display existing custom questions */}
                             {editedCustomQuestions.length > 0 ? (
                               <div className="space-y-2">
                                 {editedCustomQuestions.map((question, idx) => (
-                                  <div 
+                                  <div
                                     key={`custom-${idx}`}
                                     className="p-3 border border-[#d3d3d3] rounded bg-[#f2f2f2] flex justify-between items-center"
                                   >
                                     <p className="font-medium text-[#292929]">{question}</p>
-                                    <button 
+                                    <button
                                       onClick={() => removeCustomQuestion(idx)}
                                       className="text-red-500 hover:text-red-700"
                                     >
@@ -2233,7 +2235,7 @@ export function AdSetupModal({
                         <div className="bg-white rounded-lg p-5 border border-[#d3d3d3] shadow-sm">
                           <div className="flex items-center justify-between mb-4">
                             <h4 className="text-[22px] font-medium text-[#292929]">Step 3: Privacy Policy</h4>
-                            
+
                             {/* Save button for tab consistency */}
                             <div className="flex flex-col items-end">
                               <button
@@ -2253,7 +2255,7 @@ export function AdSetupModal({
                                   </span>
                                 )}
                               </button>
-                              
+
                               {isLeadFormModified && (
                                 <span className="text-yellow-400 text-xs mt-1">Click to save</span>
                               )}
@@ -2262,7 +2264,7 @@ export function AdSetupModal({
                               )}
                             </div>
                           </div>
-                          
+
                           <div className="space-y-5">
                             {/* Data Usage Notice */}
                             <div>
@@ -2278,7 +2280,7 @@ export function AdSetupModal({
                                 placeholder="Explain how you will use the collected data"
                               />
                             </div>
-                            
+
                             {/* Privacy Policy Link Text */}
                             <div>
                               <label className="font-medium text-[#292929] mb-2 block">Privacy Policy Link Text</label>
@@ -2294,14 +2296,14 @@ export function AdSetupModal({
                                 placeholder="Enter your privacy policy URL"
                               />
                             </div>
-                            
+
                             {/* Privacy Policy Preview */}
                             <div className="mt-5 p-4 border border-[#d3d3d3] rounded bg-[#f2f2f2]">
                               <h5 className="font-medium text-[#292929] mb-2">Preview:</h5>
                               <p className="text-[#292929]">
                                 {editedDataUsageNotice || "Add a data usage notice to inform users about how their data will be processed."}
                               </p>
-                              
+
                               {editedPrivacyPolicyLinkText && (
                                 <p className="text-[#4169e1] mt-2 underline">
                                   {editedPrivacyPolicyLinkText}
@@ -2317,7 +2319,7 @@ export function AdSetupModal({
                         <div className="bg-white rounded-lg p-5 border border-[#d3d3d3] shadow-sm">
                           <div className="flex items-center justify-between mb-4">
                             <h4 className="text-[22px] font-medium text-[#292929]">Step 4: Thank You Page</h4>
-                            
+
                             {/* Save button for tab consistency */}
                             <div className="flex flex-col items-end">
                               <button
@@ -2337,7 +2339,7 @@ export function AdSetupModal({
                                   </span>
                                 )}
                               </button>
-                              
+
                               {isLeadFormModified && (
                                 <span className="text-yellow-400 text-xs mt-1">Click to save</span>
                               )}
@@ -2346,7 +2348,7 @@ export function AdSetupModal({
                               )}
                             </div>
                           </div>
-                          
+
                           <div className="space-y-5">
                             {/* Thank You Page Title */}
                             <div>
@@ -2363,7 +2365,7 @@ export function AdSetupModal({
                                 placeholder="Enter a thank you page title"
                               />
                             </div>
-                            
+
                             {/* Thank You Text */}
                             <div>
                               <label className="font-medium text-[#292929] mb-2 block">Thank You Message</label>
@@ -2396,7 +2398,7 @@ export function AdSetupModal({
                                 <p className="text-red-500 text-xs mt-1">{thankYouTextError}</p>
                               )}
                             </div>
-                            
+
                             {/* Follow Up URL */}
                             <div>
                               <label className="font-medium text-[#292929] mb-2 block">Follow Up URL (Optional)</label>
@@ -2417,7 +2419,7 @@ export function AdSetupModal({
                                 placeholder="Enter a URL to redirect users after form submission"
                               />
                             </div>
-                            
+
                             {/* Thank You Preview */}
                             <div className="mt-5 text-center p-4 border border-[#d3d3d3] rounded bg-[#f2f2f2]">
                               <h5 className="text-xl font-bold mb-2 text-[#292929]">
