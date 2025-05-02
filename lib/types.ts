@@ -89,6 +89,7 @@ export interface User extends Record<string, any> {
   sub_interval_count?: string;
   sub_stripe_customer_id?: string;
   sub_id?: string;
+  persona_list?: string[];
 }
 
 export interface Campaign extends Record<string, any> {
@@ -302,6 +303,7 @@ export interface City {
 export interface Persona {
   id: string; 
   owner_id: string; 
+  owner_email: string;
   company_name: string;
   website_link: string;
   website_data?: string;

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { kv } from '@vercel/kv'
+import { auth } from '@/auth'
 
 // Get a single persona by ID
 export async function GET(
@@ -18,7 +19,6 @@ export async function GET(
       )
     }
 
-    // Parse location_data if it exists
     if (data.location_data && typeof data.location_data === 'string') {
       try {
         data.location_data = JSON.parse(data.location_data)
@@ -71,12 +71,13 @@ export async function PUT(
       )
     }
 
-    const updateData: any = {
+    const updateData = {
       ...existingData,
       company_name,
       website_link,
       privacy_policy_link,
       preferred_language,
+      location_data,
       updated_at: new Date().toISOString()
     }
 
@@ -86,7 +87,6 @@ export async function PUT(
 
     await kv.hset(personaKey, updateData)
 
-    // Parse location_data back for response
     if (updateData.location_data) {
       updateData.location_data = JSON.parse(updateData.location_data)
     }
@@ -111,19 +111,38 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { id } = params
     const personaKey = `persona:${id}`
-    
-    // Check if persona exists
-    const exists = await kv.exists(personaKey)
-    if (!exists) {
+    const persona = await kv.hgetall(personaKey)
+    if (!persona) {
       return NextResponse.json(
         { success: false, error: 'Persona not found' },
         { status: 404 }
       )
     }
 
+    if (persona.owner_id !== session.user.id) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
     await kv.del(personaKey)
+
+    const userData = await kv.hgetall(`user:${session.user.email}`)
+    if (Array.isArray(userData?.persona_list)) {
+      const updatedList = userData?.persona_list.filter((personaId: string) => personaId !== id)
+      await kv.hset(`user:${session.user.email}`, {
+        ...userData,
+        persona_list: JSON.stringify(updatedList)
+      })
+    }
 
     return NextResponse.json({
       success: true,
