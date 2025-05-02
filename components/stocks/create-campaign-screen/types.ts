@@ -166,6 +166,7 @@ export interface MasterFlowResponse {
     creatives: Creative[];
   };
   audiences: Audiences;
+  currency_code: string;
 }
 
 export interface AudienceUpdateRequest {

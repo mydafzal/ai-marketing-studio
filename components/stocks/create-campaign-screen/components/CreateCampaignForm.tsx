@@ -147,6 +147,13 @@ export function CreateCampaignForm() {
       return;
     }
     
+    // Validate budget format - must be a number
+    if (isNaN(parseFloat(budget))) {
+      console.warn('⚠️ Invalid budget format:', budget);
+      setError('Please enter a valid budget amount');
+      return;
+    }
+    
     // Validate that link has a TLD
     if (link && !isValidUrl(link)) {
       console.warn('⚠️ Invalid URL format - missing TLD:', link);

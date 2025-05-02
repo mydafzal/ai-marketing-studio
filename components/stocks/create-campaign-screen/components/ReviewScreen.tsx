@@ -536,6 +536,7 @@ export function ReviewScreen({
         creatives={updatedCreatives.length > 0 ? updatedCreatives : creatives}
         onCreativesUpdated={handleUpdatedCreatives}
         onLeadFormUpdated={handleLeadFormUpdated}
+        currency={masterFlowData?.currency_code}
       />
 
       <div className="mb-6 px-6 pt-6">
