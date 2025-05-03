@@ -21,28 +21,8 @@ import { useUsageStore } from "@/app/store/useUsageStore";
 import { UpgradeModal } from '@/components/upgrade-modal';
 
 
-const exampleMessages = [
-  {
-    heading: 'I want to create a campaign to generate leads',
-    subheading: 'Create a new campaign with Reeply AI',
-    message: `I want to create a campaign to generate leads`
-  },
-  {
-    heading: 'What are the results of my campaign?',
-    subheading: 'Check the results of your campaign',
-    message: 'What are the results of my campaign for today?'
-  },
-  {
-    heading: 'I would like to change my campaign budget',
-    subheading: 'Change the daily ad spent for your campaign',
-    message: `I would like to change my campaign budget`
-  },
-  {
-    heading: 'What are some Tips you can give me for my campaigns?',
-    subheading: `Learn more about how to improve your campaigns`,
-    message: `I would like to learn about some tips on how I can improve my campaigns`
-  }
-]
+// Example messages have been moved to the EmptyScreen component
+const exampleMessages = []
 
 export interface ChatPanelProps {
   id?: string
@@ -168,28 +148,7 @@ export function ChatPanel({
         />
 
         { isFbAccountConnected && <div className="mx-auto sm:max-w-2xl sm:px-4">
-          <div className="mb-6 grid grid-cols-2 gap-4 px-4 sm:px-0">
-            {messages.length === 0 &&
-              exampleMessages.map((example, index: number) => (
-                <div
-                  key={example.heading}
-                  className={`cursor-pointer rounded-xl border border-border-dark bg-container-bg p-5 hover:bg-light-container transition-all duration-200 shadow-sm ${
-                    index > 1 && 'hidden md:block'
-                  }`}
-                  onClick={() => handleExampleClick(example.message)}
-                >
-                  <div className="text-sm font-bold text-text-white mb-1">{example.heading}</div>
-                  <div className="text-xs text-text-light-gray">
-                    {example.subheading}
-                  </div>
-                  <div className="mt-3 w-full flex justify-end">
-                    <div className="h-6 w-6 rounded-full bg-primary-green flex items-center justify-center">
-                      <IconArrowRight className="h-3 w-3 text-deep-black" />
-                    </div>
-                  </div>
-                </div>
-              ))}
-          </div>
+          {/* Example messages have been moved to the EmptyScreen component */}
 
           <div className={`flex ${id && title && "h-12"} items-center justify-center mb-4`}>
             <div className="flex space-x-2">
