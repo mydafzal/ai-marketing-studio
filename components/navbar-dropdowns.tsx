@@ -224,6 +224,13 @@ const NavbarDropdowns = ({
         // Save the selection to the database
         await updateFbBusinessAcc(userDetails?.email, id);
         
+        // Remove fbAccountId entirely from database
+        // We can't rely on previous value if they change the business account
+        await updateFbAccountId(userDetails?.email, "");
+        
+        // Reset ad account selection in UI
+        setSelectedFbAdAcc(undefined);
+        
         // Reset page and Instagram selection when business account changes
         setSelectedFbPage(undefined);
         setSelectedInstagramAccount(undefined);

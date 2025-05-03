@@ -998,6 +998,15 @@ export async function updateFbAccountId(email: string, fbAccountId: string) {
             }
         }
 
+        // If fbAccountId is empty, remove the field entirely from database
+        if (!fbAccountId) {
+            await kv.hdel(userKey, 'fbAccountId')
+            return {
+                success: true,
+                message: 'Facebook Account ID removed successfully'
+            }
+        }
+
         // Format the fbAccountId
         const formattedFbAccountId = fbAccountId.startsWith('act_') ? fbAccountId : `act_${fbAccountId}`
 
