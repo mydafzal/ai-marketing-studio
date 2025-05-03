@@ -55,65 +55,51 @@ export const StandaloneCampaignContextProvider = ({ children }: { children: Reac
     const [adsets, setAdsets] = useState<Adset[]>([]);
     const [adset, setAdset] = useState<Adset>();
     const [adsetId, setAdsetId] = useState<string>();
-    const [currentFbAccountId, setCurrentFbAccountId] = useState<string>();
     const [isRefreshing, setIsRefreshing] = useState(false);
-    const lastRefreshTimeRef = useRef<number>(0);
     
-    // Get latest FB account ID and check if it has changed
-    const checkFbAccountIdChange = useCallback(async () => {
+    // Simple function to refresh the campaign list
+    const refreshCampaignList = useCallback(async () => {
         try {
-            const response = await getUserFbAccountId();
-            const fbAccountId = response.success ? response.fbAccountId : null;
-            
-            if (fbAccountId !== currentFbAccountId) {
-                setCurrentFbAccountId(fbAccountId);
-                return true; // Account has changed
-            }
-            return false; // No change in account
+            // Don't set any loading states, just refresh the data
+            console.log("Refreshing campaign list due to account change");
+            const data = await getCampaigns();
+            setCampaigns(data || []);
+            return true;
         } catch (error) {
-            console.error("Error checking FB account ID:", error);
+            console.error("Error refreshing campaign list:", error);
             return false;
         }
-    }, [currentFbAccountId]);
+    }, []);
 
+    // Simplified campaign list fetcher that just makes one API call
     const getCampaignList = useCallback(async (forceRefresh = false) => {
-        const now = Date.now();
-        const timeSinceLastRefresh = now - lastRefreshTimeRef.current;
-        const minRefreshInterval = 30000; // 30 seconds minimum between refreshes
-        
         // Skip if we're already refreshing
         if (isRefreshing) return;
         
-        // Skip refresh if not forced and it's been less than 30 seconds since last refresh
-        if (!forceRefresh && timeSinceLastRefresh < minRefreshInterval) {
-            console.log("Skipping refresh - too soon since last refresh");
-            return;
-        }
-        
         try {
             setIsRefreshing(true);
+            console.log("Fetching campaigns...");
             const data = await getCampaigns();
+            console.log("Campaigns fetched:", data?.length || 0);
             setCampaigns(data || []);
-            lastRefreshTimeRef.current = Date.now();
         } catch (error) {
             console.error("Error fetching campaigns:", error);
         } finally {
             setIsRefreshing(false);
         }
-    }, [isRefreshing])
+    }, [])
 
     const campaign = useMemo(() =>
        campaigns.find(campaign => campaign.id === id) ?? null, [campaigns, id]
     )
 
-    // Initial load only - no automatic checks
+    // Initial load only - run once at component mount
     useEffect(() => {
-        // Initial load of campaigns
-        getCampaignList(true);
-        
-        // Initial account ID check to establish baseline
-        checkFbAccountIdChange();
-    }, [getCampaignList, checkFbAccountIdChange]);
+        // Only load campaigns if we don't have any yet
+        if (campaigns.length === 0) {
+            getCampaignList(true);
+        }
+    }, []);
 
     const lastUpdatedRef = useRef<Date | null>(null)
 
@@ -148,9 +134,12 @@ export const StandaloneCampaignContextProvider = ({ children }: { children: Reac
         }
     }, [id, chat])
 
+    // Monitor adset changes
     useEffect(() => {
-        console.log("change detected in adset", new Date().getTime(), adset)
-    }, [adset])
+        if (adset) {
+            console.log("Adset selected:", adset.id);
+        }
+    }, [adset?.id])
 
     useEffect(() => {
         void fetchAdsets()
@@ -188,22 +177,18 @@ export const StandaloneCampaignContextProvider = ({ children }: { children: Reac
 
     // Note: No updateCampaignInfoBE since it comes from AI/RSC and isn't needed for standalone use
 
-    // Function to check if account changed and refresh data
+    // Function to refresh data without any checks
     const checkAndRefreshAccountData = useCallback(async () => {
-        const hasChanged = await checkFbAccountIdChange();
-        if (hasChanged) {
-            console.log("FB Account ID changed, refreshing campaigns");
-            await getCampaignList(true);
-            return true;
-        }
-        return false;
-    }, [checkFbAccountIdChange, getCampaignList]);
+        return await refreshCampaignList();
+    }, [refreshCampaignList]);
     
     // Listen for the save event from navbar
     useEffect(() => {
-        const handleSaveEvent = () => {
-            console.log("Received save event, checking for account changes");
-            checkAndRefreshAccountData();
+        const handleSaveEvent = (event: Event) => {
+            console.log("Received fb-account-changes-saved event");
+            
+            // No need to do anything - the page will reload
+            // This prevents extra API calls
         };
         
         document.addEventListener('fb-account-changes-saved', handleSaveEvent);
@@ -211,7 +196,7 @@ export const StandaloneCampaignContextProvider = ({ children }: { children: Reac
         return () => {
             document.removeEventListener('fb-account-changes-saved', handleSaveEvent);
         };
-    }, [checkAndRefreshAccountData]);
+    }, []);
 
     const value = useMemo(() => ({
         id,

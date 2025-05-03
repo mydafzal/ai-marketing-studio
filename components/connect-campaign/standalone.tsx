@@ -28,16 +28,19 @@ export function StandaloneCampaignConnect() {
   const [connectionStatus, setConnectionStatus] = useState<'initial' | 'connecting' | 'success' | 'error'>('initial')
   
   // Refresh campaign list
+  // Initial data load - only run once when component mounts
   useEffect(() => {
-    // Force refresh when the component mounts
-    getCampaignList(true)
-  }, [getCampaignList])
+    // Only force refresh on initial mount
+    if (campaigns.length === 0) {
+      getCampaignList(true);
+    }
+  }, [])
   
-  // Add a manual refresh button handler
+  // Simple refresh button handler - only make one API call
   const handleManualRefresh = async () => {
     toast({
-      title: "Refreshing data",
-      description: "Checking for campaign updates..."
+      title: "Refreshing campaigns",
+      description: "Fetching latest campaign data..."
     });
     await checkAndRefreshAccountData();
   }

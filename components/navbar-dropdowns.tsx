@@ -430,33 +430,25 @@ const NavbarDropdowns = ({
   useEffect(() => {
     if (userDetails?.fbBusinessAccId && fbBusinessAccs && fbBusinessAccs.length > 0) {
       const businessAcc = fbBusinessAccs.find((acc) => acc.id === `${userDetails?.fbBusinessAccId}`);
-      if (businessAcc) {
+      if (businessAcc && (!selectedFbBusinessAcc || selectedFbBusinessAcc.id !== businessAcc.id)) {
         setSelectedFbBusinessAcc(businessAcc);
         
         // Fetch pages for existing business account
         getFacebookPages(businessAcc.id);
       }
     }
-  }, [fbBusinessAccs, userDetails?.fbBusinessAccId]);
+  }, [fbBusinessAccs, userDetails?.fbBusinessAccId, selectedFbBusinessAcc]);
 
   // When business account changes, fetch ad accounts
   useEffect(() => {
-    if (selectedFbBusinessAcc) {
+    if (selectedFbBusinessAcc && selectedFbBusinessAcc.id) {
       getAdAccAPICall();
     }
-  }, [selectedFbBusinessAcc]);
+  }, [selectedFbBusinessAcc?.id]);
 
-  // Function to handle Save Changes button click
-  const handleSaveChanges = async () => {
-    // Create a custom event that components can listen for
-    const saveEvent = new CustomEvent('fb-account-changes-saved', {
-      detail: { timestamp: Date.now() }
-    });
-    
-    // Dispatch the event so other components can react
-    document.dispatchEvent(saveEvent);
-    
-    // Also refresh the page for good measure
+  // Simple function to reload the page when Save Changes is clicked
+  const handleSaveChanges = () => {
+    // Just reload the page - this is the simplest approach that works
     window.location.reload();
   };
 
