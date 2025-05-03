@@ -15,7 +15,7 @@ interface ICampaignContext {
     campaigns: FbCampaign[];
     campaign: FbCampaign | null;
     getCampaignList: (forceRefresh?: boolean) => Promise<void>;
-    checkAndRefreshAccountData: () => Promise<void>;
+    checkAndRefreshAccountData: () => Promise<boolean>; // Changed from Promise<void> to Promise<boolean>
     setId: (id: string) => void;
     summary: CampaignSummary | null;
     fetchSummary: (id: string) => Promise<void>;
@@ -32,7 +32,7 @@ export const StandaloneCampaignContext = createContext<ICampaignContext>({
     campaigns: [],
     campaign: null,
     getCampaignList: async () => {},
-    checkAndRefreshAccountData: async () => {},
+    checkAndRefreshAccountData: async () => false, // Changed to return a boolean (false)
     setId: () => {},
     summary: null,
     fetchSummary: async () => {},
@@ -87,7 +87,7 @@ export const StandaloneCampaignContextProvider = ({ children }: { children: Reac
         } finally {
             setIsRefreshing(false);
         }
-    }, [])
+    }, [isRefreshing])
 
     const campaign = useMemo(() =>
        campaigns.find(campaign => campaign.id === id) ?? null, [campaigns, id]
@@ -99,7 +99,7 @@ export const StandaloneCampaignContextProvider = ({ children }: { children: Reac
         if (campaigns.length === 0) {
             getCampaignList(true);
         }
-    }, []);
+    }, [campaigns.length, getCampaignList]);
 
     const lastUpdatedRef = useRef<Date | null>(null)
 
