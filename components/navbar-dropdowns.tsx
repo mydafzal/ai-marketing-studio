@@ -228,10 +228,33 @@ const NavbarDropdowns = ({
         // We can't rely on previous value if they change the business account
         await updateFbAccountId(userDetails?.email, "");
         
-        // Reset ad account selection in UI
-        setSelectedFbAdAcc(undefined);
+        // Remove fbPageId entirely from database for the same reason
+        await updateFbPageId(userDetails?.email, "");
         
-        // Reset page and Instagram selection when business account changes
+        // Remove Instagram account ID by calling the API
+        try {
+          const response = await fetch('/api/kv/update-instagram-account-id', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              email: userDetails.email,
+              instagramAccountId: "",
+              fbPageId: "" // Passing empty string to clear the Instagram account
+            })
+          });
+          
+          if (!response.ok) {
+            const errorData = await response.json();
+            console.error('Error clearing Instagram account ID:', errorData.error);
+          }
+        } catch (error) {
+          console.error('Error calling Instagram account ID update API:', error);
+        }
+        
+        // Reset UI selections
+        setSelectedFbAdAcc(undefined);
         setSelectedFbPage(undefined);
         setSelectedInstagramAccount(undefined);
         setInstagramAccounts(undefined);
@@ -258,6 +281,36 @@ const NavbarDropdowns = ({
       try {
         // Save the selection to the database
         await updateFbAccountId(userDetails?.email, id);
+        
+        // Remove fbPageId when Ad Account changes
+        await updateFbPageId(userDetails?.email, "");
+        
+        // Remove Instagram account ID by calling the API
+        try {
+          const response = await fetch('/api/kv/update-instagram-account-id', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              email: userDetails.email,
+              instagramAccountId: "",
+              fbPageId: "" // Passing empty string to clear the Instagram account
+            })
+          });
+          
+          if (!response.ok) {
+            const errorData = await response.json();
+            console.error('Error clearing Instagram account ID:', errorData.error);
+          }
+        } catch (error) {
+          console.error('Error calling Instagram account ID update API:', error);
+        }
+        
+        // Reset page and Instagram selection in UI
+        setSelectedFbPage(undefined);
+        setSelectedInstagramAccount(undefined);
+        setInstagramAccounts(undefined);
       } catch (error) {
         console.error('Error updating ad account:', error);
       } finally {
@@ -279,6 +332,31 @@ const NavbarDropdowns = ({
       try {
         // Save the selection to the database
         await updateFbPageId(userDetails.email, id);
+        
+        // Clear previous Instagram account when changing FB Page
+        try {
+          const response = await fetch('/api/kv/update-instagram-account-id', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              email: userDetails.email,
+              instagramAccountId: "",
+              fbPageId: id // Pass the new fbPageId, but clear the Instagram ID
+            })
+          });
+          
+          if (!response.ok) {
+            const errorData = await response.json();
+            console.error('Error clearing Instagram account ID:', errorData.error);
+          }
+        } catch (error) {
+          console.error('Error calling Instagram account ID update API:', error);
+        }
+        
+        // Reset Instagram selection
+        setSelectedInstagramAccount(undefined);
         
         // When a Facebook page is selected, fetch Instagram accounts
         await getInstagramAccounts();
