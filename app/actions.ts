@@ -1582,7 +1582,7 @@ export async function getFbMarketingApiKey() {
 
 // Free plan usage limits (not exported directly to comply with "use server" rules)
 const FREE_PLAN_LIMITS = {
-    MAX_MESSAGES: 5,
+    MAX_MESSAGES: 20,
     MAX_IMAGES: 5,
     MAX_VIDEOS: 1,
     MAX_INPAINTING: 1
