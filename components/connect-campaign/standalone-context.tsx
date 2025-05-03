@@ -5,6 +5,7 @@ import { KvContext }  from '@/components/contexts/kv-context';
 import { CampaignSummary, getCampaignSummary } from '@/lib/api/fasty-bot/get-campaign-summary'
 import { getCampaigns } from '@/lib/api/fasty-bot/get-campaigns'
 import { Adset, FbCampaign } from '@/lib/types'
+import { getUserFbAccountId } from '@/app/actions'
 
 // This is a standalone version of the CampaignContext without AI/RSC dependencies
 // It's used specifically for the standalone campaign connect page
@@ -13,7 +14,8 @@ interface ICampaignContext {
     id: string | null;
     campaigns: FbCampaign[];
     campaign: FbCampaign | null;
-    getCampaignList: () => Promise<void>;
+    getCampaignList: (forceRefresh?: boolean) => Promise<void>;
+    checkAndRefreshAccountData: () => Promise<void>;
     setId: (id: string) => void;
     summary: CampaignSummary | null;
     fetchSummary: (id: string) => Promise<void>;
@@ -22,6 +24,7 @@ interface ICampaignContext {
     setAdset: (adset: Adset) => void;
     fetchAdsets: () => Promise<void>;
     setAdsetId:(adsetId:string)=>void;
+    isRefreshing: boolean;
 }
 
 export const StandaloneCampaignContext = createContext<ICampaignContext>({
@@ -29,13 +32,15 @@ export const StandaloneCampaignContext = createContext<ICampaignContext>({
     campaigns: [],
     campaign: null,
     getCampaignList: async () => {},
+    checkAndRefreshAccountData: async () => {},
     setId: () => {},
     summary: null,
     fetchSummary: async () => {},
     adsets: [],
     setAdset: () => {},
     fetchAdsets: async () => {},
-    setAdsetId:async()=>{}
+    setAdsetId: async () => {},
+    isRefreshing: false
 });
 
 const oneHour = 60 * 60 * 1000
@@ -50,19 +55,65 @@ export const StandaloneCampaignContextProvider = ({ children }: { children: Reac
     const [adsets, setAdsets] = useState<Adset[]>([]);
     const [adset, setAdset] = useState<Adset>();
     const [adsetId, setAdsetId] = useState<string>();
+    const [currentFbAccountId, setCurrentFbAccountId] = useState<string>();
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    const lastRefreshTimeRef = useRef<number>(0);
     
-    const getCampaignList = useCallback(async () => {
-        const data = await getCampaigns()
-        setCampaigns(data || [])
-    }, [])
+    // Get latest FB account ID and check if it has changed
+    const checkFbAccountIdChange = useCallback(async () => {
+        try {
+            const response = await getUserFbAccountId();
+            const fbAccountId = response.success ? response.fbAccountId : null;
+            
+            if (fbAccountId !== currentFbAccountId) {
+                setCurrentFbAccountId(fbAccountId);
+                return true; // Account has changed
+            }
+            return false; // No change in account
+        } catch (error) {
+            console.error("Error checking FB account ID:", error);
+            return false;
+        }
+    }, [currentFbAccountId]);
+
+    const getCampaignList = useCallback(async (forceRefresh = false) => {
+        const now = Date.now();
+        const timeSinceLastRefresh = now - lastRefreshTimeRef.current;
+        const minRefreshInterval = 30000; // 30 seconds minimum between refreshes
+        
+        // Skip if we're already refreshing
+        if (isRefreshing) return;
+        
+        // Skip refresh if not forced and it's been less than 30 seconds since last refresh
+        if (!forceRefresh && timeSinceLastRefresh < minRefreshInterval) {
+            console.log("Skipping refresh - too soon since last refresh");
+            return;
+        }
+        
+        try {
+            setIsRefreshing(true);
+            const data = await getCampaigns();
+            setCampaigns(data || []);
+            lastRefreshTimeRef.current = Date.now();
+        } catch (error) {
+            console.error("Error fetching campaigns:", error);
+        } finally {
+            setIsRefreshing(false);
+        }
+    }, [isRefreshing])
 
     const campaign = useMemo(() =>
        campaigns.find(campaign => campaign.id === id) ?? null, [campaigns, id]
     )
 
+    // Initial load only - no automatic checks
     useEffect(() => {
-        void getCampaignList()
-    }, [getCampaignList])
+        // Initial load of campaigns
+        getCampaignList(true);
+        
+        // Initial account ID check to establish baseline
+        checkFbAccountIdChange();
+    }, [getCampaignList, checkFbAccountIdChange]);
 
     const lastUpdatedRef = useRef<Date | null>(null)
 
@@ -137,11 +188,37 @@ export const StandaloneCampaignContextProvider = ({ children }: { children: Reac
 
     // Note: No updateCampaignInfoBE since it comes from AI/RSC and isn't needed for standalone use
 
+    // Function to check if account changed and refresh data
+    const checkAndRefreshAccountData = useCallback(async () => {
+        const hasChanged = await checkFbAccountIdChange();
+        if (hasChanged) {
+            console.log("FB Account ID changed, refreshing campaigns");
+            await getCampaignList(true);
+            return true;
+        }
+        return false;
+    }, [checkFbAccountIdChange, getCampaignList]);
+    
+    // Listen for the save event from navbar
+    useEffect(() => {
+        const handleSaveEvent = () => {
+            console.log("Received save event, checking for account changes");
+            checkAndRefreshAccountData();
+        };
+        
+        document.addEventListener('fb-account-changes-saved', handleSaveEvent);
+        
+        return () => {
+            document.removeEventListener('fb-account-changes-saved', handleSaveEvent);
+        };
+    }, [checkAndRefreshAccountData]);
+
     const value = useMemo(() => ({
         id,
         campaign,
         campaigns,
-        getCampaignList,
+        getCampaignList: (forceRefresh = false) => getCampaignList(forceRefresh),
+        checkAndRefreshAccountData,
         setId,
         summary,
         fetchSummary,
@@ -149,8 +226,9 @@ export const StandaloneCampaignContextProvider = ({ children }: { children: Reac
         adset,
         setAdset,
         fetchAdsets,
-        setAdsetId
-    }), [id, setId, campaign, campaigns, summary, adsets, adset, setAdset, fetchAdsets, setAdsetId])
+        setAdsetId,
+        isRefreshing
+    }), [id, setId, campaign, campaigns, summary, adsets, adset, setAdset, fetchAdsets, setAdsetId, getCampaignList, checkAndRefreshAccountData, isRefreshing])
 
     return (
         <StandaloneCampaignContext.Provider value={value}>

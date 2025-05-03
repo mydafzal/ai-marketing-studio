@@ -446,8 +446,17 @@ const NavbarDropdowns = ({
     }
   }, [selectedFbBusinessAcc]);
 
-  // Function to refresh the page
-  const refreshPage = () => {
+  // Function to handle Save Changes button click
+  const handleSaveChanges = async () => {
+    // Create a custom event that components can listen for
+    const saveEvent = new CustomEvent('fb-account-changes-saved', {
+      detail: { timestamp: Date.now() }
+    });
+    
+    // Dispatch the event so other components can react
+    document.dispatchEvent(saveEvent);
+    
+    // Also refresh the page for good measure
     window.location.reload();
   };
 
@@ -521,8 +530,9 @@ const NavbarDropdowns = ({
           {/* Refresh & Save Changes buttons */}
           <div className="flex space-x-2">
             <button
-              onClick={refreshPage}
+              onClick={handleSaveChanges}
               className="bg-primary-green hover:bg-primary-green/90 text-black text-xs font-medium py-1 px-3 rounded-full transition-colors whitespace-nowrap"
+              title="Save changes and refresh all data"
             >
               Save Changes
             </button>
@@ -556,8 +566,9 @@ const NavbarDropdowns = ({
           
           {/* Save Changes Button */}
           <button
-            onClick={refreshPage}
+            onClick={handleSaveChanges}
             className="bg-primary-green hover:bg-primary-green/90 text-black text-xs font-medium py-1 px-2 rounded-full transition-colors whitespace-nowrap"
+            title="Save changes and refresh all data"
           >
             Save Changes
           </button>
@@ -691,8 +702,9 @@ const NavbarDropdowns = ({
           {/* Refresh & Save Changes buttons */}
           <div className="flex space-x-2">
             <button
-              onClick={refreshPage}
+              onClick={handleSaveChanges}
               className="bg-primary-green hover:bg-primary-green/90 text-black text-xs font-medium py-1 px-2 rounded-full transition-colors whitespace-nowrap"
+              title="Save changes and refresh all data"
             >
               Save Changes
             </button>

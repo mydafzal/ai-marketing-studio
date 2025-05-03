@@ -15,15 +15,32 @@ import { useRouter } from 'next/navigation'
 export function StandaloneCampaignConnect() {
   const { toast } = useToast()
   const router = useRouter()
-  const { campaigns, getCampaignList, setId, id: currentCampaignId } = useContext(StandaloneCampaignContext)
+  const { 
+    campaigns, 
+    getCampaignList, 
+    setId, 
+    id: currentCampaignId, 
+    isRefreshing,
+    checkAndRefreshAccountData
+  } = useContext(StandaloneCampaignContext)
   const [selectedCampaign, setSelectedCampaign] = useState<FbCampaign | undefined>()
   const [isSubmitting, setSubmitting] = useState<boolean>(false)
   const [connectionStatus, setConnectionStatus] = useState<'initial' | 'connecting' | 'success' | 'error'>('initial')
   
   // Refresh campaign list
   useEffect(() => {
-    getCampaignList()
+    // Force refresh when the component mounts
+    getCampaignList(true)
   }, [getCampaignList])
+  
+  // Add a manual refresh button handler
+  const handleManualRefresh = async () => {
+    toast({
+      title: "Refreshing data",
+      description: "Checking for campaign updates..."
+    });
+    await checkAndRefreshAccountData();
+  }
 
   // Pre-select the currently connected campaign if available
   useEffect(() => {
@@ -72,7 +89,24 @@ export function StandaloneCampaignConnect() {
 
   return (
     <Card className="bg-[#1A1D29] border-[#2A2E3A] w-full max-w-full">
-      <CardContent className="p-6 w-full">
+      <CardContent className="p-6 w-full relative">
+        <div className="absolute top-2 right-2 flex items-center gap-2">
+          {isRefreshing && (
+            <IconSpinner className="size-4 text-[#4BF29C]" />
+          )}
+          <button 
+            onClick={handleManualRefresh}
+            className="text-xs text-zinc-400 hover:text-white transition-colors"
+            title="Refresh campaigns list"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 2v6h-6"></path>
+              <path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path>
+              <path d="M3 22v-6h6"></path>
+              <path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path>
+            </svg>
+          </button>
+        </div>
         {connectionStatus === 'connecting' && (
           <div className="flex items-center gap-3">
             <IconSpinner className="size-5 text-[#4BF29C]" />
