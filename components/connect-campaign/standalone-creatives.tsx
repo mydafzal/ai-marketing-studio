@@ -57,6 +57,12 @@ const STYLES = {
     md: "1rem",
     lg: "1.5rem",
     xl: "2rem",
+  },
+  breakpoints: {
+    sm: "640px",
+    md: "768px",
+    lg: "1024px",
+    xl: "1280px",
   }
 };
 
@@ -66,10 +72,11 @@ interface CreativeCardProps {
   isTopPerformer: boolean;
   isSecondBest: boolean;
   onTogglePublish: () => void;
+  windowWidth: number;
 }
 
 // Custom styled Creative Card component - now vertical
-const CreativeCard = ({ creative, isTopPerformer, isSecondBest, onTogglePublish }: CreativeCardProps) => {
+const CreativeCard = ({ creative, isTopPerformer, isSecondBest, onTogglePublish, windowWidth }: CreativeCardProps) => {
   // Determine status badge color
   const statusColor = creative.status === "ACTIVE" 
     ? STYLES.colors.green 
@@ -90,7 +97,7 @@ const CreativeCard = ({ creative, isTopPerformer, isSecondBest, onTogglePublish 
       borderRadius: STYLES.borderRadius,
       border: `1px solid ${STYLES.colors.border}`,
       height: "100%", 
-      minHeight: "800px",
+      minHeight: windowWidth < 640 ? "700px" : "800px",
       display: "flex",
       flexDirection: "column",
       overflow: "hidden"
@@ -189,8 +196,8 @@ const CreativeCard = ({ creative, isTopPerformer, isSecondBest, onTogglePublish 
       }}>
         <div style={{ 
           display: "grid",
-          gridTemplateColumns: "repeat(2, 1fr)",
-          gap: STYLES.spacing.md,
+          gridTemplateColumns: windowWidth < 400 ? "repeat(1, 1fr)" : "repeat(2, 1fr)",
+          gap: windowWidth < 400 ? STYLES.spacing.sm : STYLES.spacing.md,
           marginBottom: STYLES.spacing.md
         }}>
           <MetricCard 
@@ -297,6 +304,7 @@ export function StandaloneAdCreativesComparison() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [sliderIndex, setSliderIndex] = useState(0)
+  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1024)
 
   // State for viewing creative details
   const [viewingCreative, setViewingCreative] = useState<AdCreative | null>(null)
@@ -482,6 +490,23 @@ export function StandaloneAdCreativesComparison() {
   useEffect(() => {
     setSliderIndex(0)
   }, [campaignId])
+  
+  // Handle window resize
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+      // Reset slider index when changing breakpoints to avoid layout issues
+      const previousVisibleItems = windowWidth < 768 ? 1 : windowWidth < 1024 ? 2 : 3;
+      const currentVisibleItems = window.innerWidth < 768 ? 1 : window.innerWidth < 1024 ? 2 : 3;
+      
+      if (previousVisibleItems !== currentVisibleItems) {
+        setSliderIndex(0);
+      }
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [windowWidth]);
 
   // Sorted creatives for display
   const sortedCreatives = useMemo(() => {
@@ -578,7 +603,9 @@ export function StandaloneAdCreativesComparison() {
         
         <div style={{ 
           display: "grid", 
-          gridTemplateColumns: "repeat(4, 1fr)", 
+          gridTemplateColumns: windowWidth < 640 ? "repeat(1, 1fr)" : 
+                               windowWidth < 1024 ? "repeat(2, 1fr)" : 
+                               "repeat(4, 1fr)", 
           gap: STYLES.spacing.md 
         }}>
           <div style={{ 
@@ -831,7 +858,7 @@ export function StandaloneAdCreativesComparison() {
       maxWidth: "100%",
       backgroundColor: STYLES.colors.background,
       borderRadius: STYLES.borderRadius,
-      padding: STYLES.spacing.xl,
+      padding: windowWidth < 768 ? STYLES.spacing.md : STYLES.spacing.xl,
       overflow: "auto"
     }}>
       {/* Header */}
@@ -928,22 +955,25 @@ export function StandaloneAdCreativesComparison() {
             {/* Creative cards carousel */}
             <div style={{ position: "relative" }}>
               {/* Navigation buttons */}
-              {sortedCreatives.length > 3 && (
+              {/* Navigation buttons - adjust based on screen size */}
+              {((windowWidth < 768 && sortedCreatives.length > 1) ||
+                (windowWidth < 1024 && sortedCreatives.length > 2) ||
+                (sortedCreatives.length > 3)) && (
                 <>
                   <button 
                     onClick={() => setSliderIndex(Math.max(0, sliderIndex - 1))}
                     disabled={sliderIndex === 0}
                     style={{
                       position: "absolute",
-                      left: "-20px",
+                      left: windowWidth < 640 ? "5px" : "-20px",
                       top: "50%",
                       transform: "translateY(-50%)",
                       zIndex: 10,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      width: "40px",
-                      height: "40px",
+                      width: windowWidth < 640 ? "30px" : "40px",
+                      height: windowWidth < 640 ? "30px" : "40px",
                       borderRadius: "50%",
                       backgroundColor: sliderIndex === 0 ? STYLES.colors.border : STYLES.colors.cardBg,
                       border: `1px solid ${STYLES.colors.border}`,
@@ -951,31 +981,58 @@ export function StandaloneAdCreativesComparison() {
                       opacity: sliderIndex === 0 ? 0.5 : 1
                     }}
                   >
-                    <ChevronLeft size={20} style={{ color: STYLES.colors.text }} />
+                    <ChevronLeft size={windowWidth < 640 ? 16 : 20} style={{ color: STYLES.colors.text }} />
                   </button>
                   
                   <button 
-                    onClick={() => setSliderIndex(Math.min(sortedCreatives.length - 3, sliderIndex + 1))}
-                    disabled={sliderIndex >= sortedCreatives.length - 3}
+                    onClick={() => {
+                      const visibleItems = windowWidth < 768 ? 1 : windowWidth < 1024 ? 2 : 3;
+                      setSliderIndex(Math.min(sortedCreatives.length - visibleItems, sliderIndex + 1));
+                    }}
+                    disabled={
+                      windowWidth < 768 
+                        ? sliderIndex >= sortedCreatives.length - 1
+                        : windowWidth < 1024
+                          ? sliderIndex >= sortedCreatives.length - 2
+                          : sliderIndex >= sortedCreatives.length - 3
+                    }
                     style={{
                       position: "absolute",
-                      right: "-20px",
+                      right: windowWidth < 640 ? "5px" : "-20px",
                       top: "50%",
                       transform: "translateY(-50%)",
                       zIndex: 10,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      width: "40px",
-                      height: "40px",
+                      width: windowWidth < 640 ? "30px" : "40px",
+                      height: windowWidth < 640 ? "30px" : "40px",
                       borderRadius: "50%",
-                      backgroundColor: sliderIndex >= sortedCreatives.length - 3 ? STYLES.colors.border : STYLES.colors.cardBg,
+                      backgroundColor: (
+                        windowWidth < 768 
+                          ? sliderIndex >= sortedCreatives.length - 1
+                          : windowWidth < 1024
+                            ? sliderIndex >= sortedCreatives.length - 2
+                            : sliderIndex >= sortedCreatives.length - 3
+                      ) ? STYLES.colors.border : STYLES.colors.cardBg,
                       border: `1px solid ${STYLES.colors.border}`,
-                      cursor: sliderIndex >= sortedCreatives.length - 3 ? "default" : "pointer",
-                      opacity: sliderIndex >= sortedCreatives.length - 3 ? 0.5 : 1
+                      cursor: (
+                        windowWidth < 768 
+                          ? sliderIndex >= sortedCreatives.length - 1
+                          : windowWidth < 1024
+                            ? sliderIndex >= sortedCreatives.length - 2
+                            : sliderIndex >= sortedCreatives.length - 3
+                      ) ? "default" : "pointer",
+                      opacity: (
+                        windowWidth < 768 
+                          ? sliderIndex >= sortedCreatives.length - 1
+                          : windowWidth < 1024
+                            ? sliderIndex >= sortedCreatives.length - 2
+                            : sliderIndex >= sortedCreatives.length - 3
+                      ) ? 0.5 : 1
                     }}
                   >
-                    <ChevronRight size={20} style={{ color: STYLES.colors.text }} />
+                    <ChevronRight size={windowWidth < 640 ? 16 : 20} style={{ color: STYLES.colors.text }} />
                   </button>
                 </>
               )}
@@ -988,41 +1045,55 @@ export function StandaloneAdCreativesComparison() {
               }}>
                 <div style={{ 
                   display: "flex",
-                  transform: `translateX(-${sliderIndex * 33.33}%)`,
+                  transform: windowWidth < 768 
+                    ? `translateX(-${sliderIndex * 100}%)` 
+                    : windowWidth < 1024 
+                      ? `translateX(-${sliderIndex * 50}%)` 
+                      : `translateX(-${sliderIndex * 33.33}%)`,
                   transition: "transform 0.3s ease-in-out"
                 }}>
                   {sortedCreatives.map((creative) => (
                     <div key={creative.id} style={{ 
-                      flex: "0 0 calc(33.33% - 20px)", 
+                      flex: windowWidth < 768 
+                        ? "0 0 100%" 
+                        : windowWidth < 1024 
+                          ? "0 0 calc(50% - 20px)" 
+                          : "0 0 calc(33.33% - 20px)",
                       padding: "0 10px",
-                      minWidth: "330px",
-                      maxWidth: "400px"
+                      minWidth: windowWidth < 640 ? "280px" : "330px",
+                      maxWidth: windowWidth < 640 ? "100%" : "400px"
                     }}>
                       <CreativeCard
                         creative={creative}
                         isTopPerformer={creative.id === topPerformerID}
                         isSecondBest={creative.id === secondBestID}
                         onTogglePublish={() => togglePublish(creative.id)}
+                        windowWidth={windowWidth}
                       />
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Pagination indicators */}
-              {sortedCreatives.length > 3 && (
+              {/* Pagination indicators - responsive */}
+              {((windowWidth < 768 && sortedCreatives.length > 1) ||
+                (windowWidth < 1024 && sortedCreatives.length > 2) ||
+                (sortedCreatives.length > 3)) && (
                 <div style={{ 
                   display: "flex", 
                   justifyContent: "center", 
                   marginTop: STYLES.spacing.lg 
                 }}>
-                  {Array.from({ length: Math.ceil(sortedCreatives.length / 3) }).map((_, index) => (
+                  {Array.from({ 
+                    length: Math.ceil(sortedCreatives.length / 
+                      (windowWidth < 768 ? 1 : windowWidth < 1024 ? 2 : 3))
+                  }).map((_, index) => (
                     <button
                       key={index}
                       onClick={() => setSliderIndex(index)}
                       style={{
-                        width: "8px",
-                        height: "8px",
+                        width: windowWidth < 640 ? "6px" : "8px",
+                        height: windowWidth < 640 ? "6px" : "8px",
                         borderRadius: "50%",
                         backgroundColor: sliderIndex === index ? STYLES.colors.primary : STYLES.colors.border,
                         margin: "0 4px",
