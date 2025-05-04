@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useEffect, useState, useCallback, useRef } from "react"
+import Draggable from "react-draggable"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
@@ -244,7 +245,24 @@ export default function AiCreativeDirectorPage() {
   const [referenceImages, setReferenceImages] = useState<string[]>([])
   const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
-
+  
+  // Logo upload states
+  const [logoUrl, setLogoUrl] = useState<string>("")
+  const [overlayPosition, setOverlayPosition] = useState("bottom-right")
+  const [logoSize, setLogoSize] = useState(20) // As percentage of image width
+  const [isCustomPosition, setIsCustomPosition] = useState(false)
+  const logoInputRef = useRef<HTMLInputElement>(null)
+  const [combinedPreviews, setCombinedPreviews] = useState<string[]>([])
+  const [activeTab, setActiveTab] = useState<"original" | "withLogo">("original")
+  const [isProcessing, setIsProcessing] = useState(false)
+  const previewRefs = useRef<(HTMLDivElement | null)[]>([])
+  
+  // Logo drag and drop states - simplified for react-draggable
+  const [isDraggingLogo, setIsDraggingLogo] = useState(false)
+  const [draggedImageIndex, setDraggedImageIndex] = useState<number | null>(null)
+  const [logoPositions, setLogoPositions] = useState<{ [key: number]: { x: number, y: number } }>({})
+  const [isDragUpdatePending, setIsDragUpdatePending] = useState(false)
+  
   // Mode state - Standard or Enhanced
   const [imageTypeMode, setImageTypeMode] = useState<'standard' | 'enhanced'>('standard')
   
@@ -1211,23 +1229,400 @@ export default function AiCreativeDirectorPage() {
     }
   };
 
+  // Logo upload handling
+  function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0]
+      
+      // Validate file size (5MB max)
+      if (file.size > 5 * 1024 * 1024) {
+        showToast("File too large", "Logo file must be smaller than 5MB.", "error")
+        return
+      }
+      
+      const reader = new FileReader()
+      reader.onload = () => {
+        if (reader.result) {
+          setLogoUrl(reader.result as string)
+          showToast(
+            "Logo uploaded", 
+            "Your logo has been added and can be positioned on images.", 
+            "success"
+          )
+        }
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  // Handle logo button click
+  function handleLogoButtonClick() {
+    if (logoInputRef.current) {
+      logoInputRef.current.click()
+    }
+  }
+
+  // Handle logo position change
+  const handlePositionChange = (newPosition: string) => {
+    // Prevent preview updates during position changes
+    setIsDragUpdatePending(true)
+    
+    // Update the position setting
+    setOverlayPosition(newPosition)
+    setIsCustomPosition(newPosition === "custom")
+    
+    // Reset saved positions when switching to a preset position
+    if (newPosition !== "custom") {
+      setLogoPositions({})
+    }
+    
+    // Switch to withLogo tab when custom position is selected
+    if (newPosition === "custom" && activeTab !== "withLogo") {
+      setActiveTab("withLogo")
+    }
+    
+    // Allow preview to update after a short delay
+    setTimeout(() => {
+      setIsDragUpdatePending(false)
+    }, 100)
+  }
+  
+  // We're using react-draggable now, so we don't need these handlers
+
+  // Clear logo
+  function handleClearLogo() {
+    setLogoUrl("")
+    if (logoInputRef.current) {
+      logoInputRef.current.value = ""
+    }
+    showToast("Logo removed", "Your logo has been cleared.", "success")
+  }
+
+  // Combine image with logo for download
+  const combineImages = async (backgroundUrl: string, overlayUrl: string, position: string, imageIndex = 0) => {
+    return new Promise<string>((resolve, reject) => {
+      const canvas = document.createElement("canvas")
+      const ctx = canvas.getContext("2d")
+      if (!ctx) {
+        return reject(new Error("Could not get canvas context"))
+      }
+
+      const background = new window.Image()
+      const overlay = new window.Image()
+
+      background.crossOrigin = "anonymous"
+      overlay.crossOrigin = "anonymous"
+
+      background.onload = () => {
+        canvas.width = background.width
+        canvas.height = background.height
+        ctx.drawImage(background, 0, 0)
+
+        overlay.onload = () => {
+          // Calculate logo size based on percentage setting
+          const maxWidth = Math.floor(canvas.width * (logoSize / 100))
+          
+          // Calculate aspect-correct height
+          const aspectRatio = overlay.width / overlay.height
+          const scaledWidth = Math.min(maxWidth, overlay.width)
+          const scaledHeight = scaledWidth / aspectRatio
+          
+          let x = 0
+          let y = 0
+          const padding = Math.floor(canvas.width * 0.03) // 3% padding
+
+          if (position === "custom" && isCustomPosition) {
+            // Use the specific position for this image index
+            const customPos = logoPositions[imageIndex]
+            if (customPos) {
+              // Get reference to preview container to calculate percentage position
+              const previewElement = previewRefs.current[imageIndex]
+              if (previewElement) {
+                // Get container dimensions
+                const containerWidth = previewElement.offsetWidth
+                const containerHeight = previewElement.offsetHeight
+                
+                // Calculate position as a percentage of container dimensions
+                const relativeX = customPos.x / containerWidth
+                const relativeY = customPos.y / containerHeight
+                
+                // Apply percentage to actual canvas dimensions
+                // No need to subtract half width since we're storing top-left coordinates
+                x = (canvas.width * relativeX)
+                y = (canvas.height * relativeY)
+                
+                // Ensure the logo stays within the image boundaries
+                x = Math.max(padding, Math.min(canvas.width - scaledWidth - padding, x))
+                y = Math.max(padding, Math.min(canvas.height - scaledHeight - padding, y))
+              }
+            } else {
+              // Default to center if no custom position set
+              x = (canvas.width - scaledWidth) / 2
+              y = (canvas.height - scaledHeight) / 2
+            }
+          } else {
+            // Decide Y position for preset positions
+            if (position.includes("bottom")) {
+              y = canvas.height - scaledHeight - padding
+            } else if (position.includes("middle") || position === "center") {
+              y = (canvas.height - scaledHeight) / 2
+            } else if (position.includes("top")) {
+              y = padding
+            }
+
+            // Decide X position for preset positions
+            if (position.includes("right")) {
+              x = canvas.width - scaledWidth - padding
+            } else if (position.includes("center")) {
+              x = (canvas.width - scaledWidth) / 2
+            } else if (position.includes("left")) {
+              x = padding
+            }
+          }
+
+          ctx.drawImage(overlay, x, y, scaledWidth, scaledHeight)
+          const finalUrl = canvas.toDataURL("image/png")
+          resolve(finalUrl)
+        }
+        overlay.onerror = (err) => reject(err)
+        overlay.src = overlayUrl
+      }
+
+      background.onerror = (err) => reject(err)
+      background.src = backgroundUrl
+    })
+  }
+  
+  // Initialize previewRefs when images change
+  useEffect(() => {
+    // Reset refs array when number of images changes
+    previewRefs.current = Array(generatedImages.length).fill(null)
+  }, [generatedImages.length])
+  
+  // LogoDragIndicator component with react-draggable library
+  const LogoDragIndicator = ({ imageIndex }: { imageIndex: number }) => {
+    if (!isCustomPosition || !logoUrl) return null
+    
+    // Get the reference to this specific image container
+    const previewRef = previewRefs.current[imageIndex]
+    if (!previewRef) return null
+    
+    // Get container dimensions for calculations
+    const containerWidth = previewRef.offsetWidth
+    const containerHeight = previewRef.offsetHeight
+    
+    // Calculate logo size in pixels
+    const exactLogoWidth = Math.floor(containerWidth * (logoSize / 100))
+    
+    // Get saved position for this image, or default to center
+    const savedPosition = logoPositions[imageIndex]
+    
+    // Default position at center of container
+    const defaultPosition = {
+      x: containerWidth / 2 - exactLogoWidth / 2,
+      y: containerHeight / 2 - exactLogoWidth / 2
+    }
+    
+    // Use saved position if available, otherwise use default
+    const position = savedPosition || defaultPosition
+    
+    // Handle the end of dragging - save the position
+    const handleDragStop = (e: any, data: any) => {
+      // Save the absolute position in the container
+      setLogoPositions(prev => ({
+        ...prev,
+        [imageIndex]: { x: data.x, y: data.y }
+      }))
+      
+      // Update preview images with new position
+      setTimeout(() => setIsDragUpdatePending(false), 100)
+    }
+    
+    // Handle the start of dragging
+    const handleDragStart = () => {
+      // Prevent rerendering of previews during drag
+      setIsDragUpdatePending(true)
+      setIsDraggingLogo(true)
+      setDraggedImageIndex(imageIndex)
+    }
+    
+    // Calculate bounds to keep logo inside container
+    const bounds = {
+      left: 0,
+      top: 0,
+      right: containerWidth - exactLogoWidth,
+      bottom: containerHeight - exactLogoWidth
+    }
+    
+    // Use the position directly since we're now storing top-left coordinates
+    const dragPosition = {
+      x: position.x,
+      y: position.y
+    }
+    
+    return (
+      <>
+        {/* If we're dragging, show an overlay with the original image */}
+        {isDraggingLogo && draggedImageIndex === imageIndex && (
+          <div className="absolute inset-0 z-10 pointer-events-none">
+            <div 
+              className="absolute inset-0"
+              style={{ 
+                backgroundColor: isDarkMode ? 'rgba(17, 24, 39, 0.85)' : 'rgba(243, 244, 246, 0.85)',
+                backgroundImage: `url(${generatedImages[imageIndex]})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                filter: 'blur(1px) brightness(0.7)'
+              }}
+            />
+            <div className="absolute top-2 left-0 right-0 text-center">
+              <div className={`inline-block text-sm font-medium py-1 px-3 rounded-md ${
+                isDarkMode ? 'bg-gray-800 text-gray-200' : 'bg-white text-gray-700'
+              }`}>
+                Drag to position logo
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Draggable logo component */}
+        <Draggable
+          bounds={bounds}
+          position={dragPosition}
+          onStart={handleDragStart}
+          onStop={handleDragStop}
+          onDrag={() => {
+            // Keep the dragging state active
+            setIsDraggingLogo(true)
+          }}
+        >
+          <div
+            className="absolute cursor-grab active:cursor-grabbing z-20"
+            style={{ 
+              width: `${exactLogoWidth}px`,
+              height: `${exactLogoWidth}px`,
+              opacity: isDraggingLogo && draggedImageIndex !== imageIndex ? 0.3 : 1,
+              transition: 'opacity 0.2s ease'
+            }}
+          >
+            <NextImage
+              src={logoUrl}
+              alt="Draggable logo"
+              width={exactLogoWidth}
+              height={exactLogoWidth}
+              className="w-full h-auto object-contain pointer-events-none"
+              draggable={false}
+              style={{
+                filter: `drop-shadow(0 0 3px ${isDarkMode ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.3)'})`
+              }}
+            />
+            
+            {/* Show hint on the first image when no positions are saved */}
+            {(imageIndex === 0 && !Object.keys(logoPositions).length) && (
+              <div className={`absolute -top-8 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-xs font-medium px-2 py-1 rounded-md ${
+                isDarkMode ? 'bg-blue-600 text-white' : 'bg-blue-100 text-blue-800'
+              }`}>
+                Drag me to position
+              </div>
+            )}
+          </div>
+        </Draggable>
+      </>
+    )
+  }
+  
+  // We don't need event listeners with react-draggable
+  
+  // Generate logo previews when logo or settings change
+  useEffect(() => {
+    // Skip preview updates if we're in the middle of dragging
+    if (isDragUpdatePending) return
+    
+    // Prevent unnecessary preview generation
+    const generatePreviews = async () => {
+      if (!logoUrl || generatedImages.length === 0) {
+        setCombinedPreviews([])
+        return
+      }
+      
+      try {
+        // Show loading state during generation
+        setIsProcessing(true)
+        
+        const newPreviews: string[] = []
+        for (let i = 0; i < generatedImages.length; i++) {
+          const combined = await combineImages(generatedImages[i], logoUrl, overlayPosition, i)
+          newPreviews.push(combined)
+        }
+        
+        setCombinedPreviews(newPreviews)
+        
+        // Automatically switch to the "withLogo" tab when logo is added
+        if (activeTab === "original" && newPreviews.length > 0) {
+          setActiveTab("withLogo")
+        }
+      } catch (err) {
+        console.error("Error generating logo previews:", err)
+        showToast("Preview error", "Failed to generate logo previews. Please try again.", "error")
+      } finally {
+        setIsProcessing(false)
+      }
+    }
+
+    const debounceTimeout = setTimeout(() => {
+      generatePreviews()
+    }, 200) // Add small debounce for better performance
+    
+    return () => {
+      clearTimeout(debounceTimeout)
+    }
+  }, [
+    generatedImages, 
+    logoUrl, 
+    overlayPosition, 
+    logoSize,
+    activeTab,
+    isDragUpdatePending,
+    showToast
+  ])
+
   // Download image
   async function handleDownload(imageUrl: string, index: number) {
     try {
-      const response = await fetch(imageUrl);
-      if (!response.ok) throw new Error("Failed to fetch image for download");
+      if (logoUrl) {
+        // If a logo exists, combine logo with image before download
+        const finalUrl = await combineImages(imageUrl, logoUrl, overlayPosition);
+        const response = await fetch(finalUrl);
+        if (!response.ok) throw new Error("Failed to fetch combined image for download");
+        
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `${brandName || "brand"}-ad-${index + 1}-with-logo.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        
+        showToast("Download complete", "Image with logo saved successfully to your device.", "success");
+      } else {
+        // No logo, download original image
+        const response = await fetch(imageUrl);
+        if (!response.ok) throw new Error("Failed to fetch image for download");
 
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `${brandName || "brand"}-ad-${index + 1}.png`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `${brandName || "brand"}-ad-${index + 1}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
 
-      showToast("Download complete", "Image saved successfully to your device.", "success");
+        showToast("Download complete", "Image saved successfully to your device.", "success");
+      }
     } catch (error) {
       console.error("Error downloading image:", error);
       showToast("Download failed", "Unable to download the image. Please try again.", "error");
@@ -1420,52 +1815,233 @@ export default function AiCreativeDirectorPage() {
                   </div>
                 </div>
 
-                <div className={`grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4`}>
-                  {generatedImages.map((imgUrl, index) => {
-                    const isSelected = selectedImages.includes(index);
-                    return (
-                      <div
-                        key={index}
-                        className={`relative rounded-md overflow-hidden group cursor-pointer ${
-                          selectedImageFormat === "9:16" ? "aspect-[9/16]" : "aspect-[3/4]"
-                        } ${
-                          isSelected 
-                            ? "ring-2 ring-blue-500 ring-offset-2" 
-                            : isDarkMode ? "border-gray-700 border" : "border-gray-300 border"
-                        }`}
-                        onClick={() => toggleImageSelected(index)}
+                {/* Logo Uploader UI */}
+                <div className="p-3 border rounded-md mb-4">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                    <div>
+                      <h4 className="text-sm font-medium mb-1">Add Your Logo</h4>
+                      <p className="text-xs text-gray-500">Upload your logo to place on generated images</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button 
+                        onClick={handleLogoButtonClick}
+                        variant="outline"
+                        size="sm"
+                        className="flex items-center gap-1"
                       >
+                        <Upload className="h-3 w-3" />
+                        {logoUrl ? "Change Logo" : "Upload Logo"}
+                      </Button>
+                      {logoUrl && (
+                        <Button 
+                          onClick={handleClearLogo}
+                          variant="ghost" 
+                          size="sm"
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      )}
+                      <input
+                        type="file"
+                        ref={logoInputRef}
+                        onChange={handleLogoUpload}
+                        accept="image/*"
+                        className="hidden"
+                      />
+                    </div>
+                  </div>
+                  
+                  {logoUrl && (
+                    <div className="mt-3 flex flex-col sm:flex-row gap-3 sm:items-end">
+                      <div className="w-16 h-16 border rounded-md overflow-hidden relative">
                         <NextImage
-                          src={imgUrl}
-                          alt={`Generated ad ${index+1}`}
+                          src={logoUrl}
+                          alt="Your logo"
                           fill
-                          sizes="(max-width: 768px) 100vw, 448px"
-                          className="object-cover"
+                          className="object-contain"
                         />
-                        
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDownload(imgUrl, index);
-                            }}
-                            className="absolute bottom-1.5 sm:bottom-2 right-1.5 sm:right-2 py-0.5 sm:py-1 px-2 sm:px-3 text-xs sm:text-sm font-medium bg-white text-gray-700 rounded-md shadow hover:bg-gray-50 flex items-center z-30 pointer-events-auto"
-                          >
-                            <Download className="mr-0.5 sm:mr-1 size-3 sm:size-4 flex-shrink-0" />
-                            <span>Download</span>
-                          </button>
-                        </div>
-                        
-                        {isSelected && (
-                          <div className="absolute top-2 left-2 bg-blue-600 text-white rounded-full p-1">
-                            <CheckCircle2 className="size-4" />
-                          </div>
-                        )}
                       </div>
-                    );
-                  })}
+                      <div className="space-y-2 flex-1">
+                        <div>
+                          <label className="text-xs mb-1 block">Position</label>
+                          <Select defaultValue={overlayPosition} onValueChange={handlePositionChange}>
+                            <SelectTrigger className="h-8 text-xs">
+                              <SelectValue placeholder="Choose position" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="top-left">Top Left</SelectItem>
+                              <SelectItem value="top-right">Top Right</SelectItem>
+                              <SelectItem value="bottom-left">Bottom Left</SelectItem>
+                              <SelectItem value="bottom-right">Bottom Right</SelectItem>
+                              <SelectItem value="center">Center</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <label className="text-xs mb-1 block">Size (%)</label>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="range"
+                              min="5"
+                              max="50"
+                              value={logoSize}
+                              onChange={(e) => setLogoSize(parseInt(e.target.value))}
+                              className="flex-1"
+                            />
+                            <span className="text-xs w-8 text-right">{logoSize}%</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
+
+                {/* Image View Tabs */}
+                {logoUrl && combinedPreviews.length > 0 && (
+                  <div className="mb-4 flex border-b">
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab("original")}
+                      className={`py-2 px-4 text-sm font-medium border-b-2 ${
+                        activeTab === "original" 
+                          ? isDarkMode
+                            ? 'border-primary-green text-primary-green'
+                            : 'border-blue-600 text-blue-600'
+                          : isDarkMode
+                            ? 'border-transparent text-gray-400 hover:text-gray-300'
+                            : 'border-transparent text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
+                      Original
+                    </button>
+                    
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab("withLogo")}
+                      className={`py-2 px-4 text-sm font-medium border-b-2 ${
+                        activeTab === "withLogo" 
+                          ? isDarkMode
+                            ? 'border-primary-green text-primary-green'
+                            : 'border-blue-600 text-blue-600'
+                          : isDarkMode
+                            ? 'border-transparent text-gray-400 hover:text-gray-300'
+                            : 'border-transparent text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
+                      With Logo
+                    </button>
+                  </div>
+                )}
+
+                {/* Loading indicator during preview generation */}
+                {isProcessing && (
+                  <div className="flex justify-center items-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-green"></div>
+                    <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">Generating logo previews...</span>
+                  </div>
+                )}
+
+                {/* Display the appropriate images based on the active tab */}
+                {!isProcessing && (
+                  <div className={`grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4`}>
+                    {activeTab === "original" && 
+                      generatedImages.map((imgUrl, index) => {
+                        const isSelected = selectedImages.includes(index);
+                        return (
+                          <div
+                            key={index}
+                            className={`relative rounded-md overflow-hidden group cursor-pointer ${
+                              selectedImageFormat === "9:16" ? "aspect-[9/16]" : "aspect-[3/4]"
+                            } ${
+                              isSelected 
+                                ? "ring-2 ring-blue-500 ring-offset-2" 
+                                : isDarkMode ? "border-gray-700 border" : "border-gray-300 border"
+                            }`}
+                            onClick={() => toggleImageSelected(index)}
+                          >
+                            <NextImage
+                              src={imgUrl}
+                              alt={`Generated ad ${index+1}`}
+                              fill
+                              sizes="(max-width: 768px) 100vw, 448px"
+                              className="object-cover"
+                            />
+                            
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDownload(imgUrl, index);
+                                }}
+                                className="absolute bottom-1.5 sm:bottom-2 right-1.5 sm:right-2 py-0.5 sm:py-1 px-2 sm:px-3 text-xs sm:text-sm font-medium bg-white text-gray-700 rounded-md shadow hover:bg-gray-50 flex items-center z-30 pointer-events-auto"
+                              >
+                                <Download className="mr-0.5 sm:mr-1 size-3 sm:size-4 flex-shrink-0" />
+                                <span>Download</span>
+                              </button>
+                            </div>
+                            
+                            {isSelected && (
+                              <div className="absolute top-2 left-2 bg-blue-600 text-white rounded-full p-1">
+                                <CheckCircle2 className="size-4" />
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })
+                    }
+                    
+                    {/* With Logo View */}
+                    {activeTab === "withLogo" && logoUrl && combinedPreviews.length > 0 && 
+                      combinedPreviews.map((previewUrl, index) => {
+                        const isSelected = selectedImages.includes(index);
+                        return (
+                          <div
+                            key={index}
+                            ref={el => { previewRefs.current[index] = el; }}
+                            className={`relative rounded-md overflow-hidden group cursor-pointer ${
+                              selectedImageFormat === "9:16" ? "aspect-[9/16]" : "aspect-[3/4]"
+                            } ${
+                              isSelected 
+                                ? "ring-2 ring-blue-500 ring-offset-2" 
+                                : isDarkMode ? "border-gray-700 border" : "border-gray-300 border"
+                            }`}
+                            onClick={() => toggleImageSelected(index)}
+                          >
+                            <NextImage
+                              src={previewUrl}
+                              alt={`Generated ad with logo ${index+1}`}
+                              fill
+                              sizes="(max-width: 768px) 100vw, 448px"
+                              className="object-cover"
+                            />
+                            
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDownload(generatedImages[index], index);
+                                }}
+                                className="absolute bottom-1.5 sm:bottom-2 right-1.5 sm:right-2 py-0.5 sm:py-1 px-2 sm:px-3 text-xs sm:text-sm font-medium bg-white text-gray-700 rounded-md shadow hover:bg-gray-50 flex items-center z-30 pointer-events-auto"
+                              >
+                                <Download className="mr-0.5 sm:mr-1 size-3 sm:size-4 flex-shrink-0" />
+                                <span>Download</span>
+                              </button>
+                            </div>
+                            
+                            {isSelected && (
+                              <div className="absolute top-2 left-2 bg-blue-600 text-white rounded-full p-1">
+                                <CheckCircle2 className="size-4" />
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })
+                    }
+                  </div>
+                )}
               </div>
             )}
           </CardContent>
@@ -2410,8 +2986,153 @@ export default function AiCreativeDirectorPage() {
               </div>
             </div>
 
-            <div className={`grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4`}>
-              {generatedImages.map((imgUrl, index) => {
+            {/* Logo Uploader UI */}
+            <div className="p-3 border rounded-md mb-4">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <div>
+                  <h4 className="text-sm font-medium mb-1">Add Your Logo</h4>
+                  <p className="text-xs text-gray-500">Upload your logo to place on generated images</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button 
+                    onClick={handleLogoButtonClick}
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-1"
+                  >
+                    <Upload className="h-3 w-3" />
+                    {logoUrl ? "Change Logo" : "Upload Logo"}
+                  </Button>
+                  {logoUrl && (
+                    <Button 
+                      onClick={handleClearLogo}
+                      variant="ghost" 
+                      size="sm"
+                      className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  )}
+                  <input
+                    type="file"
+                    ref={logoInputRef}
+                    onChange={handleLogoUpload}
+                    accept="image/*"
+                    className="hidden"
+                  />
+                </div>
+              </div>
+              
+              {logoUrl && (
+                <div className="mt-3 flex flex-col sm:flex-row gap-3 sm:items-end">
+                  <div className="w-16 h-16 border rounded-md overflow-hidden relative">
+                    <NextImage
+                      src={logoUrl}
+                      alt="Your logo"
+                      fill
+                      className="object-contain"
+                    />
+                  </div>
+                  <div className="space-y-2 flex-1">
+                    <div>
+                      <label className="text-xs mb-1 block">Position</label>
+                      <Select defaultValue={overlayPosition} onValueChange={handlePositionChange}>
+                        <SelectTrigger className="h-8 text-xs">
+                          <SelectValue placeholder="Choose position" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="top-left">Top Left</SelectItem>
+                          <SelectItem value="top-right">Top Right</SelectItem>
+                          <SelectItem value="bottom-left">Bottom Left</SelectItem>
+                          <SelectItem value="bottom-right">Bottom Right</SelectItem>
+                          <SelectItem value="center">Center</SelectItem>
+                          <SelectItem value="custom">Custom (Drag & Drop)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="text-xs mb-1 block">Size (%)</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="range"
+                          min="5"
+                          max="50"
+                          value={logoSize}
+                          onChange={(e) => setLogoSize(parseInt(e.target.value))}
+                          className="flex-1"
+                        />
+                        <span className="text-xs w-8 text-right">{logoSize}%</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {isCustomPosition && (
+                    <div className={`mt-2 p-2 rounded ${
+                      isDarkMode ? 'bg-blue-900/30 border border-blue-800 text-blue-200' : 'bg-blue-50 border border-blue-100 text-blue-700'
+                    }`}>
+                      <p className="text-xs flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-3 mr-1 flex-shrink-0">
+                          <circle cx="12" cy="12" r="10"></circle>
+                          <line x1="12" y1="16" x2="12" y2="12"></line>
+                          <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                        </svg>
+                        Click and drag to position your logo on each image
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Loading indicator during preview generation */}
+            {isProcessing && (
+              <div className="flex justify-center items-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-green"></div>
+                <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">Generating logo previews...</span>
+              </div>
+            )}
+
+            {/* Image View Tabs */}
+            {logoUrl && combinedPreviews.length > 0 && (
+              <div className="mb-4 flex border-b">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("original")}
+                  className={`py-2 px-4 text-sm font-medium border-b-2 ${
+                    activeTab === "original" 
+                      ? isDarkMode
+                        ? 'border-primary-green text-primary-green'
+                        : 'border-blue-600 text-blue-600'
+                      : isDarkMode
+                        ? 'border-transparent text-gray-400 hover:text-gray-300'
+                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  Original
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("withLogo")}
+                  className={`py-2 px-4 text-sm font-medium border-b-2 ${
+                    activeTab === "withLogo" 
+                      ? isDarkMode
+                        ? 'border-primary-green text-primary-green'
+                        : 'border-blue-600 text-blue-600'
+                      : isDarkMode
+                        ? 'border-transparent text-gray-400 hover:text-gray-300'
+                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  With Logo
+                </button>
+              </div>
+            )}
+            
+            {/* Display the appropriate images based on the active tab */}
+            {!isProcessing && (
+              <div className={`grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4`}>
+                {activeTab === "original" && generatedImages.map((imgUrl, index) => {
                 const isSelected = selectedImages.includes(index);
                 return (
                   <div
@@ -2455,7 +3176,62 @@ export default function AiCreativeDirectorPage() {
                   </div>
                 );
               })}
-            </div>
+                
+                {/* With Logo View */}
+                {activeTab === "withLogo" && logoUrl && combinedPreviews.length > 0 && 
+                  combinedPreviews.map((previewUrl, index) => {
+                    const isSelected = selectedImages.includes(index);
+                    return (
+                      <div
+                        key={index}
+                        ref={el => { previewRefs.current[index] = el; }}
+                        className={`relative rounded-md overflow-hidden group cursor-pointer ${
+                          selectedImageFormat === "9:16" ? "aspect-[9/16]" : "aspect-[3/4]"
+                        } ${
+                          isSelected 
+                            ? "ring-2 ring-blue-500 ring-offset-2" 
+                            : isDarkMode ? "border-gray-700 border" : "border-gray-300 border"
+                        }`}
+                        onClick={() => toggleImageSelected(index)}
+                        style={{ touchAction: isCustomPosition ? 'none' : 'auto' }}
+                      >
+                        {/* Always show the preview image */}
+                        <NextImage
+                          src={previewUrl}
+                          alt={`Generated ad with logo ${index+1}`}
+                          fill
+                          sizes="(max-width: 768px) 100vw, 448px"
+                          className="object-cover"
+                        />
+                        
+                        {/* Use the LogoDragIndicator component for dragging */}
+                        <LogoDragIndicator imageIndex={index} />
+                        
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDownload(generatedImages[index], index);
+                            }}
+                            className="absolute bottom-1.5 sm:bottom-2 right-1.5 sm:right-2 py-0.5 sm:py-1 px-2 sm:px-3 text-xs sm:text-sm font-medium bg-white text-gray-700 rounded-md shadow hover:bg-gray-50 flex items-center z-30 pointer-events-auto"
+                          >
+                            <Download className="mr-0.5 sm:mr-1 size-3 sm:size-4 flex-shrink-0" />
+                            <span>Download</span>
+                          </button>
+                        </div>
+                        
+                        {isSelected && (
+                          <div className="absolute top-2 left-2 bg-blue-600 text-white rounded-full p-1">
+                            <CheckCircle2 className="size-4" />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                }
+              </div>
+            )}
           </div>
         )}
       </CardContent>
