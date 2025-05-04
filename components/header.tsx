@@ -109,6 +109,12 @@ async function UserOrLogin() {
               >
                 Campaign Creator
               </Link>
+              <Link
+                href="/media-library"
+                className={cn(buttonVariants({ variant: 'ghost' }), 'ml-1 sm:ml-4 text-xs sm:text-sm text-text-white hover:text-primary-green hover:bg-dark-bg')}
+              >
+                Media Library
+              </Link>
               
               <ProfileSettings
                 userDetails={userDetails}
