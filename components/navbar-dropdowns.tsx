@@ -221,13 +221,6 @@ const NavbarDropdowns = ({
       // Set the selected account immediately for better UX
       setSelectedFbBusinessAcc(fbBusinessAccs.find((acc) => acc.id === id));
       
-      // Immediately reset dependent selections when business account changes
-      setSelectedFbAdAcc(undefined);
-      setFbAdAccs([]);
-      setSelectedFbPage(undefined);
-      setSelectedInstagramAccount(undefined);
-      setInstagramAccounts([]);
-      
       // Show loading indicator
       setBusinessAccLoading(true);
       
@@ -235,14 +228,13 @@ const NavbarDropdowns = ({
         // Save the selection to the database
         await updateFbBusinessAcc(userDetails?.email, id);
         
-        // Fetch pages for the selected business account
-        await getFacebookPages(id);
+        // After saving to database, refresh the page completely to ensure everything is reinitialized
+        window.location.reload();
       } catch (error) {
         console.error('Error updating business account:', error);
-      } finally {
-        // Hide loading indicator regardless of success/failure
         setBusinessAccLoading(false);
       }
+      // Note: We don't need to hide the loading indicator in finally block since the page will refresh
     }
   }
 
