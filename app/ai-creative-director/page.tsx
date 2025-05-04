@@ -57,6 +57,36 @@ const COLOR_PALETTES = {
     name: "Soft Pastels",
     colors: ["#F0E6F6", "#E6F0F6", "#F0F6E6", "#F6E6F0", "#F6F0E6"],
     description: "soft pastel shades with gentle harmony",
+  },
+  "Corporate Blue": {
+    name: "Corporate Blue",
+    colors: ["#0A2463", "#3E92CC", "#FFFAFF", "#D8315B", "#1E1B18"],
+    description: "professional blue-based corporate palette",
+  },
+  "Green Nature": {
+    name: "Green Nature",
+    colors: ["#2D6A4F", "#52B788", "#B7E4C7", "#D8F3DC", "#95D5B2"],
+    description: "refreshing natural greens for eco themes",
+  },
+  "Sunset Gradient": {
+    name: "Sunset Gradient",
+    colors: ["#FF7B00", "#FF8800", "#FF9500", "#FFA200", "#FFAA00"],
+    description: "warm orange tones reminiscent of sunset",
+  },
+  "Berry Tones": {
+    name: "Berry Tones",
+    colors: ["#6B0F1A", "#B91372", "#F7A1C4", "#F7E3AF", "#8A1C7C"],
+    description: "rich berry colors with complementary accents",
+  },
+  "Vintage": {
+    name: "Vintage",
+    colors: ["#7B8CDE", "#C2CAE8", "#F7E3AF", "#EF8354", "#BE6E46"],
+    description: "muted vintage palette with nostalgic feel",
+  },
+  "Tech Dark": {
+    name: "Tech Dark",
+    colors: ["#121212", "#1F1F1F", "#2C2C2C", "#00B4D8", "#90E0EF"],
+    description: "dark theme with vibrant blue accents",
   }
 }
 
