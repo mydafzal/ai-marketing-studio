@@ -8,7 +8,7 @@ import {
 
 // Default limits until we fetch from server
 const DEFAULT_LIMITS = {
-  MAX_MESSAGES: 5,
+  MAX_MESSAGES: 20,
   MAX_IMAGES: 5,
   MAX_VIDEOS: 1,
   MAX_INPAINTING: 1
