@@ -149,26 +149,26 @@ const IMAGE_FORMATS = [
 // Loading screen component 
 const LoadingScreen = ({ isDarkMode }: { isDarkMode: boolean }) => {
   return (
-    <div className={`flex flex-col items-center justify-center size-full min-h-[300px] ${
+    <div className={`flex flex-col items-center justify-center size-full min-h-[250px] sm:min-h-[300px] ${
       isDarkMode ? 'bg-gray-800/50' : 'bg-gray-100/50'
     } rounded-lg border ${
       isDarkMode ? 'border-gray-700' : 'border-gray-300'
     }`}>
-      <Wand2 className={`size-10 mb-4 ${isDarkMode ? 'text-primary-green' : 'text-blue-500'}`} />
+      <Wand2 className={`size-8 sm:size-10 mb-3 sm:mb-4 ${isDarkMode ? 'text-primary-green' : 'text-blue-500'}`} />
       
-      <div className={`text-base sm:text-lg font-medium mb-2 px-4 text-center ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
+      <div className={`text-sm sm:text-lg font-medium mb-2 px-3 sm:px-4 text-center ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
         Creating your professional ad creative...
       </div>
       
-      <div className="relative w-32 sm:w-48 h-2 bg-gray-300 rounded-full overflow-hidden">
+      <div className="relative w-28 sm:w-48 h-1.5 sm:h-2 bg-gray-300 rounded-full overflow-hidden">
         <div className={`absolute top-0 left-0 h-full ${
           isDarkMode ? 'bg-primary-green' : 'bg-blue-500'
         } animate-loading-bar`}></div>
       </div>
       
-      <div className={`mt-4 sm:mt-6 text-xs sm:text-sm px-4 text-center ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+      <div className={`mt-3 sm:mt-6 text-xs sm:text-sm px-3 sm:px-4 text-center ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
         <p>This may take a few moments...</p>
-        <p className="mt-1">Please don&apos;t refresh the page.</p>
+        <p className="mt-0.5 sm:mt-1">Please don&apos;t refresh the page.</p>
       </div>
     </div>
   );
@@ -487,6 +487,26 @@ export default function AiCreativeDirectorPage() {
     // Open color picker in a modal dialog approach
     const [showPicker, setShowPicker] = useState(false);
     const [currentColor, setCurrentColor] = useState(color);
+    // Track if we're on a mobile device
+    const [isMobile, setIsMobile] = useState(false);
+
+    // Check device on mount and window resize
+    useEffect(() => {
+      const checkIfMobile = () => {
+        setIsMobile(window.innerWidth < 768);
+      };
+      
+      // Initial check
+      checkIfMobile();
+      
+      // Add event listener for window resize
+      window.addEventListener('resize', checkIfMobile);
+      
+      // Cleanup
+      return () => {
+        window.removeEventListener('resize', checkIfMobile);
+      };
+    }, []);
     
     // Close picker when clicking the overlay
     const handleCloseClick = useCallback((e: React.MouseEvent) => {
@@ -531,11 +551,343 @@ export default function AiCreativeDirectorPage() {
       setCurrentColor(color);
     }, [color, showPicker]);
     
+    // Prevent body scrolling when picker is open
+    useEffect(() => {
+      if (showPicker) {
+        // Add overflow-hidden to body to prevent scrolling
+        document.body.style.overflow = 'hidden';
+        
+        // For iOS Safari to prevent background scrolling
+        if (isMobile) {
+          document.body.style.position = 'fixed';
+          document.body.style.width = '100%';
+          document.body.style.top = `-${window.scrollY}px`;
+        }
+      } else {
+        // Restore scrolling when picker is closed
+        document.body.style.overflow = '';
+        
+        // For iOS Safari to restore scroll position
+        if (isMobile) {
+          const scrollY = document.body.style.top;
+          document.body.style.position = '';
+          document.body.style.width = '';
+          document.body.style.top = '';
+          window.scrollTo(0, parseInt(scrollY || '0') * -1);
+        }
+      }
+      
+      return () => {
+        // Cleanup: ensure scrolling is restored if component unmounts
+        document.body.style.overflow = '';
+        if (isMobile) {
+          const scrollY = document.body.style.top;
+          document.body.style.position = '';
+          document.body.style.width = '';
+          document.body.style.top = '';
+          window.scrollTo(0, parseInt(scrollY || '0') * -1);
+        }
+      };
+    }, [showPicker, isMobile]);
+    
+    // Mobile-specific color picker
+    const MobileColorPicker = () => {
+      // Reference for touch handling
+      const touchSurfaceRef = useRef<HTMLDivElement>(null);
+      const [showPresetColors, setShowPresetColors] = useState(false);
+      
+      // Common color presets for quick selection
+      const colorPresets = [
+        "#FF0000", // Red
+        "#FF9500", // Orange
+        "#FFCC00", // Yellow
+        "#4CD964", // Green
+        "#5AC8FA", // Light Blue
+        "#007AFF", // Blue
+        "#5856D6", // Purple
+        "#FF2D55", // Pink
+        "#8E8E93", // Gray
+        "#000000", // Black
+        "#FFFFFF", // White
+      ];
+      
+      // Touch event handling for smoother color picker drag
+      // IMPORTANT: For mobile devices only - don't interfere with mouse events
+      useEffect(() => {
+        const touchSurface = touchSurfaceRef.current;
+        if (!touchSurface) return;
+        
+        // Only intercept touch events, not mouse events
+        const preventDefaultOnTouch = (e: TouchEvent) => {
+          // Only prevent default on the color picker elements
+          if (
+            e.target instanceof Element && 
+            (e.target.closest('.react-colorful__saturation') || 
+             e.target.closest('.react-colorful__hue'))
+          ) {
+            e.preventDefault();
+          }
+        };
+        
+        // Add passive: false to ensure preventDefault works, but only for touch events
+        touchSurface.addEventListener('touchmove', preventDefaultOnTouch, { passive: false });
+        
+        return () => {
+          touchSurface.removeEventListener('touchmove', preventDefaultOnTouch);
+        };
+      }, []);
+      
+      return (
+        <div className="fixed inset-0 bg-black bg-opacity-80 z-[100] flex flex-col">
+          {/* Header with close button */}
+          <div className="bg-white dark:bg-gray-800 px-4 py-3 flex justify-between items-center border-b">
+            <h3 className="text-base font-medium">Choose Color</h3>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                className="p-2 rounded-full text-gray-500 flex items-center justify-center"
+                onClick={() => setShowPresetColors(!showPresetColors)}
+                aria-label="Toggle presets"
+              >
+                <Palette size={20} />
+              </button>
+              <button
+                type="button"
+                className="p-2 rounded-full text-gray-500 flex items-center justify-center"
+                onClick={() => setShowPicker(false)}
+                aria-label="Close"
+              >
+                <X size={20} />
+              </button>
+            </div>
+          </div>
+          
+          {/* Color picker body */}
+          <div ref={touchSurfaceRef} className="flex-1 bg-white dark:bg-gray-800 overflow-y-auto flex flex-col">
+            {/* Preview */}
+            <div className="p-4 pb-2">
+              <div 
+                className="w-full h-28 rounded-lg mb-4 shadow-inner"
+                style={{ backgroundColor: currentColor }}
+              />
+            </div>
+            
+            {/* Quick color presets */}
+            {showPresetColors && (
+              <div className="px-4 pb-4">
+                <div className="grid grid-cols-6 gap-2">
+                  {colorPresets.map((presetColor, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      className={`w-full aspect-square rounded-md border-2 ${currentColor === presetColor ? 'border-blue-500' : 'border-gray-200'}`}
+                      style={{ backgroundColor: presetColor }}
+                      onClick={() => setCurrentColor(presetColor)}
+                      aria-label={`Select ${presetColor} color`}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Hex color picker with enhanced touch handling */}
+            <div className="touch-color-picker-container px-4 pb-0">
+              <HexColorPicker 
+                color={currentColor} 
+                onChange={handleColorChangeLocal} 
+                style={{ 
+                  width: '100%',
+                  height: '220px', // Even taller for better mobile touch
+                  maxWidth: '100%'
+                }}
+              />
+              <style jsx global>{`
+                /* Enhanced handling for mobile color picker */
+                .touch-color-picker-container .react-colorful {
+                  -webkit-tap-highlight-color: transparent;
+                  user-select: none;
+                }
+                
+                /* Make sliders and thumb bigger for touch */
+                .touch-color-picker-container .react-colorful__saturation {
+                  border-radius: 8px 8px 0 0;
+                  border-bottom: 12px solid transparent;
+                }
+                
+                .touch-color-picker-container .react-colorful__hue {
+                  height: 30px;
+                  border-radius: 0 0 8px 8px;
+                  margin-top: 2px;
+                }
+                
+                .touch-color-picker-container .react-colorful__saturation-pointer,
+                .touch-color-picker-container .react-colorful__hue-pointer {
+                  width: 28px;
+                  height: 28px;
+                  border-width: 3px;
+                  transform: translate(-50%, -50%);
+                  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                  cursor: pointer; /* Ensure cursor indicates interactivity */
+                }
+                
+                /* Delay transition to make it feel more responsive */
+                .touch-color-picker-container .react-colorful__interactive {
+                  transition: transform 0.05s;
+                  cursor: pointer; /* Ensure cursor indicates interactivity */
+                }
+                
+                /* Input and saturation area improvements */
+                input[type="text"] {
+                  font-size: 16px; /* Prevent iOS zoom on focus */
+                }
+                
+                /* Mobile-specific touch handling */
+                @media (pointer: coarse) {
+                  .touch-color-picker-container .react-colorful__interactive {
+                    touch-action: none;
+                  }
+                  
+                  .touch-color-picker-container .react-colorful__saturation,
+                  .touch-color-picker-container .react-colorful__hue {
+                    touch-action: none;
+                  }
+                }
+              `}</style>
+            </div>
+            
+            {/* Color code fields */}
+            <div className="flex-grow flex flex-col justify-end">
+              {/* Hex input field */}
+              <div className="p-4 pt-6 flex items-center">
+                <div className="text-sm font-medium mr-3">Hex:</div>
+                <input
+                  type="text"
+                  value={currentColor}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (/^#?[0-9A-Fa-f]{0,6}$/.test(value)) {
+                      setCurrentColor(value.startsWith('#') ? value : `#${value}`);
+                    }
+                  }}
+                  className="flex-1 border rounded-md px-3 py-3 text-center uppercase font-mono text-base"
+                  maxLength={7}
+                />
+              </div>
+            </div>
+          </div>
+          
+          {/* Action buttons */}
+          <div className="p-4 bg-white dark:bg-gray-800 border-t safe-bottom">
+            <div className="grid grid-cols-2 gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowPicker(false)}
+                className="h-14 text-base font-medium"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={applyColorChange}
+                className="h-14 text-base font-medium"
+              >
+                Apply Color
+              </Button>
+            </div>
+          </div>
+        </div>
+      );
+    };
+    
+    // Desktop color picker
+    const DesktopColorPicker = () => (
+      <div 
+        className="fixed inset-0 bg-black bg-opacity-50 z-50 flex flex-col items-center justify-start pt-16 sm:pt-32 overflow-y-auto overflow-x-hidden"
+        onClick={handleCloseClick}
+      >
+        <div 
+          className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-[min(100vw-32px,_424px)] mx-auto overflow-hidden"
+          style={{ 
+            maxHeight: '80vh'
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="p-3 sm:p-4">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-sm sm:text-base font-medium">Select a color</h3>
+              <button
+                type="button" 
+                className="text-gray-400 hover:text-gray-500 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+                onClick={() => setShowPicker(false)}
+              >
+                <X size={16} />
+              </button>
+            </div>
+            
+            <div className="flex flex-col items-center space-y-3">
+              {/* Color picker */}
+              <div className="w-full overflow-hidden" style={{ maxWidth: '100%' }}>
+                <HexColorPicker 
+                  color={currentColor} 
+                  onChange={handleColorChangeLocal} 
+                  style={{ 
+                    width: '100%', 
+                    height: '120px',
+                    maxWidth: '100%'
+                  }}
+                />
+              </div>
+              
+              {/* Preview and hex code display */}
+              <div className="flex items-center w-full mt-3">
+                <div 
+                  className="w-8 h-8 rounded-md border shadow-inner mr-2 flex-shrink-0"
+                  style={{ backgroundColor: currentColor }}
+                />
+                <input
+                  type="text"
+                  value={currentColor}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (/^#?[0-9A-Fa-f]{0,6}$/.test(value)) {
+                      setCurrentColor(value.startsWith('#') ? value : `#${value}`);
+                    }
+                  }}
+                  className="flex-1 border rounded-md px-1.5 py-1 text-center uppercase font-mono text-xs"
+                  maxLength={7}
+                />
+              </div>
+              
+              {/* Action buttons */}
+              <div className="flex justify-end w-full gap-2 mt-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowPicker(false)}
+                  className="h-8 text-xs px-2"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  onClick={applyColorChange}
+                  className="h-8 text-xs px-2"
+                >
+                  Apply
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+    
     return (
-      <div className="flex flex-col items-center space-y-2 relative">
+      <div className="flex flex-col items-center space-y-1 sm:space-y-2 relative">
         {/* Color swatch */}
         <div 
-          className="w-10 h-10 rounded-md cursor-pointer border border-gray-300 shadow-sm hover:ring-2 hover:ring-blue-300 transition-all"
+          className="w-6 h-6 xs:w-7 xs:h-7 sm:w-10 sm:h-10 rounded-md cursor-pointer border border-gray-300 shadow-sm hover:ring-2 hover:ring-blue-300 transition-all"
           style={{ backgroundColor: color }}
           onClick={() => setShowPicker(true)}
         />
@@ -563,77 +915,13 @@ export default function AiCreativeDirectorPage() {
               handleColorChange(index, `#${digits[0]}${digits[0]}${digits[1]}${digits[1]}${digits[2]}${digits[2]}`);
             }
           }}
-          className="w-full text-xs p-1 text-center border rounded"
+          className="w-full text-[10px] xs:text-xs sm:text-xs p-1 text-center border rounded"
           maxLength={7}
         />
         
-        {/* Full-screen overlay when picker is shown */}
+        {/* Color picker modal - conditionally render based on device */}
         {showPicker && (
-          <div 
-            className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center"
-            onClick={handleCloseClick}
-          >
-            <div 
-              className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-4 max-w-md w-full"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-medium">Select a color</h3>
-                <button
-                  type="button" 
-                  className="text-gray-400 hover:text-gray-500"
-                  onClick={() => setShowPicker(false)}
-                >
-                  <X size={20} />
-                </button>
-              </div>
-              
-              <div className="flex flex-col items-center space-y-4">
-                {/* Color picker */}
-                <HexColorPicker 
-                  color={currentColor} 
-                  onChange={handleColorChangeLocal} 
-                  style={{ width: '100%', height: '200px' }}
-                />
-                
-                {/* Preview and hex code display */}
-                <div className="flex items-center w-full mt-4">
-                  <div 
-                    className="w-12 h-12 rounded-md border shadow-inner mr-3"
-                    style={{ backgroundColor: currentColor }}
-                  />
-                  <input
-                    type="text"
-                    value={currentColor}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      if (/^#?[0-9A-Fa-f]{0,6}$/.test(value)) {
-                        setCurrentColor(value.startsWith('#') ? value : `#${value}`);
-                      }
-                    }}
-                    className="flex-1 border rounded-md px-3 py-2 text-center uppercase font-mono"
-                  />
-                </div>
-                
-                {/* Action buttons */}
-                <div className="flex justify-end w-full space-x-2 mt-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setShowPicker(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="button"
-                    onClick={applyColorChange}
-                  >
-                    Apply
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
+          isMobile ? <MobileColorPicker /> : <DesktopColorPicker />
         )}
       </div>
     );
@@ -954,7 +1242,7 @@ export default function AiCreativeDirectorPage() {
             
             {/* Selected reference images */}
             {referenceImages.length > 0 && (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mt-3 sm:mt-4">
                 {referenceImages.map((image, index) => (
                   <div 
                     key={index} 
@@ -1053,17 +1341,17 @@ export default function AiCreativeDirectorPage() {
               <Button 
                 onClick={handleGenerateImages}
                 disabled={isGeneratingImages}
-                className="w-full h-12 text-base flex items-center justify-center gap-2"
+                className="w-full h-10 sm:h-12 text-sm sm:text-base flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4"
               >
                 {isGeneratingImages ? (
                   <>
-                    <IconSpinner className="h-5 w-5 animate-spin" />
-                    Generating professional images...
+                    <IconSpinner className="h-4 w-4 sm:h-5 sm:w-5 animate-spin flex-shrink-0" />
+                    <span className="truncate">Generating professional images...</span>
                   </>
                 ) : (
                   <>
-                    <Wand2 className="h-5 w-5" />
-                    Generate Professional Ad Creatives
+                    <Wand2 className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                    <span className="truncate">Generate Professional Ad Creatives</span>
                   </>
                 )}
               </Button>
@@ -1082,7 +1370,7 @@ export default function AiCreativeDirectorPage() {
                   </div>
                 </div>
 
-                <div className={`grid grid-cols-2 gap-4`}>
+                <div className={`grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4`}>
                   {generatedImages.map((imgUrl, index) => {
                     const isSelected = selectedImages.includes(index);
                     return (
@@ -1112,10 +1400,10 @@ export default function AiCreativeDirectorPage() {
                               e.stopPropagation();
                               handleDownload(imgUrl, index);
                             }}
-                            className="absolute bottom-2 right-2 py-1 px-3 text-sm font-medium bg-white text-gray-700 rounded-md shadow hover:bg-gray-50 flex items-center z-30 pointer-events-auto"
+                            className="absolute bottom-1.5 sm:bottom-2 right-1.5 sm:right-2 py-0.5 sm:py-1 px-2 sm:px-3 text-xs sm:text-sm font-medium bg-white text-gray-700 rounded-md shadow hover:bg-gray-50 flex items-center z-30 pointer-events-auto"
                           >
-                            <Download className="mr-1 size-4" />
-                            Download
+                            <Download className="mr-0.5 sm:mr-1 size-3 sm:size-4 flex-shrink-0" />
+                            <span>Download</span>
                           </button>
                         </div>
                         
@@ -1137,27 +1425,27 @@ export default function AiCreativeDirectorPage() {
   };
 
   return (
-    <div className="container mx-auto p-3 sm:p-6 ai-content-page">
+    <div className="container mx-auto px-2 sm:px-4 md:px-6 py-3 sm:py-6 ai-content-page max-w-full">
       {/* Toast notification */}
       {toastMessage && (
-        <div className={`fixed top-4 right-4 z-50 p-4 rounded-md shadow-md transition-all ${
+        <div className={`fixed top-4 right-4 z-50 p-3 sm:p-4 rounded-md shadow-md transition-all max-w-[calc(100%-32px)] sm:max-w-md ${
           toastMessage.type === 'success' 
             ? isDarkMode ? 'bg-primary-green/20 border border-primary-green/60' : 'bg-green-100 border border-green-300' 
             : isDarkMode ? 'bg-coral/20 border border-coral/60' : 'bg-red-100 border border-red-300'
         }`}>
           <div className="flex items-start gap-2">
-            <div className={toastMessage.type === 'success' 
+            <div className={`flex-shrink-0 ${toastMessage.type === 'success' 
               ? isDarkMode ? 'text-primary-green' : 'text-green-600' 
-              : isDarkMode ? 'text-coral' : 'text-red-600'}>
+              : isDarkMode ? 'text-coral' : 'text-red-600'}`}>
               {toastMessage.type === 'success' ? <CheckCircle2 className="size-5" /> : <AlertCircle className="size-5" />}
             </div>
-            <div>
-              <h3 className={`font-medium text-sm ${toastMessage.type === 'success' 
+            <div className="flex-1 min-w-0">
+              <h3 className={`font-medium text-sm truncate ${toastMessage.type === 'success' 
                 ? isDarkMode ? 'text-primary-green' : 'text-green-800' 
                 : isDarkMode ? 'text-coral' : 'text-red-800'}`}>
                 {toastMessage.title}
               </h3>
-              <p className={`text-sm ${toastMessage.type === 'success' 
+              <p className={`text-sm break-words ${toastMessage.type === 'success' 
                 ? isDarkMode ? 'text-text-white' : 'text-green-700' 
                 : isDarkMode ? 'text-text-white' : 'text-red-700'}`}>
                 {toastMessage.description}
@@ -1167,15 +1455,15 @@ export default function AiCreativeDirectorPage() {
         </div>
       )}
 
-      <div className="flex flex-col space-y-6">
-        <div className="flex flex-col space-y-2">
-          <div className="flex items-center justify-between">
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold flex items-center gap-2">
-              <PenTool className="h-8 w-8 text-primary" />
-              AI Creative Director
+      <div className="flex flex-col space-y-4 sm:space-y-6">
+        <div className="flex flex-col space-y-1 sm:space-y-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h1 className="text-lg sm:text-2xl md:text-3xl font-bold flex items-center gap-1 sm:gap-2">
+              <PenTool className="h-5 w-5 sm:h-7 sm:w-7 md:h-8 md:w-8 text-primary flex-shrink-0" />
+              <span>AI Creative Director</span>
             </h1>
           </div>
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-1 sm:gap-2">
             <p className="text-xs sm:text-sm text-muted-foreground md:max-w-lg">
               Create professional AI-generated images with structured prompts optimized for marketing
             </p>
@@ -1185,22 +1473,22 @@ export default function AiCreativeDirectorPage() {
         {/* Toggle between text-based and reference image-based generation */}
         <div className="w-full">
           <Tabs defaultValue="text-based" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-6">
+            <TabsList className="grid w-full grid-cols-2 mb-4 sm:mb-6">
               <TabsTrigger 
                 value="text-based" 
                 onClick={() => setUseReferenceImages(false)}
-                className="text-sm sm:text-base py-3"
+                className="text-xs sm:text-sm md:text-base py-2 sm:py-3 px-1 sm:px-2"
               >
-                <Wand2 className="h-4 w-4 mr-2" />
-                Text-Based Generation
+                <Wand2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
+                <span className="truncate">Text-Based</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="reference-based" 
                 onClick={() => setUseReferenceImages(true)}
-                className="text-sm sm:text-base py-3"
+                className="text-xs sm:text-sm md:text-base py-2 sm:py-3 px-1 sm:px-2"
               >
-                <ImagePlus className="h-4 w-4 mr-2" />
-                Reference Image Generation
+                <ImagePlus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
+                <span className="truncate">Reference Image</span>
               </TabsTrigger>
             </TabsList>
             
@@ -1223,19 +1511,19 @@ export default function AiCreativeDirectorPage() {
                         <div className="grid grid-cols-2 gap-2">
                           <Button
                             variant={imageTypeMode === 'standard' ? 'default' : 'outline'}
-                            className={`py-2 ${imageTypeMode === 'standard' ? 'bg-primary' : ''}`}
+                            className={`py-1 sm:py-2 px-2 sm:px-3 h-auto text-xs sm:text-sm ${imageTypeMode === 'standard' ? 'bg-primary' : ''}`}
                             onClick={() => setImageTypeMode('standard')}
                           >
-                            <Image className="h-4 w-4 mr-2" />
-                            Standard Ads
+                            <Image className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
+                            <span className="truncate">Standard Ads</span>
                           </Button>
                           <Button
                             variant={imageTypeMode === 'enhanced' ? 'default' : 'outline'}
-                            className={`py-2 ${imageTypeMode === 'enhanced' ? 'bg-primary' : ''}`}
+                            className={`py-1 sm:py-2 px-2 sm:px-3 h-auto text-xs sm:text-sm ${imageTypeMode === 'enhanced' ? 'bg-primary' : ''}`}
                             onClick={() => setImageTypeMode('enhanced')}
                           >
-                            <Sparkles className="h-4 w-4 mr-2" />
-                            Enhanced Social Posts
+                            <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
+                            <span className="truncate">Enhanced Social</span>
                           </Button>
                         </div>
                       </div>
