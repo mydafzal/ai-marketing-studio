@@ -159,6 +159,12 @@ const NavbarDropdowns = ({
       console.log('Fetching Instagram accounts');
       console.log('Current userDetails.instagramAccountId:', userDetails?.instagramAccountId);
       
+      // Set loading indicator
+      setIgAccountLoading(true);
+      
+      // First reset previous selection and data
+      setSelectedInstagramAccount(undefined);
+      
       const response = await fetch('/api/fasty-bot/proxy-get-instagram-pages', {
         method: 'GET',
       });
@@ -170,70 +176,115 @@ const NavbarDropdowns = ({
       
       const data = await response.json();
       console.log('Instagram accounts fetched:', data);
+      
+      // Check if we received valid data
+      if (!Array.isArray(data)) {
+        console.warn('Instagram accounts data is not an array:', data);
+        setInstagramAccounts([]);
+        setIgAccountLoading(false);
+        return [];
+      }
+      
+      // Set the Instagram accounts data
       setInstagramAccounts(data);
       
-      // If we have a stored Instagram account ID, find and set it
-      if (userDetails?.instagramAccountId && data && data.length > 0) {
+      // If we have a stored Instagram account ID and valid data, find and set it
+      if (userDetails?.instagramAccountId && data.length > 0) {
         console.log('Looking for Instagram account with ID:', userDetails.instagramAccountId);
         
         // Log all available Instagram account IDs for debugging
         data.forEach((account: Account) => {
           console.log(`Available IG account: ${account.name}, ID: ${account.id}, Type: ${typeof account.id}`);
         });
-        console.log(`userDetails.instagramAccountId: ${userDetails.instagramAccountId}, Type: ${typeof userDetails.instagramAccountId}`);
         
-        // Convert both to strings for comparison to ensure type matching
-        const igIdToFind = String(userDetails.instagramAccountId);
+        // Convert userDetails.instagramAccountId to string and trim it
+        const igIdToFind = String(userDetails.instagramAccountId).trim();
         
-        const igAccount = data.find((account: Account) => String(account.id) === igIdToFind);
+        // First try exact match
+        let matchedAccount = data.find((account: Account) => 
+          String(account.id).trim() === igIdToFind
+        );
         
-        if (igAccount) {
-          console.log('Found matching Instagram account:', igAccount);
-          setSelectedInstagramAccount(igAccount);
-        } else {
-          console.log('No matching Instagram account found in returned data');
+        // If exact match found, use it
+        if (matchedAccount) {
+          console.log('Found matching Instagram account:', matchedAccount);
+          setSelectedInstagramAccount(matchedAccount);
+        } 
+        // Otherwise try partial match as fallback
+        else {
+          console.log('No exact Instagram account match, trying partial match...');
           
-          // As a fallback, try finding by string inclusion
-          const fallbackAccount = data.find((account: Account) => 
+          // Try partial matching
+          matchedAccount = data.find((account: Account) => 
             String(account.id).includes(igIdToFind) || igIdToFind.includes(String(account.id))
           );
           
-          if (fallbackAccount) {
-            console.log('Found fallback matching Instagram account:', fallbackAccount);
-            setSelectedInstagramAccount(fallbackAccount);
+          if (matchedAccount) {
+            console.log('Found fallback matching Instagram account:', matchedAccount);
+            setSelectedInstagramAccount(matchedAccount);
+          } else {
+            console.log('No matching Instagram account found at all');
           }
         }
+      } else {
+        console.log('No Instagram account ID in userDetails or no accounts fetched');
       }
       
+      setIgAccountLoading(false);
       return data;
     } catch (error) {
       console.error('Error fetching Instagram accounts:', error);
+      setInstagramAccounts([]);
+      setIgAccountLoading(false);
       return [];
     }
   }
 
   async function selectBusinessAccount(id: string) {
     if (fbBusinessAccs && userDetails) {
+      // Force reset userDetails values immediately to prevent stale UI
+      if (userDetails.fbAccountId) {
+        userDetails.fbAccountId = "";
+      }
+      if (userDetails.fbPageId) {
+        userDetails.fbPageId = "";
+      }
+      if (userDetails.instagramAccountId) {
+        userDetails.instagramAccountId = "";
+      }
+      
+      // Reset UI selections immediately to prevent interaction with stale data
+      setSelectedFbAdAcc(undefined);
+      setSelectedFbPage(undefined);
+      setSelectedInstagramAccount(undefined);
+      setInstagramAccounts(undefined);
+      // CRITICAL: Clear the old ad accounts and pages data immediately to prevent stale displays
+      setFbAdAccs([]);
+      setFbPages([]);
+      
       // Set the selected account immediately for better UX
       setSelectedFbBusinessAcc(fbBusinessAccs.find((acc) => acc.id === id));
       
-      // Show loading indicator
+      // Show loading indicators for all dependent dropdowns
       setBusinessAccLoading(true);
+      setAdAccLoading(true);
+      setFbPageLoading(true);
+      setIgAccountLoading(true);
       
       try {
-        // Save the selection to the database
-        await updateFbBusinessAcc(userDetails?.email, id);
-        
-        // Remove fbAccountId entirely from database
-        // We can't rely on previous value if they change the business account
-        await updateFbAccountId(userDetails?.email, "");
-        
-        // Remove fbPageId entirely from database for the same reason
-        await updateFbPageId(userDetails?.email, "");
-        
-        // Remove Instagram account ID by calling the API
-        try {
-          const response = await fetch('/api/kv/update-instagram-account-id', {
+        // Perform all database updates in parallel
+        await Promise.all([
+          // Save the selection to the database
+          updateFbBusinessAcc(userDetails?.email, id),
+          
+          // Remove fbAccountId entirely from database
+          updateFbAccountId(userDetails?.email, ""),
+          
+          // Remove fbPageId entirely from database
+          updateFbPageId(userDetails?.email, ""),
+          
+          // Remove Instagram account ID
+          fetch('/api/kv/update-instagram-account-id', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -241,53 +292,102 @@ const NavbarDropdowns = ({
             body: JSON.stringify({
               email: userDetails.email,
               instagramAccountId: "",
-              fbPageId: "" // Passing empty string to clear the Instagram account
+              fbPageId: "" 
             })
-          });
-          
-          if (!response.ok) {
-            const errorData = await response.json();
-            console.error('Error clearing Instagram account ID:', errorData.error);
+          }).then(response => {
+            if (!response.ok) {
+              return response.json().then(errorData => {
+                console.error('Error clearing Instagram account ID:', errorData.error);
+              });
+            }
+          }).catch(error => {
+            console.error('Error calling Instagram account ID update API:', error);
+          })
+        ]);
+        
+        // Now get new ad account data
+        if (userDetails?.fbMarketingApiKey && id) {
+          setAdAccLoading(true);
+          try {
+            const data = await getFacebookAdAccounts(userDetails.fbMarketingApiKey, id);
+            setFbAdAccs(data || []); // Ensure it's an array even if null
+            setAdAccLoading(false);
+          } catch (error) {
+            console.error('Error fetching ad accounts:', error);
+            setFbAdAccs([]);
+            setAdAccLoading(false);
           }
-        } catch (error) {
-          console.error('Error calling Instagram account ID update API:', error);
         }
         
-        // Reset UI selections
-        setSelectedFbAdAcc(undefined);
-        setSelectedFbPage(undefined);
-        setSelectedInstagramAccount(undefined);
-        setInstagramAccounts(undefined);
-        
         // Fetch pages for the selected business account
-        await getFacebookPages(id);
+        if (id) {
+          setFbPageLoading(true);
+          try {
+            const pages = await getFacebookPages(id);
+            // Make sure we have valid data
+            if (Array.isArray(pages) && pages.length > 0) {
+              setFbPages(pages);
+            } else {
+              setFbPages([]);
+            }
+          } catch (error) {
+            console.error('Error fetching Facebook pages:', error);
+            setFbPages([]);
+          } finally {
+            setFbPageLoading(false);
+          }
+        }
+        
       } catch (error) {
         console.error('Error updating business account:', error);
+        // Ensure dropdowns don't show stale data on error
+        setFbAdAccs([]);
+        setFbPages([]);
       } finally {
-        // Hide loading indicator regardless of success/failure
+        // Hide loading indicators regardless of success/failure
         setBusinessAccLoading(false);
+        setAdAccLoading(false);
+        setFbPageLoading(false);
+        setIgAccountLoading(false);
       }
     }
   }
 
   async function selectAdAccount(id: string) {
     if (fbAdAccs && userDetails) {
+      // Force reset userDetails values immediately to prevent stale UI
+      if (userDetails.fbPageId) {
+        userDetails.fbPageId = "";
+      }
+      if (userDetails.instagramAccountId) {
+        userDetails.instagramAccountId = "";
+      }
+      
+      // Reset dependent selections immediately to prevent interaction with stale data
+      setSelectedFbPage(undefined);
+      setSelectedInstagramAccount(undefined);
+      setInstagramAccounts(undefined);
+      setFbPages([]);
+      
       // Set the selected account immediately for better UX
       setSelectedFbAdAcc(fbAdAccs.find((acc) => acc.id === id));
       
-      // Show loading indicator
+      // Show loading indicators for all dependent dropdowns
       setAdAccLoading(true);
+      setFbPageLoading(true);
+      setIgAccountLoading(true);
       
       try {
-        // Save the selection to the database
-        await updateFbAccountId(userDetails?.email, id);
-        
-        // Remove fbPageId when Ad Account changes
-        await updateFbPageId(userDetails?.email, "");
-        
-        // Remove Instagram account ID by calling the API
-        try {
-          const response = await fetch('/api/kv/update-instagram-account-id', {
+        // Perform database updates in parallel
+        await Promise.all([
+          // Save the selection to the database
+          updateFbAccountId(userDetails?.email, id),
+          
+          // Remove fbPageId when Ad Account changes
+          updateFbPageId(userDetails?.email, ""),
+          
+          // Remove Instagram account ID
+          fetch('/api/kv/update-instagram-account-id', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -295,47 +395,78 @@ const NavbarDropdowns = ({
             body: JSON.stringify({
               email: userDetails.email,
               instagramAccountId: "",
-              fbPageId: "" // Passing empty string to clear the Instagram account
+              fbPageId: ""
             })
-          });
-          
-          if (!response.ok) {
-            const errorData = await response.json();
-            console.error('Error clearing Instagram account ID:', errorData.error);
-          }
-        } catch (error) {
-          console.error('Error calling Instagram account ID update API:', error);
-        }
+          }).then(response => {
+            if (!response.ok) {
+              return response.json().then(errorData => {
+                console.error('Error clearing Instagram account ID:', errorData.error);
+              });
+            }
+          }).catch(error => {
+            console.error('Error calling Instagram account ID update API:', error);
+          })
+        ]);
         
-        // Reset page and Instagram selection in UI
-        setSelectedFbPage(undefined);
-        setSelectedInstagramAccount(undefined);
-        setInstagramAccounts(undefined);
+        // Fetch pages for the current business account
+        if (selectedFbBusinessAcc?.id) {
+          try {
+            const pages = await getFacebookPages(selectedFbBusinessAcc.id);
+            if (Array.isArray(pages) && pages.length > 0) {
+              setFbPages(pages);
+            } else {
+              setFbPages([]);
+            }
+          } catch (error) {
+            console.error('Error fetching Facebook pages:', error);
+            setFbPages([]);
+          } finally {
+            setFbPageLoading(false);
+          }
+        } else {
+          setFbPages([]);
+          setFbPageLoading(false);
+        }
       } catch (error) {
         console.error('Error updating ad account:', error);
+        // Ensure dropdowns don't show stale data on error
+        setFbPages([]);
       } finally {
-        // Hide loading indicator
+        // Hide loading indicators
         setAdAccLoading(false);
+        setFbPageLoading(false);
+        setIgAccountLoading(false);
       }
     }
   }
   
   async function selectPage(id: string) {
     if (fbPages && userDetails) {
+      // Force reset Instagram ID in userDetails to prevent stale UI
+      if (userDetails.instagramAccountId) {
+        userDetails.instagramAccountId = "";
+      }
+      
+      // Reset Instagram selection immediately
+      setSelectedInstagramAccount(undefined);
+      setInstagramAccounts([]);
+      
       // Set the selected page immediately for better UX
       const selectedPage = fbPages.find((page) => page.id === id);
       setSelectedFbPage(selectedPage);
       
-      // Show loading indicator
+      // Show loading indicators
       setFbPageLoading(true);
+      setIgAccountLoading(true);
       
       try {
-        // Save the selection to the database
-        await updateFbPageId(userDetails.email, id);
-        
-        // Clear previous Instagram account when changing FB Page
-        try {
-          const response = await fetch('/api/kv/update-instagram-account-id', {
+        // Perform database updates in parallel
+        await Promise.all([
+          // Save the selection to the database
+          updateFbPageId(userDetails.email, id),
+          
+          // Clear previous Instagram account when changing FB Page
+          fetch('/api/kv/update-instagram-account-id', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -345,26 +476,33 @@ const NavbarDropdowns = ({
               instagramAccountId: "",
               fbPageId: id // Pass the new fbPageId, but clear the Instagram ID
             })
-          });
-          
-          if (!response.ok) {
-            const errorData = await response.json();
-            console.error('Error clearing Instagram account ID:', errorData.error);
-          }
-        } catch (error) {
-          console.error('Error calling Instagram account ID update API:', error);
-        }
-        
-        // Reset Instagram selection
-        setSelectedInstagramAccount(undefined);
+          }).then(response => {
+            if (!response.ok) {
+              return response.json().then(errorData => {
+                console.error('Error clearing Instagram account ID:', errorData.error);
+              });
+            }
+          }).catch(error => {
+            console.error('Error calling Instagram account ID update API:', error);
+          })
+        ]);
         
         // When a Facebook page is selected, fetch Instagram accounts
-        await getInstagramAccounts();
+        try {
+          await getInstagramAccounts(id);
+        } catch (error) {
+          console.error('Error fetching Instagram accounts:', error);
+          setInstagramAccounts([]);
+        } finally {
+          setIgAccountLoading(false);
+        }
       } catch (error) {
         console.error('Error updating Facebook page:', error);
+        setInstagramAccounts([]);
       } finally {
-        // Hide loading indicator
+        // Hide loading indicators
         setFbPageLoading(false);
+        setIgAccountLoading(false);
       }
     }
   }
@@ -404,10 +542,10 @@ const NavbarDropdowns = ({
     }
   }
 
-  // Fetch user's API token info to get saved account information first
-  // Mount/initialization effect - runs once when component mounts
+  // Fetch user's API token info to get saved account information
+  // Will run when component mounts or userDetails changes
   useEffect(() => {
-    console.log('NavbarDropdowns: Component mounted');
+    console.log('NavbarDropdowns: Component mounted or userDetails changed');
     const fetchInitialData = async () => {
       try {
         // Track loading state
@@ -423,16 +561,20 @@ const NavbarDropdowns = ({
               .then(response => response.ok ? response.json() : null)
               .then(data => {
                 if (data?.success && data?.account) {
+                  // Create a new object to avoid mutating props, which can cause issues
+                  const updatedDetails = {...userDetails};
+                  
                   // Update local state with the latest values from KV store
                   if (data.account.instagramAccountId) {
-                    userDetails.instagramAccountId = data.account.instagramAccountId;
+                    updatedDetails.instagramAccountId = data.account.instagramAccountId;
                   }
                   if (data.account.fbPageId) {
-                    userDetails.fbPageId = data.account.fbPageId;
+                    updatedDetails.fbPageId = data.account.fbPageId;
                   }
                   if (data.account.fbBusinessAccId) {
-                    userDetails.fbBusinessAccId = data.account.fbBusinessAccId;
+                    updatedDetails.fbBusinessAccId = data.account.fbBusinessAccId;
                   }
+                  
                   return data.account;
                 }
                 return null;
@@ -454,12 +596,14 @@ const NavbarDropdowns = ({
       }
     };
 
-    // Run the initialization immediately
-    fetchInitialData();
+    // Only run the initialization if we have the key
+    if (userDetails?.fbMarketingApiKey) {
+      fetchInitialData();
+    }
     
     // Add an event listener for page visibility to refresh data when tab becomes visible
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
+      if (document.visibilityState === 'visible' && userDetails?.fbMarketingApiKey) {
         console.log('Page became visible, refreshing navbar data');
         fetchInitialData();
       }
@@ -471,7 +615,7 @@ const NavbarDropdowns = ({
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, []); // Empty dependency array means this runs once on mount
+  }, [userDetails?.email, userDetails?.fbMarketingApiKey, userDetails?.fbBusinessAccId]); // Run when these dependencies change
   
   // Effect that runs when userDetails change
   useEffect(() => {
@@ -531,9 +675,19 @@ const NavbarDropdowns = ({
     }
   }, [selectedFbBusinessAcc]);
 
-  // Function to refresh the page
-  const refreshPage = () => {
-    window.location.reload();
+  // Function to handle save changes - refreshes the page
+  const handleSaveChanges = () => {
+    // Show loading indicators - gives visual feedback that something is happening
+    setBusinessAccLoading(true);
+    setAdAccLoading(true);
+    setFbPageLoading(true);
+    setIgAccountLoading(true);
+    
+    // Use setTimeout to ensure the loading state is shown before reload
+    setTimeout(() => {
+      // Refresh the page
+      window.location.reload();
+    }, 200);
   };
 
   // Only render the navigation area if there's a valid Facebook Marketing API key
@@ -606,10 +760,11 @@ const NavbarDropdowns = ({
           {/* Refresh & Save Changes buttons */}
           <div className="flex space-x-2">
             <button
-              onClick={refreshPage}
+              onClick={handleSaveChanges}
               className="bg-primary-green hover:bg-primary-green/90 text-black text-xs font-medium py-1 px-3 rounded-full transition-colors whitespace-nowrap"
+              disabled={businessAccLoading || adAccLoading || fbPageLoading || igAccountLoading}
             >
-              Save Changes
+              {(businessAccLoading || adAccLoading || fbPageLoading || igAccountLoading) ? 'Refreshing...' : 'Save Changes'}
             </button>
           </div>
         </div>
@@ -641,10 +796,11 @@ const NavbarDropdowns = ({
           
           {/* Save Changes Button */}
           <button
-            onClick={refreshPage}
+            onClick={handleSaveChanges}
             className="bg-primary-green hover:bg-primary-green/90 text-black text-xs font-medium py-1 px-2 rounded-full transition-colors whitespace-nowrap"
+            disabled={businessAccLoading || adAccLoading || fbPageLoading || igAccountLoading}
           >
-            Save Changes
+            {(businessAccLoading || adAccLoading || fbPageLoading || igAccountLoading) ? 'Refreshing...' : 'Save Changes'}
           </button>
         </div>
         
@@ -776,10 +932,11 @@ const NavbarDropdowns = ({
           {/* Refresh & Save Changes buttons */}
           <div className="flex space-x-2">
             <button
-              onClick={refreshPage}
+              onClick={handleSaveChanges}
               className="bg-primary-green hover:bg-primary-green/90 text-black text-xs font-medium py-1 px-2 rounded-full transition-colors whitespace-nowrap"
+              disabled={businessAccLoading || adAccLoading || fbPageLoading || igAccountLoading}
             >
-              Save Changes
+              {(businessAccLoading || adAccLoading || fbPageLoading || igAccountLoading) ? 'Refreshing...' : 'Save Changes'}
             </button>
           </div>
         </div>
