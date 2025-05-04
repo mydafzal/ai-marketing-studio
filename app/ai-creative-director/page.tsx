@@ -63,7 +63,7 @@ const COLOR_PALETTES = {
 const IMAGE_TYPES = [
   { id: "lifestyle_ad", name: "Lifestyle Ad", description: "Showing products in everyday use" },
   { id: "product_spotlight", name: "Product Spotlight", description: "Close-up focused on product details" },
-  { id: "banner_ad", name: "Banner Ad", description: "Wide format for website headers and ads" },
+  { id: "banner_ad", name: "Banner Ad", description: "For Banners and ads with mainly text on it" },
   { id: "social_media_post", name: "Social Media Post", description: "Optimized for social feeds" },
   { id: "promotional_offer", name: "Promotional Offer", description: "Highlight deals and special offers" }
 ]
@@ -310,8 +310,11 @@ export default function AiCreativeDirectorPage() {
       - Include appropriate negative space for text elements
       - Look like a premium professionally designed ad
       - Position text elements tastefully with good hierarchy
+      - DO NOT include any logos or brand symbols in the image
       
       Campaign purpose: ${userPrompt || "Showcase products and build brand awareness"}
+      
+      IMPORTANT: Never include any logos, watermarks, or brand symbols in the image. The brand name should only appear as text, not as a logo.
       
       Ensure the final result feels like a polished, premium advertisement that would be created by a professional designer for a major brand campaign.`
       
