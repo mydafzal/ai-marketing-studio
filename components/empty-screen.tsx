@@ -90,16 +90,16 @@ export function EmptyScreen() {
                 <div
                   key={index}
                   onClick={() => handleActionClick(action.prompt)}
-                  className="flex flex-col p-3 rounded-lg bg-[#1E2433] border border-[#2D3343] hover:border-[#4FD1C5] active:bg-[#2D3343] active:border-[#4FD1C5] transition-all cursor-pointer group"
+                  className="flex flex-col p-3 rounded-lg bg-[#1E2433] border border-[#2D3343] hover:border-primary-green active:bg-[#2D3343] active:border-primary-green transition-all cursor-pointer group"
                 >
                   <div className="flex items-center mb-2">
-                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#192133] flex items-center justify-center mr-2 text-[#4FD1C5] group-hover:bg-[#4FD1C5]/10">
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#192133] flex items-center justify-center mr-2 text-primary-green group-hover:bg-primary-green/10">
                       {action.icon}
                     </div>
                     <h3 className="font-medium text-white text-sm leading-tight">{action.title}</h3>
                   </div>
                   <p className="text-xs text-gray-400 mb-2">{action.description}</p>
-                  <div className="mt-auto text-[#4FD1C5] text-xs font-medium flex items-center opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity">
+                  <div className="mt-auto text-primary-green text-xs font-medium flex items-center opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity">
                     <span className="hidden sm:inline">Try this</span> <IconArrowRight className="ml-0.5 h-2 w-2" />
                   </div>
                 </div>
