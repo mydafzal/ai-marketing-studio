@@ -64,19 +64,27 @@ const NavbarDropdowns = ({
 
   async function getAdAccAPICall() {
     if (userDetails?.fbMarketingApiKey && selectedFbBusinessAcc) {
-      const data = await getFacebookAdAccounts(userDetails?.fbMarketingApiKey, selectedFbBusinessAcc.id);
-      setFbAdAccs(data);
-      
-      // After loading ad accounts, if we have a stored fbAccountId, try to find its name
-      if (userDetails?.fbAccountId && data && data.length > 0) {
-        const adAccount = data.find((acc: Account) => acc.id === userDetails.fbAccountId);
-        if (adAccount) {
-          // Only set selected ad account if we can find it in the current list
-          setSelectedFbAdAcc(adAccount);
-        } else {
-          // If the stored ID isn't in the list, don't show it - it's stale
-          setSelectedFbAdAcc(undefined);
+      try {
+        // Clear any previous ad account selection when fetching new ones
+        setSelectedFbAdAcc(undefined);
+        
+        const data = await getFacebookAdAccounts(userDetails?.fbMarketingApiKey, selectedFbBusinessAcc.id);
+        setFbAdAccs(data);
+        
+        // After loading ad accounts, if we have a stored fbAccountId, try to find its name in the current list
+        if (userDetails?.fbAccountId && data && data.length > 0) {
+          // Only match exact account IDs, don't show stale accounts
+          const adAccount = data.find((acc: Account) => acc.id === userDetails.fbAccountId);
+          if (adAccount) {
+            setSelectedFbAdAcc(adAccount);
+          }
+          // If not found, leave as undefined to show "Select"
         }
+      } catch (error) {
+        console.error('Error fetching ad accounts:', error);
+        // If there's an error, ensure we don't show stale data
+        setFbAdAccs([]);
+        setSelectedFbAdAcc(undefined);
       }
     }
   }
@@ -213,19 +221,19 @@ const NavbarDropdowns = ({
       // Set the selected account immediately for better UX
       setSelectedFbBusinessAcc(fbBusinessAccs.find((acc) => acc.id === id));
       
+      // Immediately reset dependent selections when business account changes
+      setSelectedFbAdAcc(undefined);
+      setFbAdAccs([]);
+      setSelectedFbPage(undefined);
+      setSelectedInstagramAccount(undefined);
+      setInstagramAccounts([]);
+      
       // Show loading indicator
       setBusinessAccLoading(true);
       
       try {
         // Save the selection to the database
         await updateFbBusinessAcc(userDetails?.email, id);
-        
-        // Reset ad account, page and Instagram selection when business account changes
-        setSelectedFbAdAcc(undefined);
-        setFbAdAccs(undefined);
-        setSelectedFbPage(undefined);
-        setSelectedInstagramAccount(undefined);
-        setInstagramAccounts(undefined);
         
         // Fetch pages for the selected business account
         await getFacebookPages(id);
