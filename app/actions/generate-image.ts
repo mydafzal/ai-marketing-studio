@@ -16,13 +16,8 @@ const replicate = new Replicate({
 
 // Available aspect ratios with their corresponding dimensions
 const aspectRatios = {
-  "1:1": { width: 1024, height: 1024, size: "1024x1024" },
-  "16:9": { width: 1536, height: 864, size: "1536x1024" },
   "9:16": { width: 864, height: 1536, size: "1024x1536" },
-  "3:4": { width: 896, height: 1152, size: "1024x1536" },
-  "4:3": { width: 1152, height: 896, size: "1536x1024" },
-  "2:3": { width: 832, height: 1216, size: "1024x1536" },
-  "3:2": { width: 1216, height: 832, size: "1536x1024" }
+  "3:4": { width: 896, height: 1152, size: "1024x1536" }
 };
 
 // Export the AspectRatio type so it can be imported in the client component

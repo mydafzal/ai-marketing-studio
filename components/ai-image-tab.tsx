@@ -291,7 +291,7 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
   const [promptHistory, setPromptHistory] = useState<string[]>([])
   const [logoSize, setLogoSize] = useState(20) // As percentage of image width
   const [toastMessage, setToastMessage] = useState<{title: string, description: string, type: 'success' | 'error'} | null>(null)
-  const [imageFormat, setImageFormat] = useState("1:1") // Default to square
+  const [imageFormat, setImageFormat] = useState("9:16") // Default to Portrait 9:16
   const [numGeneratedImages, setNumGeneratedImages] = useState<5 | 10>(5)
   
   // Reference images state
@@ -1662,13 +1662,8 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
                         : 'bg-white border-gray-300 text-gray-700'
                     }`}
                   >
-                    <option value="1:1">Square (1:1)</option>
-                    <option value="16:9">Landscape (16:9)</option>
                     <option value="9:16">Portrait (9:16)</option>
-                    <option value="4:3">Landscape (4:3)</option>
                     <option value="3:4">Portrait (3:4)</option>
-                    <option value="2:3">Portrait (2:3)</option>
-                    <option value="3:2">Landscape (3:2)</option>
                   </select>
                 </div>
               </div>
