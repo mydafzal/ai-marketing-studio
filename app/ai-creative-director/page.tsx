@@ -128,7 +128,21 @@ const BRAND_SEGMENTS = [
   { id: "fashion", name: "Fashion", styleTag: "editorial, stylish, trendy", lighting: "dramatic studio lighting with highlights" },
   { id: "food", name: "Food & Beverage", styleTag: "appetizing, warm, inviting", lighting: "warm key light with soft fill" },
   { id: "fitness", name: "Fitness", styleTag: "dynamic, energetic, vibrant", lighting: "bright high-contrast sports lighting" },
-  { id: "home", name: "Home & Decor", styleTag: "cozy, aesthetic, harmonious", lighting: "warm natural daylight with soft shadows" }
+  { id: "home", name: "Home & Decor", styleTag: "cozy, aesthetic, harmonious", lighting: "warm natural daylight with soft shadows" },
+  
+  // Additional industry segments
+  { id: "healthcare", name: "Healthcare", styleTag: "clean, trustworthy, compassionate", lighting: "bright, sterile lighting with soft edges" },
+  { id: "finance", name: "Finance & Banking", styleTag: "professional, secure, trustworthy", lighting: "neutral corporate lighting with subtle highlights" },
+  { id: "education", name: "Education", styleTag: "bright, engaging, inspiring", lighting: "warm classroom lighting with natural accents" },
+  { id: "travel", name: "Travel & Tourism", styleTag: "adventurous, scenic, aspirational", lighting: "golden hour outdoor lighting" },
+  { id: "automotive", name: "Automotive", styleTag: "sleek, powerful, premium", lighting: "dramatic showroom lighting with strong highlights" },
+  { id: "real_estate", name: "Real Estate", styleTag: "spacious, welcoming, aspirational", lighting: "bright natural lighting with soft shadows" },
+  { id: "ecommerce", name: "E-commerce", styleTag: "clean, product-focused, engaging", lighting: "studio product lighting with white background" },
+  { id: "b2b", name: "B2B Services", styleTag: "professional, solution-oriented, trustworthy", lighting: "clean office lighting with blue tones" },
+  { id: "entertainment", name: "Entertainment", styleTag: "vibrant, exciting, immersive", lighting: "theatrical lighting with dramatic colors" },
+  { id: "nonprofit", name: "Nonprofit", styleTag: "authentic, compassionate, impactful", lighting: "natural documentary-style lighting" },
+  { id: "sustainability", name: "Sustainability", styleTag: "natural, organic, eco-friendly", lighting: "soft natural daylight with green tones" },
+  { id: "luxury", name: "Luxury", styleTag: "elegant, exclusive, sophisticated", lighting: "dramatic low-key lighting with gold accents" }
 ]
 
 // Font styles
@@ -233,6 +247,42 @@ export default function AiCreativeDirectorPage() {
 
   // Mode state - Standard or Enhanced
   const [imageTypeMode, setImageTypeMode] = useState<'standard' | 'enhanced'>('standard')
+  
+  // Multi-step wizard states
+  const [currentStep, setCurrentStep] = useState(1)
+  const totalSteps = useReferenceImages ? 5 : 5 // Increased number of steps for both paths
+  
+  // Function to go to next step
+  const goToNextStep = () => {
+    if (currentStep < totalSteps) {
+      setCurrentStep(currentStep + 1)
+      // Scroll to top when moving to next step
+      window.scrollTo(0, 0)
+    }
+  }
+  
+  // Function to go to previous step
+  const goToPreviousStep = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1)
+      // Scroll to top when moving to previous step
+      window.scrollTo(0, 0)
+    }
+  }
+  
+  // Function to jump to a specific step
+  const goToStep = (step: number) => {
+    if (step >= 1 && step <= totalSteps) {
+      setCurrentStep(step)
+      // Scroll to top when changing steps
+      window.scrollTo(0, 0)
+    }
+  }
+  
+  // Reset to step 1 when switching between text-based and reference-based modes
+  useEffect(() => {
+    setCurrentStep(1)
+  }, [useReferenceImages])
 
   // Fetch usage data on component mount
   useEffect(() => {
@@ -1424,6 +1474,995 @@ export default function AiCreativeDirectorPage() {
     );
   };
 
+  // Progress indicator for multi-step process
+  const StepIndicator = () => {
+    const steps = useReferenceImages 
+      ? [
+          { number: 1, label: "Choose Type" },
+          { number: 2, label: "Upload References" },
+          { number: 3, label: "Campaign Info" },
+          { number: 4, label: "Brand Style" },
+          { number: 5, label: "Generate Images" }
+        ]
+      : [
+          { number: 1, label: "Choose Type" },
+          { number: 2, label: "Content Type" },
+          { number: 3, label: "Campaign Info" },
+          { number: 4, label: "Brand Style" },
+          { number: 5, label: "Generate Images" }
+        ];
+    
+    return (
+      <div className="w-full mb-6">
+        <div className="hidden sm:flex w-full justify-between relative">
+          {/* Progress bar */}
+          <div className="absolute top-1/2 w-full h-0.5 bg-gray-200 dark:bg-gray-700 -translate-y-1/2 z-0"></div>
+          
+          {/* Steps */}
+          {steps.map((step, i) => (
+            <div 
+              key={i} 
+              className={`z-10 flex flex-col items-center relative ${
+                currentStep >= step.number ? 'cursor-pointer' : 'cursor-not-allowed'
+              }`}
+              onClick={() => currentStep >= step.number && goToStep(step.number)}
+            >
+              <div className={`
+                w-8 h-8 rounded-full flex items-center justify-center
+                ${currentStep > step.number ? 'bg-green-500 text-white' : ''}
+                ${currentStep === step.number ? 'bg-blue-500 text-white' : ''}
+                ${currentStep < step.number ? 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400' : ''}
+                transition-colors duration-200
+              `}>
+                {currentStep > step.number ? <Check className="h-4 w-4" /> : step.number}
+              </div>
+              <span className={`
+                text-xs mt-1 text-center max-w-[80px] truncate
+                ${currentStep >= step.number ? 'text-gray-700 dark:text-gray-300' : 'text-gray-400 dark:text-gray-500'}
+              `}>
+                {step.label}
+              </span>
+            </div>
+          ))}
+        </div>
+        
+        {/* Mobile step indicator */}
+        <div className="sm:hidden flex items-center justify-between px-2">
+          <span className="text-sm font-medium">
+            Step {currentStep} of {totalSteps}
+          </span>
+          <div className="flex-1 mx-4">
+            <div className="w-full bg-gray-200 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden">
+              <div 
+                className="bg-blue-500 h-full rounded-full"
+                style={{ width: `${(currentStep / totalSteps) * 100}%` }}
+              ></div>
+            </div>
+          </div>
+          <span className="text-xs text-gray-500">
+            {steps.find(s => s.number === currentStep)?.label}
+          </span>
+        </div>
+      </div>
+    );
+  };
+  
+  // Step navigation buttons
+  const StepNavigation = () => (
+    <div className="flex justify-between mt-8 pt-4 border-t">
+      <Button
+        type="button"
+        variant="outline"
+        onClick={goToPreviousStep}
+        disabled={currentStep === 1}
+        className="px-4 py-2"
+      >
+        Previous
+      </Button>
+      
+      {currentStep < totalSteps ? (
+        <Button
+          type="button"
+          onClick={goToNextStep}
+          className="px-6 py-2"
+        >
+          Continue
+        </Button>
+      ) : (
+        <Button
+          type="button"
+          onClick={handleGenerateImages}
+          disabled={isGeneratingImages}
+          className="px-6 py-2"
+        >
+          {isGeneratingImages ? 'Generating...' : 'Generate Images'}
+        </Button>
+      )}
+    </div>
+  );
+
+  // Step 1: Choose input type (Text-based or Reference-based)
+  const Step1InputTypeSelection = () => (
+    <Card className="w-full max-w-3xl mx-auto">
+      <CardHeader>
+        <CardTitle className="text-center">Choose Your Input Type</CardTitle>
+        <CardDescription className="text-center">
+          Select how you want to generate your marketing images
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Text-based option */}
+          <div
+            className={`p-4 border rounded-lg cursor-pointer transition-all ${
+              !useReferenceImages ? 'ring-2 ring-blue-500 dark:ring-blue-400' : 'hover:bg-gray-50 dark:hover:bg-gray-800'
+            }`}
+            onClick={() => setUseReferenceImages(false)}
+          >
+            <div className="flex flex-col items-center text-center space-y-3">
+              <div className="w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+                <Wand2 className="h-8 w-8 text-blue-500 dark:text-blue-400" />
+              </div>
+              <h3 className="font-medium text-lg">Text-Based</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Describe your vision and let AI generate images based on your text prompt
+              </p>
+            </div>
+          </div>
+          
+          {/* Reference-based option */}
+          <div
+            className={`p-4 border rounded-lg cursor-pointer transition-all ${
+              useReferenceImages ? 'ring-2 ring-blue-500 dark:ring-blue-400' : 'hover:bg-gray-50 dark:hover:bg-gray-800'
+            }`}
+            onClick={() => setUseReferenceImages(true)}
+          >
+            <div className="flex flex-col items-center text-center space-y-3">
+              <div className="w-16 h-16 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center">
+                <ImagePlus className="h-8 w-8 text-purple-500 dark:text-purple-400" />
+              </div>
+              <h3 className="font-medium text-lg">Reference Image</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Upload your own images as reference and transform them into professional ads
+              </p>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+  
+  // Step 2 for Reference-based: Upload reference images
+  const Step2ReferenceImages = () => (
+    <Card className="w-full max-w-3xl mx-auto">
+      <CardHeader>
+        <CardTitle className="text-center">Upload Reference Images</CardTitle>
+        <CardDescription className="text-center">
+          Upload up to 4 images that will be used as a reference for your generated marketing materials
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <ReferenceImageUploader />
+        
+        <div className="space-y-4 pt-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Reference Image Type</label>
+            <Select value={selectedReferenceImageType} onValueChange={setSelectedReferenceImageType}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select reference image type" />
+              </SelectTrigger>
+              <SelectContent className="max-h-[300px]">
+                {REFERENCE_IMAGE_TYPES.map((type) => (
+                  <SelectItem key={type.id} value={type.id}>
+                    <div className="flex flex-col py-1">
+                      <span>{type.name}</span>
+                      <span className="text-xs text-muted-foreground">{type.description}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+  
+  // Step 2 for Text-based: Content Type selection
+  const Step2TextContentType = () => (
+    <Card className="w-full max-w-3xl mx-auto">
+      <CardHeader>
+        <CardTitle className="text-center">Select Content Type</CardTitle>
+        <CardDescription className="text-center">
+          Choose what type of marketing content you want to create
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* Content type selection */}
+        <div className="space-y-4">
+          <h3 className="text-base font-medium">Primary Content Type</h3>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div 
+              className={`p-4 border rounded-lg cursor-pointer transition-all flex flex-col items-center text-center space-y-3 ${
+                imageTypeMode === 'standard' ? 'ring-2 ring-blue-500 dark:ring-blue-400' : 'hover:bg-gray-50 dark:hover:bg-gray-800'
+              }`}
+              onClick={() => setImageTypeMode('standard')}
+            >
+              <div className="w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+                <Image className="h-8 w-8 text-blue-500 dark:text-blue-400" />
+              </div>
+              <h3 className="font-medium">Standard Ads</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Traditional marketing ads optimized for different platforms and audience segments
+              </p>
+            </div>
+            
+            <div 
+              className={`p-4 border rounded-lg cursor-pointer transition-all flex flex-col items-center text-center space-y-3 ${
+                imageTypeMode === 'enhanced' ? 'ring-2 ring-blue-500 dark:ring-blue-400' : 'hover:bg-gray-50 dark:hover:bg-gray-800'
+              }`}
+              onClick={() => setImageTypeMode('enhanced')}
+            >
+              <div className="w-16 h-16 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center">
+                <Sparkles className="h-8 w-8 text-purple-500 dark:text-purple-400" />
+              </div>
+              <h3 className="font-medium">Enhanced Social Content</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Content specifically designed for social media engagement and performance
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        {/* Image type selection */}
+        <div className="space-y-4 pt-6">
+          <h3 className="text-base font-medium">Specific Image Type</h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+            Select the specific format that best fits your marketing needs:
+          </p>
+          
+          {imageTypeMode === 'standard' ? (
+            <div className="grid grid-cols-1 gap-3">
+              {IMAGE_TYPES.map((type) => (
+                <div 
+                  key={type.id}
+                  className={`p-3 border rounded-lg cursor-pointer transition-all ${
+                    selectedImageType === type.id ? 'ring-2 ring-blue-500 border-transparent' : 'hover:bg-gray-50 dark:hover:bg-gray-800'
+                  }`}
+                  onClick={() => setSelectedImageType(type.id)}
+                >
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h4 className="font-medium">{type.name}</h4>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{type.description}</p>
+                    </div>
+                    {selectedImageType === type.id && <Check className="h-5 w-5 text-blue-500" />}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-3">
+              {ENHANCED_IMAGE_TYPES.map((type) => (
+                <div 
+                  key={type.id}
+                  className={`p-3 border rounded-lg cursor-pointer transition-all ${
+                    selectedEnhancedImageType === type.id ? 'ring-2 ring-blue-500 border-transparent' : 'hover:bg-gray-50 dark:hover:bg-gray-800'
+                  }`}
+                  onClick={() => setSelectedEnhancedImageType(type.id)}
+                >
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h4 className="font-medium">{type.name}</h4>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{type.description}</p>
+                    </div>
+                    {selectedEnhancedImageType === type.id && <Check className="h-5 w-5 text-blue-500" />}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        
+        {/* Image format selection */}
+        <div className="space-y-4 pt-6">
+          <h3 className="text-base font-medium">Image Format</h3>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {IMAGE_FORMATS.map((format) => (
+              <div 
+                key={format.id}
+                className={`p-3 border rounded-lg cursor-pointer transition-all ${
+                  selectedImageFormat === format.id ? 'ring-2 ring-blue-500 border-transparent' : 'hover:bg-gray-50 dark:hover:bg-gray-800'
+                }`}
+                onClick={() => setSelectedImageFormat(format.id)}
+              >
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h4 className="font-medium">{format.name}</h4>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{format.description}</p>
+                  </div>
+                  {selectedImageFormat === format.id && <Check className="h-5 w-5 text-blue-500" />}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+  
+  // Step 3 for Text-based: Campaign Information
+  const Step3CampaignInfo = () => {
+    // Create refs for direct DOM access instead of using controlled components
+    const brandNameRef = useRef<HTMLInputElement>(null);
+    const headlineRef = useRef<HTMLInputElement>(null);
+    const subjectRef = useRef<HTMLTextAreaElement>(null);
+    
+    // State for filtering segments
+    const [segmentFilter, setSegmentFilter] = useState("");
+    // Filtered segments based on search
+    const filteredSegments = React.useMemo(() => {
+      if (!segmentFilter.trim()) return BRAND_SEGMENTS;
+      
+      const lowerCaseFilter = segmentFilter.toLowerCase();
+      return BRAND_SEGMENTS.filter(segment => 
+        segment.name.toLowerCase().includes(lowerCaseFilter) ||
+        segment.styleTag.toLowerCase().includes(lowerCaseFilter)
+      );
+    }, [segmentFilter]);
+    
+    // Set initial values on mount
+    useEffect(() => {
+      if (brandNameRef.current) brandNameRef.current.value = brandName;
+      if (headlineRef.current) headlineRef.current.value = headline;
+      if (subjectRef.current) subjectRef.current.value = subject;
+    }, []);
+    
+    // Save form data on blur events and before navigating away
+    const saveFormData = useCallback(() => {
+      if (brandNameRef.current) setBrandName(brandNameRef.current.value);
+      if (headlineRef.current) setHeadline(headlineRef.current.value);
+      if (subjectRef.current) setSubject(subjectRef.current.value);
+    }, []);
+    
+    // Save data when navigating away
+    useEffect(() => {
+      return () => {
+        saveFormData();
+      };
+    }, [saveFormData]);
+    
+    return (
+      <Card className="w-full max-w-3xl mx-auto">
+        <CardHeader>
+          <CardTitle className="text-center">Campaign Information</CardTitle>
+          <CardDescription className="text-center">
+            Tell us about your brand and marketing goals
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium">Brand Segment</label>
+              <div className="text-xs text-gray-500">{BRAND_SEGMENTS.length} industries available</div>
+            </div>
+            
+            {/* Search filter for segments */}
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search industry segments..."
+                value={segmentFilter}
+                onChange={(e) => setSegmentFilter(e.target.value)}
+                className="w-full h-10 pl-9 pr-4 rounded-md border border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              />
+              <div className="absolute left-2.5 top-2.5 text-gray-400">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <path d="m21 21-4.3-4.3"></path>
+                </svg>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[400px] overflow-y-auto pr-1">
+              {filteredSegments.map((segment) => (
+                <div 
+                  key={segment.id}
+                  className={`p-3 border rounded-lg cursor-pointer transition-all ${
+                    selectedBrandSegment === segment.id ? 'ring-2 ring-blue-500 border-transparent' : 'hover:bg-gray-50 dark:hover:bg-gray-800'
+                  }`}
+                  onClick={() => setSelectedBrandSegment(segment.id)}
+                >
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h4 className="font-medium">{segment.name}</h4>
+                      <p className="text-xs text-gray-500 mt-1">{segment.styleTag}</p>
+                    </div>
+                    {selectedBrandSegment === segment.id && <Check className="h-5 w-5 text-blue-500" />}
+                  </div>
+                </div>
+              ))}
+              
+              {filteredSegments.length === 0 && (
+                <div className="col-span-1 sm:col-span-2 p-4 border border-dashed rounded-lg bg-gray-50 dark:bg-gray-800/50 text-center">
+                  <p className="text-sm text-gray-500">No matching industry segments found. Try a different search term.</p>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          <div className="space-y-4 pt-4">
+            <div className="space-y-3">
+              <label htmlFor="brandName" className="text-sm font-medium">Brand Name</label>
+              <div className="w-full">
+                <input
+                  ref={brandNameRef}
+                  id="brandName"
+                  type="text"
+                  placeholder="Your brand name"
+                  defaultValue={brandName}
+                  onBlur={saveFormData}
+                  autoComplete="off"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                />
+              </div>
+              <p className="text-xs text-gray-500">This will appear in your generated images</p>
+            </div>
+            
+            <div className="space-y-3">
+              <label htmlFor="headlineText" className="text-sm font-medium">Headline Text</label>
+              <div className="w-full">
+                <input
+                  ref={headlineRef}
+                  id="headlineText"
+                  type="text"
+                  placeholder="Main headline for the creative"
+                  defaultValue={headline}
+                  onBlur={saveFormData}
+                  autoComplete="off"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                />
+              </div>
+              <p className="text-xs text-gray-500">The primary message you want to communicate</p>
+            </div>
+          </div>
+
+          <div className="space-y-3 pt-4">
+            <label htmlFor="campaignGoal" className="text-sm font-medium">Campaign Goal</label>
+            <div className="w-full">
+              <textarea
+                ref={subjectRef}
+                id="campaignGoal"
+                placeholder="Briefly describe what you want to achieve with this campaign..."
+                defaultValue={subject}
+                onBlur={saveFormData}
+                rows={5}
+                className="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              />
+            </div>
+            <p className="text-xs text-gray-500">Describe your objectives, target audience, and any specific messaging requirements</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+  
+  // Step 4 for both paths: Brand Style
+  const Step4BrandStyle = () => (
+    <Card className="w-full max-w-3xl mx-auto">
+      <CardHeader>
+        <CardTitle className="text-center">Brand Style</CardTitle>
+        <CardDescription className="text-center">
+          Define your brand&apos;s visual identity
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* Color palette section */}
+        <div className="space-y-4">
+          <h3 className="text-base font-medium flex items-center gap-2">
+            <Palette className="h-4 w-4" />
+            Color Palette
+          </h3>
+          
+          <Tabs 
+            defaultValue={useCustomPalette ? "custom" : "preset"} 
+            className="w-full"
+            onValueChange={(value) => {
+              setUseCustomPalette(value === "custom");
+            }}
+          >
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="preset">
+                Preset Palettes
+              </TabsTrigger>
+              <TabsTrigger value="custom">
+                Custom Palette
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="preset" className="space-y-4 pt-4">
+              <div className="grid grid-cols-2 gap-3">
+                {Object.entries(COLOR_PALETTES).map(([key, palette]) => (
+                  <div 
+                    key={key}
+                    className={`p-2 border rounded-lg cursor-pointer transition-all ${
+                      selectedPalette === key && !useCustomPalette ? 'ring-2 ring-primary' : 'hover:bg-accent'
+                    }`}
+                    onClick={() => {
+                      setSelectedPalette(key);
+                      setUseCustomPalette(false);
+                    }}
+                  >
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm font-medium">{palette.name}</span>
+                      {selectedPalette === key && !useCustomPalette && <Check className="h-4 w-4 text-primary" />}
+                    </div>
+                    <div className="flex space-x-1">
+                      {palette.colors.map((color, i) => (
+                        <div 
+                          key={i}
+                          className="h-5 w-5 rounded-full" 
+                          style={{ backgroundColor: color }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="custom" className="space-y-4 pt-4">
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <label className="text-sm font-medium">Custom Brand Colors</label>
+                  <span className={`text-xs px-2 py-1 rounded-full ${useCustomPalette ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-700'}`}>
+                    {useCustomPalette ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
+                <div className="grid grid-cols-5 gap-3">
+                  {customColorPalette.map((color, index) => (
+                    <ColorPickerItem key={index} color={color} index={index} />
+                  ))}
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
+        
+        {/* Font style selection - only for text-based */}
+        {!useReferenceImages && (
+          <div className="pt-6 space-y-4">
+            <h3 className="text-base font-medium flex items-center gap-2">
+              <Type className="h-4 w-4" />
+              Typography
+            </h3>
+            
+            <div className="grid grid-cols-1 gap-3">
+              {FONT_STYLES.map((font) => (
+                <div 
+                  key={font.id}
+                  className={`p-3 border rounded-lg cursor-pointer transition-all ${
+                    selectedFontStyle === font.id ? 'ring-2 ring-blue-500 border-transparent' : 'hover:bg-gray-50 dark:hover:bg-gray-800'
+                  }`}
+                  onClick={() => setSelectedFontStyle(font.id)}
+                >
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h4 className="font-medium">{font.name}</h4>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{font.description}</p>
+                    </div>
+                    {selectedFontStyle === font.id && <Check className="h-5 w-5 text-blue-500" />}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+  
+  // Step 3 for Reference-based: Campaign Information
+  const Step3ReferenceSettings = () => (
+    <Card className="w-full max-w-3xl mx-auto">
+      <CardHeader>
+        <CardTitle className="text-center">Style & Settings</CardTitle>
+        <CardDescription className="text-center">
+          Define your brand identity and campaign elements
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="grid grid-cols-1 gap-6">
+          {/* Basic settings */}
+          <div className="space-y-4">
+            <h3 className="text-base font-medium">Campaign Information</h3>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Brand Name</label>
+              <Input 
+                placeholder="Your brand name"
+                value={brandName}
+                onChange={(e) => setBrandName(e.target.value)}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Headline Text</label>
+              <Input 
+                placeholder="Main headline for the creative"
+                value={headline}
+                onChange={(e) => setHeadline(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Campaign Goal</label>
+              <Textarea
+                placeholder="Briefly describe what you want to achieve with this campaign..."
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                className="min-h-[80px]"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Image Format</label>
+              <Select value={selectedImageFormat} onValueChange={setSelectedImageFormat}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select image format" />
+                </SelectTrigger>
+                <SelectContent>
+                  {IMAGE_FORMATS.map((format) => (
+                    <SelectItem key={format.id} value={format.id}>
+                      <div className="flex flex-col py-1">
+                        <span>{format.name}</span>
+                        <span className="text-xs text-muted-foreground">{format.description}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Brand Segment</label>
+              <Select value={selectedBrandSegment} onValueChange={setSelectedBrandSegment}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select brand segment" />
+                </SelectTrigger>
+                <SelectContent>
+                  {BRAND_SEGMENTS.map((segment) => (
+                    <SelectItem key={segment.id} value={segment.id}>
+                      {segment.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          {/* Color palette section */}
+          <div className="space-y-4 pt-2">
+            <h3 className="text-base font-medium flex items-center gap-2">
+              <Palette className="h-4 w-4" />
+              Color Palette
+            </h3>
+            
+            <Tabs 
+              defaultValue={useCustomPalette ? "custom" : "preset"} 
+              className="w-full"
+              onValueChange={(value) => {
+                setUseCustomPalette(value === "custom");
+              }}
+            >
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="preset">
+                  Preset Palettes
+                </TabsTrigger>
+                <TabsTrigger value="custom">
+                  Custom Palette
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="preset" className="space-y-4 pt-4">
+                <div className="grid grid-cols-2 gap-3">
+                  {Object.entries(COLOR_PALETTES).map(([key, palette]) => (
+                    <div 
+                      key={key}
+                      className={`p-2 border rounded-lg cursor-pointer transition-all ${
+                        selectedPalette === key && !useCustomPalette ? 'ring-2 ring-primary' : 'hover:bg-accent'
+                      }`}
+                      onClick={() => {
+                        setSelectedPalette(key);
+                        setUseCustomPalette(false);
+                      }}
+                    >
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm font-medium">{palette.name}</span>
+                        {selectedPalette === key && !useCustomPalette && <Check className="h-4 w-4 text-primary" />}
+                      </div>
+                      <div className="flex space-x-1">
+                        {palette.colors.map((color, i) => (
+                          <div 
+                            key={i}
+                            className="h-5 w-5 rounded-full" 
+                            style={{ backgroundColor: color }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="custom" className="space-y-4 pt-4">
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <label className="text-sm font-medium">Custom Brand Colors</label>
+                    <span className={`text-xs px-2 py-1 rounded-full ${useCustomPalette ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-700'}`}>
+                      {useCustomPalette ? 'Active' : 'Inactive'}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-5 gap-3">
+                    {customColorPalette.map((color, index) => (
+                      <ColorPickerItem key={index} color={color} index={index} />
+                    ))}
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+  
+  // Step 3 for Text-based / Step 4 for Reference-based: Generate Images
+  const Step3GenerateImages = () => (
+    <Card className="w-full max-w-4xl mx-auto">
+      <CardHeader>
+        <CardTitle className="text-center">Generate Your Images</CardTitle>
+        <CardDescription className="text-center">
+          Review your settings and generate professional marketing images
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* Settings summary */}
+        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 border">
+          <h3 className="text-sm font-medium mb-3">Settings Summary</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-gray-500 dark:text-gray-400">Input Type:</span>
+                <span className="font-medium">{useReferenceImages ? 'Reference Image' : 'Text-Based'}</span>
+              </div>
+              
+              {!useReferenceImages && (
+                <div className="flex justify-between">
+                  <span className="text-gray-500 dark:text-gray-400">Content Type:</span>
+                  <span className="font-medium">{imageTypeMode === 'standard' ? 'Standard Ad' : 'Enhanced Social'}</span>
+                </div>
+              )}
+              
+              {useReferenceImages && (
+                <div className="flex justify-between">
+                  <span className="text-gray-500 dark:text-gray-400">Reference Type:</span>
+                  <span className="font-medium">
+                    {REFERENCE_IMAGE_TYPES.find(t => t.id === selectedReferenceImageType)?.name || "-"}
+                  </span>
+                </div>
+              )}
+              
+              <div className="flex justify-between">
+                <span className="text-gray-500 dark:text-gray-400">Image Format:</span>
+                <span className="font-medium">
+                  {IMAGE_FORMATS.find(f => f.id === selectedImageFormat)?.name || "-"}
+                </span>
+              </div>
+              
+              <div className="flex justify-between">
+                <span className="text-gray-500 dark:text-gray-400">Brand Segment:</span>
+                <span className="font-medium">
+                  {BRAND_SEGMENTS.find(s => s.id === selectedBrandSegment)?.name || "-"}
+                </span>
+              </div>
+              
+              {!useReferenceImages && (
+                <div className="flex justify-between">
+                  <span className="text-gray-500 dark:text-gray-400">Font Style:</span>
+                  <span className="font-medium">
+                    {FONT_STYLES.find(f => f.id === selectedFontStyle)?.name || "-"}
+                  </span>
+                </div>
+              )}
+            </div>
+            
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-gray-500 dark:text-gray-400">Brand Name:</span>
+                <span className="font-medium truncate max-w-[180px]">{brandName || "-"}</span>
+              </div>
+              
+              <div className="flex justify-between">
+                <span className="text-gray-500 dark:text-gray-400">Headline:</span>
+                <span className="font-medium truncate max-w-[180px]">{headline || "-"}</span>
+              </div>
+              
+              <div className="flex justify-between">
+                <span className="text-gray-500 dark:text-gray-400">Color Palette:</span>
+                <span className="font-medium">
+                  {useCustomPalette ? 'Custom Colors' : COLOR_PALETTES[selectedPalette as keyof typeof COLOR_PALETTES]?.name || "-"}
+                </span>
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <span className="text-gray-500 dark:text-gray-400">Colors:</span>
+                <div className="flex space-x-1">
+                  {(useCustomPalette ? customColorPalette : COLOR_PALETTES[selectedPalette as keyof typeof COLOR_PALETTES]?.colors || []).map((color, i) => (
+                    <div 
+                      key={i}
+                      className="h-4 w-4 rounded-full border border-gray-300" 
+                      style={{ backgroundColor: color }}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="mt-3 pt-3 border-t">
+            <div className="flex justify-between">
+              <span className="text-gray-500 dark:text-gray-400 text-sm">Campaign Goal:</span>
+            </div>
+            <p className="text-sm mt-1">{subject || "No campaign goal specified"}</p>
+          </div>
+        </div>
+        
+        {/* Generation controls */}
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4 items-center">
+            <label className="text-sm font-medium w-full sm:w-auto">Number of Images:</label>
+            <div className="flex items-center space-x-1 flex-1 w-full">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8 w-8 p-0"
+                onClick={() => setNumGeneratedImages(Math.max(1, numGeneratedImages - 1))}
+                disabled={numGeneratedImages <= 1}
+              >
+                -
+              </Button>
+              <div className="w-20 text-center">
+                <Input
+                  type="number"
+                  min={1}
+                  max={8}
+                  value={numGeneratedImages}
+                  onChange={(e) => setNumGeneratedImages(Math.min(8, Math.max(1, parseInt(e.target.value) || 1)))}
+                  className="text-center h-8"
+                />
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8 w-8 p-0"
+                onClick={() => setNumGeneratedImages(Math.min(8, numGeneratedImages + 1))}
+                disabled={numGeneratedImages >= 8}
+              >
+                +
+              </Button>
+              <span className="text-sm text-gray-500 dark:text-gray-400 ml-2">
+                (Max 8)
+              </span>
+            </div>
+          </div>
+        </div>
+        
+        {/* Generate button */}
+        <div className="pt-4">
+          <Button 
+            onClick={handleGenerateImages}
+            disabled={isGeneratingImages || (!useReferenceImages && !subject.trim() && !brandName && !headline) || (useReferenceImages && referenceImages.length === 0)}
+            className="w-full h-12 text-sm font-medium flex items-center justify-center gap-2"
+          >
+            {isGeneratingImages ? (
+              <>
+                <IconSpinner className="h-5 w-5 animate-spin flex-shrink-0" />
+                <span className="truncate">Generating professional images...</span>
+              </>
+            ) : (
+              <>
+                <Wand2 className="h-5 w-5 flex-shrink-0" />
+                <span className="truncate">Generate Professional Ad Creatives</span>
+              </>
+            )}
+          </Button>
+          
+          {useReferenceImages && referenceImages.length === 0 && (
+            <p className="text-red-500 text-sm mt-2 text-center">
+              Please upload at least one reference image
+            </p>
+          )}
+          
+          {!useReferenceImages && !subject.trim() && !brandName && !headline && (
+            <p className="text-red-500 text-sm mt-2 text-center">
+              Please provide a campaign goal, brand name, or headline
+            </p>
+          )}
+        </div>
+        
+        {/* Generated images display */}
+        {isGeneratingImages && (
+          <LoadingScreen isDarkMode={isDarkMode} />
+        )}
+
+        {!isGeneratingImages && generatedImages.length > 0 && (
+          <div className="space-y-4 pt-4">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-lg font-medium">Your Generated Images</h3>
+              <div className="text-sm text-muted-foreground">
+                {generatedImages.length} image{generatedImages.length !== 1 ? 's' : ''} created
+              </div>
+            </div>
+
+            <div className={`grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4`}>
+              {generatedImages.map((imgUrl, index) => {
+                const isSelected = selectedImages.includes(index);
+                return (
+                  <div
+                    key={index}
+                    className={`relative rounded-md overflow-hidden group cursor-pointer ${
+                      selectedImageFormat === "9:16" ? "aspect-[9/16]" : "aspect-[3/4]"
+                    } ${
+                      isSelected 
+                        ? "ring-2 ring-blue-500 ring-offset-2" 
+                        : isDarkMode ? "border-gray-700 border" : "border-gray-300 border"
+                    }`}
+                    onClick={() => toggleImageSelected(index)}
+                  >
+                    <NextImage
+                      src={imgUrl}
+                      alt={`Generated ad ${index+1}`}
+                      fill
+                      sizes="(max-width: 768px) 100vw, 448px"
+                      className="object-cover"
+                    />
+                    
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDownload(imgUrl, index);
+                        }}
+                        className="absolute bottom-1.5 sm:bottom-2 right-1.5 sm:right-2 py-0.5 sm:py-1 px-2 sm:px-3 text-xs sm:text-sm font-medium bg-white text-gray-700 rounded-md shadow hover:bg-gray-50 flex items-center z-30 pointer-events-auto"
+                      >
+                        <Download className="mr-0.5 sm:mr-1 size-3 sm:size-4 flex-shrink-0" />
+                        <span>Download</span>
+                      </button>
+                    </div>
+                    
+                    {isSelected && (
+                      <div className="absolute top-2 left-2 bg-blue-600 text-white rounded-full p-1">
+                        <CheckCircle2 className="size-4" />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+  
+  // Main render function for the entire page
   return (
     <div className="container mx-auto px-2 sm:px-4 md:px-6 py-3 sm:py-6 ai-content-page max-w-full">
       {/* Toast notification */}
@@ -1470,462 +2509,48 @@ export default function AiCreativeDirectorPage() {
           </div>
         </div>
 
-        {/* Toggle between text-based and reference image-based generation */}
-        <div className="w-full">
-          <Tabs defaultValue="text-based" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-4 sm:mb-6">
-              <TabsTrigger 
-                value="text-based" 
-                onClick={() => setUseReferenceImages(false)}
-                className="text-xs sm:text-sm md:text-base py-2 sm:py-3 px-1 sm:px-2"
-              >
-                <Wand2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
-                <span className="truncate">Text-Based</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="reference-based" 
-                onClick={() => setUseReferenceImages(true)}
-                className="text-xs sm:text-sm md:text-base py-2 sm:py-3 px-1 sm:px-2"
-              >
-                <ImagePlus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
-                <span className="truncate">Reference Image</span>
-              </TabsTrigger>
-            </TabsList>
+        {/* Multi-step process */}
+        <StepIndicator />
+        
+        {/* Step 1: Select input type */}
+        {currentStep === 1 && <Step1InputTypeSelection />}
+        
+        {/* Text-based flow */}
+        {!useReferenceImages && (
+          <>
+            {/* Step 2: Content Type */}
+            {currentStep === 2 && <Step2TextContentType />}
             
-            <TabsContent value="text-based">
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                {/* Left Column - Simplified Creative Controls */}
-                <div className="lg:col-span-5 space-y-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Layers className="h-5 w-5 text-primary" />
-                        Campaign Settings
-                      </CardTitle>
-                      <CardDescription>Define the basic elements of your campaign</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      {/* Toggle between standard and enhanced image types */}
-                      <div className="space-y-1">
-                        <label className="text-sm font-medium">Content Type</label>
-                        <div className="grid grid-cols-2 gap-2">
-                          <Button
-                            variant={imageTypeMode === 'standard' ? 'default' : 'outline'}
-                            className={`py-1 sm:py-2 px-2 sm:px-3 h-auto text-xs sm:text-sm ${imageTypeMode === 'standard' ? 'bg-primary' : ''}`}
-                            onClick={() => setImageTypeMode('standard')}
-                          >
-                            <Image className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
-                            <span className="truncate">Standard Ads</span>
-                          </Button>
-                          <Button
-                            variant={imageTypeMode === 'enhanced' ? 'default' : 'outline'}
-                            className={`py-1 sm:py-2 px-2 sm:px-3 h-auto text-xs sm:text-sm ${imageTypeMode === 'enhanced' ? 'bg-primary' : ''}`}
-                            onClick={() => setImageTypeMode('enhanced')}
-                          >
-                            <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
-                            <span className="truncate">Enhanced Social</span>
-                          </Button>
-                        </div>
-                      </div>
-                    
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Image Type</label>
-                        {imageTypeMode === 'standard' ? (
-                          <Select value={selectedImageType} onValueChange={setSelectedImageType}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select image type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {IMAGE_TYPES.map((type) => (
-                                <SelectItem key={type.id} value={type.id}>
-                                  <div className="flex flex-col">
-                                    <span>{type.name}</span>
-                                    <span className="text-xs text-muted-foreground">{type.description}</span>
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        ) : (
-                          <Select value={selectedEnhancedImageType} onValueChange={setSelectedEnhancedImageType}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select enhanced content type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {ENHANCED_IMAGE_TYPES.map((type) => (
-                                <SelectItem key={type.id} value={type.id}>
-                                  <div className="flex flex-col">
-                                    <span>{type.name}</span>
-                                    <span className="text-xs text-muted-foreground">{type.description}</span>
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        )}
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Image Format</label>
-                        <Select value={selectedImageFormat} onValueChange={setSelectedImageFormat}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select image format" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {IMAGE_FORMATS.map((format) => (
-                              <SelectItem key={format.id} value={format.id}>
-                                <div className="flex flex-col">
-                                  <span>{format.name}</span>
-                                  <span className="text-xs text-muted-foreground">{format.description}</span>
-                                </div>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Brand Segment</label>
-                        <Select value={selectedBrandSegment} onValueChange={setSelectedBrandSegment}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select brand segment" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {BRAND_SEGMENTS.map((segment) => (
-                              <SelectItem key={segment.id} value={segment.id}>
-                                {segment.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">                
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Brand Name</label>
-                          <Input 
-                            placeholder="Your brand name"
-                            value={brandName}
-                            onChange={(e) => setBrandName(e.target.value)}
-                          />
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Headline Text</label>
-                          <Input 
-                            placeholder="Main headline for the creative"
-                            value={headline}
-                            onChange={(e) => setHeadline(e.target.value)}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="space-y-2 pt-2">
-                        <label className="text-sm font-medium">Campaign Goal</label>
-                        <Textarea
-                          placeholder="Briefly describe what you want to achieve with this campaign..."
-                          value={subject}
-                          onChange={(e) => setSubject(e.target.value)}
-                          className="min-h-[80px]"
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Palette className="h-5 w-5 text-primary" />
-                        Brand Style
-                      </CardTitle>
-                      <CardDescription>Define your brand&apos;s visual identity</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-5">
-                      <Tabs 
-                        defaultValue={useCustomPalette ? "custom" : "preset"} 
-                        className="w-full"
-                        onValueChange={(value) => {
-                          setUseCustomPalette(value === "custom");
-                          console.log("Tab changed, useCustomPalette set to:", value === "custom");
-                        }}
-                      >
-                        <TabsList className="grid w-full grid-cols-2">
-                          <TabsTrigger value="preset">
-                            Preset Palettes
-                          </TabsTrigger>
-                          <TabsTrigger value="custom">
-                            Custom Palette
-                          </TabsTrigger>
-                        </TabsList>
-                        
-                        <TabsContent value="preset" className="space-y-4 pt-4">
-                          <div className="grid grid-cols-2 gap-3">
-                            {Object.entries(COLOR_PALETTES).map(([key, palette]) => (
-                              <div 
-                                key={key}
-                                className={`p-2 border rounded-lg cursor-pointer transition-all ${
-                                  selectedPalette === key && !useCustomPalette ? 'ring-2 ring-primary' : 'hover:bg-accent'
-                                }`}
-                                onClick={() => {
-                                  setSelectedPalette(key);
-                                  setUseCustomPalette(false);
-                                }}
-                              >
-                                <div className="flex justify-between items-center mb-2">
-                                  <span className="text-sm font-medium">{palette.name}</span>
-                                  {selectedPalette === key && !useCustomPalette && <Check className="h-4 w-4 text-primary" />}
-                                </div>
-                                <div className="flex space-x-1">
-                                  {palette.colors.map((color, i) => (
-                                    <div 
-                                      key={i}
-                                      className="h-5 w-5 rounded-full" 
-                                      style={{ backgroundColor: color }}
-                                    />
-                                  ))}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </TabsContent>
-                        
-                        <TabsContent value="custom" className="space-y-4 pt-4">
-                          <div className="space-y-3">
-                            <div className="flex justify-between items-center">
-                              <label className="text-sm font-medium">Custom Brand Colors</label>
-                              <span className={`text-xs px-2 py-1 rounded-full ${useCustomPalette ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-700'}`}>
-                                {useCustomPalette ? 'Active' : 'Inactive'}
-                              </span>
-                            </div>
-                            <div className="grid grid-cols-5 gap-3">
-                              {customColorPalette.map((color, index) => (
-                                <ColorPickerItem key={index} color={color} index={index} />
-                              ))}
-                            </div>
-                          </div>
-                        </TabsContent>
-                      </Tabs>
-                      
-                      <div className="pt-3 space-y-2">
-                        <label className="text-sm font-medium">Font Style</label>
-                        <Select value={selectedFontStyle} onValueChange={setSelectedFontStyle}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select font style" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {FONT_STYLES.map((font) => (
-                              <SelectItem key={font.id} value={font.id}>
-                                <div className="flex flex-col">
-                                  <span>{font.name}</span>
-                                  <span className="text-xs text-muted-foreground">{font.description}</span>
-                                </div>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="pt-3">
-                        <Button 
-                          onClick={() => {
-                            // Reset form
-                            setSubject("");
-                            setBrandName("");
-                            setHeadline("");
-                            setSelectedPalette("Modern Minimalist");
-                            setSelectedImageType(IMAGE_TYPES[0].id);
-                            setSelectedEnhancedImageType(ENHANCED_IMAGE_TYPES[0].id);
-                            setSelectedImageFormat(IMAGE_FORMATS[0].id);
-                            setSelectedBrandSegment(BRAND_SEGMENTS[0].id);
-                            setSelectedFontStyle(FONT_STYLES[0].id);
-                          }}
-                          variant="outline"
-                          className="w-full"
-                        >
-                          Reset Settings
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-                
-                {/* Right Column - Image Generator */}
-                <div className="lg:col-span-7 space-y-6">
-                  {/* Customized Image Generation Component */}
-                  <CustomImageGenerator />
-                </div>
-              </div>
-            </TabsContent>
+            {/* Step 3: Campaign Info */}
+            {currentStep === 3 && <Step3CampaignInfo />}
             
-            <TabsContent value="reference-based">
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                {/* Left Column - Reference Image Controls */}
-                <div className="lg:col-span-5 space-y-6">
-                  {/* Reference image uploader */}
-                  <ReferenceImageUploader />
-                  
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Layers className="h-5 w-5 text-primary" />
-                        Campaign Settings
-                      </CardTitle>
-                      <CardDescription>Define the basic elements of your campaign</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Image Format</label>
-                        <Select value={selectedImageFormat} onValueChange={setSelectedImageFormat}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select image format" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {IMAGE_FORMATS.map((format) => (
-                              <SelectItem key={format.id} value={format.id}>
-                                <div className="flex flex-col">
-                                  <span>{format.name}</span>
-                                  <span className="text-xs text-muted-foreground">{format.description}</span>
-                                </div>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Brand Segment</label>
-                        <Select value={selectedBrandSegment} onValueChange={setSelectedBrandSegment}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select brand segment" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {BRAND_SEGMENTS.map((segment) => (
-                              <SelectItem key={segment.id} value={segment.id}>
-                                {segment.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">                
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Brand Name</label>
-                          <Input 
-                            placeholder="Your brand name"
-                            value={brandName}
-                            onChange={(e) => setBrandName(e.target.value)}
-                          />
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Headline Text</label>
-                          <Input 
-                            placeholder="Main headline for the creative"
-                            value={headline}
-                            onChange={(e) => setHeadline(e.target.value)}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="space-y-2 pt-2">
-                        <label className="text-sm font-medium">Campaign Goal</label>
-                        <Textarea
-                          placeholder="Briefly describe what you want to achieve with this campaign..."
-                          value={subject}
-                          onChange={(e) => setSubject(e.target.value)}
-                          className="min-h-[80px]"
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Palette className="h-5 w-5 text-primary" />
-                        Brand Style
-                      </CardTitle>
-                      <CardDescription>Define your brand&apos;s visual identity</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-5">
-                      <Tabs 
-                        defaultValue={useCustomPalette ? "custom" : "preset"} 
-                        className="w-full"
-                        onValueChange={(value) => {
-                          setUseCustomPalette(value === "custom");
-                          console.log("Tab changed, useCustomPalette set to:", value === "custom");
-                        }}
-                      >
-                        <TabsList className="grid w-full grid-cols-2">
-                          <TabsTrigger value="preset">
-                            Preset Palettes
-                          </TabsTrigger>
-                          <TabsTrigger value="custom">
-                            Custom Palette
-                          </TabsTrigger>
-                        </TabsList>
-                        
-                        <TabsContent value="preset" className="space-y-4 pt-4">
-                          <div className="grid grid-cols-2 gap-3">
-                            {Object.entries(COLOR_PALETTES).map(([key, palette]) => (
-                              <div 
-                                key={key}
-                                className={`p-2 border rounded-lg cursor-pointer transition-all ${
-                                  selectedPalette === key && !useCustomPalette ? 'ring-2 ring-primary' : 'hover:bg-accent'
-                                }`}
-                                onClick={() => {
-                                  setSelectedPalette(key);
-                                  setUseCustomPalette(false);
-                                }}
-                              >
-                                <div className="flex justify-between items-center mb-2">
-                                  <span className="text-sm font-medium">{palette.name}</span>
-                                  {selectedPalette === key && !useCustomPalette && <Check className="h-4 w-4 text-primary" />}
-                                </div>
-                                <div className="flex space-x-1">
-                                  {palette.colors.map((color, i) => (
-                                    <div 
-                                      key={i}
-                                      className="h-5 w-5 rounded-full" 
-                                      style={{ backgroundColor: color }}
-                                    />
-                                  ))}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </TabsContent>
-                        
-                        <TabsContent value="custom" className="space-y-4 pt-4">
-                          <div className="space-y-3">
-                            <div className="flex justify-between items-center">
-                              <label className="text-sm font-medium">Custom Brand Colors</label>
-                              <span className={`text-xs px-2 py-1 rounded-full ${useCustomPalette ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-700'}`}>
-                                {useCustomPalette ? 'Active' : 'Inactive'}
-                              </span>
-                            </div>
-                            <div className="grid grid-cols-5 gap-3">
-                              {customColorPalette.map((color, index) => (
-                                <ColorPickerItem key={index} color={color} index={index} />
-                              ))}
-                            </div>
-                          </div>
-                        </TabsContent>
-                      </Tabs>
-                    </CardContent>
-                  </Card>
-                </div>
-                
-                {/* Right Column - Image Generator */}
-                <div className="lg:col-span-7 space-y-6">
-                  {/* Image Generator */}
-                  <CustomImageGenerator />
-                </div>
-              </div>
-            </TabsContent>
-          </Tabs>
-        </div>
+            {/* Step 4: Brand Style */}
+            {currentStep === 4 && <Step4BrandStyle />}
+            
+            {/* Step 5: Generate Images */}
+            {currentStep === 5 && <Step3GenerateImages />}
+          </>
+        )}
+        
+        {/* Reference-based flow */}
+        {useReferenceImages && (
+          <>
+            {/* Step 2: Upload Reference Images */}
+            {currentStep === 2 && <Step2ReferenceImages />}
+            
+            {/* Step 3: Campaign Info */}
+            {currentStep === 3 && <Step3CampaignInfo />}
+            
+            {/* Step 4: Brand Style */}
+            {currentStep === 4 && <Step4BrandStyle />}
+            
+            {/* Step 5: Generate Images */}
+            {currentStep === 5 && <Step3GenerateImages />}
+          </>
+        )}
+        
+        {/* Navigation buttons */}
+        <StepNavigation />
       </div>
     </div>
   )
