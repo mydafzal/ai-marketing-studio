@@ -71,15 +71,11 @@ const NavbarDropdowns = ({
       if (userDetails?.fbAccountId && data && data.length > 0) {
         const adAccount = data.find((acc: Account) => acc.id === userDetails.fbAccountId);
         if (adAccount) {
+          // Only set selected ad account if we can find it in the current list
           setSelectedFbAdAcc(adAccount);
         } else {
-          // If the stored ID isn't in the list, still show it with ID as name
-          setSelectedFbAdAcc({
-            id: userDetails.fbAccountId,
-            name: userDetails.fbAccountId.startsWith("act_") 
-              ? userDetails.fbAccountId.split("act_")[1] 
-              : userDetails.fbAccountId
-          });
+          // If the stored ID isn't in the list, don't show it - it's stale
+          setSelectedFbAdAcc(undefined);
         }
       }
     }
@@ -224,7 +220,9 @@ const NavbarDropdowns = ({
         // Save the selection to the database
         await updateFbBusinessAcc(userDetails?.email, id);
         
-        // Reset page and Instagram selection when business account changes
+        // Reset ad account, page and Instagram selection when business account changes
+        setSelectedFbAdAcc(undefined);
+        setFbAdAccs(undefined);
         setSelectedFbPage(undefined);
         setSelectedInstagramAccount(undefined);
         setInstagramAccounts(undefined);
@@ -442,6 +440,8 @@ const NavbarDropdowns = ({
   // When business account changes, fetch ad accounts
   useEffect(() => {
     if (selectedFbBusinessAcc) {
+      // Clear selected ad account immediately when business account changes
+      setSelectedFbAdAcc(undefined);
       getAdAccAPICall();
     }
   }, [selectedFbBusinessAcc]);
