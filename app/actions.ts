@@ -998,6 +998,15 @@ export async function updateFbAccountId(email: string, fbAccountId: string) {
             }
         }
 
+        // If fbAccountId is empty, remove the field entirely from database
+        if (!fbAccountId) {
+            await kv.hdel(userKey, 'fbAccountId')
+            return {
+                success: true,
+                message: 'Facebook Account ID removed successfully'
+            }
+        }
+
         // Format the fbAccountId
         const formattedFbAccountId = fbAccountId.startsWith('act_') ? fbAccountId : `act_${fbAccountId}`
 
@@ -1042,13 +1051,21 @@ export async function updateFbPageId(email: string, fbPageId: string) {
             }
         }
 
+        // If fbPageId is empty, remove the field entirely from database
+        if (!fbPageId) {
+            await kv.hdel(userKey, 'fbPageId')
+            return {
+                success: true,
+                message: 'Facebook Page ID removed successfully'
+            }
+        }
 
         // Update the pageId field
         await kv.hset(userKey, {fbPageId})
 
         return {
             success: true,
-            message: 'Facebook Account ID updated successfully'
+            message: 'Facebook Page ID updated successfully'
         }
     } catch (error) {
         console.error(`Error updating pageId for user ${email}:`, error)
@@ -1120,6 +1137,15 @@ export async function updateInstagramAccountId(email: string, instagramAccountId
             return {
                 success: false,
                 error: 'User not found'
+            }
+        }
+
+        // If both IDs are empty or instagramAccountId is empty, remove the field entirely
+        if (!instagramAccountId || (!instagramAccountId && !fbPageId)) {
+            await kv.hdel(userKey, 'instagramFbPagePairing')
+            return {
+                success: true,
+                message: 'Instagram account configuration removed successfully'
             }
         }
 
