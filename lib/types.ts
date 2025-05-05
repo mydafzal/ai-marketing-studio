@@ -89,6 +89,7 @@ export interface User extends Record<string, any> {
   sub_interval_count?: string;
   sub_stripe_customer_id?: string;
   sub_id?: string;
+  persona_list?: string[];
 }
 
 export interface Campaign extends Record<string, any> {
@@ -297,4 +298,31 @@ export interface City {
   region_id: string
   supports_city: boolean
   supports_region: boolean
+}
+
+export interface Persona {
+  id: string; 
+  owner_id: string; 
+  owner_email: string;
+  company_name: string;
+  website_link: string;
+  website_data?: string;
+  location_data?: {
+    country: {
+      name: string;
+      code: string;
+    };
+    regions: Array<{
+      key: number;
+      name: string;
+      cities: Array<{
+        key: number;
+        name: string;
+      }>;
+    }>;
+  }[];
+  privacy_policy_link: string;
+  preferred_language: string;
+  created_at?: string; 
+  updated_at?: string;
 }

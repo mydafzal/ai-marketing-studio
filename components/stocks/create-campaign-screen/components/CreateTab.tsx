@@ -9,6 +9,7 @@ import {
   DialogTrigger,
   DialogClose
 } from '@/components/ui/dialog';
+import { BudgetSettings } from './BudgetSettings';
 
 interface LeadForm {
   id: string;
@@ -251,12 +252,50 @@ export function CreateTab({
           type="text"
           value={link}
           onChange={e => setLink(e.target.value)}
+          onBlur={(e) => {
+            // Format URL: remove www. and add https:// if needed
+            const formattedUrl = (() => {
+              if (!link || link.trim() === '') return link;
+              
+              // Remove www. if present
+              let cleanUrl = link.replace(/^(https?:\/\/)?(www\.)/i, '');
+              
+              // Add https:// if not present
+              if (!cleanUrl.match(/^https?:\/\//i)) {
+                return `https://${cleanUrl}`;
+              }
+              
+              return cleanUrl;
+            })();
+            
+            setLink(formattedUrl);
+
+            // Check if URL has a valid format with TLD
+            try {
+              const urlObj = new URL(formattedUrl.match(/^https?:\/\//i) ? formattedUrl : `https://${formattedUrl}`);
+              // Check if domain has a TLD (at least one dot in hostname)
+              if (!urlObj.hostname.includes('.') || urlObj.hostname.split('.').pop()!.length === 0) {
+                // Invalid domain
+                e.currentTarget.classList.add('border-red-500', 'focus:ring-red-500', 'focus:border-red-500');
+                e.currentTarget.title = "Please enter a valid URL with a domain extension (e.g. .com)";
+              } else {
+                e.currentTarget.classList.remove('border-red-500', 'focus:ring-red-500', 'focus:border-red-500');
+                e.currentTarget.title = "";
+              }
+            } catch (error) {
+              // Invalid URL
+              if (formattedUrl.trim() !== '') {
+                e.currentTarget.classList.add('border-red-500', 'focus:ring-red-500', 'focus:border-red-500');
+                e.currentTarget.title = "Please enter a valid URL";
+              }
+            }
+          }}
           placeholder="Enter the link to what you'd like to advertise"
           className="w-full px-3 py-2.5 bg-dark-bg border border-border-dark text-text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-green focus:border-primary-green placeholder:text-text-light-gray transition-all duration-200"
         />
       </div>
 
-      {/* Budget */}
+      {/* Budget with Currency and Minimum Budget Handling */}
       <div className="space-y-2 mt-5">
         <div className="flex items-center justify-between">
           <label className="text-sm font-medium text-text-white flex items-center">
@@ -264,18 +303,7 @@ export function CreateTab({
             <Info size={16} className="ml-2 text-text-light-gray" />
           </label>
         </div>
-        <div className="relative">
-          <input
-            type="text"
-            value={budget}
-            onChange={e => setBudget(e.target.value)}
-            placeholder="Enter daily budget"
-            className="w-full px-3 py-2.5 bg-dark-bg border border-border-dark text-text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-green focus:border-primary-green placeholder:text-text-light-gray transition-all duration-200 pr-16"
-          />
-          <div className="absolute inset-y-0 right-0 flex items-center pr-3 text-text-light-gray pointer-events-none">
-            <span>USD</span>
-          </div>
-        </div>
+        <BudgetSettings budget={budget} setBudget={setBudget} />
       </div>
 
       {/* Optional AI guidance */}

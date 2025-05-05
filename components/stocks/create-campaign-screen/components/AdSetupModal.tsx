@@ -13,7 +13,9 @@ import {
   DialogFooter
 } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Gender, MasterFlowResponse, AdPlacements } from '../types';
+import { Gender, MasterFlowResponse, AdPlacements, LocationsFullDetails, AudienceFilters as OldAudienceFilters, AudienceFilterData } from '../types'; // Renamed imported AudienceFilters
+import AudienceLocationSelector from '@/components/audience-locations-selector';
+import AudienceTargetingSelector, { AudienceTargeting, TargetingFilters, FilterDetail } from './AudienceTargetingSelector'; // Import new types
 
 // Extended interface with union from both LibCreative and our additional fields
 interface ExtendedCreative extends Partial<LibCreative> {
@@ -44,8 +46,10 @@ interface AdSetupModalProps {
   adPlacements: AdPlacements;
   budget: string;
   creatives: any[];
+  websiteUrl?: string;
   onCreativesUpdated?: (creatives: ExtendedCreative[]) => void;
   onLeadFormUpdated?: (updatedFields: any) => void;
+  currency?: string;
 }
 
 export function AdSetupModal({
@@ -65,8 +69,10 @@ export function AdSetupModal({
                                adPlacements,
                                budget,
                                creatives,
+                               websiteUrl,
                                onCreativesUpdated,
-                               onLeadFormUpdated
+                               onLeadFormUpdated,
+                               currency
                              }: AdSetupModalProps) {
   // States for editable headline/description
   const [editedHeadline, setEditedHeadline] = useState(
@@ -75,6 +81,130 @@ export function AdSetupModal({
   const [editedDescription, setEditedDescription] = useState(
       masterFlowData?.ad_creative_text?.ad_creative_description || adText
   );
+
+  // Initialize with empty array if data is not present
+  // console.log("This is second ", masterFlowData?.audiences?.[1])
+  const [audienceOneLocations, setAudienceOneLocations] = useState<LocationsFullDetails>(
+    masterFlowData?.audiences.audiences?.[0]?.location_full_details || []
+  );
+  const [audienceTwoLocations, setAudienceTwoLocations] = useState<LocationsFullDetails>(
+    masterFlowData?.audiences?.audiences?.[1]?.location_full_details || []
+  );
+
+  // Helper function to map initial data structure to the new structure
+  const mapInitialFilters = (initialData?: { type: string; filters?: OldAudienceFilters }): AudienceTargeting | null => {
+    if (!initialData?.filters) {
+      return { type: "custom", filters: {} }; // Return empty structure if no initial filters
+    }
+
+    const mappedFilters: TargetingFilters = {};
+
+    const mapCategory = (
+      categoryData: Record<string, AudienceFilterData> | undefined,
+      type: 'interest' | 'demographics' | 'behaviors'
+    ): { [key: string]: FilterDetail } | undefined => {
+      if (!categoryData) return undefined;
+      const mappedCategory: { [key: string]: FilterDetail } = {};
+      Object.entries(categoryData).forEach(([name, data]) => {
+        // Use name as key, generate ID, set type. Path is not available in initial data.
+        mappedCategory[name] = {
+          id: `${type}:${name}`, // Generate a simple ID based on type and name
+          name: name,
+          type: type,
+          // path: undefined // Path is not available in the initial structure
+        };
+      });
+      return mappedCategory;
+    };
+
+    mappedFilters.interest_filters = mapCategory(initialData.filters.interest_filters, 'interest');
+    mappedFilters.demographic_filters = mapCategory(initialData.filters.demographic_filters, 'demographics');
+    mappedFilters.behaviour_filters = mapCategory(initialData.filters.behaviour_filters, 'behaviors');
+
+    return { type: "custom", filters: mappedFilters };
+  };
+
+
+  // State using the new AudienceTargeting type from AudienceTargetingSelector
+  const [targetingFilters, setTargetingFilters] = useState<AudienceTargeting | null>(
+    // Initialize by mapping the data from masterFlowData
+    mapInitialFilters(masterFlowData?.audiences.audiences?.[0]?.targeting_filters)
+  );
+
+
+  useEffect(()=>{console.log("\n\n\n\n\nUdpated",audienceOneLocations)},[audienceOneLocations])
+
+  // Function to save audience locations to the API
+  const saveAudienceLocations = async () => {
+    setIsSubmitting(true);
+    
+    try {
+      // Get required fields from masterFlowData
+      const campaign_session_id = masterFlowData?.campaign_flow_session_id;
+      
+      if (!campaign_session_id) {
+        throw new Error('Missing campaign session ID');
+      }
+      
+      console.log("[TEMPORARY DEBUG] Saving audience locations for both audiences using data:", audienceOneLocations);
+
+      // --- Call API for Audience 1 ---
+      const payloadAudience1 = {
+        campaign_session_uuid: campaign_session_id, // API expects campaign_session_uuid
+        audience_nr: 1,
+        locations: audienceOneLocations // API expects 'locations'
+        // TODO: Add other optional fields like age, gender if needed from masterFlowData?.audiences.audiences?.[0]
+      };
+      console.log("[TEMPORARY DEBUG] Sending payload for Audience 1:", payloadAudience1);
+
+      const response1 = await fetch('/api/fasty-bot/proxy-update-audience', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payloadAudience1),
+      });
+      const data1 = await response1.json();
+
+      if (!response1.ok || !data1.success) {
+        const errorMessage = data1.message || data1.error || 'Failed to save locations for Audience 1';
+        console.error('API error (Audience 1):', data1);
+        throw new Error(errorMessage);
+      }
+      console.log('Audience 1 locations saved successfully!', data1);
+
+      // --- Call API for Audience 2 ---
+       const payloadAudience2 = {
+        campaign_session_uuid: campaign_session_id, // API expects campaign_session_uuid
+        audience_nr: 2,
+        locations: audienceOneLocations // Use the same locations for Audience 2
+         // TODO: Add other optional fields like age, gender if needed from masterFlowData?.audiences.audiences?.[1]
+      };
+      console.log("[TEMPORARY DEBUG] Sending payload for Audience 2:", payloadAudience2);
+
+      const response2 = await fetch('/api/fasty-bot/proxy-update-audience', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payloadAudience2),
+      });
+      const data2 = await response2.json();
+
+      if (!response2.ok || !data2.success) {
+        const errorMessage = data2.message || data2.error || 'Failed to save locations for Audience 2';
+        console.error('API error (Audience 2):', data2);
+        throw new Error(errorMessage);
+      }
+      console.log('Audience 2 locations saved successfully!', data2);
+
+      // Show success message after both calls succeed
+      alert('Locations saved successfully for both audiences!');
+      
+    } catch (err) {
+      console.error('Error saving audience locations:', err);
+      alert(`Error: ${err instanceof Error ? err.message : 'Failed to save locations'}`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
   
   // Track original values to detect changes
   const [originalHeadline, setOriginalHeadline] = useState(
@@ -90,6 +220,7 @@ export function AdSetupModal({
   // Track save operation state
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Track updated creatives from the API response
   const [updatedCreatives, setUpdatedCreatives] = useState<ExtendedCreative[]>([]);
@@ -99,10 +230,12 @@ export function AdSetupModal({
   
   // Debug the lead form content structure
   useEffect(() => {
-    if (leadFormContent) {
+    if (leadFormContent && leadFormContent !== null) {
       console.log('Lead form content structure:', leadFormContent);
+    } else if (masterFlowData?.lead_form_content === null) {
+      console.log('Lead form content is null - this campaign is not eligible for a lead form');
     }
-  }, [leadFormContent]);
+  }, [leadFormContent, masterFlowData?.lead_form_content]);
   
   // Handle the nested structure of lead form data
   const getLeadFormValue = (field: string) => {
@@ -180,7 +313,7 @@ export function AdSetupModal({
     getLeadFormValue("company_name") || ""
   );
   const [editedFollowUpUrl, setEditedFollowUpUrl] = useState(
-    getLeadFormValue("follow_up_url") || ""
+    getLeadFormValue("follow_up_url") || websiteUrl || ""
   );
   const [editedLocale, setEditedLocale] = useState(
     getLeadFormValue("lead_form_locale") || getLeadFormValue("locale") || "en_US"
@@ -250,7 +383,7 @@ export function AdSetupModal({
     getLeadFormValue("company_name") || ""
   );
   const [originalFollowUpUrl, setOriginalFollowUpUrl] = useState(
-    getLeadFormValue("follow_up_url") || ""
+    getLeadFormValue("follow_up_url") || websiteUrl || ""
   );
   const [originalLocale, setOriginalLocale] = useState(
     getLeadFormValue("lead_form_locale") || getLeadFormValue("locale") || "en_US"
@@ -504,6 +637,21 @@ export function AdSetupModal({
   
   const handleFollowUpUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEditedFollowUpUrl(e.target.value);
+  };
+
+  // URL validation to ensure all links have https:// but no www.
+  const validateAndFixUrl = (url: string) => {
+    if (!url || url.trim() === '') return url;
+    
+    // Remove www. if present
+    let cleanUrl = url.replace(/^(https?:\/\/)?(www\.)/i, '');
+    
+    // Add https:// if not present
+    if (!cleanUrl.match(/^https?:\/\//i)) {
+      return `https://${cleanUrl}`;
+    }
+    
+    return cleanUrl;
   };
   
   // Handler for locale change
@@ -1170,7 +1318,11 @@ export function AdSetupModal({
   };
 
   const hasPlacementData = masterFlowData?.hasOwnProperty('placements');
-  const hasLeadFormData = masterFlowData?.lead_form_content !== undefined;
+  // Check if lead form content exists, is not null, and is not an empty object
+  const hasLeadFormData = masterFlowData?.lead_form_content !== undefined && 
+                         masterFlowData?.lead_form_content !== null && 
+                         !(typeof masterFlowData?.lead_form_content === 'object' && 
+                           Object.keys(masterFlowData?.lead_form_content).length === 0);
 
   // Extract lead form data
   const processLeadFormQuestions = () => {
@@ -1321,7 +1473,7 @@ export function AdSetupModal({
                           </span>
                         )}
                       </button>
-                      
+
                       {/* Status indicator text */}
                       {isTextModified && (
                         <span className="text-yellow-400 text-xs mt-1">Click to save</span>
@@ -1462,7 +1614,7 @@ export function AdSetupModal({
                         <Calendar className="size-5 text-coral mr-3 mt-1" />
                         <div>
                           <h4 className="font-medium text-text-white">Budget</h4>
-                          <p className="text-text-light-gray">Daily: ${budget} USD</p>
+                          <p className="text-text-light-gray">Daily: {budget} {currency}</p>
                         </div>
                       </div>
                     </div>
@@ -1501,6 +1653,30 @@ export function AdSetupModal({
                                 ? formatObjectsForDisplay(masterFlowData.selected_locations)
                                 : targetedLocations.join(', ')}
                           </p>
+                          {audienceOneLocations && (
+                            <div className="mt-4">
+                              <AudienceLocationSelector locations={audienceOneLocations} setLocations={setAudienceOneLocations}/>
+                              <div className="mt-4 flex justify-end">
+                                <button
+                                  onClick={saveAudienceLocations}
+                                  disabled={isSubmitting}
+                                  className="px-4 py-2 bg-[#4BF29C] text-[#151925] font-medium rounded-lg hover:bg-[#3ad889] transition-colors flex items-center gap-2"
+                                >
+                                  {isSubmitting ? (
+                                    <>
+                                      <span className="animate-spin h-4 w-4 border-2 border-[#151925] border-t-transparent rounded-full"></span>
+                                      Saving...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Save className="size-4" />
+                                      Save Locations
+                                    </>
+                                  )}
+                                </button>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -1523,7 +1699,26 @@ export function AdSetupModal({
                       </div>
                     </div>
 
-                    <div className="bg-dark-bg rounded-lg p-4 border border-border-dark">
+                    <AudienceTargetingSelector 
+                      targetingFilters={targetingFilters} 
+                      setTargetingFilters={setTargetingFilters}
+                      campaignSessionId={masterFlowData?.campaign_flow_session_id}
+                      audienceNumber={1}
+                      campaignObjective={masterFlowData?.campaign_objective || campaignObjective}
+                      updateMasterFlowData={(data) => {
+                        console.log("Updating master flow data with:", data);
+                        // If masterFlowData exists, update it with the new data
+                        if (masterFlowData) {
+                          const updatedData = {
+                            ...masterFlowData,
+                            ...data
+                          };
+                          console.log("Updated master flow data:", updatedData);
+                        }
+                      }}
+                    />
+
+                    {/* <div className="bg-dark-bg rounded-lg p-4 border border-border-dark">
                       <div className="flex items-start mb-3">
                         <Target className="size-5 text-primary-green mr-3 mt-1" />
                         <div className="w-full">
@@ -1586,7 +1781,7 @@ export function AdSetupModal({
                           </div>
                         </div>
                       </div>
-                    </div>
+                    </div> */}
 
                     {masterFlowData?.age_gender_decision_reason && (
                         <div className="bg-dark-bg/80 rounded-lg p-4 border border-primary-green/30">
@@ -1611,10 +1806,10 @@ export function AdSetupModal({
                 {(() => {
                   // Use updated creatives if available, otherwise fall back to props
                   const effectiveCreatives = updatedCreatives.length > 0 ? updatedCreatives : creatives;
-                  
+
                   // If updated creatives exist, show an indicator
                   const hasUpdatedCreatives = updatedCreatives.length > 0;
-                  
+
                   return effectiveCreatives.length > 1 ? (
                     <Tabs
                         defaultValue="creative-0"
@@ -1630,7 +1825,7 @@ export function AdSetupModal({
                           </p>
                         </div>
                       )}
-                    
+
                       <TabsList className="w-full bg-dark-bg text-text-light-gray mb-4 flex overflow-x-auto border border-border-dark rounded-lg">
                         {effectiveCreatives.map((_, index) => (
                             <TabsTrigger
@@ -1649,7 +1844,7 @@ export function AdSetupModal({
                           <TabsContent key={`creative-content-${index}`} value={`creative-${index}`} className="space-y-4">
                             <div className="bg-dark-bg rounded-lg p-4 border border-border-dark">
                               <h4 className="text-lg font-medium mb-4 text-primary-green">
-                                Ad Creative {index + 1} Details 
+                                Ad Creative {index + 1} Details
                                 {hasUpdatedCreatives && <span className="text-xs text-green-400 ml-2">(Updated)</span>}
                               </h4>
 
@@ -1676,7 +1871,7 @@ export function AdSetupModal({
                                     </p>
                                   </div>
                                 </div>
-                                
+
                                 <div>
                                   <h5 className="font-medium text-text-white mb-2">Creative ID</h5>
                                   <div className="bg-container-bg p-3 rounded-lg border border-border-dark">
@@ -1755,7 +1950,7 @@ export function AdSetupModal({
                           </p>
                         </div>
                       )}
-                      
+
                       <h4 className="text-lg font-medium mb-4 text-primary-green">
                         Ad Creative Details
                         {hasUpdatedCreatives && <span className="text-xs text-green-400 ml-2">(Updated)</span>}
@@ -1787,7 +1982,7 @@ export function AdSetupModal({
                             </p>
                           </div>
                         </div>
-                        
+
                         <div>
                           <h5 className="font-medium text-text-white mb-2">Creative ID</h5>
                           <div className="bg-container-bg p-3 rounded-lg border border-border-dark">
@@ -1912,7 +2107,7 @@ export function AdSetupModal({
                         <div className="bg-white rounded-lg p-5 border border-[#d3d3d3] shadow-sm">
                           <div className="flex items-center justify-between mb-4">
                             <h4 className="text-[22px] font-medium text-[#292929]">Step 1: Lead Form</h4>
-                            
+
                             {/* Save button with status indicators */}
                             <div className="flex flex-col items-end">
                               <button
@@ -1932,7 +2127,7 @@ export function AdSetupModal({
                                   </span>
                                 )}
                               </button>
-                              
+
                               {/* Status indicator text */}
                               {isLeadFormModified && (
                                 <span className="text-yellow-400 text-xs mt-1">Click to save</span>
@@ -1977,7 +2172,7 @@ export function AdSetupModal({
                                 <p className="text-red-500 text-xs mt-1">{formTitleError}</p>
                               )}
                             </div>
-                            
+
                             {/* Form Description */}
                             <div>
                               <label className="font-medium text-[#292929] mb-2 block">Form Description</label>
@@ -2010,7 +2205,7 @@ export function AdSetupModal({
                                 <p className="text-red-500 text-xs mt-1">{formDescriptionError}</p>
                               )}
                             </div>
-                            
+
                             {/* Company Name */}
                             <div>
                               <label className="font-medium text-[#292929] mb-2 block">Company Name</label>
@@ -2026,7 +2221,7 @@ export function AdSetupModal({
                                 placeholder="Enter your company name"
                               />
                             </div>
-                            
+
                             {/* Form Locale (editable dropdown) */}
                             <div>
                               <label className="font-medium text-[#292929] mb-2 block">Form Locale</label>
@@ -2046,7 +2241,7 @@ export function AdSetupModal({
                                 ))}
                               </select>
                             </div>
-                            
+
                             {/* Form Preview */}
                             <div className="mt-8 bg-white rounded-lg overflow-hidden shadow-lg border border-[#d3d3d3]">
                               <div className="bg-[#333333] p-4">
@@ -2083,7 +2278,7 @@ export function AdSetupModal({
                         <div className="bg-white rounded-lg p-5 border border-[#d3d3d3] shadow-sm">
                           <div className="flex items-center justify-between mb-4">
                             <h4 className="text-[22px] font-medium text-[#292929]">Step 2: Questions</h4>
-                            
+
                             {/* Save button for tab consistency */}
                             <div className="flex flex-col items-end">
                               <button
@@ -2103,7 +2298,7 @@ export function AdSetupModal({
                                   </span>
                                 )}
                               </button>
-                              
+
                               {isLeadFormModified && (
                                 <span className="text-yellow-400 text-xs mt-1">Click to save</span>
                               )}
@@ -2112,13 +2307,13 @@ export function AdSetupModal({
                               )}
                             </div>
                           </div>
-                          
+
                           <div className="mb-6">
                             <h5 className="font-medium text-[#292929] mb-2">Default Questions</h5>
                             <p className="text-[#767676] mb-4">
                               These default questions are always included and cannot be modified.
                             </p>
-                            
+
                             <div className="space-y-2 mb-6">
                               <div className="p-3 border border-[#d3d3d3] rounded bg-[#f9f9f9]">
                                 <p className="font-medium text-[#292929]">First Name</p>
@@ -2134,13 +2329,13 @@ export function AdSetupModal({
                               </div>
                             </div>
                           </div>
-                          
+
                           <div>
                             <h5 className="font-medium text-[#292929] mb-2">Custom Questions</h5>
                             <p className="text-[#767676] mb-4">
                               Add custom questions to collect additional information from your leads.
                             </p>
-                            
+
                             {/* Input field to add new custom questions */}
                             <div className="flex gap-2 mb-4">
                               <div className="flex-1">
@@ -2179,17 +2374,17 @@ export function AdSetupModal({
                                 Add
                               </button>
                             </div>
-                            
+
                             {/* Display existing custom questions */}
                             {editedCustomQuestions.length > 0 ? (
                               <div className="space-y-2">
                                 {editedCustomQuestions.map((question, idx) => (
-                                  <div 
+                                  <div
                                     key={`custom-${idx}`}
                                     className="p-3 border border-[#d3d3d3] rounded bg-[#f2f2f2] flex justify-between items-center"
                                   >
                                     <p className="font-medium text-[#292929]">{question}</p>
-                                    <button 
+                                    <button
                                       onClick={() => removeCustomQuestion(idx)}
                                       className="text-red-500 hover:text-red-700"
                                     >
@@ -2210,7 +2405,7 @@ export function AdSetupModal({
                         <div className="bg-white rounded-lg p-5 border border-[#d3d3d3] shadow-sm">
                           <div className="flex items-center justify-between mb-4">
                             <h4 className="text-[22px] font-medium text-[#292929]">Step 3: Privacy Policy</h4>
-                            
+
                             {/* Save button for tab consistency */}
                             <div className="flex flex-col items-end">
                               <button
@@ -2230,7 +2425,7 @@ export function AdSetupModal({
                                   </span>
                                 )}
                               </button>
-                              
+
                               {isLeadFormModified && (
                                 <span className="text-yellow-400 text-xs mt-1">Click to save</span>
                               )}
@@ -2239,7 +2434,7 @@ export function AdSetupModal({
                               )}
                             </div>
                           </div>
-                          
+
                           <div className="space-y-5">
                             {/* Data Usage Notice */}
                             <div>
@@ -2255,7 +2450,7 @@ export function AdSetupModal({
                                 placeholder="Explain how you will use the collected data"
                               />
                             </div>
-                            
+
                             {/* Privacy Policy Link Text */}
                             <div>
                               <label className="font-medium text-[#292929] mb-2 block">Privacy Policy Link Text</label>
@@ -2271,14 +2466,14 @@ export function AdSetupModal({
                                 placeholder="Enter your privacy policy URL"
                               />
                             </div>
-                            
+
                             {/* Privacy Policy Preview */}
                             <div className="mt-5 p-4 border border-[#d3d3d3] rounded bg-[#f2f2f2]">
                               <h5 className="font-medium text-[#292929] mb-2">Preview:</h5>
                               <p className="text-[#292929]">
                                 {editedDataUsageNotice || "Add a data usage notice to inform users about how their data will be processed."}
                               </p>
-                              
+
                               {editedPrivacyPolicyLinkText && (
                                 <p className="text-[#4169e1] mt-2 underline">
                                   {editedPrivacyPolicyLinkText}
@@ -2294,7 +2489,7 @@ export function AdSetupModal({
                         <div className="bg-white rounded-lg p-5 border border-[#d3d3d3] shadow-sm">
                           <div className="flex items-center justify-between mb-4">
                             <h4 className="text-[22px] font-medium text-[#292929]">Step 4: Thank You Page</h4>
-                            
+
                             {/* Save button for tab consistency */}
                             <div className="flex flex-col items-end">
                               <button
@@ -2314,7 +2509,7 @@ export function AdSetupModal({
                                   </span>
                                 )}
                               </button>
-                              
+
                               {isLeadFormModified && (
                                 <span className="text-yellow-400 text-xs mt-1">Click to save</span>
                               )}
@@ -2323,7 +2518,7 @@ export function AdSetupModal({
                               )}
                             </div>
                           </div>
-                          
+
                           <div className="space-y-5">
                             {/* Thank You Page Title */}
                             <div>
@@ -2340,7 +2535,7 @@ export function AdSetupModal({
                                 placeholder="Enter a thank you page title"
                               />
                             </div>
-                            
+
                             {/* Thank You Text */}
                             <div>
                               <label className="font-medium text-[#292929] mb-2 block">Thank You Message</label>
@@ -2373,7 +2568,7 @@ export function AdSetupModal({
                                 <p className="text-red-500 text-xs mt-1">{thankYouTextError}</p>
                               )}
                             </div>
-                            
+
                             {/* Follow Up URL */}
                             <div>
                               <label className="font-medium text-[#292929] mb-2 block">Follow Up URL (Optional)</label>
@@ -2381,6 +2576,11 @@ export function AdSetupModal({
                                 type="text"
                                 value={editedFollowUpUrl}
                                 onChange={handleFollowUpUrlChange}
+                                onBlur={() => {
+                                  if (editedFollowUpUrl) {
+                                    setEditedFollowUpUrl(validateAndFixUrl(editedFollowUpUrl));
+                                  }
+                                }}
                                 className={`w-full bg-white p-3 rounded-lg border ${
                                   editedFollowUpUrl !== originalFollowUpUrl 
                                     ? 'border-yellow-400' 
@@ -2389,7 +2589,7 @@ export function AdSetupModal({
                                 placeholder="Enter a URL to redirect users after form submission"
                               />
                             </div>
-                            
+
                             {/* Thank You Preview */}
                             <div className="mt-5 text-center p-4 border border-[#d3d3d3] rounded bg-[#f2f2f2]">
                               <h5 className="text-xl font-bold mb-2 text-[#292929]">

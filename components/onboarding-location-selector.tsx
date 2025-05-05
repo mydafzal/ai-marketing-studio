@@ -1086,7 +1086,7 @@ export default function OnboardingLocationSelector({
       <div className="space-y-2 mb-4">
         <h3 className="text-lg font-semibold text-white">Preferred Locations</h3>
         <p className="text-gray-400 text-sm">
-          Select the locations where you frequently advertise. This helps our AI create more targeted campaigns.
+          Select the locations where you frequently advertise. This helps our AI create more targeted campaigns. <span className="text-[#4BF29C]">At least one location is required.</span>
         </p>
       </div>
       

@@ -11,6 +11,8 @@ export const useScrollAnchor = () => {
   const [isAtBottom, setIsAtBottom] = useState(true)
   const [isVisible, setIsVisible] = useState(false)
   const [isScrolling, setIsScrolling] = useState(false)
+  // Track if user has manually scrolled up
+  const userHasScrolledUpRef = useRef(false)
 
   const scrollToBottom = useCallback(() => {
     if (scrollRef.current) {
@@ -48,6 +50,16 @@ export const useScrollAnchor = () => {
       const distanceFromBottom = scrollHeight - (scrollTop + clientHeight);
       const atBottom = distanceFromBottom < paddingBottom;
 
+      // Track if user has manually scrolled up (only when not auto-scrolling)
+      if (!atBottom && !isScrolling) {
+        userHasScrolledUpRef.current = true;
+      }
+
+      // If user scrolls back to bottom, reset the flag
+      if (atBottom && userHasScrolledUpRef.current) {
+        userHasScrolledUpRef.current = false;
+      }
+
       setIsAtBottom(atBottom);
       setIsScrolling(true);
 
@@ -71,6 +83,38 @@ export const useScrollAnchor = () => {
       }
       scrollContainer.removeEventListener('scroll', handleScroll);
     };
+  }, [scrollToBottom]);
+
+  // Set up mutation observer to detect when new content is added to messages
+  useEffect(() => {
+    const messagesContainer = messagesRef.current;
+    if (!messagesContainer) return;
+
+    // Create a mutation observer to watch for changes in the DOM
+    const observer = new MutationObserver((mutations) => {
+      // Check if we have added/changed nodes that might be message content
+      let contentAdded = false;
+      
+      mutations.forEach(mutation => {
+        if (mutation.addedNodes.length > 0 || mutation.type === 'characterData') {
+          contentAdded = true;
+        }
+      });
+      
+      // If new content is detected and user hasn't manually scrolled up, scroll to bottom
+      if (contentAdded && !userHasScrolledUpRef.current) {
+        scrollToBottom();
+      }
+    });
+
+    // Start observing the messages container
+    observer.observe(messagesContainer, { 
+      childList: true,      // Watch for changes to the direct children
+      subtree: true,        // Watch for changes in all descendants
+      characterData: true   // Watch for changes in text content (essential for streaming)
+    });
+
+    return () => observer.disconnect();
   }, [scrollToBottom]);
 
   // Visibility observer

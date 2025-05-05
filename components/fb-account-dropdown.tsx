@@ -46,7 +46,7 @@ const FBAccountDropdown = ({
                                 ? "bg-[#1a1a1a] border-[#2a2a2a] text-white hover:bg-[#252525]" 
                                 : "bg-white border-gray-200 text-black hover:bg-gray-100/80",
                             compact 
-                                ? "min-h-[32px] min-w-[140px] px-3 py-0.5 text-xs" 
+                                ? "min-h-[32px] min-w-[120px] sm:min-w-[140px] px-2 sm:px-3 py-0.5 text-xs" 
                                 : "min-h-[48px] min-w-[220px] px-4 py-1"
                         )}
                         aria-label="Select account"
@@ -63,7 +63,7 @@ const FBAccountDropdown = ({
                                 <div>
                                   <p className={cn(
                                     compact ? "text-xs" : "text-sm", 
-                                    "truncate max-w-[100px]",
+                                    "truncate max-w-[60px] sm:max-w-[100px]",
                                     darkMode ? "text-white" : "text-black"
                                   )}>
                                     {selectedAcccount.name}
@@ -80,9 +80,11 @@ const FBAccountDropdown = ({
                             </div>
                             : <span className={cn(
                                 compact ? "text-xs" : "text-sm", 
-                                darkMode ? "text-zinc-400" : "text-zinc-600"
+                                darkMode ? "text-zinc-300" : "text-zinc-600",
+                                "relative font-medium"
                               )}>
                                 Select
+                                <span className="absolute inset-0 animate-pulse-green rounded-full ring-3 ring-[#4BF29C] shadow-[0_0_8px_2px_rgba(75,242,156,0.7)] ring-offset-1 ring-offset-[#1a1a1a]"></span>
                               </span>
                         }
                         <ChevronDownIcon className={cn(

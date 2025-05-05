@@ -16,6 +16,14 @@ module.exports = {
         '2xl': '1400px'
       }
     },
+    screens: {
+      'xs': '480px',
+      'sm': '640px',
+      'md': '768px',
+      'lg': '1024px',
+      'xl': '1280px',
+      '2xl': '1536px',
+    },
     extend: {
       fontFamily: {
         sans: ['var(--font-geist-sans)'],
@@ -87,12 +95,25 @@ module.exports = {
           '50%': { width: '70%' },
           '75%': { width: '90%' },
           '100%': { width: '0%' }
+        },
+        'pulse-green': {
+          '0%, 100%': { 
+            opacity: '0.6',
+            transform: 'scale(1)',
+            boxShadow: '0 0 5px 2px rgba(75, 242, 156, 0.5)'
+          },
+          '50%': { 
+            opacity: '1',
+            transform: 'scale(1.08)',
+            boxShadow: '0 0 12px 4px rgba(75, 242, 156, 0.9)'
+          }
         }
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
-        'loading-bar': 'loading-bar 2s ease-in-out infinite'
+        'loading-bar': 'loading-bar 2s ease-in-out infinite',
+        'pulse-green': 'pulse-green 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
       }
     }
   },

@@ -17,30 +17,12 @@ import { FloatingButton } from './floating-button'
 import { TaskPalette } from './task-palette'
 import {isFeatureToggleEnabled} from "@/lib/helpers/feature-toggle/feature-toggle-manager";
 import useAccountStore from "@/app/store/useAccountStore";
+import { useUsageStore } from "@/app/store/useUsageStore";
+import { UpgradeModal } from '@/components/upgrade-modal';
 
 
-const exampleMessages = [
-  {
-    heading: 'I want to create a campaign to generate leads',
-    subheading: 'Create a new campaign with Reeply AI',
-    message: `I want to create a campaign to generate leads`
-  },
-  {
-    heading: 'What are the results of my campaign?',
-    subheading: 'Check the results of your campaign',
-    message: 'What are the results of my campaign for today?'
-  },
-  {
-    heading: 'I would like to change my campaign budget',
-    subheading: 'Change the daily ad spent for your campaign',
-    message: `I would like to change my campaign budget`
-  },
-  {
-    heading: 'What are some Tips you can give me for my campaigns?',
-    subheading: `Learn more about how to improve your campaigns`,
-    message: `I would like to learn about some tips on how I can improve my campaigns`
-  }
-]
+// Example messages have been moved to the EmptyScreen component
+const exampleMessages = []
 
 export interface ChatPanelProps {
   id?: string
@@ -66,8 +48,26 @@ export function ChatPanel({
   const { submitUserMessage } = useActions()
   const [shareDialogOpen, setShareDialogOpen] = React.useState(false)
   const [isTaskPaletteOpen, setIsTaskPaletteOpen] = React.useState(false)
+  const [showUpgradeModal, setShowUpgradeModal] = React.useState(false)
+  
   let isUserGuideButtonEnabled = isFeatureToggleEnabled("userGuideFloatingButton")
+  const { isFbAccountConnected } = useAccountStore();
+  
+  // Usage store for checking message limits
+  const { 
+    isMessageLimitReached, 
+    messageCount,
+    incrementMessageCount 
+  } = useUsageStore();
+  
   const sendMessage = React.useCallback(async (message: string, userContent?: (TextPart | ImagePart | FilePart)[]) => {
+    // Check for message limit in PromptForm now handles this check separately
+    // This is just a safeguard for programmatic calls
+    if (isMessageLimitReached) {
+      setShowUpgradeModal(true);
+      return;
+    }
+    
     // Optimistically add user message UI
     setMessages(currentMessages => [
       ...currentMessages,
@@ -91,54 +91,64 @@ export function ChatPanel({
     )
 
     setMessages(currentMessages => [...currentMessages, responseMessage])
-  }, [])
+    
+    // Note: incrementMessageCount is handled by the calling component to avoid double counting
+    // The PromptForm component handles incrementing for normal input
+    // The example buttons and showMe functions handle incrementing for those cases
+  }, [isMessageLimitReached, setShowUpgradeModal, session, id, submitUserMessage, setMessages])
 
-  const handleShowMe = (prompt: string) => {
-    sendMessage(prompt)
+  const handleShowMe = async (prompt: string) => {
+    // Check if message limit has been reached
+    if (isMessageLimitReached) {
+      // Show upgrade modal instead of sending message
+      setShowUpgradeModal(true);
+      return;
+    }
+    
+    // Send message and increment counter
+    await sendMessage(prompt);
+    await incrementMessageCount();
   }
 
-  const { isFbAccountConnected } = useAccountStore();
-
   const handleExampleClick = React.useCallback(async (example: string) => {
+    // Check if message limit has been reached
+    if (isMessageLimitReached) {
+      // Show upgrade modal instead of sending message
+      setShowUpgradeModal(true);
+      return;
+    }
 
     await trackEvent('example_message_clicked', 
       { email: session?.user?.email || '', id: session?.user?.id || '' },
       { message: example }
-    )
-    sendMessage(example)
-  }, [sendMessage, session])
+    );
+    
+    // Send message and increment counter
+    await sendMessage(example);
+    await incrementMessageCount();
+  }, [sendMessage, session, isMessageLimitReached, incrementMessageCount])
 
   return (
     <>
-      <div className="fixed inset-x-0 bottom-0 w-full bg-gradient-to-b from-deep-black/90 from-0% to-deep-black to-50% duration-300 ease-in-out animate-in peer-[[data-state=open]]:group-[]:lg:pl-[250px] peer-[[data-state=open]]:group-[]:xl:pl-[300px]">
+      {/* Upgrade Modal */}
+      <UpgradeModal 
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        usageType="messages"
+        currentCount={messageCount}
+      />
+      
+      <div className="fixed inset-x-0 bottom-0 w-full bg-gradient-to-b from-deep-black/90 from-0% to-deep-black to-50% duration-300 ease-in-out animate-in peer-[[data-state=open]]:group-[]:lg:pl-[250px] peer-[[data-state=open]]:group-[]:xl:pl-[300px] md:pb-0">
+        {/* Hidden element to ensure proper spacing when keyboard appears on mobile */}
+        <div className="mobile-keyboard-spacer h-0 md:hidden"></div>
+        
         <ButtonScrollToBottom
           isAtBottom={isAtBottom}
           scrollToBottom={scrollToBottom}
         />
 
         { isFbAccountConnected && <div className="mx-auto sm:max-w-2xl sm:px-4">
-          <div className="mb-6 grid grid-cols-2 gap-4 px-4 sm:px-0">
-            {messages.length === 0 &&
-              exampleMessages.map((example, index: number) => (
-                <div
-                  key={example.heading}
-                  className={`cursor-pointer rounded-xl border border-border-dark bg-container-bg p-5 hover:bg-light-container transition-all duration-200 shadow-sm ${
-                    index > 1 && 'hidden md:block'
-                  }`}
-                  onClick={() => handleExampleClick(example.message)}
-                >
-                  <div className="text-sm font-bold text-text-white mb-1">{example.heading}</div>
-                  <div className="text-xs text-text-light-gray">
-                    {example.subheading}
-                  </div>
-                  <div className="mt-3 w-full flex justify-end">
-                    <div className="h-6 w-6 rounded-full bg-primary-green flex items-center justify-center">
-                      <IconArrowRight className="h-3 w-3 text-deep-black" />
-                    </div>
-                  </div>
-                </div>
-              ))}
-          </div>
+          {/* Example messages have been moved to the EmptyScreen component */}
 
           <div className={`flex ${id && title && "h-12"} items-center justify-center mb-4`}>
             <div className="flex space-x-2">

@@ -28,7 +28,7 @@ import { Chat } from '@/components/chat'
 import { AI } from '@/lib/chat/AIManager'
 import { auth } from '@/auth'
 import { Session } from '@/lib/types'
-import { getMissingKeys } from '@/app/actions'
+import { getMissingKeys, getUserDetail } from '@/app/actions'
 import { redirect } from 'next/navigation'
 
 export const metadata = {
@@ -41,6 +41,14 @@ export default async function IndexPage() {
 
   if (!session) {
     redirect('/login')
+  }
+  
+  // Check if Facebook account is connected
+  if (session.user?.email) {
+    const userDetail = await getUserDetail()
+    if (userDetail.success && userDetail.user && !userDetail.user.fbMarketingApiKey) {
+      redirect('/facebook-connect')
+    }
   }
 
   redirect(`/chat/${id}`)

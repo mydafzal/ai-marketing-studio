@@ -41,15 +41,7 @@ export function ChatHistoryHeader() {
           Chat History
         </h2>
       </div>
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={handleSupportClick}
-        className="text-[#8A8F99] hover:text-white hover:bg-[#1A1D29] flex items-center gap-1"
-      >
-        <HelpCircle className="size-4" />
-        <span>Support</span>
-      </Button>
+      {/* Support button removed - now using Crisp chat in the navbar */}
     </div>
   )
 }

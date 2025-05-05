@@ -1580,7 +1580,37 @@ export async function getFbMarketingApiKey() {
     }
 }
 
-export async function getSubscriptionInfo(): Promise<{ success?: boolean; sub_offer?: string; sub_status?: string; error?: string } | null> {
+// Free plan usage limits (not exported directly to comply with "use server" rules)
+const FREE_PLAN_LIMITS = {
+    MAX_MESSAGES: 20,
+    MAX_IMAGES: 5,
+    MAX_VIDEOS: 1,
+    MAX_INPAINTING: 1
+};
+
+/**
+ * Get free plan usage limits
+ */
+export async function getFreePlanLimits() {
+    return FREE_PLAN_LIMITS;
+}
+
+// Import subscription bypass list
+import { subscriptionBypassList } from '@/app/subscription/subscription-bypass-list';
+
+export async function getSubscriptionInfo(): Promise<{ 
+    success?: boolean; 
+    sub_offer?: string; 
+    sub_status?: string; 
+    error?: string;
+    usageCounts?: {
+        messages: number;
+        images: number;
+        videos: number;
+        inpainting: number;
+    };
+    isFreePlan?: boolean;
+} | null> {
     const session = await auth();
 
     if (!session || !session.user) {
@@ -1595,19 +1625,219 @@ export async function getSubscriptionInfo(): Promise<{ success?: boolean; sub_of
             return null; // Explicitly return null if user is not found
         }
 
-        if(user.sub_offer === undefined || user.sub_status === undefined)
-        {
-            return null;
-        }
+        // Get usage counts
+        const usageKey = `usage:${session.user.email}`;
+        const usageCounts = await kv.hgetall(usageKey) || {
+            messages: 0,
+            images: 0,
+            videos: 0,
+            inpainting: 0
+        };
+        
+        // Convert to numbers (Redis returns strings)
+        const parsedUsageCounts = {
+            messages: parseInt(String(usageCounts.messages || 0), 10),
+            images: parseInt(String(usageCounts.images || 0), 10),
+            videos: parseInt(String(usageCounts.videos || 0), 10),
+            inpainting: parseInt(String(usageCounts.inpainting || 0), 10)
+        };
+
+        // Check if user is in the bypass list
+        const userEmail = session.user.email as string;
+        const isInBypassList = subscriptionBypassList.includes(userEmail);
+
+        // Determine subscription status
+        // Set as active if user is in bypass list or has an active subscription
+        let userSubStatus = isInBypassList ? 'active' : String(user.sub_status || '');
+        const isOnFreePlan = !isInBypassList && (!userSubStatus || userSubStatus === 'inactive');
+        const isSubscribed = isInBypassList || userSubStatus === 'active' || userSubStatus === 'trialing';
 
         return {
             success: true,
-            sub_offer: String(user.sub_offer), // Ensure empty string instead of undefined
-            sub_status: String(user.sub_status), // Ensure empty string instead of undefined
+            sub_offer: String(user.sub_offer || ''), // Ensure empty string instead of undefined
+            sub_status: isInBypassList ? 'active' : String(user.sub_status || ''), // Override status for bypass users
+            usageCounts: parsedUsageCounts,
+            isFreePlan: isOnFreePlan
         };
     } catch (error) {
         console.error(`Error getting current user details:`, error);
         return null; // Ensure null is returned on errors
+    }
+}
+
+/**
+ * Increment a specific usage counter for the current user
+ */
+export async function incrementUsageCounter(
+    counterType: 'messages' | 'images' | 'videos' | 'inpainting'
+): Promise<{ 
+    success: boolean; 
+    newCount?: number;
+    limitReached?: boolean;
+    error?: string;
+}> {
+    const session = await auth();
+
+    if (!session || !session.user) {
+        return { 
+            success: false, 
+            error: 'User not authenticated' 
+        };
+    }
+
+    try {
+        const userEmail = session.user.email as string;
+        
+        // Check if user is in the bypass list
+        const isInBypassList = subscriptionBypassList.includes(userEmail);
+        
+        // If user is in the bypass list, treat them as subscribed and don't increment counters
+        if (isInBypassList) {
+            return { 
+                success: true,
+                newCount: 0,
+                limitReached: false
+            };
+        }
+        
+        // Get subscription status first to check if we need to track
+        const subscription = await getSubscriptionInfo();
+        
+        // If user is subscribed, don't increment counters
+        if (subscription?.sub_status === 'active' || subscription?.sub_status === 'trialing') {
+            return { 
+                success: true,
+                newCount: 0,
+                limitReached: false
+            };
+        }
+
+        const usageKey = `usage:${userEmail}`;
+        
+        // Get current count
+        const currentCount = parseInt(String(await kv.hget(usageKey, counterType) || 0), 10);
+        const newCount = currentCount + 1;
+        
+        // Update the counter
+        await kv.hset(usageKey, { [counterType]: newCount });
+        
+        // Check if limit reached
+        let limitReached = false;
+        switch (counterType) {
+            case 'messages':
+                limitReached = newCount > FREE_PLAN_LIMITS.MAX_MESSAGES;
+                break;
+            case 'images':
+                limitReached = newCount > FREE_PLAN_LIMITS.MAX_IMAGES;
+                break;
+            case 'videos':
+                limitReached = newCount > FREE_PLAN_LIMITS.MAX_VIDEOS;
+                break;
+            case 'inpainting':
+                limitReached = newCount > FREE_PLAN_LIMITS.MAX_INPAINTING;
+                break;
+        }
+
+        return {
+            success: true,
+            newCount,
+            limitReached
+        };
+    } catch (error) {
+        console.error(`Error incrementing usage counter:`, error);
+        return { 
+            success: false, 
+            error: `Error incrementing counter: ${error}` 
+        };
+    }
+}
+
+/**
+ * Check if a specific usage limit has been reached
+ */
+export async function checkUsageLimit(
+    counterType: 'messages' | 'images' | 'videos' | 'inpainting'
+): Promise<{
+    success: boolean;
+    limitReached: boolean;
+    currentCount?: number;
+    maxCount?: number;
+    error?: string;
+}> {
+    const session = await auth();
+
+    if (!session || !session.user) {
+        return { 
+            success: false, 
+            limitReached: true,
+            error: 'User not authenticated' 
+        };
+    }
+
+    try {
+        const userEmail = session.user.email as string;
+        
+        // Check if user is in the bypass list
+        const isInBypassList = subscriptionBypassList.includes(userEmail);
+        
+        // If user is in the bypass list, treat them as subscribed and don't apply limits
+        if (isInBypassList) {
+            return { 
+                success: true,
+                limitReached: false,
+                currentCount: 0,
+                maxCount: Infinity
+            };
+        }
+        
+        // Get subscription status first
+        const subscription = await getSubscriptionInfo();
+        
+        // If user is subscribed, no limits apply
+        if (subscription?.sub_status === 'active' || subscription?.sub_status === 'trialing') {
+            return { 
+                success: true,
+                limitReached: false,
+                currentCount: 0,
+                maxCount: Infinity
+            };
+        }
+
+        const usageKey = `usage:${userEmail}`;
+        
+        // Get current count
+        const currentCount = parseInt(String(await kv.hget(usageKey, counterType) || 0), 10);
+        
+        // Get max count based on counter type
+        let maxCount = 0;
+        switch (counterType) {
+            case 'messages':
+                maxCount = FREE_PLAN_LIMITS.MAX_MESSAGES;
+                break;
+            case 'images':
+                maxCount = FREE_PLAN_LIMITS.MAX_IMAGES;
+                break;
+            case 'videos':
+                maxCount = FREE_PLAN_LIMITS.MAX_VIDEOS;
+                break;
+            case 'inpainting':
+                maxCount = FREE_PLAN_LIMITS.MAX_INPAINTING;
+                break;
+        }
+
+        return {
+            success: true,
+            limitReached: currentCount >= maxCount,
+            currentCount,
+            maxCount
+        };
+    } catch (error) {
+        console.error(`Error checking usage limit:`, error);
+        return { 
+            success: false, 
+            limitReached: true, // Fail closed
+            error: `Error checking usage limit: ${error}` 
+        };
     }
 }
 

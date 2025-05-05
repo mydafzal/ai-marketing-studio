@@ -33,6 +33,37 @@ export function CreateCampaignForm() {
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
+  // URL validation to ensure all links have https:// but no www.
+  const validateAndFixUrl = (url: string) => {
+    if (!url || url.trim() === '') return url;
+    
+    // Remove www. if present
+    let cleanUrl = url.replace(/^(https?:\/\/)?(www\.)/i, '');
+    
+    // Add https:// if not present
+    if (!cleanUrl.match(/^https?:\/\//i)) {
+      return `https://${cleanUrl}`;
+    }
+    
+    return cleanUrl;
+  };
+  
+  // Check if a URL is valid (has a TLD after adding https://)
+  const isValidUrl = (url: string) => {
+    if (!url || url.trim() === '') return false;
+    
+    try {
+      // Ensure URL has protocol before checking
+      const urlWithProtocol = url.match(/^https?:\/\//i) ? url : `https://${url}`;
+      const urlObj = new URL(urlWithProtocol);
+      
+      // Check for a valid domain with at least one dot (to ensure there's a TLD)
+      return urlObj.hostname.includes('.') && urlObj.hostname.split('.').pop()!.length > 0;
+    } catch (e) {
+      return false;
+    }
+  };
+
   const [activeTab, setActiveTab] = useState<CampaignTab>('create');
   const [activePreviewTab, setActivePreviewTab] = useState<PreviewTab>('instagram_stories');
   const [currentEditSection, setCurrentEditSection] = useState<EditSection>(null);
@@ -102,6 +133,11 @@ export function CreateCampaignForm() {
   const handleReviewTransition = async () => {
     console.log('🔍 Starting review transition process');
     
+    // Ensure link has https:// before submission
+    if (link) {
+      setLink(validateAndFixUrl(link));
+    }
+    
     // Check for required fields
     if (mediaItems.length === 0 || !link || !budget) {
       console.warn('⚠️ Missing required data:', {
@@ -109,6 +145,20 @@ export function CreateCampaignForm() {
         'Link provided': !!link,
         'Budget provided': !!budget
       });
+      return;
+    }
+    
+    // Validate budget format - must be a number
+    if (isNaN(parseFloat(budget))) {
+      console.warn('⚠️ Invalid budget format:', budget);
+      setError('Please enter a valid budget amount');
+      return;
+    }
+    
+    // Validate that link has a TLD
+    if (link && !isValidUrl(link)) {
+      console.warn('⚠️ Invalid URL format - missing TLD:', link);
+      setError('Please enter a valid website URL with a domain extension (e.g. .com, .org)');
       return;
     }
     
@@ -793,6 +843,7 @@ export function CreateCampaignForm() {
             budget={budget}
             adHeadline={masterFlowData?.ad_creative_text?.ad_creative_title || adHeadline}
             adText={masterFlowData?.ad_creative_text?.ad_creative_description || adText}
+            link={link}
             openEditModal={openEditModal}
             handlePublish={handlePublish}
             masterFlowData={masterFlowData}
