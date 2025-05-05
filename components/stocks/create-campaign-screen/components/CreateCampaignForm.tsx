@@ -479,7 +479,7 @@ export function CreateCampaignForm() {
   };
 
   // Launch confetti on publish and finalize the campaign with the API
-  const handlePublish = async () => {
+  const handlePublish = async (publishCampaign: boolean = true) => {
     console.log('🚀 Starting campaign publish process');
     
     if (!masterFlowData) {
@@ -552,14 +552,16 @@ export function CreateCampaignForm() {
       console.log('📊 Campaign finalization parameters:', {
         'FB Account ID': formattedFbAccountId,
         'Campaign Flow Session ID': campaignFlowSessionId,
-        'Page ID': pageId
+        'Page ID': pageId,
+        'Publish Campaign': publishCampaign
       });
       
       // Prepare request payload with correctly formatted parameters
       const requestPayload = {
         fb_account_id: formattedFbAccountId,
         campaign_flow_session_id: campaignFlowSessionId,
-        page_id: pageId
+        page_id: pageId,
+        publish: publishCampaign
       };
       
       console.log('📤 Sending request to finalize campaign with payload:', JSON.stringify(requestPayload, null, 2));
