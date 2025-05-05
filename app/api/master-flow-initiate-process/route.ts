@@ -45,7 +45,8 @@ export async function POST(req: NextRequest) {
       daily_campaign_budget,
       company_name,
       instagram_account_id,
-      post_assessment_campaign_objective // Extract campaign objective if provided
+      post_assessment_campaign_objective, // Extract campaign objective if provided
+      selected_lead_form_id
     } = body
 
     console.log('📊 Request validation data:', {
@@ -168,7 +169,8 @@ export async function POST(req: NextRequest) {
       video_ids: processedVideoIds, // Use processed video_ids
       daily_campaign_budget, // Use daily_campaign_budget exactly as provided from client
       instagram_account_id,
-      post_assessment_campaign_objective: campaignObjective // Use processed campaign objective that might be null
+      post_assessment_campaign_objective: campaignObjective, // Use processed campaign objective that might be null,
+      selected_lead_form_id
     };
 
     console.log('📤 Sending request to backend with params:', {

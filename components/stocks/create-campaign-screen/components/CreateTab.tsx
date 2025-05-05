@@ -33,6 +33,8 @@ interface CreateTabProps {
   isUploading?: boolean;
   cooldownActive?: boolean;
   cooldownTimeRemaining?: number;
+  selectedLeadFormId: string;
+  setSelectedLeadFormId: (id: string) => void;
 }
 
 export function CreateTab({
@@ -51,10 +53,10 @@ export function CreateTab({
   isLoading,
   isUploading = false,
   cooldownActive = false,
-  cooldownTimeRemaining = 0
+  cooldownTimeRemaining = 0,
+  selectedLeadFormId,
+  setSelectedLeadFormId,
 }: CreateTabProps) {
-  // Add state for selected lead form
-  const [selectedLeadForm, setSelectedLeadForm] = useState<string>("");
   // Add state for showing/hiding lead form dropdown
   const [showLeadFormDropdown, setShowLeadFormDropdown] = useState<boolean>(false);
   // Add state for lead forms
@@ -372,8 +374,8 @@ export function CreateTab({
                     onClick={() => setShowLeadFormDropdown(!showLeadFormDropdown)}
                   >
                     <span>
-                      {selectedLeadForm ? 
-                        leadForms.find(form => form.id === selectedLeadForm)?.name :
+                      {selectedLeadFormId ? 
+                        leadForms.find(form => form.id === selectedLeadFormId)?.name :
                         "Select a lead form..."}
                     </span>
                     <ChevronDown size={16} className="text-text-light-gray" />
@@ -407,10 +409,10 @@ export function CreateTab({
                             <li 
                               key={form.id}
                               className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-800 ${
-                                selectedLeadForm === form.id ? 'bg-gray-800' : ''
+                                selectedLeadFormId === form.id ? 'bg-gray-800' : ''
                               }`}
                               onClick={() => {
-                                setSelectedLeadForm(form.id);
+                                setSelectedLeadFormId(form.id);
                                 setShowLeadFormDropdown(false);
                               }}
                             >
