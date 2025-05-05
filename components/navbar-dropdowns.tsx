@@ -5,6 +5,7 @@ import FBAccountDropdown from './fb-account-dropdown'
 import { AccountConnectionModal } from './account-not-connected-screen'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 type Account = {
   name: string;
@@ -54,6 +55,8 @@ const NavbarDropdowns = ({
   // Move this useState hook before any conditional returns to fix the ESLint error
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showConnectionModal, setShowConnectionModal] = useState(false);
+
+  const router = useRouter();
 
   async function getBusinessAPICall() {
     if (userDetails?.fbMarketingApiKey) {
@@ -527,6 +530,14 @@ const NavbarDropdowns = ({
               Save Changes
             </button>
           </div>
+          <div className="flex space-x-2">
+            <button 
+              className="bg-primary-green hover:bg-primary-green/90 text-black text-xs font-medium py-1 px-3 rounded-full transition-colors whitespace-nowrap"
+              onClick={() => router.push('/manage-persona')}
+            >
+              Manage Personas
+            </button>
+          </div>          
         </div>
       </div>
       
