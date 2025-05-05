@@ -25,6 +25,7 @@ import {getEmailAndBypassStatus} from "@/lib/auth/get-user-email";
 export default function AiContentPage() {
   // Track the current platform for prompt optimization
   const [platform, setPlatform] = useState("instagram")
+  // Only using "video" as active tab since other tabs are hidden
   const [activeTab, setActiveTab] = useState("video")
 
 
@@ -109,21 +110,22 @@ export default function AiContentPage() {
       <div className="flex flex-col space-y-4 sm:space-y-6">
         <div className="flex flex-col space-y-2 sm:space-y-3">
           <div className="flex items-center justify-between">
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">Social Media Content Studio</h1>
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">AI Video Creator</h1>
           </div>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 sm:gap-3">
             <p className="text-xs sm:text-sm text-muted-foreground md:max-w-lg">
-              Create professional AI-generated content optimized for social media engagement and conversions
+              Create professional AI-generated videos optimized for social media engagement and conversions
             </p>
           </div>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 overflow-x-auto">
+          <TabsList className="grid w-full grid-cols-1 overflow-x-auto">
             <TabsTrigger value="video" className="text-xs sm:text-sm">
-              <span className="hidden sm:inline">AI Video Creation</span>
+              <span className="hidden sm:inline">Video Creation</span>
               <span className="inline sm:hidden">Video</span>
             </TabsTrigger>
+            {/* Hidden tabs
             <TabsTrigger value="image" className="text-xs sm:text-sm">
               <span className="hidden sm:inline">AI Creatives Director</span>
               <span className="inline sm:hidden">Images</span>
@@ -132,6 +134,7 @@ export default function AiContentPage() {
               <span className="hidden sm:inline">Image Inpainting</span>
               <span className="inline sm:hidden">Inpainting</span>
             </TabsTrigger>
+            */}
           </TabsList>
 
           {/* VIDEO TAB */}
@@ -139,12 +142,12 @@ export default function AiContentPage() {
             <AiVideoTab improvePrompt={enhancedImprovePrompt} />
           </TabsContent>
 
-          {/* IMAGE TAB */}
+          {/* IMAGE TAB - Hidden but keeping the component for future use */}
           <TabsContent value="image">
             <AiImageTab improvePrompt={enhancedImprovePrompt} />
           </TabsContent>
 
-          {/* INPAINTING TAB */}
+          {/* INPAINTING TAB - Hidden but keeping the component for future use */}
           <TabsContent value="inpaint">
             <ImageImpaint improvePrompt={enhancedImprovePrompt} />
           </TabsContent>

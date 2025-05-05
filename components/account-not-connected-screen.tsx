@@ -178,7 +178,7 @@ export function HomePageInfoCard({ adAccountConnected, awaitingToGetReady, isSub
                   <p className="text-gray-700 leading-relaxed">
                     You are currently subscribed to use our{' '}
                     <span className="font-medium text-green-600">
-                  AI Creatives Generator
+                  AI Video Creator
                 </span>{' '} tool.
                   </p>
               )}
@@ -306,7 +306,7 @@ export function HomePageInfoCard({ adAccountConnected, awaitingToGetReady, isSub
                         href="https://platform.reeply.ai/ai-content"
                         className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                     >
-                      Access Your AI Creatives Generator
+                      Access Your AI Video Creator
                       <svg
                           xmlns="http://www.w3.org/2000/svg"
                           className="ml-2 h-4 w-4"

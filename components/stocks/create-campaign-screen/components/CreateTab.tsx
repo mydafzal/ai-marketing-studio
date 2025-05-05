@@ -75,14 +75,18 @@ export function CreateTab({
   // Remove showAdvancedSettings state since we're using Dialog now
   return (
     <>
-      {/* Upload area - smaller height + immediate display */}
-      <div className="mb-5">
+      {/* Upload area - improved styling */}
+      <div className="mb-6">
+        <div className="text-sm font-medium text-text-white flex items-center mb-2">
+          Upload Media <span className="text-primary-green ml-1">*</span>
+          <Info size={16} className="ml-2 text-text-light-gray" />
+        </div>
         <div
-          className={`relative flex flex-wrap items-center gap-3 p-3 w-full border-2 border-dashed ${
+          className={`relative flex flex-wrap items-center gap-3 p-4 w-full border-2 border-dashed ${
             isUploading || cooldownActive ? 'border-amber-500' : 'border-border-dark hover:border-primary-green'
           } rounded-lg transition-all duration-200 ${
             isUploading || cooldownActive ? 'cursor-not-allowed' : 'cursor-pointer'
-          } h-auto min-h-20`}
+          } h-auto min-h-24 bg-dark-bg/50 backdrop-blur-sm`}
           onClick={() => {
             if (!isUploading && !cooldownActive) {
               fileInputRef.current?.click();
@@ -183,106 +187,117 @@ export function CreateTab({
       </div>
 
       {/* Link */}
-      <div className="space-y-2 mt-5">
+      <div className="space-y-2 mt-6">
         <div className="flex items-center justify-between">
           <label className="text-sm font-medium text-text-white flex items-center">
-            Link
+            Website Link <span className="text-primary-green ml-1">*</span>
             <Info size={16} className="ml-2 text-text-light-gray" />
           </label>
         </div>
-        <input
-          type="text"
-          value={link}
-          onChange={e => setLink(e.target.value)}
-          onBlur={(e) => {
-            // Format URL: remove www. and add https:// if needed
-            const formattedUrl = (() => {
-              if (!link || link.trim() === '') return link;
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="text-text-light-gray">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+            </svg>
+          </div>
+          <input
+            type="text"
+            value={link}
+            onChange={e => setLink(e.target.value)}
+            onBlur={(e) => {
+              // Format URL: remove www. and add https:// if needed
+              const formattedUrl = (() => {
+                if (!link || link.trim() === '') return link;
+                
+                // Remove www. if present
+                let cleanUrl = link.replace(/^(https?:\/\/)?(www\.)/i, '');
+                
+                // Add https:// if not present
+                if (!cleanUrl.match(/^https?:\/\//i)) {
+                  return `https://${cleanUrl}`;
+                }
+                
+                return cleanUrl;
+              })();
               
-              // Remove www. if present
-              let cleanUrl = link.replace(/^(https?:\/\/)?(www\.)/i, '');
-              
-              // Add https:// if not present
-              if (!cleanUrl.match(/^https?:\/\//i)) {
-                return `https://${cleanUrl}`;
-              }
-              
-              return cleanUrl;
-            })();
-            
-            setLink(formattedUrl);
+              setLink(formattedUrl);
 
-            // Check if URL has a valid format with TLD
-            try {
-              const urlObj = new URL(formattedUrl.match(/^https?:\/\//i) ? formattedUrl : `https://${formattedUrl}`);
-              // Check if domain has a TLD (at least one dot in hostname)
-              if (!urlObj.hostname.includes('.') || urlObj.hostname.split('.').pop()!.length === 0) {
-                // Invalid domain
-                e.currentTarget.classList.add('border-red-500', 'focus:ring-red-500', 'focus:border-red-500');
-                e.currentTarget.title = "Please enter a valid URL with a domain extension (e.g. .com)";
-              } else {
-                e.currentTarget.classList.remove('border-red-500', 'focus:ring-red-500', 'focus:border-red-500');
-                e.currentTarget.title = "";
+              // Check if URL has a valid format with TLD
+              try {
+                const urlObj = new URL(formattedUrl.match(/^https?:\/\//i) ? formattedUrl : `https://${formattedUrl}`);
+                // Check if domain has a TLD (at least one dot in hostname)
+                if (!urlObj.hostname.includes('.') || urlObj.hostname.split('.').pop()!.length === 0) {
+                  // Invalid domain
+                  e.currentTarget.classList.add('border-red-500', 'focus:ring-red-500', 'focus:border-red-500');
+                  e.currentTarget.title = "Please enter a valid URL with a domain extension (e.g. .com)";
+                } else {
+                  e.currentTarget.classList.remove('border-red-500', 'focus:ring-red-500', 'focus:border-red-500');
+                  e.currentTarget.title = "";
+                }
+              } catch (error) {
+                // Invalid URL
+                if (formattedUrl.trim() !== '') {
+                  e.currentTarget.classList.add('border-red-500', 'focus:ring-red-500', 'focus:border-red-500');
+                  e.currentTarget.title = "Please enter a valid URL";
+                }
               }
-            } catch (error) {
-              // Invalid URL
-              if (formattedUrl.trim() !== '') {
-                e.currentTarget.classList.add('border-red-500', 'focus:ring-red-500', 'focus:border-red-500');
-                e.currentTarget.title = "Please enter a valid URL";
-              }
-            }
-          }}
-          placeholder="Enter the link to what you'd like to advertise"
-          className="w-full px-3 py-2.5 bg-dark-bg border border-border-dark text-text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-green focus:border-primary-green placeholder:text-text-light-gray transition-all duration-200"
-        />
+            }}
+            placeholder="Enter the URL you want to advertise"
+            className="w-full pl-10 pr-3 py-2.5 bg-dark-bg/80 border border-border-dark text-text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-green focus:border-primary-green placeholder:text-text-light-gray transition-all duration-200"
+          />
+        </div>
+        <p className="text-xs text-text-light-gray mt-1">The website or landing page where your audience will be directed</p>
       </div>
 
       {/* Budget with Currency and Minimum Budget Handling */}
-      <div className="space-y-2 mt-5">
+      <div className="space-y-2 mt-6">
         <div className="flex items-center justify-between">
           <label className="text-sm font-medium text-text-white flex items-center">
-            Ad Budget (Daily)
+            Daily Budget <span className="text-primary-green ml-1">*</span>
             <Info size={16} className="ml-2 text-text-light-gray" />
           </label>
         </div>
         <BudgetSettings budget={budget} setBudget={setBudget} />
+        <p className="text-xs text-text-light-gray mt-1">This is the maximum amount you'll spend per day on this campaign</p>
       </div>
 
-      {/* Optional AI guidance */}
-      <div className="space-y-2 mt-5">
-        <label className="text-sm font-medium text-text-white flex items-center">
-          AI Guidance (Optional)
-          <Info size={16} className="ml-2 text-text-light-gray" />
-        </label>
+      {/* AI Guidance field is hidden but we keep the functionality working */}
+      <div className="hidden">
         <textarea
           value={aiGuidance}
           onChange={e => setAiGuidance(e.target.value)}
-          placeholder="Type any notes or instructions for the AI..."
-          className="w-full px-3 py-2.5 bg-dark-bg border border-border-dark text-text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-green focus:border-primary-green placeholder:text-text-light-gray transition-all duration-200 min-h-[80px] resize-none"
         />
       </div>
 
-      {/* Advanced Settings Dialog */}
+      {/* Advanced Settings Dialog - styled better */}
       <div className="mt-5">
         <Dialog>
           <DialogTrigger asChild>
             <button 
-              className="flex items-center text-sm font-medium text-text-white hover:text-primary-green transition-colors"
+              className="flex items-center text-sm font-medium text-text-light-gray hover:text-primary-green transition-colors bg-dark-bg/50 px-3 py-1.5 rounded-md border border-border-dark/50 hover:border-primary-green/50"
             >
-              <Settings className="mr-1" size={16} />
-              Advanced Settings
+              <Settings className="mr-2" size={16} />
+              Campaign Objective Settings
             </button>
           </DialogTrigger>
           <DialogContent className="bg-dark-bg border border-border-dark text-text-white">
             <DialogHeader>
-              <DialogTitle className="text-text-white">Advanced Settings</DialogTitle>
+              <DialogTitle className="text-text-white flex items-center">
+                <div className="bg-primary-green/20 w-8 h-8 rounded-full flex items-center justify-center mr-2">
+                  <Settings className="text-primary-green" size={16} />
+                </div>
+                Campaign Objective
+              </DialogTitle>
             </DialogHeader>
             
             <div className="mt-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-text-white">Campaign Objective</label>
+                <p className="text-sm text-text-light-gray mb-4">
+                  Choose the primary goal of your ad campaign to help optimize its performance
+                </p>
                 
-                <div className="space-y-3 mt-2">
+                <div className="space-y-3 mt-4 bg-dark-bg/50 p-4 rounded-lg border border-border-dark/50">
                   {/* Auto Option */}
                   <div className="flex items-start space-x-2">
                     <div className="flex items-center h-5 mt-1">
@@ -334,8 +349,8 @@ export function CreateTab({
             
             <div className="mt-6 flex justify-end">
               <DialogClose asChild>
-                <button className="px-4 py-2 bg-primary-green text-deep-black font-medium rounded-md hover:bg-primary-green/90 transition-colors">
-                  Done
+                <button className="px-5 py-2.5 bg-primary-green text-deep-black font-medium rounded-md hover:bg-primary-green/90 transition-colors">
+                  Save Settings
                 </button>
               </DialogClose>
             </div>
@@ -345,12 +360,17 @@ export function CreateTab({
 
       {/* Next Step: Preview & Review */}
       <div className="mt-8">
+        <div className="text-xs text-text-light-gray mb-3 text-center">
+          {mediaItems.length === 0 || !link || !budget 
+            ? "Please fill in all required fields marked with * to continue" 
+            : "Your campaign configuration is complete! Click below to continue"}
+        </div>
         <button
-          className={`w-full bg-primary-green hover:bg-primary-green/90 text-deep-black font-bold py-3 px-4 rounded-lg transition-all duration-200 transform hover:scale-[1.02] ${mediaItems.length === 0 || !link || !budget || isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+          className={`w-full bg-gradient-to-r from-primary-green to-blue-400 hover:opacity-90 text-deep-black font-bold py-3.5 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl ${mediaItems.length === 0 || !link || !budget || isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
           onClick={() => handleReviewTransition()}
           disabled={mediaItems.length === 0 || !link || !budget || isLoading}
         >
-          Preview &amp; Review
+          Preview &amp; Review Campaign
         </button>
       </div>
     </>

@@ -104,7 +104,7 @@ export function MonthlyPricing({ currentPlanTag, showBackButton = true }: Monthl
                 AI Marketer
               </div>
               <div className="bg-[#151925] px-4 py-2 rounded-full text-[#4BF29C] text-sm border border-[#2A2E3A]">
-                AI Creatives Generator
+                AI Video Creator
               </div>
             </div>
             

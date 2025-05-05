@@ -95,13 +95,13 @@ async function UserOrLogin() {
                 href="/ai-content"
                 className={cn(buttonVariants({ variant: 'ghost' }), 'ml-1 sm:ml-4 text-xs sm:text-sm text-text-white hover:text-primary-green hover:bg-dark-bg')}
               >
-                AI Creatives
+                AI Video Creator
               </Link>
               <Link
                 href="/ai-creative-director"
                 className={cn(buttonVariants({ variant: 'ghost' }), 'ml-1 sm:ml-4 text-xs sm:text-sm text-text-white hover:text-primary-green hover:bg-dark-bg')}
               >
-                AI Director
+                AI Creatives Director
               </Link>
               <Link
                 href="/campaign-creator"
@@ -109,12 +109,14 @@ async function UserOrLogin() {
               >
                 Campaign Creator
               </Link>
+              {/* Media Library link hidden
               <Link
                 href="/media-library"
                 className={cn(buttonVariants({ variant: 'ghost' }), 'ml-1 sm:ml-4 text-xs sm:text-sm text-text-white hover:text-primary-green hover:bg-dark-bg')}
               >
                 Media Library
               </Link>
+              */}
               
               <ProfileSettings
                 userDetails={userDetails}
