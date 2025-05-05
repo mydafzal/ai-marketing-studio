@@ -77,15 +77,18 @@ export function MonthlyPricing({ currentPlanTag, showBackButton = true }: Monthl
         )}
         
         {/* Feedback CTA */}
-        <div className="mb-8 p-4 bg-[#151925] border border-[#4BF29C] rounded-lg text-center">
-          <p className="text-white text-lg mb-2">Let’s chat! Give us your feedback in a short meeting and get 20% off.</p>
-          <Link 
-            href="https://calendly.com/reeply/feedback" 
-            className="inline-block bg-[#4BF29C] text-[#0A0C14] px-6 py-2 rounded-lg font-medium hover:bg-[#3AD88C] transition-colors"
-            target="_blank"
-          >
-            Schedule Meeting
-          </Link>
+        <div className="mb-10 p-6 bg-gradient-to-r from-[#166D4A] to-[#1A8D60] rounded-lg text-center shadow-lg relative overflow-hidden">
+          <div className="absolute inset-0 bg-[url('/diamond1.png')] opacity-5 bg-repeat-space"></div>
+          <div className="relative z-10">
+            <h3 className="text-white text-xl font-bold mb-3">Provide us your feedback via a short meeting and receive <span className="text-[#4BF29C]">20% discount</span> on our product price.</h3>
+            <Link 
+              href="https://calendly.com/reeply/feedback" 
+              className="inline-block bg-[#0A0C14] text-white px-8 py-2.5 rounded-lg font-medium border border-[#2A2E3A] hover:bg-[#151925] transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+              target="_blank"
+            >
+              Schedule Your Meeting
+            </Link>
+          </div>
         </div>
 
         {/* Single Card */}
