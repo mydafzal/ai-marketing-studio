@@ -25,7 +25,8 @@ export async function POST(req: NextRequest) {
     let {
       fb_account_id,
       campaign_flow_session_id,
-      page_id
+      page_id,
+      publish = true
     } = body
 
     console.log('📊 Request validation data:', {
@@ -77,10 +78,18 @@ export async function POST(req: NextRequest) {
     });
     
     // Prepare the request payload with the correctly formatted FB Account ID
+
+    let config = {
+      "publish_campaign_after_creation": publish
+    }
+    
+    console.log('📊 Campaign publish configuration:', { publish_campaign_after_creation: publish });
+
     const requestPayload = {
       fb_account_id: formattedFbAccountId,
       campaign_flow_session_id,
-      page_id
+      page_id,
+      config: config
     };
     
     // Prepare headers - for admin-assigned accounts, don't send any token

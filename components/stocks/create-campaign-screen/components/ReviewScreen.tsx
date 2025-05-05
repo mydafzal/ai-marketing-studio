@@ -41,7 +41,7 @@ interface ReviewScreenProps {
   adText: string;
   link?: string; // Website URL
   openEditModal: (section: string) => void;
-  handlePublish: () => void;
+  handlePublish: (publishCampaign: boolean) => void;
   masterFlowData?: MasterFlowResponse | null;
 }
 
@@ -65,6 +65,8 @@ export function ReviewScreen({
   handlePublish,
   masterFlowData
 }: ReviewScreenProps) {
+  // State for publish checkbox
+  const [publishCampaign, setPublishCampaign] = useState<boolean>(true);
   // State to track updated creatives from any text edits
   const [updatedCreatives, setUpdatedCreatives] = useState<ExtendedCreative[]>([]);
   
@@ -733,8 +735,20 @@ export function ReviewScreen({
       </div>
 
       <div className="mt-auto px-6 pb-6">
+        <div className="flex items-center mb-4">
+          <input
+            type="checkbox"
+            id="publishCampaign"
+            checked={publishCampaign}
+            onChange={(e) => setPublishCampaign(e.target.checked)}
+            className="rounded border-gray-500 text-primary-green focus:ring-primary-green h-5 w-5 mr-3"
+          />
+          <label htmlFor="publishCampaign" className="text-text-white cursor-pointer">
+            I am ready to publish my campaign
+          </label>
+        </div>
         <button 
-          onClick={handlePublish}
+          onClick={() => handlePublish(publishCampaign)}
           className="w-full py-3 bg-primary-green text-deep-black rounded-lg font-bold hover:bg-primary-green/90 transition-all duration-200 transform hover:scale-[1.02]"
         >
           Launch Campaign
