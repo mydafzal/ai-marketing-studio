@@ -77,10 +77,16 @@ export async function POST(req: NextRequest) {
     });
     
     // Prepare the request payload with the correctly formatted FB Account ID
+
+    let config = {
+      "publish_campaign_after_creation": true
+    }
+
     const requestPayload = {
       fb_account_id: formattedFbAccountId,
       campaign_flow_session_id,
-      page_id
+      page_id,
+      config: config
     };
     
     // Prepare headers - for admin-assigned accounts, don't send any token
