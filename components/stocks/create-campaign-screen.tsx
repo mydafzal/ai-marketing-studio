@@ -456,19 +456,19 @@ function CreateCampaignForm() {
         </div>
       </div>
 
-      {/* Optional AI guidance */}
-      <div className="space-y-2 mt-4">
-        <label className="text-sm font-medium flex items-center">
-          AI Guidance (Optional)
-          <Info size={16} className="ml-2 text-gray-500" />
-        </label>
-        <textarea
-          value={aiGuidance}
-          onChange={e => setAiGuidance(e.target.value)}
-          placeholder="Type any notes or instructions for the AI..."
-          className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 h-16 resize-none"
-        />
-      </div>
+      {/*/!* Optional AI guidance *!/*/}
+      {/*<div className="space-y-2 mt-4">*/}
+      {/*  <label className="text-sm font-medium flex items-center">*/}
+      {/*    AI Guidance (Optional)*/}
+      {/*    <Info size={16} className="ml-2 text-gray-500" />*/}
+      {/*  </label>*/}
+      {/*  <textarea*/}
+      {/*    value={aiGuidance}*/}
+      {/*    onChange={e => setAiGuidance(e.target.value)}*/}
+      {/*    placeholder="Type any notes or instructions for the AI..."*/}
+      {/*    className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 h-16 resize-none"*/}
+      {/*  />*/}
+      {/*</div>*/}
 
       {/* Next Step: Preview & Review */}
       <div className="mt-6">
