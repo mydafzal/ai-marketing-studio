@@ -75,6 +75,18 @@ export function MonthlyPricing({ currentPlanTag, showBackButton = true }: Monthl
             </Link>
           </div>
         )}
+        
+        {/* Feedback CTA */}
+        <div className="mb-8 p-4 bg-[#151925] border border-[#4BF29C] rounded-lg text-center">
+          <p className="text-white text-lg mb-2">Let’s chat! Give us your feedback in a short meeting and get 20% off.</p>
+          <Link 
+            href="https://calendly.com/reeply/feedback" 
+            className="inline-block bg-[#4BF29C] text-[#0A0C14] px-6 py-2 rounded-lg font-medium hover:bg-[#3AD88C] transition-colors"
+            target="_blank"
+          >
+            Schedule Meeting
+          </Link>
+        </div>
 
         {/* Single Card */}
         <div className="flex justify-center mt-6">
