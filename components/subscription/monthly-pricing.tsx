@@ -71,6 +71,22 @@ export function MonthlyPricing({ currentPlanTag, showBackButton = true }: Monthl
             </Link>
           </div>
         )}
+        
+        {/* Feedback CTA */}
+        <div className="mb-10 p-6 bg-gradient-to-r from-[#166D4A] to-[#1A8D60] rounded-lg text-center shadow-lg relative overflow-hidden">
+          <div className="absolute inset-0 bg-[url('/diamond1.png')] opacity-5 bg-repeat-space"></div>
+          <div className="relative z-10">
+            <h3 className="text-white text-xl font-bold mb-3">Provide us your feedback via a short meeting and receive <span className="text-[#4BF29C]">20% discount</span> on our product price.</h3>
+            {/* ADJUST LINK */}
+            <Link 
+              href="https://tidycal.com/farzammadani/feedback-call-reeply-ai"
+              className="inline-block bg-[#0A0C14] text-white px-8 py-2.5 rounded-lg font-medium border border-[#2A2E3A] hover:bg-[#151925] transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+              target="_blank"
+            >
+              Schedule Your Meeting
+            </Link>
+          </div>
+        </div>
 
         {/* Plan Cards */}
         <div className="flex justify-center mt-6">
