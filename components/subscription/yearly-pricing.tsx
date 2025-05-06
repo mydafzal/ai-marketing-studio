@@ -80,8 +80,8 @@ export function YearlyPricing({ currentPlanTag }: YearlyPricingProps) {
                   <div className="bg-[#252A3A] px-4 py-2 rounded-full text-[#4BF29C] text-base font-bold self-start mb-2">
                     START WITH 7-DAY FREE TRIAL
                   </div>
-                  <p className="text-4xl font-bold text-white dark:text-white">{stripePriceConfig.yearly.pro.currency}{stripePriceConfig.yearly.pro.pricePerMonth * 12}</p>
-                  <p className="text-[#8A8F99] dark:text-[#8A8F99] text-sm">/ Month (Billed annually at {stripePriceConfig.yearly.pro.pricePerMonth} {stripePriceConfig.yearly.pro.currency})</p>
+                  <p className="text-4xl font-bold text-white dark:text-white">{stripePriceConfig.yearly.pro.currency}{Math.round(stripePriceConfig.yearly.pro.pricePerMonth * 12)}</p>
+                  <p className="text-[#8A8F99] dark:text-[#8A8F99] text-sm">/ Year (Billed annually at {stripePriceConfig.yearly.pro.currency}{stripePriceConfig.yearly.pro.pricePerMonth} per month)</p>
                 </div>
                 <hr className="my-4 border-[#2A2E3A] dark:border-[#2A2E3A]" />
                 <p className="font-medium mb-4 text-white dark:text-white">

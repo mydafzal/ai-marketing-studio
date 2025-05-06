@@ -19,7 +19,7 @@ const stripePriceConfig = {
       lookupKey: 'reeply_marketing_monthly_apr2025',
       sandbox_lookupKey: 'reeply_marketing_monthly_test',
       pricePerMonth: 99,
-      currency: 'EUR',
+      currency: '€',
       name: 'AI Marketer Suite',
       hidden: false,
       features: [
@@ -39,7 +39,7 @@ const stripePriceConfig = {
       lookupKey: 'reeply_marketing_yearly_apr2025',
       sandbox_lookupKey: 'reeply_marketing_yearly_test',
       pricePerMonth: 83.25,
-      currency: 'EUR',
+      currency: '€',
       name: 'AI Marketer Suite',
       hidden: false,
       features: [

@@ -92,7 +92,7 @@ export function MonthlyPricing({ currentPlanTag, showBackButton = true }: Monthl
               <h3 className="ml-2 mb-1 font-bold text-[#4BF29C] dark:text-[#4BF29C] text-[18px]">
                 {stripePriceConfig.monthly.pro.name}
               </h3>
-              <p className="ml-2 mb-4 font-bold text-white text-[16px]">{stripePriceConfig.monthly.pro.pricePerMonth} {stripePriceConfig.monthly.pro.currency} per month</p>
+              <p className="ml-2 mb-4 font-bold text-white text-[16px]">{stripePriceConfig.monthly.pro.currency}{stripePriceConfig.monthly.pro.pricePerMonth} per month</p>
               <div className="flex flex-col">
               </div>
               <hr className="my-4 border-[#2A2E3A] dark:border-[#2A2E3A]" />
