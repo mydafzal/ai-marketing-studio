@@ -5,6 +5,7 @@
 
 export interface StripePriceConfig {
   lookupKey: string;
+  sandbox_lookupKey: string;
   pricePerMonth: number;
   currency: string;
   name: string;
@@ -15,7 +16,8 @@ export interface StripePriceConfig {
 const stripePriceConfig = {
   monthly: {
     pro: {
-      lookupKey: 'reeply_marketing_monthly',
+      lookupKey: 'reeply_marketing_monthly_apr2025',
+      sandbox_lookupKey: 'reeply_marketing_monthly_test',
       pricePerMonth: 99,
       currency: 'EUR',
       name: 'AI Marketer Suite',
@@ -34,8 +36,9 @@ const stripePriceConfig = {
   },
   yearly: {
     pro: {
-      lookupKey: 'reeply_marketing_yearly',
-      pricePerMonth: 71.96,
+      lookupKey: 'reeply_marketing_yearly_apr2025',
+      sandbox_lookupKey: 'reeply_marketing_yearly_test',
+      pricePerMonth: 83.25,
       currency: 'EUR',
       name: 'AI Marketer Suite',
       hidden: false,
@@ -52,5 +55,18 @@ const stripePriceConfig = {
     }
   }
 };
+
+/**
+ * Determines the appropriate lookup key based on the environment
+ * @param planConfig The plan configuration object
+ * @returns The correct lookup key for the current environment
+ */
+export function getLookupKey(planConfig: StripePriceConfig): string {
+  const isDevelopment = 
+    typeof process !== 'undefined' && 
+    process.env.NODE_ENV === 'development';
+  
+  return isDevelopment ? planConfig.sandbox_lookupKey : planConfig.lookupKey;
+}
 
 export default stripePriceConfig;
