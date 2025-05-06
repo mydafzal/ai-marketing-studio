@@ -86,6 +86,16 @@ export function CreateTab({
   const [paginationCursor, setPaginationCursor] = useState<string | null>(null);
   // Add state for loading more forms
   const [loadingMore, setLoadingMore] = useState<boolean>(false);
+  // Add state for search query
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  // Add state for filtered forms
+  const [filteredForms, setFilteredForms] = useState<LeadForm[]>([]);
+  // Add state for search in progress
+  const [searching, setSearching] = useState<boolean>(false);
+  // Add state to track if we've loaded all forms
+  const [hasLoadedAllForms, setHasLoadedAllForms] = useState<boolean>(false);
+  // Add state to store all pagination cursors we've seen
+  const [allCursors, setAllCursors] = useState<string[]>([]);
 
   const objectives = [
     {
@@ -114,6 +124,14 @@ export function CreateTab({
   useEffect(() => {
     if (showLeadFormDropdown && leadForms.length === 0 && !loadingLeadForms) {
       getFbLeadForms();
+    }
+  }, [showLeadFormDropdown]);
+  
+  // Reset filtered forms when dropdown closes
+  useEffect(() => {
+    if (!showLeadFormDropdown) {
+      setFilteredForms([]);
+      setSearchQuery('');
     }
   }, [showLeadFormDropdown]);
 
@@ -150,8 +168,14 @@ export function CreateTab({
       // Save pagination cursor for next page if available
       if (data.pagination?.cursors?.after) {
         setPaginationCursor(data.pagination.cursors.after);
+        
+        // Store the cursor for search pagination
+        if (!allCursors.includes(data.pagination.cursors.after)) {
+          setAllCursors(prev => [...prev, data.pagination.cursors.after]);
+        }
       } else {
         setPaginationCursor(null);
+        setHasLoadedAllForms(true);
       }
       
       // Use the full data structure from the API
@@ -185,6 +209,100 @@ export function CreateTab({
       } else {
         setLoadingMore(false);
       }
+    }
+  }
+  
+  // Function to search lead forms by name or ID
+  async function searchLeadForms(query: string) {
+    if (!query.trim()) {
+      setFilteredForms([]);
+      return;
+    }
+    
+    setSearching(true);
+    
+    try {
+      const lowercaseQuery = query.toLowerCase();
+      
+      // First search in already loaded forms
+      let matchingForms = leadForms.filter(form => 
+        form.name.toLowerCase().includes(lowercaseQuery) || 
+        form.display_name.toLowerCase().includes(lowercaseQuery) || 
+        form.id.toLowerCase().includes(lowercaseQuery)
+      );
+      
+      if (matchingForms.length > 0) {
+        setFilteredForms(matchingForms);
+        setSearching(false);
+        return;
+      }
+      
+      // If no results, try to load more (up to 5 paginations)
+      const maxPaginations = 5;
+      let paginationCount = 0;
+      let currentCursor = paginationCursor;
+      
+      while (currentCursor && paginationCount < maxPaginations && !hasLoadedAllForms) {
+        // Load the next page
+        const newForms = await getFbLeadForms(currentCursor);
+        paginationCount++;
+        
+        // Search in the new forms
+        matchingForms = newForms.filter(form => 
+          form.name.toLowerCase().includes(lowercaseQuery) || 
+          form.display_name.toLowerCase().includes(lowercaseQuery) || 
+          form.id.toLowerCase().includes(lowercaseQuery)
+        );
+        
+        if (matchingForms.length > 0) {
+          setFilteredForms(matchingForms);
+          break;
+        }
+        
+        // Update cursor for next iteration
+        currentCursor = paginationCursor;
+        
+        // If we reached the end, stop
+        if (!currentCursor || hasLoadedAllForms) {
+          break;
+        }
+      }
+      
+      // If we still don't have matches but have more cursors, try them sequentially
+      if (matchingForms.length === 0 && allCursors.length > 0 && !hasLoadedAllForms) {
+        for (const cursor of allCursors) {
+          if (paginationCount >= maxPaginations) break;
+          
+          // Skip cursors we've already checked
+          if (cursor === currentCursor) continue;
+          
+          // Load the next page
+          const newForms = await getFbLeadForms(cursor);
+          paginationCount++;
+          
+          // Search in the new forms
+          matchingForms = newForms.filter(form => 
+            form.name.toLowerCase().includes(lowercaseQuery) || 
+            form.display_name.toLowerCase().includes(lowercaseQuery) || 
+            form.id.toLowerCase().includes(lowercaseQuery)
+          );
+          
+          if (matchingForms.length > 0) {
+            setFilteredForms(matchingForms);
+            break;
+          }
+        }
+      }
+      
+      // If still no matches, show an empty result
+      if (matchingForms.length === 0) {
+        setFilteredForms([]);
+      }
+    } catch (error) {
+      console.error('Error searching lead forms:', error);
+      setLeadFormError('Failed to search lead forms. Please try again.');
+    } finally {
+      setSearching(false);
     }
   }
 
@@ -480,6 +598,36 @@ export function CreateTab({
                   {/* Dropdown content */}
                   {showLeadFormDropdown && (
                     <div className="absolute z-10 mt-1 w-full bg-dark-bg rounded-md shadow-lg border border-border-dark">
+                      {/* Search Bar */}
+                      <div className="p-2 border-b border-border-dark">
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="text"
+                            placeholder="Search lead forms..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="flex-1 px-3 py-1.5 text-sm bg-dark-bg border border-border-dark text-text-white rounded-md focus:outline-none focus:ring-1 focus:ring-primary-green"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                searchLeadForms(searchQuery);
+                              }
+                            }}
+                          />
+                          <button
+                            className="px-3 py-1.5 text-sm bg-primary-green text-deep-black rounded-md hover:bg-primary-green/90 transition-colors"
+                            onClick={() => searchLeadForms(searchQuery)}
+                            disabled={searching || !searchQuery.trim()}
+                          >
+                            {searching ? (
+                              <Loader2 className="animate-spin" size={14} />
+                            ) : (
+                              'Search'
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                      
                       {loadingLeadForms ? (
                         <div className="py-4 text-center">
                           <Loader2 className="animate-spin mx-auto mb-2" size={20} />
@@ -493,6 +641,85 @@ export function CreateTab({
                             onClick={() => getFbLeadForms()}
                           >
                             Try again
+                          </button>
+                        </div>
+                      ) : searching ? (
+                        <div className="py-4 text-center">
+                          <Loader2 className="animate-spin mx-auto mb-2" size={20} />
+                          <p className="text-sm text-text-light-gray">Searching for lead forms...</p>
+                        </div>
+                      ) : filteredForms.length > 0 ? (
+                        <div>
+                          <div className="p-2 text-xs text-text-light-gray">
+                            Found {filteredForms.length} matching forms
+                            <button 
+                              className="ml-2 text-primary-green hover:underline"
+                              onClick={() => {
+                                setFilteredForms([]);
+                                setSearchQuery('');
+                              }}
+                            >
+                              Clear search
+                            </button>
+                          </div>
+                          <ul className="py-1 max-h-60 overflow-auto">
+                            {filteredForms.map(form => (
+                              <li 
+                                key={form.id}
+                                className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-800 ${
+                                  selectedLeadFormId === form.id ? 'bg-gray-800' : ''
+                                }`}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div 
+                                    className="flex-1"
+                                    onClick={() => {
+                                      setSelectedLeadFormId(form.id);
+                                      setShowLeadFormDropdown(false);
+                                    }}
+                                  >
+                                    <div className="flex flex-col">
+                                      <span className="text-text-white font-medium">{form.display_name}</span>
+                                      <span className="text-xs text-text-light-gray">ID: {form.name}</span>
+                                      <span className="text-xs text-text-light-gray">Created: {form.formatted_date}</span>
+                                      <span className="text-xs text-text-light-gray">Fields: {form.collects || `${form.question_count} questions`}</span>
+                                    </div>
+                                  </div>
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <button 
+                                          className="p-1 ml-2 text-text-light-gray hover:text-primary-green"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setSelectedFormDetails(form);
+                                            setShowFormDetails(true);
+                                          }}
+                                        >
+                                          <InfoIcon size={16} />
+                                        </button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <p className="text-xs">View form details</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                </div>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ) : searchQuery.trim() !== '' && !searching ? (
+                        <div className="py-4 text-center">
+                          <p className="text-sm text-text-light-gray">No matching lead forms found</p>
+                          <button 
+                            className="mt-2 text-xs text-primary-green hover:underline"
+                            onClick={() => {
+                              setFilteredForms([]);
+                              setSearchQuery('');
+                            }}
+                          >
+                            Clear search
                           </button>
                         </div>
                       ) : leadForms.length === 0 ? (
@@ -549,7 +776,7 @@ export function CreateTab({
                           </ul>
                           
                           {/* Load More Button */}
-                          {paginationCursor && (
+                          {paginationCursor && !searchQuery.trim() && (
                             <div className="p-2 border-t border-border-dark">
                               <button
                                 className="w-full py-2 text-sm text-center text-primary-green hover:bg-gray-800 rounded-md transition-colors"
