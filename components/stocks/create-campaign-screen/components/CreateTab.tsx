@@ -50,6 +50,61 @@ interface CreateTabProps {
   setSelectedLeadFormId: (id: string) => void;
 }
 
+// Type for storing lead form in local storage
+interface StoredLeadForm {
+  formId: string;
+  pageId: string;
+  formName: string;
+  displayName: string;
+  formattedDate: string;
+  questionCount: number;
+  collects?: string;
+}
+
+// Local storage key
+const STORED_LEAD_FORM_KEY = 'reeply_selected_lead_form';
+
+// Function to save the selected lead form to local storage
+const saveLeadFormToLocalStorage = (form: LeadForm, pageId: string) => {
+  if (!form || !pageId) return;
+  
+  const storedForm: StoredLeadForm = {
+    formId: form.id,
+    pageId: pageId,
+    formName: form.name,
+    displayName: form.display_name,
+    formattedDate: form.formatted_date,
+    questionCount: form.question_count,
+    collects: form.collects
+  };
+  
+  try {
+    localStorage.setItem(STORED_LEAD_FORM_KEY, JSON.stringify(storedForm));
+  } catch (error) {
+    console.error('Error saving lead form to local storage:', error);
+  }
+};
+
+// Function to get the previously selected lead form from local storage
+const getStoredLeadForm = (pageId: string): StoredLeadForm | null => {
+  try {
+    const storedFormJson = localStorage.getItem(STORED_LEAD_FORM_KEY);
+    if (!storedFormJson) return null;
+    
+    const storedForm: StoredLeadForm = JSON.parse(storedFormJson);
+    
+    // Only return if the page ID matches
+    if (storedForm.pageId === pageId) {
+      return storedForm;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error retrieving lead form from local storage:', error);
+    return null;
+  }
+};
+
 export function CreateTab({
   mediaItems,
   setMediaItems,
@@ -100,6 +155,8 @@ export function CreateTab({
   const [allLoadedForms, setAllLoadedForms] = useState<LeadForm[]>([]);
   // Add state to track searched terms to avoid redundant searches
   const [searchedTerms, setSearchedTerms] = useState<string[]>([]);
+  // Add state for previously selected lead form from local storage
+  const [storedLeadForm, setStoredLeadForm] = useState<StoredLeadForm | null>(null);
 
   const objectives = [
     {
@@ -126,8 +183,31 @@ export function CreateTab({
 
   // Fetch lead forms when dialog opens
   useEffect(() => {
-    if (showLeadFormDropdown && leadForms.length === 0 && !loadingLeadForms) {
-      getFbLeadForms();
+    if (showLeadFormDropdown) {
+      if (leadForms.length === 0 && !loadingLeadForms) {
+        getFbLeadForms();
+      }
+      
+      // Try to get previously selected form from local storage
+      const fetchPageId = async () => {
+        try {
+          const response = await fetch('/api/kv/fetch-api-token');
+          const userData = await response.json();
+          
+          if (userData.success && userData.account?.fbPageId) {
+            const pageId = userData.account.fbPageId;
+            const stored = getStoredLeadForm(pageId);
+            
+            if (stored) {
+              setStoredLeadForm(stored);
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching page ID:', error);
+        }
+      };
+      
+      fetchPageId();
     }
   }, [showLeadFormDropdown]);
   
@@ -674,6 +754,28 @@ export function CreateTab({
                   {/* Dropdown content */}
                   {showLeadFormDropdown && (
                     <div className="absolute z-10 mt-1 w-full bg-dark-bg rounded-md shadow-lg border border-border-dark">
+                      {/* Previously Selected Form */}
+                      {storedLeadForm && storedLeadForm.formId !== selectedLeadFormId && (
+                        <div className="p-3 border-b border-border-dark bg-gray-800">
+                          <div className="mb-1 text-xs font-medium text-text-light-gray">Previously Selected Form</div>
+                          <div 
+                            className="p-2 border border-border-dark rounded-md bg-dark-bg hover:border-primary-green cursor-pointer transition-colors"
+                            onClick={() => {
+                              setSelectedLeadFormId(storedLeadForm.formId);
+                              setShowLeadFormDropdown(false);
+                            }}
+                          >
+                            <div className="flex flex-col">
+                              <span className="text-sm text-text-white font-medium">{storedLeadForm.displayName}</span>
+                              <span className="text-xs text-text-light-gray">ID: {storedLeadForm.formName}</span>
+                              <span className="text-xs text-text-light-gray">Created: {storedLeadForm.formattedDate}</span>
+                              <span className="text-xs text-text-light-gray">Fields: {storedLeadForm.collects || `${storedLeadForm.questionCount} questions`}</span>
+                            </div>
+                            <div className="mt-1 text-xs text-primary-green">Click to reuse this form</div>
+                          </div>
+                        </div>
+                      )}
+                      
                       {/* Search Bar */}
                       <div className="p-2 border-b border-border-dark">
                         <div className="flex items-center space-x-2">
@@ -751,9 +853,22 @@ export function CreateTab({
                                 <div className="flex items-center justify-between">
                                   <div 
                                     className="flex-1"
-                                    onClick={() => {
+                                    onClick={async () => {
                                       setSelectedLeadFormId(form.id);
                                       setShowLeadFormDropdown(false);
+                                      
+                                      // Save to local storage
+                                      try {
+                                        const response = await fetch('/api/kv/fetch-api-token');
+                                        const userData = await response.json();
+                                        
+                                        if (userData.success && userData.account?.fbPageId) {
+                                          const pageId = userData.account.fbPageId;
+                                          saveLeadFormToLocalStorage(form, pageId);
+                                        }
+                                      } catch (error) {
+                                        console.error('Error saving form selection:', error);
+                                      }
                                     }}
                                   >
                                     <div className="flex flex-col">
@@ -819,9 +934,22 @@ export function CreateTab({
                                 <div className="flex items-center justify-between">
                                   <div 
                                     className="flex-1"
-                                    onClick={() => {
+                                    onClick={async () => {
                                       setSelectedLeadFormId(form.id);
                                       setShowLeadFormDropdown(false);
+                                      
+                                      // Save to local storage
+                                      try {
+                                        const response = await fetch('/api/kv/fetch-api-token');
+                                        const userData = await response.json();
+                                        
+                                        if (userData.success && userData.account?.fbPageId) {
+                                          const pageId = userData.account.fbPageId;
+                                          saveLeadFormToLocalStorage(form, pageId);
+                                        }
+                                      } catch (error) {
+                                        console.error('Error saving form selection:', error);
+                                      }
                                     }}
                                   >
                                     <div className="flex flex-col">
@@ -940,9 +1068,22 @@ export function CreateTab({
               <div className="pt-4 flex justify-end">
                 <button 
                   className="px-4 py-2 bg-primary-green text-deep-black font-medium rounded-md hover:bg-primary-green/90 transition-colors"
-                  onClick={() => {
+                  onClick={async () => {
                     setSelectedLeadFormId(selectedFormDetails.id);
                     setShowFormDetails(false);
+                    
+                    // Save to local storage
+                    try {
+                      const response = await fetch('/api/kv/fetch-api-token');
+                      const userData = await response.json();
+                      
+                      if (userData.success && userData.account?.fbPageId) {
+                        const pageId = userData.account.fbPageId;
+                        saveLeadFormToLocalStorage(selectedFormDetails, pageId);
+                      }
+                    } catch (error) {
+                      console.error('Error saving form selection:', error);
+                    }
                   }}
                 >
                   Use This Form
