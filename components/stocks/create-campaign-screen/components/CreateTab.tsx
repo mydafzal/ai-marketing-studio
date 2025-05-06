@@ -465,6 +465,9 @@ export function CreateTab({
                           {leadForms.find(form => form.id === selectedLeadFormId)?.display_name}
                         </span>
                         <span className="text-xs text-text-light-gray truncate">
+                          ID: {leadForms.find(form => form.id === selectedLeadFormId)?.name}
+                        </span>
+                        <span className="text-xs text-text-light-gray truncate">
                           Created: {leadForms.find(form => form.id === selectedLeadFormId)?.formatted_date}
                         </span>
                       </div>
@@ -516,6 +519,7 @@ export function CreateTab({
                                   >
                                     <div className="flex flex-col">
                                       <span className="text-text-white font-medium">{form.display_name}</span>
+                                      <span className="text-xs text-text-light-gray">ID: {form.name}</span>
                                       <span className="text-xs text-text-light-gray">Created: {form.formatted_date}</span>
                                       <span className="text-xs text-text-light-gray">Fields: {form.collects || `${form.question_count} questions`}</span>
                                     </div>
@@ -604,6 +608,8 @@ export function CreateTab({
             <div className="mt-4 space-y-4">
               <div>
                 <h3 className="font-medium text-text-white">{selectedFormDetails.display_name}</h3>
+                <p className="text-sm text-text-light-gray">Internal Name: {selectedFormDetails.name}</p>
+                <p className="text-sm text-text-light-gray">ID: {selectedFormDetails.id}</p>
                 <p className="text-sm text-text-light-gray">Created: {selectedFormDetails.formatted_date}</p>
                 <p className="text-sm text-text-light-gray">Status: <span className={selectedFormDetails.status === 'ACTIVE' ? 'text-green-500' : 'text-amber-500'}>{selectedFormDetails.status}</span></p>
               </div>
