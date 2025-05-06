@@ -7,6 +7,8 @@ import { User } from '@/lib/types'
 import CancelSubscriptionDialog from '../CancelSubscriptionDialog'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { getUser } from '@/app/login/actions'
+import stripePriceConfig from '@/lib/stripe-price-provider'
+
 
 export interface SubscriptionProps {
   user: User
@@ -89,7 +91,7 @@ export function Subscription({
           {!user.sub_status || (user.sub_status !== 'active' && user.sub_status !== 'trialing') ? (
             <div className="text-center">
               <h1 className="text-[40px] font-bold text-white dark:text-white">
-                Power Your Marketing with AI for <span className="text-[#4BF29C] dark:text-[#4BF29C]">€39.95</span>/month
+                Power Your Marketing with AI for <span className="text-[#4BF29C] dark:text-[#4BF29C]">€{stripePriceConfig.monthly.pro.pricePerMonth}</span>/month
               </h1>
               <p className="mt-3 max-w-2xl mx-auto text-[#ADB0B8] dark:text-[#ADB0B8] text-lg">
                 Start today with our monthly subscription. You can cancel anytime on a monthly basis.
@@ -119,15 +121,15 @@ export function Subscription({
           ) : (
             <>
               {/* Only show pricing with back button to onboarding-complete for non-subscribed users */}
-              <MonthlyPricing 
-                currentPlanTag={getCurrentPlanTag(user)} 
-                showBackButton={!user.sub_status || (user.sub_status !== 'active' && user.sub_status !== 'trialing')} 
+              <MonthlyPricing
+                currentPlanTag={getCurrentPlanTag(user)}
+                showBackButton={!user.sub_status || (user.sub_status !== 'active' && user.sub_status !== 'trialing')}
               />
             </>
           )}
         </div>
       </div>
-      
+
       {/* Modal dialog - unchanged */}
       <CancelSubscriptionDialog
         open={openModal}
