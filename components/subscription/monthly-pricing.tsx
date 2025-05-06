@@ -98,7 +98,7 @@ export function MonthlyPricing({ currentPlanTag, showBackButton = true }: Monthl
               <hr className="my-4 border-[#2A2E3A] dark:border-[#2A2E3A]" />
               <div className="flex flex-wrap gap-3 mb-6">
                 <div className="bg-[#151925] px-4 py-2 rounded-full text-[#4BF29C] text-sm border border-[#2A2E3A]">
-                  AI Marketer
+                  AI Marketer (Unlimited Ad Accounts)
                 </div>
                 <div className="bg-[#151925] px-4 py-2 rounded-full text-[#4BF29C] text-sm border border-[#2A2E3A]">
                   AI Creatives Generator
