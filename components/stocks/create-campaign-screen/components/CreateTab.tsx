@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, Info, XCircle, Loader2, Plus, ChevronDown, ChevronRight, Settings, Clock } from 'lucide-react';
+import { Upload, Info, XCircle, Loader2, Plus, ChevronDown, ChevronRight, Settings, Clock, Info as InfoIcon } from 'lucide-react';
 import { MediaItem } from '../types';
 import { 
   Dialog, 
@@ -10,11 +10,23 @@ import {
   DialogClose
 } from '@/components/ui/dialog';
 import { BudgetSettings } from './BudgetSettings';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
+interface LeadFormQuestion {
+  label: string;
+  type: string;
+}
 
 interface LeadForm {
   id: string;
   name: string;
-  page: string;
+  display_name: string;
+  formatted_date: string;
+  question_count: number;
+  questions_preview?: LeadFormQuestion[];
+  collects?: string;
+  status?: string;
+  page_id?: string;
 }
 
 interface CreateTabProps {
@@ -66,6 +78,10 @@ export function CreateTab({
   const [loadingLeadForms, setLoadingLeadForms] = useState<boolean>(false);
   // Add state for lead form errors
   const [leadFormError, setLeadFormError] = useState<string | null>(null);
+  // Add state for form details dialog
+  const [showFormDetails, setShowFormDetails] = useState<boolean>(false);
+  // Add state for selected form details
+  const [selectedFormDetails, setSelectedFormDetails] = useState<LeadForm | null>(null);
 
   const objectives = [
     {
@@ -112,11 +128,17 @@ export function CreateTab({
       }
       
       const data = await response.json();
-      // Transform the data to match our interface if needed
+      // Use the full data structure from the API
       const formattedLeadForms: LeadForm[] = data.map((form: any) => ({
         id: form.id || form.form_id,
         name: form.name || form.form_name,
-        page: form.page_name || 'Unknown Page'
+        display_name: form.display_name || form.name || 'Unnamed Form',
+        formatted_date: form.formatted_date || new Date(form.created_time).toLocaleDateString(),
+        question_count: form.question_count || 0,
+        questions_preview: form.questions_preview || [],
+        collects: form.collects || '',
+        status: form.status || 'UNKNOWN',
+        page_id: form.page_id || ''
       }));
       
       setLeadForms(formattedLeadForms);
@@ -401,12 +423,19 @@ export function CreateTab({
                     className="w-full bg-dark-bg border border-border-dark rounded-md py-2 px-3 text-left text-sm text-text-white flex justify-between items-center"
                     onClick={() => setShowLeadFormDropdown(!showLeadFormDropdown)}
                   >
-                    <span>
-                      {selectedLeadFormId ? 
-                        leadForms.find(form => form.id === selectedLeadFormId)?.name :
-                        "Select a lead form..."}
-                    </span>
-                    <ChevronDown size={16} className="text-text-light-gray" />
+                    {selectedLeadFormId && leadForms.find(form => form.id === selectedLeadFormId) ? (
+                      <div className="flex flex-col overflow-hidden">
+                        <span className="truncate">
+                          {leadForms.find(form => form.id === selectedLeadFormId)?.display_name}
+                        </span>
+                        <span className="text-xs text-text-light-gray truncate">
+                          Created: {leadForms.find(form => form.id === selectedLeadFormId)?.formatted_date}
+                        </span>
+                      </div>
+                    ) : (
+                      <span>Select a lead form...</span>
+                    )}
+                    <ChevronDown size={16} className="text-text-light-gray ml-2 flex-shrink-0" />
                   </button>
                   
                   {/* Dropdown content */}
@@ -432,21 +461,47 @@ export function CreateTab({
                           <p className="text-sm text-text-light-gray">No lead forms found</p>
                         </div>
                       ) : (
-                        <ul className="py-1 max-h-56 overflow-auto">
+                        <ul className="py-1 max-h-60 overflow-auto">
                           {leadForms.map(form => (
                             <li 
                               key={form.id}
                               className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-800 ${
                                 selectedLeadFormId === form.id ? 'bg-gray-800' : ''
                               }`}
-                              onClick={() => {
-                                setSelectedLeadFormId(form.id);
-                                setShowLeadFormDropdown(false);
-                              }}
                             >
-                              <div className="flex flex-col">
-                                <span className="text-text-white">{form.name}</span>
-                                <span className="text-xs text-text-light-gray">{form.page}</span>
+                              <div className="flex items-center justify-between">
+                                <div 
+                                  className="flex-1"
+                                  onClick={() => {
+                                    setSelectedLeadFormId(form.id);
+                                    setShowLeadFormDropdown(false);
+                                  }}
+                                >
+                                  <div className="flex flex-col">
+                                    <span className="text-text-white font-medium">{form.display_name}</span>
+                                    <span className="text-xs text-text-light-gray">Created: {form.formatted_date}</span>
+                                    <span className="text-xs text-text-light-gray">Fields: {form.collects || `${form.question_count} questions`}</span>
+                                  </div>
+                                </div>
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <button 
+                                        className="p-1 ml-2 text-text-light-gray hover:text-primary-green"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setSelectedFormDetails(form);
+                                          setShowFormDetails(true);
+                                        }}
+                                      >
+                                        <InfoIcon size={16} />
+                                      </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p className="text-xs">View form details</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
                               </div>
                             </li>
                           ))}
@@ -479,6 +534,53 @@ export function CreateTab({
           Preview &amp; Review
         </button>
       </div>
+
+      {/* Lead Form Details Dialog */}
+      <Dialog open={showFormDetails} onOpenChange={setShowFormDetails}>
+        <DialogContent className="bg-dark-bg border border-border-dark text-text-white max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-text-white">Lead Form Details</DialogTitle>
+          </DialogHeader>
+          
+          {selectedFormDetails && (
+            <div className="mt-4 space-y-4">
+              <div>
+                <h3 className="font-medium text-text-white">{selectedFormDetails.display_name}</h3>
+                <p className="text-sm text-text-light-gray">Created: {selectedFormDetails.formatted_date}</p>
+                <p className="text-sm text-text-light-gray">Status: <span className={selectedFormDetails.status === 'ACTIVE' ? 'text-green-500' : 'text-amber-500'}>{selectedFormDetails.status}</span></p>
+              </div>
+              
+              <div>
+                <h4 className="text-sm font-medium text-text-white mb-2">Form Questions</h4>
+                {selectedFormDetails.questions_preview && selectedFormDetails.questions_preview.length > 0 ? (
+                  <div className="space-y-2">
+                    {selectedFormDetails.questions_preview.map((question, index) => (
+                      <div key={index} className="bg-gray-800 rounded-md p-3">
+                        <p className="text-sm text-text-white">{question.label}</p>
+                        <p className="text-xs text-text-light-gray">Type: {question.type}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-text-light-gray">This form collects: {selectedFormDetails.collects || `${selectedFormDetails.question_count} questions`}</p>
+                )}
+              </div>
+
+              <div className="pt-4 flex justify-end">
+                <button 
+                  className="px-4 py-2 bg-primary-green text-deep-black font-medium rounded-md hover:bg-primary-green/90 transition-colors"
+                  onClick={() => {
+                    setSelectedLeadFormId(selectedFormDetails.id);
+                    setShowFormDetails(false);
+                  }}
+                >
+                  Use This Form
+                </button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
