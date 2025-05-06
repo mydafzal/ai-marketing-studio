@@ -96,6 +96,10 @@ export function CreateTab({
   const [hasLoadedAllForms, setHasLoadedAllForms] = useState<boolean>(false);
   // Add state to store all pagination cursors we've seen
   const [allCursors, setAllCursors] = useState<string[]>([]);
+  // Add state to store all forms ever loaded (including from search pagination)
+  const [allLoadedForms, setAllLoadedForms] = useState<LeadForm[]>([]);
+  // Add state to track searched terms to avoid redundant searches
+  const [searchedTerms, setSearchedTerms] = useState<string[]>([]);
 
   const objectives = [
     {
@@ -136,6 +140,12 @@ export function CreateTab({
   }, [showLeadFormDropdown]);
 
   async function getFbLeadForms(afterCursor?: string | null) {
+    // If we already have forms loaded and no cursor is provided, use cached forms
+    if (!afterCursor && allLoadedForms.length > 0 && !searchQuery) {
+      setLeadForms(allLoadedForms);
+      return allLoadedForms;
+    }
+    
     if (!afterCursor) {
       setLoadingLeadForms(true);
     } else {
@@ -144,6 +154,26 @@ export function CreateTab({
     setLeadFormError(null);
     
     try {
+      // Skip fetching if we already loaded all forms
+      if (hasLoadedAllForms && afterCursor) {
+        setLoadingMore(false);
+        return [];
+      }
+      
+      // Check if we already have data for this cursor
+      if (afterCursor && allCursors.includes(afterCursor)) {
+        const existingFormsIds = new Set(allLoadedForms.map(form => form.id));
+        const newFormsNeeded = allLoadedForms.filter(form => !existingFormsIds.has(form.id));
+        
+        if (newFormsNeeded.length > 0) {
+          if (afterCursor) {
+            setLeadForms(prev => [...prev, ...newFormsNeeded]);
+          }
+          setLoadingMore(false);
+          return newFormsNeeded;
+        }
+      }
+      
       // Add pagination cursor if provided
       const url = afterCursor 
         ? `/api/fasty-bot/proxy-get-facebook-lead-forms?after=${afterCursor}`
@@ -191,9 +221,20 @@ export function CreateTab({
         page_id: form.page_id || ''
       }));
       
+      // Update allLoadedForms with deduplication
+      setAllLoadedForms(prevAll => {
+        const existingIds = new Set(prevAll.map(form => form.id));
+        const newForms = formattedLeadForms.filter(form => !existingIds.has(form.id));
+        return [...prevAll, ...newForms];
+      });
+      
       // If loading more, append to existing forms, otherwise replace
       if (afterCursor) {
-        setLeadForms(prev => [...prev, ...formattedLeadForms]);
+        setLeadForms(prev => {
+          const existingIds = new Set(prev.map(form => form.id));
+          const newForms = formattedLeadForms.filter(form => !existingIds.has(form.id));
+          return [...prev, ...newForms];
+        });
       } else {
         setLeadForms(formattedLeadForms);
       }
@@ -219,13 +260,26 @@ export function CreateTab({
       return;
     }
     
+    const lowercaseQuery = query.toLowerCase();
+    
+    // Check if we've already searched for this exact term
+    if (searchedTerms.includes(lowercaseQuery)) {
+      // Search in all loaded forms
+      const matchingForms = allLoadedForms.filter(form => 
+        form.name.toLowerCase().includes(lowercaseQuery) || 
+        form.display_name.toLowerCase().includes(lowercaseQuery) || 
+        form.id.toLowerCase().includes(lowercaseQuery)
+      );
+      
+      setFilteredForms(matchingForms);
+      return;
+    }
+    
     setSearching(true);
     
     try {
-      const lowercaseQuery = query.toLowerCase();
-      
-      // First search in already loaded forms
-      let matchingForms = leadForms.filter(form => 
+      // First search in already loaded forms (now including all forms ever loaded)
+      let matchingForms = allLoadedForms.filter(form => 
         form.name.toLowerCase().includes(lowercaseQuery) || 
         form.display_name.toLowerCase().includes(lowercaseQuery) || 
         form.id.toLowerCase().includes(lowercaseQuery)
@@ -233,6 +287,15 @@ export function CreateTab({
       
       if (matchingForms.length > 0) {
         setFilteredForms(matchingForms);
+        setSearchedTerms(prev => [...prev, lowercaseQuery]);
+        setSearching(false);
+        return;
+      }
+      
+      // If no results and we've already loaded all forms, then no matches exist
+      if (hasLoadedAllForms) {
+        setFilteredForms([]);
+        setSearchedTerms(prev => [...prev, lowercaseQuery]);
         setSearching(false);
         return;
       }
@@ -246,6 +309,11 @@ export function CreateTab({
         // Load the next page
         const newForms = await getFbLeadForms(currentCursor);
         paginationCount++;
+        
+        if (newForms.length === 0) {
+          // No more forms to load
+          break;
+        }
         
         // Search in the new forms
         matchingForms = newForms.filter(form => 
@@ -270,15 +338,20 @@ export function CreateTab({
       
       // If we still don't have matches but have more cursors, try them sequentially
       if (matchingForms.length === 0 && allCursors.length > 0 && !hasLoadedAllForms) {
-        for (const cursor of allCursors) {
+        // Sort cursors to ensure logical progression
+        const remainingCursors = allCursors.filter(c => c !== currentCursor);
+        
+        for (const cursor of remainingCursors) {
           if (paginationCount >= maxPaginations) break;
-          
-          // Skip cursors we've already checked
-          if (cursor === currentCursor) continue;
           
           // Load the next page
           const newForms = await getFbLeadForms(cursor);
           paginationCount++;
+          
+          if (newForms.length === 0) {
+            // No more forms in this cursor
+            continue;
+          }
           
           // Search in the new forms
           matchingForms = newForms.filter(form => 
@@ -293,6 +366,9 @@ export function CreateTab({
           }
         }
       }
+      
+      // Record this search term to avoid redundant searching
+      setSearchedTerms(prev => [...prev, lowercaseQuery]);
       
       // If still no matches, show an empty result
       if (matchingForms.length === 0) {
@@ -657,6 +733,8 @@ export function CreateTab({
                               onClick={() => {
                                 setFilteredForms([]);
                                 setSearchQuery('');
+                                // Show all loaded forms without changing them
+                                setLeadForms(allLoadedForms);
                               }}
                             >
                               Clear search
@@ -717,6 +795,8 @@ export function CreateTab({
                             onClick={() => {
                               setFilteredForms([]);
                               setSearchQuery('');
+                              // Show all loaded forms without changing them
+                              setLeadForms(allLoadedForms);
                             }}
                           >
                             Clear search
