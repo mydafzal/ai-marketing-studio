@@ -3,6 +3,10 @@ import {getFbMarketingApiKey, getUserDetail} from "@/app/actions";
 
 export async function GET(request: Request) {
     try {
+        // Get pagination cursor from URL if provided
+        const { searchParams } = new URL(request.url);
+        const afterCursor = searchParams.get('after');
+        
         const userDetail = await getUserDetail()
 
         const fbPageId = userDetail?.user?.fbPageId
@@ -21,6 +25,11 @@ export async function GET(request: Request) {
 
         const url = new URL(`${process.env.FASTY_API_URL}/facebook/campaign-creation-flow/get-leadgen-forms-by-page`);
         url.searchParams.set('page_id', fbPageId);
+        
+        // Add pagination cursor if provided
+        if (afterCursor) {
+            url.searchParams.set('after', afterCursor);
+        }
 
         const response = await fetch(url.toString(), {
             method: 'GET',

@@ -82,6 +82,10 @@ export function CreateTab({
   const [showFormDetails, setShowFormDetails] = useState<boolean>(false);
   // Add state for selected form details
   const [selectedFormDetails, setSelectedFormDetails] = useState<LeadForm | null>(null);
+  // Add state for pagination cursor
+  const [paginationCursor, setPaginationCursor] = useState<string | null>(null);
+  // Add state for loading more forms
+  const [loadingMore, setLoadingMore] = useState<boolean>(false);
 
   const objectives = [
     {
@@ -113,12 +117,21 @@ export function CreateTab({
     }
   }, [showLeadFormDropdown]);
 
-  async function getFbLeadForms() {
-    setLoadingLeadForms(true);
+  async function getFbLeadForms(afterCursor?: string | null) {
+    if (!afterCursor) {
+      setLoadingLeadForms(true);
+    } else {
+      setLoadingMore(true);
+    }
     setLeadFormError(null);
     
     try {
-      const response = await fetch('/api/fasty-bot/proxy-get-facebook-lead-forms', {
+      // Add pagination cursor if provided
+      const url = afterCursor 
+        ? `/api/fasty-bot/proxy-get-facebook-lead-forms?after=${afterCursor}`
+        : '/api/fasty-bot/proxy-get-facebook-lead-forms';
+      
+      const response = await fetch(url, {
         method: 'GET',
       });
       
@@ -128,8 +141,21 @@ export function CreateTab({
       }
       
       const data = await response.json();
+      
+      // Handle the new response structure with forms and pagination
+      if (!data.forms) {
+        throw new Error('Invalid response format from server');
+      }
+      
+      // Save pagination cursor for next page if available
+      if (data.pagination?.cursors?.after) {
+        setPaginationCursor(data.pagination.cursors.after);
+      } else {
+        setPaginationCursor(null);
+      }
+      
       // Use the full data structure from the API
-      const formattedLeadForms: LeadForm[] = data.map((form: any) => ({
+      const formattedLeadForms: LeadForm[] = data.forms.map((form: any) => ({
         id: form.id || form.form_id,
         name: form.name || form.form_name,
         display_name: form.display_name || form.name || 'Unnamed Form',
@@ -141,14 +167,24 @@ export function CreateTab({
         page_id: form.page_id || ''
       }));
       
-      setLeadForms(formattedLeadForms);
+      // If loading more, append to existing forms, otherwise replace
+      if (afterCursor) {
+        setLeadForms(prev => [...prev, ...formattedLeadForms]);
+      } else {
+        setLeadForms(formattedLeadForms);
+      }
+      
       return formattedLeadForms;
     } catch (error) {
       console.error('Error fetching lead forms:', error);
       setLeadFormError('Failed to fetch lead forms. Please try again.');
       return [];
     } finally {
-      setLoadingLeadForms(false);
+      if (!afterCursor) {
+        setLoadingLeadForms(false);
+      } else {
+        setLoadingMore(false);
+      }
     }
   }
 
@@ -461,51 +497,73 @@ export function CreateTab({
                           <p className="text-sm text-text-light-gray">No lead forms found</p>
                         </div>
                       ) : (
-                        <ul className="py-1 max-h-60 overflow-auto">
-                          {leadForms.map(form => (
-                            <li 
-                              key={form.id}
-                              className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-800 ${
-                                selectedLeadFormId === form.id ? 'bg-gray-800' : ''
-                              }`}
-                            >
-                              <div className="flex items-center justify-between">
-                                <div 
-                                  className="flex-1"
-                                  onClick={() => {
-                                    setSelectedLeadFormId(form.id);
-                                    setShowLeadFormDropdown(false);
-                                  }}
-                                >
-                                  <div className="flex flex-col">
-                                    <span className="text-text-white font-medium">{form.display_name}</span>
-                                    <span className="text-xs text-text-light-gray">Created: {form.formatted_date}</span>
-                                    <span className="text-xs text-text-light-gray">Fields: {form.collects || `${form.question_count} questions`}</span>
+                        <div>
+                          <ul className="py-1 max-h-60 overflow-auto">
+                            {leadForms.map(form => (
+                              <li 
+                                key={form.id}
+                                className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-800 ${
+                                  selectedLeadFormId === form.id ? 'bg-gray-800' : ''
+                                }`}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div 
+                                    className="flex-1"
+                                    onClick={() => {
+                                      setSelectedLeadFormId(form.id);
+                                      setShowLeadFormDropdown(false);
+                                    }}
+                                  >
+                                    <div className="flex flex-col">
+                                      <span className="text-text-white font-medium">{form.display_name}</span>
+                                      <span className="text-xs text-text-light-gray">Created: {form.formatted_date}</span>
+                                      <span className="text-xs text-text-light-gray">Fields: {form.collects || `${form.question_count} questions`}</span>
+                                    </div>
                                   </div>
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <button 
+                                          className="p-1 ml-2 text-text-light-gray hover:text-primary-green"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setSelectedFormDetails(form);
+                                            setShowFormDetails(true);
+                                          }}
+                                        >
+                                          <InfoIcon size={16} />
+                                        </button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <p className="text-xs">View form details</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
                                 </div>
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <button 
-                                        className="p-1 ml-2 text-text-light-gray hover:text-primary-green"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          setSelectedFormDetails(form);
-                                          setShowFormDetails(true);
-                                        }}
-                                      >
-                                        <InfoIcon size={16} />
-                                      </button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      <p className="text-xs">View form details</p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                              </div>
-                            </li>
-                          ))}
-                        </ul>
+                              </li>
+                            ))}
+                          </ul>
+                          
+                          {/* Load More Button */}
+                          {paginationCursor && (
+                            <div className="p-2 border-t border-border-dark">
+                              <button
+                                className="w-full py-2 text-sm text-center text-primary-green hover:bg-gray-800 rounded-md transition-colors"
+                                onClick={() => getFbLeadForms(paginationCursor)}
+                                disabled={loadingMore}
+                              >
+                                {loadingMore ? (
+                                  <div className="flex items-center justify-center">
+                                    <Loader2 className="animate-spin mr-2" size={14} />
+                                    <span>Loading more...</span>
+                                  </div>
+                                ) : (
+                                  <span>Load more forms</span>
+                                )}
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       )}
                     </div>
                   )}
