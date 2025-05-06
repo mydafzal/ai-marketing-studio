@@ -307,18 +307,18 @@ export function CreateTab({
       </div>
 
       {/* Optional AI guidance */}
-      <div className="space-y-2 mt-5">
-        <label className="text-sm font-medium text-text-white flex items-center">
-          AI Guidance (Optional)
-          <Info size={16} className="ml-2 text-text-light-gray" />
-        </label>
-        <textarea
-          value={aiGuidance}
-          onChange={e => setAiGuidance(e.target.value)}
-          placeholder="Type any notes or instructions for the AI..."
-          className="w-full px-3 py-2.5 bg-dark-bg border border-border-dark text-text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-green focus:border-primary-green placeholder:text-text-light-gray transition-all duration-200 min-h-[80px] resize-none"
-        />
-      </div>
+      {/*<div className="space-y-2 mt-5">*/}
+      {/*  <label className="text-sm font-medium text-text-white flex items-center">*/}
+      {/*    AI Guidance (Optional)*/}
+      {/*    <Info size={16} className="ml-2 text-text-light-gray" />*/}
+      {/*  </label>*/}
+      {/*  <textarea*/}
+      {/*    value={aiGuidance}*/}
+      {/*    onChange={e => setAiGuidance(e.target.value)}*/}
+      {/*    placeholder="Type any notes or instructions for the AI..."*/}
+      {/*    className="w-full px-3 py-2.5 bg-dark-bg border border-border-dark text-text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-green focus:border-primary-green placeholder:text-text-light-gray transition-all duration-200 min-h-[80px] resize-none"*/}
+      {/*  />*/}
+      {/*</div>*/}
 
       {/* Advanced Settings Dialog */}
       <div className="mt-5">
