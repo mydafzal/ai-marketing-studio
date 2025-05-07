@@ -851,10 +851,12 @@ export function CreateTab({
                   {loadingMore ? (
                     <div className="flex items-center justify-center">
                       <Loader2 className="animate-spin mr-2" size={14} />
-                      <span>Loading all forms...</span>
+                      <span>Loading more forms...</span>
                     </div>
+                  ) : searchQuery.trim() !== '' ? (
+                    <span>Search Further</span>
                   ) : (
-                    <span>Load all forms</span>
+                    <span>Load All Forms</span>
                   )}
                 </button>
               </div>
