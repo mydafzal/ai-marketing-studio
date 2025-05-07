@@ -2143,15 +2143,18 @@ export function AdSetupModal({
                           <CheckCircle className="mr-2 size-4" />
                           Step 2: Questions
                         </TabsTrigger>
-                        <TabsTrigger
-                            value="step3"
-                            className={`data-[state=active]:bg-white data-[state=active]:text-[#4169e1] ${
-                                activeLeadFormTab === 'step3' ? 'border-b-2 border-[#4169e1]' : ''
-                            }`}
-                        >
-                          <Lock className="mr-2 size-4" />
-                          Step 3: Privacy
-                        </TabsTrigger>
+                        {/* Privacy tab - only show if not a preselected form */}
+                        {!isPreselectedLeadForm && (
+                          <TabsTrigger
+                              value="step3"
+                              className={`data-[state=active]:bg-white data-[state=active]:text-[#4169e1] ${
+                                  activeLeadFormTab === 'step3' ? 'border-b-2 border-[#4169e1]' : ''
+                              }`}
+                          >
+                            <Lock className="mr-2 size-4" />
+                            Step 3: Privacy
+                          </TabsTrigger>
+                        )}
                         <TabsTrigger
                             value="step4"
                             className={`data-[state=active]:bg-white data-[state=active]:text-[#4169e1] ${
@@ -2422,27 +2425,30 @@ export function AdSetupModal({
                             </div>
                           )}
 
-                          <div className="mb-6">
-                            <h5 className="font-medium text-[#292929] mb-2">Default Questions</h5>
-                            <p className="text-[#767676] mb-4">
-                              These default questions are always included and cannot be modified.
-                            </p>
-
-                            <div className="space-y-2 mb-6">
-                              <div className="p-3 border border-[#d3d3d3] rounded bg-[#f9f9f9]">
-                                <p className="font-medium text-[#292929]">First Name</p>
-                              </div>
-                              <div className="p-3 border border-[#d3d3d3] rounded bg-[#f9f9f9]">
-                                <p className="font-medium text-[#292929]">Last Name</p>
-                              </div>
-                              <div className="p-3 border border-[#d3d3d3] rounded bg-[#f9f9f9]">
-                                <p className="font-medium text-[#292929]">Email</p>
-                              </div>
-                              <div className="p-3 border border-[#d3d3d3] rounded bg-[#f9f9f9]">
-                                <p className="font-medium text-[#292929]">Phone</p>
+                          {/* Default Questions - Only show for non-preselected forms */}
+                          {!isPreselectedLeadForm && (
+                            <div className="mb-6">
+                              <h5 className="font-medium text-[#292929] mb-2">Default Questions</h5>
+                              <p className="text-[#767676] mb-4">
+                                These default questions are always included and cannot be modified.
+                              </p>
+  
+                              <div className="space-y-2 mb-6">
+                                <div className="p-3 border border-[#d3d3d3] rounded bg-[#f9f9f9]">
+                                  <p className="font-medium text-[#292929]">First Name</p>
+                                </div>
+                                <div className="p-3 border border-[#d3d3d3] rounded bg-[#f9f9f9]">
+                                  <p className="font-medium text-[#292929]">Last Name</p>
+                                </div>
+                                <div className="p-3 border border-[#d3d3d3] rounded bg-[#f9f9f9]">
+                                  <p className="font-medium text-[#292929]">Email</p>
+                                </div>
+                                <div className="p-3 border border-[#d3d3d3] rounded bg-[#f9f9f9]">
+                                  <p className="font-medium text-[#292929]">Phone</p>
+                                </div>
                               </div>
                             </div>
-                          </div>
+                          )}
 
                           <div>
                             <h5 className="font-medium text-[#292929] mb-2">
@@ -2539,14 +2545,14 @@ export function AdSetupModal({
                         </div>
                       </TabsContent>
 
-                      {/* Step 3: Privacy */}
-                      <TabsContent value="step3" className="space-y-4">
-                        <div className="bg-white rounded-lg p-5 border border-[#d3d3d3] shadow-sm">
-                          <div className="flex items-center justify-between mb-4">
-                            <h4 className="text-[22px] font-medium text-[#292929]">Step 3: Privacy Policy</h4>
+                      {/* Step 3: Privacy - Only show for non-preselected forms */}
+                      {!isPreselectedLeadForm && (
+                        <TabsContent value="step3" className="space-y-4">
+                          <div className="bg-white rounded-lg p-5 border border-[#d3d3d3] shadow-sm">
+                            <div className="flex items-center justify-between mb-4">
+                              <h4 className="text-[22px] font-medium text-[#292929]">Step 3: Privacy Policy</h4>
 
-                            {/* Save button for tab consistency - only show if not preselected */}
-                            {!isPreselectedLeadForm && (
+                              {/* Save button */}
                               <div className="flex flex-col items-end">
                                 <button
                                   onClick={handleSaveLeadForm}
@@ -2573,77 +2579,57 @@ export function AdSetupModal({
                                   <span className="text-green-400 text-xs mt-1">Saved!</span>
                                 )}
                               </div>
-                            )}
-                          </div>
-                          
-                          {/* Preselected Lead Form Notice */}
-                          {isPreselectedLeadForm && (
-                            <div className="bg-blue-50 border border-blue-200 text-blue-800 rounded-lg p-4 mb-5">
-                              <div className="flex items-start">
-                                <Info className="w-5 h-5 mr-2 mt-0.5 text-blue-600" />
-                                <div>
-                                  <p className="font-medium">Pre-selected Lead Form</p>
-                                  <p className="text-sm">
-                                    Privacy policy settings from your pre-selected lead form will be used.
-                                    These settings cannot be modified.
+                            </div>
+
+                            <div className="space-y-5">
+                              {/* Data Usage Notice */}
+                              <div>
+                                <label className="font-medium text-[#292929] mb-2 block">Data Usage Notice</label>
+                                <textarea
+                                  value={editedDataUsageNotice}
+                                  onChange={handleDataUsageNoticeChange}
+                                  className={`w-full bg-white p-3 rounded-lg border ${
+                                    editedDataUsageNotice !== originalDataUsageNotice 
+                                      ? 'border-yellow-400' 
+                                      : 'border-[#d3d3d3]'
+                                  } text-[#292929] focus:outline-none focus:border-[#4169e1] min-h-[80px]`}
+                                  placeholder="Explain how you will use the collected data"
+                                />
+                              </div>
+
+                              {/* Privacy Policy Link Text */}
+                              <div>
+                                <label className="font-medium text-[#292929] mb-2 block">Privacy Policy Link Text</label>
+                                <input
+                                  type="text"
+                                  value={editedPrivacyPolicyLinkText}
+                                  onChange={handlePrivacyPolicyLinkTextChange}
+                                  className={`w-full bg-white p-3 rounded-lg border ${
+                                    editedPrivacyPolicyLinkText !== originalPrivacyPolicyLinkText 
+                                      ? 'border-yellow-400' 
+                                      : 'border-[#d3d3d3]'
+                                  } text-[#292929] focus:outline-none focus:border-[#4169e1]`}
+                                  placeholder="Enter your privacy policy URL"
+                                />
+                              </div>
+
+                              {/* Privacy Policy Preview */}
+                              <div className="mt-5 p-4 border border-[#d3d3d3] rounded bg-[#f2f2f2]">
+                                <h5 className="font-medium text-[#292929] mb-2">Preview:</h5>
+                                <p className="text-[#292929]">
+                                  {editedDataUsageNotice || "Add a data usage notice to inform users about how their data will be processed."}
+                                </p>
+
+                                {editedPrivacyPolicyLinkText && (
+                                  <p className="text-[#4169e1] mt-2 underline">
+                                    {editedPrivacyPolicyLinkText}
                                   </p>
-                                </div>
+                                )}
                               </div>
                             </div>
-                          )}
-
-                          <div className="space-y-5">
-                            {/* Data Usage Notice */}
-                            <div>
-                              <label className="font-medium text-[#292929] mb-2 block">Data Usage Notice</label>
-                              <textarea
-                                value={editedDataUsageNotice}
-                                onChange={isPreselectedLeadForm ? undefined : handleDataUsageNoticeChange}
-                                readOnly={isPreselectedLeadForm}
-                                className={`w-full p-3 rounded-lg border ${
-                                  isPreselectedLeadForm ? 'bg-gray-50 cursor-not-allowed ' : 'bg-white ' }
-                                  ${editedDataUsageNotice !== originalDataUsageNotice 
-                                    ? 'border-yellow-400' 
-                                    : 'border-[#d3d3d3]'
-                                } text-[#292929] focus:outline-none focus:border-[#4169e1] min-h-[80px]`}
-                                placeholder="Explain how you will use the collected data"
-                              />
-                            </div>
-
-                            {/* Privacy Policy Link Text */}
-                            <div>
-                              <label className="font-medium text-[#292929] mb-2 block">Privacy Policy Link Text</label>
-                              <input
-                                type="text"
-                                value={editedPrivacyPolicyLinkText}
-                                onChange={isPreselectedLeadForm ? undefined : handlePrivacyPolicyLinkTextChange}
-                                readOnly={isPreselectedLeadForm}
-                                className={`w-full p-3 rounded-lg border ${
-                                  isPreselectedLeadForm ? 'bg-gray-50 cursor-not-allowed ' : 'bg-white ' }
-                                  ${editedPrivacyPolicyLinkText !== originalPrivacyPolicyLinkText 
-                                    ? 'border-yellow-400' 
-                                    : 'border-[#d3d3d3]'
-                                } text-[#292929] focus:outline-none focus:border-[#4169e1]`}
-                                placeholder="Enter your privacy policy URL"
-                              />
-                            </div>
-
-                            {/* Privacy Policy Preview */}
-                            <div className="mt-5 p-4 border border-[#d3d3d3] rounded bg-[#f2f2f2]">
-                              <h5 className="font-medium text-[#292929] mb-2">Preview:</h5>
-                              <p className="text-[#292929]">
-                                {editedDataUsageNotice || "Add a data usage notice to inform users about how their data will be processed."}
-                              </p>
-
-                              {editedPrivacyPolicyLinkText && (
-                                <p className="text-[#4169e1] mt-2 underline">
-                                  {editedPrivacyPolicyLinkText}
-                                </p>
-                              )}
-                            </div>
                           </div>
-                        </div>
-                      </TabsContent>
+                        </TabsContent>
+                      )}
 
                       {/* Step 4: Thank You */}
                       <TabsContent value="step4" className="space-y-4">
