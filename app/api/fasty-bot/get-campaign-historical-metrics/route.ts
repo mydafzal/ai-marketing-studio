@@ -1,5 +1,9 @@
 import { NextResponse } from 'next/server'
 import { getFbMarketingApiKey } from '@/app/actions'
+import { auth } from '@/auth'
+import { encryptEmail } from '@/lib/email-encryption'
+import { trackEvent } from '@/lib/utils'
+import { Events } from '@/lib/posthog-events'
 
 export async function GET(request: Request) {
   try {
@@ -53,6 +57,18 @@ export async function GET(request: Request) {
 
     // 6. Return the FastAPI response as JSON
     const data = await response.json()
+    const session = await auth()
+     if (!session?.user) {
+       console.error('❌ Authentication failed - no valid user session');
+       return NextResponse.json({error: 'Unauthorized'}, {status: 401})
+     }
+
+    const encryptedEmail = await encryptEmail(session.user.email || '')
+    
+    trackEvent(Events.CAMPAIGN_ANALYZED, {
+        email: encryptedEmail,
+        id: session?.user?.id || ''
+      })  
     return NextResponse.json(data)
 
   } catch (err) {

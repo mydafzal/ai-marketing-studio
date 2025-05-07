@@ -2,6 +2,10 @@
 
 import React, { useEffect, useState } from "react"
 import type { AdInsight } from "@/lib/api/fasty-bot/get-all-ad-metrics-by-campaign-id"
+import { auth } from "@/auth"
+import { encryptEmail } from "@/lib/email-encryption"
+import { trackEvent } from "@/lib/utils"
+import { Events } from "@/lib/posthog-events"
 
 interface AdMetricsFetcherProps {
   campaignId: string
@@ -41,6 +45,13 @@ export const AdMetricsFetcher: React.FC<AdMetricsFetcherProps> = ({
           throw new Error(`Failed to fetch metrics: ${text}`)
         }
         const data = await res.json()
+        const session = await auth()
+        const encryptedEmail = await encryptEmail(session?.user?.email || '');
+
+        trackEvent(Events.AD_CREATIVES_ANALYZED, {
+            email: encryptedEmail,
+            id: session?.user?.id || ''
+          })
 
         // data should have { ads_insights: AdInsight[] }
         if (!data?.ads_insights) {

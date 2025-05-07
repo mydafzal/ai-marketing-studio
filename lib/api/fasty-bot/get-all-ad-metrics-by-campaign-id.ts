@@ -1,4 +1,8 @@
 import { getCampaignIdFromUrl } from "./helpers/campaign-id-from-url-helper"
+import { auth } from "@/auth"
+import { encryptEmail } from "@/lib/email-encryption"
+import { trackEvent } from "@/lib/utils"
+import { Events } from "@/lib/posthog-events"
 
 // Define base types for actions
 interface ActionType {
@@ -277,6 +281,13 @@ export async function getAllAdMetricsByCampaignId(campaignId?: string): Promise<
       }
 
       const data = await response.json();
+      const session = await auth()
+      const encryptedEmail = await encryptEmail(session?.user?.email || '');
+
+      trackEvent(Events.AD_CREATIVES_ANALYZED, {
+          email: encryptedEmail,
+          id: session?.user?.id || ''
+        })
       if (!data?.ads_insights) {
         console.warn("No ads_insights in response");
         return { adCreatives: [] };

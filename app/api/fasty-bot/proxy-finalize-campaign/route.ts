@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { getFbMarketingApiKey } from '@/app/actions';
+import { encryptEmail } from '@/lib/email-encryption';
+import { Events } from '@/lib/posthog-events';
+import { trackEvent } from '@/lib/utils';
 
 export async function POST(req: NextRequest) {
   console.log('📥 Received request to proxy-finalize-campaign endpoint');
@@ -158,10 +161,50 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    const encryptedEmail = await encryptEmail(session.user.email || '');
     // Return successful response
     console.log('✅ Successfully received response from backend');
     const data = await response.json();
     console.log('📊 Response data:', JSON.stringify(data, null, 2));
+    // Track campaign type specific event
+    const campaignObjective = data.campaign_objective || data.fb_compliant_campaign_objective;
+    if (campaignObjective) {
+      
+      switch (campaignObjective) {
+        case 'LEAD_GENERATION':
+          trackEvent(Events.LEAD_CAMPAIGN_CREATED, {
+            email: encryptedEmail,
+            id: session.user.id || ''
+          });
+          break;
+        case 'CONVERSIONS':
+          trackEvent(Events.CONVERSION_CAMPAIGN_CREATED, {
+            email: encryptedEmail,
+            id: session.user.id || ''
+          });
+          break;
+        case 'BRAND_AWARENESS':
+          trackEvent(Events.AWARENESS_CAMPAIGN_CREATED, {
+            email: encryptedEmail,
+            id: session.user.id || ''
+          });
+          break;
+        case 'RECRUITING':
+          trackEvent(Events.RECRUITING_CAMPAIGN_CREATED, {
+            email: encryptedEmail,
+            id: session.user.id || ''
+          });
+          break;
+        default:
+          console.log('⚠️ Unknown campaign objective:', campaignObjective);
+      }
+    }    
+
+    // Track general campaign finalization event
+    trackEvent(Events.CAMPAIGN_FINALIZED, {
+      email: encryptedEmail,
+      id: session.user.id || ''
+    });    
     
     return NextResponse.json(data)
   } catch (error) {

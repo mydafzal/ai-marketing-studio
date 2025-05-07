@@ -1,4 +1,8 @@
 import { getFbMarketingApiKey } from '@/app/actions';
+import { auth } from '@/auth';
+import { encryptEmail } from '@/lib/email-encryption';
+import { Events } from '@/lib/posthog-events';
+import { trackEvent } from '@/lib/utils';
 
 async function setCampaignStatus(campaignId: string, status: string): Promise<boolean> {
     if (campaignId == '0') { // TODO: Remove this once Fasty bot is live and campaign IDs are available
@@ -46,6 +50,13 @@ async function setCampaignStatus(campaignId: string, status: string): Promise<bo
 
         // Check for success in the result
         if (responseData.result && responseData.result.success === true) {
+            const session = await auth()
+            const encryptedEmail = await encryptEmail(session?.user?.email || '');
+    
+            trackEvent(Events.CAMPAIGN_STATUS_CHANGED, {
+                email: encryptedEmail,
+                id: session?.user?.id || ''
+              })            
             console.log('Successfully set status:', responseData);
             return true;
         } else {

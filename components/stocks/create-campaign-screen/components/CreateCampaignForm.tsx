@@ -11,6 +11,10 @@ import { ReviewScreen } from './ReviewScreen';
 import { LoadingScreen } from './LoadingScreen';
 import { loadingSteps } from '../utils';
 import { CampaignSettingsModal } from './CampaignSettingsModal';
+import { trackEvent } from '@/lib/utils';
+import { Events } from '@/lib/posthog-events';
+import { auth } from '@/auth';
+import { encryptEmail } from '@/lib/email-encryption';
 
 export function CreateCampaignForm() {
   // Media upload state
@@ -429,6 +433,15 @@ export function CreateCampaignForm() {
       const data = await response.json();
       console.log('✅ Master flow response received successfully');
       console.log('📊 Master flow response data:', JSON.stringify(data, null, 2));
+
+      const session = await auth()
+      const encryptedEmail = await encryptEmail(session?.user?.email || '');
+
+      trackEvent(Events.CAMPAIGN_FLOW_INITIATED, {
+        email: encryptedEmail,
+        id: session?.user?.id || ''
+      })
+
       setMasterFlowData(data);
       
       // No delay needed - removed for better UX

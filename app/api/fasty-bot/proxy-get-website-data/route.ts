@@ -1,4 +1,8 @@
 import {NextResponse} from 'next/server'
+import { auth } from '@/auth'
+import { encryptEmail } from '@/lib/email-encryption'
+import { trackEvent } from '@/lib/utils'
+import { Events } from '@/lib/posthog-events'
 
 const enableBackendCall = true;
 
@@ -46,6 +50,13 @@ export async function POST(request: Request) {
             )
         }
         const data = await response.json()
+        const session = await auth()
+        const encryptedEmail = await encryptEmail(session?.user?.email || '');
+
+        trackEvent(Events.WEBSITE_ANALYZED, {
+            email: encryptedEmail,
+            id: session?.user?.id || ''
+          })
         return NextResponse.json(data)
     } catch (error) {
         console.error('Error setting status:', error)

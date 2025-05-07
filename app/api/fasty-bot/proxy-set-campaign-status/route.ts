@@ -1,5 +1,9 @@
 import {NextResponse} from 'next/server'
 import { getFbMarketingApiKey } from '@/app/actions';
+import { auth } from '@/auth';
+import { encryptEmail } from '@/lib/email-encryption';
+import { Events } from '@/lib/posthog-events';
+import { trackEvent } from '@/lib/utils';
 
 export async function POST(request: Request) {
     try {
@@ -52,6 +56,13 @@ export async function POST(request: Request) {
             return NextResponse.json({success: false}, {status: response.status})
         }
 
+        const session = await auth()
+        const encryptedEmail = await encryptEmail(session?.user?.email || '');
+
+        trackEvent(Events.CAMPAIGN_STATUS_CHANGED, {
+            email: encryptedEmail,
+            id: session?.user?.id || ''
+          })
         return NextResponse.json({success: true})
     } catch (error) {
         console.error('Error setting status:', error)
