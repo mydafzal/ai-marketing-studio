@@ -316,8 +316,23 @@ export function CreateTab({
   const saveFormSelection = async () => {
     if (!tempSelectedFormId) return;
     
-    // Find the selected form
-    const selectedForm = allLoadedForms.find(form => form.id === tempSelectedFormId);
+    // Find the selected form in loaded forms or use stored form if available
+    let selectedForm = allLoadedForms.find(form => form.id === tempSelectedFormId);
+    
+    // If the form isn't in allLoadedForms but matches storedLeadForm, use it anyway
+    if (!selectedForm && storedLeadForm && tempSelectedFormId === storedLeadForm.formId) {
+      // Create a LeadForm object from the stored form data
+      selectedForm = {
+        id: storedLeadForm.formId,
+        name: storedLeadForm.formName,
+        display_name: storedLeadForm.displayName,
+        formatted_date: storedLeadForm.formattedDate,
+        question_count: storedLeadForm.questionCount,
+        collects: storedLeadForm.collects
+      };
+    }
+    
+    // If we still don't have a form, don't proceed
     if (!selectedForm) return;
     
     // Update the selected lead form ID
