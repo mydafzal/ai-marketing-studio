@@ -6,6 +6,7 @@ export async function GET(request: Request) {
         // Get pagination cursor from URL if provided
         const { searchParams } = new URL(request.url);
         const afterCursor = searchParams.get('after');
+        const paginateTillEnd = searchParams.get('paginate_till_end') === 'true';
         
         const userDetail = await getUserDetail()
 
@@ -29,6 +30,11 @@ export async function GET(request: Request) {
         // Add pagination cursor if provided
         if (afterCursor) {
             url.searchParams.set('after', afterCursor);
+        }
+        
+        // Add paginate_till_end parameter if provided
+        if (paginateTillEnd) {
+            url.searchParams.set('paginate_till_end', 'true');
         }
 
         const response = await fetch(url.toString(), {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, Info, XCircle, Loader2, Plus, ChevronDown, ChevronRight, Settings, Clock, Info as InfoIcon } from 'lucide-react';
+import { Upload, Info, XCircle, Loader2, Plus, ChevronDown, Settings, Clock, Info as InfoIcon } from 'lucide-react';
 import { MediaItem } from '../types';
 import { 
   Dialog, 
@@ -11,23 +11,14 @@ import {
 } from '@/components/ui/dialog';
 import { BudgetSettings } from './BudgetSettings';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-
-interface LeadFormQuestion {
-  label: string;
-  type: string;
-}
-
-interface LeadForm {
-  id: string;
-  name: string;
-  display_name: string;
-  formatted_date: string;
-  question_count: number;
-  questions_preview?: LeadFormQuestion[];
-  collects?: string;
-  status?: string;
-  page_id?: string;
-}
+import { 
+  LeadForm, 
+  StoredLeadForm,
+  getStoredLeadForm,
+  saveLeadFormToLocalStorage,
+  fetchAllLeadForms,
+  searchFormsLocally
+} from './lead-form';
 
 interface CreateTabProps {
   mediaItems: MediaItem[];
@@ -49,61 +40,6 @@ interface CreateTabProps {
   selectedLeadFormId: string;
   setSelectedLeadFormId: (id: string) => void;
 }
-
-// Type for storing lead form in local storage
-interface StoredLeadForm {
-  formId: string;
-  pageId: string;
-  formName: string;
-  displayName: string;
-  formattedDate: string;
-  questionCount: number;
-  collects?: string;
-}
-
-// Local storage key
-const STORED_LEAD_FORM_KEY = 'reeply_selected_lead_form';
-
-// Function to save the selected lead form to local storage
-const saveLeadFormToLocalStorage = (form: LeadForm, pageId: string) => {
-  if (!form || !pageId) return;
-  
-  const storedForm: StoredLeadForm = {
-    formId: form.id,
-    pageId: pageId,
-    formName: form.name,
-    displayName: form.display_name,
-    formattedDate: form.formatted_date,
-    questionCount: form.question_count,
-    collects: form.collects
-  };
-  
-  try {
-    localStorage.setItem(STORED_LEAD_FORM_KEY, JSON.stringify(storedForm));
-  } catch (error) {
-    console.error('Error saving lead form to local storage:', error);
-  }
-};
-
-// Function to get the previously selected lead form from local storage
-const getStoredLeadForm = (pageId: string): StoredLeadForm | null => {
-  try {
-    const storedFormJson = localStorage.getItem(STORED_LEAD_FORM_KEY);
-    if (!storedFormJson) return null;
-    
-    const storedForm: StoredLeadForm = JSON.parse(storedFormJson);
-    
-    // Only return if the page ID matches
-    if (storedForm.pageId === pageId) {
-      return storedForm;
-    }
-    
-    return null;
-  } catch (error) {
-    console.error('Error retrieving lead form from local storage:', error);
-    return null;
-  }
-};
 
 export function CreateTab({
   mediaItems,
@@ -149,12 +85,8 @@ export function CreateTab({
   const [searching, setSearching] = useState<boolean>(false);
   // Add state to track if we've loaded all forms
   const [hasLoadedAllForms, setHasLoadedAllForms] = useState<boolean>(false);
-  // Add state to store all pagination cursors we've seen
-  const [allCursors, setAllCursors] = useState<string[]>([]);
-  // Add state to store all forms ever loaded (including from search pagination)
+  // Add state to store all forms ever loaded
   const [allLoadedForms, setAllLoadedForms] = useState<LeadForm[]>([]);
-  // Add state to track searched terms to avoid redundant searches
-  const [searchedTerms, setSearchedTerms] = useState<string[]>([]);
   // Add state for previously selected lead form from local storage
   const [storedLeadForm, setStoredLeadForm] = useState<StoredLeadForm | null>(null);
 
@@ -223,7 +155,7 @@ export function CreateTab({
     // If we already have forms loaded and no cursor is provided, use cached forms
     if (!afterCursor && allLoadedForms.length > 0 && !searchQuery) {
       setLeadForms(allLoadedForms);
-      return allLoadedForms;
+      return;
     }
     
     if (!afterCursor) {
@@ -235,76 +167,26 @@ export function CreateTab({
     
     try {
       // Skip fetching if we already loaded all forms
-      if (hasLoadedAllForms && afterCursor) {
+      if (hasLoadedAllForms && !paginationCursor) {
         setLoadingMore(false);
-        return [];
+        setLoadingLeadForms(false);
+        return;
       }
       
-      // Check if we already have data for this cursor
-      if (afterCursor && allCursors.includes(afterCursor)) {
-        const existingFormsIds = new Set(allLoadedForms.map(form => form.id));
-        const newFormsNeeded = allLoadedForms.filter(form => !existingFormsIds.has(form.id));
-        
-        if (newFormsNeeded.length > 0) {
-          if (afterCursor) {
-            setLeadForms(prev => [...prev, ...newFormsNeeded]);
-          }
-          setLoadingMore(false);
-          return newFormsNeeded;
-        }
-      }
+      const result = await fetchAllLeadForms(afterCursor);
       
-      // Add pagination cursor if provided
-      const url = afterCursor 
-        ? `/api/fasty-bot/proxy-get-facebook-lead-forms?after=${afterCursor}`
-        : '/api/fasty-bot/proxy-get-facebook-lead-forms';
+      // Update pagination state
+      setPaginationCursor(result.paginationCursor);
       
-      const response = await fetch(url, {
-        method: 'GET',
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to fetch lead forms');
-      }
-      
-      const data = await response.json();
-      
-      // Handle the new response structure with forms and pagination
-      if (!data.forms) {
-        throw new Error('Invalid response format from server');
-      }
-      
-      // Save pagination cursor for next page if available
-      if (data.pagination?.cursors?.after) {
-        setPaginationCursor(data.pagination.cursors.after);
-        
-        // Store the cursor for search pagination
-        if (!allCursors.includes(data.pagination.cursors.after)) {
-          setAllCursors(prev => [...prev, data.pagination.cursors.after]);
-        }
-      } else {
-        setPaginationCursor(null);
+      // When pagination is null, we've loaded all forms
+      if (!result.paginationCursor) {
         setHasLoadedAllForms(true);
       }
-      
-      // Use the full data structure from the API
-      const formattedLeadForms: LeadForm[] = data.forms.map((form: any) => ({
-        id: form.id || form.form_id,
-        name: form.name || form.form_name,
-        display_name: form.display_name || form.name || 'Unnamed Form',
-        formatted_date: form.formatted_date || new Date(form.created_time).toLocaleDateString(),
-        question_count: form.question_count || 0,
-        questions_preview: form.questions_preview || [],
-        collects: form.collects || '',
-        status: form.status || 'UNKNOWN',
-        page_id: form.page_id || ''
-      }));
       
       // Update allLoadedForms with deduplication
       setAllLoadedForms(prevAll => {
         const existingIds = new Set(prevAll.map(form => form.id));
-        const newForms = formattedLeadForms.filter(form => !existingIds.has(form.id));
+        const newForms = result.forms.filter(form => !existingIds.has(form.id));
         return [...prevAll, ...newForms];
       });
       
@@ -312,152 +194,74 @@ export function CreateTab({
       if (afterCursor) {
         setLeadForms(prev => {
           const existingIds = new Set(prev.map(form => form.id));
-          const newForms = formattedLeadForms.filter(form => !existingIds.has(form.id));
+          const newForms = result.forms.filter(form => !existingIds.has(form.id));
           return [...prev, ...newForms];
         });
       } else {
-        setLeadForms(formattedLeadForms);
+        setLeadForms(result.forms);
       }
-      
-      return formattedLeadForms;
     } catch (error) {
       console.error('Error fetching lead forms:', error);
       setLeadFormError('Failed to fetch lead forms. Please try again.');
-      return [];
     } finally {
-      if (!afterCursor) {
-        setLoadingLeadForms(false);
-      } else {
-        setLoadingMore(false);
-      }
+      setLoadingLeadForms(false);
+      setLoadingMore(false);
     }
   }
   
   // Function to search lead forms by name or ID
-  async function searchLeadForms(query: string) {
-    if (!query.trim()) {
-      setFilteredForms([]);
-      return;
-    }
-    
-    const lowercaseQuery = query.toLowerCase();
-    
-    // Check if we've already searched for this exact term
-    if (searchedTerms.includes(lowercaseQuery)) {
-      // Search in all loaded forms
-      const matchingForms = allLoadedForms.filter(form => 
-        form.name.toLowerCase().includes(lowercaseQuery) || 
-        form.display_name.toLowerCase().includes(lowercaseQuery) || 
-        form.id.toLowerCase().includes(lowercaseQuery)
-      );
-      
-      setFilteredForms(matchingForms);
-      return;
-    }
-    
+  function searchLeadForms(query: string) {
     setSearching(true);
     
     try {
-      // First search in already loaded forms (now including all forms ever loaded)
-      let matchingForms = allLoadedForms.filter(form => 
-        form.name.toLowerCase().includes(lowercaseQuery) || 
-        form.display_name.toLowerCase().includes(lowercaseQuery) || 
-        form.id.toLowerCase().includes(lowercaseQuery)
-      );
-      
-      if (matchingForms.length > 0) {
-        setFilteredForms(matchingForms);
-        setSearchedTerms(prev => [...prev, lowercaseQuery]);
+      if (!query.trim()) {
+        setFilteredForms([]);
         setSearching(false);
         return;
       }
       
-      // If no results and we've already loaded all forms, then no matches exist
-      if (hasLoadedAllForms) {
-        setFilteredForms([]);
-        setSearchedTerms(prev => [...prev, lowercaseQuery]);
+      // If we haven't loaded all forms yet, let's do it now
+      if (!hasLoadedAllForms && paginationCursor) {
+        // Load all forms with pagination
+        fetchAllLeadForms(paginationCursor)
+          .then(result => {
+            // Update our states
+            setHasLoadedAllForms(!result.hasMore);
+            
+            // Add these forms to our all loaded forms with deduplication
+            const updatedForms = [...allLoadedForms];
+            const existingIds = new Set(updatedForms.map(f => f.id));
+            
+            result.forms.forEach(form => {
+              if (!existingIds.has(form.id)) {
+                updatedForms.push(form);
+              }
+            });
+            
+            setAllLoadedForms(updatedForms);
+            
+            // Now search in all the forms we have
+            const matches = searchFormsLocally(updatedForms, query);
+            setFilteredForms(matches);
+          })
+          .catch(error => {
+            console.error('Error loading all forms for search:', error);
+            // Still try to search in what we have
+            const matches = searchFormsLocally(allLoadedForms, query);
+            setFilteredForms(matches);
+          })
+          .finally(() => {
+            setSearching(false);
+          });
+      } else {
+        // We already have all forms, just search locally
+        const matches = searchFormsLocally(allLoadedForms, query);
+        setFilteredForms(matches);
         setSearching(false);
-        return;
-      }
-      
-      // If no results, try to load more (up to 5 paginations)
-      const maxPaginations = 5;
-      let paginationCount = 0;
-      let currentCursor = paginationCursor;
-      
-      while (currentCursor && paginationCount < maxPaginations && !hasLoadedAllForms) {
-        // Load the next page
-        const newForms = await getFbLeadForms(currentCursor);
-        paginationCount++;
-        
-        if (newForms.length === 0) {
-          // No more forms to load
-          break;
-        }
-        
-        // Search in the new forms
-        matchingForms = newForms.filter(form => 
-          form.name.toLowerCase().includes(lowercaseQuery) || 
-          form.display_name.toLowerCase().includes(lowercaseQuery) || 
-          form.id.toLowerCase().includes(lowercaseQuery)
-        );
-        
-        if (matchingForms.length > 0) {
-          setFilteredForms(matchingForms);
-          break;
-        }
-        
-        // Update cursor for next iteration
-        currentCursor = paginationCursor;
-        
-        // If we reached the end, stop
-        if (!currentCursor || hasLoadedAllForms) {
-          break;
-        }
-      }
-      
-      // If we still don't have matches but have more cursors, try them sequentially
-      if (matchingForms.length === 0 && allCursors.length > 0 && !hasLoadedAllForms) {
-        // Sort cursors to ensure logical progression
-        const remainingCursors = allCursors.filter(c => c !== currentCursor);
-        
-        for (const cursor of remainingCursors) {
-          if (paginationCount >= maxPaginations) break;
-          
-          // Load the next page
-          const newForms = await getFbLeadForms(cursor);
-          paginationCount++;
-          
-          if (newForms.length === 0) {
-            // No more forms in this cursor
-            continue;
-          }
-          
-          // Search in the new forms
-          matchingForms = newForms.filter(form => 
-            form.name.toLowerCase().includes(lowercaseQuery) || 
-            form.display_name.toLowerCase().includes(lowercaseQuery) || 
-            form.id.toLowerCase().includes(lowercaseQuery)
-          );
-          
-          if (matchingForms.length > 0) {
-            setFilteredForms(matchingForms);
-            break;
-          }
-        }
-      }
-      
-      // Record this search term to avoid redundant searching
-      setSearchedTerms(prev => [...prev, lowercaseQuery]);
-      
-      // If still no matches, show an empty result
-      if (matchingForms.length === 0) {
-        setFilteredForms([]);
       }
     } catch (error) {
       console.error('Error searching lead forms:', error);
       setLeadFormError('Failed to search lead forms. Please try again.');
-    } finally {
       setSearching(false);
     }
   }
@@ -637,20 +441,6 @@ export function CreateTab({
         </div>
         <BudgetSettings budget={budget} setBudget={setBudget} />
       </div>
-
-      {/* Optional AI guidance */}
-      {/*<div className="space-y-2 mt-5">*/}
-      {/*  <label className="text-sm font-medium text-text-white flex items-center">*/}
-      {/*    AI Guidance (Optional)*/}
-      {/*    <Info size={16} className="ml-2 text-text-light-gray" />*/}
-      {/*  </label>*/}
-      {/*  <textarea*/}
-      {/*    value={aiGuidance}*/}
-      {/*    onChange={e => setAiGuidance(e.target.value)}*/}
-      {/*    placeholder="Type any notes or instructions for the AI..."*/}
-      {/*    className="w-full px-3 py-2.5 bg-dark-bg border border-border-dark text-text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-green focus:border-primary-green placeholder:text-text-light-gray transition-all duration-200 min-h-[80px] resize-none"*/}
-      {/*  />*/}
-      {/*</div>*/}
 
       {/* Advanced Settings Dialog */}
       <div className="mt-5">
@@ -984,7 +774,7 @@ export function CreateTab({
                           </ul>
                           
                           {/* Load More Button */}
-                          {paginationCursor && !searchQuery.trim() && (
+                          {paginationCursor && !searchQuery.trim() && !hasLoadedAllForms && (
                             <div className="p-2 border-t border-border-dark">
                               <button
                                 className="w-full py-2 text-sm text-center text-primary-green hover:bg-gray-800 rounded-md transition-colors"
@@ -997,7 +787,7 @@ export function CreateTab({
                                     <span>Loading more...</span>
                                   </div>
                                 ) : (
-                                  <span>Load more forms</span>
+                                  <span>Load all forms</span>
                                 )}
                               </button>
                             </div>
