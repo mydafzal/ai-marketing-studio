@@ -141,6 +141,21 @@ export function CreateTab({
             
             if (stored) {
               setStoredLeadForm(stored);
+              
+              // If we have a stored form, handle both auto-selection and displaying in the UI
+              if (stored.formId) {
+                console.log('Found stored lead form:', stored.formId);
+                
+                // If no form is currently selected, automatically select the stored one
+                if (!selectedLeadFormId) {
+                  console.log('Setting previously stored lead form as selected:', stored.formId);
+                  setSelectedLeadFormId(stored.formId);
+                  setSelectedFormName(stored.displayName);
+                  
+                  // Set behavior to existing since we're selecting a stored form
+                  setLeadFormBehavior("existing");
+                }
+              }
             }
           }
         } catch (error) {
@@ -150,8 +165,12 @@ export function CreateTab({
       
       fetchPageId();
       
-      // Set temporary selected form to current selection
-      setTempSelectedFormId(selectedLeadFormId);
+      // Set temporary selected form to current selection or stored one as fallback
+      if (selectedLeadFormId) {
+        setTempSelectedFormId(selectedLeadFormId);
+      } else if (storedLeadForm) {
+        setTempSelectedFormId(storedLeadForm.formId);
+      }
     }
   }, [showLeadFormModal]);
   
@@ -685,7 +704,7 @@ export function CreateTab({
             </div>
 
             {/* Previously Selected Form */}
-            {storedLeadForm && storedLeadForm.formId !== selectedLeadFormId && (
+            {storedLeadForm && (
               <div className="p-3 border-b border-border-dark bg-gray-800">
                 <div className="mb-1 text-xs font-medium text-text-light-gray">Previously Selected Form</div>
                 <div 
