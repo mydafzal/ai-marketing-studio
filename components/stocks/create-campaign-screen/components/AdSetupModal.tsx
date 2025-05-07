@@ -317,7 +317,7 @@ export function AdSetupModal({
     getLeadFormValue("company_name") || ""
   );
   const [editedFollowUpUrl, setEditedFollowUpUrl] = useState(
-    getLeadFormValue("follow_up_url") || websiteUrl || ""
+    getLeadFormValue("follow_up_url") || getLeadFormValue("lead_form_follow_up_url") || websiteUrl || ""
   );
   const [editedLocale, setEditedLocale] = useState(
     getLeadFormValue("lead_form_locale") || getLeadFormValue("locale") || "en_US"
@@ -387,7 +387,7 @@ export function AdSetupModal({
     getLeadFormValue("company_name") || ""
   );
   const [originalFollowUpUrl, setOriginalFollowUpUrl] = useState(
-    getLeadFormValue("follow_up_url") || websiteUrl || ""
+    getLeadFormValue("follow_up_url") || getLeadFormValue("lead_form_follow_up_url") || websiteUrl || ""
   );
   const [originalLocale, setOriginalLocale] = useState(
     getLeadFormValue("lead_form_locale") || getLeadFormValue("locale") || "en_US"
