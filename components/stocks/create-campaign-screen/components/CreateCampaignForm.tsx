@@ -369,7 +369,7 @@ export function CreateCampaignForm() {
         privacy_policy_link: userData.account?.privacy_policy_link || '',
         instagram_account_id: userData.account?.instagramAccountId || '',
         post_assessment_campaign_objective: 'auto',
-        selected_lead_form_id: selectedLeadFormId
+        selectedLeadFormId: selectedLeadFormId
 
       };
       
