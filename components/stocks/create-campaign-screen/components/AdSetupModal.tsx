@@ -228,14 +228,18 @@ export function AdSetupModal({
   // Safe access for lead form properties using type assertion 
   const leadFormContent = masterFlowData?.lead_form_content as any;
   
+  // Check if this is a preselected lead form based on having lead_form_id in the response
+  const isPreselectedLeadForm = !!(leadFormContent && leadFormContent.lead_form_id);
+  
   // Debug the lead form content structure
   useEffect(() => {
     if (leadFormContent && leadFormContent !== null) {
       console.log('Lead form content structure:', leadFormContent);
+      console.log('Is preselected lead form:', isPreselectedLeadForm);
     } else if (masterFlowData?.lead_form_content === null) {
       console.log('Lead form content is null - this campaign is not eligible for a lead form');
     }
-  }, [leadFormContent, masterFlowData?.lead_form_content]);
+  }, [leadFormContent, masterFlowData?.lead_form_content, isPreselectedLeadForm]);
   
   // Handle the nested structure of lead form data
   const getLeadFormValue = (field: string) => {
@@ -313,7 +317,7 @@ export function AdSetupModal({
     getLeadFormValue("company_name") || ""
   );
   const [editedFollowUpUrl, setEditedFollowUpUrl] = useState(
-    getLeadFormValue("follow_up_url") || websiteUrl || ""
+    getLeadFormValue("follow_up_url") || getLeadFormValue("lead_form_follow_up_url") || websiteUrl || ""
   );
   const [editedLocale, setEditedLocale] = useState(
     getLeadFormValue("lead_form_locale") || getLeadFormValue("locale") || "en_US"
@@ -383,7 +387,7 @@ export function AdSetupModal({
     getLeadFormValue("company_name") || ""
   );
   const [originalFollowUpUrl, setOriginalFollowUpUrl] = useState(
-    getLeadFormValue("follow_up_url") || websiteUrl || ""
+    getLeadFormValue("follow_up_url") || getLeadFormValue("lead_form_follow_up_url") || websiteUrl || ""
   );
   const [originalLocale, setOriginalLocale] = useState(
     getLeadFormValue("lead_form_locale") || getLeadFormValue("locale") || "en_US"
@@ -1332,7 +1336,30 @@ export function AdSetupModal({
     
     // Option 1: Top-level lead_form_questions array
     if (leadFormContent.lead_form_questions && Array.isArray(leadFormContent.lead_form_questions)) {
-      return leadFormContent.lead_form_questions.map((question: string) => {
+      return leadFormContent.lead_form_questions.map((question: any) => {
+        // If the question is already an object with a type and label
+        if (typeof question === 'object' && question !== null) {
+          // Check if it has type/key/id and label
+          if (question.key && question.label) {
+            return {
+              type: question.key,
+              label: question.label // Already formatted
+            };
+          }
+          if (question.type && question.label) {
+            return {
+              type: question.type,
+              label: question.label // Already formatted
+            };
+          }
+          if (question.id && question.label) {
+            return {
+              type: question.id,
+              label: question.label // Already formatted
+            };
+          }
+        }
+        
         return {
           type: question,
           label: formatQuestionLabel(question)
@@ -1342,7 +1369,17 @@ export function AdSetupModal({
     
     // Option 2: Questions in lead_form_data nested structure
     if (leadFormContent.lead_form_data && leadFormContent.lead_form_data.lead_form_questions) {
-      return leadFormContent.lead_form_data.lead_form_questions.map((question: string) => {
+      return leadFormContent.lead_form_data.lead_form_questions.map((question: any) => {
+        // If the question is already an object with a type and label
+        if (typeof question === 'object' && question !== null) {
+          if (question.label) {
+            return {
+              type: question.type || question.key || question.id || 'custom',
+              label: question.label
+            };
+          }
+        }
+        
         return {
           type: question,
           label: formatQuestionLabel(question)
@@ -1352,7 +1389,17 @@ export function AdSetupModal({
     
     // Option 3: New format custom_questions array
     if (leadFormContent.custom_questions && Array.isArray(leadFormContent.custom_questions)) {
-      return leadFormContent.custom_questions.map((question: string) => {
+      return leadFormContent.custom_questions.map((question: any) => {
+        // If the question is already an object with a type and label
+        if (typeof question === 'object' && question !== null) {
+          if (question.label) {
+            return {
+              type: question.type || question.key || question.id || 'custom',
+              label: question.label
+            };
+          }
+        }
+        
         return {
           type: question,
           label: formatQuestionLabel(question)
@@ -1363,12 +1410,26 @@ export function AdSetupModal({
     return [];
   };
 
-  const formatQuestionLabel = (questionKey: string): string => {
+  const formatQuestionLabel = (questionKey: any): string => {
+    // If it's not defined or null, return empty string
     if (!questionKey) return '';
-    return questionKey
-        .split('_')
-        .map(word => word.charAt(0) + word.slice(1).toLowerCase())
-        .join(' ');
+    
+    // If it's an object with a label property (for preselected forms), use that
+    if (typeof questionKey === 'object' && questionKey !== null) {
+      if (questionKey.label) return questionKey.label;
+      if (questionKey.type) return formatQuestionLabel(questionKey.type);
+      if (questionKey.key) return formatQuestionLabel(questionKey.key);
+      return '';
+    }
+    
+    // If it's not a string, convert it to one
+    const keyString = String(questionKey);
+    
+    // Convert FIRST_NAME to "First Name"
+    return keyString
+      .split('_')
+      .map(word => word.charAt(0) + word.slice(1).toLowerCase())
+      .join(' ');
   };
 
   const getLeadFormData = () => {
@@ -2082,15 +2143,18 @@ export function AdSetupModal({
                           <CheckCircle className="mr-2 size-4" />
                           Step 2: Questions
                         </TabsTrigger>
-                        <TabsTrigger
-                            value="step3"
-                            className={`data-[state=active]:bg-white data-[state=active]:text-[#4169e1] ${
-                                activeLeadFormTab === 'step3' ? 'border-b-2 border-[#4169e1]' : ''
-                            }`}
-                        >
-                          <Lock className="mr-2 size-4" />
-                          Step 3: Privacy
-                        </TabsTrigger>
+                        {/* Privacy tab - only show if not a preselected form */}
+                        {!isPreselectedLeadForm && (
+                          <TabsTrigger
+                              value="step3"
+                              className={`data-[state=active]:bg-white data-[state=active]:text-[#4169e1] ${
+                                  activeLeadFormTab === 'step3' ? 'border-b-2 border-[#4169e1]' : ''
+                              }`}
+                          >
+                            <Lock className="mr-2 size-4" />
+                            Step 3: Privacy
+                          </TabsTrigger>
+                        )}
                         <TabsTrigger
                             value="step4"
                             className={`data-[state=active]:bg-white data-[state=active]:text-[#4169e1] ${
@@ -2108,35 +2172,53 @@ export function AdSetupModal({
                           <div className="flex items-center justify-between mb-4">
                             <h4 className="text-[22px] font-medium text-[#292929]">Step 1: Lead Form</h4>
 
-                            {/* Save button with status indicators */}
-                            <div className="flex flex-col items-end">
-                              <button
-                                onClick={handleSaveLeadForm}
-                                disabled={!isLeadFormModified || isLeadFormSaving}
-                                className={`transition-colors relative ${
-                                  isLeadFormSaving ? 'opacity-50 cursor-not-allowed' : 
-                                  isLeadFormModified ? 'text-yellow-400 hover:text-yellow-300' : 
-                                  'text-primary-green hover:text-white'
-                                }`}
-                                title={isLeadFormModified ? "Save changes" : "No changes to save"}
-                              >
-                                <Save className="w-5 h-5" />
-                                {isLeadFormSaving && (
-                                  <span className="animate-spin absolute inset-0 flex items-center justify-center">
-                                    <span className="w-3 h-3 border-2 border-t-transparent border-yellow-400 rounded-full"></span>
-                                  </span>
-                                )}
-                              </button>
+                            {/* Save button with status indicators - only show if not preselected */}
+                            {!isPreselectedLeadForm && (
+                              <div className="flex flex-col items-end">
+                                <button
+                                  onClick={handleSaveLeadForm}
+                                  disabled={!isLeadFormModified || isLeadFormSaving}
+                                  className={`transition-colors relative ${
+                                    isLeadFormSaving ? 'opacity-50 cursor-not-allowed' : 
+                                    isLeadFormModified ? 'text-yellow-400 hover:text-yellow-300' : 
+                                    'text-primary-green hover:text-white'
+                                  }`}
+                                  title={isLeadFormModified ? "Save changes" : "No changes to save"}
+                                >
+                                  <Save className="w-5 h-5" />
+                                  {isLeadFormSaving && (
+                                    <span className="animate-spin absolute inset-0 flex items-center justify-center">
+                                      <span className="w-3 h-3 border-2 border-t-transparent border-yellow-400 rounded-full"></span>
+                                    </span>
+                                  )}
+                                </button>
 
-                              {/* Status indicator text */}
-                              {isLeadFormModified && (
-                                <span className="text-yellow-400 text-xs mt-1">Click to save</span>
-                              )}
-                              {leadFormSaveSuccess && (
-                                <span className="text-green-400 text-xs mt-1">Saved!</span>
-                              )}
-                            </div>
+                                {/* Status indicator text */}
+                                {isLeadFormModified && (
+                                  <span className="text-yellow-400 text-xs mt-1">Click to save</span>
+                                )}
+                                {leadFormSaveSuccess && (
+                                  <span className="text-green-400 text-xs mt-1">Saved!</span>
+                                )}
+                              </div>
+                            )}
                           </div>
+                          
+                          {/* Preselected Lead Form Notice */}
+                          {isPreselectedLeadForm && (
+                            <div className="bg-blue-50 border border-blue-200 text-blue-800 rounded-lg p-4 mb-5">
+                              <div className="flex items-start">
+                                <Info className="w-5 h-5 mr-2 mt-0.5 text-blue-600" />
+                                <div>
+                                  <p className="font-medium">Pre-selected Lead Form</p>
+                                  <p className="text-sm">
+                                    You have pre-selected a lead form (ID: {leadFormContent.lead_form_id}) to be used for this campaign.
+                                    Pre-selected lead forms cannot be edited.
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
 
                           <div className="space-y-5">
                             {/* Form Title */}
@@ -2146,9 +2228,9 @@ export function AdSetupModal({
                                 id="form-title"
                                 type="text"
                                 value={editedFormTitle}
-                                onChange={handleFormTitleChange}
-                                onKeyDown={handleKeyDown}
-                                onPaste={(e) => {
+                                onChange={isPreselectedLeadForm ? undefined : handleFormTitleChange}
+                                onKeyDown={isPreselectedLeadForm ? undefined : handleKeyDown}
+                                onPaste={isPreselectedLeadForm ? undefined : (e) => {
                                   // Check if pasted text contains comma
                                   const pastedText = e.clipboardData.getData('text');
                                   if (pastedText.includes(',')) {
@@ -2160,8 +2242,10 @@ export function AdSetupModal({
                                     setTimeout(() => setFormTitleError(null), 3000);
                                   }
                                 }}
-                                className={`w-full bg-white p-3 rounded-lg border ${
-                                  formTitleError ? 'border-red-500' :
+                                readOnly={isPreselectedLeadForm}
+                                className={`w-full p-3 rounded-lg border ${
+                                  isPreselectedLeadForm ? 'bg-gray-50 cursor-not-allowed ' : 'bg-white ' }
+                                  ${formTitleError ? 'border-red-500' :
                                   editedFormTitle !== originalFormTitle 
                                     ? 'border-yellow-400' 
                                     : 'border-[#d3d3d3]'
@@ -2179,9 +2263,9 @@ export function AdSetupModal({
                               <textarea
                                 id="form-description"
                                 value={editedFormDescription}
-                                onChange={handleFormDescriptionChange}
-                                onKeyDown={handleKeyDown}
-                                onPaste={(e) => {
+                                onChange={isPreselectedLeadForm ? undefined : handleFormDescriptionChange}
+                                onKeyDown={isPreselectedLeadForm ? undefined : handleKeyDown}
+                                onPaste={isPreselectedLeadForm ? undefined : (e) => {
                                   // Check if pasted text contains comma
                                   const pastedText = e.clipboardData.getData('text');
                                   if (pastedText.includes(',')) {
@@ -2193,8 +2277,10 @@ export function AdSetupModal({
                                     setTimeout(() => setFormDescriptionError(null), 3000);
                                   }
                                 }}
-                                className={`w-full bg-white p-3 rounded-lg border ${
-                                  formDescriptionError ? 'border-red-500' :
+                                readOnly={isPreselectedLeadForm}
+                                className={`w-full p-3 rounded-lg border ${
+                                  isPreselectedLeadForm ? 'bg-gray-50 cursor-not-allowed ' : 'bg-white ' }
+                                  ${formDescriptionError ? 'border-red-500' :
                                   editedFormDescription !== originalFormDescription 
                                     ? 'border-yellow-400' 
                                     : 'border-[#d3d3d3]'
@@ -2206,40 +2292,53 @@ export function AdSetupModal({
                               )}
                             </div>
 
-                            {/* Company Name */}
-                            <div>
-                              <label className="font-medium text-[#292929] mb-2 block">Company Name</label>
-                              <input
-                                type="text"
-                                value={editedCompanyName}
-                                onChange={handleCompanyNameChange}
-                                className={`w-full bg-white p-3 rounded-lg border ${
-                                  editedCompanyName !== originalCompanyName 
-                                    ? 'border-yellow-400' 
-                                    : 'border-[#d3d3d3]'
-                                } text-[#292929] focus:outline-none focus:border-[#4169e1]`}
-                                placeholder="Enter your company name"
-                              />
-                            </div>
+                            {/* Company Name - hide for preselected forms */}
+                            {!isPreselectedLeadForm && (
+                              <div>
+                                <label className="font-medium text-[#292929] mb-2 block">Company Name</label>
+                                <input
+                                  type="text"
+                                  value={editedCompanyName}
+                                  onChange={handleCompanyNameChange}
+                                  className={`w-full bg-white p-3 rounded-lg border ${
+                                    editedCompanyName !== originalCompanyName 
+                                      ? 'border-yellow-400' 
+                                      : 'border-[#d3d3d3]'
+                                  } text-[#292929] focus:outline-none focus:border-[#4169e1]`}
+                                  placeholder="Enter your company name"
+                                />
+                              </div>
+                            )}
 
                             {/* Form Locale (editable dropdown) */}
                             <div>
                               <label className="font-medium text-[#292929] mb-2 block">Form Locale</label>
-                              <select
-                                value={editedLocale}
-                                onChange={handleLocaleChange}
-                                className={`w-full bg-white p-3 rounded-lg border ${
-                                  editedLocale !== originalLocale 
-                                    ? 'border-yellow-400' 
-                                    : 'border-[#d3d3d3]'
-                                } text-[#292929] focus:outline-none focus:border-[#4169e1]`}
-                              >
-                                {locales.map(locale => (
-                                  <option key={locale.value} value={locale.value}>
-                                    {locale.label} ({locale.value})
-                                  </option>
-                                ))}
-                              </select>
+                              {isPreselectedLeadForm ? (
+                                // Read-only display of locale for preselected forms
+                                <input
+                                  type="text"
+                                  value={editedLocale}
+                                  readOnly
+                                  className="w-full bg-gray-50 p-3 rounded-lg border border-[#d3d3d3] cursor-not-allowed text-[#292929]"
+                                />
+                              ) : (
+                                // Editable dropdown for non-preselected forms
+                                <select
+                                  value={editedLocale}
+                                  onChange={handleLocaleChange}
+                                  className={`w-full bg-white p-3 rounded-lg border ${
+                                    editedLocale !== originalLocale 
+                                      ? 'border-yellow-400' 
+                                      : 'border-[#d3d3d3]'
+                                  } text-[#292929] focus:outline-none focus:border-[#4169e1]`}
+                                >
+                                  {locales.map(locale => (
+                                    <option key={locale.value} value={locale.value}>
+                                      {locale.label} ({locale.value})
+                                    </option>
+                                  ))}
+                                </select>
+                              )}
                             </div>
 
                             {/* Form Preview */}
@@ -2279,104 +2378,131 @@ export function AdSetupModal({
                           <div className="flex items-center justify-between mb-4">
                             <h4 className="text-[22px] font-medium text-[#292929]">Step 2: Questions</h4>
 
-                            {/* Save button for tab consistency */}
-                            <div className="flex flex-col items-end">
-                              <button
-                                onClick={handleSaveLeadForm}
-                                disabled={!isLeadFormModified || isLeadFormSaving}
-                                className={`transition-colors relative ${
-                                  isLeadFormSaving ? 'opacity-50 cursor-not-allowed' : 
-                                  isLeadFormModified ? 'text-yellow-400 hover:text-yellow-300' : 
-                                  'text-primary-green hover:text-white'
-                                }`}
-                                title={isLeadFormModified ? "Save changes" : "No changes to save"}
-                              >
-                                <Save className="w-5 h-5" />
-                                {isLeadFormSaving && (
-                                  <span className="animate-spin absolute inset-0 flex items-center justify-center">
-                                    <span className="w-3 h-3 border-2 border-t-transparent border-yellow-400 rounded-full"></span>
-                                  </span>
+                            {/* Save button for tab consistency - only show if not preselected */}
+                            {!isPreselectedLeadForm && (
+                              <div className="flex flex-col items-end">
+                                <button
+                                  onClick={handleSaveLeadForm}
+                                  disabled={!isLeadFormModified || isLeadFormSaving}
+                                  className={`transition-colors relative ${
+                                    isLeadFormSaving ? 'opacity-50 cursor-not-allowed' : 
+                                    isLeadFormModified ? 'text-yellow-400 hover:text-yellow-300' : 
+                                    'text-primary-green hover:text-white'
+                                  }`}
+                                  title={isLeadFormModified ? "Save changes" : "No changes to save"}
+                                >
+                                  <Save className="w-5 h-5" />
+                                  {isLeadFormSaving && (
+                                    <span className="animate-spin absolute inset-0 flex items-center justify-center">
+                                      <span className="w-3 h-3 border-2 border-t-transparent border-yellow-400 rounded-full"></span>
+                                    </span>
+                                  )}
+                                </button>
+
+                                {isLeadFormModified && (
+                                  <span className="text-yellow-400 text-xs mt-1">Click to save</span>
                                 )}
-                              </button>
-
-                              {isLeadFormModified && (
-                                <span className="text-yellow-400 text-xs mt-1">Click to save</span>
-                              )}
-                              {leadFormSaveSuccess && (
-                                <span className="text-green-400 text-xs mt-1">Saved!</span>
-                              )}
-                            </div>
+                                {leadFormSaveSuccess && (
+                                  <span className="text-green-400 text-xs mt-1">Saved!</span>
+                                )}
+                              </div>
+                            )}
                           </div>
-
-                          <div className="mb-6">
-                            <h5 className="font-medium text-[#292929] mb-2">Default Questions</h5>
-                            <p className="text-[#767676] mb-4">
-                              These default questions are always included and cannot be modified.
-                            </p>
-
-                            <div className="space-y-2 mb-6">
-                              <div className="p-3 border border-[#d3d3d3] rounded bg-[#f9f9f9]">
-                                <p className="font-medium text-[#292929]">First Name</p>
-                              </div>
-                              <div className="p-3 border border-[#d3d3d3] rounded bg-[#f9f9f9]">
-                                <p className="font-medium text-[#292929]">Last Name</p>
-                              </div>
-                              <div className="p-3 border border-[#d3d3d3] rounded bg-[#f9f9f9]">
-                                <p className="font-medium text-[#292929]">Email</p>
-                              </div>
-                              <div className="p-3 border border-[#d3d3d3] rounded bg-[#f9f9f9]">
-                                <p className="font-medium text-[#292929]">Phone</p>
+                          
+                          {/* Preselected Lead Form Notice */}
+                          {isPreselectedLeadForm && (
+                            <div className="bg-blue-50 border border-blue-200 text-blue-800 rounded-lg p-4 mb-5">
+                              <div className="flex items-start">
+                                <Info className="w-5 h-5 mr-2 mt-0.5 text-blue-600" />
+                                <div>
+                                  <p className="font-medium">Pre-selected Lead Form</p>
+                                  <p className="text-sm">
+                                    You have pre-selected a lead form to be used for this campaign.
+                                    Questions for pre-selected lead forms cannot be modified.
+                                  </p>
+                                </div>
                               </div>
                             </div>
-                          </div>
+                          )}
+
+                          {/* Default Questions - Only show for non-preselected forms */}
+                          {!isPreselectedLeadForm && (
+                            <div className="mb-6">
+                              <h5 className="font-medium text-[#292929] mb-2">Default Questions</h5>
+                              <p className="text-[#767676] mb-4">
+                                These default questions are always included and cannot be modified.
+                              </p>
+  
+                              <div className="space-y-2 mb-6">
+                                <div className="p-3 border border-[#d3d3d3] rounded bg-[#f9f9f9]">
+                                  <p className="font-medium text-[#292929]">First Name</p>
+                                </div>
+                                <div className="p-3 border border-[#d3d3d3] rounded bg-[#f9f9f9]">
+                                  <p className="font-medium text-[#292929]">Last Name</p>
+                                </div>
+                                <div className="p-3 border border-[#d3d3d3] rounded bg-[#f9f9f9]">
+                                  <p className="font-medium text-[#292929]">Email</p>
+                                </div>
+                                <div className="p-3 border border-[#d3d3d3] rounded bg-[#f9f9f9]">
+                                  <p className="font-medium text-[#292929]">Phone</p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
 
                           <div>
-                            <h5 className="font-medium text-[#292929] mb-2">Custom Questions</h5>
+                            <h5 className="font-medium text-[#292929] mb-2">
+                              {isPreselectedLeadForm ? "Form Questions" : "Custom Questions"}
+                            </h5>
                             <p className="text-[#767676] mb-4">
-                              Add custom questions to collect additional information from your leads.
+                              {isPreselectedLeadForm 
+                                ? "These are the questions from your pre-selected lead form."
+                                : "Add custom questions to collect additional information from your leads."}
                             </p>
 
-                            {/* Input field to add new custom questions */}
-                            <div className="flex gap-2 mb-4">
-                              <div className="flex-1">
-                                <input
-                                  id="custom-question-input"
-                                  type="text"
-                                  value={newCustomQuestion}
-                                  onChange={handleCustomQuestionChange}
-                                  onKeyDown={handleCustomQuestionKeyDown}
-                                  onPaste={(e) => {
-                                    // Check if pasted text contains comma
-                                    const pastedText = e.clipboardData.getData('text');
-                                    if (pastedText.includes(',')) {
-                                      e.preventDefault();
-                                      // Paste without commas
-                                      const cleanText = pastedText.replace(/,/g, '');
-                                      setNewCustomQuestion(newCustomQuestion + cleanText);
-                                      setCustomQuestionError("Facebook lead forms don't allow commas in questions");
-                                      setTimeout(() => setCustomQuestionError(null), 3000);
-                                    }
-                                  }}
-                                  placeholder="Enter your custom question here"
-                                  className={`w-full bg-white p-3 rounded-lg border ${
-                                    customQuestionError ? 'border-red-500' : 'border-[#d3d3d3]'
-                                  } text-[#292929] focus:outline-none focus:border-[#4169e1]`}
-                                />
-                                {customQuestionError && (
-                                  <p className="text-red-500 text-xs mt-1">{customQuestionError}</p>
-                                )}
+                            {/* Input field to add new custom questions - only show if not preselected */}
+                            {!isPreselectedLeadForm && (
+                              <div className="flex gap-2 mb-4">
+                                <div className="flex-1">
+                                  <input
+                                    id="custom-question-input"
+                                    type="text"
+                                    value={newCustomQuestion}
+                                    onChange={handleCustomQuestionChange}
+                                    onKeyDown={handleCustomQuestionKeyDown}
+                                    onPaste={(e) => {
+                                      // Check if pasted text contains comma
+                                      const pastedText = e.clipboardData.getData('text');
+                                      if (pastedText.includes(',')) {
+                                        e.preventDefault();
+                                        // Paste without commas
+                                        const cleanText = pastedText.replace(/,/g, '');
+                                        setNewCustomQuestion(newCustomQuestion + cleanText);
+                                        setCustomQuestionError("Facebook lead forms don't allow commas in questions");
+                                        setTimeout(() => setCustomQuestionError(null), 3000);
+                                      }
+                                    }}
+                                    placeholder="Enter your custom question here"
+                                    className={`w-full bg-white p-3 rounded-lg border ${
+                                      customQuestionError ? 'border-red-500' : 'border-[#d3d3d3]'
+                                    } text-[#292929] focus:outline-none focus:border-[#4169e1]`}
+                                  />
+                                  {customQuestionError && (
+                                    <p className="text-red-500 text-xs mt-1">{customQuestionError}</p>
+                                  )}
+                                </div>
+                                <button
+                                  onClick={addCustomQuestion}
+                                  className="px-4 py-3 bg-[#4169e1] hover:bg-[#3152b3] text-white font-medium rounded-lg transition-colors"
+                                  disabled={!newCustomQuestion.trim()}
+                                >
+                                  Add
+                                </button>
                               </div>
-                              <button
-                                onClick={addCustomQuestion}
-                                className="px-4 py-3 bg-[#4169e1] hover:bg-[#3152b3] text-white font-medium rounded-lg transition-colors"
-                                disabled={!newCustomQuestion.trim()}
-                              >
-                                Add
-                              </button>
-                            </div>
+                            )}
 
-                            {/* Display existing custom questions */}
-                            {editedCustomQuestions.length > 0 ? (
+                            {/* Display custom questions for editable forms */}
+                            {!isPreselectedLeadForm && editedCustomQuestions.length > 0 ? (
                               <div className="space-y-2">
                                 {editedCustomQuestions.map((question, idx) => (
                                   <div
@@ -2393,96 +2519,117 @@ export function AdSetupModal({
                                   </div>
                                 ))}
                               </div>
-                            ) : (
+                            ) : !isPreselectedLeadForm ? (
                               <p className="text-[#767676] italic">No custom questions added yet</p>
+                            ) : null}
+                            
+                            {/* Display questions for preselected forms - read only */}
+                            {isPreselectedLeadForm && leadFormContent && leadFormContent.lead_form_questions && (
+                              <div className="space-y-2">
+                                {leadFormContent.lead_form_questions.map((question: any, idx: number) => (
+                                  <div
+                                    key={`form-question-${idx}`}
+                                    className="p-3 border border-[#d3d3d3] rounded bg-[#f9f9f9]"
+                                  >
+                                    <p className="font-medium text-[#292929]">{question.label}</p>
+                                    <p className="text-xs text-[#767676] mt-1">Type: {question.type}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            
+                            {isPreselectedLeadForm && (!leadFormContent || !leadFormContent.lead_form_questions || leadFormContent.lead_form_questions.length === 0) && (
+                              <p className="text-[#767676] italic">No additional questions found in preselected form</p>
                             )}
                           </div>
                         </div>
                       </TabsContent>
 
-                      {/* Step 3: Privacy */}
-                      <TabsContent value="step3" className="space-y-4">
-                        <div className="bg-white rounded-lg p-5 border border-[#d3d3d3] shadow-sm">
-                          <div className="flex items-center justify-between mb-4">
-                            <h4 className="text-[22px] font-medium text-[#292929]">Step 3: Privacy Policy</h4>
+                      {/* Step 3: Privacy - Only show for non-preselected forms */}
+                      {!isPreselectedLeadForm && (
+                        <TabsContent value="step3" className="space-y-4">
+                          <div className="bg-white rounded-lg p-5 border border-[#d3d3d3] shadow-sm">
+                            <div className="flex items-center justify-between mb-4">
+                              <h4 className="text-[22px] font-medium text-[#292929]">Step 3: Privacy Policy</h4>
 
-                            {/* Save button for tab consistency */}
-                            <div className="flex flex-col items-end">
-                              <button
-                                onClick={handleSaveLeadForm}
-                                disabled={!isLeadFormModified || isLeadFormSaving}
-                                className={`transition-colors relative ${
-                                  isLeadFormSaving ? 'opacity-50 cursor-not-allowed' : 
-                                  isLeadFormModified ? 'text-yellow-400 hover:text-yellow-300' : 
-                                  'text-primary-green hover:text-white'
-                                }`}
-                                title={isLeadFormModified ? "Save changes" : "No changes to save"}
-                              >
-                                <Save className="w-5 h-5" />
-                                {isLeadFormSaving && (
-                                  <span className="animate-spin absolute inset-0 flex items-center justify-center">
-                                    <span className="w-3 h-3 border-2 border-t-transparent border-yellow-400 rounded-full"></span>
-                                  </span>
+                              {/* Save button */}
+                              <div className="flex flex-col items-end">
+                                <button
+                                  onClick={handleSaveLeadForm}
+                                  disabled={!isLeadFormModified || isLeadFormSaving}
+                                  className={`transition-colors relative ${
+                                    isLeadFormSaving ? 'opacity-50 cursor-not-allowed' : 
+                                    isLeadFormModified ? 'text-yellow-400 hover:text-yellow-300' : 
+                                    'text-primary-green hover:text-white'
+                                  }`}
+                                  title={isLeadFormModified ? "Save changes" : "No changes to save"}
+                                >
+                                  <Save className="w-5 h-5" />
+                                  {isLeadFormSaving && (
+                                    <span className="animate-spin absolute inset-0 flex items-center justify-center">
+                                      <span className="w-3 h-3 border-2 border-t-transparent border-yellow-400 rounded-full"></span>
+                                    </span>
+                                  )}
+                                </button>
+
+                                {isLeadFormModified && (
+                                  <span className="text-yellow-400 text-xs mt-1">Click to save</span>
                                 )}
-                              </button>
-
-                              {isLeadFormModified && (
-                                <span className="text-yellow-400 text-xs mt-1">Click to save</span>
-                              )}
-                              {leadFormSaveSuccess && (
-                                <span className="text-green-400 text-xs mt-1">Saved!</span>
-                              )}
-                            </div>
-                          </div>
-
-                          <div className="space-y-5">
-                            {/* Data Usage Notice */}
-                            <div>
-                              <label className="font-medium text-[#292929] mb-2 block">Data Usage Notice</label>
-                              <textarea
-                                value={editedDataUsageNotice}
-                                onChange={handleDataUsageNoticeChange}
-                                className={`w-full bg-white p-3 rounded-lg border ${
-                                  editedDataUsageNotice !== originalDataUsageNotice 
-                                    ? 'border-yellow-400' 
-                                    : 'border-[#d3d3d3]'
-                                } text-[#292929] focus:outline-none focus:border-[#4169e1] min-h-[80px]`}
-                                placeholder="Explain how you will use the collected data"
-                              />
+                                {leadFormSaveSuccess && (
+                                  <span className="text-green-400 text-xs mt-1">Saved!</span>
+                                )}
+                              </div>
                             </div>
 
-                            {/* Privacy Policy Link Text */}
-                            <div>
-                              <label className="font-medium text-[#292929] mb-2 block">Privacy Policy Link Text</label>
-                              <input
-                                type="text"
-                                value={editedPrivacyPolicyLinkText}
-                                onChange={handlePrivacyPolicyLinkTextChange}
-                                className={`w-full bg-white p-3 rounded-lg border ${
-                                  editedPrivacyPolicyLinkText !== originalPrivacyPolicyLinkText 
-                                    ? 'border-yellow-400' 
-                                    : 'border-[#d3d3d3]'
-                                } text-[#292929] focus:outline-none focus:border-[#4169e1]`}
-                                placeholder="Enter your privacy policy URL"
-                              />
-                            </div>
+                            <div className="space-y-5">
+                              {/* Data Usage Notice */}
+                              <div>
+                                <label className="font-medium text-[#292929] mb-2 block">Data Usage Notice</label>
+                                <textarea
+                                  value={editedDataUsageNotice}
+                                  onChange={handleDataUsageNoticeChange}
+                                  className={`w-full bg-white p-3 rounded-lg border ${
+                                    editedDataUsageNotice !== originalDataUsageNotice 
+                                      ? 'border-yellow-400' 
+                                      : 'border-[#d3d3d3]'
+                                  } text-[#292929] focus:outline-none focus:border-[#4169e1] min-h-[80px]`}
+                                  placeholder="Explain how you will use the collected data"
+                                />
+                              </div>
 
-                            {/* Privacy Policy Preview */}
-                            <div className="mt-5 p-4 border border-[#d3d3d3] rounded bg-[#f2f2f2]">
-                              <h5 className="font-medium text-[#292929] mb-2">Preview:</h5>
-                              <p className="text-[#292929]">
-                                {editedDataUsageNotice || "Add a data usage notice to inform users about how their data will be processed."}
-                              </p>
+                              {/* Privacy Policy Link Text */}
+                              <div>
+                                <label className="font-medium text-[#292929] mb-2 block">Privacy Policy Link Text</label>
+                                <input
+                                  type="text"
+                                  value={editedPrivacyPolicyLinkText}
+                                  onChange={handlePrivacyPolicyLinkTextChange}
+                                  className={`w-full bg-white p-3 rounded-lg border ${
+                                    editedPrivacyPolicyLinkText !== originalPrivacyPolicyLinkText 
+                                      ? 'border-yellow-400' 
+                                      : 'border-[#d3d3d3]'
+                                  } text-[#292929] focus:outline-none focus:border-[#4169e1]`}
+                                  placeholder="Enter your privacy policy URL"
+                                />
+                              </div>
 
-                              {editedPrivacyPolicyLinkText && (
-                                <p className="text-[#4169e1] mt-2 underline">
-                                  {editedPrivacyPolicyLinkText}
+                              {/* Privacy Policy Preview */}
+                              <div className="mt-5 p-4 border border-[#d3d3d3] rounded bg-[#f2f2f2]">
+                                <h5 className="font-medium text-[#292929] mb-2">Preview:</h5>
+                                <p className="text-[#292929]">
+                                  {editedDataUsageNotice || "Add a data usage notice to inform users about how their data will be processed."}
                                 </p>
-                              )}
+
+                                {editedPrivacyPolicyLinkText && (
+                                  <p className="text-[#4169e1] mt-2 underline">
+                                    {editedPrivacyPolicyLinkText}
+                                  </p>
+                                )}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </TabsContent>
+                        </TabsContent>
+                      )}
 
                       {/* Step 4: Thank You */}
                       <TabsContent value="step4" className="space-y-4">
@@ -2490,34 +2637,52 @@ export function AdSetupModal({
                           <div className="flex items-center justify-between mb-4">
                             <h4 className="text-[22px] font-medium text-[#292929]">Step 4: Thank You Page</h4>
 
-                            {/* Save button for tab consistency */}
-                            <div className="flex flex-col items-end">
-                              <button
-                                onClick={handleSaveLeadForm}
-                                disabled={!isLeadFormModified || isLeadFormSaving}
-                                className={`transition-colors relative ${
-                                  isLeadFormSaving ? 'opacity-50 cursor-not-allowed' : 
-                                  isLeadFormModified ? 'text-yellow-400 hover:text-yellow-300' : 
-                                  'text-primary-green hover:text-white'
-                                }`}
-                                title={isLeadFormModified ? "Save changes" : "No changes to save"}
-                              >
-                                <Save className="w-5 h-5" />
-                                {isLeadFormSaving && (
-                                  <span className="animate-spin absolute inset-0 flex items-center justify-center">
-                                    <span className="w-3 h-3 border-2 border-t-transparent border-yellow-400 rounded-full"></span>
-                                  </span>
-                                )}
-                              </button>
+                            {/* Save button for tab consistency - only show if not preselected */}
+                            {!isPreselectedLeadForm && (
+                              <div className="flex flex-col items-end">
+                                <button
+                                  onClick={handleSaveLeadForm}
+                                  disabled={!isLeadFormModified || isLeadFormSaving}
+                                  className={`transition-colors relative ${
+                                    isLeadFormSaving ? 'opacity-50 cursor-not-allowed' : 
+                                    isLeadFormModified ? 'text-yellow-400 hover:text-yellow-300' : 
+                                    'text-primary-green hover:text-white'
+                                  }`}
+                                  title={isLeadFormModified ? "Save changes" : "No changes to save"}
+                                >
+                                  <Save className="w-5 h-5" />
+                                  {isLeadFormSaving && (
+                                    <span className="animate-spin absolute inset-0 flex items-center justify-center">
+                                      <span className="w-3 h-3 border-2 border-t-transparent border-yellow-400 rounded-full"></span>
+                                    </span>
+                                  )}
+                                </button>
 
-                              {isLeadFormModified && (
-                                <span className="text-yellow-400 text-xs mt-1">Click to save</span>
-                              )}
-                              {leadFormSaveSuccess && (
-                                <span className="text-green-400 text-xs mt-1">Saved!</span>
-                              )}
-                            </div>
+                                {isLeadFormModified && (
+                                  <span className="text-yellow-400 text-xs mt-1">Click to save</span>
+                                )}
+                                {leadFormSaveSuccess && (
+                                  <span className="text-green-400 text-xs mt-1">Saved!</span>
+                                )}
+                              </div>
+                            )}
                           </div>
+                          
+                          {/* Preselected Lead Form Notice */}
+                          {isPreselectedLeadForm && (
+                            <div className="bg-blue-50 border border-blue-200 text-blue-800 rounded-lg p-4 mb-5">
+                              <div className="flex items-start">
+                                <Info className="w-5 h-5 mr-2 mt-0.5 text-blue-600" />
+                                <div>
+                                  <p className="font-medium">Pre-selected Lead Form</p>
+                                  <p className="text-sm">
+                                    Thank you page settings from your pre-selected lead form will be used.
+                                    These settings cannot be modified.
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
 
                           <div className="space-y-5">
                             {/* Thank You Page Title */}
@@ -2526,9 +2691,11 @@ export function AdSetupModal({
                               <input
                                 type="text"
                                 value={editedThankYouPageTitle}
-                                onChange={handleThankYouPageTitleChange}
-                                className={`w-full bg-white p-3 rounded-lg border ${
-                                  editedThankYouPageTitle !== originalThankYouPageTitle 
+                                onChange={isPreselectedLeadForm ? undefined : handleThankYouPageTitleChange}
+                                readOnly={isPreselectedLeadForm}
+                                className={`w-full p-3 rounded-lg border ${
+                                  isPreselectedLeadForm ? 'bg-gray-50 cursor-not-allowed ' : 'bg-white ' }
+                                  ${editedThankYouPageTitle !== originalThankYouPageTitle 
                                     ? 'border-yellow-400' 
                                     : 'border-[#d3d3d3]'
                                 } text-[#292929] focus:outline-none focus:border-[#4169e1]`}
@@ -2542,9 +2709,9 @@ export function AdSetupModal({
                               <textarea
                                 id="thank-you-text"
                                 value={editedThankYouText}
-                                onChange={handleThankYouTextChange}
-                                onKeyDown={handleKeyDown}
-                                onPaste={(e) => {
+                                onChange={isPreselectedLeadForm ? undefined : handleThankYouTextChange}
+                                onKeyDown={isPreselectedLeadForm ? undefined : handleKeyDown}
+                                onPaste={isPreselectedLeadForm ? undefined : (e) => {
                                   // Check if pasted text contains comma
                                   const pastedText = e.clipboardData.getData('text');
                                   if (pastedText.includes(',')) {
@@ -2556,8 +2723,10 @@ export function AdSetupModal({
                                     setTimeout(() => setThankYouTextError(null), 3000);
                                   }
                                 }}
-                                className={`w-full bg-white p-3 rounded-lg border ${
-                                  thankYouTextError ? 'border-red-500' :
+                                readOnly={isPreselectedLeadForm}
+                                className={`w-full p-3 rounded-lg border ${
+                                  isPreselectedLeadForm ? 'bg-gray-50 cursor-not-allowed ' : 'bg-white ' }
+                                  ${thankYouTextError ? 'border-red-500' :
                                   editedThankYouText !== originalThankYouText 
                                     ? 'border-yellow-400' 
                                     : 'border-[#d3d3d3]'
@@ -2575,14 +2744,16 @@ export function AdSetupModal({
                               <input
                                 type="text"
                                 value={editedFollowUpUrl}
-                                onChange={handleFollowUpUrlChange}
-                                onBlur={() => {
+                                onChange={isPreselectedLeadForm ? undefined : handleFollowUpUrlChange}
+                                onBlur={isPreselectedLeadForm ? undefined : () => {
                                   if (editedFollowUpUrl) {
                                     setEditedFollowUpUrl(validateAndFixUrl(editedFollowUpUrl));
                                   }
                                 }}
-                                className={`w-full bg-white p-3 rounded-lg border ${
-                                  editedFollowUpUrl !== originalFollowUpUrl 
+                                readOnly={isPreselectedLeadForm}
+                                className={`w-full p-3 rounded-lg border ${
+                                  isPreselectedLeadForm ? 'bg-gray-50 cursor-not-allowed ' : 'bg-white ' }
+                                  ${editedFollowUpUrl !== originalFollowUpUrl 
                                     ? 'border-yellow-400' 
                                     : 'border-[#d3d3d3]'
                                 } text-[#292929] focus:outline-none focus:border-[#4169e1]`}

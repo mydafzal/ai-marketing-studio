@@ -29,6 +29,7 @@ export function CreateCampaignForm() {
   // Main states
   const [link, setLink] = useState('');
   const [budget, setBudget] = useState('');
+  const [selectedLeadFormId, setSelectedLeadFormId] = useState<string>("");
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
@@ -368,6 +369,8 @@ export function CreateCampaignForm() {
         privacy_policy_link: userData.account?.privacy_policy_link || '',
         instagram_account_id: userData.account?.instagramAccountId || '',
         post_assessment_campaign_objective: 'auto',
+        selectedLeadFormId: selectedLeadFormId
+
       };
       
       // Add post_assessment_campaign_objective parameter only if a specific objective is selected
@@ -815,6 +818,8 @@ export function CreateCampaignForm() {
             isUploading={isUploading}
             cooldownActive={cooldownActive}
             cooldownTimeRemaining={cooldownTimeRemaining}
+            selectedLeadFormId={selectedLeadFormId}
+            setSelectedLeadFormId={setSelectedLeadFormId}
           />
         ) : (
           <ReviewScreen 

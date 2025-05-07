@@ -425,7 +425,31 @@ export function ReviewScreen({
     
     // Check if we have questions in the lead_form_content
     if (effectiveLeadFormContent.lead_form_questions && Array.isArray(effectiveLeadFormContent.lead_form_questions)) {
-      return effectiveLeadFormContent.lead_form_questions.map((question: string) => {
+      return effectiveLeadFormContent.lead_form_questions.map((question: any) => {
+        // If the question is already an object with a type and label
+        if (typeof question === 'object' && question !== null) {
+          // Check if it has type/key/id and label
+          if (question.key && question.label) {
+            return {
+              type: question.key,
+              label: question.label // Already formatted
+            };
+          }
+          if (question.type && question.label) {
+            return {
+              type: question.type,
+              label: question.label // Already formatted
+            };
+          }
+          if (question.id && question.label) {
+            return {
+              type: question.id,
+              label: question.label // Already formatted
+            };
+          }
+        }
+        
+        // Otherwise treat as simple string
         return {
           type: question, // e.g. FIRST_NAME, LAST_NAME, EMAIL, PHONE
           label: formatQuestionLabel(question) // Format the label for display
@@ -435,7 +459,17 @@ export function ReviewScreen({
     
     // Check for custom_questions from the updated lead form
     if (effectiveLeadFormContent.custom_questions && Array.isArray(effectiveLeadFormContent.custom_questions)) {
-      return effectiveLeadFormContent.custom_questions.map((question: string) => {
+      return effectiveLeadFormContent.custom_questions.map((question: any) => {
+        // If the question is already an object with a type and label
+        if (typeof question === 'object' && question !== null) {
+          if (question.label) {
+            return {
+              type: question.type || question.key || question.id || 'custom',
+              label: question.label
+            };
+          }
+        }
+        
         return {
           type: question,
           label: formatQuestionLabel(question)
@@ -445,7 +479,17 @@ export function ReviewScreen({
     
     // Legacy format or data inside lead_form_data
     if (effectiveLeadFormContent.lead_form_data && effectiveLeadFormContent.lead_form_data.lead_form_questions) {
-      return effectiveLeadFormContent.lead_form_data.lead_form_questions.map((question: string) => {
+      return effectiveLeadFormContent.lead_form_data.lead_form_questions.map((question: any) => {
+        // If the question is already an object with a type and label
+        if (typeof question === 'object' && question !== null) {
+          if (question.label) {
+            return {
+              type: question.type || question.key || question.id || 'custom',
+              label: question.label
+            };
+          }
+        }
+        
         return {
           type: question,
           label: formatQuestionLabel(question)
@@ -457,11 +501,22 @@ export function ReviewScreen({
   };
   
   // Helper to format question labels from keys like FIRST_NAME to "First Name"
-  const formatQuestionLabel = (questionKey: string): string => {
+  const formatQuestionLabel = (questionKey: any): string => {
+    // If it's not defined or null, return empty string
     if (!questionKey) return '';
     
+    // If it's an object with a label property (for preselected forms), use that
+    if (typeof questionKey === 'object' && questionKey !== null) {
+      if (questionKey.label) return questionKey.label;
+      if (questionKey.type) return formatQuestionLabel(questionKey.type);
+      return '';
+    }
+    
+    // If it's not a string, convert it to one
+    const keyString = String(questionKey);
+    
     // Convert FIRST_NAME to "First Name"
-    return questionKey
+    return keyString
       .split('_')
       .map(word => word.charAt(0) + word.slice(1).toLowerCase())
       .join(' ');
