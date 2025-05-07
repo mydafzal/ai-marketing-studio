@@ -3,6 +3,7 @@ import { auth } from '@/auth'
 import { getUserDetail, getFbMarketingApiKey } from '@/app/actions'
 import { trackEvent } from '@/lib/utils';
 import { Events } from '@/lib/posthog-events';
+import { encryptEmail } from '@/lib/email-encryption';
 
 export async function POST(req: NextRequest) {
   console.log('📥 Received request to master-flow-initiate-process endpoint');
@@ -298,6 +299,8 @@ export async function POST(req: NextRequest) {
       'Audience count': data.audiences?.audiences?.length || 0,
       'Creative count': data.creatives_and_previews?.creatives?.length || 0
     });
+
+    const encryptedEmail = await encryptEmail(session.user.email || '');
 
     // Track campaign flow initiated event
     trackEvent(Events.CAMPAIGN_FLOW_INITIATED, {
