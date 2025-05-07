@@ -740,14 +740,19 @@ export function CreateTab({
                       <li 
                         key={form.id}
                         className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-800 ${
-                          tempSelectedFormId === form.id ? 'bg-gray-800' : ''
+                          tempSelectedFormId === form.id ? 'bg-gray-800 border-l-4 border-primary-green' : ''
                         }`}
                         onClick={() => setTempSelectedFormId(form.id)}
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
                             <div className="flex flex-col">
-                              <span className="text-text-white font-medium">{form.display_name}</span>
+                              <div className="flex items-center">
+                                <span className="text-text-white font-medium">{form.display_name}</span>
+                                {tempSelectedFormId === form.id && (
+                                  <span className="ml-2 text-xs text-primary-green">✓ Selected</span>
+                                )}
+                              </div>
                               <span className="text-xs text-text-light-gray">ID: {form.name}</span>
                               <span className="text-xs text-text-light-gray">Created: {form.formatted_date}</span>
                               <span className="text-xs text-text-light-gray">Fields: {form.collects || `${form.question_count} questions`}</span>
@@ -800,14 +805,19 @@ export function CreateTab({
                       <li 
                         key={form.id}
                         className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-800 ${
-                          tempSelectedFormId === form.id ? 'bg-gray-800' : ''
+                          tempSelectedFormId === form.id ? 'bg-gray-800 border-l-4 border-primary-green' : ''
                         }`}
                         onClick={() => setTempSelectedFormId(form.id)}
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
                             <div className="flex flex-col">
-                              <span className="text-text-white font-medium">{form.display_name}</span>
+                              <div className="flex items-center">
+                                <span className="text-text-white font-medium">{form.display_name}</span>
+                                {tempSelectedFormId === form.id && (
+                                  <span className="ml-2 text-xs text-primary-green">✓ Selected</span>
+                                )}
+                              </div>
                               <span className="text-xs text-text-light-gray">ID: {form.name}</span>
                               <span className="text-xs text-text-light-gray">Created: {form.formatted_date}</span>
                               <span className="text-xs text-text-light-gray">Fields: {form.collects || `${form.question_count} questions`}</span>
