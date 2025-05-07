@@ -15,9 +15,9 @@ export const formatLeadForms = (formData: any[]): LeadForm[] => {
   }));
 };
 
-// Search lead forms by query
+// Search lead forms by query - client-side implementation
 export const searchFormsLocally = (forms: LeadForm[], query: string): LeadForm[] => {
-  if (!query.trim()) return [];
+  if (!query.trim()) return forms;
   
   const lowercaseQuery = query.toLowerCase();
   

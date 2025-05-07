@@ -81,8 +81,6 @@ export function CreateTab({
   const [searchQuery, setSearchQuery] = useState<string>('');
   // Add state for filtered forms
   const [filteredForms, setFilteredForms] = useState<LeadForm[]>([]);
-  // Add state for search in progress
-  const [searching, setSearching] = useState<boolean>(false);
   // Add state to track if we've loaded all forms
   const [hasLoadedAllForms, setHasLoadedAllForms] = useState<boolean>(false);
   // Add state to store all forms ever loaded
@@ -143,6 +141,18 @@ export function CreateTab({
     }
   }, [showLeadFormDropdown]);
   
+  // Update filtered forms when search query changes
+  useEffect(() => {
+    if (searchQuery.trim() === '') {
+      // When search query is empty, show all loaded forms
+      setFilteredForms([]);
+    } else if (allLoadedForms.length > 0) {
+      // Only search if we have forms loaded
+      const results = searchFormsLocally(allLoadedForms, searchQuery);
+      setFilteredForms(results);
+    }
+  }, [searchQuery, allLoadedForms]);
+  
   // Reset filtered forms when dropdown closes
   useEffect(() => {
     if (!showLeadFormDropdown) {
@@ -153,7 +163,7 @@ export function CreateTab({
 
   async function getFbLeadForms(afterCursor?: string | null) {
     // If we already have forms loaded and no cursor is provided, use cached forms
-    if (!afterCursor && allLoadedForms.length > 0 && !searchQuery) {
+    if (!afterCursor && allLoadedForms.length > 0) {
       setLeadForms(allLoadedForms);
       return;
     }
@@ -167,7 +177,7 @@ export function CreateTab({
     
     try {
       // Skip fetching if we already loaded all forms
-      if (hasLoadedAllForms && !paginationCursor) {
+      if (hasLoadedAllForms) {
         setLoadingMore(false);
         setLoadingLeadForms(false);
         return;
@@ -200,6 +210,16 @@ export function CreateTab({
       } else {
         setLeadForms(result.forms);
       }
+      
+      // Update filtered forms if there's a search query
+      if (searchQuery.trim() !== '') {
+        const updatedAllForms = [...allLoadedForms, ...result.forms.filter(form => 
+          !allLoadedForms.some(f => f.id === form.id)
+        )];
+        
+        const results = searchFormsLocally(updatedAllForms, searchQuery);
+        setFilteredForms(results);
+      }
     } catch (error) {
       console.error('Error fetching lead forms:', error);
       setLeadFormError('Failed to fetch lead forms. Please try again.');
@@ -209,60 +229,37 @@ export function CreateTab({
     }
   }
   
-  // Function to search lead forms by name or ID
-  function searchLeadForms(query: string) {
-    setSearching(true);
+  // Function to load all forms when search is activated
+  async function loadAllForms() {
+    if (hasLoadedAllForms) return;
+    
+    setLoadingMore(true);
     
     try {
-      if (!query.trim()) {
-        setFilteredForms([]);
-        setSearching(false);
-        return;
-      }
+      const result = await fetchAllLeadForms(paginationCursor);
       
-      // If we haven't loaded all forms yet, let's do it now
-      if (!hasLoadedAllForms && paginationCursor) {
-        // Load all forms with pagination
-        fetchAllLeadForms(paginationCursor)
-          .then(result => {
-            // Update our states
-            setHasLoadedAllForms(!result.hasMore);
-            
-            // Add these forms to our all loaded forms with deduplication
-            const updatedForms = [...allLoadedForms];
-            const existingIds = new Set(updatedForms.map(f => f.id));
-            
-            result.forms.forEach(form => {
-              if (!existingIds.has(form.id)) {
-                updatedForms.push(form);
-              }
-            });
-            
-            setAllLoadedForms(updatedForms);
-            
-            // Now search in all the forms we have
-            const matches = searchFormsLocally(updatedForms, query);
-            setFilteredForms(matches);
-          })
-          .catch(error => {
-            console.error('Error loading all forms for search:', error);
-            // Still try to search in what we have
-            const matches = searchFormsLocally(allLoadedForms, query);
-            setFilteredForms(matches);
-          })
-          .finally(() => {
-            setSearching(false);
-          });
-      } else {
-        // We already have all forms, just search locally
-        const matches = searchFormsLocally(allLoadedForms, query);
-        setFilteredForms(matches);
-        setSearching(false);
-      }
+      // Update pagination state and set hasLoadedAllForms
+      setPaginationCursor(null);
+      setHasLoadedAllForms(true);
+      
+      // Update allLoadedForms with deduplication
+      setAllLoadedForms(prevAll => {
+        const existingIds = new Set(prevAll.map(form => form.id));
+        const newForms = result.forms.filter(form => !existingIds.has(form.id));
+        return [...prevAll, ...newForms];
+      });
+      
+      // Update leadForms as well
+      setLeadForms(prevForms => {
+        const existingIds = new Set(prevForms.map(form => form.id));
+        const newForms = result.forms.filter(form => !existingIds.has(form.id));
+        return [...prevForms, ...newForms];
+      });
     } catch (error) {
-      console.error('Error searching lead forms:', error);
-      setLeadFormError('Failed to search lead forms. Please try again.');
-      setSearching(false);
+      console.error('Error loading all forms:', error);
+      setLeadFormError('Failed to load all forms. Please try again.');
+    } finally {
+      setLoadingMore(false);
     }
   }
 
@@ -543,10 +540,10 @@ export function CreateTab({
                   
                   {/* Dropdown content */}
                   {showLeadFormDropdown && (
-                    <div className="absolute z-10 mt-1 w-full bg-dark-bg rounded-md shadow-lg border border-border-dark">
+                    <div className="absolute z-10 mt-1 w-full bg-dark-bg rounded-md shadow-lg border border-border-dark max-h-[400px] overflow-hidden flex flex-col">
                       {/* Previously Selected Form */}
                       {storedLeadForm && storedLeadForm.formId !== selectedLeadFormId && (
-                        <div className="p-3 border-b border-border-dark bg-gray-800">
+                        <div className="p-3 border-b border-border-dark bg-gray-800 flex-shrink-0">
                           <div className="mb-1 text-xs font-medium text-text-light-gray">Previously Selected Form</div>
                           <div 
                             className="p-2 border border-border-dark rounded-md bg-dark-bg hover:border-primary-green cursor-pointer transition-colors"
@@ -567,7 +564,7 @@ export function CreateTab({
                       )}
                       
                       {/* Search Bar */}
-                      <div className="p-2 border-b border-border-dark">
+                      <div className="p-2 border-b border-border-dark flex-shrink-0">
                         <div className="flex items-center space-x-2">
                           <input
                             type="text"
@@ -575,223 +572,198 @@ export function CreateTab({
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="flex-1 px-3 py-1.5 text-sm bg-dark-bg border border-border-dark text-text-white rounded-md focus:outline-none focus:ring-1 focus:ring-primary-green"
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                searchLeadForms(searchQuery);
-                              }
-                            }}
                           />
-                          <button
-                            className="px-3 py-1.5 text-sm bg-primary-green text-deep-black rounded-md hover:bg-primary-green/90 transition-colors"
-                            onClick={() => searchLeadForms(searchQuery)}
-                            disabled={searching || !searchQuery.trim()}
-                          >
-                            {searching ? (
-                              <Loader2 className="animate-spin" size={14} />
-                            ) : (
-                              'Search'
-                            )}
-                          </button>
                         </div>
                       </div>
-                      
-                      {loadingLeadForms ? (
-                        <div className="py-4 text-center">
-                          <Loader2 className="animate-spin mx-auto mb-2" size={20} />
-                          <p className="text-sm text-text-light-gray">Loading lead forms...</p>
-                        </div>
-                      ) : leadFormError ? (
-                        <div className="py-4 text-center">
-                          <p className="text-sm text-red-500">{leadFormError}</p>
-                          <button 
-                            className="mt-2 text-xs text-primary-green hover:underline"
-                            onClick={() => getFbLeadForms()}
-                          >
-                            Try again
-                          </button>
-                        </div>
-                      ) : searching ? (
-                        <div className="py-4 text-center">
-                          <Loader2 className="animate-spin mx-auto mb-2" size={20} />
-                          <p className="text-sm text-text-light-gray">Searching for lead forms...</p>
-                        </div>
-                      ) : filteredForms.length > 0 ? (
-                        <div>
-                          <div className="p-2 text-xs text-text-light-gray">
-                            Found {filteredForms.length} matching forms
+
+                      {/* Main content area */}
+                      <div className="overflow-y-auto flex-grow min-h-[100px]">
+                        {loadingLeadForms ? (
+                          <div className="py-4 text-center">
+                            <Loader2 className="animate-spin mx-auto mb-2" size={20} />
+                            <p className="text-sm text-text-light-gray">Loading lead forms...</p>
+                          </div>
+                        ) : leadFormError ? (
+                          <div className="py-4 text-center">
+                            <p className="text-sm text-red-500">{leadFormError}</p>
                             <button 
-                              className="ml-2 text-primary-green hover:underline"
+                              className="mt-2 text-xs text-primary-green hover:underline"
+                              onClick={() => getFbLeadForms()}
+                            >
+                              Try again
+                            </button>
+                          </div>
+                        ) : filteredForms.length > 0 ? (
+                          <div>
+                            <div className="p-2 text-xs text-text-light-gray border-b border-border-dark">
+                              Found {filteredForms.length} matching forms
+                              <button 
+                                className="ml-2 text-primary-green hover:underline"
+                                onClick={() => {
+                                  setSearchQuery('');
+                                }}
+                              >
+                                Clear search
+                              </button>
+                            </div>
+                            <ul className="py-1">
+                              {filteredForms.map(form => (
+                                <li 
+                                  key={form.id}
+                                  className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-800 ${
+                                    selectedLeadFormId === form.id ? 'bg-gray-800' : ''
+                                  }`}
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <div 
+                                      className="flex-1"
+                                      onClick={async () => {
+                                        setSelectedLeadFormId(form.id);
+                                        setShowLeadFormDropdown(false);
+                                        
+                                        // Save to local storage
+                                        try {
+                                          const response = await fetch('/api/kv/fetch-api-token');
+                                          const userData = await response.json();
+                                          
+                                          if (userData.success && userData.account?.fbPageId) {
+                                            const pageId = userData.account.fbPageId;
+                                            saveLeadFormToLocalStorage(form, pageId);
+                                          }
+                                        } catch (error) {
+                                          console.error('Error saving form selection:', error);
+                                        }
+                                      }}
+                                    >
+                                      <div className="flex flex-col">
+                                        <span className="text-text-white font-medium">{form.display_name}</span>
+                                        <span className="text-xs text-text-light-gray">ID: {form.name}</span>
+                                        <span className="text-xs text-text-light-gray">Created: {form.formatted_date}</span>
+                                        <span className="text-xs text-text-light-gray">Fields: {form.collects || `${form.question_count} questions`}</span>
+                                      </div>
+                                    </div>
+                                    <TooltipProvider>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <button 
+                                            className="p-1 ml-2 text-text-light-gray hover:text-primary-green"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setSelectedFormDetails(form);
+                                              setShowFormDetails(true);
+                                            }}
+                                          >
+                                            <InfoIcon size={16} />
+                                          </button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p className="text-xs">View form details</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
+                                  </div>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ) : searchQuery.trim() !== '' ? (
+                          <div className="py-4 text-center">
+                            <p className="text-sm text-text-light-gray">No matching lead forms found</p>
+                            <button 
+                              className="mt-2 text-xs text-primary-green hover:underline"
                               onClick={() => {
-                                setFilteredForms([]);
                                 setSearchQuery('');
-                                // Show all loaded forms without changing them
-                                setLeadForms(allLoadedForms);
                               }}
                             >
                               Clear search
                             </button>
                           </div>
-                          <ul className="py-1 max-h-60 overflow-auto">
-                            {filteredForms.map(form => (
-                              <li 
-                                key={form.id}
-                                className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-800 ${
-                                  selectedLeadFormId === form.id ? 'bg-gray-800' : ''
-                                }`}
-                              >
-                                <div className="flex items-center justify-between">
-                                  <div 
-                                    className="flex-1"
-                                    onClick={async () => {
-                                      setSelectedLeadFormId(form.id);
-                                      setShowLeadFormDropdown(false);
-                                      
-                                      // Save to local storage
-                                      try {
-                                        const response = await fetch('/api/kv/fetch-api-token');
-                                        const userData = await response.json();
+                        ) : leadForms.length === 0 ? (
+                          <div className="py-4 text-center">
+                            <p className="text-sm text-text-light-gray">No lead forms found</p>
+                          </div>
+                        ) : (
+                          <div>
+                            <ul className="py-1">
+                              {leadForms.map(form => (
+                                <li 
+                                  key={form.id}
+                                  className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-800 ${
+                                    selectedLeadFormId === form.id ? 'bg-gray-800' : ''
+                                  }`}
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <div 
+                                      className="flex-1"
+                                      onClick={async () => {
+                                        setSelectedLeadFormId(form.id);
+                                        setShowLeadFormDropdown(false);
                                         
-                                        if (userData.success && userData.account?.fbPageId) {
-                                          const pageId = userData.account.fbPageId;
-                                          saveLeadFormToLocalStorage(form, pageId);
+                                        // Save to local storage
+                                        try {
+                                          const response = await fetch('/api/kv/fetch-api-token');
+                                          const userData = await response.json();
+                                          
+                                          if (userData.success && userData.account?.fbPageId) {
+                                            const pageId = userData.account.fbPageId;
+                                            saveLeadFormToLocalStorage(form, pageId);
+                                          }
+                                        } catch (error) {
+                                          console.error('Error saving form selection:', error);
                                         }
-                                      } catch (error) {
-                                        console.error('Error saving form selection:', error);
-                                      }
-                                    }}
-                                  >
-                                    <div className="flex flex-col">
-                                      <span className="text-text-white font-medium">{form.display_name}</span>
-                                      <span className="text-xs text-text-light-gray">ID: {form.name}</span>
-                                      <span className="text-xs text-text-light-gray">Created: {form.formatted_date}</span>
-                                      <span className="text-xs text-text-light-gray">Fields: {form.collects || `${form.question_count} questions`}</span>
+                                      }}
+                                    >
+                                      <div className="flex flex-col">
+                                        <span className="text-text-white font-medium">{form.display_name}</span>
+                                        <span className="text-xs text-text-light-gray">ID: {form.name}</span>
+                                        <span className="text-xs text-text-light-gray">Created: {form.formatted_date}</span>
+                                        <span className="text-xs text-text-light-gray">Fields: {form.collects || `${form.question_count} questions`}</span>
+                                      </div>
                                     </div>
+                                    <TooltipProvider>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <button 
+                                            className="p-1 ml-2 text-text-light-gray hover:text-primary-green"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setSelectedFormDetails(form);
+                                              setShowFormDetails(true);
+                                            }}
+                                          >
+                                            <InfoIcon size={16} />
+                                          </button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p className="text-xs">View form details</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
                                   </div>
-                                  <TooltipProvider>
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <button 
-                                          className="p-1 ml-2 text-text-light-gray hover:text-primary-green"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            setSelectedFormDetails(form);
-                                            setShowFormDetails(true);
-                                          }}
-                                        >
-                                          <InfoIcon size={16} />
-                                        </button>
-                                      </TooltipTrigger>
-                                      <TooltipContent>
-                                        <p className="text-xs">View form details</p>
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  </TooltipProvider>
-                                </div>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      ) : searchQuery.trim() !== '' && !searching ? (
-                        <div className="py-4 text-center">
-                          <p className="text-sm text-text-light-gray">No matching lead forms found</p>
-                          <button 
-                            className="mt-2 text-xs text-primary-green hover:underline"
-                            onClick={() => {
-                              setFilteredForms([]);
-                              setSearchQuery('');
-                              // Show all loaded forms without changing them
-                              setLeadForms(allLoadedForms);
-                            }}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Load All Forms Button - shown at the bottom */}
+                      {!hasLoadedAllForms && !loadingLeadForms && (
+                        <div className="p-2 border-t border-border-dark flex-shrink-0">
+                          <button
+                            className="w-full py-2 text-sm text-center text-primary-green hover:bg-gray-800 rounded-md transition-colors"
+                            onClick={() => loadAllForms()}
+                            disabled={loadingMore}
                           >
-                            Clear search
+                            {loadingMore ? (
+                              <div className="flex items-center justify-center">
+                                <Loader2 className="animate-spin mr-2" size={14} />
+                                <span>Loading all forms...</span>
+                              </div>
+                            ) : (
+                              <span>Load all forms</span>
+                            )}
                           </button>
-                        </div>
-                      ) : leadForms.length === 0 ? (
-                        <div className="py-4 text-center">
-                          <p className="text-sm text-text-light-gray">No lead forms found</p>
-                        </div>
-                      ) : (
-                        <div>
-                          <ul className="py-1 max-h-60 overflow-auto">
-                            {leadForms.map(form => (
-                              <li 
-                                key={form.id}
-                                className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-800 ${
-                                  selectedLeadFormId === form.id ? 'bg-gray-800' : ''
-                                }`}
-                              >
-                                <div className="flex items-center justify-between">
-                                  <div 
-                                    className="flex-1"
-                                    onClick={async () => {
-                                      setSelectedLeadFormId(form.id);
-                                      setShowLeadFormDropdown(false);
-                                      
-                                      // Save to local storage
-                                      try {
-                                        const response = await fetch('/api/kv/fetch-api-token');
-                                        const userData = await response.json();
-                                        
-                                        if (userData.success && userData.account?.fbPageId) {
-                                          const pageId = userData.account.fbPageId;
-                                          saveLeadFormToLocalStorage(form, pageId);
-                                        }
-                                      } catch (error) {
-                                        console.error('Error saving form selection:', error);
-                                      }
-                                    }}
-                                  >
-                                    <div className="flex flex-col">
-                                      <span className="text-text-white font-medium">{form.display_name}</span>
-                                      <span className="text-xs text-text-light-gray">ID: {form.name}</span>
-                                      <span className="text-xs text-text-light-gray">Created: {form.formatted_date}</span>
-                                      <span className="text-xs text-text-light-gray">Fields: {form.collects || `${form.question_count} questions`}</span>
-                                    </div>
-                                  </div>
-                                  <TooltipProvider>
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <button 
-                                          className="p-1 ml-2 text-text-light-gray hover:text-primary-green"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            setSelectedFormDetails(form);
-                                            setShowFormDetails(true);
-                                          }}
-                                        >
-                                          <InfoIcon size={16} />
-                                        </button>
-                                      </TooltipTrigger>
-                                      <TooltipContent>
-                                        <p className="text-xs">View form details</p>
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  </TooltipProvider>
-                                </div>
-                              </li>
-                            ))}
-                          </ul>
-                          
-                          {/* Load More Button */}
-                          {paginationCursor && !searchQuery.trim() && !hasLoadedAllForms && (
-                            <div className="p-2 border-t border-border-dark">
-                              <button
-                                className="w-full py-2 text-sm text-center text-primary-green hover:bg-gray-800 rounded-md transition-colors"
-                                onClick={() => getFbLeadForms(paginationCursor)}
-                                disabled={loadingMore}
-                              >
-                                {loadingMore ? (
-                                  <div className="flex items-center justify-center">
-                                    <Loader2 className="animate-spin mr-2" size={14} />
-                                    <span>Loading more...</span>
-                                  </div>
-                                ) : (
-                                  <span>Load all forms</span>
-                                )}
-                              </button>
-                            </div>
-                          )}
                         </div>
                       )}
                     </div>
