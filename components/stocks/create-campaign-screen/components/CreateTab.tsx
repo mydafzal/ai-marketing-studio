@@ -209,6 +209,14 @@ export function CreateTab({
       setLeadFormBehavior("automatic");
     }
   }, [selectedLeadFormId, allLoadedForms]);
+  
+  // When the lead form behavior changes to automatic, clear the selected lead form ID
+  useEffect(() => {
+    if (leadFormBehavior === "automatic" && selectedLeadFormId) {
+      console.log('Lead form behavior set to automatic, clearing selected lead form ID');
+      setSelectedLeadFormId("");
+    }
+  }, [leadFormBehavior, selectedLeadFormId, setSelectedLeadFormId]);
 
   async function getFbLeadForms(afterCursor?: string | null) {
     // If we already have forms loaded and no cursor is provided, use cached forms
@@ -335,9 +343,10 @@ export function CreateTab({
     // If we still don't have a form, don't proceed
     if (!selectedForm) return;
     
-    // Update the selected lead form ID
+    // Update the selected lead form ID and ensure behavior is set to "existing"
     setSelectedLeadFormId(tempSelectedFormId);
     setSelectedFormName(selectedForm.display_name);
+    setLeadFormBehavior("existing");
     
     // Save to local storage
     try {
@@ -618,7 +627,14 @@ export function CreateTab({
                         name="leadFormBehavior"
                         value="automatic"
                         checked={leadFormBehavior === "automatic"}
-                        onChange={() => setLeadFormBehavior("automatic")}
+                        onChange={() => {
+                          setLeadFormBehavior("automatic");
+                          // Clear the selected lead form ID when switching to automatic
+                          if (selectedLeadFormId) {
+                            console.log('Switching to automatic lead form behavior, clearing selected lead form ID');
+                            setSelectedLeadFormId("");
+                          }
+                        }}
                         className="w-4 h-4 border-border-dark focus:ring-primary-green accent-primary-green"
                       />
                     </div>
