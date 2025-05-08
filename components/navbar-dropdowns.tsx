@@ -467,10 +467,21 @@ const NavbarDropdowns = ({
       {/* Desktop View - Standard Horizontal Layout */}
       <div className="hidden md:block">
         {selectedFbPage && instagramAccounts && instagramAccounts.length === 0 && (
-          <div className="w-full bg-amber-800/20 border-y border-amber-800/30 py-1 px-4">
-            <p className="text-amber-400 text-xs text-center">
-              Instagram account not found. To ensure the best user experience, we recommend adding your Instagram account to your Ads Manager.
-            </p>
+          <div className="w-full bg-amber-800/20 border-y border-amber-800/30 py-1 px-4 relative z-50">
+            <div className="flex items-center justify-center">
+              <p className="text-amber-400 text-xs text-center">
+                Instagram account not found. To ensure the best user experience, we recommend adding your Instagram account to your Ads Manager.
+              </p>
+              <div className="relative inline-block ml-1 group">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-amber-400 cursor-help" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                </svg>
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-64 bg-black text-white text-xs rounded py-2 px-3 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+                  To connect your Instagram account, please configure it in your Facebook Business Manager. Need help? Use our support chat widget to get in touch.
+                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1 border-t-4 border-black"></div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
         <div className="flex flex-nowrap items-center justify-center space-x-4 lg:space-x-6 px-6 py-2 bg-dark-bg border-b border-border-dark w-full">
@@ -541,10 +552,21 @@ const NavbarDropdowns = ({
       {/* Mobile View - Dropdown Menu */}
       <div className="md:hidden">
         {selectedFbPage && instagramAccounts && instagramAccounts.length === 0 && (
-          <div className="w-full bg-amber-800/20 border-y border-amber-800/30 py-1 px-4">
-            <p className="text-amber-400 text-xs text-center">
-              Instagram account not found. We highly suggest you to add your Instagram account to your ads manager for best user experience.
-            </p>
+          <div className="w-full bg-amber-800/20 border-y border-amber-800/30 py-1 px-4 relative z-50">
+            <div className="flex items-center justify-center">
+              <p className="text-amber-400 text-xs text-center">
+                Instagram account not found. To ensure the best user experience, we recommend adding your Instagram account to your Ads Manager.
+              </p>
+              <div className="relative inline-block ml-1 group">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-amber-400 cursor-help" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                </svg>
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-64 bg-black text-white text-xs rounded py-2 px-3 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+                  To connect your Instagram account, please configure it in your Facebook Business Manager. Need help? Use our support chat widget to get in touch.
+                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1 border-t-4 border-black"></div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
         <div className="flex items-center justify-between px-4 py-2 bg-dark-bg border-b border-border-dark w-full">
