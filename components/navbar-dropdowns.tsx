@@ -402,10 +402,11 @@ const NavbarDropdowns = ({
       const hasNoBusinessAccounts = fbBusinessAccs && fbBusinessAccs.length === 0;
       const hasNoAdAccounts = selectedFbBusinessAcc && fbAdAccs && fbAdAccs.length === 0;
       const hasNoFbPages = selectedFbBusinessAcc && fbPages && fbPages.length === 0;
-      const hasNoInstagramAccounts = selectedFbPage && instagramAccounts && instagramAccounts.length === 0;
+      // Don't count missing Instagram account as a reason to show the connection modal
+      // const hasNoInstagramAccounts = selectedFbPage && instagramAccounts && instagramAccounts.length === 0;
       
-      // Show modal if any of these conditions are true
-      if (hasNoBusinessAccounts || hasNoAdAccounts || hasNoFbPages || hasNoInstagramAccounts) {
+      // Show modal if any of these conditions are true (excluding Instagram)
+      if (hasNoBusinessAccounts || hasNoAdAccounts || hasNoFbPages) {
         setShowConnectionModal(true);
       } else {
         setShowConnectionModal(false);
@@ -420,8 +421,8 @@ const NavbarDropdowns = ({
     selectedFbBusinessAcc, 
     fbAdAccs,
     fbPages,
-    selectedFbPage, 
-    instagramAccounts
+    selectedFbPage
+    // Removed instagramAccounts from dependencies
   ]);
 
   // When business accounts are loaded, set the selected business account and fetch FB pages
@@ -508,6 +509,11 @@ const NavbarDropdowns = ({
           <div className="flex items-center relative">
             <span className="text-xs text-zinc-400 mr-2 whitespace-nowrap">IG Acc:</span>
             {igAccountLoading && <Spinner />}
+            {selectedFbPage && instagramAccounts && instagramAccounts.length === 0 && (
+              <div className="text-red-500 text-xs mr-2 max-w-[200px]">
+                Instagram account not found. We highly suggest you to add your Instagram account to your ads manager for best user experience on our platform.
+              </div>
+            )}
             <FBAccountDropdown
               title=""
               selectedAcccount={selectedInstagramAccount}
@@ -620,6 +626,11 @@ const NavbarDropdowns = ({
                 <span className="text-sm text-zinc-400">Instagram Account</span>
                 {igAccountLoading && <Spinner />}
               </div>
+              {selectedFbPage && instagramAccounts && instagramAccounts.length === 0 && (
+                <div className="text-red-500 text-xs mb-2">
+                  Instagram account not found. We highly suggest you to add your Instagram account to your ads manager for best user experience on our platform.
+                </div>
+              )}
               <FBAccountDropdown
                 title=""
                 selectedAcccount={selectedInstagramAccount}
