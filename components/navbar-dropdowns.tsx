@@ -473,10 +473,8 @@ const NavbarDropdowns = ({
                 Instagram account not found. To ensure the best user experience, we recommend adding your Instagram account to your Ads Manager.
               </p>
               <div className="relative inline-block ml-1">
-                <a href="https://joyous-brow-6da.notion.site/Instagram-not-configured-1ed16186aac98085a1b6d611885d1950" target="_blank" rel="noopener noreferrer" className="cursor-pointer">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-amber-400 cursor-pointer" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-                  </svg>
+                <a href="https://joyous-brow-6da.notion.site/Instagram-not-configured-1ed16186aac98085a1b6d611885d1950" target="_blank" rel="noopener noreferrer" className="text-amber-400 text-xs underline hover:text-amber-300 ml-1 cursor-pointer">
+                  View Guide
                 </a>
               </div>
             </div>
@@ -556,10 +554,8 @@ const NavbarDropdowns = ({
                 Instagram account not found. To ensure the best user experience, we recommend adding your Instagram account to your Ads Manager.
               </p>
               <div className="relative inline-block ml-1">
-                <a href="https://joyous-brow-6da.notion.site/Instagram-not-configured-1ed16186aac98085a1b6d611885d1950" target="_blank" rel="noopener noreferrer" className="cursor-pointer">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-amber-400 cursor-pointer" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-                  </svg>
+                <a href="https://joyous-brow-6da.notion.site/Instagram-not-configured-1ed16186aac98085a1b6d611885d1950" target="_blank" rel="noopener noreferrer" className="text-amber-400 text-xs underline hover:text-amber-300 ml-1 cursor-pointer">
+                  View Guide
                 </a>
               </div>
             </div>
