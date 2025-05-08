@@ -402,10 +402,11 @@ const NavbarDropdowns = ({
       const hasNoBusinessAccounts = fbBusinessAccs && fbBusinessAccs.length === 0;
       const hasNoAdAccounts = selectedFbBusinessAcc && fbAdAccs && fbAdAccs.length === 0;
       const hasNoFbPages = selectedFbBusinessAcc && fbPages && fbPages.length === 0;
-      const hasNoInstagramAccounts = selectedFbPage && instagramAccounts && instagramAccounts.length === 0;
+      // Don't count missing Instagram account as a reason to show the connection modal
+      // const hasNoInstagramAccounts = selectedFbPage && instagramAccounts && instagramAccounts.length === 0;
       
-      // Show modal if any of these conditions are true
-      if (hasNoBusinessAccounts || hasNoAdAccounts || hasNoFbPages || hasNoInstagramAccounts) {
+      // Show modal if any of these conditions are true (excluding Instagram)
+      if (hasNoBusinessAccounts || hasNoAdAccounts || hasNoFbPages) {
         setShowConnectionModal(true);
       } else {
         setShowConnectionModal(false);
@@ -420,8 +421,8 @@ const NavbarDropdowns = ({
     selectedFbBusinessAcc, 
     fbAdAccs,
     fbPages,
-    selectedFbPage, 
-    instagramAccounts
+    selectedFbPage
+    // Removed instagramAccounts from dependencies
   ]);
 
   // When business accounts are loaded, set the selected business account and fetch FB pages
@@ -465,6 +466,20 @@ const NavbarDropdowns = ({
       />
       {/* Desktop View - Standard Horizontal Layout */}
       <div className="hidden md:block">
+        {selectedFbPage && instagramAccounts && instagramAccounts.length === 0 && (
+          <div className="w-full bg-amber-800/20 border-y border-amber-800/30 py-1 px-4 relative z-50">
+            <div className="flex items-center justify-center">
+              <p className="text-amber-400 text-xs text-center">
+                Instagram account not found. To ensure the best user experience, we recommend adding your Instagram account to your Ads Manager.
+              </p>
+              <div className="relative inline-block ml-1">
+                <a href="https://joyous-brow-6da.notion.site/Instagram-not-configured-1ed16186aac98085a1b6d611885d1950" target="_blank" rel="noopener noreferrer" className="text-amber-400 text-xs underline hover:text-amber-300 ml-1 cursor-pointer">
+                  View Guide
+                </a>
+              </div>
+            </div>
+          </div>
+        )}
         <div className="flex flex-nowrap items-center justify-center space-x-4 lg:space-x-6 px-6 py-2 bg-dark-bg border-b border-border-dark w-full">
           <div className="flex items-center relative">
             <span className="text-xs text-zinc-400 mr-2 whitespace-nowrap">Business:</span>
@@ -532,6 +547,20 @@ const NavbarDropdowns = ({
       
       {/* Mobile View - Dropdown Menu */}
       <div className="md:hidden">
+        {selectedFbPage && instagramAccounts && instagramAccounts.length === 0 && (
+          <div className="w-full bg-amber-800/20 border-y border-amber-800/30 py-1 px-4 relative z-50">
+            <div className="flex items-center justify-center">
+              <p className="text-amber-400 text-xs text-center">
+                Instagram account not found. To ensure the best user experience, we recommend adding your Instagram account to your Ads Manager.
+              </p>
+              <div className="relative inline-block ml-1">
+                <a href="https://joyous-brow-6da.notion.site/Instagram-not-configured-1ed16186aac98085a1b6d611885d1950" target="_blank" rel="noopener noreferrer" className="text-amber-400 text-xs underline hover:text-amber-300 ml-1 cursor-pointer">
+                  View Guide
+                </a>
+              </div>
+            </div>
+          </div>
+        )}
         <div className="flex items-center justify-between px-4 py-2 bg-dark-bg border-b border-border-dark w-full">
           {/* Mobile Menu Toggle */}
           <button 
