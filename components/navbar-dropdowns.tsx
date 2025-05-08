@@ -530,13 +530,42 @@ const NavbarDropdowns = ({
               Save Changes
             </button>
           </div>
-          <div className="flex space-x-2">
+          <div className="flex space-x-2 relative">
             <button 
-              className="bg-primary-green hover:bg-primary-green/90 text-black text-xs font-medium py-1 px-3 rounded-full transition-colors whitespace-nowrap"
-              onClick={() => router.push('/manage-persona')}
+              className="bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white text-xs font-medium py-1 px-3 rounded-full transition-colors whitespace-nowrap flex items-center"
+              onClick={() => {
+                const dropdown = document.getElementById('agency-tools-dropdown');
+                if (dropdown) {
+                  dropdown.classList.toggle('hidden');
+                }
+              }}
             >
-              Manage Personas
+              Agency Tools
+              <svg 
+                className="w-4 h-4 ml-1" 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+              </svg>
             </button>
+            <div 
+              id="agency-tools-dropdown"
+              className="absolute top-full right-0 mt-1 bg-dark-bg border border-border-dark rounded-md shadow-lg hidden z-10"
+              onMouseLeave={(e) => {
+                e.currentTarget.classList.add('hidden');
+              }}
+            >
+              <div className="py-1">
+                <button 
+                  onClick={() => router.push('/manage-persona')}
+                  className="block w-full text-left px-4 py-2 text-sm text-white hover:bg-primary-green/20 transition-colors whitespace-nowrap"
+                >
+                  Manage Customer Profiles
+                </button>
+              </div>
+            </div>
           </div>          
         </div>
       </div>
