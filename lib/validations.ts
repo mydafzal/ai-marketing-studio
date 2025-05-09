@@ -15,12 +15,14 @@ export const validateUrl = (url: string): { isValid: boolean; error: string } =>
 }
 
 export const validatePersonaForm = (formData: {
+  name?: string
   companyName: string
   websiteLink: string
   privacyPolicyLink: string
   language: string
 }) => {
   const errors = {
+    name: '',
     companyName: '',
     websiteLink: '',
     privacyPolicyLink: '',
@@ -29,6 +31,8 @@ export const validatePersonaForm = (formData: {
   }
   let hasErrors = false
 
+  // Profile name validation (optional - will be auto-populated if empty)
+  
   // Company name validation
   if (!formData.companyName.trim()) {
     errors.companyName = 'Company name is required'

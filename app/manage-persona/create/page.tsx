@@ -10,6 +10,7 @@ import { validatePersonaForm } from '@/lib/validations'
 export default function CreatePersonaPage() {
   const router = useRouter()
   const [formData, setFormData] = useState({
+    name: '',
     companyName: '',
     websiteLink: '',
     privacyPolicyLink: '',
@@ -17,6 +18,7 @@ export default function CreatePersonaPage() {
     locations: [] as LocationData
   })
   const [inputError, setInputError] = useState({
+    name: '',
     companyName: '',
     websiteLink: '',
     privacyPolicyLink: '',
@@ -136,6 +138,7 @@ export default function CreatePersonaPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           owner_id: 'default_owner',
+          name: formData.name,
           company_name: formData.companyName,
           website_link: formData.websiteLink,
           privacy_policy_link: formData.privacyPolicyLink,
@@ -199,6 +202,16 @@ export default function CreatePersonaPage() {
               name="companyName"
               value={formData.companyName}
               onChange={handleInputChange}
+              onBlur={(e) => {
+                // Auto-generate profile name only on blur and if not manually set by user
+                if (!formData.name && e.target.value) {
+                  const todayDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                  setFormData(prev => ({
+                    ...prev,
+                    name: `${e.target.value} - profile (${todayDate})`
+                  }));
+                }
+              }}
               className={cn(
                 "w-full px-3 py-2 rounded-lg text-sm bg-[#232736] border",
                 inputError.companyName ? "border-red-500" : "border-gray-700",
@@ -210,6 +223,31 @@ export default function CreatePersonaPage() {
               <p className="text-sm text-red-500 flex items-center gap-1 mt-1">
                 <AlertCircle className="size-3" />
                 {inputError.companyName}
+              </p>
+            )}
+          </div>
+          
+          <div>
+            <label className="block text-sm font-semibold mb-1">
+              Profile Name 
+              <span className="text-xs text-gray-400 ml-2 font-normal">Choose a name to help you remember this profile</span>
+            </label>
+            <input
+              type="text"
+              name="name"
+              value={formData.name}
+              onChange={handleInputChange}
+              className={cn(
+                "w-full px-3 py-2 rounded-lg text-sm bg-[#232736] border",
+                inputError.name ? "border-red-500" : "border-gray-700",
+                "focus:outline-none focus:ring-2 focus:ring-[#4BF29C]"
+              )}
+              placeholder="Auto-generated from company name if left empty"
+            />
+            {inputError.name && (
+              <p className="text-sm text-red-500 flex items-center gap-1 mt-1">
+                <AlertCircle className="size-3" />
+                {inputError.name}
               </p>
             )}
           </div>

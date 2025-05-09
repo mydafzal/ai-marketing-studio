@@ -9,6 +9,7 @@ import DeletePersonaModal from '@/components/delete-persona-modal'
 function mapPersona(persona: any) {
   return {
     id: persona.id,
+    name: persona.name,
     companyName: persona.company_name,
     websiteLink: persona.website_link,
     language: persona.preferred_language,
@@ -95,6 +96,7 @@ export default function PersonaDashboard() {
                 <table className="w-full">
                   <thead>
                     <tr className="text-left border-b border-gray-700">
+                      <th className="px-4 py-3 text-base font-semibold">Profile Name</th>
                       <th className="px-4 py-3 text-base font-semibold">Company</th>
                       <th className="px-4 py-3 text-base font-semibold">Website</th>
                       <th className="px-4 py-3 text-base font-semibold">Language</th>
@@ -104,6 +106,7 @@ export default function PersonaDashboard() {
                   <tbody>
                     {personas.map(persona => (
                       <tr key={persona.id} className="border-b border-gray-800 hover:bg-[#232736]">
+                        <td className="px-4 py-4 text-base">{persona.name || `${persona.companyName} Profile`}</td>
                         <td className="px-4 py-4 text-base">{persona.companyName}</td>
                         <td className="px-4 py-4 text-base text-gray-300">{persona.websiteLink}</td>
                         <td className="px-4 py-4 text-base">{persona.language}</td>

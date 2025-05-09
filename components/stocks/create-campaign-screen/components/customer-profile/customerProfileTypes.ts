@@ -1,5 +1,6 @@
 export interface CustomerProfile {
   id: string;
+  name?: string; // New profile name field
   companyName: string;
   websiteLink: string;
   language?: string;

@@ -107,6 +107,7 @@ export function CustomerProfileSelector({
         // Map the API response format to our CustomerProfile type
         const profiles = data.data.map((persona: any) => ({
           id: persona.id,
+          name: persona.name,
           companyName: persona.company_name,
           websiteLink: persona.website_link,
           language: persona.preferred_language,
@@ -140,6 +141,7 @@ export function CustomerProfileSelector({
         // Map snake_case to camelCase and also keep original snake_case properties
         const completeProfile: CustomerProfile = {
           id: data.data.id,
+          name: data.data.name,
           companyName: data.data.company_name,
           websiteLink: data.data.website_link,
           language: data.data.preferred_language,
@@ -278,7 +280,7 @@ export function CustomerProfileSelector({
                   <option value="">Select a customer profile...</option>
                   {customerProfiles.map(profile => (
                     <option key={profile.id} value={profile.id}>
-                      {profile.companyName}
+                      {profile.name ? `${profile.name} (${profile.companyName})` : profile.companyName}
                     </option>
                   ))}
                 </select>
