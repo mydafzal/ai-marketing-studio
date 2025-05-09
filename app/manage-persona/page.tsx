@@ -71,7 +71,7 @@ export default function PersonaDashboard() {
     <div className="min-h-screen bg-[#0F1117] text-white flex flex-col items-center py-10">
       <div className="w-full max-w-3xl">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">Manage Personas</h1>
+          <h1 className="text-3xl font-bold">Customer Profiles</h1>
                 <button 
             onClick={() => router.push('/manage-persona/create')}
             className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#4BF29C] to-[#38A169] text-[#0F1117] rounded-lg font-medium hover:scale-105 transition"

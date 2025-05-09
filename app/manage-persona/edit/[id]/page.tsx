@@ -84,6 +84,37 @@ export default function EditPersonaPage() {
     }
   }, [id])
 
+  // Format URL: remove www. and add https:// if needed
+  const formatUrl = (url: string): string => {
+    if (!url || url.trim() === '') return url;
+    
+    // Remove www. if present
+    let cleanUrl = url.replace(/^(https?:\/\/)?(www\.)/i, '');
+    
+    // Add https:// if not present
+    if (!cleanUrl.match(/^https?:\/\//i)) {
+      return `https://${cleanUrl}`;
+    }
+    
+    return cleanUrl;
+  };
+
+  // Validate URL format with TLD check
+  const validateUrlFormat = (url: string): boolean => {
+    if (!url || url.trim() === '') return true; // Empty URLs are handled by other validation
+    
+    try {
+      const urlObj = new URL(url.match(/^https?:\/\//i) ? url : `https://${url}`);
+      // Check if domain has a TLD (at least one dot in hostname)
+      if (!urlObj.hostname.includes('.') || urlObj.hostname.split('.').pop()!.length === 0) {
+        return false; // Invalid domain (missing TLD)
+      }
+      return true;
+    } catch (error) {
+      return false; // Invalid URL
+    }
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     let formattedValue = value
@@ -98,6 +129,30 @@ export default function EditPersonaPage() {
         ...prev,
         [name]: ''
       }))
+    }
+  }
+  
+  // Handle blur event for URL fields
+  const handleUrlBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    
+    if (name === 'websiteLink' || name === 'privacyPolicyLink') {
+      // Format the URL (remove www. and add https://)
+      const formattedUrl = formatUrl(value);
+      
+      // Update the form data with formatted URL
+      setFormData(prev => ({
+        ...prev,
+        [name]: formattedUrl
+      }));
+      
+      // Validate URL format
+      if (formattedUrl && !validateUrlFormat(formattedUrl)) {
+        setInputError(prev => ({
+          ...prev,
+          [name]: 'Please enter a valid URL with a domain extension (e.g. .com)'
+        }));
+      }
     }
   }
 
@@ -185,7 +240,7 @@ export default function EditPersonaPage() {
           className="w-full bg-[#1A1D29] rounded-xl shadow-lg p-8 space-y-8 border border-gray-800"
         >
           <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold">Edit Persona</h1>
+            <h1 className="text-2xl font-bold">Edit Customer Profile</h1>
             <button
               type="button"
               onClick={() => router.push('/manage-persona')}
@@ -230,12 +285,13 @@ export default function EditPersonaPage() {
               name="websiteLink"
               value={formData.websiteLink}
               onChange={handleInputChange}
+              onBlur={handleUrlBlur}
               className={cn(
                 "w-full px-3 py-2 rounded-lg text-sm bg-[#232736] border",
                 inputError.websiteLink ? "border-red-500" : "border-gray-700",
                 "focus:outline-none focus:ring-2 focus:ring-[#4BF29C]"
               )}
-              placeholder="https://www.yourwebsite.com"
+              placeholder="https://yourwebsite.com"
             />
             {inputError.websiteLink && (
               <p className="text-sm text-red-500 flex items-center gap-1 mt-1">
@@ -252,12 +308,13 @@ export default function EditPersonaPage() {
               name="privacyPolicyLink"
               value={formData.privacyPolicyLink}
               onChange={handleInputChange}
+              onBlur={handleUrlBlur}
               className={cn(
                 "w-full px-3 py-2 rounded-lg text-sm bg-[#232736] border",
                 inputError.privacyPolicyLink ? "border-red-500" : "border-gray-700",
                 "focus:outline-none focus:ring-2 focus:ring-[#4BF29C]"
               )}
-              placeholder="https://www.yourwebsite.com/privacy-policy"
+              placeholder="https://yourwebsite.com/privacy-policy"
             />
             {inputError.privacyPolicyLink && (
               <p className="text-sm text-red-500 flex items-center gap-1 mt-1">
@@ -309,7 +366,7 @@ export default function EditPersonaPage() {
               onClick={() => setDeleteModal({ isOpen: true, isDeleting: false })}
               className="px-4 py-2 rounded-lg bg-red-600/20 text-red-400 border border-red-600/50 hover:bg-red-600/30"
             >
-              Delete Persona
+              Delete Profile
             </button>
             <button
               type="submit"
