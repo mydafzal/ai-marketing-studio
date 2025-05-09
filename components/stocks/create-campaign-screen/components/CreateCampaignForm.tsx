@@ -287,8 +287,8 @@ export function CreateCampaignForm() {
       let privacyPolicyLink = '';
       let websiteLink = link; // Default to current link
       
-      // Check if we should use a selected customer profile
-      if (selectedCustomerProfile) {
+      // Check if we have a selected customer profile AND "select" behavior is chosen
+      if (selectedCustomerProfile && selectedCustomerProfileId) {
         console.log('🔍 Using selected customer profile data');
         
         // Use customer profile locations if available
@@ -324,7 +324,7 @@ export function CreateCampaignForm() {
           console.log('🔗 Using website link from customer profile:', websiteLink);
         }
       } else {
-        console.log('🔍 Using user account data (no customer profile selected)');
+        console.log('🔍 Using user account data (using own profile)');
         
         // First check if user has saved locations from onboarding that are valid
         if (userData.account?.locations && 

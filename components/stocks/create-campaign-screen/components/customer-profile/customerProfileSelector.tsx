@@ -17,7 +17,7 @@ export function CustomerProfileSelector({
   selectedProfileId,
   setSelectedProfileId
 }: CustomerProfileSelectorProps) {
-  // State
+  // State - "own" is the default profile behavior
   const [profileBehavior, setProfileBehavior] = useState<CustomerProfileBehavior>("own");
   const [customerProfiles, setCustomerProfiles] = useState<CustomerProfile[]>([]);
   const [selectedProfileName, setSelectedProfileName] = useState<string>('');
@@ -41,8 +41,13 @@ export function CustomerProfileSelector({
     }
   }, [selectedProfileId, customerProfiles]);
 
-  // Check for previously stored profile
+  // Check for previously stored profile, but only use it if user hasn't made an explicit choice
   useEffect(() => {
+    // Don't auto-load a profile if already loaded (prevents unwanted overrides)
+    if (selectedProfileId) {
+      return;
+    }
+    
     const storedProfile = getStoredCustomerProfile();
     if (storedProfile && storedProfile.profileId) {
       setSelectedProfileId(storedProfile.profileId);
@@ -55,17 +60,26 @@ export function CustomerProfileSelector({
           dispatchProfileChangeEvent(completeProfile);
         }
       });
+    } else {
+      // If no stored profile, explicitly set to "own" and clear any data
+      setProfileBehavior("own");
+      // Dispatch null profile to indicate using own profile
+      dispatchProfileChangeEvent(null);
     }
-  }, [setSelectedProfileId]);
+  }, [setSelectedProfileId, selectedProfileId]);
 
-  // When profile behavior changes to "own", clear selected profile
+  // Debug profile behavior changes
   useEffect(() => {
-    if (profileBehavior === "own" && selectedProfileId) {
+    console.log('Profile behavior changed:', profileBehavior);
+    
+    // When profile behavior changes to "own", clear selected profile
+    if (profileBehavior === "own") {
+      console.log('Clearing profile selection due to own profile selection');
       setSelectedProfileId("");
       setSelectedProfileName("");
       dispatchProfileChangeEvent(null);
     }
-  }, [profileBehavior, selectedProfileId, setSelectedProfileId]);
+  }, [profileBehavior, setSelectedProfileId]);
 
   // Fetch customer profiles from API
   const fetchCustomerProfiles = async () => {
@@ -185,13 +199,29 @@ export function CustomerProfileSelector({
       
       <RadioGroup
         value={profileBehavior}
-        onValueChange={(value) => setProfileBehavior(value as CustomerProfileBehavior)}
+        onValueChange={(value) => {
+          setProfileBehavior(value as CustomerProfileBehavior);
+          console.log('Profile behavior changed to:', value);
+          
+          // Clear selection and dispatch null profile when switching to own
+          if (value === 'own') {
+            setSelectedProfileId('');
+            setSelectedProfileName('');
+            dispatchProfileChangeEvent(null);
+          }
+        }}
         className="space-y-3"
       >
-        <div className="flex items-start space-x-2">
-          <RadioGroupItem id="own-profile" value="own" />
+        <div 
+          className={`flex items-start space-x-2 cursor-pointer p-2 rounded-md ${profileBehavior === 'own' ? 'bg-gray-800' : ''}`} 
+          onClick={() => {
+            console.log('Clicked Own Profile');
+            setProfileBehavior('own');
+          }}
+        >
+          <RadioGroupItem id="own-profile" value="own" checked={profileBehavior === 'own'} />
           <div className="flex flex-col">
-            <Label htmlFor="own-profile" className="text-sm font-medium text-text-white">
+            <Label htmlFor="own-profile" className="text-sm font-medium text-text-white cursor-pointer">
               Use my own profile
             </Label>
             <span className="text-xs text-text-light-gray">
@@ -200,10 +230,16 @@ export function CustomerProfileSelector({
           </div>
         </div>
         
-        <div className="flex items-start space-x-2">
-          <RadioGroupItem id="select-profile" value="select" />
+        <div 
+          className={`flex items-start space-x-2 cursor-pointer p-2 rounded-md ${profileBehavior === 'select' ? 'bg-gray-800' : ''}`} 
+          onClick={() => {
+            console.log('Clicked Select Profile');
+            setProfileBehavior('select');
+          }}
+        >
+          <RadioGroupItem id="select-profile" value="select" checked={profileBehavior === 'select'} />
           <div className="flex flex-col w-full">
-            <Label htmlFor="select-profile" className="text-sm font-medium text-text-white mb-1">
+            <Label htmlFor="select-profile" className="text-sm font-medium text-text-white mb-1 cursor-pointer">
               Select customer profile
             </Label>
             
@@ -213,7 +249,10 @@ export function CustomerProfileSelector({
                   className={`w-full bg-dark-bg border border-border-dark rounded-md py-2 px-3 text-sm appearance-none ${profileBehavior === "select" ? "text-text-white" : "text-text-light-gray"}`}
                   disabled={profileBehavior !== "select" || customerProfiles.length === 0}
                   value={selectedProfileId}
-                  onChange={(e) => handleProfileSelection(e.target.value)}
+                  onChange={(e) => {
+                    console.log('Selected profile from dropdown:', e.target.value);
+                    handleProfileSelection(e.target.value);
+                  }}
                 >
                   <option value="">Select a customer profile...</option>
                   {customerProfiles.map(profile => (
