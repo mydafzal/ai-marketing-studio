@@ -31,6 +31,7 @@ export function CreateCampaignForm() {
   const [budget, setBudget] = useState('');
   const [selectedLeadFormId, setSelectedLeadFormId] = useState<string>("");
   const [selectedCustomerProfileId, setSelectedCustomerProfileId] = useState<string>("");
+  const [selectedCustomerProfile, setSelectedCustomerProfile] = useState<any>(null);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
@@ -129,6 +130,26 @@ export function CreateCampaignForm() {
       };
     }
   }, [fileInputRef, handleFileUpload]);
+  
+  // Add event listener for customer profile changes
+  useEffect(() => {
+    const handleProfileChange = (event: any) => {
+      const profile = event.detail?.profile || null;
+      console.log('Customer profile changed:', profile);
+      setSelectedCustomerProfile(profile);
+      
+      // Override link if profile is selected and has website link
+      if (profile && profile.websiteLink) {
+        setLink(validateAndFixUrl(profile.websiteLink));
+      }
+    };
+    
+    window.addEventListener('customerProfileChange', handleProfileChange);
+    
+    return () => {
+      window.removeEventListener('customerProfileChange', handleProfileChange);
+    };
+  }, []);
 
   // Handle transition to review screen with loading sequence and API call
   const handleReviewTransition = async () => {
@@ -258,30 +279,81 @@ export function CreateCampaignForm() {
         throw new Error('Failed to fetch user details');
       }
       
-      // Prepare location data based on targeted locations
+      // Prepare location data based on selected profile or user settings
       let locationData = [];
+      let profileData = '';
+      let companyName = '';
+      let preferredLanguage = '';
+      let privacyPolicyLink = '';
+      let websiteLink = link; // Default to current link
       
-      // First check if user has saved locations from onboarding that are valid
-      if (userData.account?.locations && 
-          Array.isArray(userData.account.locations) && 
-          userData.account.locations.length > 0) {
+      // Check if we should use a selected customer profile
+      if (selectedCustomerProfile) {
+        console.log('🔍 Using selected customer profile data');
         
-        // Validate that location data has proper country information
-        const validLocations = userData.account.locations.filter((loc: any) => 
-          loc && 
-          loc.country && 
-          typeof loc.country === 'object' &&
-          loc.country.name && 
-          loc.country.code
-        );
-        
-        if (validLocations.length > 0) {
-          console.log('📍 Using valid user saved locations:', validLocations.length);
-          // User locations are in the correct format, use them directly
-          locationData = validLocations;
-        } else {
-          console.warn('⚠️ User has locations but they are invalid or empty, falling back to default');
+        // Use customer profile locations if available
+        if (selectedCustomerProfile.location_data && 
+            Array.isArray(selectedCustomerProfile.location_data) && 
+            selectedCustomerProfile.location_data.length > 0) {
+          
+          console.log('📍 Using locations from customer profile');
+          locationData = selectedCustomerProfile.location_data;
         }
+        
+        // Use customer profile website data if available
+        if (selectedCustomerProfile.website_data) {
+          console.log('🌐 Using website data from customer profile');
+          profileData = selectedCustomerProfile.website_data;
+        }
+        
+        // Use customer profile company name
+        companyName = selectedCustomerProfile.companyName;
+        console.log('🏢 Using company name from customer profile:', companyName);
+        
+        // Use customer profile preferred language
+        preferredLanguage = selectedCustomerProfile.preferred_language || selectedCustomerProfile.language || 'en';
+        console.log('🌐 Using preferred language from customer profile:', preferredLanguage);
+        
+        // Use customer profile privacy policy link
+        privacyPolicyLink = selectedCustomerProfile.privacy_policy_link || selectedCustomerProfile.privacyPolicyLink || '';
+        console.log('🔒 Using privacy policy link from customer profile');
+        
+        // Use customer profile website link if not already set by user input
+        if (selectedCustomerProfile.websiteLink) {
+          websiteLink = validateAndFixUrl(selectedCustomerProfile.websiteLink);
+          console.log('🔗 Using website link from customer profile:', websiteLink);
+        }
+      } else {
+        console.log('🔍 Using user account data (no customer profile selected)');
+        
+        // First check if user has saved locations from onboarding that are valid
+        if (userData.account?.locations && 
+            Array.isArray(userData.account.locations) && 
+            userData.account.locations.length > 0) {
+          
+          // Validate that location data has proper country information
+          const validLocations = userData.account.locations.filter((loc: any) => 
+            loc && 
+            loc.country && 
+            typeof loc.country === 'object' &&
+            loc.country.name && 
+            loc.country.code
+          );
+          
+          if (validLocations.length > 0) {
+            console.log('📍 Using valid user saved locations:', validLocations.length);
+            // User locations are in the correct format, use them directly
+            locationData = validLocations;
+          } else {
+            console.warn('⚠️ User has locations but they are invalid or empty, falling back to default');
+          }
+        }
+        
+        // Include AI guidance in profile data if provided
+        profileData = userData.account?.defaultExtraDetails || '';
+        companyName = userData.account?.companyName || '';
+        preferredLanguage = userData.account?.preferred_language || 'en';
+        privacyPolicyLink = userData.account?.privacy_policy_link || '';
       }
       
       // If no valid saved locations but we have targetedLocations, use those instead
@@ -338,14 +410,12 @@ export function CreateCampaignForm() {
       
       console.log('📍 Final location data:', JSON.stringify(locationData, null, 2));
       
-      // Include AI guidance in profile data if provided
-      let profileData = userData.account?.defaultExtraDetails || '';
+      // Add AI guidance to profile data if provided
       if (aiGuidance && aiGuidance.trim() !== '') {
         console.log('💬 Including AI guidance in profile data');
         profileData = profileData + "\n\nThe user explicitly stated that they want: " + aiGuidance;
       }
       
-      const companyName = userData.account?.companyName;
       console.log('🏢 Using company name:', companyName);
       
       const pageId = userData.account?.fbPageId ? String(userData.account.fbPageId) : '';
@@ -358,16 +428,16 @@ export function CreateCampaignForm() {
       const requestPayload = {
         fb_account_id: userData.account?.fbAccountId || '',
         campaign_flow_session_id: sessionId,
-        company_name: companyName, // Make sure company_name is always present
+        company_name: companyName, // Now using the determined company name (from profile or user)
         profile_data: profileData,
         location_data: locationData,
         page_id: pageId,
         image_hashes: imageHashes,
         video_ids: videoIds,
         daily_campaign_budget: budget, // Use daily_campaign_budget as shown in documentation example
-        website_link: link,
-        preferred_language: userData.account?.preferred_language || "en",
-        privacy_policy_link: userData.account?.privacy_policy_link || '',
+        website_link: websiteLink, // Now using the determined website link (from profile or user input)
+        preferred_language: preferredLanguage, // Now using the determined language (from profile or user)
+        privacy_policy_link: privacyPolicyLink, // Now using the determined privacy policy link (from profile or user)
         instagram_account_id: userData.account?.instagramAccountId || '',
         post_assessment_campaign_objective: 'auto',
         selectedLeadFormId: selectedLeadFormId,

@@ -9,6 +9,10 @@ export interface CustomerProfile {
   ownerId?: string;
   privacyPolicyLink?: string;
   websiteData?: any;
+  preferred_language?: string; // Match API naming convention
+  location_data?: any; // Match API naming convention
+  privacy_policy_link?: string; // Match API naming convention
+  website_data?: any; // Match API naming convention
 }
 
 export type CustomerProfileBehavior = "own" | "select";

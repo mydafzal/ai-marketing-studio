@@ -5,6 +5,14 @@ import { Label } from '@/components/ui/label';
 import { CustomerProfile, CustomerProfileBehavior, CustomerProfileSelectorProps } from './customerProfileTypes';
 import { getStoredCustomerProfile, saveCustomerProfileToLocalStorage } from './customerProfileStorage';
 
+// Define an event dispatcher for profile changes
+export const dispatchProfileChangeEvent = (profile: CustomerProfile | null) => {
+  const event = new CustomEvent('customerProfileChange', { 
+    detail: { profile }
+  });
+  window.dispatchEvent(event);
+};
+
 export function CustomerProfileSelector({
   selectedProfileId,
   setSelectedProfileId
@@ -40,6 +48,13 @@ export function CustomerProfileSelector({
       setSelectedProfileId(storedProfile.profileId);
       setSelectedProfileName(storedProfile.companyName);
       setProfileBehavior("select");
+      
+      // Fetch and dispatch complete profile data
+      fetchCompleteProfileData(storedProfile.profileId).then(completeProfile => {
+        if (completeProfile) {
+          dispatchProfileChangeEvent(completeProfile);
+        }
+      });
     }
   }, [setSelectedProfileId]);
 
@@ -48,6 +63,7 @@ export function CustomerProfileSelector({
     if (profileBehavior === "own" && selectedProfileId) {
       setSelectedProfileId("");
       setSelectedProfileName("");
+      dispatchProfileChangeEvent(null);
     }
   }, [profileBehavior, selectedProfileId, setSelectedProfileId]);
 
@@ -87,13 +103,69 @@ export function CustomerProfileSelector({
     }
   };
 
+  // Fetch complete profile data
+  const fetchCompleteProfileData = async (profileId: string) => {
+    try {
+      const response = await fetch(`/api/persona/${profileId}`);
+      const data = await response.json();
+      
+      if (data.success && data.data) {
+        // Map snake_case to camelCase and also keep original snake_case properties
+        const completeProfile: CustomerProfile = {
+          id: data.data.id,
+          companyName: data.data.company_name,
+          websiteLink: data.data.website_link,
+          language: data.data.preferred_language,
+          locations: data.data.location_data,
+          createdAt: data.data.created_at,
+          updatedAt: data.data.updated_at,
+          ownerId: data.data.owner_id,
+          privacyPolicyLink: data.data.privacy_policy_link,
+          websiteData: data.data.website_data,
+          // Also keep original snake_case versions for API compatibility
+          preferred_language: data.data.preferred_language,
+          location_data: data.data.location_data,
+          privacy_policy_link: data.data.privacy_policy_link,
+          website_data: data.data.website_data
+        };
+        
+        return completeProfile;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error fetching complete profile data:', error);
+      return null;
+    }
+  };
+
   // Handle profile selection
-  const handleProfileSelection = (profileId: string) => {
-    const selectedProfile = customerProfiles.find(profile => profile.id === profileId);
-    if (selectedProfile) {
-      setSelectedProfileId(profileId);
-      setSelectedProfileName(selectedProfile.companyName);
-      saveCustomerProfileToLocalStorage(selectedProfile);
+  const handleProfileSelection = async (profileId: string) => {
+    if (!profileId) {
+      setSelectedProfileId("");
+      setSelectedProfileName("");
+      dispatchProfileChangeEvent(null);
+      return;
+    }
+    
+    // Find basic profile info from current list
+    const basicProfile = customerProfiles.find(profile => profile.id === profileId);
+    if (!basicProfile) return;
+    
+    // Set basic info immediately for UI responsiveness
+    setSelectedProfileId(profileId);
+    setSelectedProfileName(basicProfile.companyName);
+    
+    // Fetch complete profile data
+    const completeProfile = await fetchCompleteProfileData(profileId);
+    if (completeProfile) {
+      // Update local storage with complete profile
+      saveCustomerProfileToLocalStorage(completeProfile);
+      
+      // Dispatch event with complete profile data
+      dispatchProfileChangeEvent(completeProfile);
+    } else {
+      // If complete profile fetch fails, still use basic profile
+      dispatchProfileChangeEvent(basicProfile);
     }
   };
 
