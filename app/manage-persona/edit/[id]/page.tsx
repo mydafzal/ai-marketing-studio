@@ -67,6 +67,7 @@ export default function EditPersonaPage() {
         if (data.success && data.data) {
           const mappedPersona = mapPersona(data.data)
           setFormData({
+            name: mappedPersona.name || '',
             companyName: mappedPersona.companyName || '',
             websiteLink: mappedPersona.websiteLink || '',
             privacyPolicyLink: mappedPersona.privacyPolicyLink || '',
