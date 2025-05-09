@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronDown, RefreshCw, ExternalLink, Loader2, Info as InfoIcon } from 'lucide-react';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { CustomerProfile, CustomerProfileBehavior, CustomerProfileSelectorProps } from './customerProfileTypes';
 import { getStoredCustomerProfile, saveCustomerProfileToLocalStorage } from './customerProfileStorage';
@@ -23,6 +22,20 @@ export function CustomerProfileSelector({
   const [selectedProfileName, setSelectedProfileName] = useState<string>('');
   const [loadingProfiles, setLoadingProfiles] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Ensure profile behavior is consistent with selection
+  useEffect(() => {
+    // If no profile is selected, ensure "own" behavior is active
+    if (!selectedProfileId && profileBehavior !== "own") {
+      console.log('No profile selected, setting to own behavior');
+      setProfileBehavior("own");
+    } 
+    // If a profile is selected, ensure "select" behavior is active
+    else if (selectedProfileId && profileBehavior !== "select") {
+      console.log('Profile selected, setting to select behavior');
+      setProfileBehavior("select");
+    }
+  }, [selectedProfileId, profileBehavior]);
 
   // Fetch customer profiles when component mounts
   useEffect(() => {
@@ -197,29 +210,30 @@ export function CustomerProfileSelector({
         Choose whether to use your own profile or select from your saved customer profiles.
       </p>
       
-      <RadioGroup
-        value={profileBehavior}
-        onValueChange={(value) => {
-          setProfileBehavior(value as CustomerProfileBehavior);
-          console.log('Profile behavior changed to:', value);
-          
-          // Clear selection and dispatch null profile when switching to own
-          if (value === 'own') {
-            setSelectedProfileId('');
-            setSelectedProfileName('');
-            dispatchProfileChangeEvent(null);
-          }
-        }}
-        className="space-y-3"
-      >
+      <div className="space-y-3">
         <div 
           className={`flex items-start space-x-2 cursor-pointer p-2 rounded-md ${profileBehavior === 'own' ? 'bg-gray-800' : ''}`} 
           onClick={() => {
             console.log('Clicked Own Profile');
+            // Direct state changes instead of using the RadioGroup
             setProfileBehavior('own');
+            setSelectedProfileId('');
+            setSelectedProfileName('');
+            dispatchProfileChangeEvent(null);
           }}
         >
-          <RadioGroupItem id="own-profile" value="own" checked={profileBehavior === 'own'} />
+          <input
+            type="radio"
+            id="own-profile"
+            checked={profileBehavior === 'own'}
+            onChange={() => {
+              setProfileBehavior('own');
+              setSelectedProfileId('');
+              setSelectedProfileName('');
+              dispatchProfileChangeEvent(null);
+            }}
+            className="w-4 h-4 border-border-dark focus:ring-primary-green accent-primary-green"
+          />
           <div className="flex flex-col">
             <Label htmlFor="own-profile" className="text-sm font-medium text-text-white cursor-pointer">
               Use my own profile
@@ -234,10 +248,17 @@ export function CustomerProfileSelector({
           className={`flex items-start space-x-2 cursor-pointer p-2 rounded-md ${profileBehavior === 'select' ? 'bg-gray-800' : ''}`} 
           onClick={() => {
             console.log('Clicked Select Profile');
+            // Direct state change
             setProfileBehavior('select');
           }}
         >
-          <RadioGroupItem id="select-profile" value="select" checked={profileBehavior === 'select'} />
+          <input
+            type="radio"
+            id="select-profile"
+            checked={profileBehavior === 'select'}
+            onChange={() => setProfileBehavior('select')}
+            className="w-4 h-4 border-border-dark focus:ring-primary-green accent-primary-green"
+          />
           <div className="flex flex-col w-full">
             <Label htmlFor="select-profile" className="text-sm font-medium text-text-white mb-1 cursor-pointer">
               Select customer profile
@@ -302,7 +323,7 @@ export function CustomerProfileSelector({
             )}
           </div>
         </div>
-      </RadioGroup>
+      </div>
     </div>
   );
 }
