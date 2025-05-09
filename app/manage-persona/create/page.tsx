@@ -148,17 +148,28 @@ export default function CreatePersonaPage() {
       if (result.success) {
         router.push('/manage-persona')
       } else {
-        setError(result.error || 'Failed to create persona')
+        setError(result.error || 'Failed to create customer profile')
       }
     } catch (error) {
-      setError('Error creating persona')
+      setError('Error creating customer profile')
     } finally {
       setIsSaving(false)
     }
   }
 
   return (
-    <div className="min-h-screen bg-[#0F1117] text-white flex flex-col items-center py-10">
+    <div className="min-h-screen bg-[#0F1117] text-white flex flex-col items-center py-10 relative">
+      {/* Loading Overlay */}
+      {isSaving && (
+        <div className="fixed inset-0 bg-[#0F1117]/80 backdrop-blur-sm flex flex-col items-center justify-center z-50">
+          <div className="bg-[#1A1D29] p-8 rounded-xl border border-gray-800 shadow-lg flex flex-col items-center animate-pulse-green">
+            <Loader2 className="w-12 h-12 text-[#4BF29C] animate-spin mb-4" />
+            <h3 className="text-xl font-medium text-white mb-2">Building Customer Profile...</h3>
+            <p className="text-gray-400 text-sm">This may take a moment</p>
+          </div>
+        </div>
+      )}
+
       <div className="w-full max-w-2xl">
         <form
           onSubmit={handleSubmit}
