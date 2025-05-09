@@ -3,7 +3,7 @@
 import React, { useState, useCallback, useEffect } from 'react'
 import { Country, Region, City } from '@/lib/types'
 import debounce from 'lodash/debounce'
-import { MapPin, X, Search, Loader2, Globe } from 'lucide-react'
+import { MapPin, X, Search, Loader2, Globe, AlertCircle } from 'lucide-react'
 import { ComboBox } from '@/components/ui/combo-box'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -1113,7 +1113,10 @@ export default function OnboardingLocationSelector({
         
         {/* Search results dropdown - always show when user is typing */}
         {searchTerm.length > 1 && (
-          <div className="absolute z-10 mt-1 w-full bg-[#1A1D29] border border-gray-700 rounded-lg shadow-lg max-h-60 overflow-auto">
+          <div
+            className="absolute z-10 mt-1 w-full max-w-md min-w-[250px] bg-[#1A1D29] border border-gray-700 rounded-lg shadow-lg max-h-60 overflow-auto"
+            style={{ right: 'auto' }}
+          >
             <div className="py-1">
               {/* Show loading indicator while searching */}
               {isSearching && (
@@ -1149,6 +1152,7 @@ export default function OnboardingLocationSelector({
                 
                 return (
                   <button
+                    type="button"
                     key={`${result.type}-${i}`}
                     className="w-full text-left px-4 py-2 text-sm hover:bg-[#2A2E3A] flex items-center text-white"
                     onClick={() => handleSearchResultSelect(result.type, result.data)}
@@ -1190,6 +1194,7 @@ export default function OnboardingLocationSelector({
                     <MapPin className="size-3 text-[#4BF29C]" />
                     <span>{locationText}</span>
                     <button 
+                      type="button"
                       onClick={() => handleRemoveCountry(idx)}
                       className="text-gray-400 hover:text-white ml-1"
                     >
@@ -1234,6 +1239,7 @@ export default function OnboardingLocationSelector({
                         >
                           <span>{city.name}</span>
                           <button 
+                            type="button"
                             onClick={() => handleRemoveCity(index, city.key)}
                             className="text-gray-400 hover:text-white"
                           >

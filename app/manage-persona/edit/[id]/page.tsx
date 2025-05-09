@@ -12,6 +12,7 @@ import { validatePersonaForm } from '@/lib/validations'
 function mapPersona(persona: any) {
   return {
     id: persona.id,
+    name: persona.name,
     companyName: persona.company_name,
     websiteLink: persona.website_link,
     language: persona.preferred_language,
@@ -30,6 +31,7 @@ export default function EditPersonaPage() {
   const id = params.id as string
 
   const [formData, setFormData] = useState({
+    name: '',
     companyName: '',
     websiteLink: '',
     privacyPolicyLink: '',
@@ -37,6 +39,7 @@ export default function EditPersonaPage() {
     locations: [] as LocationData
   })
   const [inputError, setInputError] = useState({
+    name: '',
     companyName: '',
     websiteLink: '',
     privacyPolicyLink: '',
@@ -64,6 +67,7 @@ export default function EditPersonaPage() {
         if (data.success && data.data) {
           const mappedPersona = mapPersona(data.data)
           setFormData({
+            name: mappedPersona.name || '',
             companyName: mappedPersona.companyName || '',
             websiteLink: mappedPersona.websiteLink || '',
             privacyPolicyLink: mappedPersona.privacyPolicyLink || '',
@@ -84,6 +88,37 @@ export default function EditPersonaPage() {
     }
   }, [id])
 
+  // Format URL: remove www. and add https:// if needed
+  const formatUrl = (url: string): string => {
+    if (!url || url.trim() === '') return url;
+    
+    // Remove www. if present
+    let cleanUrl = url.replace(/^(https?:\/\/)?(www\.)/i, '');
+    
+    // Add https:// if not present
+    if (!cleanUrl.match(/^https?:\/\//i)) {
+      return `https://${cleanUrl}`;
+    }
+    
+    return cleanUrl;
+  };
+
+  // Validate URL format with TLD check
+  const validateUrlFormat = (url: string): boolean => {
+    if (!url || url.trim() === '') return true; // Empty URLs are handled by other validation
+    
+    try {
+      const urlObj = new URL(url.match(/^https?:\/\//i) ? url : `https://${url}`);
+      // Check if domain has a TLD (at least one dot in hostname)
+      if (!urlObj.hostname.includes('.') || urlObj.hostname.split('.').pop()!.length === 0) {
+        return false; // Invalid domain (missing TLD)
+      }
+      return true;
+    } catch (error) {
+      return false; // Invalid URL
+    }
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     let formattedValue = value
@@ -98,6 +133,30 @@ export default function EditPersonaPage() {
         ...prev,
         [name]: ''
       }))
+    }
+  }
+  
+  // Handle blur event for URL fields
+  const handleUrlBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    
+    if (name === 'websiteLink' || name === 'privacyPolicyLink') {
+      // Format the URL (remove www. and add https://)
+      const formattedUrl = formatUrl(value);
+      
+      // Update the form data with formatted URL
+      setFormData(prev => ({
+        ...prev,
+        [name]: formattedUrl
+      }));
+      
+      // Validate URL format
+      if (formattedUrl && !validateUrlFormat(formattedUrl)) {
+        setInputError(prev => ({
+          ...prev,
+          [name]: 'Please enter a valid URL with a domain extension (e.g. .com)'
+        }));
+      }
     }
   }
 
@@ -130,6 +189,7 @@ export default function EditPersonaPage() {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          name: formData.name,
           company_name: formData.companyName,
           website_link: formData.websiteLink,
           privacy_policy_link: formData.privacyPolicyLink,
@@ -141,10 +201,10 @@ export default function EditPersonaPage() {
       if (result.success) {
         router.push('/manage-persona')
       } else {
-        setError(result.error || 'Failed to update persona')
+        setError(result.error || 'Failed to update customer profile')
       }
     } catch (e) {
-      setError('Error updating persona')
+      setError('Error updating customer profile')
     } finally {
       setIsSaving(false)
     }
@@ -178,14 +238,25 @@ export default function EditPersonaPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0F1117] text-white flex items-center justify-center py-10">
+    <div className="min-h-screen bg-[#0F1117] text-white flex items-center justify-center py-10 relative">
+      {/* Loading Overlay */}
+      {isSaving && (
+        <div className="fixed inset-0 bg-[#0F1117]/80 backdrop-blur-sm flex flex-col items-center justify-center z-50">
+          <div className="bg-[#1A1D29] p-8 rounded-xl border border-gray-800 shadow-lg flex flex-col items-center animate-pulse-green">
+            <Loader2 className="w-12 h-12 text-[#4BF29C] animate-spin mb-4" />
+            <h3 className="text-xl font-medium text-white mb-2">Updating Customer Profile...</h3>
+            <p className="text-gray-400 text-sm">This may take a moment</p>
+          </div>
+        </div>
+      )}
+
       <div className="w-full max-w-2xl">
         <form
           onSubmit={handleSubmit}
           className="w-full bg-[#1A1D29] rounded-xl shadow-lg p-8 space-y-8 border border-gray-800"
         >
           <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold">Edit Persona</h1>
+            <h1 className="text-2xl font-bold">Edit Customer Profile</h1>
             <button
               type="button"
               onClick={() => router.push('/manage-persona')}
@@ -208,6 +279,16 @@ export default function EditPersonaPage() {
               name="companyName"
               value={formData.companyName}
               onChange={handleInputChange}
+              onBlur={(e) => {
+                // Auto-generate profile name only on blur and if empty
+                if (!formData.name && e.target.value) {
+                  const todayDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                  setFormData(prev => ({
+                    ...prev,
+                    name: `${e.target.value} - profile (${todayDate})`
+                  }));
+                }
+              }}
               className={cn(
                 "w-full px-3 py-2 rounded-lg text-sm bg-[#232736] border",
                 inputError.companyName ? "border-red-500" : "border-gray-700",
@@ -222,6 +303,31 @@ export default function EditPersonaPage() {
               </p>
             )}
           </div>
+          
+          <div>
+            <label className="block text-sm font-semibold mb-1">
+              Profile Name 
+              <span className="text-xs text-gray-400 ml-2 font-normal">Choose a name to help you remember this profile</span>
+            </label>
+            <input
+              type="text"
+              name="name"
+              value={formData.name}
+              onChange={handleInputChange}
+              className={cn(
+                "w-full px-3 py-2 rounded-lg text-sm bg-[#232736] border",
+                inputError.name ? "border-red-500" : "border-gray-700",
+                "focus:outline-none focus:ring-2 focus:ring-[#4BF29C]"
+              )}
+              placeholder="Auto-generated from company name if left empty"
+            />
+            {inputError.name && (
+              <p className="text-sm text-red-500 flex items-center gap-1 mt-1">
+                <AlertCircle className="size-3" />
+                {inputError.name}
+              </p>
+            )}
+          </div>
 
           <div>
             <label className="block text-sm font-semibold mb-1">Website Link</label>
@@ -230,12 +336,13 @@ export default function EditPersonaPage() {
               name="websiteLink"
               value={formData.websiteLink}
               onChange={handleInputChange}
+              onBlur={handleUrlBlur}
               className={cn(
                 "w-full px-3 py-2 rounded-lg text-sm bg-[#232736] border",
                 inputError.websiteLink ? "border-red-500" : "border-gray-700",
                 "focus:outline-none focus:ring-2 focus:ring-[#4BF29C]"
               )}
-              placeholder="https://www.yourwebsite.com"
+              placeholder="https://yourwebsite.com"
             />
             {inputError.websiteLink && (
               <p className="text-sm text-red-500 flex items-center gap-1 mt-1">
@@ -252,12 +359,13 @@ export default function EditPersonaPage() {
               name="privacyPolicyLink"
               value={formData.privacyPolicyLink}
               onChange={handleInputChange}
+              onBlur={handleUrlBlur}
               className={cn(
                 "w-full px-3 py-2 rounded-lg text-sm bg-[#232736] border",
                 inputError.privacyPolicyLink ? "border-red-500" : "border-gray-700",
                 "focus:outline-none focus:ring-2 focus:ring-[#4BF29C]"
               )}
-              placeholder="https://www.yourwebsite.com/privacy-policy"
+              placeholder="https://yourwebsite.com/privacy-policy"
             />
             {inputError.privacyPolicyLink && (
               <p className="text-sm text-red-500 flex items-center gap-1 mt-1">
@@ -309,7 +417,7 @@ export default function EditPersonaPage() {
               onClick={() => setDeleteModal({ isOpen: true, isDeleting: false })}
               className="px-4 py-2 rounded-lg bg-red-600/20 text-red-400 border border-red-600/50 hover:bg-red-600/30"
             >
-              Delete Persona
+              Delete Profile
             </button>
             <button
               type="submit"

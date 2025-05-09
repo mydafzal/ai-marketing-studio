@@ -19,9 +19,9 @@ export default function DeletePersonaModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
       <div className="bg-[#1A1D29] p-8 rounded-xl border border-gray-700 shadow-lg max-w-md w-full mx-4">
-        <h2 className="text-xl font-bold mb-4 text-red-400">Delete Persona?</h2>
+        <h2 className="text-xl font-bold mb-4 text-red-400">Delete Customer Profile?</h2>
         <p className="mb-6 text-gray-300">
-          Are you sure you want to delete this persona? This action cannot be undone.
+          Are you sure you want to delete this customer profile? This action cannot be undone.
         </p>
         <div className="flex justify-end gap-4">
           <button

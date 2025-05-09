@@ -22,6 +22,7 @@ import {
   fetchAllLeadForms,
   searchFormsLocally
 } from './lead-form';
+import { CustomerProfileSelector } from './customer-profile';
 
 interface CreateTabProps {
   mediaItems: MediaItem[];
@@ -42,6 +43,8 @@ interface CreateTabProps {
   cooldownTimeRemaining?: number;
   selectedLeadFormId: string;
   setSelectedLeadFormId: (id: string) => void;
+  selectedCustomerProfileId?: string;
+  setSelectedCustomerProfileId?: (id: string) => void;
 }
 
 type LeadFormBehavior = "automatic" | "existing";
@@ -65,6 +68,8 @@ export function CreateTab({
   cooldownTimeRemaining = 0,
   selectedLeadFormId,
   setSelectedLeadFormId,
+  selectedCustomerProfileId = '',
+  setSelectedCustomerProfileId = () => {},
 }: CreateTabProps) {
   // Add state for showing/hiding lead form dropdown
   const [showLeadFormModal, setShowLeadFormModal] = useState<boolean>(false);
@@ -689,6 +694,12 @@ export function CreateTab({
                   </div>
                 </div>
               </div>
+              
+              {/* Customer Profile Selector */}
+              <CustomerProfileSelector
+                selectedProfileId={selectedCustomerProfileId}
+                setSelectedProfileId={setSelectedCustomerProfileId}
+              />
             </div>
             
             <div className="mt-6 flex justify-end">

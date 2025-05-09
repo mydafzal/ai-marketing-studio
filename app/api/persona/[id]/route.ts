@@ -57,6 +57,7 @@ export async function PUT(
 
     const body = await req.json()
     const {
+      name,
       company_name,
       website_link,
       privacy_policy_link,
@@ -70,9 +71,13 @@ export async function PUT(
         { status: 400 }
       )
     }
+    
+    // If name is provided, use it; if not, keep existing name or generate a new one
+    const profile_name = name || existingData.name || `${company_name} - profile (${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })})`;
 
     const updateData = {
       ...existingData,
+      name: profile_name,
       company_name,
       website_link,
       privacy_policy_link,
