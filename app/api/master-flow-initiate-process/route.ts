@@ -48,7 +48,8 @@ export async function POST(req: NextRequest) {
       daily_campaign_budget,
       company_name,
       instagram_account_id,
-      post_assessment_campaign_objective // Extract campaign objective if provided
+      post_assessment_campaign_objective, // Extract campaign objective if provided
+      selectedLeadFormId
     } = body
 
     console.log('📊 Request validation data:', {
@@ -58,7 +59,8 @@ export async function POST(req: NextRequest) {
       'Image hashes count': image_hashes.length,
       'Video IDs count': video_ids.length,
       'Location data count': location_data?.length || 0,
-      'Campaign Objective': post_assessment_campaign_objective
+      'Campaign Objective': post_assessment_campaign_objective,
+      'Has preselected lead form ID': !!selectedLeadFormId
     });
 
     // Log location data structure to help debug issues
@@ -171,7 +173,8 @@ export async function POST(req: NextRequest) {
       video_ids: processedVideoIds, // Use processed video_ids
       daily_campaign_budget, // Use daily_campaign_budget exactly as provided from client
       instagram_account_id,
-      post_assessment_campaign_objective: campaignObjective // Use processed campaign objective that might be null
+      post_assessment_campaign_objective: campaignObjective, // Use processed campaign objective that might be null,
+      campaign_creation_request_config: selectedLeadFormId ? { preselected_leadform_id: selectedLeadFormId } : null
     };
 
     console.log('📤 Sending request to backend with params:', {
@@ -184,7 +187,9 @@ export async function POST(req: NextRequest) {
       'Locations': location_data?.length || 0,
       'Daily Campaign Budget': daily_campaign_budget,
       'Website Link': website_link,
-      'Campaign Objective': campaignObjective
+      'Campaign Objective': campaignObjective,
+      'Preselected Lead Form ID': selectedLeadFormId || 'None',
+      'Has campaign_creation_request_config': !!requestPayload.campaign_creation_request_config
     });
 
     // Log detailed video_ids for debugging the video upload issues

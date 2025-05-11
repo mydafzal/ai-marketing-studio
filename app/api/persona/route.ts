@@ -7,6 +7,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
     const {
+      name,
       company_name,
       website_link,
       privacy_policy_link,
@@ -29,11 +30,16 @@ export async function POST(req: NextRequest) {
     const id = randomUUID()
     const personaKey = `persona:${id}`
     const userKey = `user:${owner_email}`
+    
+    // Generate profile name if not provided
+    const todayDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const profile_name = name || `${company_name} - profile (${todayDate})`;
 
     const dataToSave = {
       id,
       owner_id,
       owner_email,
+      name: profile_name,
       company_name,
       website_link,
       privacy_policy_link,
