@@ -16,10 +16,6 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Gender, MasterFlowResponse, AdPlacements, LocationsFullDetails, AudienceFilters as OldAudienceFilters, AudienceFilterData } from '../types'; // Renamed imported AudienceFilters
 import AudienceLocationSelector from '@/components/audience-locations-selector';
 import AudienceTargetingSelector, { AudienceTargeting, TargetingFilters, FilterDetail } from './AudienceTargetingSelector'; // Import new types
-import { Events } from '@/lib/posthog-events';
-import { trackEvent } from '@/lib/utils';
-import { auth } from '@/auth';
-import { encryptEmail } from '@/lib/email-encryption';
 
 // Extended interface with union from both LibCreative and our additional fields
 interface ExtendedCreative extends Partial<LibCreative> {
@@ -262,24 +258,6 @@ export function AdSetupModal({
     return "";
   };
 
-  // Add this function to handle creative creation tracking
-  const handleCreativeCreation = async (creative: ExtendedCreative) => {
-    const session = await auth()
-    const encryptedEmail = await encryptEmail(session?.user?.email || '');
-
-    if (creative.media_type === 'video' || creative.is_video) {
-      trackEvent(Events.AD_CREATIVE_VIDEO_SUBMITTED, {
-        email: encryptedEmail,
-        id: session?.user?.id || ''
-      });
-    } else if (creative.media_type === 'image' || creative.is_image) {
-      trackEvent(Events.AD_CREATIVE_IMAGE_SUBMITTED, {
-        email: encryptedEmail,
-        id: session?.user?.id || ''
-      });
-    }
-  };  
-  
   // Available locales for the form
   const locales = [
     { value: "ar_AR", label: "Arabic" },
@@ -783,19 +761,6 @@ export function AdSetupModal({
           previews: creative.previews || {},
           // Preserve any other fields from original creatives if needed
         }));
-
-        if (newCreatives && newCreatives.length > 0) {
-          // Track events for each new creative
-          newCreatives.forEach(creative => {
-            handleCreativeCreation(creative);
-          });
-          
-          // Update the creatives state
-          setUpdatedCreatives(newCreatives);
-          if (onCreativesUpdated) {
-            onCreativesUpdated(newCreatives);
-          }
-        }
         
         // Update the creatives state with new data
         setUpdatedCreatives(newCreatives);

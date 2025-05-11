@@ -286,15 +286,8 @@ export async function POST(request: Request) {
       data = JSON.parse(responseText);
       console.log('📊 Parsed response data:', JSON.stringify(data, null, 2));
 
-      const session = await auth()
-      const encryptedEmail = await encryptEmail(session?.user?.email || '');
-
       // Simplify response handling
       if (isInitializing) {
-        trackEvent(Events.AD_CREATIVE_VIDEO_SUBMITTED, {
-          email: encryptedEmail,
-          id: session?.user?.id || ''
-        })
         console.log('🔍 Processing initialization response');
 
         // Extract upload_session_id
@@ -346,10 +339,6 @@ export async function POST(request: Request) {
 
         console.log('✅ Normalized initialization response:', JSON.stringify(data, null, 2));
       } else if (finish === '1') {
-        trackEvent(Events.VIDEO_UPLOADED, {
-          email: encryptedEmail,
-          id: session?.user?.id || ''
-        })
         console.log('🔍 Processing final chunk response');
 
         // Extract video_id from final chunk response

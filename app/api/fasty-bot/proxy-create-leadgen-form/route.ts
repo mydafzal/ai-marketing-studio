@@ -1,9 +1,5 @@
 import { NextResponse } from 'next/server'
 import { createLeadgenForm } from '@/lib/api/fasty-bot/create-leadgen-form'
-import { auth } from '@/auth'
-import { Events } from '@/lib/posthog-events'
-import { trackEvent } from '@/lib/utils'
-import { encryptEmail } from '@/lib/email-encryption'
 
 export async function POST(request: Request) {
   try {
@@ -23,13 +19,6 @@ export async function POST(request: Request) {
     }
 
     const data = await response.json()
-    const session = await auth()
-    const encryptedEmail = await encryptEmail(session?.user?.email || '');
-
-    trackEvent(Events.LEADFORM_CREATED, {
-        email: encryptedEmail,
-        id: session?.user?.id || ''
-    })
     return NextResponse.json({ success: true, data: data })
   } catch (error) {
     console.error('Error create leadgen:', error)

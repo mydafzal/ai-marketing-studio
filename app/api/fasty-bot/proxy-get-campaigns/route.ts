@@ -1,9 +1,5 @@
 import { NextResponse } from 'next/server'
 import { getFbMarketingApiKey } from '@/app/actions';
-import { auth } from '@/auth'
-import { trackEvent } from '@/lib/utils';
-import { Events } from '@/lib/posthog-events';
-import { encryptEmail } from '@/lib/email-encryption';
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
@@ -45,13 +41,6 @@ export async function GET(request: Request) {
         }
 
         const data = await response.json()
-        const session = await auth()
-        const encryptedEmail = await encryptEmail(session?.user?.email || '');
-
-        trackEvent(Events.CAMPAIGN_LIST_FETCHED, {
-            email: encryptedEmail,
-            id: session?.user?.id || ''
-          })
         return NextResponse.json(data)
     } catch (error) {
         console.error('Error fetching campaigns:', error)
