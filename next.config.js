@@ -40,6 +40,13 @@ module.exports = {
         hostname: '*.facebook.com',
         port: '',
         pathname: '/**'
+      },
+      // Add Imgur for dashboard images
+      {
+        protocol: 'https',
+        hostname: 'i.imgur.com',
+        port: '',
+        pathname: '/**'
       }
     ],
   },
