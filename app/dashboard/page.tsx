@@ -316,7 +316,9 @@ export default function DashboardPage() {
         <div className="flex justify-between items-center mb-8">
           <div className="flex items-center">
             <h1 className="text-2xl font-bold text-white mr-3">Campaign Dashboard</h1>
-            <DashboardChatWidget />
+            <div className="hidden">
+              <DashboardChatWidget />
+            </div>
           </div>
         </div>
 
@@ -341,15 +343,41 @@ export default function DashboardPage() {
         {/* Campaign Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
           {/* Create Campaign Card - Always First */}
-          <Card className="bg-[#1A1D29] border-[#2A2E3A] border-dashed border-2 shadow-md hover:shadow-lg transition-shadow flex flex-col items-center justify-center cursor-pointer hover:bg-[#20232f] group">
-            <div className="p-8 flex flex-col items-center justify-center h-full">
-              <div className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                </svg>
+          <Card className="bg-[#1A1D29] border-[#2A2E3A] shadow-md hover:shadow-lg transition-shadow overflow-hidden">
+            <div className="grid grid-cols-1 grid-rows-2 h-full divide-y divide-[#2A2E3A]">
+              {/* Create Campaign Section */}
+              <div className="p-5 flex items-center cursor-pointer hover:bg-[#20232f] transition-colors group">
+                <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center mr-4 group-hover:scale-110 transition-transform flex-shrink-0">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-lg font-medium text-white">Create Campaign</h3>
+                  <p className="text-gray-400 text-xs mt-1">Start a new marketing campaign</p>
+                </div>
               </div>
-              <h3 className="text-lg font-medium text-white">Create Campaign</h3>
-              <p className="text-gray-400 text-sm text-center mt-2">Start a new marketing campaign</p>
+              
+              {/* Ask AI Section */}
+              <div 
+                className="p-5 flex items-center cursor-pointer hover:bg-[#20232f] transition-colors group"
+                onClick={() => {
+                  const chatButton = document.querySelector('.inline-flex.items-center.mr-3.bg-\\[\\#1A1D29\\]');
+                  if (chatButton) {
+                    (chatButton as HTMLElement).click();
+                  }
+                }}
+              >
+                <div className="w-12 h-12 rounded-full bg-[#4F46E5] flex items-center justify-center mr-4 group-hover:scale-110 transition-transform flex-shrink-0">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path>
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-lg font-medium text-white">Ask AI</h3>
+                  <p className="text-gray-400 text-xs mt-1">Get insights about existing campaigns and more</p>
+                </div>
+              </div>
             </div>
           </Card>
           
