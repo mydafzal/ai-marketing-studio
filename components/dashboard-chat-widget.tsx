@@ -138,7 +138,7 @@ export default function DashboardChatWidget() {
       {!isOpen && (
         <div className="inline-flex items-center mr-3 bg-[#1A1D29] px-3 py-2 rounded-lg shadow-md border border-[#2A2E3A] cursor-pointer hover:bg-[#2A2E3A] transition-colors" onClick={() => handleOpenWithMessage("Compare my last 3 campaigns")}>
           <MessageSquare className="w-4 h-4 mr-2 text-blue-400" />
-          <span className="text-sm text-gray-300">Compare my last 3 campaigns</span>
+          <span className="text-xs text-gray-400">Ask me questions... e.g. Compare my last 3 campaigns</span>
         </div>
       )}
       
