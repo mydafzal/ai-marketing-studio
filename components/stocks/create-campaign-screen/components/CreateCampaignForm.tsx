@@ -138,10 +138,8 @@ export function CreateCampaignForm() {
       console.log('Customer profile changed:', profile);
       setSelectedCustomerProfile(profile);
       
-      // Override link if profile is selected and has website link
-      if (profile && profile.websiteLink) {
-        setLink(validateAndFixUrl(profile.websiteLink));
-      }
+      // Don't override the link field when profile is selected
+      // This allows users to maintain their own link separate from the profile
     };
     
     window.addEventListener('customerProfileChange', handleProfileChange);
@@ -300,10 +298,21 @@ export function CreateCampaignForm() {
           locationData = selectedCustomerProfile.location_data;
         }
         
-        // Use customer profile website data if available
-        if (selectedCustomerProfile.website_data) {
-          console.log('🌐 Using website data from customer profile');
+        // Use combined company description and website data if available
+        console.log('🌐 Using data from customer profile');
+        
+        if (selectedCustomerProfile.companyDescription && selectedCustomerProfile.website_data) {
+          // Combine both description and website data
+          profileData = `Brief description provided by user: ${selectedCustomerProfile.companyDescription}\n\nInformation fetched from the website of company: ${selectedCustomerProfile.website_data}`;
+          console.log('🌐 Using combined company description and website data');
+        } else if (selectedCustomerProfile.companyDescription) {
+          // Only description available
+          profileData = `Brief description provided by user: ${selectedCustomerProfile.companyDescription}`;
+          console.log('🌐 Using only company description (no website data)');
+        } else if (selectedCustomerProfile.website_data) {
+          // Only website data available
           profileData = selectedCustomerProfile.website_data;
+          console.log('🌐 Using only website data (no company description)');
         }
         
         // Use customer profile company name
@@ -318,11 +327,9 @@ export function CreateCampaignForm() {
         privacyPolicyLink = selectedCustomerProfile.privacy_policy_link || selectedCustomerProfile.privacyPolicyLink || '';
         console.log('🔒 Using privacy policy link from customer profile');
         
-        // Use customer profile website link if not already set by user input
-        if (selectedCustomerProfile.websiteLink) {
-          websiteLink = validateAndFixUrl(selectedCustomerProfile.websiteLink);
-          console.log('🔗 Using website link from customer profile:', websiteLink);
-        }
+        // Keep using the user-entered link regardless of the profile selection
+        // This ensures the link field is not overridden by the profile's website link
+        console.log('🔗 Using user-provided website link:', websiteLink);
       } else {
         console.log('🔍 Using user account data (using own profile)');
         

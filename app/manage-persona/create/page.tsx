@@ -12,6 +12,7 @@ export default function CreatePersonaPage() {
   const [formData, setFormData] = useState({
     name: '',
     companyName: '',
+    companyDescription: '',
     websiteLink: '',
     privacyPolicyLink: '',
     language: '',
@@ -20,6 +21,7 @@ export default function CreatePersonaPage() {
   const [inputError, setInputError] = useState({
     name: '',
     companyName: '',
+    companyDescription: '',
     websiteLink: '',
     privacyPolicyLink: '',
     language: '',
@@ -140,6 +142,7 @@ export default function CreatePersonaPage() {
           owner_id: 'default_owner',
           name: formData.name,
           company_name: formData.companyName,
+          company_description: formData.companyDescription,
           website_link: formData.websiteLink,
           privacy_policy_link: formData.privacyPolicyLink,
           preferred_language: formData.language,
@@ -223,6 +226,28 @@ export default function CreatePersonaPage() {
               <p className="text-sm text-red-500 flex items-center gap-1 mt-1">
                 <AlertCircle className="size-3" />
                 {inputError.companyName}
+              </p>
+            )}
+          </div>
+          
+          <div>
+            <label className="block text-sm font-semibold mb-1">Company Description</label>
+            <textarea
+              name="companyDescription"
+              value={formData.companyDescription}
+              onChange={handleInputChange}
+              rows={3}
+              className={cn(
+                "w-full px-3 py-2 rounded-lg text-sm bg-[#232736] border",
+                inputError.companyDescription ? "border-red-500" : "border-gray-700",
+                "focus:outline-none focus:ring-2 focus:ring-[#4BF29C]"
+              )}
+              placeholder="Briefly explain what the company does"
+            />
+            {inputError.companyDescription && (
+              <p className="text-sm text-red-500 flex items-center gap-1 mt-1">
+                <AlertCircle className="size-3" />
+                {inputError.companyDescription}
               </p>
             )}
           </div>
