@@ -316,7 +316,7 @@ export default function DashboardPage() {
         <div className="flex justify-between items-center mb-8">
           <div className="flex items-center">
             <h1 className="text-2xl font-bold text-white mr-3">Campaign Dashboard</h1>
-            <div className="hidden">
+            <div id="dashboard-chat-container">
               <DashboardChatWidget />
             </div>
           </div>
@@ -362,9 +362,9 @@ export default function DashboardPage() {
               <div 
                 className="p-5 flex items-center cursor-pointer hover:bg-[#20232f] transition-colors group"
                 onClick={() => {
-                  const chatButton = document.querySelector('.inline-flex.items-center.mr-3.bg-\\[\\#1A1D29\\]');
-                  if (chatButton) {
-                    (chatButton as HTMLElement).click();
+                  // Use the global chat function we added to the window object
+                  if ((window as any).dashboardChat) {
+                    (window as any).dashboardChat.open("Compare my last 3 campaigns");
                   }
                 }}
               >

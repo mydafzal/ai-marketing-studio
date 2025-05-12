@@ -14,6 +14,17 @@ type Message = {
   timestamp: Date
 }
 
+// Create a context to expose the widget functions
+export const ChatWidgetContext = React.createContext<{
+  openChat: (initialMessage?: string) => void;
+  closeChat: () => void;
+  minimizeChat: () => void;
+}>({
+  openChat: () => {},
+  closeChat: () => {},
+  minimizeChat: () => {},
+});
+
 export default function DashboardChatWidget() {
   const [isOpen, setIsOpen] = useState(false)
   const [isMinimized, setIsMinimized] = useState(false)
@@ -24,6 +35,16 @@ export default function DashboardChatWidget() {
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
   const chatRef = useRef<HTMLDivElement>(null)
   const chatContentRef = useRef<HTMLDivElement>(null)
+  
+  // Expose functions through context
+  useEffect(() => {
+    // Make the chat functions available globally
+    (window as any).dashboardChat = {
+      open: handleOpenWithMessage,
+      close: () => setIsOpen(false),
+      minimize: () => setIsMinimized(true)
+    };
+  }, []);
 
   // Handle opening the chat with a preset message
   const handleOpenWithMessage = (message: string) => {
