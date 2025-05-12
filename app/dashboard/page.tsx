@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -22,6 +22,27 @@ export default function DashboardPage() {
   const [insightsCollapsed, setInsightsCollapsed] = useState(false)
   const [showStatsModal, setShowStatsModal] = useState<number | null>(null)
   const [showEditModal, setShowEditModal] = useState<number | null>(null)
+  const [showIntegrationsModal, setShowIntegrationsModal] = useState(false)
+  
+  // Effect to listen for hash changes
+  useEffect(() => {
+    const handleHashChange = () => {
+      if (window.location.hash === '#integrations') {
+        setShowIntegrationsModal(true);
+      }
+    };
+    
+    // Check on initial load
+    handleHashChange();
+    
+    // Add listener for hash changes
+    window.addEventListener('hashchange', handleHashChange);
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+    };
+  }, []);
   
   const itemsPerPage = 4
   
@@ -297,9 +318,6 @@ export default function DashboardPage() {
             <h1 className="text-2xl font-bold text-white mr-3">Campaign Dashboard</h1>
             <DashboardChatWidget />
           </div>
-          <Button className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-2 text-base shadow-lg border border-blue-500 rounded-md animate-pulse">
-            Create Campaign
-          </Button>
         </div>
 
         {/* Search Bar */}
@@ -322,6 +340,20 @@ export default function DashboardPage() {
 
         {/* Campaign Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+          {/* Create Campaign Card - Always First */}
+          <Card className="bg-[#1A1D29] border-[#2A2E3A] border-dashed border-2 shadow-md hover:shadow-lg transition-shadow flex flex-col items-center justify-center cursor-pointer hover:bg-[#20232f] group">
+            <div className="p-8 flex flex-col items-center justify-center h-full">
+              <div className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium text-white">Create Campaign</h3>
+              <p className="text-gray-400 text-sm text-center mt-2">Start a new marketing campaign</p>
+            </div>
+          </Card>
+          
+          {/* Regular Campaign Cards */}
           {currentCampaigns.map((campaign) => (
             <Card key={campaign.id} className="bg-[#1A1D29] border-[#2A2E3A] shadow-md hover:shadow-lg transition-shadow">
               <div className="relative h-32 bg-gray-800 border-b border-[#2A2E3A]">
@@ -803,8 +835,9 @@ export default function DashboardPage() {
       </Dialog>
 
       {/* Integrations Modal */}
-      <Dialog open={location.hash === '#integrations'} onOpenChange={() => {
-        if (location.hash === '#integrations') {
+      <Dialog open={showIntegrationsModal} onOpenChange={(open) => {
+        setShowIntegrationsModal(open);
+        if (!open && window.location.hash === '#integrations') {
           window.history.pushState(null, '', window.location.pathname);
         }
       }}>
