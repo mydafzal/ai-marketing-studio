@@ -826,6 +826,7 @@ export default function DashboardPage() {
                     <TabsTrigger value="budget" className="data-[state=active]:bg-blue-600">Budget</TabsTrigger>
                     <TabsTrigger value="adsets" className="data-[state=active]:bg-blue-600">Ad Sets</TabsTrigger>
                     <TabsTrigger value="creatives" className="data-[state=active]:bg-blue-600">Creatives</TabsTrigger>
+                    <TabsTrigger value="rulesets" className="data-[state=active]:bg-blue-600">Rulesets</TabsTrigger>
                   </TabsList>
                   
                   <TabsContent value="budget" className="py-4">
@@ -988,6 +989,206 @@ export default function DashboardPage() {
                             </CardContent>
                           </Card>
                         ))}
+                      </div>
+                    </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="rulesets" className="py-4">
+                    <div className="space-y-6">
+                      <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-medium">Automation Rules</h3>
+                        <Button className="bg-blue-600 hover:bg-blue-700 text-white text-sm">
+                          Add New Rule
+                        </Button>
+                      </div>
+                      
+                      <div className="bg-[#0A0C14] rounded-lg border border-[#2A2E3A] divide-y divide-[#2A2E3A]">
+                        {/* Rule 1: Pause underperforming ads */}
+                        <div className="p-4">
+                          <div className="mb-3 flex items-center justify-between">
+                            <h4 className="font-medium text-white">Rule 1</h4>
+                            <div className="flex items-center space-x-2">
+                              <Switch id="rule1-active" defaultChecked />
+                              <Label htmlFor="rule1-active" className="text-green-400">Active</Label>
+                            </div>
+                          </div>
+                          
+                          <div className="flex flex-wrap items-center gap-2 text-sm">
+                            <span className="text-gray-300">If</span>
+                            <select className="bg-[#1A1D29] border border-[#2A2E3A] rounded text-white px-2 py-1">
+                              <option>ROAS</option>
+                              <option>CTR</option>
+                              <option selected>CPC</option>
+                            </select>
+                            <span className="text-gray-300">is</span>
+                            <select className="bg-[#1A1D29] border border-[#2A2E3A] rounded text-white px-2 py-1">
+                              <option>below</option>
+                              <option selected>above</option>
+                            </select>
+                            <div className="bg-[#1A1D29] border border-[#2A2E3A] rounded px-2 py-1 flex items-center">
+                              <input 
+                                type="number" 
+                                className="w-16 bg-transparent border-none focus:outline-none text-white"
+                                defaultValue={1.5} 
+                              />
+                            </div>
+                            <span className="text-gray-300">then</span>
+                            <select className="bg-[#1A1D29] border border-[#2A2E3A] rounded text-white px-2 py-1">
+                              <option selected>pause</option>
+                              <option>reduce budget by</option>
+                              <option>send alert</option>
+                            </select>
+                            <span className="text-gray-300">the</span>
+                            <select className="bg-[#1A1D29] border border-[#2A2E3A] rounded text-white px-2 py-1">
+                              <option>campaign</option>
+                              <option selected>ad creative</option>
+                              <option>ad set</option>
+                            </select>
+                          </div>
+                        </div>
+                        
+                        {/* Rule 2: Scale budgets */}
+                        <div className="p-4">
+                          <div className="mb-3 flex items-center justify-between">
+                            <h4 className="font-medium text-white">Rule 2</h4>
+                            <div className="flex items-center space-x-2">
+                              <Switch id="rule2-active" defaultChecked />
+                              <Label htmlFor="rule2-active" className="text-green-400">Active</Label>
+                            </div>
+                          </div>
+                          
+                          <div className="flex flex-wrap items-center gap-2 text-sm">
+                            <span className="text-gray-300">If</span>
+                            <select className="bg-[#1A1D29] border border-[#2A2E3A] rounded text-white px-2 py-1">
+                              <option selected>ROAS</option>
+                              <option>CTR</option>
+                              <option>CPC</option>
+                            </select>
+                            <span className="text-gray-300">is</span>
+                            <select className="bg-[#1A1D29] border border-[#2A2E3A] rounded text-white px-2 py-1">
+                              <option>below</option>
+                              <option selected>above</option>
+                            </select>
+                            <div className="bg-[#1A1D29] border border-[#2A2E3A] rounded px-2 py-1 flex items-center">
+                              <input 
+                                type="number" 
+                                className="w-16 bg-transparent border-none focus:outline-none text-white"
+                                defaultValue={3.0} 
+                              />
+                            </div>
+                            <span className="text-gray-300">for</span>
+                            <div className="bg-[#1A1D29] border border-[#2A2E3A] rounded px-2 py-1 flex items-center">
+                              <input 
+                                type="number" 
+                                className="w-10 bg-transparent border-none focus:outline-none text-white"
+                                defaultValue={3} 
+                              />
+                            </div>
+                            <span className="text-gray-300">consecutive days then</span>
+                            <select className="bg-[#1A1D29] border border-[#2A2E3A] rounded text-white px-2 py-1">
+                              <option>pause</option>
+                              <option selected>increase budget by</option>
+                              <option>send alert</option>
+                            </select>
+                            <div className="bg-[#1A1D29] border border-[#2A2E3A] rounded px-2 py-1 flex items-center">
+                              <input 
+                                type="number" 
+                                className="w-10 bg-transparent border-none focus:outline-none text-white"
+                                defaultValue={20} 
+                              />
+                              <span className="text-white">%</span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Rule 3: Custom rule */}
+                        <div className="p-4">
+                          <div className="mb-3 flex items-center justify-between">
+                            <h4 className="font-medium text-white">Rule 3</h4>
+                            <div className="flex items-center space-x-2">
+                              <Switch id="rule3-active" defaultChecked={false} />
+                              <Label htmlFor="rule3-active" className="text-gray-400">Inactive</Label>
+                            </div>
+                          </div>
+                          
+                          <div className="flex flex-wrap items-center gap-2 text-sm">
+                            <span className="text-gray-300">If</span>
+                            <select className="bg-[#1A1D29] border border-[#2A2E3A] rounded text-white px-2 py-1">
+                              <option>ROAS</option>
+                              <option selected>CTR</option>
+                              <option>CPC</option>
+                            </select>
+                            <span className="text-gray-300">is</span>
+                            <select className="bg-[#1A1D29] border border-[#2A2E3A] rounded text-white px-2 py-1">
+                              <option selected>below</option>
+                              <option>above</option>
+                            </select>
+                            <div className="bg-[#1A1D29] border border-[#2A2E3A] rounded px-2 py-1 flex items-center">
+                              <input 
+                                type="number" 
+                                className="w-16 bg-transparent border-none focus:outline-none text-white"
+                                defaultValue={1.2} 
+                              />
+                              <span className="text-white">%</span>
+                            </div>
+                            <span className="text-gray-300">then</span>
+                            <select className="bg-[#1A1D29] border border-[#2A2E3A] rounded text-white px-2 py-1">
+                              <option>pause</option>
+                              <option>reduce budget by</option>
+                              <option selected>send alert</option>
+                            </select>
+                            <span className="text-gray-300">to</span>
+                            <select className="bg-[#1A1D29] border border-[#2A2E3A] rounded text-white px-2 py-1">
+                              <option selected>email</option>
+                              <option>dashboard</option>
+                              <option>SMS</option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="p-4 bg-[#1A1D29] border border-[#2A2E3A] rounded-lg">
+                        <h4 className="font-medium text-white mb-2">Create a New Rule</h4>
+                        <p className="text-sm text-gray-400 mb-4">
+                          Automate campaign management with custom rules based on performance metrics.
+                        </p>
+                        <div className="flex flex-wrap items-center gap-2 text-sm">
+                          <span className="text-gray-300">If</span>
+                          <select className="bg-[#0A0C14] border border-[#2A2E3A] rounded text-white px-2 py-1">
+                            <option>ROAS</option>
+                            <option>CTR</option>
+                            <option>CPC</option>
+                            <option>Impressions</option>
+                            <option>Conversions</option>
+                            <option>Cost</option>
+                          </select>
+                          <span className="text-gray-300">is</span>
+                          <select className="bg-[#0A0C14] border border-[#2A2E3A] rounded text-white px-2 py-1">
+                            <option>below</option>
+                            <option>above</option>
+                            <option>equal to</option>
+                          </select>
+                          <div className="bg-[#0A0C14] border border-[#2A2E3A] rounded px-2 py-1 flex items-center">
+                            <input 
+                              type="text" 
+                              className="w-16 bg-transparent border-none focus:outline-none text-white"
+                              placeholder="Value" 
+                            />
+                          </div>
+                          <span className="text-gray-300">then</span>
+                          <select className="bg-[#0A0C14] border border-[#2A2E3A] rounded text-white px-2 py-1">
+                            <option>pause</option>
+                            <option>increase budget by</option>
+                            <option>decrease budget by</option>
+                            <option>send alert</option>
+                          </select>
+                          <span className="text-gray-300">the</span>
+                          <select className="bg-[#0A0C14] border border-[#2A2E3A] rounded text-white px-2 py-1">
+                            <option>campaign</option>
+                            <option>ad creative</option>
+                            <option>ad set</option>
+                          </select>
+                        </div>
                       </div>
                     </div>
                   </TabsContent>
