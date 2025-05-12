@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import Image from 'next/image'
 import Link from 'next/link'
+import DashboardChatWidget from '@/components/dashboard-chat-widget'
 
 export default function DashboardPage() {
   // State for search, pagination, and collapsible sections
@@ -222,7 +223,10 @@ export default function DashboardPage() {
       {/* Main Content */}
       <div className="flex-1 p-8 overflow-y-auto">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-2xl font-bold text-white">Campaign Dashboard</h1>
+          <div className="flex items-center">
+            <h1 className="text-2xl font-bold text-white mr-3">Campaign Dashboard</h1>
+            <DashboardChatWidget />
+          </div>
           <Button className="bg-blue-600 hover:bg-blue-700">
             Create Campaign
           </Button>
