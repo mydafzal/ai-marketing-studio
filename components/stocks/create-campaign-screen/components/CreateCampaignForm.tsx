@@ -300,10 +300,21 @@ export function CreateCampaignForm() {
           locationData = selectedCustomerProfile.location_data;
         }
         
-        // Use customer profile website data if available
-        if (selectedCustomerProfile.website_data) {
-          console.log('🌐 Using website data from customer profile');
+        // Use combined company description and website data if available
+        console.log('🌐 Using data from customer profile');
+        
+        if (selectedCustomerProfile.companyDescription && selectedCustomerProfile.website_data) {
+          // Combine both description and website data
+          profileData = `Brief description provided by user: ${selectedCustomerProfile.companyDescription}\n\nInformation fetched from the website of company: ${selectedCustomerProfile.website_data}`;
+          console.log('🌐 Using combined company description and website data');
+        } else if (selectedCustomerProfile.companyDescription) {
+          // Only description available
+          profileData = `Brief description provided by user: ${selectedCustomerProfile.companyDescription}`;
+          console.log('🌐 Using only company description (no website data)');
+        } else if (selectedCustomerProfile.website_data) {
+          // Only website data available
           profileData = selectedCustomerProfile.website_data;
+          console.log('🌐 Using only website data (no company description)');
         }
         
         // Use customer profile company name

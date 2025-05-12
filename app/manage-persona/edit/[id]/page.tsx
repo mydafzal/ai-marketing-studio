@@ -14,6 +14,7 @@ function mapPersona(persona: any) {
     id: persona.id,
     name: persona.name,
     companyName: persona.company_name,
+    companyDescription: persona.company_description || '',
     websiteLink: persona.website_link,
     language: persona.preferred_language,
     locations: persona.location_data,
@@ -33,6 +34,7 @@ export default function EditPersonaPage() {
   const [formData, setFormData] = useState({
     name: '',
     companyName: '',
+    companyDescription: '',
     websiteLink: '',
     privacyPolicyLink: '',
     language: '',
@@ -41,6 +43,7 @@ export default function EditPersonaPage() {
   const [inputError, setInputError] = useState({
     name: '',
     companyName: '',
+    companyDescription: '',
     websiteLink: '',
     privacyPolicyLink: '',
     language: '',
@@ -69,6 +72,7 @@ export default function EditPersonaPage() {
           setFormData({
             name: mappedPersona.name || '',
             companyName: mappedPersona.companyName || '',
+            companyDescription: mappedPersona.companyDescription || '',
             websiteLink: mappedPersona.websiteLink || '',
             privacyPolicyLink: mappedPersona.privacyPolicyLink || '',
             language: mappedPersona.language || '',
@@ -119,7 +123,7 @@ export default function EditPersonaPage() {
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     let formattedValue = value
 
@@ -191,6 +195,7 @@ export default function EditPersonaPage() {
         body: JSON.stringify({
           name: formData.name,
           company_name: formData.companyName,
+          company_description: formData.companyDescription,
           website_link: formData.websiteLink,
           privacy_policy_link: formData.privacyPolicyLink,
           preferred_language: formData.language,
@@ -300,6 +305,28 @@ export default function EditPersonaPage() {
               <p className="text-sm text-red-500 flex items-center gap-1 mt-1">
                 <AlertCircle className="size-3" />
                 {inputError.companyName}
+              </p>
+            )}
+          </div>
+          
+          <div>
+            <label className="block text-sm font-semibold mb-1">Company Description</label>
+            <textarea
+              name="companyDescription"
+              value={formData.companyDescription}
+              onChange={handleInputChange}
+              rows={3}
+              className={cn(
+                "w-full px-3 py-2 rounded-lg text-sm bg-[#232736] border",
+                inputError.companyDescription ? "border-red-500" : "border-gray-700",
+                "focus:outline-none focus:ring-2 focus:ring-[#4BF29C]"
+              )}
+              placeholder="Briefly explain what the company does"
+            />
+            {inputError.companyDescription && (
+              <p className="text-sm text-red-500 flex items-center gap-1 mt-1">
+                <AlertCircle className="size-3" />
+                {inputError.companyDescription}
               </p>
             )}
           </div>
