@@ -30,7 +30,8 @@ export default function DashboardPage() {
   const [campaigns, setCampaigns] = useState<DashboardCampaign[]>([])
   const [totalCampaigns, setTotalCampaigns] = useState(0)
   
-  const itemsPerPage = 7
+  // We need 11 campaigns per page (3 rows of 4 minus the create card)
+  const itemsPerPage = 11
   
   // Effect to listen for hash changes
   useEffect(() => {
@@ -51,58 +52,6 @@ export default function DashboardPage() {
       window.removeEventListener('hashchange', handleHashChange);
     };
   }, []);
-  
-  // Effect to fetch campaigns from Facebook when page changes
-  useEffect(() => {
-    // Only fetch if we're not searching
-    if (!searchQuery) {
-      fetchCampaigns(currentPage, itemsPerPage);
-    }
-  }, [currentPage, itemsPerPage, searchQuery])
-  
-  // With server-side pagination, we don't need to filter/paginate the campaigns array
-  // Just use the campaigns array directly
-  const currentCampaigns = campaigns;
-  
-  // Use the total from the API for pagination
-  const totalPages = Math.ceil(totalCampaigns / itemsPerPage)
-  
-  // When search is active, filter locally
-  useEffect(() => {
-    // Reset to first page when search query changes
-    setCurrentPage(1);
-    
-    if (searchQuery) {
-      // If searching, fetch all campaigns and filter locally
-      async function fetchAllForSearch() {
-        setIsLoading(true)
-        try {
-          const response = await getDashboardCampaigns({
-            limit: 100, // Get a larger batch for search
-            offset: 0
-          })
-          
-          if (response.success) {
-            // Filter the results based on search
-            const filtered = response.campaigns.filter(campaign => 
-              campaign.name.toLowerCase().includes(searchQuery.toLowerCase())
-            );
-            setCampaigns(filtered)
-            setTotalCampaigns(filtered.length)
-          }
-        } catch (error) {
-          console.error('Error fetching campaigns for search:', error)
-        } finally {
-          setIsLoading(false)
-        }
-      }
-      
-      fetchAllForSearch()
-    } else {
-      // If search is cleared, refresh with pagination
-      fetchCampaigns(currentPage, itemsPerPage);
-    }
-  }, [searchQuery]);
   
   // Function to fetch campaigns with pagination
   async function fetchCampaigns(page: number, pageSize: number) {
@@ -126,7 +75,76 @@ export default function DashboardPage() {
       setIsLoading(false)
     }
   }
-
+  
+  // Effect to fetch campaigns from Facebook when page changes
+  useEffect(() => {
+    // Only fetch if we're not searching
+    if (!searchQuery) {
+      fetchCampaigns(currentPage, itemsPerPage);
+    }
+  }, [currentPage, itemsPerPage, searchQuery])
+  
+  // When search is active, filter locally
+  useEffect(() => {
+    // Reset to first page when search query changes
+    setCurrentPage(1);
+    
+    // Function to handle search
+    async function handleSearch() {
+      setIsLoading(true);
+      
+      if (searchQuery) {
+        // If searching, fetch all campaigns and filter locally
+        try {
+          const response = await getDashboardCampaigns({
+            limit: 100, // Get a larger batch for search
+            offset: 0
+          });
+          
+          if (response.success) {
+            // Filter the results based on search
+            const filtered = response.campaigns.filter(campaign => 
+              campaign.name.toLowerCase().includes(searchQuery.toLowerCase())
+            );
+            setCampaigns(filtered);
+            setTotalCampaigns(filtered.length);
+          }
+        } catch (error) {
+          console.error('Error fetching campaigns for search:', error);
+        }
+      } else {
+        // If search is cleared, refresh with pagination for first page
+        try {
+          const response = await getDashboardCampaigns({
+            limit: itemsPerPage,
+            offset: 0
+          });
+          
+          if (response.success) {
+            setCampaigns(response.campaigns);
+            setTotalCampaigns(response.total);
+          }
+        } catch (error) {
+          console.error('Error fetching campaigns after search cleared:', error);
+        }
+      }
+      
+      setIsLoading(false);
+    }
+    
+    // Execute the search handler
+    handleSearch();
+  }, [searchQuery, itemsPerPage]);
+  
+  // Use the campaigns array directly
+  const currentCampaigns = campaigns;
+  
+  // Use the total from the API for pagination
+  const totalPages = Math.ceil(totalCampaigns / itemsPerPage)
+  
+  // Debug pagination values
+  console.log('Pagination debug:', { totalCampaigns, itemsPerPage, totalPages, currentPage })
+  
   // Handle pagination
   const handlePageChange = (page: number) => {
     setCurrentPage(page)
@@ -178,69 +196,91 @@ export default function DashboardPage() {
 
         {/* Campaign Cards */}
         <div className="mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-8 gap-6">
-            {/* Create Campaign Card - Always First */}
-            <div className="md:col-span-1 lg:col-span-1">
-              <CreateCampaignCard onAskAI={handleAskAI} />
+          {/* Loading State */}
+          {isLoading ? (
+            <div className="bg-[#1A1D29] border border-[#2A2E3A] rounded-lg flex items-center justify-center p-12">
+              <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
+              <span className="ml-3 text-gray-400">Loading campaigns...</span>
             </div>
-            
-            {/* Content Area */}
-            <div className="md:col-span-3 lg:col-span-7">
-              {/* Loading State */}
-              {isLoading && (
-                <div className="flex items-center justify-center py-10 bg-[#1A1D29] border border-[#2A2E3A] rounded-lg h-full">
-                  <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
-                  <span className="ml-3 text-gray-400">Loading campaigns...</span>
-                </div>
-              )}
-              
-              {/* Empty State */}
-              {!isLoading && currentCampaigns.length === 0 && (
-                <div className="bg-[#1A1D29] border border-[#2A2E3A] rounded-lg p-8 flex flex-col items-center justify-center">
-                  <svg className="w-12 h-12 text-gray-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                  </svg>
-                  <h3 className="text-lg font-medium text-white mb-2">No campaigns found</h3>
-                  <p className="text-gray-400 text-center">
-                    {searchQuery 
-                      ? `No campaigns match "${searchQuery}"`
-                      : "Create your first campaign to get started"
-                    }
-                  </p>
-                  {searchQuery && (
-                    <button 
-                      onClick={() => setSearchQuery('')}
-                      className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-md text-white text-sm"
-                    >
-                      Clear search
-                    </button>
-                  )}
-                </div>
-              )}
-              
-              {/* Regular Campaign Cards */}
-              {!isLoading && currentCampaigns.length > 0 && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-4">
-                  {currentCampaigns.map((campaign) => (
-                    <CampaignCard 
-                      key={campaign.id} 
-                      campaign={campaign} 
-                      onStatsClick={(id) => setShowStatsModal(id)}
-                      onEditClick={(id) => setShowEditModal(id)}
-                    />
-                  ))}
-                </div>
+          ) : currentCampaigns.length === 0 ? (
+            /* Empty State */
+            <div className="bg-[#1A1D29] border border-[#2A2E3A] rounded-lg p-8 flex flex-col items-center justify-center">
+              <svg className="w-12 h-12 text-gray-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+              <h3 className="text-lg font-medium text-white mb-2">No campaigns found</h3>
+              <p className="text-gray-400 text-center">
+                {searchQuery 
+                  ? `No campaigns match "${searchQuery}"`
+                  : "Create your first campaign to get started"
+                }
+              </p>
+              {searchQuery && (
+                <button 
+                  onClick={() => setSearchQuery('')}
+                  className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-md text-white text-sm"
+                >
+                  Clear search
+                </button>
               )}
             </div>
-          </div>
+          ) : (
+            /* Campaign Grid - Exactly 3 rows of 4 columns (responsive) */
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+              {/* Row 1 */}
+              <div className="col-span-1">
+                <CreateCampaignCard onAskAI={handleAskAI} />
+              </div>
+              
+              {/* First row cards (positions 0-2) */}
+              {currentCampaigns.slice(0, 3).map((campaign) => (
+                <div key={campaign.id} className="col-span-1">
+                  <CampaignCard 
+                    campaign={campaign} 
+                    onStatsClick={(id) => setShowStatsModal(id)}
+                    onEditClick={(id) => setShowEditModal(id)}
+                  />
+                </div>
+              ))}
+              
+              {/* Second row cards (positions 3-6) */}
+              {currentCampaigns.slice(3, 7).map((campaign) => (
+                <div key={campaign.id} className="col-span-1">
+                  <CampaignCard 
+                    campaign={campaign} 
+                    onStatsClick={(id) => setShowStatsModal(id)}
+                    onEditClick={(id) => setShowEditModal(id)}
+                  />
+                </div>
+              ))}
+              
+              {/* Third row cards (positions 7-10) */}
+              {currentCampaigns.slice(7, 11).map((campaign) => (
+                <div key={campaign.id} className="col-span-1">
+                  <CampaignCard 
+                    campaign={campaign} 
+                    onStatsClick={(id) => setShowStatsModal(id)}
+                    onEditClick={(id) => setShowEditModal(id)}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Pagination Controls */}
-        <Pagination 
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={handlePageChange}
-        />
+        {/* Pagination Controls with info */}
+        <div>
+          {totalPages > 0 && (
+            <div className="text-center text-sm text-gray-400 mb-2">
+              Showing {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, totalCampaigns)} of {totalCampaigns} campaigns
+            </div>
+          )}
+          <Pagination 
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+          />
+        </div>
 
         {/* Collapsible AI Insights Section */}
         <AiInsights insights={insights} />
