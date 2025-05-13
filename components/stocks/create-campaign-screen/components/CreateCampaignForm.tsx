@@ -4,6 +4,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import { useMediaUpload } from '../hooks/useMediaUpload';
+import { useFormStateManager } from '../hooks/useFormStateManager';
 import { CampaignTab, PreviewTab, Gender, AdPlacements, EditSection, MasterFlowResponse } from '../types';
 import { Header } from './Header';
 import { CreateTab } from './CreateTab';
@@ -148,6 +149,50 @@ export function CreateCampaignForm() {
       window.removeEventListener('customerProfileChange', handleProfileChange);
     };
   }, []);
+  
+  // Setup form state manager
+  const formStateManager = useFormStateManager({
+    // State setter functions
+    setMediaItems,
+    setLink,
+    setBudget,
+    setSelectedLeadFormId,
+    setSelectedCustomerProfileId,
+    setSelectedCustomerProfile,
+    setCampaignObjective,
+    setAdText,
+    setAdHeadline,
+    setAgeRange,
+    setTargetedLocations,
+    setTargetedInterests,
+    setGender,
+    setBehavioralFilters,
+    setDemographicFilters,
+    setAiGuidance,
+    setAdPlacements,
+    setMasterFlowData,
+    
+    // Current state values
+    mediaItems,
+    campaignSessionId,
+    link,
+    budget,
+    selectedLeadFormId,
+    selectedCustomerProfileId,
+    selectedCustomerProfile,
+    campaignObjective,
+    adText,
+    adHeadline,
+    ageRange,
+    targetedLocations,
+    targetedInterests,
+    gender,
+    behavioralFilters,
+    demographicFilters,
+    aiGuidance,
+    adPlacements,
+    masterFlowData
+  });
 
   // Handle transition to review screen with loading sequence and API call
   const handleReviewTransition = async () => {
@@ -871,6 +916,8 @@ export function CreateCampaignForm() {
         handleReviewTransition={handleReviewTransition}
         isLoading={isLoading}
         disableReview={mediaItems.length === 0 || !link || !budget}
+        formData={formStateManager.getCurrentFormData()}
+        onLoadFormState={formStateManager.loadFormState}
       />
 
       {isLoading ? (

@@ -1,5 +1,6 @@
 import React from 'react';
 import { CampaignTab } from '../types';
+import { FormStateManager } from './FormStateManager';
 
 interface HeaderProps {
   activeTab: CampaignTab;
@@ -7,6 +8,8 @@ interface HeaderProps {
   handleReviewTransition: () => void;
   isLoading: boolean;
   disableReview: boolean;
+  formData: any;
+  onLoadFormState: (formState: any) => void;
 }
 
 export function Header({ 
@@ -14,10 +17,12 @@ export function Header({
   setActiveTab, 
   handleReviewTransition, 
   isLoading, 
-  disableReview 
+  disableReview,
+  formData,
+  onLoadFormState
 }: HeaderProps) {
   return (
-    <div className="flex items-center mb-6 border-b border-border-dark pb-5">
+    <div className="flex items-center justify-between mb-6 border-b border-border-dark pb-5">
       <div className="flex space-x-3">
         <button
           className={`px-5 py-2.5 rounded-lg transition-all duration-200 ${
@@ -41,6 +46,14 @@ export function Header({
           Review
         </button>
       </div>
+      
+      {/* Template Save/Load Manager */}
+      {activeTab === 'create' && (
+        <FormStateManager 
+          formData={formData}
+          onLoadFormState={onLoadFormState}
+        />
+      )}
     </div>
   );
 }
