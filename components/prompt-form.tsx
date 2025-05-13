@@ -716,7 +716,7 @@ export function PromptForm({
       }}
     >
       {progressBar.isShow && <ProgressBar value={progressBar.value} max={100} width="w-full" height="h-[2px]" color="bg-gray-500"/>}
-      <div className="relative flex max-h-60 w-full grow flex-col overflow-hidden bg-container-bg border border-border-dark px-8 sm:rounded-xl sm:px-12 shadow-sm">
+      <div className="relative flex max-h-60 w-full grow flex-col overflow-hidden bg-container-bg border border-border-dark px-2 sm:rounded-xl sm:px-4 shadow-sm">
         <input
           ref={imageInputRef}
           style={{ display: 'none' }}
@@ -771,15 +771,14 @@ export function PromptForm({
           </PopoverContent>
         </Popover>
         
-        {/* Quick Actions Button */}
-        <QuickActionsDialog onSendMessage={onSendMessage} />
+        {/* Quick Actions Button - Hidden */}
         <Textarea
           ref={inputRef}
           disabled={isTextareaDisabled}
           tabIndex={0}
           onKeyDown={onKeyDown}
           placeholder="Send a message."
-          className="min-h-[60px] w-full resize-none bg-transparent px-4 py-[1.3rem] focus-within:outline-none sm:text-sm text-text-white placeholder:text-text-light-gray"
+          className="min-h-[60px] w-full resize-none bg-transparent pl-0 pr-12 py-[1.3rem] focus-within:outline-none sm:text-sm text-text-white placeholder:text-text-light-gray"
           autoFocus
           spellCheck={false}
           autoComplete="off"

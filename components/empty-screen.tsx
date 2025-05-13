@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { ExternalLink } from '@/components/external-link'
 import { IconArrowRight, IconBolt, IconChartBar, IconCog, IconDownload, IconMessage, IconPower } from '@/components/ui/icons'
 import { UpgradeModal } from '@/components/upgrade-modal'
+import { Zap, BarChart, PieChart, Download, DollarSign, Power, Plus } from 'lucide-react'
 
 export function EmptyScreen() {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
