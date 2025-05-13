@@ -20,7 +20,6 @@ import { useParams } from 'next/navigation'
 import { useAIState } from 'ai/rsc'
 import { Message } from '@/lib/types'
 import { getMimeType } from '@/lib/utils'
-import { useLocalStorage } from '@/lib/hooks/use-local-storage'
 import { 
   Dialog, 
   DialogTrigger, 
@@ -295,8 +294,8 @@ export function PromptForm({
   const [isActionsOpen, setIsActionsOpen] = React.useState(false);
   
   // Campaign name management
-  const [connectedCampaigns, setConnectedCampaigns] = useLocalStorage<Record<string, string>>("connected-campaigns", {});
   const [currentCampaignName, setCurrentCampaignName] = React.useState<string>("");
+  const [campaignId, setCampaignId] = React.useState<string>("");
 
   // Usage limits state
   const { 
@@ -329,113 +328,161 @@ export function PromptForm({
     fetchUsageData()
   }, [])
   
-  // Load campaign name from local storage
+  // DIRECT API call to check campaign connection
   React.useEffect(() => {
-    if (id && connectedCampaigns && connectedCampaigns[id as string]) {
-      setCurrentCampaignName(connectedCampaigns[id as string]);
-      console.log("Loaded campaign name from storage:", connectedCampaigns[id as string]);
-    } else {
-      console.log("No campaign found in storage for chat ID:", id);
+    async function fetchCampaignInfoDirect() {
+      if (!id) return;
       
-      // Try to load campaign ID from chat-to-campaign mapping if available
-      if (id && chatToCampaignMapping && chatToCampaignMapping[id as string]) {
-        const campaignId = chatToCampaignMapping[id as string];
-        console.log("Found campaign ID in mapping:", campaignId);
-        // Do not automatically set a generic name
-      }
-    }
-    
-    // Add a helper message about testing in the console
-    console.info("To manually set campaign name for testing, run: window.setCampaignName('Your Campaign Name')");
-  }, [id, connectedCampaigns])
-  
-  // Function to set campaign name for current chat
-  const setCampaignName = (name: string) => {
-    if (id) {
-      setConnectedCampaigns({
-        ...connectedCampaigns,
-        [id as string]: name
-      });
-      setCurrentCampaignName(name);
-    }
-  }
-  
-  // Find and extract campaign info from messages
-  React.useEffect(() => {
-    if (!aiState?.messages || aiState.messages.length === 0) return;
-    
-    console.log("Checking messages for campaign info, message count:", aiState.messages.length);
-    
-    // Look for campaign information in UI components or direct messages
-    for (let i = aiState.messages.length - 1; i >= 0; i--) {
-      const msg = aiState.messages[i];
-      
-      // Check for UI components that indicate campaign connection
-      if (msg.role === 'assistant' && Array.isArray(msg.content)) {
-        for (const part of msg.content) {
-          if (part.type === 'connectCampaignResult' && part.success) {
-            console.log("Found campaign connection success component:", part.campaignName);
-            setCampaignName(part.campaignName);
-            return;
-          }
-        }
-      }
-      
-      // Fallback: Check for mentions of campaigns in text
-      if (msg.role === 'assistant' && typeof msg.content === 'string') {
-        const content = msg.content.toLowerCase();
-        
-        // Look for phrases indicating campaign connection
-        if (
-          content.includes("successfully connected") || 
-          content.includes("connected to campaign") || 
-          content.includes("campaign connected") ||
-          content.includes("connected campaign")
-        ) {
-          console.log("Found campaign connection message");
+      try {
+        // This is a direct API call to get campaign ID from the chat
+        const response = await fetch(`/api/admin/fetch-chat-fb-campaign-id?chatSlug=${id}`);
+        if (response.ok) {
+          const result = await response.json();
+          console.log("Direct API call result:", result);
           
-          // Try different regex patterns to extract campaign name
-          const patterns = [
-            /campaign[:\s]+["']?([^"'.,]+)["']?/i,
-            /connected to ["']?([^"'.,]+)["']?/i,
-            /connected[\s:]+["']?([^"'.,]+)["']?/i,
-            /campaign ["']?([^"'.,]+)["']? connected/i,
-            /campaign["'\s:]+([^"'.,\s]+)/i
-          ];
-          
-          for (const pattern of patterns) {
-            const match = content.match(pattern);
-            if (match && match[1] && match[1].length > 2) {
-              const campaignName = match[1].trim();
-              console.log("Extracted campaign name:", campaignName);
-              setCampaignName(campaignName);
-              return;
+          if (result.success && result.fbCampaignId) {
+            // We found a campaign ID associated with this chat!
+            const fbCampaignId = String(result.fbCampaignId);
+            setCampaignId(fbCampaignId);
+            
+            // Now get the campaign name
+            try {
+              const campaignResponse = await fetch(`/api/fasty-bot/proxy-get-campaign-summary?campaignId=${fbCampaignId}`);
+              if (campaignResponse.ok) {
+                const campaignData = await campaignResponse.json();
+                console.log("Campaign data:", campaignData);
+                
+                if (campaignData.success && campaignData.data && campaignData.data.name) {
+                  setCurrentCampaignName(campaignData.data.name);
+                } else {
+                  // If we can't get the name, use the ID as a fallback
+                  setCurrentCampaignName(`Campaign ${fbCampaignId.substring(0, 8)}`);
+                }
+              }
+            } catch (error) {
+              console.error("Error fetching campaign name:", error);
+              // Still set a fallback name
+              setCurrentCampaignName(`Campaign ${fbCampaignId.substring(0, 8)}`);
             }
           }
         }
+      } catch (error) {
+        console.error("Error checking campaign connection:", error);
       }
     }
     
-    // If we haven't returned yet and there's no current campaign name,
-    // try to get the campaign ID from the mapping as a fallback
-    if (!currentCampaignName && id && chatToCampaignMapping && chatToCampaignMapping[id as string]) {
-      // Set up an event listener for campaign connections
-      console.log("Setting up campaign connection event listener");
+    // Always run this check when the component mounts or ID changes
+    fetchCampaignInfoDirect();
+  }, [id])
+  
+  // Listen for campaign connection events in AI message updates
+  React.useEffect(() => {
+    // Short circuit if no messages
+    if (!aiState?.messages || aiState.messages.length === 0) return;
+    
+    const checkMessages = async () => {
+      console.log("Checking for campaign connection in messages...");
       
-      const handleCampaignConnect = (event: CustomEvent) => {
-        if (event.detail?.campaignName) {
-          console.log("Event detected campaign connection:", event.detail.campaignName);
-          setCampaignName(event.detail.campaignName);
+      // Look at the last few messages to find campaign connection indicators
+      const recentMessages = aiState.messages.slice(-5);
+      let foundCampaign = false;
+      
+      for (const msg of recentMessages) {
+        // Check message objects for campaign connection UI components
+        if (msg.role === 'assistant' && Array.isArray(msg.content)) {
+          for (const part of msg.content) {
+            // Check for connectCampaignResult components
+            if (part.type === 'connectCampaignResult' && part.success) {
+              console.log("Found campaign connection component:", part);
+              foundCampaign = true;
+              
+              // We should refresh our campaign info from the server
+              try {
+                // Direct API call to get the fresh campaign ID
+                const response = await fetch(`/api/admin/fetch-chat-fb-campaign-id?chatSlug=${id}`);
+                if (response.ok) {
+                  const result = await response.json();
+                  console.log("Refreshed campaign info:", result);
+                  
+                  if (result.success && result.fbCampaignId) {
+                    const fbCampaignId = String(result.fbCampaignId);
+                    setCampaignId(fbCampaignId);
+                    
+                    // Use the name from the component if available
+                    if (part.campaignName) {
+                      setCurrentCampaignName(part.campaignName);
+                    } else {
+                      // Or try to get it from the API
+                      try {
+                        const nameResponse = await fetch(`/api/fasty-bot/proxy-get-campaign-summary?campaignId=${fbCampaignId}`);
+                        if (nameResponse.ok) {
+                          const nameData = await nameResponse.json();
+                          if (nameData.success && nameData.data && nameData.data.name) {
+                            setCurrentCampaignName(nameData.data.name);
+                          } else {
+                            setCurrentCampaignName(`Campaign ${fbCampaignId.substring(0, 8)}`);
+                          }
+                        }
+                      } catch (error) {
+                        console.error("Error getting campaign name:", error);
+                        setCurrentCampaignName(`Campaign ${fbCampaignId.substring(0, 8)}`);
+                      }
+                    }
+                  }
+                }
+              } catch (error) {
+                console.error("Error refreshing campaign info:", error);
+              }
+              
+              break;
+            }
+          }
         }
-      };
-      
-      window.addEventListener('campaign-connected', handleCampaignConnect as EventListener);
-      
-      return () => {
-        window.removeEventListener('campaign-connected', handleCampaignConnect as EventListener);
-      };
-    }
-  }, [aiState?.messages, currentCampaignName, id])
+        
+        // Also check text messages for campaign connection phrases
+        if (!foundCampaign && msg.role === 'assistant' && typeof msg.content === 'string') {
+          const content = msg.content.toLowerCase();
+          if (
+            content.includes("successfully connected to campaign") || 
+            content.includes("campaign connected successfully") ||
+            content.includes("connected to your campaign")
+          ) {
+            console.log("Found campaign connection in text message");
+            foundCampaign = true;
+            
+            // Same refresh logic as above
+            try {
+              const response = await fetch(`/api/admin/fetch-chat-fb-campaign-id?chatSlug=${id}`);
+              if (response.ok) {
+                const result = await response.json();
+                if (result.success && result.fbCampaignId) {
+                  const fbCampaignId = String(result.fbCampaignId);
+                  setCampaignId(fbCampaignId);
+                  
+                  // Try to get the name
+                  const nameResponse = await fetch(`/api/fasty-bot/proxy-get-campaign-summary?campaignId=${fbCampaignId}`);
+                  if (nameResponse.ok) {
+                    const nameData = await nameResponse.json();
+                    if (nameData.success && nameData.data && nameData.data.name) {
+                      setCurrentCampaignName(nameData.data.name);
+                    } else {
+                      setCurrentCampaignName(`Campaign ${fbCampaignId.substring(0, 8)}`);
+                    }
+                  }
+                }
+              }
+            } catch (error) {
+              console.error("Error refreshing campaign after text message:", error);
+            }
+            
+            break;
+          }
+        }
+      }
+    };
+    
+    checkMessages();
+  }, [aiState?.messages, id])
 
   const handleImageFileChange = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -674,32 +721,57 @@ export function PromptForm({
     setOpenUploadMenu(!openUploadMenu)
   }
   
-  // Set up a listener for campaign connections from UI
+  // Periodic refresh of campaign data from database
   React.useEffect(() => {
-    // Function to handle when a user connects to a campaign via UI
-    const handleCampaignConnect = (event: CustomEvent) => {
-      console.log("Campaign connect event received:", event.detail);
-      if (event.detail?.campaignName) {
-        console.log("Setting campaign name from event:", event.detail.campaignName);
-        setCampaignName(event.detail.campaignName);
+    // Set up a periodic check for campaign connections (directly with the API)
+    const checkInterval = setInterval(async () => {
+      if (!id) return;
+      
+      try {
+        // This direct API call is the most accurate way to check
+        const response = await fetch(`/api/admin/fetch-chat-fb-campaign-id?chatSlug=${id}`);
+        if (response.ok) {
+          const result = await response.json();
+          
+          if (result.success && result.fbCampaignId) {
+            const fbCampaignId = String(result.fbCampaignId);
+            
+            // Only update if this is different from what we know
+            if (fbCampaignId !== campaignId) {
+              console.log("Campaign ID changed from:", campaignId, "to:", fbCampaignId);
+              setCampaignId(fbCampaignId);
+              
+              // Get updated name
+              try {
+                const nameResponse = await fetch(`/api/fasty-bot/proxy-get-campaign-summary?campaignId=${fbCampaignId}`);
+                if (nameResponse.ok) {
+                  const nameData = await nameResponse.json();
+                  if (nameData.success && nameData.data && nameData.data.name) {
+                    setCurrentCampaignName(nameData.data.name);
+                  } else {
+                    setCurrentCampaignName(`Campaign ${fbCampaignId.substring(0, 8)}`);
+                  }
+                }
+              } catch (error) {
+                console.error("Error getting campaign name in refresh:", error);
+                setCurrentCampaignName(`Campaign ${fbCampaignId.substring(0, 8)}`);
+              }
+            }
+          } else if (campaignId) {
+            // Campaign was disconnected
+            setCampaignId("");
+            setCurrentCampaignName("");
+          }
+        }
+      } catch (error) {
+        console.error("Error in periodic campaign check:", error);
       }
-    };
+    }, 10000); // Check every 10 seconds
     
-    // Add the event listener
-    window.addEventListener('campaign-connected', handleCampaignConnect as EventListener);
-    
-    // Expose a function to allow campaign connections from anywhere
-    (window as any).setCampaignName = (name: string) => {
-      console.log("Manual campaign name setting:", name);
-      setCampaignName(name);
-    };
-    
-    // Cleanup
     return () => {
-      window.removeEventListener('campaign-connected', handleCampaignConnect as EventListener);
-      delete (window as any).setCampaignName;
+      clearInterval(checkInterval);
     };
-  }, []);
+  }, [id, campaignId]);
   
   //
   React.useEffect(() => {
@@ -790,6 +862,53 @@ export function PromptForm({
     }
   }, [videoUploadDataInfo])
   
+  // Log campaign info for debugging and state visualization
+  React.useEffect(() => {
+    // Provide detailed logging about the campaign state
+    console.log("CAMPAIGN STATE - Current ID:", campaignId);
+    console.log("CAMPAIGN STATE - Current Name:", currentCampaignName);
+    console.log("CAMPAIGN STATE - Chat ID:", id);
+    
+    // For testing/debugging - add to window object so we can trigger from console
+    (window as any).refreshCampaignData = async () => {
+      console.log("Manual campaign refresh triggered");
+      if (!id) return;
+      
+      try {
+        // Most direct API call to check campaign connection
+        const response = await fetch(`/api/admin/fetch-chat-fb-campaign-id?chatSlug=${id}`);
+        const result = await response.json();
+        console.log("Manual refresh result:", result);
+        
+        if (result.success && result.fbCampaignId) {
+          const fbCampaignId = String(result.fbCampaignId);
+          setCampaignId(fbCampaignId);
+          
+          // Get name
+          const nameResponse = await fetch(`/api/fasty-bot/proxy-get-campaign-summary?campaignId=${fbCampaignId}`);
+          const nameData = await nameResponse.json();
+          if (nameData.success && nameData.data && nameData.data.name) {
+            console.log("Setting campaign name to:", nameData.data.name);
+            setCurrentCampaignName(nameData.data.name);
+          } else {
+            console.log("Using fallback name");
+            setCurrentCampaignName(`Campaign ${fbCampaignId.substring(0, 8)}`);
+          }
+        } else {
+          console.log("No campaign connected");
+          setCampaignId("");
+          setCurrentCampaignName("");
+        }
+      } catch (error) {
+        console.error("Error in manual refresh:", error);
+      }
+    };
+    
+    return () => {
+      delete (window as any).refreshCampaignData;
+    };
+  }, [id, campaignId, currentCampaignName])
+  
 
   const isTextareaDisabled = uploading || isHandling;
   React.useEffect(() => {
@@ -829,7 +948,7 @@ export function PromptForm({
             </Button>
           </CollapsibleTrigger>
           
-          {/* Connected Campaign Name - Always showing for now */}
+          {/* Connected Campaign Name */}
           <div className="flex items-center">
             <Tooltip>
               <TooltipTrigger asChild>
@@ -838,25 +957,20 @@ export function PromptForm({
                   size="sm"
                   className="p-2 h-8 flex items-center justify-center gap-1 text-primary-green hover:bg-[#1E2336]/20 hover:text-primary-green border border-[#2D3343] rounded-md"
                   onClick={() => {
-                    if (!currentCampaignName) {
-                      // When no campaign is connected, clicking will ask for campaign list
-                      onSendMessage("Show my campaign list");
-                    } else {
-                      // When campaign is connected, clicking shows campaigns and offers to switch
-                      onSendMessage("I want to switch to a different campaign");
-                    }
+                    // Always show campaign list when clicked
+                    onSendMessage("Show my campaign list");
                   }}
                 >
                   <Target className="h-4 w-4 mr-1 text-primary-green" />
-                  <span className={`text-sm font-medium ${!currentCampaignName ? 'text-gray-400' : ''}`}>
-                    {currentCampaignName || "No Campaign Connected"}
+                  <span className="text-sm font-medium">
+                    {currentCampaignName || (campaignId ? `Campaign ${campaignId.substring(0,6)}...` : "Select Campaign")}
                   </span>
                   <ChevronDown className="h-4 w-4 ml-1" />
                   <span className="sr-only">Switch campaign</span>
                 </Button>
               </TooltipTrigger>
               <TooltipContent className="bg-container-bg border border-border-dark text-text-white">
-                Switch campaign
+                {campaignId || currentCampaignName ? "Switch campaign" : "Select campaign"}
               </TooltipContent>
             </Tooltip>
           </div>
