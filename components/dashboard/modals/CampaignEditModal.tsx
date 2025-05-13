@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label'
 import { Slider } from '@/components/ui/slider'
 import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import Image from 'next/image'
+import SafeImage from '../SafeImage'
 
 interface CampaignEditModalProps {
   isOpen: boolean
@@ -179,7 +179,7 @@ export default function CampaignEditModal({
                   {campaign.creatives.map((creative: any) => (
                     <Card key={creative.id} className="bg-[#0A0C14] border-[#2A2E3A] overflow-hidden">
                       <div className="h-32 bg-gray-800 flex items-center justify-center border-b border-[#2A2E3A]">
-                        <Image 
+                        <SafeImage 
                           src={campaign.thumbnail}
                           alt={creative.name}
                           width={125}

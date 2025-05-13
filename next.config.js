@@ -41,10 +41,36 @@ module.exports = {
         port: '',
         pathname: '/**'
       },
+      // Add Facebook CDN domains for images
+      {
+        protocol: 'https',
+        hostname: 'scontent.xx.fbcdn.net',
+        port: '',
+        pathname: '/**'
+      },
+      {
+        protocol: 'https',
+        hostname: '*.fbcdn.net',
+        port: '',
+        pathname: '/**'
+      },
+      {
+        protocol: 'https',
+        hostname: '*.fbsbx.com',
+        port: '',
+        pathname: '/**'
+      },
       // Add Imgur for dashboard images
       {
         protocol: 'https',
         hostname: 'i.imgur.com',
+        port: '',
+        pathname: '/**'
+      },
+      // Add placeholder image service
+      {
+        protocol: 'https',
+        hostname: 'via.placeholder.com',
         port: '',
         pathname: '/**'
       }

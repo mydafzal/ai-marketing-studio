@@ -1,4 +1,6 @@
-// Campaign data types
+/**
+ * Types for Campaign Data from the Facebook API 
+ */
 export interface CampaignMetrics {
   ctr: string;
   conversions: number;
@@ -33,7 +35,11 @@ export interface Creative {
   ctr: string;
 }
 
-export interface Campaign {
+/**
+ * Dashboard Campaign type extending the basic campaign with additional data
+ * coming from the dashboard API endpoint
+ */
+export interface DashboardCampaign {
   id: number;
   name: string;
   thumbnail: string;
@@ -46,6 +52,9 @@ export interface Campaign {
   adSets?: AdSet[];
   creatives?: Creative[];
 }
+
+// For displaying mock data
+export interface Campaign extends DashboardCampaign {}
 
 // Daily Creative types
 export interface DailyCreative {

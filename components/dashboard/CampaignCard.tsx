@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import Image from 'next/image'
+import SafeImage from './SafeImage'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -36,11 +36,10 @@ export default function CampaignCard({
   return (
     <Card className="bg-[#1A1D29] border-[#2A2E3A] shadow-md hover:shadow-lg transition-shadow">
       <div className="relative h-32 bg-gray-800 border-b border-[#2A2E3A]">
-        <Image 
+        <SafeImage 
           src={campaign.thumbnail}
           alt={campaign.name}
           fill
-          style={{ objectFit: 'cover' }}
         />
         <div className="absolute top-2 right-2">
           <Badge className={campaign.status === 'ACTIVE' ? 'bg-green-600 text-white' : 'bg-gray-600 text-white'}>
@@ -50,23 +49,25 @@ export default function CampaignCard({
       </div>
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
-          <CardTitle className="text-lg text-white">{campaign.name}</CardTitle>
-          <div className="flex space-x-2">
+          <CardTitle className="text-sm font-medium text-white line-clamp-2 min-h-[40px] leading-tight">
+            {campaign.name}
+          </CardTitle>
+          <div className="flex space-x-2 ml-2 flex-shrink-0">
             <Button 
               variant="ghost" 
               size="sm" 
-              className="h-8 w-8 p-0 text-gray-400 hover:text-blue-400"
+              className="h-7 w-7 p-0 text-gray-400 hover:text-blue-400"
               onClick={() => onStatsClick(campaign.id)}
             >
-              <BarChart2 className="h-4 w-4" />
+              <BarChart2 className="h-3.5 w-3.5" />
             </Button>
             <Button 
               variant="ghost" 
               size="sm" 
-              className="h-8 w-8 p-0 text-gray-400 hover:text-blue-400"
+              className="h-7 w-7 p-0 text-gray-400 hover:text-blue-400"
               onClick={() => onEditClick(campaign.id)}
             >
-              <Edit className="h-4 w-4" />
+              <Edit className="h-3.5 w-3.5" />
             </Button>
           </div>
         </div>

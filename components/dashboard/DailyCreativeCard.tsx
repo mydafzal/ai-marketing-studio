@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import Image from 'next/image'
+import SafeImage from './SafeImage'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 
@@ -24,11 +24,10 @@ export default function DailyCreativeCard({
   return (
     <Card className="bg-[#1A1D29] border-[#2A2E3A] shadow-md overflow-hidden">
       <div className="relative aspect-video bg-gray-800">
-        <Image 
+        <SafeImage 
           src={creative.imageUrl}
           alt={creative.title}
           fill
-          style={{ objectFit: 'cover' }}
           unoptimized
         />
       </div>
