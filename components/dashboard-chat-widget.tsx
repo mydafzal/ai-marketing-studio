@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { X, Minus, Send, Maximize2, MessageSquare } from 'lucide-react'
-import { Avatar } from '@radix-ui/react-avatar'
 
 type Message = {
   id: number
