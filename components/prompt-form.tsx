@@ -61,7 +61,10 @@ function QuickAction({ icon, label, message, onAction }: QuickActionProps) {
 }
 
 // Action List component that can be used both in the empty screen and in the collapsible
-function ActionsList({ onSendMessage }: { onSendMessage: (message: string) => Promise<void> }) {
+function ActionsList({ onSendMessage, setActionsOpen }: { 
+  onSendMessage: (message: string) => Promise<void>, 
+  setActionsOpen?: React.Dispatch<React.SetStateAction<boolean>> 
+}) {
   const { 
     isMessageLimitReached, 
     messageCount,
@@ -75,6 +78,11 @@ function ActionsList({ onSendMessage }: { onSendMessage: (message: string) => Pr
     if (isMessageLimitReached) {
       setShowUpgradeModal(true);
       return;
+    }
+    
+    // Close the collapsible if setActionsOpen function is provided
+    if (setActionsOpen) {
+      setActionsOpen(false);
     }
     
     await onSendMessage(message);
@@ -683,7 +691,7 @@ export function PromptForm({
         
         <CollapsibleContent className="overflow-hidden transition-all data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
           <div className="rounded-lg p-3 sm:p-4 bg-[#0D1117] border border-[#1E2433] mb-2">
-            <ActionsList onSendMessage={onSendMessage} />
+            <ActionsList onSendMessage={onSendMessage} setActionsOpen={setIsActionsOpen} />
           </div>
         </CollapsibleContent>
       </Collapsible>
