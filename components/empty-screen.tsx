@@ -18,7 +18,7 @@ export function EmptyScreen() {
       title: 'Create a Campaign',
       description: 'I can help you set up a new advertising campaign.',
       icon: <IconMessage className="h-6 w-6" />,
-      prompt: 'I want to create a campaign to generate leads'
+      prompt: 'I want to create a campaign'
     },
     {
       title: 'View Campaign Results',

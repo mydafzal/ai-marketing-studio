@@ -27,7 +27,7 @@ import {
   DialogHeader, 
   DialogTitle
 } from '@/components/ui/dialog'
-import { Zap, BarChart, PieChart, Download, DollarSign, Power, LifeBuoy, Plus, ChevronUp } from 'lucide-react'
+import { Zap, BarChart, PieChart, Download, DollarSign, Power, LifeBuoy, Plus, ChevronDown, ChevronRight } from 'lucide-react'
 import { useUsageStore } from '@/app/store/useUsageStore'
 import { UpgradeModal } from '@/components/upgrade-modal'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
@@ -86,7 +86,7 @@ function ActionsList({ onSendMessage }: { onSendMessage: (message: string) => Pr
       title: 'Create a Campaign',
       description: 'I can help you set up a new advertising campaign.',
       icon: <Plus className="h-6 w-6 text-primary-green" />,
-      prompt: 'I want to create a campaign to generate leads'
+      prompt: 'I want to create a campaign'
     },
     {
       title: 'View Campaign Results',
@@ -670,10 +670,13 @@ export function PromptForm({
             <Button 
               variant="ghost" 
               size="sm" 
-              className="p-1 h-7 flex items-center justify-center gap-1 text-primary-green hover:bg-[#1E2336]/20 hover:text-primary-green"
+              className="p-1 h-8 flex items-center justify-center gap-1 text-primary-green hover:bg-[#1E2336]/20 hover:text-primary-green"
             >
-              <ChevronUp className={`h-4 w-4 transform transition-transform ${isActionsOpen ? '' : 'rotate-180'}`} />
-              <span className="text-xs">View list of supported actions</span>
+              {isActionsOpen ? 
+                <ChevronDown className="h-5 w-5" /> : 
+                <ChevronRight className="h-5 w-5" />
+              }
+              <span className="text-sm font-medium">View list of supported actions</span>
             </Button>
           </CollapsibleTrigger>
         </div>
