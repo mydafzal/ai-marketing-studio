@@ -20,6 +20,7 @@ import { useParams } from 'next/navigation'
 import { useAIState } from 'ai/rsc'
 import { Message } from '@/lib/types'
 import { getMimeType } from '@/lib/utils'
+import { useLocalStorage } from '@/lib/hooks/use-local-storage'
 import { 
   Dialog, 
   DialogTrigger, 
@@ -27,7 +28,7 @@ import {
   DialogHeader, 
   DialogTitle
 } from '@/components/ui/dialog'
-import { Zap, BarChart, PieChart, Download, DollarSign, Power, LifeBuoy, Plus, ChevronDown, ChevronRight } from 'lucide-react'
+import { Zap, BarChart, PieChart, Download, DollarSign, Power, LifeBuoy, Plus, ChevronDown, ChevronRight, Target } from 'lucide-react'
 import { useUsageStore } from '@/app/store/useUsageStore'
 import { UpgradeModal } from '@/components/upgrade-modal'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
@@ -292,6 +293,10 @@ export function PromptForm({
   const [openUploadMenu, setOpenUploadMenu] = React.useState(false);
   const [videoUploadDataInfo, setVideoUploadDataInfo] = React.useState<ChunkUploadProps>({});
   const [isActionsOpen, setIsActionsOpen] = React.useState(false);
+  
+  // Campaign name management
+  const [connectedCampaigns, setConnectedCampaigns] = useLocalStorage<Record<string, string>>("connected-campaigns", {});
+  const [currentCampaignName, setCurrentCampaignName] = React.useState<string>("");
 
   // Usage limits state
   const { 
@@ -323,6 +328,114 @@ export function PromptForm({
   React.useEffect(() => {
     fetchUsageData()
   }, [])
+  
+  // Load campaign name from local storage
+  React.useEffect(() => {
+    if (id && connectedCampaigns && connectedCampaigns[id as string]) {
+      setCurrentCampaignName(connectedCampaigns[id as string]);
+      console.log("Loaded campaign name from storage:", connectedCampaigns[id as string]);
+    } else {
+      console.log("No campaign found in storage for chat ID:", id);
+      
+      // Try to load campaign ID from chat-to-campaign mapping if available
+      if (id && chatToCampaignMapping && chatToCampaignMapping[id as string]) {
+        const campaignId = chatToCampaignMapping[id as string];
+        console.log("Found campaign ID in mapping:", campaignId);
+        // Do not automatically set a generic name
+      }
+    }
+    
+    // Add a helper message about testing in the console
+    console.info("To manually set campaign name for testing, run: window.setCampaignName('Your Campaign Name')");
+  }, [id, connectedCampaigns])
+  
+  // Function to set campaign name for current chat
+  const setCampaignName = (name: string) => {
+    if (id) {
+      setConnectedCampaigns({
+        ...connectedCampaigns,
+        [id as string]: name
+      });
+      setCurrentCampaignName(name);
+    }
+  }
+  
+  // Find and extract campaign info from messages
+  React.useEffect(() => {
+    if (!aiState?.messages || aiState.messages.length === 0) return;
+    
+    console.log("Checking messages for campaign info, message count:", aiState.messages.length);
+    
+    // Look for campaign information in UI components or direct messages
+    for (let i = aiState.messages.length - 1; i >= 0; i--) {
+      const msg = aiState.messages[i];
+      
+      // Check for UI components that indicate campaign connection
+      if (msg.role === 'assistant' && Array.isArray(msg.content)) {
+        for (const part of msg.content) {
+          if (part.type === 'connectCampaignResult' && part.success) {
+            console.log("Found campaign connection success component:", part.campaignName);
+            setCampaignName(part.campaignName);
+            return;
+          }
+        }
+      }
+      
+      // Fallback: Check for mentions of campaigns in text
+      if (msg.role === 'assistant' && typeof msg.content === 'string') {
+        const content = msg.content.toLowerCase();
+        
+        // Look for phrases indicating campaign connection
+        if (
+          content.includes("successfully connected") || 
+          content.includes("connected to campaign") || 
+          content.includes("campaign connected") ||
+          content.includes("connected campaign")
+        ) {
+          console.log("Found campaign connection message");
+          
+          // Try different regex patterns to extract campaign name
+          const patterns = [
+            /campaign[:\s]+["']?([^"'.,]+)["']?/i,
+            /connected to ["']?([^"'.,]+)["']?/i,
+            /connected[\s:]+["']?([^"'.,]+)["']?/i,
+            /campaign ["']?([^"'.,]+)["']? connected/i,
+            /campaign["'\s:]+([^"'.,\s]+)/i
+          ];
+          
+          for (const pattern of patterns) {
+            const match = content.match(pattern);
+            if (match && match[1] && match[1].length > 2) {
+              const campaignName = match[1].trim();
+              console.log("Extracted campaign name:", campaignName);
+              setCampaignName(campaignName);
+              return;
+            }
+          }
+        }
+      }
+    }
+    
+    // If we haven't returned yet and there's no current campaign name,
+    // try to get the campaign ID from the mapping as a fallback
+    if (!currentCampaignName && id && chatToCampaignMapping && chatToCampaignMapping[id as string]) {
+      // Set up an event listener for campaign connections
+      console.log("Setting up campaign connection event listener");
+      
+      const handleCampaignConnect = (event: CustomEvent) => {
+        if (event.detail?.campaignName) {
+          console.log("Event detected campaign connection:", event.detail.campaignName);
+          setCampaignName(event.detail.campaignName);
+        }
+      };
+      
+      window.addEventListener('campaign-connected', handleCampaignConnect as EventListener);
+      
+      return () => {
+        window.removeEventListener('campaign-connected', handleCampaignConnect as EventListener);
+      };
+    }
+  }, [aiState?.messages, currentCampaignName, id])
 
   const handleImageFileChange = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -560,6 +673,34 @@ export function PromptForm({
     videoInputRef.current?.click()
     setOpenUploadMenu(!openUploadMenu)
   }
+  
+  // Set up a listener for campaign connections from UI
+  React.useEffect(() => {
+    // Function to handle when a user connects to a campaign via UI
+    const handleCampaignConnect = (event: CustomEvent) => {
+      console.log("Campaign connect event received:", event.detail);
+      if (event.detail?.campaignName) {
+        console.log("Setting campaign name from event:", event.detail.campaignName);
+        setCampaignName(event.detail.campaignName);
+      }
+    };
+    
+    // Add the event listener
+    window.addEventListener('campaign-connected', handleCampaignConnect as EventListener);
+    
+    // Expose a function to allow campaign connections from anywhere
+    (window as any).setCampaignName = (name: string) => {
+      console.log("Manual campaign name setting:", name);
+      setCampaignName(name);
+    };
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener('campaign-connected', handleCampaignConnect as EventListener);
+      delete (window as any).setCampaignName;
+    };
+  }, []);
+  
   //
   React.useEffect(() => {
     if (inputRef.current) {
@@ -687,6 +828,38 @@ export function PromptForm({
               <span className="text-sm font-medium">View list of supported actions</span>
             </Button>
           </CollapsibleTrigger>
+          
+          {/* Connected Campaign Name - Always showing for now */}
+          <div className="flex items-center">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="p-2 h-8 flex items-center justify-center gap-1 text-primary-green hover:bg-[#1E2336]/20 hover:text-primary-green border border-[#2D3343] rounded-md"
+                  onClick={() => {
+                    if (!currentCampaignName) {
+                      // When no campaign is connected, clicking will ask for campaign list
+                      onSendMessage("Show my campaign list");
+                    } else {
+                      // When campaign is connected, clicking shows campaigns and offers to switch
+                      onSendMessage("I want to switch to a different campaign");
+                    }
+                  }}
+                >
+                  <Target className="h-4 w-4 mr-1 text-primary-green" />
+                  <span className={`text-sm font-medium ${!currentCampaignName ? 'text-gray-400' : ''}`}>
+                    {currentCampaignName || "No Campaign Connected"}
+                  </span>
+                  <ChevronDown className="h-4 w-4 ml-1" />
+                  <span className="sr-only">Switch campaign</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="bg-container-bg border border-border-dark text-text-white">
+                Switch campaign
+              </TooltipContent>
+            </Tooltip>
+          </div>
         </div>
         
         <CollapsibleContent className="overflow-hidden transition-all data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
