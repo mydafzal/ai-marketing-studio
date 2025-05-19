@@ -64,6 +64,7 @@ export async function generateImages(
       n: Math.min(numberOfImages, 10), // Allow up to 10 images
       size: size as any, // gpt-image-1 supports different sizes than the type definition
       quality: "high" as any, // gpt-image-1 supports "high" quality
+      moderation: "low" as any, // Set to "low" for less restrictive filtering
       // Note: We're using b64_json by default which is what GPT-Image-1 returns
     } as any)
     
@@ -170,6 +171,7 @@ export async function generateImageVariants(
     form.append('n', Math.min(numberOfImages, 10).toString()); // Allow up to 10 images
     form.append('size', size);
     form.append('quality', 'high');
+    form.append('moderation', 'low'); // Set to "low" for less restrictive filtering
     // Note: response_format is not used for gpt-image-1 as it always returns base64 images
     
     // For the images/edits endpoint, we need to handle single vs multiple images differently
@@ -382,6 +384,7 @@ export async function generateImageVariation(
     form.append('n', Math.min(numberOfImages, 10).toString()); // Allow up to 10 images
     form.append('size', size);
     form.append('quality', 'high');
+    form.append('moderation', 'low'); // Set to "low" for less restrictive filtering
     // Note: response_format is not used for gpt-image-1 as it always returns base64 images
 
     // Add reference images with the correct format based on whether we have one or multiple

@@ -293,6 +293,7 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
   const [toastMessage, setToastMessage] = useState<{title: string, description: string, type: 'success' | 'error'} | null>(null)
   const [imageFormat, setImageFormat] = useState("9:16") // Default to Portrait 9:16
   const [numGeneratedImages, setNumGeneratedImages] = useState<5 | 10>(5)
+  const [selectedTemplate, setSelectedTemplate] = useState("none") // New state for prompt templates
   
   // Reference images state
   const [referenceImages, setReferenceImages] = useState<File[]>([])
@@ -1595,13 +1596,51 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
                   {generationMode === 'text' ? 'Describe the image you want' : 'Describe what to create from reference images'}
                 </label>
                 
-                <button 
-                  type="button" 
-                  className={isDarkMode ? 'text-text-light-gray hover:text-text-white' : 'text-gray-500 hover:text-gray-700'}
-                  title="Tips for better prompts"
-                >
-                  <Info className="size-4" />
-                </button>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={selectedTemplate}
+                    onChange={(e) => {
+                      const template = e.target.value;
+                      setSelectedTemplate(template);
+                      
+                      // Apply selected template
+                      if (template === "ad-style") {
+                        const adStyleTemplate = 
+                          "Create a natural, everyday advertisement with a relatable person " + 
+                          "in casual clothing, using natural daylight with soft shadows. " + 
+                          "Include a clearly visible product. " + 
+                          "Add a bold text hook inside a solid-colored block (blue, green, or brand color). " + 
+                          "Include arrows pointing at the product to highlight key features. " + 
+                          "Make it look authentic and not overly styled, perfect for social media advertising.";
+                        
+                        setImagePrompt(adStyleTemplate);
+                        
+                        // Show guidance toast
+                        showToast(
+                          "Template applied", 
+                          "You can now edit the prompt to customize your advertisement style.", 
+                          "success"
+                        );
+                      }
+                    }}
+                    className={`text-xs rounded-md p-1 ${
+                      isDarkMode
+                        ? 'bg-dark-bg border-border-dark text-text-white'
+                        : 'bg-white border-gray-300 text-gray-700'
+                    }`}
+                  >
+                    <option value="none">Choose template...</option>
+                    <option value="ad-style">Ad with colored text blocks</option>
+                  </select>
+                  
+                  <button 
+                    type="button" 
+                    className={isDarkMode ? 'text-text-light-gray hover:text-text-white' : 'text-gray-500 hover:text-gray-700'}
+                    title="Tips for better prompts"
+                  >
+                    <Info className="size-4" />
+                  </button>
+                </div>
               </div>
 
               <textarea

@@ -93,6 +93,7 @@ const COLOR_PALETTES = {
 
 // Standard image types
 const IMAGE_TYPES = [
+  { id: "color_block_ad", name: "Color Block Ad", description: "Ad with colored text blocks and arrows pointing at product" },
   { id: "lifestyle_ad", name: "Lifestyle Ad", description: "Showing products in everyday use" },
   { id: "product_spotlight", name: "Product Spotlight", description: "Close-up focused on product details" },
   { id: "banner_ad", name: "Banner Ad", description: "Wide format for website headers and ads" },
@@ -102,6 +103,7 @@ const IMAGE_TYPES = [
 
 // Enhanced social media content types
 const ENHANCED_IMAGE_TYPES = [
+  { id: "color_block_ad", name: "📱 Color Block Ad", description: "Ad with colored text blocks and arrows pointing at product" },
   { id: "comparison_post", name: "🔁 Comparison Post", description: "Us vs. Them, Before vs. After, Old Way vs. New Way" },
   { id: "before_after", name: "✅ Before/After Post", description: "Show transformation and results" },
   { id: "myth_vs_fact", name: "🧠 Myths vs. Facts", description: "Debunk misconceptions with facts" },
@@ -115,6 +117,7 @@ const ENHANCED_IMAGE_TYPES = [
 
 // Reference-based image types
 const REFERENCE_IMAGE_TYPES = [
+  { id: "color_block_ad", name: "Color Block Ad", description: "Ad with colored text blocks and arrows pointing at product" },
   { id: "product_scene", name: "Product in Scene", description: "Place products from reference images into a new scene" },
   { id: "creative_variation", name: "Creative Variations", description: "Generate fresh variations based on your references" },
   { id: "lifestyle_usage", name: "Product at Use", description: "Show products being used in lifestyle scenes" },
