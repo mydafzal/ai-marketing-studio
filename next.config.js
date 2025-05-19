@@ -1,6 +1,13 @@
 /** @type {import('next').NextConfig} */
 module.exports = {
   images: {
+    domains: [
+      'avatars.githubusercontent.com',
+      'replicate.delivery', 
+      'business.facebook.com',
+      'hellonuwa.com',
+      'cdn.shopify.com'
+    ],
     remotePatterns: [
       {
         protocol: 'https',
@@ -42,6 +49,7 @@ module.exports = {
         pathname: '/**'
       }
     ],
+    unoptimized: true
   },
   // Add header configuration to allow iframes from Facebook domains
   async headers() {
