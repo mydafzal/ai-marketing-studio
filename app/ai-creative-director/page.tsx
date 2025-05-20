@@ -24,7 +24,12 @@ export default function AiCreativeDirectorPage() {
     contentSummary: string;
     images: string[];
   } | null>(null);
-  const [generatedImages, setGeneratedImages] = useState<string[]>([]);
+  // Organized by funnel stage and format
+  const [generatedImages, setGeneratedImages] = useState<{
+    awareness: { square: string; vertical: string };
+    consideration: { square: string; vertical: string };
+    conversion: { square: string; vertical: string };
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [imageLoadErrors, setImageLoadErrors] = useState<Record<string, boolean>>({});
   const [selectedReferenceImages, setSelectedReferenceImages] = useState<string[]>([]);
@@ -33,6 +38,7 @@ export default function AiCreativeDirectorPage() {
   // New state for large image preview modal
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [previewImageFormat, setPreviewImageFormat] = useState<"square" | "vertical" | null>(null);
+  const [previewStage, setPreviewStage] = useState<"awareness" | "consideration" | "conversion" | null>(null);
 
   const handleScrapeWebsite = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,7 +52,7 @@ export default function AiCreativeDirectorPage() {
       setIsLoading(true);
       setError(null);
       setWebsiteData(null);
-      setGeneratedImages([]);
+      setGeneratedImages(null);
       setImageLoadErrors({});
       setSelectedReferenceImages([]);
       
@@ -126,7 +132,7 @@ export default function AiCreativeDirectorPage() {
       setIsGeneratingImages(true);
       setError(null);
 
-      // Create the base prompt for both formats
+      // Create the base prompt that will be customized for each funnel stage
       const basePrompt = `
 You are a world-class creative director tasked with designing a high-converting visual ad for this brand.
 
@@ -151,19 +157,21 @@ Additional guidance:
 - Prioritize clarity, contrast, emotional resonance, and simplicity
 - Use strong composition and negative space to guide the eye
 `;
-      
-      // Initialize result variable to fix the "result is not defined" error
-      let result: { success: boolean; images?: string[]; error?: string } = {
-        success: false,
-        images: []
-      };
 
-      // Reference images handling check
+      // Add reference to website images in the prompt if we aren't using them directly
+      let additionalInfo = "";
+      if (validWebsiteImages.length > 0 && !useReferenceImages) {
+        additionalInfo = `\nThe website contains images that showcase: ${
+          validWebsiteImages.length === 1 
+          ? "a specific visual element that should inspire your design" 
+          : "specific visual elements that should inspire your design"
+        }.`;
+      }
+      
+      // Process reference images if selected
+      let base64Images: string[] = [];
       if (useReferenceImages && selectedReferenceImages.length > 0) {
-        // First convert the URL references to base64 data URLs
         setError("Converting reference images... please wait");
-        
-        const base64Images: string[] = [];
         
         // Process each image URL to convert it to a base64 data URL
         for (const imageUrl of selectedReferenceImages) {
@@ -176,110 +184,168 @@ Additional guidance:
         if (base64Images.length === 0) {
           throw new Error("Failed to convert any reference images. Please try selecting different images.");
         }
+      }
+
+      // Funnel stage specific prompts
+      const funnelStagePrompts = {
+        awareness: {
+          square: `${basePrompt}${additionalInfo}
+**AWARENESS STAGE CREATIVE**
+This ad is for the top of the funnel to build brand awareness:
+- Focus on making a memorable first impression
+- Highlight a broad problem or opportunity
+- Introduce the brand without specifics of products/services 
+- Use eye-catching visuals that convey the brand's personality
+- Create emotional impact without expecting immediate conversion
+- Aim for broad appeal within the target audience
+- Keep text minimal and focus on bold visuals
+- Leave the audience wanting to learn more
+
+Output: a realistic, high-resolution square (1:1) ad image optimized for awareness stage marketing.`,
+
+          vertical: `${basePrompt}${additionalInfo}
+**AWARENESS STAGE CREATIVE**
+This ad is for the top of the funnel to build brand awareness:
+- Focus on making a memorable first impression
+- Highlight a broad problem or opportunity
+- Introduce the brand without specifics of products/services 
+- Use eye-catching visuals that convey the brand's personality
+- Create emotional impact without expecting immediate conversion
+- Aim for broad appeal within the target audience
+- Keep text minimal and focus on bold visuals
+- Leave the audience wanting to learn more
+
+Output: a realistic, high-resolution vertical (9:16) ad image optimized for awareness stage marketing on reels and stories.`
+        },
         
-        setError("Generating square format images (1:1)...");
+        consideration: {
+          square: `${basePrompt}${additionalInfo}
+**CONSIDERATION STAGE CREATIVE**
+This ad is for the middle of the funnel to build interest and consideration:
+- Focus on specific problems and solutions
+- Highlight key benefits and unique selling propositions
+- Show how your product/service solves specific pain points
+- Include more detailed information than awareness ads
+- Use visuals that demonstrate the product/service in context
+- Appeal to both emotional and rational decision-making
+- Include clear benefits bulleted or numbered if appropriate
+- Use a CTA that encourages learning more (like "Discover How" or "See Why")
+
+Output: a realistic, high-resolution square (1:1) ad image optimized for consideration stage marketing.`,
+
+          vertical: `${basePrompt}${additionalInfo}
+**CONSIDERATION STAGE CREATIVE**
+This ad is for the middle of the funnel to build interest and consideration:
+- Focus on specific problems and solutions
+- Highlight key benefits and unique selling propositions
+- Show how your product/service solves specific pain points
+- Include more detailed information than awareness ads
+- Use visuals that demonstrate the product/service in context
+- Appeal to both emotional and rational decision-making
+- Include clear benefits bulleted or numbered if appropriate
+- Use a CTA that encourages learning more (like "Discover How" or "See Why")
+
+Output: a realistic, high-resolution vertical (9:16) ad image optimized for consideration stage marketing on reels and stories.`
+        },
         
-        // Create prompt for square format
-        const squarePrompt = `${basePrompt}\nOutput: a realistic, high-resolution square (1:1) ad image perfect for Instagram posts.`;
+        conversion: {
+          square: `${basePrompt}${additionalInfo}
+**CONVERSION STAGE CREATIVE**
+This ad is for the bottom of the funnel to drive conversions:
+- Focus on creating urgency and prompting immediate action
+- Include specific offers, promotions, or limited-time deals
+- Highlight social proof, testimonials, or results
+- Show the product/service with clear value proposition
+- Address final objections or hesitations
+- Use strong, action-oriented language
+- Include a very direct CTA (like "Buy Now," "Sign Up Today," or "Claim Offer")
+- Create a sense of FOMO (fear of missing out)
+
+Output: a realistic, high-resolution square (1:1) ad image optimized for conversion stage marketing.`,
+
+          vertical: `${basePrompt}${additionalInfo}
+**CONVERSION STAGE CREATIVE**
+This ad is for the bottom of the funnel to drive conversions:
+- Focus on creating urgency and prompting immediate action
+- Include specific offers, promotions, or limited-time deals
+- Highlight social proof, testimonials, or results
+- Show the product/service with clear value proposition
+- Address final objections or hesitations
+- Use strong, action-oriented language
+- Include a very direct CTA (like "Buy Now," "Sign Up Today," or "Claim Offer")
+- Create a sense of FOMO (fear of missing out)
+
+Output: a realistic, high-resolution vertical (9:16) ad image optimized for conversion stage marketing on reels and stories.`
+        }
+      };
+
+      // Object to store our results
+      const funnelStageResults: {
+        awareness: { square: string; vertical: string };
+        consideration: { square: string; vertical: string };
+        conversion: { square: string; vertical: string };
+      } = {
+        awareness: { square: '', vertical: '' },
+        consideration: { square: '', vertical: '' },
+        conversion: { square: '', vertical: '' }
+      };
+
+      // Generate images for each funnel stage and format
+      for (const stage of ['awareness', 'consideration', 'conversion'] as const) {
+        // Generate square format image
+        setError(`Generating ${stage} stage square image (1:1)...`);
+        let squareResult;
         
-        // Generate square format images (1:1)
-        const squareResult = await generateImageVariation(
-          base64Images,
-          "1:1" as AspectRatio,
-          3,
-          squarePrompt
-        );
-        
-        setError("Generating reel format images (9:16)...");
-        
-        // Create prompt for reel format
-        const reelPrompt = `${basePrompt}\nOutput: a realistic, high-resolution vertical (9:16) ad image perfect for Instagram/Facebook reels and stories.`;
-        
-        // Generate reel format images (9:16)
-        const reelResult = await generateImageVariation(
-          base64Images,
-          "9:16" as AspectRatio,
-          3,
-          reelPrompt
-        );
-        
-        // Combine the results
-        const combinedImages = [];
-        
-        if (squareResult.success && squareResult.images) {
-          combinedImages.push(...squareResult.images);
+        if (useReferenceImages && base64Images.length > 0) {
+          squareResult = await generateImageVariation(
+            base64Images,
+            "1:1" as AspectRatio,
+            1,
+            funnelStagePrompts[stage].square
+          );
+        } else {
+          squareResult = await generateImages(
+            funnelStagePrompts[stage].square, 
+            "1:1" as AspectRatio, 
+            1
+          );
         }
         
-        if (reelResult.success && reelResult.images) {
-          combinedImages.push(...reelResult.images);
+        if (squareResult.success && squareResult.images && squareResult.images.length > 0) {
+          funnelStageResults[stage].square = squareResult.images[0];
+        } else {
+          throw new Error(`Failed to generate ${stage} stage square image: ${squareResult.error || 'Unknown error'}`);
         }
         
-        if (combinedImages.length === 0) {
-          throw new Error("Failed to generate images. Please try again or use different reference images.");
+        // Generate vertical format image
+        setError(`Generating ${stage} stage vertical image (9:16)...`);
+        let verticalResult;
+        
+        if (useReferenceImages && base64Images.length > 0) {
+          verticalResult = await generateImageVariation(
+            base64Images,
+            "9:16" as AspectRatio,
+            1,
+            funnelStagePrompts[stage].vertical
+          );
+        } else {
+          verticalResult = await generateImages(
+            funnelStagePrompts[stage].vertical, 
+            "9:16" as AspectRatio, 
+            1
+          );
         }
         
-        // Use the combined result
-        result = {
-          success: true,
-          images: combinedImages
-        };
-        
-      } else {
-        // For text-only mode (no reference images)
-        
-        // Add reference to website images in the prompt if we aren't using them directly
-        let additionalInfo = "";
-        if (validWebsiteImages.length > 0 && !useReferenceImages) {
-          additionalInfo = `\nThe website contains images that showcase: ${
-            validWebsiteImages.length === 1 
-            ? "a specific visual element that should inspire your design" 
-            : "specific visual elements that should inspire your design"
-          }.`;
+        if (verticalResult.success && verticalResult.images && verticalResult.images.length > 0) {
+          funnelStageResults[stage].vertical = verticalResult.images[0];
+        } else {
+          throw new Error(`Failed to generate ${stage} stage vertical image: ${verticalResult.error || 'Unknown error'}`);
         }
-        
-        setError("Generating square format images (1:1)...");
-        
-        // Create prompt for square format
-        const squarePrompt = `${basePrompt}${additionalInfo}\nOutput: a realistic, high-resolution square (1:1) ad image perfect for Instagram posts.`;
-        
-        // Generate square format images (1:1)
-        const squareResult = await generateImages(squarePrompt, "1:1" as AspectRatio, 3);
-        
-        setError("Generating reel format images (9:16)...");
-        
-        // Create prompt for reel format
-        const reelPrompt = `${basePrompt}${additionalInfo}\nOutput: a realistic, high-resolution vertical (9:16) ad image perfect for Instagram/Facebook reels and stories.`;
-        
-        // Generate reel format images (9:16)
-        const reelResult = await generateImages(reelPrompt, "9:16" as AspectRatio, 3);
-        
-        // Combine the results
-        const combinedImages = [];
-        
-        if (squareResult.success && squareResult.images) {
-          combinedImages.push(...squareResult.images);
-        }
-        
-        if (reelResult.success && reelResult.images) {
-          combinedImages.push(...reelResult.images);
-        }
-        
-        if (combinedImages.length === 0) {
-          throw new Error("Failed to generate images. Please try again with a different prompt.");
-        }
-        
-        // Use the combined result
-        result = {
-          success: true,
-          images: combinedImages
-        };
       }
       
-      if (result.success && result.images) {
-        setGeneratedImages(result.images);
-      } else {
-        throw new Error(result.error || "Failed to generate images");
-      }
+      // Update the state with all generated images
+      setGeneratedImages(funnelStageResults);
+      
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to generate creatives");
     } finally {
@@ -294,6 +360,7 @@ Additional guidance:
   const closePreview = () => {
     setPreviewImage(null);
     setPreviewImageFormat(null);
+    setPreviewStage(null);
   };
 
   return (
@@ -315,7 +382,7 @@ Additional guidance:
             <div className="absolute top-2 right-2 flex gap-2">
               <a
                 href={previewImage}
-                download={`ad-creative-${previewImageFormat}.png`}
+                download={`${previewStage}-${previewImageFormat}-ad.png`}
                 className="bg-white text-gray-800 rounded-md py-2 px-4 font-medium shadow hover:bg-gray-50"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -329,13 +396,27 @@ Additional guidance:
                 Close
               </button>
             </div>
-            <div className="absolute top-2 left-2">
+            <div className="absolute top-2 left-2 flex gap-2">
               <span className={`px-3 py-1 rounded-full text-sm font-medium ${
                 previewImageFormat === "square" 
                   ? "bg-primary-green/80 text-black" 
                   : "bg-blue-500/80 text-white"
               }`}>
                 {previewImageFormat === "square" ? "1:1 Square" : "9:16 Vertical"}
+              </span>
+              
+              <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                previewStage === "awareness" 
+                  ? "bg-primary-green/80 text-black"
+                  : previewStage === "consideration"
+                  ? "bg-blue-500/80 text-white"
+                  : "bg-amber-500/80 text-black"
+              }`}>
+                {previewStage === "awareness" 
+                  ? "Awareness" 
+                  : previewStage === "consideration" 
+                  ? "Consideration" 
+                  : "Conversion"}
               </span>
             </div>
           </div>
@@ -348,7 +429,7 @@ Additional guidance:
       </p>
 
       {/* ===== STEP 1: Initial URL Input ===== */}
-      {!websiteData && !generatedImages.length && (
+      {!websiteData && !generatedImages && (
         <div className="max-w-xl mx-auto">
           <Card className="bg-dark-bg border-border-dark shadow-lg">
             <CardHeader>
@@ -445,7 +526,7 @@ Additional guidance:
       )}
 
       {/* ===== STEP 2: Website Analysis and Reference Image Selection ===== */}
-      {websiteData && !generatedImages.length && (
+      {websiteData && !generatedImages && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Left column - Analysis report and brand assets */}
           <div className="lg:col-span-7 space-y-6">
@@ -672,14 +753,14 @@ Additional guidance:
       )}
 
       {/* ===== STEP 3: Generated Creatives Display ===== */}
-      {generatedImages.length > 0 && (
+      {generatedImages && (
         <div className="space-y-8">
           <div className="bg-dark-bg border border-border-dark p-6 rounded-lg">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold">Step 3: Your Custom Ad Creatives</h2>
               <Button
                 onClick={() => {
-                  setGeneratedImages([]);
+                  setGeneratedImages(null);
                   setWebsiteData(null);
                   setUrl("");
                   setSelectedReferenceImages([]);
@@ -691,27 +772,37 @@ Additional guidance:
               </Button>
             </div>
             
-            <div className="mb-8">
-              <h3 className="text-xl font-semibold mb-4 flex items-center">
-                <div className="w-5 h-5 bg-primary-green/80 rounded-full mr-2 flex items-center justify-center">
-                  <span className="text-xs font-bold">1</span>
+            {/* Awareness Stage */}
+            <div className="mb-12 pb-8 border-b border-gray-700">
+              <div className="flex items-center mb-6">
+                <div className="w-10 h-10 bg-primary-green rounded-full text-black font-bold flex items-center justify-center mr-3">1</div>
+                <div>
+                  <h3 className="text-2xl font-bold mb-1">Awareness Stage</h3>
+                  <p className="text-gray-400">Top-of-funnel creatives to build brand awareness and attract new audiences</p>
                 </div>
-                Square Format (1:1) - For Instagram Posts
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {generatedImages.slice(0, 3).map((image, index) => (
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Square Format */}
+                <div>
+                  <div className="mb-3 flex items-center">
+                    <div className="w-5 h-5 bg-primary-green/80 rounded-full mr-2 flex items-center justify-center">
+                      <span className="text-xs font-bold">A</span>
+                    </div>
+                    <span className="font-medium">Square Format (1:1)</span>
+                  </div>
                   <div 
-                    key={index} 
                     className="relative aspect-square border border-border-dark rounded-lg overflow-hidden group cursor-pointer shadow-lg"
                     onClick={() => {
-                      setPreviewImage(image);
+                      setPreviewImage(generatedImages.awareness.square);
                       setPreviewImageFormat("square");
+                      setPreviewStage("awareness");
                     }}
                   >
                     <div className="w-full h-full">
                       <img
-                        src={image}
-                        alt={`Square ad creative ${index + 1}`}
+                        src={generatedImages.awareness.square}
+                        alt="Awareness stage square ad creative"
                         className="w-full h-full object-cover"
                       />
                     </div>
@@ -720,16 +811,17 @@ Additional guidance:
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            setPreviewImage(image);
+                            setPreviewImage(generatedImages.awareness.square);
                             setPreviewImageFormat("square");
+                            setPreviewStage("awareness");
                           }}
                           className="py-2 px-4 bg-white text-gray-800 rounded-md font-medium shadow hover:bg-gray-50"
                         >
                           View
                         </button>
                         <a 
-                          href={image}
-                          download={`square-ad-${index + 1}.png`}
+                          href={generatedImages.awareness.square}
+                          download="awareness-square-ad.png"
                           className="py-2 px-4 bg-white text-gray-800 rounded-md font-medium shadow hover:bg-gray-50"
                           target="_blank"
                           rel="noopener noreferrer"
@@ -743,34 +835,31 @@ Additional guidance:
                       1:1
                     </div>
                     <div className="absolute bottom-3 left-3 bg-black/70 text-white text-xs px-2 py-1 rounded font-medium">
-                      Square {index + 1}
+                      Awareness
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
-            
-            <div>
-              <h3 className="text-xl font-semibold mb-4 flex items-center">
-                <div className="w-5 h-5 bg-blue-500/80 rounded-full mr-2 flex items-center justify-center">
-                  <span className="text-xs font-bold text-white">2</span>
                 </div>
-                Vertical Format (9:16) - For Reels & Stories
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {generatedImages.slice(3, 6).map((image, index) => (
+                
+                {/* Vertical Format */}
+                <div>
+                  <div className="mb-3 flex items-center">
+                    <div className="w-5 h-5 bg-blue-500/80 rounded-full mr-2 flex items-center justify-center">
+                      <span className="text-xs font-bold text-white">B</span>
+                    </div>
+                    <span className="font-medium">Vertical Format (9:16)</span>
+                  </div>
                   <div 
-                    key={index} 
                     className="relative aspect-[9/16] border border-border-dark rounded-lg overflow-hidden group cursor-pointer shadow-lg"
                     onClick={() => {
-                      setPreviewImage(image);
+                      setPreviewImage(generatedImages.awareness.vertical);
                       setPreviewImageFormat("vertical");
+                      setPreviewStage("awareness");
                     }}
                   >
                     <div className="w-full h-full">
                       <img
-                        src={image}
-                        alt={`Vertical ad creative ${index + 1}`}
+                        src={generatedImages.awareness.vertical}
+                        alt="Awareness stage vertical ad creative"
                         className="w-full h-full object-cover"
                       />
                     </div>
@@ -779,16 +868,17 @@ Additional guidance:
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            setPreviewImage(image);
+                            setPreviewImage(generatedImages.awareness.vertical);
                             setPreviewImageFormat("vertical");
+                            setPreviewStage("awareness");
                           }}
                           className="py-2 px-4 bg-white text-gray-800 rounded-md font-medium shadow hover:bg-gray-50"
                         >
                           View
                         </button>
                         <a 
-                          href={image}
-                          download={`reel-ad-${index + 1}.png`}
+                          href={generatedImages.awareness.vertical}
+                          download="awareness-vertical-ad.png"
                           className="py-2 px-4 bg-white text-gray-800 rounded-md font-medium shadow hover:bg-gray-50"
                           target="_blank"
                           rel="noopener noreferrer"
@@ -802,10 +892,264 @@ Additional guidance:
                       9:16
                     </div>
                     <div className="absolute bottom-3 left-3 bg-black/70 text-white text-xs px-2 py-1 rounded font-medium">
-                      Reel {index + 1}
+                      Awareness
                     </div>
                   </div>
-                ))}
+                </div>
+              </div>
+            </div>
+            
+            {/* Consideration Stage */}
+            <div className="mb-12 pb-8 border-b border-gray-700">
+              <div className="flex items-center mb-6">
+                <div className="w-10 h-10 bg-blue-500 rounded-full text-white font-bold flex items-center justify-center mr-3">2</div>
+                <div>
+                  <h3 className="text-2xl font-bold mb-1">Consideration Stage</h3>
+                  <p className="text-gray-400">Mid-funnel creatives to highlight benefits and engage interested prospects</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Square Format */}
+                <div>
+                  <div className="mb-3 flex items-center">
+                    <div className="w-5 h-5 bg-primary-green/80 rounded-full mr-2 flex items-center justify-center">
+                      <span className="text-xs font-bold">A</span>
+                    </div>
+                    <span className="font-medium">Square Format (1:1)</span>
+                  </div>
+                  <div 
+                    className="relative aspect-square border border-border-dark rounded-lg overflow-hidden group cursor-pointer shadow-lg"
+                    onClick={() => {
+                      setPreviewImage(generatedImages.consideration.square);
+                      setPreviewImageFormat("square");
+                      setPreviewStage("consideration");
+                    }}
+                  >
+                    <div className="w-full h-full">
+                      <img
+                        src={generatedImages.consideration.square}
+                        alt="Consideration stage square ad creative"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPreviewImage(generatedImages.consideration.square);
+                            setPreviewImageFormat("square");
+                            setPreviewStage("consideration");
+                          }}
+                          className="py-2 px-4 bg-white text-gray-800 rounded-md font-medium shadow hover:bg-gray-50"
+                        >
+                          View
+                        </button>
+                        <a 
+                          href={generatedImages.consideration.square}
+                          download="consideration-square-ad.png"
+                          className="py-2 px-4 bg-white text-gray-800 rounded-md font-medium shadow hover:bg-gray-50"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          Download
+                        </a>
+                      </div>
+                    </div>
+                    <div className="absolute top-3 right-3 bg-primary-green/80 text-black text-xs px-2 py-1 rounded-full font-medium">
+                      1:1
+                    </div>
+                    <div className="absolute bottom-3 left-3 bg-black/70 text-white text-xs px-2 py-1 rounded font-medium">
+                      Consideration
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Vertical Format */}
+                <div>
+                  <div className="mb-3 flex items-center">
+                    <div className="w-5 h-5 bg-blue-500/80 rounded-full mr-2 flex items-center justify-center">
+                      <span className="text-xs font-bold text-white">B</span>
+                    </div>
+                    <span className="font-medium">Vertical Format (9:16)</span>
+                  </div>
+                  <div 
+                    className="relative aspect-[9/16] border border-border-dark rounded-lg overflow-hidden group cursor-pointer shadow-lg"
+                    onClick={() => {
+                      setPreviewImage(generatedImages.consideration.vertical);
+                      setPreviewImageFormat("vertical");
+                      setPreviewStage("consideration");
+                    }}
+                  >
+                    <div className="w-full h-full">
+                      <img
+                        src={generatedImages.consideration.vertical}
+                        alt="Consideration stage vertical ad creative"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPreviewImage(generatedImages.consideration.vertical);
+                            setPreviewImageFormat("vertical");
+                            setPreviewStage("consideration");
+                          }}
+                          className="py-2 px-4 bg-white text-gray-800 rounded-md font-medium shadow hover:bg-gray-50"
+                        >
+                          View
+                        </button>
+                        <a 
+                          href={generatedImages.consideration.vertical}
+                          download="consideration-vertical-ad.png"
+                          className="py-2 px-4 bg-white text-gray-800 rounded-md font-medium shadow hover:bg-gray-50"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          Download
+                        </a>
+                      </div>
+                    </div>
+                    <div className="absolute top-3 right-3 bg-blue-500/80 text-white text-xs px-2 py-1 rounded-full font-medium">
+                      9:16
+                    </div>
+                    <div className="absolute bottom-3 left-3 bg-black/70 text-white text-xs px-2 py-1 rounded font-medium">
+                      Consideration
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Conversion Stage */}
+            <div className="mb-8">
+              <div className="flex items-center mb-6">
+                <div className="w-10 h-10 bg-amber-500 rounded-full text-black font-bold flex items-center justify-center mr-3">3</div>
+                <div>
+                  <h3 className="text-2xl font-bold mb-1">Conversion Stage</h3>
+                  <p className="text-gray-400">Bottom-of-funnel creatives to drive immediate action and conversions</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Square Format */}
+                <div>
+                  <div className="mb-3 flex items-center">
+                    <div className="w-5 h-5 bg-primary-green/80 rounded-full mr-2 flex items-center justify-center">
+                      <span className="text-xs font-bold">A</span>
+                    </div>
+                    <span className="font-medium">Square Format (1:1)</span>
+                  </div>
+                  <div 
+                    className="relative aspect-square border border-border-dark rounded-lg overflow-hidden group cursor-pointer shadow-lg"
+                    onClick={() => {
+                      setPreviewImage(generatedImages.conversion.square);
+                      setPreviewImageFormat("square");
+                      setPreviewStage("conversion");
+                    }}
+                  >
+                    <div className="w-full h-full">
+                      <img
+                        src={generatedImages.conversion.square}
+                        alt="Conversion stage square ad creative"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPreviewImage(generatedImages.conversion.square);
+                            setPreviewImageFormat("square");
+                            setPreviewStage("conversion");
+                          }}
+                          className="py-2 px-4 bg-white text-gray-800 rounded-md font-medium shadow hover:bg-gray-50"
+                        >
+                          View
+                        </button>
+                        <a 
+                          href={generatedImages.conversion.square}
+                          download="conversion-square-ad.png"
+                          className="py-2 px-4 bg-white text-gray-800 rounded-md font-medium shadow hover:bg-gray-50"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          Download
+                        </a>
+                      </div>
+                    </div>
+                    <div className="absolute top-3 right-3 bg-primary-green/80 text-black text-xs px-2 py-1 rounded-full font-medium">
+                      1:1
+                    </div>
+                    <div className="absolute bottom-3 left-3 bg-black/70 text-white text-xs px-2 py-1 rounded font-medium">
+                      Conversion
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Vertical Format */}
+                <div>
+                  <div className="mb-3 flex items-center">
+                    <div className="w-5 h-5 bg-blue-500/80 rounded-full mr-2 flex items-center justify-center">
+                      <span className="text-xs font-bold text-white">B</span>
+                    </div>
+                    <span className="font-medium">Vertical Format (9:16)</span>
+                  </div>
+                  <div 
+                    className="relative aspect-[9/16] border border-border-dark rounded-lg overflow-hidden group cursor-pointer shadow-lg"
+                    onClick={() => {
+                      setPreviewImage(generatedImages.conversion.vertical);
+                      setPreviewImageFormat("vertical");
+                      setPreviewStage("conversion");
+                    }}
+                  >
+                    <div className="w-full h-full">
+                      <img
+                        src={generatedImages.conversion.vertical}
+                        alt="Conversion stage vertical ad creative"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPreviewImage(generatedImages.conversion.vertical);
+                            setPreviewImageFormat("vertical");
+                            setPreviewStage("conversion");
+                          }}
+                          className="py-2 px-4 bg-white text-gray-800 rounded-md font-medium shadow hover:bg-gray-50"
+                        >
+                          View
+                        </button>
+                        <a 
+                          href={generatedImages.conversion.vertical}
+                          download="conversion-vertical-ad.png"
+                          className="py-2 px-4 bg-white text-gray-800 rounded-md font-medium shadow hover:bg-gray-50"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          Download
+                        </a>
+                      </div>
+                    </div>
+                    <div className="absolute top-3 right-3 bg-blue-500/80 text-white text-xs px-2 py-1 rounded-full font-medium">
+                      9:16
+                    </div>
+                    <div className="absolute bottom-3 left-3 bg-black/70 text-white text-xs px-2 py-1 rounded font-medium">
+                      Conversion
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -813,7 +1157,7 @@ Additional guidance:
               <p className="text-gray-400 mb-4">Need different creatives? You can start over or try with a different website.</p>
               <Button
                 onClick={() => {
-                  setGeneratedImages([]);
+                  setGeneratedImages(null);
                   setWebsiteData(null);
                   setUrl("");
                   setSelectedReferenceImages([]);
