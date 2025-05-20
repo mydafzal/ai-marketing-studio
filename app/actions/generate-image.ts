@@ -41,6 +41,8 @@ export async function generateImages(
   images?: string[] 
   error?: string 
 }> {
+  let timeoutId: NodeJS.Timeout | undefined;
+  
   try {
     if (!process.env.OPENAI_API_KEY) {
       throw new Error("OPENAI_API_KEY is not configured")
@@ -55,46 +57,62 @@ export async function generateImages(
       }
     }
 
-    console.log(`Starting image generation with prompt: "${prompt}" and aspect ratio: ${aspectRatio}`)
+    console.log(`Starting image generation with prompt: "${prompt.substring(0, 50)}..." and aspect ratio: ${aspectRatio}`)
     
     // Get the size parameter based on the aspect ratio
     const size = aspectRatios[aspectRatio].size
     
-    // Generate predictions for the specified number of images (up to 10)
-    // TypeScript definitions don't match actual gpt-image-1 supported parameters
-    const result = await openai.images.generate({
-      model: "gpt-image-1",
-      prompt: prompt,
-      n: Math.min(numberOfImages, 10), // Allow up to 10 images
-      size: size as any, // gpt-image-1 supports different sizes than the type definition
-      quality: "high" as any, // gpt-image-1 supports "high" quality
-      // Note: We're using b64_json by default which is what GPT-Image-1 returns
-    } as any)
+    // Set a longer timeout than default since image generation can take time
+    const controller = new AbortController();
+    timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
     
-    console.log("Generation complete, received results")
+    try {
+      // Generate predictions for the specified number of images (up to 10)
+      // TypeScript definitions don't match actual gpt-image-1 supported parameters
+      const result = await openai.images.generate({
+        model: "gpt-image-1",
+        prompt: prompt,
+        n: Math.min(numberOfImages, 10), // Allow up to 10 images
+        size: size as any, // gpt-image-1 supports different sizes than the type definition
+        quality: "high" as any, // gpt-image-1 supports "high" quality
+        // Note: We're using b64_json by default which is what GPT-Image-1 returns
+      } as any, { signal: controller.signal })
+      
+      if (timeoutId) clearTimeout(timeoutId);
+      console.log("Generation complete, received results")
     
-    // Extract base64 image data and convert to data URLs
-    const imageUrls = result.data.map(image => {
-      if (image.b64_json) {
-        return `data:image/png;base64,${image.b64_json}`
+      // Extract base64 image data and convert to data URLs
+      const imageUrls = result.data.map(image => {
+        if (image.b64_json) {
+          return `data:image/png;base64,${image.b64_json}`
+        }
+        return ""
+      }).filter(Boolean)
+
+      if (imageUrls.length === 0) {
+        throw new Error("No images were generated")
       }
-      return ""
-    }).filter(Boolean)
+      
+      // Increment the usage counter for successful generations
+      await incrementUsageCounter('images')
 
-    if (imageUrls.length === 0) {
-      throw new Error("No images were generated")
-    }
+      const response = {
+        success: true,
+        images: imageUrls,
+      }
+
+      // Ensure the response is serializable
+      return JSON.parse(JSON.stringify(response))
     
-    // Increment the usage counter for successful generations
-    await incrementUsageCounter('images')
-
-    const response = {
-      success: true,
-      images: imageUrls,
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.error("Image generation request timed out after 60 seconds")
+        throw new Error("Image generation timed out. Please try again with a simpler prompt.")
+      }
+      throw error;
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId);
     }
-
-    // Ensure the response is serializable
-    return JSON.parse(JSON.stringify(response))
   } catch (error) {
     console.error("Error in generateImages:", error)
     return {
@@ -104,13 +122,6 @@ export async function generateImages(
   }
 }
 
-/**
- * Inpaint an image using the 'ideogram-ai/ideogram-v2' model.
- * This function expects:
- *  - `prompt` (string)
- *  - `base64Image` (the base64 data URL of the original image)
- *  - `maskImage` (the base64 data URL of the mask, where black = inpaint region, white = keep)
- */
 /**
  * Generate image variants using multiple reference images with the OpenAI GPT-Image-1 model.
  * This function accepts multiple base64 image data URLs and a text prompt.
@@ -314,14 +325,13 @@ export async function generateImageVariants(
 }
 
 /**
- * Generate images using reference images with the OpenAI GPT-Image-1 model.
- * This function uses the images.edit endpoint which supports multiple reference images
- * and is available for GPT-Image-1.
+ * Generate a variation of an input image using the OpenAI API.
+ * This function uses the images.edit endpoint which is optimized for the GPT-Image-1 model.
  * 
- * @param referenceImages Array of base64 image data URLs (up to 4 images)
+ * @param referenceImages A single image as a base64 data URL or an array of images (using a single image is recommended)
  * @param aspectRatio The desired aspect ratio for the generated images
  * @param numberOfImages Number of images to generate (default 5, max 10)
- * @param prompt Optional custom prompt (defaults to a general creative prompt)
+ * @param prompt Custom prompt to guide the image variation
  */
 export async function generateImageVariation(
   referenceImages: string | string[],

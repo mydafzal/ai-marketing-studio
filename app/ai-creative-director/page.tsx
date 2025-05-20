@@ -13,6 +13,10 @@ import { generateImages, generateImageVariation } from "@/app/actions/generate-i
 import Image from "next/image";
 import dynamic from "next/dynamic";
 
+// Import our custom loading screen components
+import WebsiteAnalysisLoader from "@/components/website-analysis-loader";
+import AdCreativeLoader from "@/components/ad-creative-loader";
+
 export default function AiCreativeDirectorPage() {
   const [url, setUrl] = useState("");
   const [campaignGoals, setCampaignGoals] = useState<{
@@ -69,8 +73,8 @@ export default function AiCreativeDirectorPage() {
       setImageLoadErrors({});
       setSelectedReferenceImages([]);
       
-      // First step: Show appropriate loading message
-      setError("Analyzing website structure and content...");
+      // First step: Show the loading animation (handled by WebsiteAnalysisLoader component)
+      // The animated loading screen will be shown while we fetch and process data
       
       const response = await fetch("/api/website-scrape", {
         method: "POST",
@@ -86,13 +90,10 @@ export default function AiCreativeDirectorPage() {
         throw new Error(data.error || "Failed to analyze website");
       }
       
-      // Add a loading message during AI processing
-      setError("Generating brand analysis report...");
-      
       // Before displaying the results, add a deliberate delay to ensure
-      // the AI has enough time to complete its analysis
-      // This helps prevent seeing incomplete content
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // the AI has enough time to complete its analysis and the user can see the loading animation
+      // This helps prevent seeing incomplete content and enhances the AI experience
+      await new Promise(resolve => setTimeout(resolve, 6000));
       
       // Clear error message and set the data
       setError(null);
@@ -157,6 +158,7 @@ export default function AiCreativeDirectorPage() {
     try {
       setIsGeneratingImages(true);
       setError(null);
+      console.log("Starting creative generation process...");
 
       // Create the base prompt that will be customized for each funnel stage
       const basePrompt = `
@@ -183,6 +185,9 @@ Additional guidance:
 - Prioritize clarity, contrast, emotional resonance, and simplicity
 - Use strong composition and negative space to guide the eye
 `;
+
+      // Show the AdCreativeLoader component - this is completely separate from the actual generation process,
+      // it just provides a nice visual for the user while the real generation happens in the background
 
       // Add reference to website images in the prompt if we aren't using them directly
       let additionalInfo = "";
@@ -229,18 +234,34 @@ Additional guidance:
       // Process reference images if selected
       let base64Images: string[] = [];
       if (useReferenceImages && selectedReferenceImages.length > 0) {
-        setError("Converting reference images... please wait");
+        // We no longer need to show this error message since we have the animated loader now
+        // setError("Converting reference images... please wait");
         
-        // Process each image URL to convert it to a base64 data URL
-        for (const imageUrl of selectedReferenceImages) {
-          const base64Image = await convertImageUrlToBase64(imageUrl);
+        try {
+          // Only use the first image to avoid compatibility issues with OpenAI API
+          // The error suggests problems with multiple reference images
+          const firstImageUrl = selectedReferenceImages[0];
+          console.log("Processing reference image:", firstImageUrl);
+          
+          const base64Image = await convertImageUrlToBase64(firstImageUrl);
           if (base64Image) {
             base64Images.push(base64Image);
+            console.log("Successfully converted image to base64");
+          } else {
+            console.error("Failed to convert image to base64");
           }
-        }
-        
-        if (base64Images.length === 0) {
-          throw new Error("Failed to convert any reference images. Please try selecting different images.");
+          
+          if (base64Images.length === 0) {
+            console.error("No images were successfully converted");
+            throw new Error("Failed to convert reference image. Please try selecting a different image.");
+          }
+        } catch (err) {
+          console.error("Error processing reference images:", err);
+          // Continue without reference images rather than failing completely
+          // We don't need to show this error message now that we have the animated loader
+          // setError("Could not process reference images. Continuing without them...");
+          base64Images = [];
+          // No need for a delay since we have the animation
         }
       }
 
@@ -351,62 +372,149 @@ Output: a realistic, high-resolution vertical (9:16) ad image optimized for conv
       // Generate images for each funnel stage and format
       for (const stage of ['awareness', 'consideration', 'conversion'] as const) {
         // Generate square format image
-        setError(`Generating ${stage} stage square image (1:1)...`);
+        // We don't need to set error messages now that we have the animated loader
+        // setError(`Generating ${stage} stage square image (1:1)...`);
+        console.log(`Generating ${stage} stage square format (1:1)...`);
         let squareResult;
         
-        if (useReferenceImages && base64Images.length > 0) {
-          squareResult = await generateImageVariation(
-            base64Images,
-            "1:1" as AspectRatio,
-            1,
-            funnelStagePrompts[stage].square
-          );
-        } else {
-          squareResult = await generateImages(
-            funnelStagePrompts[stage].square, 
-            "1:1" as AspectRatio, 
-            1
-          );
-        }
-        
-        if (squareResult.success && squareResult.images && squareResult.images.length > 0) {
-          funnelStageResults[stage].square = squareResult.images[0];
-        } else {
-          throw new Error(`Failed to generate ${stage} stage square image: ${squareResult.error || 'Unknown error'}`);
+        try {
+          // Check if we should use reference images for this generation
+          if (useReferenceImages && base64Images.length > 0) {
+            console.log(`Using ${base64Images.length} reference images for ${stage} square generation`);
+            try {
+              // For single reference image, use variation API
+              if (base64Images.length === 1) {
+                squareResult = await generateImageVariation(
+                  base64Images[0], // Pass a single string instead of an array
+                  "1:1" as AspectRatio,
+                  1,
+                  funnelStagePrompts[stage].square
+                );
+              } else {
+                // If multiple images somehow got through, fall back to regular generation
+                console.log("Multiple reference images not supported, falling back to text-to-image");
+                squareResult = await generateImages(
+                  funnelStagePrompts[stage].square,
+                  "1:1" as AspectRatio,
+                  1
+                );
+              }
+            } catch (variationError) {
+              console.error(`Reference image variation failed: ${variationError}`);
+              // Fall back to regular generation if variation fails
+              console.log("Falling back to text-to-image generation");
+              squareResult = await generateImages(
+                funnelStagePrompts[stage].square,
+                "1:1" as AspectRatio,
+                1
+              );
+            }
+          } else {
+            console.log(`Using text-to-image for ${stage} square generation`);
+            squareResult = await generateImages(
+              funnelStagePrompts[stage].square, 
+              "1:1" as AspectRatio, 
+              1
+            );
+          }
+          
+          console.log(`Square result for ${stage}: success=${squareResult.success}, images=${squareResult.images?.length || 0}`);
+          
+          if (squareResult.success && squareResult.images && squareResult.images.length > 0) {
+            funnelStageResults[stage].square = squareResult.images[0];
+            console.log(`Successfully generated ${stage} square image`);
+          } else {
+            console.error(`Failed to generate ${stage} square image: ${squareResult.error || 'Unknown error'}`);
+            throw new Error(`Failed to generate ${stage} stage square image: ${squareResult.error || 'Unknown error'}`);
+          }
+        } catch (err) {
+          console.error(`Exception generating ${stage} square image:`, err);
+          throw err;
         }
         
         // Generate vertical format image
-        setError(`Generating ${stage} stage vertical image (9:16)...`);
+        // We don't need to set error messages now that we have the animated loader
+        // setError(`Generating ${stage} stage vertical image (9:16)...`);
+        console.log(`Generating ${stage} stage vertical format (9:16)...`);
         let verticalResult;
         
-        if (useReferenceImages && base64Images.length > 0) {
-          verticalResult = await generateImageVariation(
-            base64Images,
-            "9:16" as AspectRatio,
-            1,
-            funnelStagePrompts[stage].vertical
-          );
-        } else {
-          verticalResult = await generateImages(
-            funnelStagePrompts[stage].vertical, 
-            "9:16" as AspectRatio, 
-            1
-          );
-        }
-        
-        if (verticalResult.success && verticalResult.images && verticalResult.images.length > 0) {
-          funnelStageResults[stage].vertical = verticalResult.images[0];
-        } else {
-          throw new Error(`Failed to generate ${stage} stage vertical image: ${verticalResult.error || 'Unknown error'}`);
+        try {
+          // Check if we should use reference images for this generation
+          if (useReferenceImages && base64Images.length > 0) {
+            console.log(`Using ${base64Images.length} reference images for ${stage} vertical generation`);
+            try {
+              // For single reference image, use variation API
+              if (base64Images.length === 1) {
+                verticalResult = await generateImageVariation(
+                  base64Images[0], // Pass a single string instead of an array
+                  "9:16" as AspectRatio,
+                  1,
+                  funnelStagePrompts[stage].vertical
+                );
+              } else {
+                // If multiple images somehow got through, fall back to regular generation
+                console.log("Multiple reference images not supported, falling back to text-to-image");
+                verticalResult = await generateImages(
+                  funnelStagePrompts[stage].vertical,
+                  "9:16" as AspectRatio,
+                  1
+                );
+              }
+            } catch (variationError) {
+              console.error(`Reference image variation failed: ${variationError}`);
+              // Fall back to regular generation if variation fails
+              console.log("Falling back to text-to-image generation");
+              verticalResult = await generateImages(
+                funnelStagePrompts[stage].vertical,
+                "9:16" as AspectRatio,
+                1
+              );
+            }
+          } else {
+            console.log(`Using text-to-image for ${stage} vertical generation`);
+            verticalResult = await generateImages(
+              funnelStagePrompts[stage].vertical, 
+              "9:16" as AspectRatio, 
+              1
+            );
+          }
+          
+          console.log(`Vertical result for ${stage}: success=${verticalResult.success}, images=${verticalResult.images?.length || 0}`);
+          
+          if (verticalResult.success && verticalResult.images && verticalResult.images.length > 0) {
+            funnelStageResults[stage].vertical = verticalResult.images[0];
+            console.log(`Successfully generated ${stage} vertical image`);
+          } else {
+            console.error(`Failed to generate ${stage} vertical image: ${verticalResult.error || 'Unknown error'}`);
+            throw new Error(`Failed to generate ${stage} stage vertical image: ${verticalResult.error || 'Unknown error'}`);
+          }
+        } catch (err) {
+          console.error(`Exception generating ${stage} vertical image:`, err);
+          throw err;
         }
       }
       
       // Update the state with all generated images
+      console.log("All images generated successfully, updating state...");
       setGeneratedImages(funnelStageResults);
       
     } catch (err) {
+      console.error("Error in creative generation process:", err);
       setError(err instanceof Error ? err.message : "Failed to generate creatives");
+      
+      // Try to give more specific error messages based on common issues
+      if (err instanceof Error) {
+        const errorMsg = err.message.toLowerCase();
+        if (errorMsg.includes("timeout") || errorMsg.includes("timed out")) {
+          setError("Request timed out. Please try again with simpler prompts or without reference images.");
+        } else if (errorMsg.includes("limit") || errorMsg.includes("quota")) {
+          setError("API usage limit reached. Please try again later.");
+        } else if (errorMsg.includes("server") || errorMsg.includes("5")) {
+          setError("Server error occurred. The system is likely experiencing high demand. Please try again in a few minutes.");
+        }
+      }
     } finally {
+      console.log("Creative generation process completed");
       setIsGeneratingImages(false);
     }
   };
@@ -487,7 +595,7 @@ Output: a realistic, high-resolution vertical (9:16) ad image optimized for conv
       </p>
 
       {/* ===== STEP 1: Initial URL Input ===== */}
-      {!websiteData && !generatedImages && (
+      {!websiteData && !generatedImages && !isLoading && (
         <div className="max-w-5xl mx-auto">
           {/* Get Started with Reeply AI Card */}
           <div className="relative overflow-hidden rounded-xl bg-dark-bg border border-border-dark shadow-xl">
@@ -647,9 +755,16 @@ Output: a realistic, high-resolution vertical (9:16) ad image optimized for conv
           </div>
         </div>
       )}
+      
+      {/* Website Analysis Loading Animation */}
+      {isLoading && !websiteData && !generatedImages && (
+        <div className="max-w-5xl mx-auto bg-dark-bg border border-border-dark rounded-lg shadow-xl p-6">
+          <WebsiteAnalysisLoader />
+        </div>
+      )}
 
       {/* ===== STEP 2: Website Analysis and Reference Image Selection ===== */}
-      {websiteData && !generatedImages && (
+      {websiteData && !generatedImages && !isGeneratingImages && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Left column - Analysis report and brand assets */}
           <div className="lg:col-span-7 space-y-6">
@@ -853,7 +968,7 @@ Output: a realistic, high-resolution vertical (9:16) ad image optimized for conv
                     {isGeneratingImages ? (
                       <>
                         <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                        {error || "Generating Creatives..."}
+                        Generating Creatives...
                       </>
                     ) : (
                       <>
@@ -875,6 +990,13 @@ Output: a realistic, high-resolution vertical (9:16) ad image optimized for conv
         </div>
       )}
 
+      {/* Ad Creative Generation Loading Animation */}
+      {isGeneratingImages && websiteData && !generatedImages && (
+        <div className="max-w-5xl mx-auto bg-dark-bg border border-border-dark rounded-lg shadow-xl p-6">
+          <AdCreativeLoader />
+        </div>
+      )}
+      
       {/* ===== STEP 3: Generated Creatives Display ===== */}
       {generatedImages && (
         <div className="space-y-8">
