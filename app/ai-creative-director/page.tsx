@@ -15,6 +15,19 @@ import dynamic from "next/dynamic";
 
 export default function AiCreativeDirectorPage() {
   const [url, setUrl] = useState("");
+  const [campaignGoals, setCampaignGoals] = useState<{
+    leads: boolean;
+    emails: boolean;
+    sales: boolean;
+    brand: boolean;
+    recruiting: boolean;
+  }>({
+    leads: true,
+    emails: false,
+    sales: false,
+    brand: false,
+    recruiting: false,
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [isGeneratingImages, setIsGeneratingImages] = useState(false);
   const [websiteData, setWebsiteData] = useState<{
@@ -56,6 +69,9 @@ export default function AiCreativeDirectorPage() {
       setImageLoadErrors({});
       setSelectedReferenceImages([]);
       
+      // First step: Show appropriate loading message
+      setError("Analyzing website structure and content...");
+      
       const response = await fetch("/api/website-scrape", {
         method: "POST",
         headers: {
@@ -69,7 +85,17 @@ export default function AiCreativeDirectorPage() {
       if (!response.ok) {
         throw new Error(data.error || "Failed to analyze website");
       }
-
+      
+      // Add a loading message during AI processing
+      setError("Generating brand analysis report...");
+      
+      // Before displaying the results, add a deliberate delay to ensure
+      // the AI has enough time to complete its analysis
+      // This helps prevent seeing incomplete content
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Clear error message and set the data
+      setError(null);
       setWebsiteData(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
@@ -167,6 +193,38 @@ Additional guidance:
           : "specific visual elements that should inspire your design"
         }.`;
       }
+      
+      // Add campaign goals information to the prompt
+      let campaignGoalInfo = "\nThe campaign goals are:";
+      
+      // Check each goal and add specific instructions
+      if (campaignGoals.leads) {
+        campaignGoalInfo += `\n- GENERATE LEADS: Focus on encouraging sign-ups, contact form submissions, or consultations. Design creatives that emphasize the value of taking immediate action and highlight lead magnets or offers.`;
+      }
+      
+      if (campaignGoals.emails) {
+        campaignGoalInfo += `\n- INCREASE EMAIL SUBSCRIBERS: Design creatives that promote newsletter benefits, exclusive content, or special offers available only to subscribers. Focus on making the email subscription process seem valuable and low-friction.`;
+      }
+      
+      if (campaignGoals.sales) {
+        campaignGoalInfo += `\n- DRIVE SALES: Create creatives that showcase products/services, emphasize unique selling propositions, and include strong purchase CTAs. Focus on benefits, social proof, and urgency to drive immediate purchase decisions.`;
+      }
+      
+      if (campaignGoals.brand) {
+        campaignGoalInfo += `\n- BUILD BRAND AWARENESS: Design creatives that communicate the brand's personality, values, and story. Focus on memorable visuals and messaging that will stick in the audience's mind, even if they don't take immediate action.`;
+      }
+      
+      if (campaignGoals.recruiting) {
+        campaignGoalInfo += `\n- RECRUITING: Create creatives focused on attracting potential job candidates. Highlight company culture, benefits, growth opportunities, and what makes the workplace unique. Use language that appeals to job seekers and emphasizes the value of joining the team.`;
+      }
+      
+      // If no goals selected, default to leads
+      if (!campaignGoals.leads && !campaignGoals.emails && !campaignGoals.sales && !campaignGoals.brand && !campaignGoals.recruiting) {
+        campaignGoalInfo = `\nThe primary campaign goal is to GENERATE LEADS. Focus on encouraging sign-ups, contact form submissions, or consultations. Design creatives that emphasize the value of taking immediate action and highlight lead magnets or offers.`;
+      }
+      
+      // Combine additional info
+      additionalInfo = additionalInfo + campaignGoalInfo;
       
       // Process reference images if selected
       let base64Images: string[] = [];
@@ -430,95 +488,160 @@ Output: a realistic, high-resolution vertical (9:16) ad image optimized for conv
 
       {/* ===== STEP 1: Initial URL Input ===== */}
       {!websiteData && !generatedImages && (
-        <div className="max-w-xl mx-auto">
-          <Card className="bg-dark-bg border-border-dark shadow-lg">
-            <CardHeader>
-              <CardTitle className="text-xl">Step 1: Enter Your Website</CardTitle>
-              <CardDescription>
-                Our AI will analyze your website to create custom advertising assets
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleScrapeWebsite} className="space-y-4">
-                <div>
-                  <label htmlFor="website-url" className="block text-sm font-medium mb-1">
-                    Website URL
-                  </label>
-                  <Input 
-                    id="website-url" 
-                    placeholder="https://yourwebsite.com" 
-                    className="w-full"
-                    value={url}
-                    onChange={(e) => setUrl(e.target.value)}
-                  />
-                  <p className="mt-2 text-xs text-gray-500">
-                    Enter your full website URL including https://
-                  </p>
+        <div className="max-w-5xl mx-auto">
+          {/* Get Started with Reeply AI Card */}
+          <div className="relative overflow-hidden rounded-xl bg-dark-bg border border-border-dark shadow-xl">
+            <div className="absolute top-0 left-0 w-full h-full bg-[url('/Reeplylogoicon.png')] bg-no-repeat bg-right-bottom opacity-5 bg-contain"></div>
+            
+            {/* Top content section */}
+            <div className="px-8 pt-8 pb-4 relative z-10">
+              <div className="inline-block bg-primary-green/20 text-primary-green text-xs px-3 py-1 rounded-full font-medium mb-4">
+                AI Creative Director
+              </div>
+              <h2 className="text-3xl md:text-4xl font-bold text-white mb-2">Get Started With Reeply AI</h2>
+              <h3 className="text-xl md:text-2xl font-medium text-gray-300 mb-5">Start your first project</h3>
+              <p className="text-gray-400 mb-6 leading-relaxed">
+                Reeply AI analyzes your website to create a comprehensive marketing strategy and professional ad creatives. 
+                Our advanced AI scrapes your brand&apos;s visual identity, messaging, and key selling points to deliver 
+                customized marketing assets that perfectly match your brand and campaign goals.
+              </p>
+              <div className="flex flex-wrap gap-x-6 gap-y-3 mb-2">
+                <div className="flex items-center text-gray-300">
+                  <Check className="h-5 w-5 mr-2 text-primary-green" />
+                  <span>Brand-matched designs</span>
+                </div>
+                <div className="flex items-center text-gray-300">
+                  <Check className="h-5 w-5 mr-2 text-primary-green" />
+                  <span>Multiple ad formats</span>
+                </div>
+                <div className="flex items-center text-gray-300">
+                  <Check className="h-5 w-5 mr-2 text-primary-green" />
+                  <span>Full funnel creatives</span>
+                </div>
+                <div className="flex items-center text-gray-300">
+                  <Check className="h-5 w-5 mr-2 text-primary-green" />
+                  <span>Campaign-specific targeting</span>
+                </div>
+              </div>
+            </div>
+            
+            {/* Input form section */}
+            <div className="px-8 pb-8 relative z-10">
+              <div className="mt-6 p-6 bg-gray-800/50 rounded-xl border border-border-dark">
+                <form onSubmit={handleScrapeWebsite} className="space-y-5">
+                  <h4 className="text-lg font-semibold text-gray-200 mb-4">Enter your details to generate ad creatives</h4>
+                  
+                  {/* URL + Campaign Goal Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                    <div className="md:col-span-2">
+                      <label htmlFor="website-url" className="block text-sm font-medium mb-2 text-gray-300">
+                        Website URL
+                      </label>
+                      <Input 
+                        id="website-url" 
+                        placeholder="https://yourwebsite.com" 
+                        className="w-full bg-dark-bg border-border-dark text-white placeholder:text-gray-500 focus-visible:ring-primary-green"
+                        value={url}
+                        onChange={(e) => setUrl(e.target.value)}
+                      />
+                      <p className="mt-2 text-xs text-gray-500">
+                        Enter your full website URL including https://
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium mb-3 text-gray-300">
+                        Campaign Goals
+                      </label>
+                      
+                      <div className="space-y-3">
+                        <div className="flex items-center">
+                          <input 
+                            type="checkbox" 
+                            id="goal-leads" 
+                            checked={campaignGoals.leads}
+                            onChange={() => setCampaignGoals(prev => ({...prev, leads: !prev.leads}))}
+                            className="h-4 w-4 rounded border-gray-600 text-primary-green focus:ring-primary-green focus:ring-offset-0 bg-dark-bg"
+                          />
+                          <label htmlFor="goal-leads" className="ml-2 text-sm text-gray-300">Get more Leads</label>
+                        </div>
+                        
+                        <div className="flex items-center">
+                          <input 
+                            type="checkbox" 
+                            id="goal-emails" 
+                            checked={campaignGoals.emails}
+                            onChange={() => setCampaignGoals(prev => ({...prev, emails: !prev.emails}))}
+                            className="h-4 w-4 rounded border-gray-600 text-primary-green focus:ring-primary-green focus:ring-offset-0 bg-dark-bg"
+                          />
+                          <label htmlFor="goal-emails" className="ml-2 text-sm text-gray-300">Increase Email subscribers</label>
+                        </div>
+                        
+                        <div className="flex items-center">
+                          <input 
+                            type="checkbox" 
+                            id="goal-sales" 
+                            checked={campaignGoals.sales}
+                            onChange={() => setCampaignGoals(prev => ({...prev, sales: !prev.sales}))}
+                            className="h-4 w-4 rounded border-gray-600 text-primary-green focus:ring-primary-green focus:ring-offset-0 bg-dark-bg"
+                          />
+                          <label htmlFor="goal-sales" className="ml-2 text-sm text-gray-300">Make more Sales</label>
+                        </div>
+                        
+                        <div className="flex items-center">
+                          <input 
+                            type="checkbox" 
+                            id="goal-brand" 
+                            checked={campaignGoals.brand}
+                            onChange={() => setCampaignGoals(prev => ({...prev, brand: !prev.brand}))}
+                            className="h-4 w-4 rounded border-gray-600 text-primary-green focus:ring-primary-green focus:ring-offset-0 bg-dark-bg"
+                          />
+                          <label htmlFor="goal-brand" className="ml-2 text-sm text-gray-300">Brand awareness</label>
+                        </div>
+                        
+                        <div className="flex items-center">
+                          <input 
+                            type="checkbox" 
+                            id="goal-recruiting" 
+                            checked={campaignGoals.recruiting}
+                            onChange={() => setCampaignGoals(prev => ({...prev, recruiting: !prev.recruiting}))}
+                            className="h-4 w-4 rounded border-gray-600 text-primary-green focus:ring-primary-green focus:ring-offset-0 bg-dark-bg"
+                          />
+                          <label htmlFor="goal-recruiting" className="ml-2 text-sm text-gray-300">Recruiting</label>
+                        </div>
+                      </div>
+                      
+                      <p className="mt-3 text-xs text-gray-500">
+                        Select one or more campaign objectives
+                      </p>
+                    </div>
+                  </div>
+                  
                   {error && (
-                    <p className="mt-2 text-xs text-red-500">{error}</p>
+                    <div className="bg-red-900/30 text-red-300 px-4 py-3 rounded-md text-sm border border-red-900 flex items-center">
+                      <AlertCircle className="h-4 w-4 mr-2" />
+                      {error}
+                    </div>
                   )}
-                </div>
 
-                <Button 
-                  type="submit" 
-                  className="w-full h-12 bg-primary-green hover:bg-primary-green/90 text-black text-lg font-semibold"
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                      Analyzing...
-                    </>
-                  ) : (
-                    <>
-                      Analyze Website
-                      <ArrowRight className="ml-2 h-5 w-5" />
-                    </>
-                  )}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-
-          {/* How it works section */}
-          <div className="mt-16">
-            <h2 className="text-xl font-semibold mb-4">How It Works</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="p-5 border border-border-dark rounded-lg bg-dark-bg shadow-sm">
-                <div className="font-bold text-base mb-2 flex items-center">
-                  <div className="w-6 h-6 bg-primary-green/20 text-primary-green rounded-full mr-2 flex items-center justify-center font-bold text-sm">1</div>
-                  Enter Your Website
-                </div>
-                <p className="text-sm text-gray-400">
-                  Simply provide your website URL so our AI can analyze your brand&apos;s visual identity and messaging
-                </p>
-              </div>
-              <div className="p-5 border border-border-dark rounded-lg bg-dark-bg shadow-sm">
-                <div className="font-bold text-base mb-2 flex items-center">
-                  <div className="w-6 h-6 bg-blue-500/20 text-blue-400 rounded-full mr-2 flex items-center justify-center font-bold text-sm">2</div>
-                  AI Analysis
-                </div>
-                <p className="text-sm text-gray-400">
-                  Our AI extracts your brand&apos;s color palette, typography, images, and key content to understand your identity
-                </p>
-              </div>
-              <div className="p-5 border border-border-dark rounded-lg bg-dark-bg shadow-sm">
-                <div className="font-bold text-base mb-2 flex items-center">
-                  <div className="w-6 h-6 bg-amber-500/20 text-amber-400 rounded-full mr-2 flex items-center justify-center font-bold text-sm">3</div>
-                  Select Reference Images
-                </div>
-                <p className="text-sm text-gray-400">
-                  Choose website images to use as visual references or let our AI generate creatives based on text description
-                </p>
-              </div>
-              <div className="p-5 border border-border-dark rounded-lg bg-dark-bg shadow-sm">
-                <div className="font-bold text-base mb-2 flex items-center">
-                  <div className="w-6 h-6 bg-purple-500/20 text-purple-400 rounded-full mr-2 flex items-center justify-center font-bold text-sm">4</div>
-                  Get Creative Assets
-                </div>
-                <p className="text-sm text-gray-400">
-                  Receive professionally designed advertising creatives that are perfectly aligned with your brand
-                </p>
+                  <Button 
+                    type="submit" 
+                    className="w-full h-12 bg-primary-green hover:bg-primary-green/90 text-black text-lg font-semibold mt-4"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        Analyzing...
+                      </>
+                    ) : (
+                      <>
+                        Analyze Website
+                        <ArrowRight className="ml-2 h-5 w-5" />
+                      </>
+                    )}
+                  </Button>
+                </form>
               </div>
             </div>
           </div>
@@ -756,8 +879,42 @@ Output: a realistic, high-resolution vertical (9:16) ad image optimized for conv
       {generatedImages && (
         <div className="space-y-8">
           <div className="bg-dark-bg border border-border-dark p-4 rounded-lg">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-bold">Step 3: Your Custom Ad Creatives</h2>
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 space-y-3 md:space-y-0">
+              <div>
+                <h2 className="text-2xl font-bold">Step 3: Your Custom Ad Creatives</h2>
+                <div className="mt-2">
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {campaignGoals.leads && (
+                      <div className="px-3 py-1 text-sm font-medium rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                        Lead Generation
+                      </div>
+                    )}
+                    {campaignGoals.emails && (
+                      <div className="px-3 py-1 text-sm font-medium rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/40">
+                        Email Subscribers
+                      </div>
+                    )}
+                    {campaignGoals.sales && (
+                      <div className="px-3 py-1 text-sm font-medium rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                        Sales
+                      </div>
+                    )}
+                    {campaignGoals.brand && (
+                      <div className="px-3 py-1 text-sm font-medium rounded-full bg-primary-green/20 text-primary-green border border-primary-green/40">
+                        Brand Awareness
+                      </div>
+                    )}
+                    {campaignGoals.recruiting && (
+                      <div className="px-3 py-1 text-sm font-medium rounded-full bg-violet-500/20 text-violet-300 border border-violet-500/40">
+                        Recruiting
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    Optimized for {url}
+                  </div>
+                </div>
+              </div>
               <Button
                 onClick={() => {
                   setGeneratedImages(null);

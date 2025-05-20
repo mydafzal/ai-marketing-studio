@@ -22,6 +22,30 @@ export async function summarizeWebsiteContent(
   fonts: string[] = []
 ): Promise<string> {
   try {
+    // Check if content is empty or too short to be meaningful
+    if (!content || content.trim().length < 100) {
+      return `## ⚠️ Website Content Analysis Failed
+
+### Unable to Analyze Website Content
+The website could not be properly accessed or contains insufficient textual content to analyze. This may be due to:
+- Website using technologies that block scraping
+- Content being loaded dynamically with JavaScript
+- Website using unusual content embedding methods
+- Access restrictions on the website
+
+### Available Visual Information
+${colors.length > 0 ? `- **Brand Colors Detected**: ${colors.slice(0, 8).join(', ')}` : "- No brand colors could be detected"}
+${fonts.length > 0 ? `- **Typography Detected**: ${fonts.slice(0, 5).join(', ')}` : "- No typography information could be detected"}
+
+### Troubleshooting Suggestions
+- Try providing a more specific page URL that contains marketing content
+- If you're using a homepage with minimal text, try a product or about page instead
+- Check if the website requires user interaction or login to display content
+- Some websites may be protected against automated access
+
+Please try again with a different URL or a more accessible page on the website.`;
+    }
+
     // Preprocess the content to make it more digestible
     const cleanedContent = content
       .replace(/\s+/g, ' ')
@@ -81,6 +105,12 @@ Format your report beautifully with the following sections:
 - [Benefit 2 - with brief explanation]
 - [Benefit 3 - with brief explanation]
 
+### 🎨 Brand Visual Identity
+- **Primary Brand Color**: [First color in the list, generally the main brand color]
+- **Secondary Color**: [Second color, typically used for accents]
+- **Typography**: [Main font identified, and how it contributes to brand identity]
+- **Visual Style**: [Is the brand minimalist, bold, elegant, playful, etc.]
+
 ### 🗣️ Brand Voice & Tone
 [Analysis of communication style and emotional resonance]
 
@@ -101,10 +131,10 @@ Make your analysis detailed, insightful, and visually structured with proper mar
 CONTENT:
 ${cleanedContent.slice(0, 7500)} ${cleanedContent.length > 7500 ? '... [additional content truncated]' : ''}
 
-BRAND COLORS:
+BRAND COLORS (in priority order - higher priority colors first):
 ${colors.slice(0, 8).join(', ')}
 
-FONTS:
+BRAND TYPOGRAPHY (in priority order - higher priority fonts first):
 ${fonts.slice(0, 5).join(', ')}
 
 I need a structured summary that captures the essence of this business for AI-generated ad creatives. If any section is unclear from the content, make your best educated guess based on the available information, but keep it realistic.`
@@ -120,28 +150,43 @@ I need a structured summary that captures the essence of this business for AI-ge
     console.error("Error summarizing website content:", error)
     
     // Create a more helpful fallback summary
-    let fallbackSummary = "## Website Summary\n\n";
+    let fallbackSummary = "## ⚠️ AI Analysis Error\n\n";
+    fallbackSummary += "There was an error generating the complete website analysis. Here's what we were able to extract:\n\n";
     
-    // Extract some sample sentences if possible
-    try {
-      const sentences = content.match(/[^.!?]+[.!?]+/g) || [];
-      const sampleSentences = sentences
-        .filter(s => s.length > 30 && s.length < 150) // Reasonable sentence length
-        .slice(0, 5);  // Take up to 5 sentences
-        
-      if (sampleSentences.length > 0) {
-        fallbackSummary += "### Key Content\n";
-        sampleSentences.forEach(s => {
-          fallbackSummary += `- ${s.trim()}\n`;
-        });
-      } else {
-        fallbackSummary += `This site appears to be about ${content.slice(0, 100)}...\n`;
-      }
-    } catch (e) {
-      fallbackSummary += `This site appears to be about ${content.slice(0, 100)}...\n`;
+    // Include visual identity information if available
+    if (colors.length > 0) {
+      fallbackSummary += "### 🎨 Brand Colors\n";
+      fallbackSummary += colors.slice(0, 8).map(color => `- ${color}`).join('\n');
+      fallbackSummary += "\n\n";
     }
     
-    fallbackSummary += "\n*Note: AI summarization encountered an error. Showing excerpts from the website.*";
+    if (fonts.length > 0) {
+      fallbackSummary += "### 🔤 Typography\n";
+      fallbackSummary += fonts.slice(0, 5).map(font => `- ${font}`).join('\n');
+      fallbackSummary += "\n\n";
+    }
+    
+    // Extract some sample sentences if possible
+    if (content && content.length > 100) {
+      try {
+        const sentences = content.match(/[^.!?]+[.!?]+/g) || [];
+        const sampleSentences = sentences
+          .filter(s => s.length > 30 && s.length < 150) // Reasonable sentence length
+          .slice(0, 5);  // Take up to 5 sentences
+          
+        if (sampleSentences.length > 0) {
+          fallbackSummary += "### 📝 Content Excerpts\n";
+          sampleSentences.forEach(s => {
+            fallbackSummary += `- ${s.trim()}\n`;
+          });
+          fallbackSummary += "\n";
+        }
+      } catch (e) {
+        // Skip sentence extraction if it fails
+      }
+    }
+    
+    fallbackSummary += "> **Note**: Please try again or try a different URL. If the problem persists, consider using a more accessible page on the website.";
     return fallbackSummary;
   }
 }
