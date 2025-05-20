@@ -347,14 +347,14 @@ Additional guidance:
         Enter your website URL and get instant ad creatives tailored to your brand
       </p>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Left column - always visible, contains the form */}
-        <div className="space-y-6">
+      {/* ===== STEP 1: Initial URL Input ===== */}
+      {!websiteData && !generatedImages.length && (
+        <div className="max-w-xl mx-auto">
           <Card className="bg-dark-bg border-border-dark shadow-lg">
             <CardHeader>
-              <CardTitle className="text-xl">Generate AI Advertising Creatives</CardTitle>
+              <CardTitle className="text-xl">Step 1: Enter Your Website</CardTitle>
               <CardDescription>
-                Our AI will analyze your website and create custom advertising assets
+                Our AI will analyze your website to create custom advertising assets
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -380,244 +380,77 @@ Additional guidance:
 
                 <Button 
                   type="submit" 
-                  className="w-full bg-primary-green hover:bg-primary-green/90 text-black"
+                  className="w-full h-12 bg-primary-green hover:bg-primary-green/90 text-black text-lg font-semibold"
                   disabled={isLoading}
                 >
                   {isLoading ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                       Analyzing...
-                    </>
-                  ) : "Analyze Website"}
-                </Button>
-              </form>
-            </CardContent>
-            {websiteData && (
-              <CardFooter className="flex flex-col items-stretch">
-                <Button 
-                  onClick={handleGenerateCreatives} 
-                  disabled={isGeneratingImages || (useReferenceImages && selectedReferenceImages.length === 0)}
-                  className="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center"
-                >
-                  {isGeneratingImages ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      {error || "Generating Creatives..."}
                     </>
                   ) : (
                     <>
-                      {useReferenceImages && selectedReferenceImages.length === 0 ? (
-                        <>Select reference images to continue</>
-                      ) : useReferenceImages ? (
-                        <>Generate 3 Square + 3 Reel Creatives</>
-                      ) : (
-                        <>Generate 3 Square + 3 Reel Creatives</>
-                      )}
-                      <ArrowRight className="ml-2 h-4 w-4" />
+                      Analyze Website
+                      <ArrowRight className="ml-2 h-5 w-5" />
                     </>
                   )}
                 </Button>
-              </CardFooter>
-            )}
+              </form>
+            </CardContent>
           </Card>
 
-          {/* Reference images section */}
-          {websiteData && validWebsiteImages.length > 0 && generatedImages.length === 0 && (
-            <Card className="bg-dark-bg border-border-dark shadow-lg overflow-hidden">
-              <CardHeader className="pb-2">
-                <div className="flex justify-between items-center">
-                  <CardTitle className="text-lg">Reference Images</CardTitle>
-                  <div className="flex items-center">
-                    <label className="flex items-center space-x-1 text-sm cursor-pointer mr-2">
-                      <input 
-                        type="checkbox"
-                        checked={useReferenceImages}
-                        onChange={() => setUseReferenceImages(!useReferenceImages)}
-                        className="rounded text-primary-green focus:ring-primary-green"
-                      />
-                      <span>Use as references</span>
-                    </label>
-                    {selectedReferenceImages.length > 0 && (
-                      <span className="text-xs bg-primary-green/20 text-primary-green px-2 py-0.5 rounded-full">
-                        {selectedReferenceImages.length}/4 selected
-                      </span>
-                    )}
-                  </div>
+          {/* How it works section */}
+          <div className="mt-16">
+            <h2 className="text-xl font-semibold mb-4">How It Works</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="p-5 border border-border-dark rounded-lg bg-dark-bg shadow-sm">
+                <div className="font-bold text-base mb-2 flex items-center">
+                  <div className="w-6 h-6 bg-primary-green/20 text-primary-green rounded-full mr-2 flex items-center justify-center font-bold text-sm">1</div>
+                  Enter Your Website
                 </div>
-                {useReferenceImages && (
-                  <CardDescription>
-                    Click on images to select up to 4 reference images for ad generation
-                  </CardDescription>
-                )}
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {validWebsiteImages.map((imageUrl, index) => {
-                    const isSelected = selectedReferenceImages.includes(imageUrl);
-                    return (
-                      <div 
-                        key={index} 
-                        className={`relative aspect-square group rounded-md overflow-hidden border cursor-pointer ${
-                          isSelected 
-                            ? "border-primary-green ring-2 ring-primary-green" 
-                            : "border-border-dark hover:border-primary-green/50"
-                        }`}
-                        onClick={() => useReferenceImages && toggleReferenceImage(imageUrl)}
-                      >
-                        {/* Use a regular img tag with role="img" for accessibility */}
-                        <div className="relative w-full h-full">
-                          <img 
-                            src={imageUrl}
-                            alt={`Website image ${index + 1}`}
-                            className="absolute inset-0 w-full h-full object-cover"
-                            onError={() => handleImageError(imageUrl)}
-                          />
-                        </div>
-                        
-                        {/* Selection indicator */}
-                        {isSelected && (
-                          <div className="absolute top-2 right-2 bg-primary-green text-black rounded-full p-1">
-                            <Check className="h-3 w-3" />
-                          </div>
-                        )}
-                        
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
-                          <a
-                            href={imageUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="p-1.5 bg-white text-gray-800 rounded-full"
-                            onClick={(e) => {
-                              e.stopPropagation(); // Prevent selection toggle when clicking view button
-                            }}
-                          >
-                            <ExternalLink className="h-4 w-4" />
-                          </a>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-
-        {/* Right column - either website analysis or generated creatives */}
-        <div>
-          {generatedImages.length > 0 ? (
-            <div className="space-y-6">
-              <h2 className="text-xl font-bold mb-4">Generated Ad Creatives</h2>
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold mb-3">Square Format (1:1) - For Instagram Posts</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {generatedImages.slice(0, 3).map((image, index) => (
-                    <div 
-                      key={index} 
-                      className="relative aspect-square border border-border-dark rounded-lg overflow-hidden group cursor-pointer"
-                      onClick={() => {
-                        setPreviewImage(image);
-                        setPreviewImageFormat("square");
-                      }}
-                    >
-                      <div className="w-full h-full">
-                        <img
-                          src={image}
-                          alt={`Square ad creative ${index + 1}`}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setPreviewImage(image);
-                              setPreviewImageFormat("square");
-                            }}
-                            className="py-2 px-4 bg-white text-gray-800 rounded-md font-medium shadow hover:bg-gray-50"
-                          >
-                            View
-                          </button>
-                          <a 
-                            href={image}
-                            download={`square-ad-${index + 1}.png`}
-                            className="py-2 px-4 bg-white text-gray-800 rounded-md font-medium shadow hover:bg-gray-50"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            Download
-                          </a>
-                        </div>
-                      </div>
-                      <div className="absolute top-2 right-2 bg-primary-green/80 text-black text-xs px-2 py-1 rounded-full">
-                        1:1
-                      </div>
-                      <div className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
-                        Square {index + 1}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <p className="text-sm text-gray-400">
+                  Simply provide your website URL so our AI can analyze your brand&apos;s visual identity and messaging
+                </p>
               </div>
-              
-              <div>
-                <h3 className="text-lg font-semibold mb-3">Vertical Format (9:16) - For Reels & Stories</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {generatedImages.slice(3, 6).map((image, index) => (
-                    <div 
-                      key={index} 
-                      className="relative aspect-[9/16] border border-border-dark rounded-lg overflow-hidden group cursor-pointer"
-                      onClick={() => {
-                        setPreviewImage(image);
-                        setPreviewImageFormat("vertical");
-                      }}
-                    >
-                      <div className="w-full h-full">
-                        <img
-                          src={image}
-                          alt={`Vertical ad creative ${index + 1}`}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setPreviewImage(image);
-                              setPreviewImageFormat("vertical");
-                            }}
-                            className="py-2 px-4 bg-white text-gray-800 rounded-md font-medium shadow hover:bg-gray-50"
-                          >
-                            View
-                          </button>
-                          <a 
-                            href={image}
-                            download={`reel-ad-${index + 1}.png`}
-                            className="py-2 px-4 bg-white text-gray-800 rounded-md font-medium shadow hover:bg-gray-50"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            Download
-                          </a>
-                        </div>
-                      </div>
-                      <div className="absolute top-2 right-2 bg-blue-500/80 text-white text-xs px-2 py-1 rounded-full">
-                        9:16
-                      </div>
-                      <div className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
-                        Reel {index + 1}
-                      </div>
-                    </div>
-                  ))}
+              <div className="p-5 border border-border-dark rounded-lg bg-dark-bg shadow-sm">
+                <div className="font-bold text-base mb-2 flex items-center">
+                  <div className="w-6 h-6 bg-blue-500/20 text-blue-400 rounded-full mr-2 flex items-center justify-center font-bold text-sm">2</div>
+                  AI Analysis
                 </div>
+                <p className="text-sm text-gray-400">
+                  Our AI extracts your brand&apos;s color palette, typography, images, and key content to understand your identity
+                </p>
+              </div>
+              <div className="p-5 border border-border-dark rounded-lg bg-dark-bg shadow-sm">
+                <div className="font-bold text-base mb-2 flex items-center">
+                  <div className="w-6 h-6 bg-amber-500/20 text-amber-400 rounded-full mr-2 flex items-center justify-center font-bold text-sm">3</div>
+                  Select Reference Images
+                </div>
+                <p className="text-sm text-gray-400">
+                  Choose website images to use as visual references or let our AI generate creatives based on text description
+                </p>
+              </div>
+              <div className="p-5 border border-border-dark rounded-lg bg-dark-bg shadow-sm">
+                <div className="font-bold text-base mb-2 flex items-center">
+                  <div className="w-6 h-6 bg-purple-500/20 text-purple-400 rounded-full mr-2 flex items-center justify-center font-bold text-sm">4</div>
+                  Get Creative Assets
+                </div>
+                <p className="text-sm text-gray-400">
+                  Receive professionally designed advertising creatives that are perfectly aligned with your brand
+                </p>
               </div>
             </div>
-          ) : websiteData ? (
-            <Card className="bg-dark-bg border-border-dark shadow-lg overflow-hidden h-full">
+          </div>
+        </div>
+      )}
+
+      {/* ===== STEP 2: Website Analysis and Reference Image Selection ===== */}
+      {websiteData && !generatedImages.length && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* Left column - Analysis report and brand assets */}
+          <div className="lg:col-span-7 space-y-6">
+            {/* Website analysis report */}
+            <Card className="bg-dark-bg border-border-dark shadow-lg overflow-hidden">
               <CardHeader className="border-b border-gray-800">
                 <div className="flex justify-between items-center">
                   <div>
@@ -626,7 +459,7 @@ Additional guidance:
                       Brand Analysis Report
                     </CardTitle>
                     <CardDescription className="mt-1">
-                      Details extracted from <a href={url} target="_blank" rel="noopener noreferrer" className="font-medium text-primary-green hover:underline flex items-center">
+                      Details extracted from <a href={url} target="_blank" rel="noopener noreferrer" className="font-medium text-primary-green hover:underline inline-flex items-center gap-1">
                         {url} <ExternalLink className="h-3 w-3" />
                       </a>
                     </CardDescription>
@@ -636,27 +469,67 @@ Additional guidance:
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-5 pt-6">
+              <CardContent className="pt-6">
+                <div className="bg-gray-800/50 p-5 rounded-md max-h-[65vh] overflow-y-auto border border-gray-700 shadow-inner">
+                  <div className="text-sm text-gray-200 leading-relaxed prose prose-sm prose-invert max-w-none prose-headings:text-primary-green prose-headings:mb-2 prose-headings:mt-4 prose-p:mb-2 prose-li:mb-1">
+                    {websiteData.contentSummary ? (
+                      <div dangerouslySetInnerHTML={{ 
+                        __html: websiteData.contentSummary
+                          .replace(/\n\n/g, '<br/><br/>')
+                          .replace(/\n/g, '<br/>')
+                          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                          .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                          // Handle headings with emojis
+                          .replace(/#{3}\s+(🏢|👥|✨|💼|🗣️|📣|📈|📊)?\s*(.*?)(?=<br\/>|$)/g, 
+                            '<h3 class="text-primary-green font-semibold text-base flex items-center gap-2 border-b border-primary-green/30 pb-1 mt-4 mb-2">$1 $2</h3>')
+                          .replace(/#{2}\s+(🏢|👥|✨|💼|🗣️|📣|📈|📊)?\s*(.*?)(?=<br\/>|$)/g, 
+                            '<h2 class="text-primary-green font-bold text-lg flex items-center gap-2 border-b border-primary-green/30 pb-2 mt-5 mb-3">$1 $2</h2>')
+                          // Handle bullet points
+                          .replace(/- (.*?)(?=<br\/>|$)/g, 
+                            '<li class="flex items-start mb-2"><span class="text-primary-green mr-2 font-bold">•</span><span>$1</span></li>')
+                          // Wrap lists in proper ul tags
+                          .replace(/(<li.*?<\/li>)(<br\/>)*(<li.*?<\/li>)(<br\/>)*(<li.*?<\/li>)/g, '<ul class="mt-1 mb-3 pl-2">$1$3$5</ul>')
+                          .replace(/(<li.*?<\/li>)(<br\/>)*(<li.*?<\/li>)/g, '<ul class="mt-1 mb-3 pl-2">$1$3</ul>')
+                          .replace(/(<li.*?<\/li>)/g, '<ul class="mt-1 mb-3 pl-2">$1</ul>')
+                      }} />
+                    ) : (
+                      <p className="italic text-gray-400">Analyzing website content...</p>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+              <div className="px-6 py-4 bg-primary-green/10 border-t border-primary-green/30 mt-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-primary-green flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+                      <circle cx="12" cy="12" r="10" />
+                      <path d="M12 16v.01" />
+                      <path d="M12 8v4" />
+                    </svg>
+                    <span className="font-semibold">Analysis complete. Select reference images to proceed.</span>
+                  </p>
+                </div>
+              </div>
+            </Card>
+
+            {/* Brand assets section */}
+            <Card className="bg-dark-bg border-border-dark shadow-lg overflow-hidden">
+              <CardContent className="space-y-6 pt-6 pb-6">
                 <div>
                   <h3 className="text-md font-semibold mb-3 flex items-center">
                     <div className="w-4 h-4 bg-primary-green/60 rounded-full mr-2"></div>
-                    Brand Color Palette
+                    Primary Colors
                   </h3>
-                  <div className="grid grid-cols-5 sm:grid-cols-8 gap-3">
-                    {websiteData.colors.slice(0, 8).map((color, index) => (
+                  <div className="grid grid-cols-4 gap-4">
+                    {websiteData.colors.slice(0, 4).map((color, index) => (
                       <div key={index} className="flex flex-col items-center group">
                         <div 
-                          className="w-12 h-12 rounded-md border border-border-dark shadow-sm group-hover:scale-110 transition-transform" 
+                          className="w-14 h-14 rounded-md border border-border-dark shadow-sm group-hover:scale-110 transition-transform" 
                           style={{ backgroundColor: color }}
                         ></div>
                         <span className="text-xs mt-1 opacity-70 group-hover:opacity-100">{color}</span>
                       </div>
                     ))}
-                    {websiteData.colors.length > 8 && (
-                      <div className="flex flex-col items-center justify-center">
-                        <Badge className="bg-gray-700 text-white">+{websiteData.colors.length - 8} more</Badge>
-                      </div>
-                    )}
                   </div>
                 </div>
 
@@ -679,148 +552,280 @@ Additional guidance:
                     )}
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+          </div>
 
-                <Separator className="bg-gray-700" />
-
-                <div className="col-span-2">
-                  <h3 className="text-md font-semibold mb-3 flex items-center">
-                    <div className="w-4 h-4 bg-amber-500/60 rounded-full mr-2"></div>
-                    Website Analysis Report
-                  </h3>
-                  <div className="bg-gray-800/50 p-5 rounded-md max-h-80 overflow-y-auto border border-gray-700 shadow-inner">
-                    <div className="text-sm text-gray-200 leading-relaxed prose prose-sm prose-invert max-w-none prose-headings:text-primary-green prose-headings:mb-2 prose-headings:mt-4 prose-p:mb-2 prose-li:mb-1">
-                      {websiteData.contentSummary ? (
-                        <div dangerouslySetInnerHTML={{ 
-                          __html: websiteData.contentSummary
-                            .replace(/\n\n/g, '<br/><br/>')
-                            .replace(/\n/g, '<br/>')
-                            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                            .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                            // Handle headings with emojis
-                            .replace(/#{3}\s+(🏢|👥|✨|💼|🗣️|📣|📈|📊)?\s*(.*?)(?=<br\/>|$)/g, 
-                              '<h3 class="text-primary-green font-semibold text-base flex items-center gap-2 border-b border-primary-green/30 pb-1 mt-4 mb-2">$1 $2</h3>')
-                            .replace(/#{2}\s+(🏢|👥|✨|💼|🗣️|📣|📈|📊)?\s*(.*?)(?=<br\/>|$)/g, 
-                              '<h2 class="text-primary-green font-bold text-lg flex items-center gap-2 border-b border-primary-green/30 pb-2 mt-5 mb-3">$1 $2</h2>')
-                            // Handle bullet points
-                            .replace(/- (.*?)(?=<br\/>|$)/g, 
-                              '<li class="flex items-start mb-2"><span class="text-primary-green mr-2 font-bold">•</span><span>$1</span></li>')
-                            // Wrap lists in proper ul tags
-                            .replace(/(<li.*?<\/li>)(<br\/>)*(<li.*?<\/li>)(<br\/>)*(<li.*?<\/li>)/g, '<ul class="mt-1 mb-3 pl-2">$1$3$5</ul>')
-                            .replace(/(<li.*?<\/li>)(<br\/>)*(<li.*?<\/li>)/g, '<ul class="mt-1 mb-3 pl-2">$1$3</ul>')
-                            .replace(/(<li.*?<\/li>)/g, '<ul class="mt-1 mb-3 pl-2">$1</ul>')
-                        }} />
-                      ) : (
-                        <p className="italic text-gray-400">Analyzing website content...</p>
+          {/* Right column - Image selection */}
+          <div className="lg:col-span-5">
+            {/* Reference images section */}
+            {validWebsiteImages.length > 0 && (
+              <Card className="bg-dark-bg border-border-dark shadow-lg overflow-hidden h-full">
+                <CardHeader className="pb-2 border-b border-gray-800">
+                  <div className="flex justify-between items-center">
+                    <CardTitle className="text-lg flex items-center">
+                      <div className="w-1 h-6 bg-amber-500 rounded mr-2"></div>
+                      Reference Images
+                    </CardTitle>
+                    <div className="flex items-center">
+                      <label className="flex items-center space-x-1 text-sm cursor-pointer mr-2">
+                        <input 
+                          type="checkbox"
+                          checked={useReferenceImages}
+                          onChange={() => setUseReferenceImages(!useReferenceImages)}
+                          className="rounded text-primary-green focus:ring-primary-green"
+                        />
+                        <span>Use as references</span>
+                      </label>
+                      {selectedReferenceImages.length > 0 && (
+                        <span className="text-xs bg-primary-green/20 text-primary-green px-2 py-0.5 rounded-full">
+                          {selectedReferenceImages.length}/4 selected
+                        </span>
                       )}
                     </div>
                   </div>
-                </div>
-              </CardContent>
-              <div className="px-6 py-4 bg-primary-green/10 border-t border-primary-green/30 mt-4">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm text-primary-green flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
-                      <circle cx="12" cy="12" r="10" />
-                      <path d="m15 9-6 6" />
-                      <path d="m9 9 6 6" />
-                    </svg>
-                    <span className="font-semibold">Analysis complete</span>
-                  </p>
-                  <button 
-                    onClick={handleGenerateCreatives}
+                  {useReferenceImages && (
+                    <CardDescription className="mt-2">
+                      Click on images to select up to 4 reference images for ad generation
+                    </CardDescription>
+                  )}
+                </CardHeader>
+                <CardContent className="pt-4 flex-grow">
+                  <div className="grid grid-cols-2 gap-3">
+                    {validWebsiteImages.map((imageUrl, index) => {
+                      const isSelected = selectedReferenceImages.includes(imageUrl);
+                      return (
+                        <div 
+                          key={index} 
+                          className={`relative aspect-square group rounded-md overflow-hidden border cursor-pointer ${
+                            isSelected 
+                              ? "border-primary-green ring-2 ring-primary-green" 
+                              : "border-border-dark hover:border-primary-green/50"
+                          }`}
+                          onClick={() => useReferenceImages && toggleReferenceImage(imageUrl)}
+                        >
+                          {/* Use a regular img tag with role="img" for accessibility */}
+                          <div className="relative w-full h-full">
+                            <img 
+                              src={imageUrl}
+                              alt={`Website image ${index + 1}`}
+                              className="absolute inset-0 w-full h-full object-cover"
+                              onError={() => handleImageError(imageUrl)}
+                            />
+                          </div>
+                          
+                          {/* Selection indicator */}
+                          {isSelected && (
+                            <div className="absolute top-2 right-2 bg-primary-green text-black rounded-full p-1">
+                              <Check className="h-3 w-3" />
+                            </div>
+                          )}
+                          
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
+                            <a
+                              href={imageUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-1.5 bg-white text-gray-800 rounded-full"
+                              onClick={(e) => {
+                                e.stopPropagation(); // Prevent selection toggle when clicking view button
+                              }}
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                            </a>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+
+                <CardFooter className="border-t border-gray-800 p-4">
+                  <Button 
+                    onClick={handleGenerateCreatives} 
                     disabled={isGeneratingImages || (useReferenceImages && selectedReferenceImages.length === 0)}
-                    className="bg-primary-green hover:bg-primary-green/90 text-black text-sm px-4 py-1 rounded-md font-medium flex items-center"
+                    className="w-full h-12 bg-primary-green hover:bg-primary-green/90 text-black font-medium text-base flex items-center justify-center"
                   >
-                    Generate Ad Creatives
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-2">
-                      <path d="M5 12h14" />
-                      <path d="m12 5 7 7-7 7" />
-                    </svg>
-                  </button>
+                    {isGeneratingImages ? (
+                      <>
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        {error || "Generating Creatives..."}
+                      </>
+                    ) : (
+                      <>
+                        {useReferenceImages && selectedReferenceImages.length === 0 ? (
+                          <>Select reference images to continue</>
+                        ) : (
+                          <>
+                            Generate Ad Creatives
+                            <ArrowRight className="ml-2 h-5 w-5" />
+                          </>
+                        )}
+                      </>
+                    )}
+                  </Button>
+                </CardFooter>
+              </Card>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ===== STEP 3: Generated Creatives Display ===== */}
+      {generatedImages.length > 0 && (
+        <div className="space-y-8">
+          <div className="bg-dark-bg border border-border-dark p-6 rounded-lg">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold">Step 3: Your Custom Ad Creatives</h2>
+              <Button
+                onClick={() => {
+                  setGeneratedImages([]);
+                  setWebsiteData(null);
+                  setUrl("");
+                  setSelectedReferenceImages([]);
+                }}
+                variant="outline"
+                className="border-gray-700 hover:bg-gray-800"
+              >
+                Start Over
+              </Button>
+            </div>
+            
+            <div className="mb-8">
+              <h3 className="text-xl font-semibold mb-4 flex items-center">
+                <div className="w-5 h-5 bg-primary-green/80 rounded-full mr-2 flex items-center justify-center">
+                  <span className="text-xs font-bold">1</span>
                 </div>
-              </div>
-            </Card>
-          ) : (
-            <div className="h-full flex items-center justify-center">
-              <div className="text-center p-8 border border-dashed border-gray-600 rounded-lg w-full">
-                <div className="mx-auto bg-gray-800 rounded-full p-4 w-16 h-16 flex items-center justify-center mb-4">
-                  <svg 
-                    xmlns="http://www.w3.org/2000/svg" 
-                    width="24" 
-                    height="24" 
-                    viewBox="0 0 24 24" 
-                    fill="none" 
-                    stroke="currentColor" 
-                    strokeWidth="2" 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
-                    className="text-primary-green"
+                Square Format (1:1) - For Instagram Posts
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {generatedImages.slice(0, 3).map((image, index) => (
+                  <div 
+                    key={index} 
+                    className="relative aspect-square border border-border-dark rounded-lg overflow-hidden group cursor-pointer shadow-lg"
+                    onClick={() => {
+                      setPreviewImage(image);
+                      setPreviewImageFormat("square");
+                    }}
                   >
-                    <rect width="18" height="10" x="3" y="4" rx="2" />
-                    <circle cx="12" cy="14" r="6" />
-                    <path d="M8 14h8" />
-                    <path d="M12 10v8" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-bold mb-2">AI Creative Director</h3>
-                <p className="text-gray-400 mb-4">
-                  Enter your website URL to extract brand elements and generate professional ad creatives.
-                </p>
-                <div className="flex flex-col gap-2 text-left max-w-md mx-auto bg-gray-800 p-4 rounded-lg">
-                  <div className="flex items-center">
-                    <div className="bg-gray-700 rounded-full p-1 mr-2">
-                      <span className="w-5 h-5 flex items-center justify-center text-xs font-bold text-white">1</span>
+                    <div className="w-full h-full">
+                      <img
+                        src={image}
+                        alt={`Square ad creative ${index + 1}`}
+                        className="w-full h-full object-cover"
+                      />
                     </div>
-                    <span className="text-sm">Enter your website URL</span>
-                  </div>
-                  <div className="flex items-center">
-                    <div className="bg-gray-700 rounded-full p-1 mr-2">
-                      <span className="w-5 h-5 flex items-center justify-center text-xs font-bold text-white">2</span>
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPreviewImage(image);
+                            setPreviewImageFormat("square");
+                          }}
+                          className="py-2 px-4 bg-white text-gray-800 rounded-md font-medium shadow hover:bg-gray-50"
+                        >
+                          View
+                        </button>
+                        <a 
+                          href={image}
+                          download={`square-ad-${index + 1}.png`}
+                          className="py-2 px-4 bg-white text-gray-800 rounded-md font-medium shadow hover:bg-gray-50"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          Download
+                        </a>
+                      </div>
                     </div>
-                    <span className="text-sm">Analyze website colors, fonts, and content</span>
-                  </div>
-                  <div className="flex items-center">
-                    <div className="bg-gray-700 rounded-full p-1 mr-2">
-                      <span className="w-5 h-5 flex items-center justify-center text-xs font-bold text-white">3</span>
+                    <div className="absolute top-3 right-3 bg-primary-green/80 text-black text-xs px-2 py-1 rounded-full font-medium">
+                      1:1
                     </div>
-                    <span className="text-sm">Generate custom advertisement creatives</span>
+                    <div className="absolute bottom-3 left-3 bg-black/70 text-white text-xs px-2 py-1 rounded font-medium">
+                      Square {index + 1}
+                    </div>
                   </div>
-                </div>
+                ))}
               </div>
             </div>
-          )}
-        </div>
-      </div>
+            
+            <div>
+              <h3 className="text-xl font-semibold mb-4 flex items-center">
+                <div className="w-5 h-5 bg-blue-500/80 rounded-full mr-2 flex items-center justify-center">
+                  <span className="text-xs font-bold text-white">2</span>
+                </div>
+                Vertical Format (9:16) - For Reels & Stories
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {generatedImages.slice(3, 6).map((image, index) => (
+                  <div 
+                    key={index} 
+                    className="relative aspect-[9/16] border border-border-dark rounded-lg overflow-hidden group cursor-pointer shadow-lg"
+                    onClick={() => {
+                      setPreviewImage(image);
+                      setPreviewImageFormat("vertical");
+                    }}
+                  >
+                    <div className="w-full h-full">
+                      <img
+                        src={image}
+                        alt={`Vertical ad creative ${index + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPreviewImage(image);
+                            setPreviewImageFormat("vertical");
+                          }}
+                          className="py-2 px-4 bg-white text-gray-800 rounded-md font-medium shadow hover:bg-gray-50"
+                        >
+                          View
+                        </button>
+                        <a 
+                          href={image}
+                          download={`reel-ad-${index + 1}.png`}
+                          className="py-2 px-4 bg-white text-gray-800 rounded-md font-medium shadow hover:bg-gray-50"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          Download
+                        </a>
+                      </div>
+                    </div>
+                    <div className="absolute top-3 right-3 bg-blue-500/80 text-white text-xs px-2 py-1 rounded-full font-medium">
+                      9:16
+                    </div>
+                    <div className="absolute bottom-3 left-3 bg-black/70 text-white text-xs px-2 py-1 rounded font-medium">
+                      Reel {index + 1}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
 
-      <div className="mt-16">
-        <h2 className="text-xl font-semibold mb-4">How It Works</h2>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="p-4 border border-border-dark rounded-lg bg-dark-bg">
-            <div className="font-bold mb-2">1. Enter Your Website</div>
-            <p className="text-sm text-gray-400">
-              Simply provide your website URL so our AI can analyze your brand&apos;s visual identity and messaging
-            </p>
-          </div>
-          <div className="p-4 border border-border-dark rounded-lg bg-dark-bg">
-            <div className="font-bold mb-2">2. AI Analysis</div>
-            <p className="text-sm text-gray-400">
-              Our AI extracts your brand&apos;s color palette, typography, images, and key content to understand your identity
-            </p>
-          </div>
-          <div className="p-4 border border-border-dark rounded-lg bg-dark-bg">
-            <div className="font-bold mb-2">3. Select Reference Images</div>
-            <p className="text-sm text-gray-400">
-              Choose website images to use as visual references or let our AI generate creatives based on text description
-            </p>
-          </div>
-          <div className="p-4 border border-border-dark rounded-lg bg-dark-bg">
-            <div className="font-bold mb-2">4. Get Creative Assets</div>
-            <p className="text-sm text-gray-400">
-              Receive professionally designed advertising creatives that are perfectly aligned with your brand
-            </p>
+            <div className="mt-12 pt-6 border-t border-gray-700 text-center">
+              <p className="text-gray-400 mb-4">Need different creatives? You can start over or try with a different website.</p>
+              <Button
+                onClick={() => {
+                  setGeneratedImages([]);
+                  setWebsiteData(null);
+                  setUrl("");
+                  setSelectedReferenceImages([]);
+                }}
+                className="bg-primary-green hover:bg-primary-green/90 text-black"
+              >
+                Create New Creatives
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
