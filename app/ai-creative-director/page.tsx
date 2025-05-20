@@ -599,13 +599,13 @@ Output: a realistic, high-resolution vertical (9:16) ad image optimized for conv
                 <div>
                   <h3 className="text-md font-semibold mb-3 flex items-center">
                     <div className="w-4 h-4 bg-primary-green/60 rounded-full mr-2"></div>
-                    Primary Colors
+                    Brand Colors
                   </h3>
-                  <div className="grid grid-cols-4 gap-4">
-                    {websiteData.colors.slice(0, 4).map((color, index) => (
+                  <div className="grid grid-cols-4 gap-3">
+                    {websiteData.colors.slice(0, 8).map((color, index) => (
                       <div key={index} className="flex flex-col items-center group">
                         <div 
-                          className="w-14 h-14 rounded-md border border-border-dark shadow-sm group-hover:scale-110 transition-transform" 
+                          className="w-12 h-12 rounded-md border border-border-dark shadow-sm group-hover:scale-110 transition-transform" 
                           style={{ backgroundColor: color }}
                         ></div>
                         <span className="text-xs mt-1 opacity-70 group-hover:opacity-100">{color}</span>
@@ -755,8 +755,8 @@ Output: a realistic, high-resolution vertical (9:16) ad image optimized for conv
       {/* ===== STEP 3: Generated Creatives Display ===== */}
       {generatedImages && (
         <div className="space-y-8">
-          <div className="bg-dark-bg border border-border-dark p-6 rounded-lg">
-            <div className="flex items-center justify-between mb-6">
+          <div className="bg-dark-bg border border-border-dark p-4 rounded-lg">
+            <div className="flex items-center justify-between mb-4">
               <h2 className="text-2xl font-bold">Step 3: Your Custom Ad Creatives</h2>
               <Button
                 onClick={() => {
@@ -773,23 +773,23 @@ Output: a realistic, high-resolution vertical (9:16) ad image optimized for conv
             </div>
             
             {/* Awareness Stage */}
-            <div className="mb-12 pb-8 border-b border-gray-700">
-              <div className="flex items-center mb-6">
-                <div className="w-10 h-10 bg-primary-green rounded-full text-black font-bold flex items-center justify-center mr-3">1</div>
+            <div className="mb-8 pb-6 border-b border-gray-700">
+              <div className="flex items-center mb-4">
+                <div className="w-9 h-9 bg-primary-green rounded-full text-black font-bold flex items-center justify-center mr-3">1</div>
                 <div>
-                  <h3 className="text-2xl font-bold mb-1">Awareness Stage</h3>
-                  <p className="text-gray-400">Top-of-funnel creatives to build brand awareness and attract new audiences</p>
+                  <h3 className="text-xl font-bold mb-1">Awareness Stage</h3>
+                  <p className="text-gray-400 text-sm">Top-of-funnel creatives to build brand awareness and attract new audiences</p>
                 </div>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Square Format */}
                 <div>
-                  <div className="mb-3 flex items-center">
-                    <div className="w-5 h-5 bg-primary-green/80 rounded-full mr-2 flex items-center justify-center">
+                  <div className="mb-2 flex items-center">
+                    <div className="w-4 h-4 bg-primary-green/80 rounded-full mr-1.5 flex items-center justify-center">
                       <span className="text-xs font-bold">A</span>
                     </div>
-                    <span className="font-medium">Square Format (1:1)</span>
+                    <span className="text-sm font-medium">Square Format (1:1)</span>
                   </div>
                   <div 
                     className="relative aspect-square border border-border-dark rounded-lg overflow-hidden group cursor-pointer shadow-lg"
@@ -842,11 +842,11 @@ Output: a realistic, high-resolution vertical (9:16) ad image optimized for conv
                 
                 {/* Vertical Format */}
                 <div>
-                  <div className="mb-3 flex items-center">
-                    <div className="w-5 h-5 bg-blue-500/80 rounded-full mr-2 flex items-center justify-center">
+                  <div className="mb-2 flex items-center">
+                    <div className="w-4 h-4 bg-blue-500/80 rounded-full mr-1.5 flex items-center justify-center">
                       <span className="text-xs font-bold text-white">B</span>
                     </div>
-                    <span className="font-medium">Vertical Format (9:16)</span>
+                    <span className="text-sm font-medium">Vertical Format (9:16)</span>
                   </div>
                   <div 
                     className="relative aspect-[9/16] border border-border-dark rounded-lg overflow-hidden group cursor-pointer shadow-lg"
@@ -900,23 +900,23 @@ Output: a realistic, high-resolution vertical (9:16) ad image optimized for conv
             </div>
             
             {/* Consideration Stage */}
-            <div className="mb-12 pb-8 border-b border-gray-700">
-              <div className="flex items-center mb-6">
-                <div className="w-10 h-10 bg-blue-500 rounded-full text-white font-bold flex items-center justify-center mr-3">2</div>
+            <div className="mb-8 pb-6 border-b border-gray-700">
+              <div className="flex items-center mb-4">
+                <div className="w-9 h-9 bg-blue-500 rounded-full text-white font-bold flex items-center justify-center mr-3">2</div>
                 <div>
-                  <h3 className="text-2xl font-bold mb-1">Consideration Stage</h3>
-                  <p className="text-gray-400">Mid-funnel creatives to highlight benefits and engage interested prospects</p>
+                  <h3 className="text-xl font-bold mb-1">Consideration Stage</h3>
+                  <p className="text-gray-400 text-sm">Mid-funnel creatives to highlight benefits and engage interested prospects</p>
                 </div>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Square Format */}
                 <div>
-                  <div className="mb-3 flex items-center">
-                    <div className="w-5 h-5 bg-primary-green/80 rounded-full mr-2 flex items-center justify-center">
+                  <div className="mb-2 flex items-center">
+                    <div className="w-4 h-4 bg-primary-green/80 rounded-full mr-1.5 flex items-center justify-center">
                       <span className="text-xs font-bold">A</span>
                     </div>
-                    <span className="font-medium">Square Format (1:1)</span>
+                    <span className="text-sm font-medium">Square Format (1:1)</span>
                   </div>
                   <div 
                     className="relative aspect-square border border-border-dark rounded-lg overflow-hidden group cursor-pointer shadow-lg"
@@ -969,11 +969,11 @@ Output: a realistic, high-resolution vertical (9:16) ad image optimized for conv
                 
                 {/* Vertical Format */}
                 <div>
-                  <div className="mb-3 flex items-center">
-                    <div className="w-5 h-5 bg-blue-500/80 rounded-full mr-2 flex items-center justify-center">
+                  <div className="mb-2 flex items-center">
+                    <div className="w-4 h-4 bg-blue-500/80 rounded-full mr-1.5 flex items-center justify-center">
                       <span className="text-xs font-bold text-white">B</span>
                     </div>
-                    <span className="font-medium">Vertical Format (9:16)</span>
+                    <span className="text-sm font-medium">Vertical Format (9:16)</span>
                   </div>
                   <div 
                     className="relative aspect-[9/16] border border-border-dark rounded-lg overflow-hidden group cursor-pointer shadow-lg"
@@ -1028,22 +1028,22 @@ Output: a realistic, high-resolution vertical (9:16) ad image optimized for conv
             
             {/* Conversion Stage */}
             <div className="mb-8">
-              <div className="flex items-center mb-6">
-                <div className="w-10 h-10 bg-amber-500 rounded-full text-black font-bold flex items-center justify-center mr-3">3</div>
+              <div className="flex items-center mb-4">
+                <div className="w-9 h-9 bg-amber-500 rounded-full text-black font-bold flex items-center justify-center mr-3">3</div>
                 <div>
-                  <h3 className="text-2xl font-bold mb-1">Conversion Stage</h3>
-                  <p className="text-gray-400">Bottom-of-funnel creatives to drive immediate action and conversions</p>
+                  <h3 className="text-xl font-bold mb-1">Conversion Stage</h3>
+                  <p className="text-gray-400 text-sm">Bottom-of-funnel creatives to drive immediate action and conversions</p>
                 </div>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Square Format */}
                 <div>
-                  <div className="mb-3 flex items-center">
-                    <div className="w-5 h-5 bg-primary-green/80 rounded-full mr-2 flex items-center justify-center">
+                  <div className="mb-2 flex items-center">
+                    <div className="w-4 h-4 bg-primary-green/80 rounded-full mr-1.5 flex items-center justify-center">
                       <span className="text-xs font-bold">A</span>
                     </div>
-                    <span className="font-medium">Square Format (1:1)</span>
+                    <span className="text-sm font-medium">Square Format (1:1)</span>
                   </div>
                   <div 
                     className="relative aspect-square border border-border-dark rounded-lg overflow-hidden group cursor-pointer shadow-lg"
@@ -1096,11 +1096,11 @@ Output: a realistic, high-resolution vertical (9:16) ad image optimized for conv
                 
                 {/* Vertical Format */}
                 <div>
-                  <div className="mb-3 flex items-center">
-                    <div className="w-5 h-5 bg-blue-500/80 rounded-full mr-2 flex items-center justify-center">
+                  <div className="mb-2 flex items-center">
+                    <div className="w-4 h-4 bg-blue-500/80 rounded-full mr-1.5 flex items-center justify-center">
                       <span className="text-xs font-bold text-white">B</span>
                     </div>
-                    <span className="font-medium">Vertical Format (9:16)</span>
+                    <span className="text-sm font-medium">Vertical Format (9:16)</span>
                   </div>
                   <div 
                     className="relative aspect-[9/16] border border-border-dark rounded-lg overflow-hidden group cursor-pointer shadow-lg"
@@ -1153,7 +1153,7 @@ Output: a realistic, high-resolution vertical (9:16) ad image optimized for conv
               </div>
             </div>
 
-            <div className="mt-12 pt-6 border-t border-gray-700 text-center">
+            <div className="mt-8 pt-4 border-t border-gray-700 text-center">
               <p className="text-gray-400 mb-4">Need different creatives? You can start over or try with a different website.</p>
               <Button
                 onClick={() => {
