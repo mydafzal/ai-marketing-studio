@@ -21,6 +21,7 @@ export default function AiCreativeDirectorPage() {
     colors: string[];
     fonts: string[];
     contentSample: string;
+    contentSummary: string;
     images: string[];
   } | null>(null);
   const [generatedImages, setGeneratedImages] = useState<string[]>([]);
@@ -346,8 +347,9 @@ Additional guidance:
         Enter your website URL and get instant ad creatives tailored to your brand
       </p>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-1 space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Left column - always visible, contains the form */}
+        <div className="space-y-6">
           <Card className="bg-dark-bg border-border-dark shadow-lg">
             <CardHeader>
               <CardTitle className="text-xl">Generate AI Advertising Creatives</CardTitle>
@@ -419,145 +421,92 @@ Additional guidance:
             )}
           </Card>
 
-          {websiteData && (
+          {/* Reference images section */}
+          {websiteData && validWebsiteImages.length > 0 && generatedImages.length === 0 && (
             <Card className="bg-dark-bg border-border-dark shadow-lg overflow-hidden">
-              <CardHeader>
-                <CardTitle className="text-xl">Website Analysis</CardTitle>
-                <CardDescription>
-                  Details extracted from {url}
-                </CardDescription>
+              <CardHeader className="pb-2">
+                <div className="flex justify-between items-center">
+                  <CardTitle className="text-lg">Reference Images</CardTitle>
+                  <div className="flex items-center">
+                    <label className="flex items-center space-x-1 text-sm cursor-pointer mr-2">
+                      <input 
+                        type="checkbox"
+                        checked={useReferenceImages}
+                        onChange={() => setUseReferenceImages(!useReferenceImages)}
+                        className="rounded text-primary-green focus:ring-primary-green"
+                      />
+                      <span>Use as references</span>
+                    </label>
+                    {selectedReferenceImages.length > 0 && (
+                      <span className="text-xs bg-primary-green/20 text-primary-green px-2 py-0.5 rounded-full">
+                        {selectedReferenceImages.length}/4 selected
+                      </span>
+                    )}
+                  </div>
+                </div>
+                {useReferenceImages && (
+                  <CardDescription>
+                    Click on images to select up to 4 reference images for ad generation
+                  </CardDescription>
+                )}
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <h3 className="text-md font-semibold mb-2">Color Palette</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {websiteData.colors.slice(0, 10).map((color, index) => (
-                      <div key={index} className="flex flex-col items-center">
-                        <div 
-                          className="w-10 h-10 rounded-md border border-border-dark" 
-                          style={{ backgroundColor: color }}
-                        ></div>
-                        <span className="text-xs mt-1">{color}</span>
-                      </div>
-                    ))}
-                    {websiteData.colors.length > 10 && (
-                      <Badge className="bg-gray-700 text-white">+{websiteData.colors.length - 10} more</Badge>
-                    )}
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div>
-                  <h3 className="text-md font-semibold mb-2">Font Styles</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {websiteData.fonts.length > 0 ? (
-                      websiteData.fonts.map((font, index) => (
-                        <Badge key={index} className="bg-gray-700 text-white">{font}</Badge>
-                      ))
-                    ) : (
-                      <p className="text-sm text-gray-400">No font information detected</p>
-                    )}
-                  </div>
-                </div>
-
-                <Separator />
-
-                {validWebsiteImages.length > 0 && (
-                  <>
-                    <div>
-                      <div className="flex justify-between items-center mb-3">
-                        <h3 className="text-md font-semibold">Website Images</h3>
-                        <div className="flex items-center">
-                          <label className="flex items-center space-x-1 text-sm cursor-pointer mr-2">
-                            <input 
-                              type="checkbox"
-                              checked={useReferenceImages}
-                              onChange={() => setUseReferenceImages(!useReferenceImages)}
-                              className="rounded text-primary-green focus:ring-primary-green"
-                            />
-                            <span>Use as references</span>
-                          </label>
-                          {selectedReferenceImages.length > 0 && (
-                            <span className="text-xs bg-primary-green/20 text-primary-green px-2 py-0.5 rounded-full">
-                              {selectedReferenceImages.length}/4 selected
-                            </span>
-                          )}
+              <CardContent>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {validWebsiteImages.map((imageUrl, index) => {
+                    const isSelected = selectedReferenceImages.includes(imageUrl);
+                    return (
+                      <div 
+                        key={index} 
+                        className={`relative aspect-square group rounded-md overflow-hidden border cursor-pointer ${
+                          isSelected 
+                            ? "border-primary-green ring-2 ring-primary-green" 
+                            : "border-border-dark hover:border-primary-green/50"
+                        }`}
+                        onClick={() => useReferenceImages && toggleReferenceImage(imageUrl)}
+                      >
+                        {/* Use a regular img tag with role="img" for accessibility */}
+                        <div className="relative w-full h-full">
+                          <img 
+                            src={imageUrl}
+                            alt={`Website image ${index + 1}`}
+                            className="absolute inset-0 w-full h-full object-cover"
+                            onError={() => handleImageError(imageUrl)}
+                          />
+                        </div>
+                        
+                        {/* Selection indicator */}
+                        {isSelected && (
+                          <div className="absolute top-2 right-2 bg-primary-green text-black rounded-full p-1">
+                            <Check className="h-3 w-3" />
+                          </div>
+                        )}
+                        
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
+                          <a
+                            href={imageUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-1.5 bg-white text-gray-800 rounded-full"
+                            onClick={(e) => {
+                              e.stopPropagation(); // Prevent selection toggle when clicking view button
+                            }}
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                          </a>
                         </div>
                       </div>
-                      
-                      {useReferenceImages && (
-                        <p className="text-xs text-gray-400 mb-3">
-                          Click on images to select up to 4 reference images for ad generation
-                        </p>
-                      )}
-                      
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                        {validWebsiteImages.map((imageUrl, index) => {
-                          const isSelected = selectedReferenceImages.includes(imageUrl);
-                          return (
-                            <div 
-                              key={index} 
-                              className={`relative aspect-square group rounded-md overflow-hidden border cursor-pointer ${
-                                isSelected 
-                                  ? "border-primary-green ring-2 ring-primary-green" 
-                                  : "border-border-dark hover:border-primary-green/50"
-                              }`}
-                              onClick={() => useReferenceImages && toggleReferenceImage(imageUrl)}
-                            >
-                              {/* Use a regular img tag with role="img" for accessibility */}
-                              <div className="relative w-full h-full">
-                                <img 
-                                  src={imageUrl}
-                                  alt={`Website image ${index + 1}`}
-                                  className="absolute inset-0 w-full h-full object-cover"
-                                  onError={() => handleImageError(imageUrl)}
-                                />
-                              </div>
-                              
-                              {/* Selection indicator */}
-                              {isSelected && (
-                                <div className="absolute top-2 right-2 bg-primary-green text-black rounded-full p-1">
-                                  <Check className="h-3 w-3" />
-                                </div>
-                              )}
-                              
-                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
-                                <a
-                                  href={imageUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="p-1.5 bg-white text-gray-800 rounded-full"
-                                  onClick={(e) => {
-                                    e.stopPropagation(); // Prevent selection toggle when clicking view button
-                                  }}
-                                >
-                                  <ExternalLink className="h-4 w-4" />
-                                </a>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                    <Separator />
-                  </>
-                )}
-
-                <div>
-                  <h3 className="text-md font-semibold mb-2">Content Sample</h3>
-                  <div className="bg-gray-800 p-3 rounded-md max-h-48 overflow-y-auto">
-                    <p className="text-sm text-gray-300">{websiteData.contentSample}</p>
-                  </div>
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
           )}
         </div>
 
-        <div className="lg:col-span-2">
+        {/* Right column - either website analysis or generated creatives */}
+        <div>
           {generatedImages.length > 0 ? (
-            <div className="space-y-4">
+            <div className="space-y-6">
               <h2 className="text-xl font-bold mb-4">Generated Ad Creatives</h2>
               <div className="mb-6">
                 <h3 className="text-lg font-semibold mb-3">Square Format (1:1) - For Instagram Posts</h3>
@@ -667,6 +616,130 @@ Additional guidance:
                 </div>
               </div>
             </div>
+          ) : websiteData ? (
+            <Card className="bg-dark-bg border-border-dark shadow-lg overflow-hidden h-full">
+              <CardHeader className="border-b border-gray-800">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle className="text-xl flex items-center gap-2">
+                      <div className="w-1 h-6 bg-primary-green rounded mr-2"></div>
+                      Brand Analysis Report
+                    </CardTitle>
+                    <CardDescription className="mt-1">
+                      Details extracted from <a href={url} target="_blank" rel="noopener noreferrer" className="font-medium text-primary-green hover:underline flex items-center">
+                        {url} <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </CardDescription>
+                  </div>
+                  <div className="bg-primary-green/20 text-primary-green text-xs px-3 py-1 rounded-full font-medium">
+                    AI-Powered Analysis
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-5 pt-6">
+                <div>
+                  <h3 className="text-md font-semibold mb-3 flex items-center">
+                    <div className="w-4 h-4 bg-primary-green/60 rounded-full mr-2"></div>
+                    Brand Color Palette
+                  </h3>
+                  <div className="grid grid-cols-5 sm:grid-cols-8 gap-3">
+                    {websiteData.colors.slice(0, 8).map((color, index) => (
+                      <div key={index} className="flex flex-col items-center group">
+                        <div 
+                          className="w-12 h-12 rounded-md border border-border-dark shadow-sm group-hover:scale-110 transition-transform" 
+                          style={{ backgroundColor: color }}
+                        ></div>
+                        <span className="text-xs mt-1 opacity-70 group-hover:opacity-100">{color}</span>
+                      </div>
+                    ))}
+                    {websiteData.colors.length > 8 && (
+                      <div className="flex flex-col items-center justify-center">
+                        <Badge className="bg-gray-700 text-white">+{websiteData.colors.length - 8} more</Badge>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <Separator className="bg-gray-700" />
+
+                <div>
+                  <h3 className="text-md font-semibold mb-3 flex items-center">
+                    <div className="w-4 h-4 bg-blue-500/60 rounded-full mr-2"></div>
+                    Typography
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {websiteData.fonts.length > 0 ? (
+                      websiteData.fonts.map((font, index) => (
+                        <Badge key={index} className="bg-blue-500/20 text-blue-300 border border-blue-500/40 py-1.5 px-3">
+                          {font}
+                        </Badge>
+                      ))
+                    ) : (
+                      <p className="text-sm text-gray-400 italic">No font information detected</p>
+                    )}
+                  </div>
+                </div>
+
+                <Separator className="bg-gray-700" />
+
+                <div className="col-span-2">
+                  <h3 className="text-md font-semibold mb-3 flex items-center">
+                    <div className="w-4 h-4 bg-amber-500/60 rounded-full mr-2"></div>
+                    Website Analysis Report
+                  </h3>
+                  <div className="bg-gray-800/50 p-5 rounded-md max-h-80 overflow-y-auto border border-gray-700 shadow-inner">
+                    <div className="text-sm text-gray-200 leading-relaxed prose prose-sm prose-invert max-w-none prose-headings:text-primary-green prose-headings:mb-2 prose-headings:mt-4 prose-p:mb-2 prose-li:mb-1">
+                      {websiteData.contentSummary ? (
+                        <div dangerouslySetInnerHTML={{ 
+                          __html: websiteData.contentSummary
+                            .replace(/\n\n/g, '<br/><br/>')
+                            .replace(/\n/g, '<br/>')
+                            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                            // Handle headings with emojis
+                            .replace(/#{3}\s+(🏢|👥|✨|💼|🗣️|📣|📈|📊)?\s*(.*?)(?=<br\/>|$)/g, 
+                              '<h3 class="text-primary-green font-semibold text-base flex items-center gap-2 border-b border-primary-green/30 pb-1 mt-4 mb-2">$1 $2</h3>')
+                            .replace(/#{2}\s+(🏢|👥|✨|💼|🗣️|📣|📈|📊)?\s*(.*?)(?=<br\/>|$)/g, 
+                              '<h2 class="text-primary-green font-bold text-lg flex items-center gap-2 border-b border-primary-green/30 pb-2 mt-5 mb-3">$1 $2</h2>')
+                            // Handle bullet points
+                            .replace(/- (.*?)(?=<br\/>|$)/g, 
+                              '<li class="flex items-start mb-2"><span class="text-primary-green mr-2 font-bold">•</span><span>$1</span></li>')
+                            // Wrap lists in proper ul tags
+                            .replace(/(<li.*?<\/li>)(<br\/>)*(<li.*?<\/li>)(<br\/>)*(<li.*?<\/li>)/g, '<ul class="mt-1 mb-3 pl-2">$1$3$5</ul>')
+                            .replace(/(<li.*?<\/li>)(<br\/>)*(<li.*?<\/li>)/g, '<ul class="mt-1 mb-3 pl-2">$1$3</ul>')
+                            .replace(/(<li.*?<\/li>)/g, '<ul class="mt-1 mb-3 pl-2">$1</ul>')
+                        }} />
+                      ) : (
+                        <p className="italic text-gray-400">Analyzing website content...</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+              <div className="px-6 py-4 bg-primary-green/10 border-t border-primary-green/30 mt-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-primary-green flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+                      <circle cx="12" cy="12" r="10" />
+                      <path d="m15 9-6 6" />
+                      <path d="m9 9 6 6" />
+                    </svg>
+                    <span className="font-semibold">Analysis complete</span>
+                  </p>
+                  <button 
+                    onClick={handleGenerateCreatives}
+                    disabled={isGeneratingImages || (useReferenceImages && selectedReferenceImages.length === 0)}
+                    className="bg-primary-green hover:bg-primary-green/90 text-black text-sm px-4 py-1 rounded-md font-medium flex items-center"
+                  >
+                    Generate Ad Creatives
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-2">
+                      <path d="M5 12h14" />
+                      <path d="m12 5 7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </Card>
           ) : (
             <div className="h-full flex items-center justify-center">
               <div className="text-center p-8 border border-dashed border-gray-600 rounded-lg w-full">
@@ -689,9 +762,9 @@ Additional guidance:
                     <path d="M12 10v8" />
                   </svg>
                 </div>
-                <h3 className="text-xl font-bold mb-2">Ad Creatives</h3>
+                <h3 className="text-xl font-bold mb-2">AI Creative Director</h3>
                 <p className="text-gray-400 mb-4">
-                  Enter your website URL and analyze it to generate custom advertising assets tailored to your brand.
+                  Enter your website URL to extract brand elements and generate professional ad creatives.
                 </p>
                 <div className="flex flex-col gap-2 text-left max-w-md mx-auto bg-gray-800 p-4 rounded-lg">
                   <div className="flex items-center">

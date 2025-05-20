@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { summarizeWebsiteContent } from '@/app/actions/summarize-website-content';
 
 export async function POST(req: NextRequest) {
   try {
@@ -54,6 +55,9 @@ export async function POST(req: NextRequest) {
     // Extract a sample of the content text
     const bodyText = html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
     const contentSample = bodyText.substring(0, 500) + (bodyText.length > 500 ? '...' : '');
+    
+    // Generate a summarized version of the content for display
+    const contentSummary = await summarizeWebsiteContent(bodyText, colors, Array.from(fonts) as string[]);
     
     // Extract images
     const imgRegex = /<img[^>]+src\s*=\s*["']([^"']+)["'][^>]*>/ig;
@@ -149,6 +153,7 @@ export async function POST(req: NextRequest) {
       colors,
       fonts: Array.from(fonts),
       contentSample,
+      contentSummary,
       images: proxiedImages,
       success: true
     });
