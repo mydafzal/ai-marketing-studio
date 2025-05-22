@@ -84,9 +84,41 @@ export async function POST(req: NextRequest) {
     };
     
     // Helper to add a color to our map with a weight
-    const addColorWithWeight = (color: string, weight: number, source: string = 'generic') => {
+    const addColorWithWeight = (color: string, weight: number, source: string = 'generic', elementContext: string = '') => {
       // Skip empty colors
       if (!color) return;
+      
+      // CRITICAL: Explicitly reject any colors from image elements or contexts
+      // This ensures we NEVER extract colors from images except logos
+      if (
+        (elementContext.includes('<img') || 
+         elementContext.includes('background-image') || 
+         source.includes('image')) && 
+        !source.includes('logo')
+      ) {
+        return;
+      }
+      
+      // Only consider brand-relevant sources according to user requirements:
+      // button colors, headline colors, text colors, background colors, and logo colors
+      const allowedSources = [
+        'button', 'primary-button', 'button-css', 'primary-btn-css',
+        'header', 'header-css', 'heading-text',
+        'text', 'paragraph', 'body-text',
+        'background', 'main-background',
+        'logo', 'brand-element'
+      ];
+      
+      // Skip if not from one of the specifically allowed sources
+      if (!allowedSources.includes(source) && 
+          // Also include sources that contain these keywords
+          !source.includes('button') && 
+          !source.includes('heading') && 
+          !source.includes('text') && 
+          !source.includes('background') && 
+          !source.includes('logo')) {
+        return;
+      }
       
       let r = 0, g = 0, b = 0;
       let normalizedColor = '';
@@ -151,8 +183,8 @@ export async function POST(req: NextRequest) {
       // Skip pure gray colors (R=G=B) in non-critical contexts
       const isGray = Math.abs(r - g) < 5 && Math.abs(g - b) < 5 && Math.abs(r - b) < 5;
       
-      // Higher-weight sources (like logos, buttons) can include borderline colors
-      const isPrioritySrc = ['logo', 'button', 'cta', 'primary', 'accent', 'brand'].includes(source);
+      // Higher-weight sources can include borderline colors
+      const isPrioritySrc = ['logo', 'button', 'heading-text', 'main-background'].includes(source);
       
       // Skip non-branded colors unless they're from critical branding elements
       if ((isExtremeBlack || isExtremeWhite || isGray) && !isPrioritySrc) {
@@ -164,21 +196,53 @@ export async function POST(req: NextRequest) {
       const min = Math.min(r, g, b);
       const saturation = max === 0 ? 0 : (max - min) / max;
       
+      // Add source-specific weight adjustments
+      let sourceBonus = 0;
+      if (source.includes('logo')) {
+        // Logo colors get highest priority
+        sourceBonus += 5;
+      } else if (source.includes('button')) {
+        // Button colors are usually brand colors
+        sourceBonus += 3;
+      } else if (source.includes('heading')) {
+        // Headings often use brand colors
+        sourceBonus += 2;
+      }
+      
       // Increase weight for more saturated colors (likely intentional brand choices)
       const saturationBonus = saturation > 0.5 ? 2 : (saturation > 0.2 ? 1 : 0);
       
-      // Add the color with its calculated weight
-      colorMap.set(normalizedColor, (colorMap.get(normalizedColor) || 0) + weight + saturationBonus);
+      // Add the color with its calculated weight and bonuses
+      colorMap.set(normalizedColor, (colorMap.get(normalizedColor) || 0) + weight + sourceBonus + saturationBonus);
     };
     
-    // Parse CSS variables for brand colors (these are gold for finding brand colors!)
+    // Parse CSS variables for brand colors but only those related to buttons, headings, text, backgrounds, and logos
     // Capture hex, rgb/rgba, and hsl/hsla color formats
-    const cssVarRegex = /--(?:[a-zA-Z0-9_-]*(?:primary|brand|accent|theme|corporate|main|base|highlight|color)[a-zA-Z0-9_-]*)\s*:\s*((?:#[a-fA-F0-9]{3,6}|rgba?\([^)]+\)|hsla?\([^)]+\)))/gi;
+    const cssVarRegex = /--(?:[a-zA-Z0-9_-]*(?:button|btn|heading|title|text|background|bg|logo|brand)[a-zA-Z0-9_-]*)\s*:\s*((?:#[a-fA-F0-9]{3,6}|rgba?\([^)]+\)|hsla?\([^)]+\)))/gi;
     const styleContent = html.toString();
     let match;
     
     while ((match = cssVarRegex.exec(styleContent)) !== null) {
-      addColorWithWeight(match[1], 15, 'css-var'); // Highest weight for CSS variables that look like brand colors
+      const varName = match[0].toLowerCase();
+      let sourceType;
+      
+      // Assign appropriate source based on CSS variable name
+      if (varName.includes('button') || varName.includes('btn')) {
+        sourceType = 'button';
+      } else if (varName.includes('heading') || varName.includes('title')) {
+        sourceType = 'heading-text';
+      } else if (varName.includes('text')) {
+        sourceType = 'text';
+      } else if (varName.includes('background') || varName.includes('bg')) {
+        sourceType = 'background';
+      } else if (varName.includes('logo') || varName.includes('brand')) {
+        sourceType = 'logo';
+      } else {
+        // Skip if not related to our target categories
+        continue;
+      }
+      
+      addColorWithWeight(match[1], 15, sourceType);
     }
     
     // Extract color roots from :root declarations
@@ -187,32 +251,34 @@ export async function POST(req: NextRequest) {
     while ((rootMatch = rootRegex.exec(styleContent)) !== null) {
       const rootContent = rootMatch[1];
       // Look for variable definitions in :root with hex, rgb/rgba, or hsl/hsla
-      const rootVarRegex = /--(?:[a-zA-Z0-9_-]*(?:primary|brand|accent|theme|corporate|main|base|highlight|color)[a-zA-Z0-9_-]*)\s*:\s*((?:#[a-fA-F0-9]{3,6}|rgba?\([^)]+\)|hsla?\([^)]+\)))/gi;
+      // Only target variables related to buttons, headings, text, backgrounds, and logos
+      const rootVarRegex = /--(?:[a-zA-Z0-9_-]*(?:button|btn|heading|title|text|background|bg|logo|brand)[a-zA-Z0-9_-]*)\s*:\s*((?:#[a-fA-F0-9]{3,6}|rgba?\([^)]+\)|hsla?\([^)]+\)))/gi;
       let cssVarMatch;
       while ((cssVarMatch = rootVarRegex.exec(rootContent)) !== null) {
-        addColorWithWeight(cssVarMatch[1], 15, 'root-var');
+        const varName = cssVarMatch[0].toLowerCase();
+        let sourceType;
+        
+        // Assign appropriate source based on CSS variable name
+        if (varName.includes('button') || varName.includes('btn')) {
+          sourceType = 'button';
+        } else if (varName.includes('heading') || varName.includes('title')) {
+          sourceType = 'heading-text';
+        } else if (varName.includes('text')) {
+          sourceType = 'text';
+        } else if (varName.includes('background') || varName.includes('bg')) {
+          sourceType = 'background';
+        } else if (varName.includes('logo') || varName.includes('brand')) {
+          sourceType = 'logo';
+        } else {
+          // Skip if not related to our target categories
+          continue;
+        }
+        
+        addColorWithWeight(cssVarMatch[1], 15, sourceType);
       }
     }
     
-    // Extract colors from elements with brand-related class/id names
-    const brandElementRegex = /<[^>]*(?:class|id)\s*=\s*["'][^"']*(?:brand|logo|primary|main-header|navbar|nav-primary|cta-primary|hero)[^"']*["'][^>]*\bstyle\s*=\s*["'][^"']*\b(?:color|background(?:-color)?)\s*:\s*((?:#[a-fA-F0-9]{3,6}|rgba?\([^)]+\)|hsla?\([^)]+\)))[^"']*["'][^>]*>/gi;
-    while ((match = brandElementRegex.exec(html)) !== null) {
-      addColorWithWeight(match[1], 14, 'brand-element');
-    }
-    
-    // Primary CTA buttons (extremely high weight - almost always brand colors)
-    const primaryBtnRegex = /<(?:button|a)[^>]*(?:class|id)\s*=\s*["'][^"']*(?:btn-primary|primary-button|main-cta|cta-primary|primary)[^"']*["'][^>]*\bstyle\s*=\s*["'][^"']*\bbackground(?:-color)?\s*:\s*((?:#[a-fA-F0-9]{3,6}|rgba?\([^)]+\)|hsla?\([^)]+\)))[^"']*["'][^>]*>/gi;
-    while ((match = primaryBtnRegex.exec(html)) !== null) {
-      addColorWithWeight(match[1], 13, 'primary-button');
-    }
-    
-    // Standard buttons (high weight - often brand colors)
-    const buttonColorRegex = /<button[^>]*\bstyle\s*=\s*["'][^"']*\bbackground(?:-color)?\s*:\s*((?:#[a-fA-F0-9]{3,6}|rgba?\([^)]+\)|hsla?\([^)]+\)))[^"']*["'][^>]*>/gi;
-    while ((match = buttonColorRegex.exec(html)) !== null) {
-      addColorWithWeight(match[1], 10, 'button');
-    }
-    
-    // Logo elements (very high weight)
+    // Logo elements (highest priority)
     const logoRegex = /<[^>]*(?:class|id)\s*=\s*["'][^"']*(?:logo|brand)[^"']*["'][^>]*>/gi;
     let logoElement;
     while ((logoElement = logoRegex.exec(html)) !== null) {
@@ -220,14 +286,58 @@ export async function POST(req: NextRequest) {
       const logoColorRegex = /\bstyle\s*=\s*["'][^"']*\b(?:color|background(?:-color)?)\s*:\s*((?:#[a-fA-F0-9]{3,6}|rgba?\([^)]+\)|hsla?\([^)]+\)))[^"']*["']/i;
       const logoColorMatch = logoElement[0].match(logoColorRegex);
       if (logoColorMatch) {
-        addColorWithWeight(logoColorMatch[1], 12, 'logo');
+        // Pass the element context to check if it contains image references
+        addColorWithWeight(logoColorMatch[1], 15, 'logo', logoElement[0]);
       }
     }
     
-    // Headers and hero sections (high weight)
-    const headerRegex = /<(?:header|div[^>]*(?:class|id)\s*=\s*["'][^"']*(?:header|hero|banner|masthead|top-banner)[^"']*["'])[^>]*\bstyle\s*=\s*["'][^"']*\b(?:color|background(?:-color)?)\s*:\s*((?:#[a-fA-F0-9]{3,6}|rgba?\([^)]+\)|hsla?\([^)]+\)))[^"']*["'][^>]*>/gi;
-    while ((match = headerRegex.exec(html)) !== null) {
-      addColorWithWeight(match[1], 11, 'header');
+    // Button elements (high priority)
+    // Primary buttons
+    const primaryBtnRegex = /<(?:button|a)[^>]*(?:class|id)\s*=\s*["'][^"']*(?:btn-primary|primary-button|main-cta|cta-primary|primary)[^"']*["'][^>]*\bstyle\s*=\s*["'][^"']*\bbackground(?:-color)?\s*:\s*((?:#[a-fA-F0-9]{3,6}|rgba?\([^)]+\)|hsla?\([^)]+\)))[^"']*["'][^>]*>/gi;
+    while ((match = primaryBtnRegex.exec(html)) !== null) {
+      addColorWithWeight(match[1], 14, 'button', match[0]);
+    }
+    
+    // Standard buttons
+    const buttonColorRegex = /<button[^>]*\bstyle\s*=\s*["'][^"']*\bbackground(?:-color)?\s*:\s*((?:#[a-fA-F0-9]{3,6}|rgba?\([^)]+\)|hsla?\([^)]+\)))[^"']*["'][^>]*>/gi;
+    while ((match = buttonColorRegex.exec(html)) !== null) {
+      addColorWithWeight(match[1], 12, 'button', match[0]);
+    }
+    
+    // Button text colors
+    const buttonTextColorRegex = /<button[^>]*\bstyle\s*=\s*["'][^"']*\bcolor\s*:\s*((?:#[a-fA-F0-9]{3,6}|rgba?\([^)]+\)|hsla?\([^)]+\)))[^"']*["'][^>]*>/gi;
+    while ((match = buttonTextColorRegex.exec(html)) !== null) {
+      addColorWithWeight(match[1], 10, 'button', match[0]);
+    }
+    
+    // Headline colors - h1, h2, h3 elements
+    const headlineRegex = /<h[1-3][^>]*\bstyle\s*=\s*["'][^"']*\bcolor\s*:\s*((?:#[a-fA-F0-9]{3,6}|rgba?\([^)]+\)|hsla?\([^)]+\)))[^"']*["'][^>]*>/gi;
+    while ((match = headlineRegex.exec(html)) !== null) {
+      addColorWithWeight(match[1], 13, 'heading-text', match[0]);
+    }
+    
+    // Header background colors
+    const headerBgRegex = /<(?:header|div[^>]*(?:class|id)\s*=\s*["'][^"']*(?:header|hero|banner|masthead|top-banner)[^"']*["'])[^>]*\bstyle\s*=\s*["'][^"']*\bbackground(?:-color)?\s*:\s*((?:#[a-fA-F0-9]{3,6}|rgba?\([^)]+\)|hsla?\([^)]+\)))[^"']*["'][^>]*>/gi;
+    while ((match = headerBgRegex.exec(html)) !== null) {
+      // Skip if the header contains an image background (we only want solid color backgrounds)
+      if (!match[0].includes('background-image') && !match[0].includes('<img')) {
+        addColorWithWeight(match[1], 11, 'background', match[0]);
+      }
+    }
+    
+    // Text colors
+    const textColorRegex = /<(?:p|span|div|a)[^>]*\bstyle\s*=\s*["'][^"']*\bcolor\s*:\s*((?:#[a-fA-F0-9]{3,6}|rgba?\([^)]+\)|hsla?\([^)]+\)))[^"']*["'][^>]*>/gi;
+    while ((match = textColorRegex.exec(html)) !== null) {
+      addColorWithWeight(match[1], 9, 'text', match[0]);
+    }
+    
+    // Background colors of main elements
+    const mainBgRegex = /<(?:body|main|div[^>]*(?:class|id)\s*=\s*["'][^"']*(?:main|content|container|wrapper|page)[^"']*["'])[^>]*\bstyle\s*=\s*["'][^"']*\bbackground(?:-color)?\s*:\s*((?:#[a-fA-F0-9]{3,6}|rgba?\([^)]+\)|hsla?\([^)]+\)))[^"']*["'][^>]*>/gi;
+    while ((match = mainBgRegex.exec(html)) !== null) {
+      // Skip if the element contains an image background
+      if (!match[0].includes('background-image') && !match[0].includes('<img')) {
+        addColorWithWeight(match[1], 10, 'background', match[0]);
+      }
     }
     
     // Extract and process CSS rules for colors from style tags
@@ -236,61 +346,84 @@ export async function POST(req: NextRequest) {
       // Extract style content
       const styleContent = styleTag.replace(/<style[^>]*>|<\/style>/gi, '');
       
-      // CSS classes that typically contain brand colors
-      const brandCssRegex = /\.(?:brand|primary|logo|accent|corporate|highlight|main|cta-primary|btn-primary)[^{]*{[^}]*\b(?:color|background(?:-color)?)\s*:\s*((?:#[a-fA-F0-9]{3,6}|rgba?\([^)]+\)|hsla?\([^)]+\)))[^}]*}/gi;
-      while ((match = brandCssRegex.exec(styleContent)) !== null) {
-        addColorWithWeight(match[1], 12, 'brand-css');
+      // Skip stylesheets that seem to be for images or non-UI content
+      if (
+        styleContent.includes('background-image') && 
+        (styleContent.includes('.jpg') || 
+         styleContent.includes('.png') || 
+         styleContent.includes('.gif') || 
+         styleContent.includes('.svg'))
+      ) {
+        continue;
       }
       
-      // Primary button selectors (nearly always brand colors)
-      const primaryBtnCssRegex = /\.(?:btn-primary|button-primary|primary-button|cta-primary)[^{]*{[^}]*\bbackground(?:-color)?\s*:\s*((?:#[a-fA-F0-9]{3,6}|rgba?\([^)]+\)|hsla?\([^)]+\)))[^}]*}/gi;
+      // Logo selectors - very high priority
+      const logoCssRegex = /(?:\.logo|#logo|\[class\*="logo"]|\[id\*="logo"]|\.brand|#brand)[^{]*{[^}]*\b(?:color|background(?:-color)?)\s*:\s*((?:#[a-fA-F0-9]{3,6}|rgba?\([^)]+\)|hsla?\([^)]+\)))[^}]*}/gi;
+      while ((match = logoCssRegex.exec(styleContent)) !== null) {
+        // Skip if the rule includes background-image
+        if (!match[0].includes('background-image')) {
+          addColorWithWeight(match[1], 15, 'logo', match[0]);
+        }
+      }
+      
+      // Primary Button selectors - high priority
+      const primaryBtnCssRegex = /\.(?:btn-primary|button-primary|primary-button|cta-primary|primary-btn)[^{]*{[^}]*\bbackground(?:-color)?\s*:\s*((?:#[a-fA-F0-9]{3,6}|rgba?\([^)]+\)|hsla?\([^)]+\)))[^}]*}/gi;
       while ((match = primaryBtnCssRegex.exec(styleContent)) !== null) {
-        addColorWithWeight(match[1], 12, 'primary-btn-css');
+        // Skip if the rule includes background-image
+        if (!match[0].includes('background-image')) {
+          addColorWithWeight(match[1], 14, 'button', match[0]);
+        }
       }
       
-      // Button and CTA selectors
-      const buttonCssRegex = /(?:\.btn|\.button|\.cta|button|\[type=['"]submit['"]\])[^{]*{[^}]*\bbackground(?:-color)?\s*:\s*((?:#[a-fA-F0-9]{3,6}|rgba?\([^)]+\)|hsla?\([^)]+\)))[^}]*}/gi;
+      // Standard Button selectors
+      const buttonCssRegex = /(?:\.btn|\.button|button|\[type=['"]submit['"]\])[^{]*{[^}]*\bbackground(?:-color)?\s*:\s*((?:#[a-fA-F0-9]{3,6}|rgba?\([^)]+\)|hsla?\([^)]+\)))[^}]*}/gi;
       while ((match = buttonCssRegex.exec(styleContent)) !== null) {
-        addColorWithWeight(match[1], 9, 'button-css');
+        // Skip if the rule includes background-image
+        if (!match[0].includes('background-image')) {
+          addColorWithWeight(match[1], 12, 'button', match[0]);
+        }
       }
       
-      // Header and nav selectors
-      const headerCssRegex = /(?:header|\.header|nav|\.navbar|\.navigation)[^{]*{[^}]*\b(?:color|background(?:-color)?)\s*:\s*((?:#[a-fA-F0-9]{3,6}|rgba?\([^)]+\)|hsla?\([^)]+\)))[^}]*}/gi;
+      // Button text colors
+      const buttonTextCssRegex = /(?:\.btn|\.button|button|\[type=['"]submit['"]\])[^{]*{[^}]*\bcolor\s*:\s*((?:#[a-fA-F0-9]{3,6}|rgba?\([^)]+\)|hsla?\([^)]+\)))[^}]*}/gi;
+      while ((match = buttonTextCssRegex.exec(styleContent)) !== null) {
+        addColorWithWeight(match[1], 10, 'button', match[0]);
+      }
+      
+      // Headline selectors
+      const headlineCssRegex = /(?:h1|h2|h3|\.heading|\.title|\.headline)[^{]*{[^}]*\bcolor\s*:\s*((?:#[a-fA-F0-9]{3,6}|rgba?\([^)]+\)|hsla?\([^)]+\)))[^}]*}/gi;
+      while ((match = headlineCssRegex.exec(styleContent)) !== null) {
+        addColorWithWeight(match[1], 13, 'heading-text', match[0]);
+      }
+      
+      // Text selectors
+      const textCssRegex = /(?:p|\.text|body|\.body-text)[^{]*{[^}]*\bcolor\s*:\s*((?:#[a-fA-F0-9]{3,6}|rgba?\([^)]+\)|hsla?\([^)]+\)))[^}]*}/gi;
+      while ((match = textCssRegex.exec(styleContent)) !== null) {
+        addColorWithWeight(match[1], 9, 'text', match[0]);
+      }
+      
+      // Background selectors - only solid background colors, not images
+      const backgroundCssRegex = /(?:body|main|\.container|\.wrapper|\.content|#main|#content)[^{]*{[^}]*\bbackground(?:-color)?\s*:\s*((?:#[a-fA-F0-9]{3,6}|rgba?\([^)]+\)|hsla?\([^)]+\)))[^}]*}/gi;
+      while ((match = backgroundCssRegex.exec(styleContent)) !== null) {
+        // Skip if the rule includes background-image
+        if (!match[0].includes('background-image')) {
+          addColorWithWeight(match[1], 10, 'background', match[0]);
+        }
+      }
+      
+      // Header background selectors - only solid background colors
+      const headerCssRegex = /(?:header|\.header|\.hero|\.banner)[^{]*{[^}]*\bbackground(?:-color)?\s*:\s*((?:#[a-fA-F0-9]{3,6}|rgba?\([^)]+\)|hsla?\([^)]+\)))[^}]*}/gi;
       while ((match = headerCssRegex.exec(styleContent)) !== null) {
-        addColorWithWeight(match[1], 8, 'header-css');
-      }
-      
-      // Link colors (often brand-related)
-      const linkCssRegex = /(?:a|\.link)[^{]*{[^}]*\bcolor\s*:\s*((?:#[a-fA-F0-9]{3,6}|rgba?\([^)]+\)|hsla?\([^)]+\)))[^}]*}/gi;
-      while ((match = linkCssRegex.exec(styleContent)) !== null) {
-        addColorWithWeight(match[1], 6, 'link-css');
-      }
-      
-      // Look for accent/focus/hover states (often variations of brand colors)
-      const accentCssRegex = /(?:\.active|:hover|:focus|\.focus|\.selected|\.current)[^{]*{[^}]*\b(?:color|background(?:-color)?|border-color)\s*:\s*((?:#[a-fA-F0-9]{3,6}|rgba?\([^)]+\)|hsla?\([^)]+\)))[^}]*}/gi;
-      while ((match = accentCssRegex.exec(styleContent)) !== null) {
-        addColorWithWeight(match[1], 5, 'accent-css');
+        // Skip if the rule includes background-image
+        if (!match[0].includes('background-image')) {
+          addColorWithWeight(match[1], 11, 'background', match[0]);
+        }
       }
     }
     
-    // As a fallback, also extract all hex, rgb, and hsl color codes anywhere in the document (low weight)
-    const allHexColorRegex = /#([a-fA-F0-9]{3,6})\b/g;
-    const allHexMatches = html.match(allHexColorRegex) || [];
-    for (const color of allHexMatches) {
-      addColorWithWeight(color, 1, 'fallback-hex');
-    }
-    
-    const allRgbColorRegex = /\brgba?\([^)]+\)/g;
-    const allRgbMatches = html.match(allRgbColorRegex) || [];
-    for (const color of allRgbMatches) {
-      addColorWithWeight(color, 1, 'fallback-rgb');
-    }
-    
-    const allHslColorRegex = /\bhsla?\([^)]+\)/g;
-    const allHslMatches = html.match(allHslColorRegex) || [];
-    for (const color of allHslMatches) {
-      addColorWithWeight(color, 1, 'fallback-hsl');
-    }
+    // We're removing the fallback color extraction that scans the entire document
+    // This way we only get colors from the specific UI elements requested
+    // No fallback extraction means we won't accidentally include colors from images
     
     // Convert the color Map to an array of [color, weight] pairs
     let colorEntries = Array.from(colorMap.entries());
@@ -326,7 +459,7 @@ export async function POST(req: NextRequest) {
     for (const [color, weight] of colorEntries) {
       let foundSimilar = false;
       
-      for (const [existingColor] of groupedColors.entries()) {
+      for (const [existingColor, existingWeight] of Array.from(groupedColors.entries())) {
         const distance = calculateColorDistance(color, existingColor);
         
         if (distance < COLOR_SIMILARITY_THRESHOLD) {
@@ -350,10 +483,45 @@ export async function POST(req: NextRequest) {
     const finalColorEntries = Array.from(groupedColors.entries())
       .sort((a, b) => b[1] - a[1]);
     
-    // Take top colors
-    const colors = finalColorEntries
-      .map(([color]) => color)
-      .slice(0, 8); // Get top 8 colors
+    // Define a confidence threshold - colors with weight below this are not considered brand colors
+    // This ensures we only return colors we're confident about
+    const BRAND_COLOR_CONFIDENCE_THRESHOLD = 10;
+    
+    // For debugging: console log the color weights
+    console.log('Found color candidates with weights:');
+    finalColorEntries.forEach(([color, weight]) => {
+      console.log(`${color}: ${weight}`);
+    });
+    
+    // First, get all colors that meet our confidence threshold
+    const confidentColors = finalColorEntries
+      .filter(([_, weight]) => weight >= BRAND_COLOR_CONFIDENCE_THRESHOLD)
+      .map(([color]) => color);
+    
+    // Log how many colors met our confidence threshold  
+    console.log(`Found ${confidentColors.length} brand colors that meet confidence threshold.`);
+    
+    // Take only the top 3 colors that meet our threshold
+    let colors = confidentColors.slice(0, 3);
+    
+    // If we don't have at least one color that meets our threshold, take the top one
+    // But only if it has a minimum acceptable weight
+    if (colors.length === 0 && finalColorEntries.length > 0) {
+      const topColorWeight = finalColorEntries[0][1];
+      if (topColorWeight >= 8) { // Only use top color if it has at least some reasonable weight
+        colors.push(finalColorEntries[0][0]);
+        console.log(`Added top color as fallback: ${finalColorEntries[0][0]} with weight ${topColorWeight}`);
+      }
+    }
+    
+    // If we have fewer than 3 colors but at least one, log that we're only using what we found
+    if (colors.length > 0 && colors.length < 3) {
+      console.log(`Only found ${colors.length} confident brand colors, will only use these for ad creatives`);
+    }
+    
+    // Log the final selected colors
+    console.log('Final colors selected for ad creatives:');
+    colors.forEach(color => console.log(color));
 
     // Extract font information with priority for headings and important text
     const fontMap = new Map<string, number>();

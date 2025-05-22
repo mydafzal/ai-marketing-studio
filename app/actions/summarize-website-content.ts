@@ -34,7 +34,7 @@ The website could not be properly accessed or contains insufficient textual cont
 - Access restrictions on the website
 
 ### Available Visual Information
-${colors.length > 0 ? `- **Brand Colors Detected**: ${colors.slice(0, 8).join(', ')}` : "- No brand colors could be detected"}
+${colors.length > 0 ? `- **Brand Colors Detected**: ${colors.slice(0, 3).join(', ')}` : "- No brand colors could be detected"}
 ${fonts.length > 0 ? `- **Typography Detected**: ${fonts.slice(0, 5).join(', ')}` : "- No typography information could be detected"}
 
 ### Troubleshooting Suggestions
@@ -107,9 +107,12 @@ Format your report beautifully with the following sections:
 
 ### 🎨 Brand Visual Identity
 - **Primary Brand Color**: [First color in the list, generally the main brand color]
-- **Secondary Color**: [Second color, typically used for accents]
+- **Secondary Color**: [Second color if available, typically used for accents]
+- **Tertiary Color**: [Third color if available, used for additional accents]
 - **Typography**: [Main font identified, and how it contributes to brand identity]
 - **Visual Style**: [Is the brand minimalist, bold, elegant, playful, etc.]
+
+IMPORTANT: For ad creative generation, ONLY use the brand colors provided. Do not suggest or use any additional colors.
 
 ### 🗣️ Brand Voice & Tone
 [Analysis of communication style and emotional resonance]
@@ -131,13 +134,15 @@ Make your analysis detailed, insightful, and visually structured with proper mar
 CONTENT:
 ${cleanedContent.slice(0, 7500)} ${cleanedContent.length > 7500 ? '... [additional content truncated]' : ''}
 
-BRAND COLORS (in priority order - higher priority colors first):
-${colors.slice(0, 8).join(', ')}
+BRAND COLORS (use ONLY these colors for ad creatives, in priority order):
+${colors.slice(0, 3).join(', ')}
 
 BRAND TYPOGRAPHY (in priority order - higher priority fonts first):
 ${fonts.slice(0, 5).join(', ')}
 
-I need a structured summary that captures the essence of this business for AI-generated ad creatives. If any section is unclear from the content, make your best educated guess based on the available information, but keep it realistic.`
+I need a structured summary that captures the essence of this business for AI-generated ad creatives. If any section is unclear from the content, make your best educated guess based on the available information, but keep it realistic.
+
+IMPORTANT: When creating ad creatives, ONLY use the brand colors listed above. Do not use any additional colors.`
         }
       ],
       temperature: 0.4,
@@ -153,10 +158,10 @@ I need a structured summary that captures the essence of this business for AI-ge
     let fallbackSummary = "## ⚠️ AI Analysis Error\n\n";
     fallbackSummary += "There was an error generating the complete website analysis. Here's what we were able to extract:\n\n";
     
-    // Include visual identity information if available
+    // Include visual identity information if available - only up to 3 brand colors
     if (colors.length > 0) {
-      fallbackSummary += "### 🎨 Brand Colors\n";
-      fallbackSummary += colors.slice(0, 8).map(color => `- ${color}`).join('\n');
+      fallbackSummary += "### 🎨 Brand Colors (use ONLY these colors for ad creatives)\n";
+      fallbackSummary += colors.slice(0, 3).map(color => `- ${color}`).join('\n');
       fallbackSummary += "\n\n";
     }
     
