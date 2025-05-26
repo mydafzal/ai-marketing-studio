@@ -5,7 +5,9 @@ export async function POST(req: Request) {
   const body = await req.json()
 
   try {
-    await trackServerEvent(body)
+    if(process.env.NODE_ENV == "production"){
+      await trackServerEvent(body)
+    }
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error tracking event:', error)

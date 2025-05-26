@@ -14,6 +14,7 @@ export interface CampaignSummary {
     reach: number;
     unique_clicks: number;
     daily_budget: number;
+    other_campaign_insights?: Record<string, any>;
 }
 
 export async function getCampaignSummary(campaignId?: string): Promise<CampaignSummary> {

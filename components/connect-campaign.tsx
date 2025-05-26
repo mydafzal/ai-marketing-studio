@@ -243,7 +243,7 @@ export function ConnectCampaign({ connectingUiProps }: ConnectCampaignProps) {
            lastUserMessage.toLowerCase().includes('stats') ||
            lastUserMessage.toLowerCase().includes('metrics'))) {
         // User was likely asking about campaign results/performance
-        responsePrompt += 'Now continue with showing the campaign results or metrics as previously discussed.';
+        responsePrompt += 'Now continue with showing the campaign results or metrics as previously discussed. Use other campaign information to provide comparative analysis if available.';
       } else if (typeof lastUserMessage === 'string' && 
                 (lastUserMessage.toLowerCase().includes('edit') || 
                  lastUserMessage.toLowerCase().includes('change') ||

@@ -19,6 +19,12 @@ export async function updateCampaignInfo(campaignSummary: CampaignSummary) {
                 content: `Campaign is connected, the knowledge base about current campaign information: ${JSON.stringify(campaignSummary)}`,
                 timestamp: new Date().toISOString()
             },
+            {
+                id: 'campaign-info',
+                role: 'system',
+                content: `Other campaign information: ${JSON.stringify(campaignSummary.other_campaign_insights)}`,
+                timestamp: new Date().toISOString()
+            },
             // Update the AI state with the latest campaign information and filter out old campaign info messages
             ...aiState.get().messages.filter((message: Message) => message.id !== 'campaign-info-data' || message.role !== 'system'),
         ]
