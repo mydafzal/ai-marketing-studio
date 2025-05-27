@@ -41,22 +41,37 @@ export default function AiCreativeDirectorPage() {
     contentSummary: string;
     images: string[];
   } | null>(null);
-  // Organized by funnel stage and format
+  
   const [generatedImages, setGeneratedImages] = useState<{
     awareness: { square: string; vertical: string };
     consideration: { square: string; vertical: string };
     conversion: { square: string; vertical: string };
   } | null>(null);
+  
   const [error, setError] = useState<string | null>(null);
   const [imageLoadErrors, setImageLoadErrors] = useState<Record<string, boolean>>({});
   const [selectedReferenceImages, setSelectedReferenceImages] = useState<string[]>([]);
   const [useReferenceImages, setUseReferenceImages] = useState<boolean>(true);
   
-  // New state for large image preview modal
+  // Preview modal state
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [previewImageFormat, setPreviewImageFormat] = useState<"square" | "vertical" | null>(null);
   const [previewStage, setPreviewStage] = useState<"awareness" | "consideration" | "conversion" | null>(null);
+  
+  // Campaign selection state
+  const [selectedCampaigns, setSelectedCampaigns] = useState<{
+    campaign1: boolean;
+    campaign2: boolean;
+    campaign3: boolean;
+  }>({
+    campaign1: false,
+    campaign2: false,
+    campaign3: false
+  });
+  
+  const [showSubscribeScreen, setShowSubscribeScreen] = useState<boolean>(false);
 
+  // Function to handle website scraping
   const handleScrapeWebsite = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -73,9 +88,6 @@ export default function AiCreativeDirectorPage() {
       setImageLoadErrors({});
       setSelectedReferenceImages([]);
       
-      // First step: Show the loading animation (handled by WebsiteAnalysisLoader component)
-      // The animated loading screen will be shown while we fetch and process data
-      
       const response = await fetch("/api/website-scrape", {
         method: "POST",
         headers: {
@@ -90,12 +102,8 @@ export default function AiCreativeDirectorPage() {
         throw new Error(data.error || "Failed to analyze website");
       }
       
-      // Before displaying the results, add a deliberate delay to ensure
-      // the AI has enough time to complete its analysis and the user can see the loading animation
-      // This helps prevent seeing incomplete content and enhances the AI experience
       await new Promise(resolve => setTimeout(resolve, 6000));
       
-      // Clear error message and set the data
       setError(null);
       setWebsiteData(data);
     } catch (err) {
@@ -105,6 +113,7 @@ export default function AiCreativeDirectorPage() {
     }
   };
 
+  // Function to handle image errors
   const handleImageError = (imageUrl: string) => {
     setImageLoadErrors(prev => ({
       ...prev,
@@ -112,21 +121,21 @@ export default function AiCreativeDirectorPage() {
     }));
   };
   
+  // Function to toggle reference images
   const toggleReferenceImage = (imageUrl: string) => {
     setSelectedReferenceImages(prev => {
       if (prev.includes(imageUrl)) {
         return prev.filter(url => url !== imageUrl);
       } else {
-        // Limit to 4 reference images (OpenAI API limit)
         if (prev.length >= 4) {
-          return [...prev.slice(1), imageUrl]; // Remove oldest, add new one
+          return [...prev.slice(1), imageUrl];
         }
         return [...prev, imageUrl];
       }
     });
   };
 
-  // Helper function to convert an image URL to a base64 data URL
+  // Helper function to convert image to base64
   const convertImageUrlToBase64 = async (imageUrl: string): Promise<string | null> => {
     try {
       const response = await fetch(imageUrl);
@@ -136,7 +145,6 @@ export default function AiCreativeDirectorPage() {
       
       const blob = await response.blob();
       
-      // Create a FileReader to convert the blob to a base64 data URL
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onloadend = () => resolve(reader.result as string);
@@ -149,6 +157,7 @@ export default function AiCreativeDirectorPage() {
     }
   };
 
+  // Function to generate creatives
   const handleGenerateCreatives = async () => {
     if (!websiteData) {
       setError("Please analyze a website first");
@@ -158,371 +167,139 @@ export default function AiCreativeDirectorPage() {
     try {
       setIsGeneratingImages(true);
       setError(null);
-      console.log("Starting creative generation process...");
-
-      // Create the base prompt that will be customized for each funnel stage
-      const basePrompt = `
-You are a world-class creative director tasked with designing a high-converting visual ad for this brand.
-
-**Brand Colors**: ${websiteData.colors.slice(0, 5).join(', ')}  
-**Font Style**: ${websiteData.fonts.slice(0, 3).join(', ') || "clean, modern fonts"}  
-**Visual Identity**: Derive your design inspiration from the brand's look and feel.
-
-**Product/Service Summary**:  
-"${websiteData.contentSample.substring(0, 300)}..."
-
-Your task is to design a visually compelling advertisement image that:
-- Instantly captures attention within 2 seconds
-- Clearly communicates the brand's core value proposition
-- Reflects the visual style and emotion of the website
-- Uses harmonious colors and typography consistent with the brand
-- Includes a bold, scroll-stopping headline
-- Includes a persuasive call-to-action (CTA) that drives clicks or signups
-
-Additional guidance:
-- Think like a conversion-optimized designer, not a generic graphic artist
-- Your image should work for paid advertising (e.g. Facebook, Instagram, Google Display)
-- Prioritize clarity, contrast, emotional resonance, and simplicity
-- Use strong composition and negative space to guide the eye
-`;
-
-      // Show the AdCreativeLoader component - this is completely separate from the actual generation process,
-      // it just provides a nice visual for the user while the real generation happens in the background
-
-      // Add reference to website images in the prompt if we aren't using them directly
-      let additionalInfo = "";
-      if (validWebsiteImages.length > 0 && !useReferenceImages) {
-        additionalInfo = `\nThe website contains images that showcase: ${
-          validWebsiteImages.length === 1 
-          ? "a specific visual element that should inspire your design" 
-          : "specific visual elements that should inspire your design"
-        }.`;
-      }
       
-      // Add campaign goals information to the prompt
-      let campaignGoalInfo = "\nThe campaign goals are:";
+      // Reference images setup
+      let referenceImagesBase64: string[] = [];
       
-      // Check each goal and add specific instructions
-      if (campaignGoals.leads) {
-        campaignGoalInfo += `\n- GENERATE LEADS: Focus on encouraging sign-ups, contact form submissions, or consultations. Design creatives that emphasize the value of taking immediate action and highlight lead magnets or offers.`;
-      }
-      
-      if (campaignGoals.emails) {
-        campaignGoalInfo += `\n- INCREASE EMAIL SUBSCRIBERS: Design creatives that promote newsletter benefits, exclusive content, or special offers available only to subscribers. Focus on making the email subscription process seem valuable and low-friction.`;
-      }
-      
-      if (campaignGoals.sales) {
-        campaignGoalInfo += `\n- DRIVE SALES: Create creatives that showcase products/services, emphasize unique selling propositions, and include strong purchase CTAs. Focus on benefits, social proof, and urgency to drive immediate purchase decisions.`;
-      }
-      
-      if (campaignGoals.brand) {
-        campaignGoalInfo += `\n- BUILD BRAND AWARENESS: Design creatives that communicate the brand's personality, values, and story. Focus on memorable visuals and messaging that will stick in the audience's mind, even if they don't take immediate action.`;
-      }
-      
-      if (campaignGoals.recruiting) {
-        campaignGoalInfo += `\n- RECRUITING: Create creatives focused on attracting potential job candidates. Highlight company culture, benefits, growth opportunities, and what makes the workplace unique. Use language that appeals to job seekers and emphasizes the value of joining the team.`;
-      }
-      
-      // If no goals selected, default to leads
-      if (!campaignGoals.leads && !campaignGoals.emails && !campaignGoals.sales && !campaignGoals.brand && !campaignGoals.recruiting) {
-        campaignGoalInfo = `\nThe primary campaign goal is to GENERATE LEADS. Focus on encouraging sign-ups, contact form submissions, or consultations. Design creatives that emphasize the value of taking immediate action and highlight lead magnets or offers.`;
-      }
-      
-      // Combine additional info
-      additionalInfo = additionalInfo + campaignGoalInfo;
-      
-      // Process reference images if selected
-      let base64Images: string[] = [];
+      // Only process reference images if the user has selected to use them
       if (useReferenceImages && selectedReferenceImages.length > 0) {
-        // We no longer need to show this error message since we have the animated loader now
-        // setError("Converting reference images... please wait");
-        
-        try {
-          // Only use the first image to avoid compatibility issues with OpenAI API
-          // The error suggests problems with multiple reference images
-          const firstImageUrl = selectedReferenceImages[0];
-          console.log("Processing reference image:", firstImageUrl);
-          
-          const base64Image = await convertImageUrlToBase64(firstImageUrl);
-          if (base64Image) {
-            base64Images.push(base64Image);
-            console.log("Successfully converted image to base64");
-          } else {
-            console.error("Failed to convert image to base64");
-          }
-          
-          if (base64Images.length === 0) {
-            console.error("No images were successfully converted");
-            throw new Error("Failed to convert reference image. Please try selecting a different image.");
-          }
-        } catch (err) {
-          console.error("Error processing reference images:", err);
-          // Continue without reference images rather than failing completely
-          // We don't need to show this error message now that we have the animated loader
-          // setError("Could not process reference images. Continuing without them...");
-          base64Images = [];
-          // No need for a delay since we have the animation
-        }
-      }
-
-      // Funnel stage specific prompts
-      const funnelStagePrompts = {
-        awareness: {
-          square: `${basePrompt}${additionalInfo}
-**AWARENESS STAGE CREATIVE**
-This ad is for the top of the funnel to build brand awareness:
-- Focus on making a memorable first impression
-- Highlight a broad problem or opportunity
-- Introduce the brand without specifics of products/services 
-- Use eye-catching visuals that convey the brand's personality
-- Create emotional impact without expecting immediate conversion
-- Aim for broad appeal within the target audience
-- Keep text minimal and focus on bold visuals
-- Leave the audience wanting to learn more
-
-Output: a realistic, high-resolution square (1:1) ad image optimized for awareness stage marketing.`,
-
-          vertical: `${basePrompt}${additionalInfo}
-**AWARENESS STAGE CREATIVE**
-This ad is for the top of the funnel to build brand awareness:
-- Focus on making a memorable first impression
-- Highlight a broad problem or opportunity
-- Introduce the brand without specifics of products/services 
-- Use eye-catching visuals that convey the brand's personality
-- Create emotional impact without expecting immediate conversion
-- Aim for broad appeal within the target audience
-- Keep text minimal and focus on bold visuals
-- Leave the audience wanting to learn more
-
-Output: a realistic, high-resolution vertical (9:16) ad image optimized for awareness stage marketing on reels and stories.`
-        },
-        
-        consideration: {
-          square: `${basePrompt}${additionalInfo}
-**CONSIDERATION STAGE CREATIVE**
-This ad is for the middle of the funnel to build interest and consideration:
-- Focus on specific problems and solutions
-- Highlight key benefits and unique selling propositions
-- Show how your product/service solves specific pain points
-- Include more detailed information than awareness ads
-- Use visuals that demonstrate the product/service in context
-- Appeal to both emotional and rational decision-making
-- Include clear benefits bulleted or numbered if appropriate
-- Use a CTA that encourages learning more (like "Discover How" or "See Why")
-
-Output: a realistic, high-resolution square (1:1) ad image optimized for consideration stage marketing.`,
-
-          vertical: `${basePrompt}${additionalInfo}
-**CONSIDERATION STAGE CREATIVE**
-This ad is for the middle of the funnel to build interest and consideration:
-- Focus on specific problems and solutions
-- Highlight key benefits and unique selling propositions
-- Show how your product/service solves specific pain points
-- Include more detailed information than awareness ads
-- Use visuals that demonstrate the product/service in context
-- Appeal to both emotional and rational decision-making
-- Include clear benefits bulleted or numbered if appropriate
-- Use a CTA that encourages learning more (like "Discover How" or "See Why")
-
-Output: a realistic, high-resolution vertical (9:16) ad image optimized for consideration stage marketing on reels and stories.`
-        },
-        
-        conversion: {
-          square: `${basePrompt}${additionalInfo}
-**CONVERSION STAGE CREATIVE**
-This ad is for the bottom of the funnel to drive conversions:
-- Focus on creating urgency and prompting immediate action
-- Include specific offers, promotions, or limited-time deals
-- Highlight social proof, testimonials, or results
-- Show the product/service with clear value proposition
-- Address final objections or hesitations
-- Use strong, action-oriented language
-- Include a very direct CTA (like "Buy Now," "Sign Up Today," or "Claim Offer")
-- Create a sense of FOMO (fear of missing out)
-
-Output: a realistic, high-resolution square (1:1) ad image optimized for conversion stage marketing.`,
-
-          vertical: `${basePrompt}${additionalInfo}
-**CONVERSION STAGE CREATIVE**
-This ad is for the bottom of the funnel to drive conversions:
-- Focus on creating urgency and prompting immediate action
-- Include specific offers, promotions, or limited-time deals
-- Highlight social proof, testimonials, or results
-- Show the product/service with clear value proposition
-- Address final objections or hesitations
-- Use strong, action-oriented language
-- Include a very direct CTA (like "Buy Now," "Sign Up Today," or "Claim Offer")
-- Create a sense of FOMO (fear of missing out)
-
-Output: a realistic, high-resolution vertical (9:16) ad image optimized for conversion stage marketing on reels and stories.`
-        }
-      };
-
-      // Object to store our results
-      const funnelStageResults: {
-        awareness: { square: string; vertical: string };
-        consideration: { square: string; vertical: string };
-        conversion: { square: string; vertical: string };
-      } = {
-        awareness: { square: '', vertical: '' },
-        consideration: { square: '', vertical: '' },
-        conversion: { square: '', vertical: '' }
-      };
-
-      // Generate images for each funnel stage and format
-      for (const stage of ['awareness', 'consideration', 'conversion'] as const) {
-        // Generate square format image
-        // We don't need to set error messages now that we have the animated loader
-        // setError(`Generating ${stage} stage square image (1:1)...`);
-        console.log(`Generating ${stage} stage square format (1:1)...`);
-        let squareResult;
-        
-        try {
-          // Check if we should use reference images for this generation
-          if (useReferenceImages && base64Images.length > 0) {
-            console.log(`Using ${base64Images.length} reference images for ${stage} square generation`);
-            try {
-              // For single reference image, use variation API
-              if (base64Images.length === 1) {
-                squareResult = await generateImageVariation(
-                  base64Images[0], // Pass a single string instead of an array
-                  "1:1" as AspectRatio,
-                  1,
-                  funnelStagePrompts[stage].square
-                );
-              } else {
-                // If multiple images somehow got through, fall back to regular generation
-                console.log("Multiple reference images not supported, falling back to text-to-image");
-                squareResult = await generateImages(
-                  funnelStagePrompts[stage].square,
-                  "1:1" as AspectRatio,
-                  1
-                );
-              }
-            } catch (variationError) {
-              console.error(`Reference image variation failed: ${variationError}`);
-              // Fall back to regular generation if variation fails
-              console.log("Falling back to text-to-image generation");
-              squareResult = await generateImages(
-                funnelStagePrompts[stage].square,
-                "1:1" as AspectRatio,
-                1
-              );
-            }
-          } else {
-            console.log(`Using text-to-image for ${stage} square generation`);
-            squareResult = await generateImages(
-              funnelStagePrompts[stage].square, 
-              "1:1" as AspectRatio, 
-              1
-            );
-          }
-          
-          console.log(`Square result for ${stage}: success=${squareResult.success}, images=${squareResult.images?.length || 0}`);
-          
-          if (squareResult.success && squareResult.images && squareResult.images.length > 0) {
-            funnelStageResults[stage].square = squareResult.images[0];
-            console.log(`Successfully generated ${stage} square image`);
-          } else {
-            console.error(`Failed to generate ${stage} square image: ${squareResult.error || 'Unknown error'}`);
-            throw new Error(`Failed to generate ${stage} stage square image: ${squareResult.error || 'Unknown error'}`);
-          }
-        } catch (err) {
-          console.error(`Exception generating ${stage} square image:`, err);
-          throw err;
-        }
-        
-        // Generate vertical format image
-        // We don't need to set error messages now that we have the animated loader
-        // setError(`Generating ${stage} stage vertical image (9:16)...`);
-        console.log(`Generating ${stage} stage vertical format (9:16)...`);
-        let verticalResult;
-        
-        try {
-          // Check if we should use reference images for this generation
-          if (useReferenceImages && base64Images.length > 0) {
-            console.log(`Using ${base64Images.length} reference images for ${stage} vertical generation`);
-            try {
-              // For single reference image, use variation API
-              if (base64Images.length === 1) {
-                verticalResult = await generateImageVariation(
-                  base64Images[0], // Pass a single string instead of an array
-                  "9:16" as AspectRatio,
-                  1,
-                  funnelStagePrompts[stage].vertical
-                );
-              } else {
-                // If multiple images somehow got through, fall back to regular generation
-                console.log("Multiple reference images not supported, falling back to text-to-image");
-                verticalResult = await generateImages(
-                  funnelStagePrompts[stage].vertical,
-                  "9:16" as AspectRatio,
-                  1
-                );
-              }
-            } catch (variationError) {
-              console.error(`Reference image variation failed: ${variationError}`);
-              // Fall back to regular generation if variation fails
-              console.log("Falling back to text-to-image generation");
-              verticalResult = await generateImages(
-                funnelStagePrompts[stage].vertical,
-                "9:16" as AspectRatio,
-                1
-              );
-            }
-          } else {
-            console.log(`Using text-to-image for ${stage} vertical generation`);
-            verticalResult = await generateImages(
-              funnelStagePrompts[stage].vertical, 
-              "9:16" as AspectRatio, 
-              1
-            );
-          }
-          
-          console.log(`Vertical result for ${stage}: success=${verticalResult.success}, images=${verticalResult.images?.length || 0}`);
-          
-          if (verticalResult.success && verticalResult.images && verticalResult.images.length > 0) {
-            funnelStageResults[stage].vertical = verticalResult.images[0];
-            console.log(`Successfully generated ${stage} vertical image`);
-          } else {
-            console.error(`Failed to generate ${stage} vertical image: ${verticalResult.error || 'Unknown error'}`);
-            throw new Error(`Failed to generate ${stage} stage vertical image: ${verticalResult.error || 'Unknown error'}`);
-          }
-        } catch (err) {
-          console.error(`Exception generating ${stage} vertical image:`, err);
-          throw err;
-        }
+        // Convert selected reference images to base64
+        const promises = selectedReferenceImages.map(img => convertImageUrlToBase64(img));
+        const results = await Promise.all(promises);
+        referenceImagesBase64 = results.filter(r => r !== null) as string[];
       }
       
-      // Update the state with all generated images
-      console.log("All images generated successfully, updating state...");
-      setGeneratedImages(funnelStageResults);
+      // Extract key info from website data
+      const { colors, fonts, contentSummary } = websiteData;
+      
+      // Build base prompt from website analysis
+      const basePrompt = `
+Create an ad creative for a marketing campaign based on this website analysis:
+${contentSummary ? contentSummary.substring(0, 500) : "No content summary available"}
+
+Brand Colors: ${colors ? colors.join(", ") : "No brand colors available"}
+Brand Fonts: ${fonts ? fonts.slice(0, 3).join(", ") : "No brand fonts available"}
+
+The ad should be clean, professional and match the brand identity.
+      `.trim();
+      
+      // Generate images for all three campaign types
+      const generateImagesForStage = async (stageName: string, prompt: string, aspectRatio: AspectRatio) => {
+        try {
+          // Generate the image with the correct function signature
+          const result = await generateImages(
+            `${prompt} Create a ${aspectRatio === "1:1" ? "square format (1:1)" : "vertical format (9:16)"} ad for ${stageName} campaign.`,
+            aspectRatio
+          );
+          
+          // Return the first image URL from the results if successful
+          if (result.success && result.images && result.images.length > 0) {
+            return result.images[0];
+          } else {
+            console.error(`Error generating images: ${result.error}`);
+            return "";
+          }
+        } catch (error) {
+          console.error(`Error generating images for ${stageName}:`, error);
+          return "";
+        }
+      };
+      
+      // For demonstration, we'll generate real images
+      // If the API calls fail, the try/catch will ensure we don't crash
+      try {
+        // Generate images for all three campaign types (square and vertical for each)
+        const campaign1SquareResult = await generateImagesForStage(
+          "Campaign 1", 
+          basePrompt + " Focus on brand awareness and introduction.",
+          "1:1"
+        );
+        
+        const campaign1VerticalResult = await generateImagesForStage(
+          "Campaign 1", 
+          basePrompt + " Focus on brand awareness and introduction.",
+          "9:16"
+        );
+        
+        const campaign2SquareResult = await generateImagesForStage(
+          "Campaign 2", 
+          basePrompt + " Focus on product/service consideration and benefits.",
+          "1:1"
+        );
+        
+        const campaign2VerticalResult = await generateImagesForStage(
+          "Campaign 2", 
+          basePrompt + " Focus on product/service consideration and benefits.",
+          "9:16"
+        );
+        
+        const campaign3SquareResult = await generateImagesForStage(
+          "Campaign 3", 
+          basePrompt + " Focus on conversion with strong call-to-action.",
+          "1:1"
+        );
+        
+        const campaign3VerticalResult = await generateImagesForStage(
+          "Campaign 3", 
+          basePrompt + " Focus on conversion with strong call-to-action.",
+          "9:16"
+        );
+        
+        // Set the generated images
+        setGeneratedImages({
+          awareness: { 
+            square: campaign1SquareResult || 'https://placehold.co/600x600/333/white?text=Campaign+1+Square', 
+            vertical: campaign1VerticalResult || 'https://placehold.co/600x1067/333/white?text=Campaign+1+Vertical' 
+          },
+          consideration: { 
+            square: campaign2SquareResult || 'https://placehold.co/600x600/333/white?text=Campaign+2+Square', 
+            vertical: campaign2VerticalResult || 'https://placehold.co/600x1067/333/white?text=Campaign+2+Vertical' 
+          },
+          conversion: { 
+            square: campaign3SquareResult || 'https://placehold.co/600x600/333/white?text=Campaign+3+Square', 
+            vertical: campaign3VerticalResult || 'https://placehold.co/600x1067/333/white?text=Campaign+3+Vertical' 
+          }
+        });
+      } catch (err) {
+        console.error("Failed to generate one or more creatives:", err);
+        // Fallback to placeholder images if generation fails
+        setGeneratedImages({
+          awareness: { 
+            square: 'https://placehold.co/600x600/333/white?text=Campaign+1+Square', 
+            vertical: 'https://placehold.co/600x1067/333/white?text=Campaign+1+Vertical' 
+          },
+          consideration: { 
+            square: 'https://placehold.co/600x600/333/white?text=Campaign+2+Square', 
+            vertical: 'https://placehold.co/600x1067/333/white?text=Campaign+2+Vertical' 
+          },
+          conversion: { 
+            square: 'https://placehold.co/600x600/333/white?text=Campaign+3+Square', 
+            vertical: 'https://placehold.co/600x1067/333/white?text=Campaign+3+Vertical' 
+          }
+        });
+      }
       
     } catch (err) {
-      console.error("Error in creative generation process:", err);
       setError(err instanceof Error ? err.message : "Failed to generate creatives");
-      
-      // Try to give more specific error messages based on common issues
-      if (err instanceof Error) {
-        const errorMsg = err.message.toLowerCase();
-        if (errorMsg.includes("timeout") || errorMsg.includes("timed out")) {
-          setError("Request timed out. Please try again with simpler prompts or without reference images.");
-        } else if (errorMsg.includes("limit") || errorMsg.includes("quota")) {
-          setError("API usage limit reached. Please try again later.");
-        } else if (errorMsg.includes("server") || errorMsg.includes("5")) {
-          setError("Server error occurred. The system is likely experiencing high demand. Please try again in a few minutes.");
-        }
-      }
     } finally {
-      console.log("Creative generation process completed");
       setIsGeneratingImages(false);
     }
   };
 
-  // Filter out images that failed to load
+  // Filter valid website images
   const validWebsiteImages = websiteData?.images.filter(img => !imageLoadErrors[img]) || [];
 
-  // Function to close the preview modal
+  // Function to close preview modal
   const closePreview = () => {
     setPreviewImage(null);
     setPreviewImageFormat(null);
@@ -548,7 +325,7 @@ Output: a realistic, high-resolution vertical (9:16) ad image optimized for conv
             <div className="absolute top-2 right-2 flex gap-2">
               <a
                 href={previewImage}
-                download={`${previewStage}-${previewImageFormat}-ad.png`}
+                download={`campaign${previewStage === "awareness" ? "1" : previewStage === "consideration" ? "2" : "3"}-${previewImageFormat}-ad.png`}
                 className="bg-white text-gray-800 rounded-md py-2 px-4 font-medium shadow hover:bg-gray-50"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -579,462 +356,372 @@ Output: a realistic, high-resolution vertical (9:16) ad image optimized for conv
                   : "bg-amber-500/80 text-black"
               }`}>
                 {previewStage === "awareness" 
-                  ? "Awareness" 
+                  ? "Campaign 1" 
                   : previewStage === "consideration" 
-                  ? "Consideration" 
-                  : "Conversion"}
+                  ? "Campaign 2" 
+                  : "Campaign 3"}
               </span>
             </div>
           </div>
         </div>
       )}
 
-      <h1 className="text-3xl font-bold mb-4 text-center">AI Creative Director</h1>
-      <p className="text-lg text-gray-500 mb-8 text-center">
-        Enter your website URL and get instant ad creatives tailored to your brand
-      </p>
+      <h1 className="text-3xl font-bold mb-8 text-center">AI Creative Director</h1>
 
-      {/* ===== STEP 1: Initial URL Input ===== */}
-      {!websiteData && !generatedImages && !isLoading && (
-        <div className="max-w-5xl mx-auto">
-          {/* Get Started with Reeply AI Card */}
-          <div className="relative overflow-hidden rounded-xl bg-dark-bg border border-border-dark shadow-xl">
-            <div className="absolute top-0 left-0 w-full h-full bg-[url('/Reeplylogoicon.png')] bg-no-repeat bg-right-bottom opacity-5 bg-contain"></div>
-            
-            {/* Top content section */}
-            <div className="px-8 pt-8 pb-4 relative z-10">
-              <div className="inline-block bg-primary-green/20 text-primary-green text-xs px-3 py-1 rounded-full font-medium mb-4">
-                AI Creative Director
-              </div>
-              <h2 className="text-3xl md:text-4xl font-bold text-white mb-2">Get Started With Reeply AI</h2>
-              <h3 className="text-xl md:text-2xl font-medium text-gray-300 mb-5">Start your first project</h3>
-              <p className="text-gray-400 mb-6 leading-relaxed">
-                Reeply AI analyzes your website to create a comprehensive marketing strategy and professional ad creatives. 
-                Our advanced AI scrapes your brand&apos;s visual identity, messaging, and key selling points to deliver 
-                customized marketing assets that perfectly match your brand and campaign goals.
-              </p>
-              <div className="flex flex-wrap gap-x-6 gap-y-3 mb-2">
-                <div className="flex items-center text-gray-300">
-                  <Check className="h-5 w-5 mr-2 text-primary-green" />
-                  <span>Brand-matched designs</span>
-                </div>
-                <div className="flex items-center text-gray-300">
-                  <Check className="h-5 w-5 mr-2 text-primary-green" />
-                  <span>Multiple ad formats</span>
-                </div>
-                <div className="flex items-center text-gray-300">
-                  <Check className="h-5 w-5 mr-2 text-primary-green" />
-                  <span>Full funnel creatives</span>
-                </div>
-                <div className="flex items-center text-gray-300">
-                  <Check className="h-5 w-5 mr-2 text-primary-green" />
-                  <span>Campaign-specific targeting</span>
-                </div>
-              </div>
-            </div>
-            
-            {/* Input form section */}
-            <div className="px-8 pb-8 relative z-10">
-              <div className="mt-6 p-6 bg-gray-800/50 rounded-xl border border-border-dark">
-                <form onSubmit={handleScrapeWebsite} className="space-y-5">
-                  <h4 className="text-lg font-semibold text-gray-200 mb-4">Enter your details to generate ad creatives</h4>
-                  
-                  {/* URL + Campaign Goal Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                    <div className="md:col-span-2">
-                      <label htmlFor="website-url" className="block text-sm font-medium mb-2 text-gray-300">
-                        Website URL
-                      </label>
-                      <Input 
-                        id="website-url" 
-                        placeholder="https://yourwebsite.com" 
-                        className="w-full bg-dark-bg border-border-dark text-white placeholder:text-gray-500 focus-visible:ring-primary-green"
-                        value={url}
-                        onChange={(e) => setUrl(e.target.value)}
-                      />
-                      <p className="mt-2 text-xs text-gray-500">
-                        Enter your full website URL including https://
-                      </p>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium mb-3 text-gray-300">
-                        Campaign Goals
-                      </label>
-                      
-                      <div className="space-y-3">
-                        <div className="flex items-center">
-                          <input 
-                            type="checkbox" 
-                            id="goal-leads" 
-                            checked={campaignGoals.leads}
-                            onChange={() => setCampaignGoals(prev => ({...prev, leads: !prev.leads}))}
-                            className="h-4 w-4 rounded border-gray-600 text-primary-green focus:ring-primary-green focus:ring-offset-0 bg-dark-bg"
-                          />
-                          <label htmlFor="goal-leads" className="ml-2 text-sm text-gray-300">Get more Leads</label>
-                        </div>
-                        
-                        <div className="flex items-center">
-                          <input 
-                            type="checkbox" 
-                            id="goal-emails" 
-                            checked={campaignGoals.emails}
-                            onChange={() => setCampaignGoals(prev => ({...prev, emails: !prev.emails}))}
-                            className="h-4 w-4 rounded border-gray-600 text-primary-green focus:ring-primary-green focus:ring-offset-0 bg-dark-bg"
-                          />
-                          <label htmlFor="goal-emails" className="ml-2 text-sm text-gray-300">Increase Email subscribers</label>
-                        </div>
-                        
-                        <div className="flex items-center">
-                          <input 
-                            type="checkbox" 
-                            id="goal-sales" 
-                            checked={campaignGoals.sales}
-                            onChange={() => setCampaignGoals(prev => ({...prev, sales: !prev.sales}))}
-                            className="h-4 w-4 rounded border-gray-600 text-primary-green focus:ring-primary-green focus:ring-offset-0 bg-dark-bg"
-                          />
-                          <label htmlFor="goal-sales" className="ml-2 text-sm text-gray-300">Make more Sales</label>
-                        </div>
-                        
-                        <div className="flex items-center">
-                          <input 
-                            type="checkbox" 
-                            id="goal-brand" 
-                            checked={campaignGoals.brand}
-                            onChange={() => setCampaignGoals(prev => ({...prev, brand: !prev.brand}))}
-                            className="h-4 w-4 rounded border-gray-600 text-primary-green focus:ring-primary-green focus:ring-offset-0 bg-dark-bg"
-                          />
-                          <label htmlFor="goal-brand" className="ml-2 text-sm text-gray-300">Brand awareness</label>
-                        </div>
-                        
-                        <div className="flex items-center">
-                          <input 
-                            type="checkbox" 
-                            id="goal-recruiting" 
-                            checked={campaignGoals.recruiting}
-                            onChange={() => setCampaignGoals(prev => ({...prev, recruiting: !prev.recruiting}))}
-                            className="h-4 w-4 rounded border-gray-600 text-primary-green focus:ring-primary-green focus:ring-offset-0 bg-dark-bg"
-                          />
-                          <label htmlFor="goal-recruiting" className="ml-2 text-sm text-gray-300">Recruiting</label>
-                        </div>
-                      </div>
-                      
-                      <p className="mt-3 text-xs text-gray-500">
-                        Select one or more campaign objectives
-                      </p>
-                    </div>
-                  </div>
-                  
-                  {error && (
-                    <div className="bg-red-900/30 text-red-300 px-4 py-3 rounded-md text-sm border border-red-900 flex items-center">
-                      <AlertCircle className="h-4 w-4 mr-2" />
-                      {error}
-                    </div>
-                  )}
-
-                  <Button 
-                    type="submit" 
-                    className="w-full h-12 bg-primary-green hover:bg-primary-green/90 text-black text-lg font-semibold mt-4"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                        Analyzing...
-                      </>
-                    ) : (
-                      <>
-                        Analyze Website
-                        <ArrowRight className="ml-2 h-5 w-5" />
-                      </>
-                    )}
-                  </Button>
-                </form>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {/* Website Analysis Loading Animation */}
+      {/* Show loading screens */}
       {isLoading && !websiteData && !generatedImages && (
         <div className="max-w-5xl mx-auto bg-dark-bg border border-border-dark rounded-lg shadow-xl p-6">
           <WebsiteAnalysisLoader />
         </div>
       )}
 
-      {/* ===== STEP 2: Website Analysis and Reference Image Selection ===== */}
-      {websiteData && !generatedImages && !isGeneratingImages && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Left column - Analysis report and brand assets */}
-          <div className="lg:col-span-7 space-y-6">
-            {/* Website analysis report */}
-            <Card className="bg-dark-bg border-border-dark shadow-lg overflow-hidden">
-              <CardHeader className="border-b border-gray-800">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <CardTitle className="text-xl flex items-center gap-2">
-                      <div className="w-1 h-6 bg-primary-green rounded mr-2"></div>
-                      Brand Analysis Report
-                    </CardTitle>
-                    <CardDescription className="mt-1">
-                      Details extracted from <a href={url} target="_blank" rel="noopener noreferrer" className="font-medium text-primary-green hover:underline inline-flex items-center gap-1">
-                        {url} <ExternalLink className="h-3 w-3" />
-                      </a>
-                    </CardDescription>
-                  </div>
-                  <div className="bg-primary-green/20 text-primary-green text-xs px-3 py-1 rounded-full font-medium">
-                    AI-Powered Analysis
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-6">
-                <div className="bg-gray-800/50 p-5 rounded-md max-h-[65vh] overflow-y-auto border border-gray-700 shadow-inner">
-                  <div className="text-sm text-gray-200 leading-relaxed prose prose-sm prose-invert max-w-none prose-headings:text-primary-green prose-headings:mb-2 prose-headings:mt-4 prose-p:mb-2 prose-li:mb-1">
-                    {websiteData.contentSummary ? (
-                      <div dangerouslySetInnerHTML={{ 
-                        __html: websiteData.contentSummary
-                          .replace(/\n\n/g, '<br/><br/>')
-                          .replace(/\n/g, '<br/>')
-                          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                          .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                          // Handle headings with emojis
-                          .replace(/#{3}\s+(🏢|👥|✨|💼|🗣️|📣|📈|📊)?\s*(.*?)(?=<br\/>|$)/g, 
-                            '<h3 class="text-primary-green font-semibold text-base flex items-center gap-2 border-b border-primary-green/30 pb-1 mt-4 mb-2">$1 $2</h3>')
-                          .replace(/#{2}\s+(🏢|👥|✨|💼|🗣️|📣|📈|📊)?\s*(.*?)(?=<br\/>|$)/g, 
-                            '<h2 class="text-primary-green font-bold text-lg flex items-center gap-2 border-b border-primary-green/30 pb-2 mt-5 mb-3">$1 $2</h2>')
-                          // Handle bullet points
-                          .replace(/- (.*?)(?=<br\/>|$)/g, 
-                            '<li class="flex items-start mb-2"><span class="text-primary-green mr-2 font-bold">•</span><span>$1</span></li>')
-                          // Wrap lists in proper ul tags
-                          .replace(/(<li.*?<\/li>)(<br\/>)*(<li.*?<\/li>)(<br\/>)*(<li.*?<\/li>)/g, '<ul class="mt-1 mb-3 pl-2">$1$3$5</ul>')
-                          .replace(/(<li.*?<\/li>)(<br\/>)*(<li.*?<\/li>)/g, '<ul class="mt-1 mb-3 pl-2">$1$3</ul>')
-                          .replace(/(<li.*?<\/li>)/g, '<ul class="mt-1 mb-3 pl-2">$1</ul>')
-                      }} />
-                    ) : (
-                      <p className="italic text-gray-400">Analyzing website content...</p>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-              <div className="px-6 py-4 bg-primary-green/10 border-t border-primary-green/30 mt-4">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm text-primary-green flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
-                      <circle cx="12" cy="12" r="10" />
-                      <path d="M12 16v.01" />
-                      <path d="M12 8v4" />
-                    </svg>
-                    <span className="font-semibold">Analysis complete. Select reference images to proceed.</span>
-                  </p>
-                </div>
-              </div>
-            </Card>
-
-            {/* Brand assets section */}
-            <Card className="bg-dark-bg border-border-dark shadow-lg overflow-hidden">
-              <CardContent className="space-y-6 pt-6 pb-6">
-                <div>
-                  <h3 className="text-md font-semibold mb-3 flex items-center">
-                    <div className="w-4 h-4 bg-primary-green/60 rounded-full mr-2"></div>
-                    Brand Colors
-                  </h3>
-                  <div className="grid grid-cols-4 gap-3">
-                    {websiteData.colors.slice(0, 8).map((color, index) => (
-                      <div key={index} className="flex flex-col items-center group">
-                        <div 
-                          className="w-12 h-12 rounded-md border border-border-dark shadow-sm group-hover:scale-110 transition-transform" 
-                          style={{ backgroundColor: color }}
-                        ></div>
-                        <span className="text-xs mt-1 opacity-70 group-hover:opacity-100">{color}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <Separator className="bg-gray-700" />
-
-                <div>
-                  <h3 className="text-md font-semibold mb-3 flex items-center">
-                    <div className="w-4 h-4 bg-blue-500/60 rounded-full mr-2"></div>
-                    Typography
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {websiteData.fonts.length > 0 ? (
-                      websiteData.fonts.map((font, index) => (
-                        <Badge key={index} className="bg-blue-500/20 text-blue-300 border border-blue-500/40 py-1.5 px-3">
-                          {font}
-                        </Badge>
-                      ))
-                    ) : (
-                      <p className="text-sm text-gray-400 italic">No font information detected</p>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Right column - Image selection */}
-          <div className="lg:col-span-5">
-            {/* Reference images section */}
-            {validWebsiteImages.length > 0 && (
-              <Card className="bg-dark-bg border-border-dark shadow-lg overflow-hidden h-full">
-                <CardHeader className="pb-2 border-b border-gray-800">
-                  <div className="flex justify-between items-center">
-                    <CardTitle className="text-lg flex items-center">
-                      <div className="w-1 h-6 bg-amber-500 rounded mr-2"></div>
-                      Reference Images
-                    </CardTitle>
-                    <div className="flex items-center">
-                      <label className="flex items-center space-x-1 text-sm cursor-pointer mr-2">
-                        <input 
-                          type="checkbox"
-                          checked={useReferenceImages}
-                          onChange={() => setUseReferenceImages(!useReferenceImages)}
-                          className="rounded text-primary-green focus:ring-primary-green"
-                        />
-                        <span>Use as references</span>
-                      </label>
-                      {selectedReferenceImages.length > 0 && (
-                        <span className="text-xs bg-primary-green/20 text-primary-green px-2 py-0.5 rounded-full">
-                          {selectedReferenceImages.length}/4 selected
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  {useReferenceImages && (
-                    <CardDescription className="mt-2">
-                      Click on images to select up to 4 reference images for ad generation
-                    </CardDescription>
-                  )}
-                </CardHeader>
-                <CardContent className="pt-4 flex-grow">
-                  <div className="grid grid-cols-2 gap-3">
-                    {validWebsiteImages.map((imageUrl, index) => {
-                      const isSelected = selectedReferenceImages.includes(imageUrl);
-                      return (
-                        <div 
-                          key={index} 
-                          className={`relative aspect-square group rounded-md overflow-hidden border cursor-pointer ${
-                            isSelected 
-                              ? "border-primary-green ring-2 ring-primary-green" 
-                              : "border-border-dark hover:border-primary-green/50"
-                          }`}
-                          onClick={() => useReferenceImages && toggleReferenceImage(imageUrl)}
-                        >
-                          {/* Use a regular img tag with role="img" for accessibility */}
-                          <div className="relative w-full h-full">
-                            <img 
-                              src={imageUrl}
-                              alt={`Website image ${index + 1}`}
-                              className="absolute inset-0 w-full h-full object-cover"
-                              onError={() => handleImageError(imageUrl)}
-                            />
-                          </div>
-                          
-                          {/* Selection indicator */}
-                          {isSelected && (
-                            <div className="absolute top-2 right-2 bg-primary-green text-black rounded-full p-1">
-                              <Check className="h-3 w-3" />
-                            </div>
-                          )}
-                          
-                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
-                            <a
-                              href={imageUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="p-1.5 bg-white text-gray-800 rounded-full"
-                              onClick={(e) => {
-                                e.stopPropagation(); // Prevent selection toggle when clicking view button
-                              }}
-                            >
-                              <ExternalLink className="h-4 w-4" />
-                            </a>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </CardContent>
-
-                <CardFooter className="border-t border-gray-800 p-4">
-                  <Button 
-                    onClick={handleGenerateCreatives} 
-                    disabled={isGeneratingImages || (useReferenceImages && selectedReferenceImages.length === 0)}
-                    className="w-full h-12 bg-primary-green hover:bg-primary-green/90 text-black font-medium text-base flex items-center justify-center"
-                  >
-                    {isGeneratingImages ? (
-                      <>
-                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                        Generating Creatives...
-                      </>
-                    ) : (
-                      <>
-                        {useReferenceImages && selectedReferenceImages.length === 0 ? (
-                          <>Select reference images to continue</>
-                        ) : (
-                          <>
-                            Generate Ad Creatives
-                            <ArrowRight className="ml-2 h-5 w-5" />
-                          </>
-                        )}
-                      </>
-                    )}
-                  </Button>
-                </CardFooter>
-              </Card>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Ad Creative Generation Loading Animation */}
-      {isGeneratingImages && websiteData && !generatedImages && (
-        <div className="max-w-5xl mx-auto bg-dark-bg border border-border-dark rounded-lg shadow-xl p-6">
-          <AdCreativeLoader />
+      {/* Show initial URL input form */}
+      {!websiteData && !generatedImages && !isLoading && (
+        <div className="text-center">
+          <h2 className="text-xl font-medium mb-4">Enter your website URL to generate ad creatives</h2>
+          
+          <form onSubmit={handleScrapeWebsite} className="max-w-md mx-auto">
+            <Input 
+              placeholder="https://yourwebsite.com" 
+              className="mb-4"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+            />
+            
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Analyzing...
+                </>
+              ) : (
+                "Analyze Website"
+              )}
+            </Button>
+          </form>
         </div>
       )}
       
-      {/* ===== STEP 3: Generated Creatives Display ===== */}
+      {/* Show Website Analysis Results */}
+      {websiteData && !generatedImages && !isLoading && (
+        <div className="max-w-5xl mx-auto bg-dark-bg border border-border-dark rounded-lg shadow-xl p-6">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 space-y-3 md:space-y-0">
+            <div>
+              <h2 className="text-2xl font-bold">Website Analysis</h2>
+              <div className="text-xs text-gray-500 mt-1">
+                Analysis for {url}
+              </div>
+            </div>
+            <Button
+              onClick={() => {
+                setWebsiteData(null);
+                setUrl("");
+                setSelectedReferenceImages([]);
+              }}
+              variant="outline"
+              className="border-gray-700 hover:bg-gray-800"
+            >
+              Start Over
+            </Button>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            {/* Marketing Insight Report */}
+            <div className="md:col-span-2 bg-gray-800/50 rounded-lg p-5 border border-gray-700">
+              <h3 className="text-lg font-semibold mb-3 text-primary-green flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="3" y1="9" x2="21" y2="9"></line>
+                  <line x1="9" y1="21" x2="9" y2="9"></line>
+                </svg>
+                Marketing Insight Report
+              </h3>
+              
+              <div className="prose prose-sm prose-invert max-w-none overflow-auto max-h-[500px] pr-2">
+                {websiteData.contentSummary ? (
+                  <div dangerouslySetInnerHTML={{ __html: websiteData.contentSummary.replace(/\n/g, '<br />') }} />
+                ) : (
+                  <div className="text-amber-400 flex items-center">
+                    <AlertCircle className="w-4 h-4 mr-2" />
+                    <span>No content analysis available</span>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {/* Brand Colors and Reference Images */}
+            <div className="md:col-span-1 space-y-5">
+              {/* Brand Colors */}
+              <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
+                <h3 className="text-sm font-semibold mb-3 text-primary-green flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <circle cx="12" cy="12" r="6"></circle>
+                    <circle cx="12" cy="12" r="2"></circle>
+                  </svg>
+                  Brand Colors
+                </h3>
+                
+                <div className="flex flex-wrap gap-2">
+                  {websiteData.colors && websiteData.colors.length > 0 ? (
+                    websiteData.colors.map((color, index) => (
+                      <div key={index} className="flex flex-col items-center">
+                        <div 
+                          className="w-8 h-8 rounded-md border border-gray-600"
+                          style={{ backgroundColor: color }}
+                        ></div>
+                        <span className="text-xs mt-1">{color}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-amber-400 text-xs flex items-center">
+                      <AlertCircle className="w-3 h-3 mr-1" />
+                      <span>No brand colors detected</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              {/* Brand Fonts */}
+              <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
+                <h3 className="text-sm font-semibold mb-3 text-primary-green flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+                    <polyline points="4 7 4 4 20 4 20 7"></polyline>
+                    <line x1="9" y1="20" x2="15" y2="20"></line>
+                    <line x1="12" y1="4" x2="12" y2="20"></line>
+                  </svg>
+                  Brand Typography
+                </h3>
+                
+                <div className="space-y-1">
+                  {websiteData.fonts && websiteData.fonts.length > 0 ? (
+                    websiteData.fonts.slice(0, 3).map((font, index) => (
+                      <div key={index} className="text-sm">
+                        {font}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-amber-400 text-xs flex items-center">
+                      <AlertCircle className="w-3 h-3 mr-1" />
+                      <span>No fonts detected</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Reference Images Section */}
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold mb-3 flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2 text-blue-400">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                <polyline points="21 15 16 10 5 21"></polyline>
+              </svg>
+              Reference Images
+              <span className="text-xs font-normal ml-2 text-gray-400">(Select up to 4 images to use as reference)</span>
+            </h3>
+            
+            {websiteData.images && websiteData.images.length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                {websiteData.images.map((img, idx) => !imageLoadErrors[img] && (
+                  <div 
+                    key={idx}
+                    className={`relative aspect-square rounded-lg overflow-hidden border-2 cursor-pointer transition-all ${
+                      selectedReferenceImages.includes(img) ? 'border-primary-green scale-95 ring-1 ring-primary-green' : 'border-transparent hover:border-gray-500'
+                    }`}
+                    onClick={() => toggleReferenceImage(img)}
+                  >
+                    <img 
+                      src={img} 
+                      alt={`Website image ${idx + 1}`} 
+                      className="w-full h-full object-cover"
+                      onError={() => handleImageError(img)}
+                    />
+                    {selectedReferenceImages.includes(img) && (
+                      <div className="absolute top-2 right-2 bg-primary-green rounded-full p-1">
+                        <Check className="h-4 w-4 text-black" />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700 text-amber-400 flex items-center">
+                <AlertCircle className="w-5 h-5 mr-2" />
+                <span>No reference images were found on the website</span>
+              </div>
+            )}
+          </div>
+          
+          {/* Generate Creatives Button */}
+          <div className="flex justify-center mt-8">
+            <Button
+              onClick={handleGenerateCreatives}
+              disabled={isGeneratingImages}
+              className="bg-primary-green hover:bg-primary-green/90 text-black font-semibold px-10 py-6 text-lg shadow-lg shadow-primary-green/30"
+            >
+              {isGeneratingImages ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Generating Creatives...
+                </>
+              ) : (
+                <>
+                  <ImageIcon className="mr-2 h-5 w-5" />
+                  Generate Ad Creatives
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Show campaign options after generation */}
       {generatedImages && (
         <div className="space-y-8">
-          <div className="bg-dark-bg border border-border-dark p-4 rounded-lg">
+          {/* Show subscription screen after selecting campaigns */}
+          {showSubscribeScreen && (
+            <div className="border border-primary-green/40 rounded-xl p-8 relative overflow-hidden">
+              {/* Gradient background */}
+              <div className="absolute inset-0 bg-gradient-to-br from-primary-green/20 via-blue-600/20 to-purple-800/30 z-0"></div>
+              {/* Glow effects */}
+              <div className="absolute -top-20 -left-20 w-64 h-64 bg-primary-green/10 rounded-full blur-3xl"></div>
+              <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl"></div>
+              
+              <div className="relative z-10">
+                <div className="flex flex-col items-center text-center mb-8">
+                  {/* Status badge */}
+                  <div className="mb-3 bg-primary-green/20 border border-primary-green/30 rounded-full px-4 py-1 flex items-center gap-2">
+                    <div className="bg-primary-green rounded-full p-1">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-black">
+                        <path d="M20 6 9 17l-5-5"></path>
+                      </svg>
+                    </div>
+                    <span className="text-sm font-medium text-primary-green">AI Campaign Creation Complete!</span>
+                  </div>
+                
+                  {/* Main heading with highlight */}
+                  <h2 className="font-bold text-2xl md:text-3xl mb-2 bg-clip-text text-transparent bg-gradient-to-r from-primary-green to-blue-400">
+                    {selectedCampaigns.campaign1 && selectedCampaigns.campaign2 && selectedCampaigns.campaign3 
+                      ? "3 Ready-to-Launch Meta Ad Campaigns"
+                      : selectedCampaigns.campaign1 && selectedCampaigns.campaign2 
+                      ? "2 Ready-to-Launch Meta Ad Campaigns"
+                      : selectedCampaigns.campaign1 && selectedCampaigns.campaign3
+                      ? "2 Ready-to-Launch Meta Ad Campaigns"
+                      : selectedCampaigns.campaign2 && selectedCampaigns.campaign3
+                      ? "2 Ready-to-Launch Meta Ad Campaigns"
+                      : "1 Ready-to-Launch Meta Ad Campaign"}
+                  </h2>
+                  
+                  {/* One-click callout */}
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="h-6 w-6 bg-primary-green rounded-full flex items-center justify-center text-black font-bold text-sm">1</div>
+                    <span className="text-lg font-medium text-white">Click Launch to Start Running Your Ads</span>
+                  </div>
+                  
+                  <p className="text-base text-gray-300 max-w-2xl mb-6">
+                    Your website has been analyzed and our AI has created <span className="text-primary-green font-medium">complete campaigns</span> with all required settings:
+                  </p>
+                
+                  {/* Campaign settings section */}
+                  <div className="w-full max-w-4xl mx-auto">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                      <div className="bg-blue-500/20 border border-blue-500/30 rounded-md p-3">
+                        <div className="text-blue-300 font-medium flex items-center justify-center text-sm mb-1">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1.5">
+                            <path d="M12 20h9"></path>
+                            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                          </svg>
+                          AI-Written Ad Copy
+                        </div>
+                        <div className="text-xs text-blue-200/70 text-center">✓ Headlines & Descriptions</div>
+                      </div>
+                      
+                      <div className="bg-amber-500/20 border border-amber-500/30 rounded-md p-3">
+                        <div className="text-amber-300 font-medium flex items-center justify-center text-sm mb-1">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1.5">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                          </svg>
+                          Detailed Targeting
+                        </div>
+                        <div className="text-xs text-amber-200/70 text-center">✓ Interests & Demographics</div>
+                      </div>
+                      
+                      <div className="bg-green-500/20 border border-green-500/30 rounded-md p-3">
+                        <div className="text-green-300 font-medium flex items-center justify-center text-sm mb-1">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1.5">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path>
+                            <path d="M12 18V6"></path>
+                          </svg>
+                          Budget Optimization
+                        </div>
+                        <div className="text-xs text-green-200/70 text-center">✓ Maximum ROI Settings</div>
+                      </div>
+                      
+                      <div className="bg-purple-500/20 border border-purple-500/30 rounded-md p-3">
+                        <div className="text-purple-300 font-medium flex items-center justify-center text-sm mb-1">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1.5">
+                            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                          </svg>
+                          Placement Settings
+                        </div>
+                        <div className="text-xs text-purple-200/70 text-center">✓ Optimized for All Devices</div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Meta Ads Logo and Campaign Status */}
+                  <div className="flex items-center gap-3 mb-5 bg-white/5 rounded-lg px-4 py-2 border border-white/10">
+                    <img src="/Reeplylogoicon.png" alt="Reeply Logo" className="h-6 w-6" />
+                    <div className="h-2 w-2 bg-primary-green rounded-full animate-pulse"></div>
+                    <span className="text-white/90 font-medium">All Meta Campaign Settings Ready</span>
+                  </div>
+                  
+                  {/* CTA button */}
+                  <Button
+                    className="bg-primary-green hover:bg-primary-green/90 text-black font-semibold px-10 py-6 text-lg shadow-lg shadow-primary-green/30 transition-all hover:scale-105"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+                      <path d="M5 12h14"></path>
+                      <path d="m12 5 7 7-7 7"></path>
+                    </svg>
+                    Unlock & Launch Campaigns
+                  </Button>
+                  
+                  <p className="text-xs text-gray-400 mt-3">
+                    Subscribe to unlock all campaign settings and launch immediately
+                  </p>
+                  
+                  {/* Back to selection link */}
+                  <p className="mt-5">
+                    <button 
+                      onClick={() => setShowSubscribeScreen(false)}
+                      className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-1"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="m15 18-6-6 6-6"></path>
+                      </svg>
+                      Back to campaign selection
+                    </button>
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <div className="bg-dark-bg border border-border-dark p-6 rounded-lg">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 space-y-3 md:space-y-0">
               <div>
-                <h2 className="text-2xl font-bold">Step 3: Your Custom Ad Creatives</h2>
-                <div className="mt-2">
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    {campaignGoals.leads && (
-                      <div className="px-3 py-1 text-sm font-medium rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40">
-                        Lead Generation
-                      </div>
-                    )}
-                    {campaignGoals.emails && (
-                      <div className="px-3 py-1 text-sm font-medium rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/40">
-                        Email Subscribers
-                      </div>
-                    )}
-                    {campaignGoals.sales && (
-                      <div className="px-3 py-1 text-sm font-medium rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                        Sales
-                      </div>
-                    )}
-                    {campaignGoals.brand && (
-                      <div className="px-3 py-1 text-sm font-medium rounded-full bg-primary-green/20 text-primary-green border border-primary-green/40">
-                        Brand Awareness
-                      </div>
-                    )}
-                    {campaignGoals.recruiting && (
-                      <div className="px-3 py-1 text-sm font-medium rounded-full bg-violet-500/20 text-violet-300 border border-violet-500/40">
-                        Recruiting
-                      </div>
-                    )}
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    Optimized for {url}
-                  </div>
+                <h2 className="text-2xl font-bold">AI-Generated Ad Campaigns</h2>
+                <div className="text-xs text-gray-500 mt-1">
+                  Optimized for {url}
                 </div>
               </div>
               <Button
@@ -1051,401 +738,309 @@ Output: a realistic, high-resolution vertical (9:16) ad image optimized for conv
               </Button>
             </div>
             
-            {/* Awareness Stage */}
-            <div className="mb-8 pb-6 border-b border-gray-700">
-              <div className="flex items-center mb-4">
-                <div className="w-9 h-9 bg-primary-green rounded-full text-black font-bold flex items-center justify-center mr-3">1</div>
-                <div>
-                  <h3 className="text-xl font-bold mb-1">Awareness Stage</h3>
-                  <p className="text-gray-400 text-sm">Top-of-funnel creatives to build brand awareness and attract new audiences</p>
+            {!showSubscribeScreen && (
+              <div className="mb-6 bg-gradient-to-r from-primary-green/10 to-blue-500/10 rounded-lg p-4 border border-primary-green/20">
+                <div className="flex items-center gap-3 mb-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary-green">
+                    <path d="M20 6 9 17l-5-5"></path>
+                  </svg>
+                  <h3 className="text-lg font-semibold text-primary-green">3 Meta Ad Campaigns Ready</h3>
                 </div>
+                <p className="text-sm text-gray-300 ml-7">Select one or more campaigns below to launch</p>
               </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Square Format */}
-                <div>
-                  <div className="mb-2 flex items-center">
-                    <div className="w-4 h-4 bg-primary-green/80 rounded-full mr-1.5 flex items-center justify-center">
-                      <span className="text-xs font-bold">A</span>
-                    </div>
-                    <span className="text-sm font-medium">Square Format (1:1)</span>
+            )}
+            
+            {/* Campaign selection section */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+              {/* Campaign 1 */}
+              <div className={`bg-gray-800/30 rounded-xl border ${selectedCampaigns.campaign1 ? 'border-primary-green' : 'border-gray-700'} p-4 transition-all ${selectedCampaigns.campaign1 ? 'ring-1 ring-primary-green' : ''}`}>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center">
+                    <div className="w-7 h-7 bg-primary-green rounded-full text-black font-bold flex items-center justify-center mr-2.5">1</div>
+                    <h3 className="text-lg font-bold">Campaign 1</h3>
                   </div>
+                  
                   <div 
-                    className="relative aspect-square border border-border-dark rounded-lg overflow-hidden group cursor-pointer shadow-lg"
-                    onClick={() => {
-                      setPreviewImage(generatedImages.awareness.square);
-                      setPreviewImageFormat("square");
-                      setPreviewStage("awareness");
-                    }}
+                    className={`w-6 h-6 rounded border ${selectedCampaigns.campaign1 ? 'bg-primary-green border-primary-green' : 'border-gray-400'} flex items-center justify-center cursor-pointer`}
+                    onClick={() => setSelectedCampaigns(prev => ({...prev, campaign1: !prev.campaign1}))}
                   >
-                    <div className="w-full h-full">
-                      <img
-                        src={generatedImages.awareness.square}
-                        alt="Awareness stage square ad creative"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
-                      <div className="flex items-center gap-3">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setPreviewImage(generatedImages.awareness.square);
-                            setPreviewImageFormat("square");
-                            setPreviewStage("awareness");
-                          }}
-                          className="py-2 px-4 bg-white text-gray-800 rounded-md font-medium shadow hover:bg-gray-50"
-                        >
-                          View
-                        </button>
-                        <a 
-                          href={generatedImages.awareness.square}
-                          download="awareness-square-ad.png"
-                          className="py-2 px-4 bg-white text-gray-800 rounded-md font-medium shadow hover:bg-gray-50"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          Download
-                        </a>
-                      </div>
-                    </div>
-                    <div className="absolute top-3 right-3 bg-primary-green/80 text-black text-xs px-2 py-1 rounded-full font-medium">
-                      1:1
-                    </div>
-                    <div className="absolute bottom-3 left-3 bg-black/70 text-white text-xs px-2 py-1 rounded font-medium">
-                      Awareness
-                    </div>
+                    {selectedCampaigns.campaign1 && (
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-black">
+                        <path d="M20 6 9 17l-5-5"></path>
+                      </svg>
+                    )}
                   </div>
                 </div>
                 
-                {/* Vertical Format */}
-                <div>
-                  <div className="mb-2 flex items-center">
-                    <div className="w-4 h-4 bg-blue-500/80 rounded-full mr-1.5 flex items-center justify-center">
-                      <span className="text-xs font-bold text-white">B</span>
-                    </div>
-                    <span className="text-sm font-medium">Vertical Format (9:16)</span>
-                  </div>
+                {/* Campaign 1 content with real images */}
+                <div className="grid grid-cols-2 gap-3 mb-4">
                   <div 
-                    className="relative aspect-[9/16] border border-border-dark rounded-lg overflow-hidden group cursor-pointer shadow-lg"
+                    className="aspect-square bg-gray-700 rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
                     onClick={() => {
-                      setPreviewImage(generatedImages.awareness.vertical);
-                      setPreviewImageFormat("vertical");
-                      setPreviewStage("awareness");
+                      if (generatedImages?.awareness?.square) {
+                        setPreviewImage(generatedImages.awareness.square);
+                        setPreviewImageFormat("square");
+                        setPreviewStage("awareness");
+                      }
                     }}
                   >
-                    <div className="w-full h-full">
-                      <img
-                        src={generatedImages.awareness.vertical}
-                        alt="Awareness stage vertical ad creative"
+                    {generatedImages?.awareness?.square && (
+                      <img 
+                        src={generatedImages.awareness.square} 
+                        alt="Campaign 1 square ad" 
                         className="w-full h-full object-cover"
                       />
+                    )}
+                  </div>
+                  <div 
+                    className="aspect-[9/16] bg-gray-700 rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                    onClick={() => {
+                      if (generatedImages?.awareness?.vertical) {
+                        setPreviewImage(generatedImages.awareness.vertical);
+                        setPreviewImageFormat("vertical");
+                        setPreviewStage("awareness");
+                      }
+                    }}
+                  >
+                    {generatedImages?.awareness?.vertical && (
+                      <img 
+                        src={generatedImages.awareness.vertical} 
+                        alt="Campaign 1 vertical ad" 
+                        className="w-full h-full object-cover"
+                      />
+                    )}
+                  </div>
+                </div>
+                
+                {/* Campaign Settings */}
+                <div className="mt-3 border-t border-gray-700 pt-3">
+                  <h4 className="text-sm font-semibold mb-2 flex items-center">
+                    <span className="w-3 h-3 bg-primary-green/80 rounded-full mr-1.5"></span>
+                    AI-Generated Campaign Settings
+                  </h4>
+                  
+                  <div className="grid grid-cols-2 gap-2 text-[10px]">
+                    <div className="flex flex-col">
+                      <span className="text-blue-300 font-medium">Ad Copy</span>
+                      <span className="text-gray-400">✓ AI Generated</span>
                     </div>
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
-                      <div className="flex items-center gap-3">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setPreviewImage(generatedImages.awareness.vertical);
-                            setPreviewImageFormat("vertical");
-                            setPreviewStage("awareness");
-                          }}
-                          className="py-2 px-4 bg-white text-gray-800 rounded-md font-medium shadow hover:bg-gray-50"
-                        >
-                          View
-                        </button>
-                        <a 
-                          href={generatedImages.awareness.vertical}
-                          download="awareness-vertical-ad.png"
-                          className="py-2 px-4 bg-white text-gray-800 rounded-md font-medium shadow hover:bg-gray-50"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          Download
-                        </a>
-                      </div>
+                    <div className="flex flex-col">
+                      <span className="text-amber-300 font-medium">Targeting</span>
+                      <span className="text-gray-400">✓ AI Generated</span>
                     </div>
-                    <div className="absolute top-3 right-3 bg-blue-500/80 text-white text-xs px-2 py-1 rounded-full font-medium">
-                      9:16
+                    <div className="flex flex-col">
+                      <span className="text-green-300 font-medium">Budget</span>
+                      <span className="text-gray-400">✓ Freely Choosable</span>
                     </div>
-                    <div className="absolute bottom-3 left-3 bg-black/70 text-white text-xs px-2 py-1 rounded font-medium">
-                      Awareness
+                    <div className="flex flex-col">
+                      <span className="text-purple-300 font-medium">Placement</span>
+                      <span className="text-gray-400">✓ AI Generated</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Campaign 2 */}
+              <div className={`bg-gray-800/30 rounded-xl border ${selectedCampaigns.campaign2 ? 'border-blue-500' : 'border-gray-700'} p-4 transition-all ${selectedCampaigns.campaign2 ? 'ring-1 ring-blue-500' : ''}`}>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center">
+                    <div className="w-7 h-7 bg-blue-500 rounded-full text-white font-bold flex items-center justify-center mr-2.5">2</div>
+                    <h3 className="text-lg font-bold">Campaign 2</h3>
+                  </div>
+                  
+                  <div 
+                    className={`w-6 h-6 rounded border ${selectedCampaigns.campaign2 ? 'bg-blue-500 border-blue-500' : 'border-gray-400'} flex items-center justify-center cursor-pointer`}
+                    onClick={() => setSelectedCampaigns(prev => ({...prev, campaign2: !prev.campaign2}))}
+                  >
+                    {selectedCampaigns.campaign2 && (
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white">
+                        <path d="M20 6 9 17l-5-5"></path>
+                      </svg>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Campaign 2 content with real images */}
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <div 
+                    className="aspect-square bg-gray-700 rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                    onClick={() => {
+                      if (generatedImages?.consideration?.square) {
+                        setPreviewImage(generatedImages.consideration.square);
+                        setPreviewImageFormat("square");
+                        setPreviewStage("consideration");
+                      }
+                    }}
+                  >
+                    {generatedImages?.consideration?.square && (
+                      <img 
+                        src={generatedImages.consideration.square} 
+                        alt="Campaign 2 square ad" 
+                        className="w-full h-full object-cover"
+                      />
+                    )}
+                  </div>
+                  <div 
+                    className="aspect-[9/16] bg-gray-700 rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                    onClick={() => {
+                      if (generatedImages?.consideration?.vertical) {
+                        setPreviewImage(generatedImages.consideration.vertical);
+                        setPreviewImageFormat("vertical");
+                        setPreviewStage("consideration");
+                      }
+                    }}
+                  >
+                    {generatedImages?.consideration?.vertical && (
+                      <img 
+                        src={generatedImages.consideration.vertical} 
+                        alt="Campaign 2 vertical ad" 
+                        className="w-full h-full object-cover"
+                      />
+                    )}
+                  </div>
+                </div>
+                
+                {/* Campaign Settings */}
+                <div className="mt-3 border-t border-gray-700 pt-3">
+                  <h4 className="text-sm font-semibold mb-2 flex items-center">
+                    <span className="w-3 h-3 bg-blue-500/80 rounded-full mr-1.5"></span>
+                    AI-Generated Campaign Settings
+                  </h4>
+                  
+                  <div className="grid grid-cols-2 gap-2 text-[10px]">
+                    <div className="flex flex-col">
+                      <span className="text-blue-300 font-medium">Ad Copy</span>
+                      <span className="text-gray-400">✓ AI Generated</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-amber-300 font-medium">Targeting</span>
+                      <span className="text-gray-400">✓ AI Generated</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-green-300 font-medium">Budget</span>
+                      <span className="text-gray-400">✓ Freely Choosable</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-purple-300 font-medium">Placement</span>
+                      <span className="text-gray-400">✓ AI Generated</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Campaign 3 */}
+              <div className={`bg-gray-800/30 rounded-xl border ${selectedCampaigns.campaign3 ? 'border-amber-500' : 'border-gray-700'} p-4 transition-all ${selectedCampaigns.campaign3 ? 'ring-1 ring-amber-500' : ''}`}>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center">
+                    <div className="w-7 h-7 bg-amber-500 rounded-full text-black font-bold flex items-center justify-center mr-2.5">3</div>
+                    <h3 className="text-lg font-bold">Campaign 3</h3>
+                  </div>
+                  
+                  <div 
+                    className={`w-6 h-6 rounded border ${selectedCampaigns.campaign3 ? 'bg-amber-500 border-amber-500' : 'border-gray-400'} flex items-center justify-center cursor-pointer`}
+                    onClick={() => setSelectedCampaigns(prev => ({...prev, campaign3: !prev.campaign3}))}
+                  >
+                    {selectedCampaigns.campaign3 && (
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-black">
+                        <path d="M20 6 9 17l-5-5"></path>
+                      </svg>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Campaign 3 content with real images */}
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <div 
+                    className="aspect-square bg-gray-700 rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                    onClick={() => {
+                      if (generatedImages?.conversion?.square) {
+                        setPreviewImage(generatedImages.conversion.square);
+                        setPreviewImageFormat("square");
+                        setPreviewStage("conversion");
+                      }
+                    }}
+                  >
+                    {generatedImages?.conversion?.square && (
+                      <img 
+                        src={generatedImages.conversion.square} 
+                        alt="Campaign 3 square ad" 
+                        className="w-full h-full object-cover"
+                      />
+                    )}
+                  </div>
+                  <div 
+                    className="aspect-[9/16] bg-gray-700 rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                    onClick={() => {
+                      if (generatedImages?.conversion?.vertical) {
+                        setPreviewImage(generatedImages.conversion.vertical);
+                        setPreviewImageFormat("vertical");
+                        setPreviewStage("conversion");
+                      }
+                    }}
+                  >
+                    {generatedImages?.conversion?.vertical && (
+                      <img 
+                        src={generatedImages.conversion.vertical} 
+                        alt="Campaign 3 vertical ad" 
+                        className="w-full h-full object-cover"
+                      />
+                    )}
+                  </div>
+                </div>
+                
+                {/* Campaign Settings */}
+                <div className="mt-3 border-t border-gray-700 pt-3">
+                  <h4 className="text-sm font-semibold mb-2 flex items-center">
+                    <span className="w-3 h-3 bg-amber-500/80 rounded-full mr-1.5"></span>
+                    AI-Generated Campaign Settings
+                  </h4>
+                  
+                  <div className="grid grid-cols-2 gap-2 text-[10px]">
+                    <div className="flex flex-col">
+                      <span className="text-blue-300 font-medium">Ad Copy</span>
+                      <span className="text-gray-400">✓ AI Generated</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-amber-300 font-medium">Targeting</span>
+                      <span className="text-gray-400">✓ AI Generated</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-green-300 font-medium">Budget</span>
+                      <span className="text-gray-400">✓ Freely Choosable</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-purple-300 font-medium">Placement</span>
+                      <span className="text-gray-400">✓ AI Generated</span>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
             
-            {/* Consideration Stage */}
-            <div className="mb-8 pb-6 border-b border-gray-700">
-              <div className="flex items-center mb-4">
-                <div className="w-9 h-9 bg-blue-500 rounded-full text-white font-bold flex items-center justify-center mr-3">2</div>
-                <div>
-                  <h3 className="text-xl font-bold mb-1">Consideration Stage</h3>
-                  <p className="text-gray-400 text-sm">Mid-funnel creatives to highlight benefits and engage interested prospects</p>
-                </div>
+            {/* Launch button */}
+            {!showSubscribeScreen && (
+              <div className="col-span-1 lg:col-span-3 flex flex-col items-center mt-2 mb-6">
+                <Button
+                  onClick={() => {
+                    // Only show subscribe screen if at least one campaign is selected
+                    if (selectedCampaigns.campaign1 || selectedCampaigns.campaign2 || selectedCampaigns.campaign3) {
+                      setShowSubscribeScreen(true);
+                    }
+                  }}
+                  disabled={!selectedCampaigns.campaign1 && !selectedCampaigns.campaign2 && !selectedCampaigns.campaign3}
+                  className="bg-primary-green hover:bg-primary-green/90 text-black font-semibold px-10 py-6 text-lg shadow-lg shadow-primary-green/30 disabled:bg-gray-600 disabled:text-gray-300 disabled:cursor-not-allowed"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+                    <path d="M5 12h14"></path>
+                    <path d="m12 5 7 7-7 7"></path>
+                  </svg>
+                  Launch Selected Campaigns
+                </Button>
+                {!selectedCampaigns.campaign1 && !selectedCampaigns.campaign2 && !selectedCampaigns.campaign3 && (
+                  <p className="text-sm text-gray-400 mt-2">Select at least one campaign to continue</p>
+                )}
               </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Square Format */}
-                <div>
-                  <div className="mb-2 flex items-center">
-                    <div className="w-4 h-4 bg-primary-green/80 rounded-full mr-1.5 flex items-center justify-center">
-                      <span className="text-xs font-bold">A</span>
-                    </div>
-                    <span className="text-sm font-medium">Square Format (1:1)</span>
-                  </div>
-                  <div 
-                    className="relative aspect-square border border-border-dark rounded-lg overflow-hidden group cursor-pointer shadow-lg"
-                    onClick={() => {
-                      setPreviewImage(generatedImages.consideration.square);
-                      setPreviewImageFormat("square");
-                      setPreviewStage("consideration");
-                    }}
-                  >
-                    <div className="w-full h-full">
-                      <img
-                        src={generatedImages.consideration.square}
-                        alt="Consideration stage square ad creative"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
-                      <div className="flex items-center gap-3">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setPreviewImage(generatedImages.consideration.square);
-                            setPreviewImageFormat("square");
-                            setPreviewStage("consideration");
-                          }}
-                          className="py-2 px-4 bg-white text-gray-800 rounded-md font-medium shadow hover:bg-gray-50"
-                        >
-                          View
-                        </button>
-                        <a 
-                          href={generatedImages.consideration.square}
-                          download="consideration-square-ad.png"
-                          className="py-2 px-4 bg-white text-gray-800 rounded-md font-medium shadow hover:bg-gray-50"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          Download
-                        </a>
-                      </div>
-                    </div>
-                    <div className="absolute top-3 right-3 bg-primary-green/80 text-black text-xs px-2 py-1 rounded-full font-medium">
-                      1:1
-                    </div>
-                    <div className="absolute bottom-3 left-3 bg-black/70 text-white text-xs px-2 py-1 rounded font-medium">
-                      Consideration
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Vertical Format */}
-                <div>
-                  <div className="mb-2 flex items-center">
-                    <div className="w-4 h-4 bg-blue-500/80 rounded-full mr-1.5 flex items-center justify-center">
-                      <span className="text-xs font-bold text-white">B</span>
-                    </div>
-                    <span className="text-sm font-medium">Vertical Format (9:16)</span>
-                  </div>
-                  <div 
-                    className="relative aspect-[9/16] border border-border-dark rounded-lg overflow-hidden group cursor-pointer shadow-lg"
-                    onClick={() => {
-                      setPreviewImage(generatedImages.consideration.vertical);
-                      setPreviewImageFormat("vertical");
-                      setPreviewStage("consideration");
-                    }}
-                  >
-                    <div className="w-full h-full">
-                      <img
-                        src={generatedImages.consideration.vertical}
-                        alt="Consideration stage vertical ad creative"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
-                      <div className="flex items-center gap-3">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setPreviewImage(generatedImages.consideration.vertical);
-                            setPreviewImageFormat("vertical");
-                            setPreviewStage("consideration");
-                          }}
-                          className="py-2 px-4 bg-white text-gray-800 rounded-md font-medium shadow hover:bg-gray-50"
-                        >
-                          View
-                        </button>
-                        <a 
-                          href={generatedImages.consideration.vertical}
-                          download="consideration-vertical-ad.png"
-                          className="py-2 px-4 bg-white text-gray-800 rounded-md font-medium shadow hover:bg-gray-50"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          Download
-                        </a>
-                      </div>
-                    </div>
-                    <div className="absolute top-3 right-3 bg-blue-500/80 text-white text-xs px-2 py-1 rounded-full font-medium">
-                      9:16
-                    </div>
-                    <div className="absolute bottom-3 left-3 bg-black/70 text-white text-xs px-2 py-1 rounded font-medium">
-                      Consideration
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            {/* Conversion Stage */}
-            <div className="mb-8">
-              <div className="flex items-center mb-4">
-                <div className="w-9 h-9 bg-amber-500 rounded-full text-black font-bold flex items-center justify-center mr-3">3</div>
-                <div>
-                  <h3 className="text-xl font-bold mb-1">Conversion Stage</h3>
-                  <p className="text-gray-400 text-sm">Bottom-of-funnel creatives to drive immediate action and conversions</p>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Square Format */}
-                <div>
-                  <div className="mb-2 flex items-center">
-                    <div className="w-4 h-4 bg-primary-green/80 rounded-full mr-1.5 flex items-center justify-center">
-                      <span className="text-xs font-bold">A</span>
-                    </div>
-                    <span className="text-sm font-medium">Square Format (1:1)</span>
-                  </div>
-                  <div 
-                    className="relative aspect-square border border-border-dark rounded-lg overflow-hidden group cursor-pointer shadow-lg"
-                    onClick={() => {
-                      setPreviewImage(generatedImages.conversion.square);
-                      setPreviewImageFormat("square");
-                      setPreviewStage("conversion");
-                    }}
-                  >
-                    <div className="w-full h-full">
-                      <img
-                        src={generatedImages.conversion.square}
-                        alt="Conversion stage square ad creative"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
-                      <div className="flex items-center gap-3">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setPreviewImage(generatedImages.conversion.square);
-                            setPreviewImageFormat("square");
-                            setPreviewStage("conversion");
-                          }}
-                          className="py-2 px-4 bg-white text-gray-800 rounded-md font-medium shadow hover:bg-gray-50"
-                        >
-                          View
-                        </button>
-                        <a 
-                          href={generatedImages.conversion.square}
-                          download="conversion-square-ad.png"
-                          className="py-2 px-4 bg-white text-gray-800 rounded-md font-medium shadow hover:bg-gray-50"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          Download
-                        </a>
-                      </div>
-                    </div>
-                    <div className="absolute top-3 right-3 bg-primary-green/80 text-black text-xs px-2 py-1 rounded-full font-medium">
-                      1:1
-                    </div>
-                    <div className="absolute bottom-3 left-3 bg-black/70 text-white text-xs px-2 py-1 rounded font-medium">
-                      Conversion
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Vertical Format */}
-                <div>
-                  <div className="mb-2 flex items-center">
-                    <div className="w-4 h-4 bg-blue-500/80 rounded-full mr-1.5 flex items-center justify-center">
-                      <span className="text-xs font-bold text-white">B</span>
-                    </div>
-                    <span className="text-sm font-medium">Vertical Format (9:16)</span>
-                  </div>
-                  <div 
-                    className="relative aspect-[9/16] border border-border-dark rounded-lg overflow-hidden group cursor-pointer shadow-lg"
-                    onClick={() => {
-                      setPreviewImage(generatedImages.conversion.vertical);
-                      setPreviewImageFormat("vertical");
-                      setPreviewStage("conversion");
-                    }}
-                  >
-                    <div className="w-full h-full">
-                      <img
-                        src={generatedImages.conversion.vertical}
-                        alt="Conversion stage vertical ad creative"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
-                      <div className="flex items-center gap-3">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setPreviewImage(generatedImages.conversion.vertical);
-                            setPreviewImageFormat("vertical");
-                            setPreviewStage("conversion");
-                          }}
-                          className="py-2 px-4 bg-white text-gray-800 rounded-md font-medium shadow hover:bg-gray-50"
-                        >
-                          View
-                        </button>
-                        <a 
-                          href={generatedImages.conversion.vertical}
-                          download="conversion-vertical-ad.png"
-                          className="py-2 px-4 bg-white text-gray-800 rounded-md font-medium shadow hover:bg-gray-50"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          Download
-                        </a>
-                      </div>
-                    </div>
-                    <div className="absolute top-3 right-3 bg-blue-500/80 text-white text-xs px-2 py-1 rounded-full font-medium">
-                      9:16
-                    </div>
-                    <div className="absolute bottom-3 left-3 bg-black/70 text-white text-xs px-2 py-1 rounded font-medium">
-                      Conversion
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-8 pt-4 border-t border-gray-700 text-center">
-              <p className="text-gray-400 mb-4">Need different creatives? You can start over or try with a different website.</p>
-              <Button
-                onClick={() => {
-                  setGeneratedImages(null);
-                  setWebsiteData(null);
-                  setUrl("");
-                  setSelectedReferenceImages([]);
-                }}
-                className="bg-primary-green hover:bg-primary-green/90 text-black"
-              >
-                Create New Creatives
-              </Button>
-            </div>
+            )}
           </div>
         </div>
       )}
