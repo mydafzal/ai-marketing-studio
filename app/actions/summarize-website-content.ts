@@ -16,6 +16,337 @@ const openai = new OpenAI({
  * @param fonts Array of fonts extracted from the website
  * @returns A structured, marketing-focused summary of the website content
  */
+/**
+ * Generates a plain text brand overview from website content
+ * without markdown formatting or emojis, specifically for
+ * use in company profile descriptions.
+ * 
+ * @param content The raw website content to process
+ * @param colors Array of brand colors extracted from the website
+ * @param fonts Array of fonts extracted from the website
+ * @returns A plain text brand overview without markdown or emojis
+ */
+export async function generatePlainBrandOverview(
+  content: string,
+  colors: string[] = [],
+  fonts: string[] = []
+): Promise<string> {
+  try {
+    // Check if content is empty or too short to be meaningful
+    if (!content || content.trim().length < 100) {
+      return "Unable to generate a brand overview. The website contains insufficient content for analysis.";
+    }
+
+    // Preprocess the content to make it more digestible
+    const cleanedContent = content
+      .replace(/\s+/g, ' ')
+      .trim();
+    
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o", // Using the more powerful model for better results
+      messages: [
+        {
+          role: "system",
+          content: `You are a professional marketing writer who creates concise, informative brand overviews.
+
+Your task is to analyze website content and create a purely plain text brand overview without any formatting.
+
+CRITICAL REQUIREMENTS:
+1. ABSOLUTELY NO MARKDOWN - No '#', '*', '-', or any other markdown syntax
+2. ABSOLUTELY NO EMOJIS - No emoji characters of any kind
+3. NO HEADERS - Do not use "Brand Overview:" or any other labeled sections
+4. NO BULLET POINTS - Present information in paragraphs only
+5. NO SECTION TITLES - Just write cohesive paragraphs of text
+6. NO SPECIAL CHARACTERS - No unicode symbols or decorative elements
+
+The overview should still include:
+- What the business does
+- Who their target audience is
+- Their unique value proposition
+- Key benefits they offer
+- Brand voice and tone
+
+Format the entire response as simple paragraphs of plain text with no headers, sections, markdown, or special formatting of any kind. The output should look like a normal business description that could appear in a company profile.`
+        },
+        {
+          role: "user",
+          content: `Please create a plain text brand overview based on this website content. It MUST be pure text without ANY markdown, headers, bullet points, emojis, or special formatting.
+
+CONTENT:
+${cleanedContent.slice(0, 7500)} ${cleanedContent.length > 7500 ? '... [additional content truncated]' : ''}
+
+BRAND COLORS (for context only):
+${colors.slice(0, 3).join(', ')}
+
+BRAND TYPOGRAPHY (for context only):
+${fonts.slice(0, 5).join(', ')}
+
+The output should be a simple business description in plain text paragraphs only - no section titles, no markdown, no special characters, and no emojis. This text will be used in a company profile field that does not support any formatting.`
+        }
+      ],
+      temperature: 0.4,
+      max_tokens: 1000,
+    });
+
+    // Extra processing to ensure NO markdown or emojis remain
+    let plainOverview = completion.choices[0]?.message?.content || "";
+    
+    // Remove any markdown headers
+    plainOverview = plainOverview.replace(/#+\s+[^\n]+\n/g, '');
+    
+    // Remove any bullet points
+    plainOverview = plainOverview.replace(/[-*]\s+/g, '');
+    
+    // Remove any emojis
+    plainOverview = plainOverview.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '');
+    
+    // Remove any lines that might be section headers (e.g. "Brand Overview:")
+    plainOverview = plainOverview.replace(/^[A-Z][^:]+:\s*$/gm, '');
+    
+    // Remove any remaining markdown formatting characters
+    plainOverview = plainOverview.replace(/[*_~`#>]+/g, '');
+    
+    // Clean up any double spaces or newlines created during the cleanup
+    plainOverview = plainOverview.replace(/\n{3,}/g, '\n\n').replace(/\s{2,}/g, ' ').trim();
+    
+    return plainOverview;
+  } catch (error) {
+    console.error("Error generating plain brand overview:", error);
+    return "We encountered an error while generating your brand overview. Please try again or enter your description manually.";
+  }
+}
+
+/**
+ * Extracts the company name from website content using multiple extraction techniques
+ * to ensure accurate results across different website structures.
+ * 
+ * @param content The raw website content to analyze
+ * @param url The URL of the website (used for domain-based extraction)
+ * @returns The extracted company name or empty string if not found
+ */
+export async function extractCompanyName(content: string, url: string): Promise<string> {
+  // Clean the content for processing
+  const cleanedContent = content.replace(/\s+/g, ' ').trim();
+  
+  // Pattern 1: Look for common company name patterns in text
+  const patterns = [
+    // "Company Name is a..." pattern
+    /(?:^|\s)([A-Z][A-Za-z0-9\s&,'-]{2,30})(?:\s+is\s+an?|,\s+an?)\s+(?:industry|leading|innovative|premier|global|top|award[\s-]winning)/i,
+    
+    // "About Company Name" pattern
+    /(?:about|about\s+us|company)(?:\s+[\-\|:])?\s+([A-Z][A-Za-z0-9\s&,'-]{2,30})(?:[\.\s]|$)/i,
+    
+    // "Company Name, a..." pattern
+    /([A-Z][A-Za-z0-9\s&,'-]{2,30}),\s+(?:an?|the)\s+(?:industry|leading|innovative|premier|global|provider|company|organization|enterprise|specialist)/i,
+    
+    // "Welcome to Company Name" pattern
+    /welcome\s+to\s+([A-Z][A-Za-z0-9\s&,'-]{2,30})(?:[\.\s]|$)/i,
+    
+    // "© 2023 Company Name" pattern (copyright)
+    /©\s*(?:19|20)\d{2}\s+([A-Z][A-Za-z0-9\s&,''-]{2,30})(?:[\.\s,]|$)/i,
+    
+    // "Company Name LLC/Inc/Ltd" pattern
+    /([A-Z][A-Za-z0-9\s&,''-]{2,25})\s+(?:LLC|Inc|Ltd|GmbH|Limited|Corp|Corporation|Company|Co)(?:[\.\s,]|$)/i,
+    
+    // "All rights reserved. Company Name" pattern
+    /All\s+rights\s+reserved\.?\s+([A-Z][A-Za-z0-9\s&,''-]{2,30})(?:[\.\s,]|$)/i
+  ];
+  
+  for (const pattern of patterns) {
+    const match = cleanedContent.match(pattern);
+    if (match && match[1] && match[1].length > 2) {
+      // Clean up the match
+      return match[1].trim()
+        .replace(/\s+/g, ' ')
+        .replace(/\s*[,\.-]\s*$/, ''); // Remove trailing punctuation
+    }
+  }
+  
+  // Pattern 2: Extract from meta tags
+  const metaTagPatterns = [
+    /<meta\s+(?:property|name)=["'](?:og:site_name|application-name|author|copyright|publisher)["']\s+content=["']([^"']+)["']/i,
+    /<meta\s+content=["']([^"']+)["']\s+(?:property|name)=["'](?:og:site_name|application-name|author|copyright|publisher)["']/i
+  ];
+  
+  for (const pattern of metaTagPatterns) {
+    const matches = content.matchAll(new RegExp(pattern, 'gi'));
+    for (const match of matches) {
+      if (match && match[1] && match[1].length > 2 && match[1].length < 50) {
+        return match[1].trim();
+      }
+    }
+  }
+  
+  // Pattern 3: Extract from title tag
+  const titleMatch = content.match(/<title[^>]*>([^<]+)<\/title>/i);
+  if (titleMatch && titleMatch[1]) {
+    // Clean and process the title
+    let title = titleMatch[1].trim();
+    
+    // Remove common suffixes like "| Home" or "- Official Website"
+    title = title.replace(/\s*[|:\-–—]\s*(?:Home|Official(?:\s+Site|Website)?|Welcome|About(?:\s+Us)?|Contact(?:\s+Us)?)$/i, '');
+    
+    // If title is not too long and looks like a brand name, use it
+    if (title.length > 2 && title.length < 50 && /^[A-Z0-9]/.test(title)) {
+      return title;
+    }
+  }
+  
+  // Pattern 4: Extract from domain name
+  if (url) {
+    try {
+      const hostname = new URL(url).hostname;
+      // Remove common TLDs and www
+      let domain = hostname
+        .replace(/^www\./, '')
+        .replace(/\.(com|org|net|io|co|ai|app|biz|info|us|uk|eu|de|fr)$/, '');
+      
+      // Split by dots and take the first part (for subdomains)
+      const domainParts = domain.split('.');
+      domain = domainParts[0];
+      
+      // If domain has dashes, convert to spaces and capitalize each word
+      if (domain.includes('-')) {
+        domain = domain.split('-')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ');
+      } else {
+        // Just capitalize the first letter
+        domain = domain.charAt(0).toUpperCase() + domain.slice(1);
+      }
+      
+      // Only use domain if it's not too short and looks like a name
+      if (domain.length > 2 && /^[A-Za-z0-9]/.test(domain)) {
+        return domain;
+      }
+    } catch (e) {
+      console.error('Error extracting company name from domain:', e);
+    }
+  }
+  
+  // If all else fails, return an empty string
+  return '';
+}
+
+/**
+ * Finds the privacy policy URL from a website
+ * 
+ * @param content The raw HTML content
+ * @param baseUrl The base URL of the website for resolving relative URLs
+ * @returns The privacy policy URL or empty string if not found
+ */
+export async function findPrivacyPolicyUrl(content: string, baseUrl: string): Promise<string> {
+  try {
+    // Clean up the content a bit to make regex more reliable
+    const cleanedContent = content.replace(/\s+/g, ' ');
+    
+    // Regex for finding link tags with privacy-related text
+    // This prioritizes links that have explicit privacy policy text
+    const privacyLinkPatterns = [
+      // Links with very specific privacy policy text in the link text
+      /<a[^>]*href=["']([^"']+)["'][^>]*>(?:[^<]*(?:privacy\s*policy|privacy\s*statement|datenschutz(?:erklärung)?|política\s*de\s*privacidad)[^<]*)<\/a>/i,
+      
+      // Links with common privacy paths in the href
+      /<a[^>]*href=["']([^"']*\/(?:privacy-policy|privacy_policy|privacypolicy|datenschutz|privacy\/|datenschutz\/|legal\/privacy|legal\/datenschutz)[^"']*)["'][^>]*>/i,
+      
+      // Links with privacy-related text
+      /<a[^>]*href=["']([^"']+)["'][^>]*>(?:[^<]*(?:privacy|datenschutz|privacidad|policy)[^<]*)<\/a>/i,
+      
+      // Footer or legal links that might contain privacy policy
+      /<(?:footer|div[^>]*(?:class|id)=["'][^"']*(?:footer|legal|bottom)[^"']*["'])[^>]*>(?:[^<]*<a[^>]*href=["']([^"']+)["'][^>]*>(?:[^<]*(?:privacy|datenschutz|privacidad|policy)[^<]*)<\/a>[^<]*)+<\/(?:footer|div)>/i
+    ];
+    
+    // Try each pattern
+    for (const pattern of privacyLinkPatterns) {
+      const matches = cleanedContent.matchAll(new RegExp(pattern, 'gi'));
+      for (const match of matches) {
+        if (match && match[1]) {
+          const linkHref = match[1];
+          
+          // Skip links that are clearly not privacy policy links
+          if (linkHref.includes('mailto:') || 
+              linkHref.includes('tel:') || 
+              linkHref.includes('javascript:') ||
+              linkHref === '#' ||
+              linkHref.includes('login') ||
+              linkHref.includes('signup') ||
+              linkHref.includes('/cart') ||
+              linkHref.includes('/search')) {
+            continue;
+          }
+          
+          try {
+            // Resolve relative URLs
+            const url = new URL(linkHref, baseUrl).href;
+            console.log('Found privacy policy URL:', url);
+            return url;
+          } catch (e) {
+            // If URL parsing fails, try to handle it as a relative URL manually
+            if (linkHref.startsWith('/')) {
+              try {
+                const urlObj = new URL(baseUrl);
+                const fullUrl = `${urlObj.origin}${linkHref}`;
+                console.log('Resolved relative privacy policy URL:', fullUrl);
+                return fullUrl;
+              } catch (e) {
+                console.error('Error resolving relative URL:', e);
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    // Fallback: check for all links that have privacy-related text or URLs
+    const linkRegex = /<a[^>]*href=["']([^"']+)["'][^>]*>([^<]+)<\/a>/gi;
+    const links = Array.from(cleanedContent.matchAll(linkRegex));
+    
+    // First, look for obvious privacy policy links
+    for (const link of links) {
+      const url = link[1];
+      const text = link[2].toLowerCase();
+      
+      const isPrivacyText = 
+        text.includes('privacy policy') || 
+        text.includes('privacy statement') || 
+        text.includes('datenschutzerklärung') ||
+        text.includes('política de privacidad');
+        
+      const isPrivacyUrl = 
+        url.includes('/privacy-policy') || 
+        url.includes('/privacy_policy') || 
+        url.includes('/privacypolicy') || 
+        url.includes('/datenschutz') ||
+        url.includes('/legal/privacy');
+      
+      if (isPrivacyText || isPrivacyUrl) {
+        try {
+          const resolvedUrl = new URL(url, baseUrl).href;
+          console.log('Found privacy policy URL from fallback:', resolvedUrl);
+          return resolvedUrl;
+        } catch (e) {
+          if (url.startsWith('/')) {
+            try {
+              const urlObj = new URL(baseUrl);
+              const fullUrl = `${urlObj.origin}${url}`;
+              console.log('Resolved relative privacy URL from fallback:', fullUrl);
+              return fullUrl;
+            } catch (e) {
+              console.error('Error resolving relative URL:', e);
+            }
+          }
+        }
+      }
+    }
+    
+    // If no privacy policy URL was found, do NOT guess one
+    return '';
+  } catch (error) {
+    console.error('Error finding privacy policy URL:', error);
+    return '';
+  }
+}
+
 export async function summarizeWebsiteContent(
   content: string,
   colors: string[] = [],

@@ -93,17 +93,27 @@ const STEPS = [
     { 
         id: 'personal', 
         title: 'Personal Information', 
-        fields: ['first_name', 'last_name'] 
+        fields: ['first_name', 'last_name', 'company_name'] 
+    },
+    { 
+        id: 'website_analysis', 
+        title: 'Website Analysis', 
+        fields: ['website_link'] 
+    },
+    { 
+        id: 'company_type', 
+        title: 'Company Type', 
+        fields: ['company_segment'] 
     },
     { 
         id: 'company', 
         title: 'Company Information', 
-        fields: ['company_name', 'company_segment', 'company_description'] 
+        fields: ['company_description'] 
     },
     { 
         id: 'website', 
         title: 'Website Details', 
-        fields: ['website_link', 'privacy_policy_link'] 
+        fields: ['privacy_policy_link'] 
     },
     { 
         id: 'preferences', 
@@ -173,7 +183,7 @@ const BenefitsPanel = ({ currentStep }: { currentStep: number }) => {
         </div>
       );
       
-    case 1: // Company Information
+    case 1: // Website Analysis
       return (
         <div className="space-y-4 sm:space-y-6">
           <div className="bg-[#1A1D29] rounded-xl border border-gray-700 p-4 sm:p-6">
@@ -188,6 +198,46 @@ const BenefitsPanel = ({ currentStep }: { currentStep: number }) => {
           
           <div className="bg-[#1A1D29] rounded-xl border border-gray-700 p-4 sm:p-6">
             <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+              <Zap className="size-4 sm:size-5 text-[#4BF29C]" />
+              <h3 className="text-base sm:text-lg font-semibold text-white">Instant Brand Analysis</h3>
+            </div>
+            <p className="text-gray-300 text-sm sm:text-base">
+              Our AI instantly analyzes your website's colors, fonts, and content to understand your brand identity and create perfectly matched ads.
+            </p>
+          </div>
+        </div>
+      );
+      
+    case 2: // Company Type
+      return (
+        <div className="space-y-4 sm:space-y-6">
+          <div className="bg-[#1A1D29] rounded-xl border border-gray-700 p-4 sm:p-6">
+            <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+              <Building2 className="size-4 sm:size-5 text-[#4BF29C]" />
+              <h3 className="text-base sm:text-lg font-semibold text-white">Tailored Marketing Strategy</h3>
+            </div>
+            <p className="text-gray-300 text-sm sm:text-base">
+              We customize your marketing approach based on your company size and type, optimizing campaigns for your specific business category.
+            </p>
+          </div>
+          
+          <div className="bg-[#1A1D29] rounded-xl border border-gray-700 p-4 sm:p-6">
+            <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+              <BarChart3 className="size-4 sm:size-5 text-[#4BF29C]" />
+              <h3 className="text-base sm:text-lg font-semibold text-white">Industry-Specific Performance</h3>
+            </div>
+            <p className="text-gray-300 text-sm sm:text-base">
+              Your company type helps our AI select the most effective advertising approaches that have been proven to work for similar businesses in your industry.
+            </p>
+          </div>
+        </div>
+      );
+    
+    case 3: // Company Information
+      return (
+        <div className="space-y-4 sm:space-y-6">
+          <div className="bg-[#1A1D29] rounded-xl border border-gray-700 p-4 sm:p-6">
+            <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
               <FileText className="size-4 sm:size-5 text-[#4BF29C]" />
               <h3 className="text-base sm:text-lg font-semibold text-white">AI-Generated Ad Copy</h3>
             </div>
@@ -195,10 +245,20 @@ const BenefitsPanel = ({ currentStep }: { currentStep: number }) => {
               Based on your company description, our AI writes compelling ad text that resonates with your audience and highlights your unique value proposition.
             </p>
           </div>
+          
+          <div className="bg-[#1A1D29] rounded-xl border border-gray-700 p-4 sm:p-6">
+            <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+              <Lightbulb className="size-4 sm:size-5 text-[#4BF29C]" />
+              <h3 className="text-base sm:text-lg font-semibold text-white">Value Proposition Detection</h3>
+            </div>
+            <p className="text-gray-300 text-sm sm:text-base">
+              Our AI identifies what makes your business special from your description and emphasizes these unique selling points in your ad campaigns.
+            </p>
+          </div>
         </div>
       );
       
-    case 2: // Website Details
+    case 4: // Website Details
       return (
         <div className="space-y-4 sm:space-y-6">
           <div className="bg-[#1A1D29] rounded-xl border border-gray-700 p-4 sm:p-6">
@@ -247,7 +307,7 @@ const BenefitsPanel = ({ currentStep }: { currentStep: number }) => {
         </div>
       );
       
-    case 3: // Preferences
+    case 5: // Preferences
       return (
         <div className="space-y-4 sm:space-y-6">
           <div className="bg-[#1A1D29] rounded-xl border border-gray-700 p-4 sm:p-6">
@@ -272,7 +332,7 @@ const BenefitsPanel = ({ currentStep }: { currentStep: number }) => {
         </div>
       );
 
-    case 4: // Locations
+    case 6: // Locations
       return (
         <div className="space-y-4 sm:space-y-6">
           <div className="bg-[#1A1D29] rounded-xl border border-gray-700 p-4 sm:p-6">
@@ -446,6 +506,18 @@ function Onboarding({
     };
     
 
+        // Website Analysis States
+    const [isAnalyzingWebsite, setIsAnalyzingWebsite] = React.useState<boolean>(false)
+    const [websiteAnalysisComplete, setWebsiteAnalysisComplete] = React.useState<boolean>(false)
+    const [websiteData, setWebsiteData] = React.useState<{
+        colors: string[];
+        fonts: string[];
+        contentSample: string;
+        contentSummary: string;
+        images: string[];
+    } | null>(null)
+    const [foundPrivacyPolicy, setFoundPrivacyPolicy] = React.useState<string | null>(null)
+    
     const [firstName, setFirstName] = React.useState<string>(userDetails?.first_name || "")
     const [lastName, setLastName] = React.useState<string>(userDetails?.last_name || "")
     const [companyName, setCompanyName] = React.useState<string>(userDetails?.company_name || "")
@@ -486,6 +558,33 @@ function Onboarding({
     React.useEffect(() => {
         if (open) {
             setDialogOpenedAt(Date.now());
+            
+            // Check if we should auto-skip to first incomplete step
+            // Small timeout to ensure all state is loaded properly
+            setTimeout(() => {
+                // If user already has some data prefilled (e.g. from website or previous session)
+                if (
+                    (companyName && companyName.trim() !== "") || 
+                    (companyDescription && companyDescription.trim() !== "") ||
+                    (websiteLink && websiteLink.trim() !== "") ||
+                    (privacyPolicyLink && privacyPolicyLink.trim() !== "")
+                ) {
+                    // Find the first incomplete step
+                    let firstIncompleteStep = 0;
+                    
+                    for (let i = 0; i < STEPS.length; i++) {
+                        if (!isStepComplete(STEPS[i])) {
+                            firstIncompleteStep = i;
+                            break;
+                        }
+                    }
+                    
+                    // Skip to that step if it's not the current step
+                    if (firstIncompleteStep !== currentStep) {
+                        setCurrentStep(firstIncompleteStep);
+                    }
+                }
+            }, 300);
         }
     }, [open]);
     
@@ -538,12 +637,13 @@ function Onboarding({
         // Skip validation for confirmation step
         if (currentStep >= STEPS.length - 1) return true;
         
+        const currentStepId = STEPS[currentStep].id;
         const currentFields = STEPS[currentStep].fields;
         const errors: InputErrors = { ...inputError };
         let hasErrors = false;
         
         // Handle special case for locations step
-        if (STEPS[currentStep].id === 'locations') {
+        if (currentStepId === 'locations') {
             // Check if at least one location is selected
             if (!locations || locations.length === 0) {
                 errors.locations = "Please select at least one location";
@@ -551,6 +651,37 @@ function Onboarding({
                 return false;
             }
             return true;
+        }
+        
+        // Handle special case for website analysis step
+        if (currentStepId === 'website_analysis') {
+            // Website link is always required
+            if (!websiteLink || websiteLink.trim() === "") {
+                errors.website_link = "Please enter a website URL";
+                setInputError(errors);
+                return false;
+            }
+            
+            const fixedUrl = validateAndFixUrl(websiteLink);
+            if (fixedUrl !== websiteLink) {
+                setWebsiteLink(fixedUrl);
+            }
+            
+            if (!isValidfUrl(fixedUrl)) {
+                errors.website_link = "Please enter a valid URL";
+                setInputError(errors);
+                return false;
+            }
+            
+            // Analysis is mandatory - if not already in progress or completed, start it
+            if (!websiteAnalysisComplete && !isAnalyzingWebsite) {
+                // Start the analysis when user clicks Next
+                handleAnalyzeWebsite();
+                return false; // Stop navigation to next step until analysis completes
+            }
+            
+            // Analysis is complete or in progress
+            return websiteAnalysisComplete; // Only allow proceeding when analysis is complete
         }
         
         // Validate other fields
@@ -619,8 +750,26 @@ function Onboarding({
 
     const handleNextStep = () => {
         if (validateStep()) {
-            const nextStep = Math.min(currentStep + 1, STEPS.length - 1);
+            // First, go to the immediate next step
+            let nextStep = Math.min(currentStep + 1, STEPS.length - 1);
+            
+            // If we're moving from the website analysis step and it was successful,
+            // use smart navigation to skip to the first incomplete step
+            if (currentStep === STEPS.findIndex(s => s.id === 'website_analysis') && 
+                websiteAnalysisComplete) {
+                
+                // Find the next incomplete step after the website analysis
+                for (let i = nextStep; i < STEPS.length; i++) {
+                    if (!isStepComplete(STEPS[i])) {
+                        nextStep = i;
+                        break;
+                    }
+                }
+            } 
+            // For other steps, just do normal advancement
+            
             setCurrentStep(nextStep);
+            
             // Scroll to top when changing steps on mobile
             if (isMobile) {
                 window.scrollTo(0, 0);
@@ -803,6 +952,483 @@ function Onboarding({
         return inputError[field as keyof InputErrors];
     };
 
+    // Function to analyze website and extract data
+    const handleAnalyzeWebsite = async () => {
+        // Validate website URL first
+        if (!websiteLink || websiteLink.trim() === "") {
+            setInputError({...inputError, website_link: "Please enter a website URL"});
+            return;
+        }
+
+        try {
+            // Normalize and fix URL if needed
+            const fixedUrl = validateAndFixUrl(websiteLink);
+            if (fixedUrl !== websiteLink) {
+                setWebsiteLink(fixedUrl);
+            }
+            
+            if (!isValidfUrl(fixedUrl)) {
+                setInputError({...inputError, website_link: "Please enter a valid URL"});
+                return;
+            }
+            
+            // Clear previous results and set loading state
+            setError(null);
+            setIsAnalyzingWebsite(true);
+            setWebsiteData(null);
+            setWebsiteAnalysisComplete(false);
+            
+            // Make the request to the website-scrape endpoint
+            const response = await fetch("/api/website-scrape", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ url: fixedUrl }),
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || "Failed to analyze website");
+            }
+            
+            const data = await response.json();
+            
+            // Store the data in state
+            setWebsiteData(data);
+            
+            // Auto-fill company data from the analysis
+            if (data.plainBrandOverview) {
+                // If company description is empty, fill it with the plain brand overview
+                if (!companyDescription || companyDescription.trim() === "") {
+                    setCompanyDescription(data.plainBrandOverview);
+                }
+            } else if (data.contentSummary) {
+                // Fallback to content summary if plain brand overview is not available
+                if (!companyDescription || companyDescription.trim() === "") {
+                    setCompanyDescription(data.contentSummary);
+                }
+            }
+            
+            // First use the companyName from the API response if available (highest priority)
+            if (data.companyName && typeof data.companyName === 'string' && data.companyName.trim() !== "" && (!companyName || companyName.trim() === "")) {
+                // Use the company name extracted by our specialized server-side function
+                setCompanyName(data.companyName);
+                console.log("Using API extracted company name:", data.companyName);
+            } 
+            // Fall back to extraction from content if no company name was found by the API
+            else if (data.contentSummary && (!companyName || companyName.trim() === "")) {
+                // First check for a clear brand name in the heading (most reliable)
+                const brandHeadingMatch = data.contentSummary.match(/# (.+?)(?:\n|$)/);
+                // Then check for brand overview section
+                const brandOverviewMatch = data.contentSummary.match(/### 🏢 Brand Overview\n([^\n]+)/);
+                // Also look for company name in the unique value proposition
+                const valuePropositionMatch = data.contentSummary.match(/### ✨ Unique Value Proposition\n([^\n]+)/);
+                
+                if (brandHeadingMatch && brandHeadingMatch[1]) {
+                    // Remove any emoji and marketing report text from heading
+                    const cleanName = brandHeadingMatch[1].replace(/📊 MARKETING INSIGHT REPORT|MARKETING INSIGHT REPORT|📊/g, '').trim();
+                    if (cleanName) setCompanyName(cleanName);
+                } else if (brandOverviewMatch && brandOverviewMatch[1]) {
+                    // Extract likely company name from brand overview (first sentence or phrase)
+                    const text = brandOverviewMatch[1].trim();
+                    
+                    // Look for company indicators like "is a" or company/organization types
+                    const companyIndicators = [
+                        /^([^,]+?)(?:\sis\sa|\sprovides|\soffers|\sdelivers|\screates|\sspecializes\sin)/i,
+                        /^([^,]+?)(?:,\s+a)/i,
+                        /^((?:[A-Z][a-z]*\s){1,5}(?:Inc|LLC|Ltd|GmbH|AG|Co\.|Company|Corporation))/
+                    ];
+                    
+                    let extractedName = null;
+                    
+                    // Try each pattern to extract the company name
+                    for (const pattern of companyIndicators) {
+                        const match = text.match(pattern);
+                        if (match && match[1] && match[1].trim().length > 1) {
+                            extractedName = match[1].trim();
+                            break;
+                        }
+                    }
+                    
+                    // If no patterns matched, take the first 2-4 words as a fallback
+                    if (!extractedName) {
+                        const words = text.split(' ');
+                        extractedName = words.length > 3 ? 
+                            words.slice(0, 3).join(' ') : 
+                            words.slice(0, Math.min(words.length, 2)).join(' ');
+                    }
+                    
+                    if (extractedName) setCompanyName(extractedName);
+                } else if (valuePropositionMatch && valuePropositionMatch[1]) {
+                    // If no name found in brand overview, try to extract from value proposition
+                    const text = valuePropositionMatch[1].trim();
+                    // Take the first 2-3 words as a fallback
+                    const words = text.split(' ').slice(0, 3).join(' ');
+                    if (words) setCompanyName(words);
+                }
+            }
+            
+            // Use the privacy policy URL found by our specialized function
+            if (data.privacyPolicyUrl && typeof data.privacyPolicyUrl === 'string' && data.privacyPolicyUrl.trim() !== "") {
+                setFoundPrivacyPolicy(data.privacyPolicyUrl);
+                setPrivacyPolicyLink(data.privacyPolicyUrl);
+                console.log("Using extracted privacy policy URL:", data.privacyPolicyUrl);
+            } 
+            // Don't guess a privacy policy URL if none was found - let the user enter it manually
+            else {
+                console.log("No privacy policy URL found during website analysis. User will need to enter it manually.");
+            }
+            
+            // Detect and set language based on website content and domain
+            try {
+                // First check the domain TLD for country-specific domains
+                const urlObj = new URL(fixedUrl);
+                const domainTLD = urlObj.hostname.split('.').pop()?.toLowerCase();
+                
+                // Language mapping based on common country TLDs
+                const tldLanguageMap: {[key: string]: string} = {
+                    'de': 'de', // German
+                    'fr': 'fr', // French
+                    'es': 'es', // Spanish
+                    'it': 'it', // Italian
+                    'nl': 'nl', // Dutch
+                    'pt': 'pt', // Portuguese
+                    'br': 'pt', // Brazilian Portuguese
+                    'ru': 'ru', // Russian
+                    'jp': 'ja', // Japanese
+                    'cn': 'zh', // Chinese
+                    'kr': 'ko', // Korean
+                    'se': 'sv', // Swedish
+                    'dk': 'da', // Danish
+                    'no': 'no', // Norwegian
+                    'fi': 'fi', // Finnish
+                    'pl': 'pl', // Polish
+                    'cz': 'cs', // Czech
+                    'hu': 'hu', // Hungarian
+                    'tr': 'tr', // Turkish
+                    // Default for .com, .net, .org, etc. will remain English
+                };
+                
+                // Next, try to detect language from content by looking for language markers
+                // Check for common words specific to certain languages in the content sample
+                const contentSample = data.contentSample?.toLowerCase() || '';
+                
+                // Simple language detection based on common words
+                const languageMarkers: {[key: string]: RegExp[]} = {
+                    'de': [/(?:\bund\b|\bder\b|\bdie\b|\bdas\b|\bist\b|\bfür\b|\bmit\b)/g],
+                    'fr': [/(?:\bet\b|\ble\b|\bla\b|\bles\b|\bde\b|\bdu\b|\bpour\b)/g],
+                    'es': [/(?:\by\b|\bel\b|\bla\b|\blos\b|\blas\b|\bde\b|\bpara\b)/g],
+                    'it': [/(?:\be\b|\bil\b|\bla\b|\bi\b|\ble\b|\bun\b|\bper\b)/g],
+                    'nl': [/(?:\ben\b|\bde\b|\bhet\b|\been\b|\bvan\b|\bvoor\b)/g],
+                    'pt': [/(?:\be\b|\bo\b|\ba\b|\bos\b|\bas\b|\bum\b|\bpara\b)/g],
+                };
+                
+                let detectedLanguage: string | null = null;
+                
+                // First try TLD-based detection (strongest signal)
+                if (domainTLD && tldLanguageMap[domainTLD]) {
+                    detectedLanguage = tldLanguageMap[domainTLD];
+                }
+                
+                // If no language detected from TLD, try content-based detection
+                if (!detectedLanguage) {
+                    // Count matches for each language
+                    const langScores: {[key: string]: number} = {};
+                    
+                    Object.entries(languageMarkers).forEach(([lang, patterns]) => {
+                        let count = 0;
+                        patterns.forEach(pattern => {
+                            const matches = contentSample.match(pattern) || [];
+                            count += matches.length;
+                        });
+                        langScores[lang] = count;
+                    });
+                    
+                    // Find language with highest score
+                    let maxScore = 0;
+                    Object.entries(langScores).forEach(([lang, score]) => {
+                        if (score > maxScore) {
+                            maxScore = score;
+                            detectedLanguage = lang;
+                        }
+                    });
+                    
+                    // Only use content-based detection if score is significant
+                    if (maxScore < 5) {
+                        detectedLanguage = null;
+                    }
+                }
+                
+                // If language detected, set it
+                if (detectedLanguage) {
+                    setPreferredLanguage(detectedLanguage);
+                } else {
+                    // Default to English if we can't detect
+                    setPreferredLanguage("en");
+                }
+            } catch (langError) {
+                console.error("Error detecting language:", langError);
+                // Default to English on error
+                setPreferredLanguage("en");
+            }
+            
+            setWebsiteAnalysisComplete(true);
+            
+            // Smart navigation: Automatically advance to the next incomplete step
+            setTimeout(() => {
+                advanceToNextIncompleteStep();
+            }, 1000); // Small delay to let the user see the success message
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "An error occurred while analyzing the website");
+        } finally {
+            setIsAnalyzingWebsite(false);
+        }
+    };
+    
+    // Function to check if a step is complete based on its fields
+    const isStepComplete = (step: typeof STEPS[0]) => {
+        // If it's the confirmation step, it's always considered "incomplete" (we want users to review)
+        if (step.id === 'confirm') return false;
+        
+        // If it's the website_analysis step, consider it complete if analysis is done
+        if (step.id === 'website_analysis') return websiteAnalysisComplete;
+        
+        // For locations step, check if locations are selected
+        if (step.id === 'locations') return locations && locations.length > 0;
+        
+        // For other steps, check if all fields have values
+        return step.fields.every(field => {
+            const value = getFieldValue(field);
+            return value && value.trim() !== '';
+        });
+    };
+    
+    // Function to advance to the next incomplete step
+    const advanceToNextIncompleteStep = () => {
+        let nextIncompleteStep = currentStep;
+        
+        // Start from the current step + 1 and find the first incomplete step
+        for (let i = currentStep + 1; i < STEPS.length; i++) {
+            if (!isStepComplete(STEPS[i])) {
+                nextIncompleteStep = i;
+                break;
+            }
+        }
+        
+        // If we found a next incomplete step, go there
+        if (nextIncompleteStep > currentStep) {
+            setCurrentStep(nextIncompleteStep);
+        }
+    };
+
+    // Function to render website analysis results
+    const renderWebsiteAnalysis = () => {
+        return (
+            <div className="space-y-6">
+                {!websiteAnalysisComplete && !isAnalyzingWebsite && (
+                    <>
+                        <div className="space-y-2">
+                            <label htmlFor="website_link" className="text-sm font-semibold text-white">
+                                Website URL
+                            </label>
+                            <p className="text-xs text-gray-400">
+                                Enter your website URL to automatically analyze your brand and prefill your profile.
+                            </p>
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    id="website_link"
+                                    className={cn(
+                                        "flex-1 px-3 py-2 rounded-lg text-sm transition-colors duration-200",
+                                        "bg-[#1A1D29] dark:bg-[#1A1D29] border",
+                                        inputError.website_link
+                                            ? "border-red-500 dark:border-red-500 focus:ring-red-500"
+                                            : "border-gray-700 dark:border-gray-700 focus:border-[#4BF29C] dark:focus:border-[#4BF29C]",
+                                        "focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4BF29C] dark:focus:ring-offset-[#0F1117]",
+                                        "text-white"
+                                    )}
+                                    placeholder="https://yourwebsite.com"
+                                    value={websiteLink}
+                                    onChange={(e) => {
+                                        if (e.target.value.length > 0) {
+                                            setInputError({...inputError, website_link: ""})
+                                        }
+                                        setWebsiteLink(e.target.value)
+                                    }}
+                                    onBlur={(e) => {
+                                        const fixedUrl = validateAndFixUrl(e.target.value);
+                                        if (fixedUrl !== e.target.value) {
+                                            setWebsiteLink(fixedUrl);
+                                        }
+                                        if (!isValidfUrl(fixedUrl) && fixedUrl.length > 0) {
+                                            setInputError({...inputError, website_link: "Please enter a valid URL"})
+                                        } else {
+                                            setInputError({...inputError, website_link: ""})
+                                        }
+                                    }}
+                                />
+                                <button
+                                    className="px-4 py-2 bg-[#4BF29C] hover:bg-[#4BF29C]/90 text-black font-medium rounded-lg flex items-center gap-2 text-sm"
+                                    onClick={handleAnalyzeWebsite}
+                                >
+                                    <Search className="size-4" />
+                                    Analyze
+                                </button>
+                            </div>
+                            {inputError.website_link && (
+                                <p className="text-sm text-red-500 flex items-center gap-1">
+                                    <AlertCircle className="size-3"/>
+                                    {inputError.website_link}
+                                </p>
+                            )}
+                        </div>
+                        
+                        <div className="bg-[#1A1D29] border border-gray-700 rounded-xl p-5">
+                            <div className="flex items-center gap-3 mb-3">
+                                <Search className="size-5 text-[#4BF29C]" />
+                                <h3 className="text-lg font-semibold text-white">Website Analysis</h3>
+                            </div>
+                            <p className="text-sm text-gray-300 mb-4">
+                                Our AI will analyze your website to:
+                            </p>
+                            <ul className="space-y-3 text-sm">
+                                <li className="flex items-start gap-2">
+                                    <div className="mt-0.5 size-4 rounded-full bg-[#4BF29C]/20 flex items-center justify-center text-[#4BF29C]">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M20 6 9 17l-5-5"></path>
+                                        </svg>
+                                    </div>
+                                    <span className="text-gray-300">Extract your <span className="text-white font-medium">brand colors</span> for consistent ad designs</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <div className="mt-0.5 size-4 rounded-full bg-[#4BF29C]/20 flex items-center justify-center text-[#4BF29C]">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M20 6 9 17l-5-5"></path>
+                                        </svg>
+                                    </div>
+                                    <span className="text-gray-300">Identify your <span className="text-white font-medium">business type</span> and marketing approach</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <div className="mt-0.5 size-4 rounded-full bg-[#4BF29C]/20 flex items-center justify-center text-[#4BF29C]">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M20 6 9 17l-5-5"></path>
+                                        </svg>
+                                    </div>
+                                    <span className="text-gray-300">Understand your <span className="text-white font-medium">target audience</span> and unique value proposition</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <div className="mt-0.5 size-4 rounded-full bg-[#4BF29C]/20 flex items-center justify-center text-[#4BF29C]">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M20 6 9 17l-5-5"></path>
+                                        </svg>
+                                    </div>
+                                    <span className="text-gray-300">Create a <span className="text-white font-medium">complete marketing profile</span> to power AI-generated campaigns</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </>
+                )}
+                
+                {isAnalyzingWebsite && (
+                    <div className="flex flex-col items-center justify-center py-8">
+                        <div className="relative size-16 mb-4">
+                            <div className="absolute inset-0 rounded-full border-4 border-[#4BF29C]/30 animate-pulse"></div>
+                            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-[#4BF29C] animate-spin"></div>
+                            <div className="absolute inset-0 flex items-center justify-center">
+                                <Search className="size-6 text-[#4BF29C] animate-pulse" />
+                            </div>
+                        </div>
+                        <h3 className="text-xl font-semibold text-white mb-2">Analyzing your website...</h3>
+                        <p className="text-sm text-gray-400 text-center max-w-md mb-4">
+                            Our AI is scanning your website to understand your brand, target audience, and unique value proposition.
+                        </p>
+                        <div className="w-full max-w-md h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                            <div className="h-full bg-gradient-to-r from-purple-500 to-[#4BF29C] animate-loading-bar"></div>
+                        </div>
+                    </div>
+                )}
+                
+                {websiteAnalysisComplete && websiteData && (
+                    <div className="space-y-6">
+                        <div className="bg-[#1A1D29]/50 border border-[#4BF29C]/40 rounded-xl p-5">
+                            <div className="flex items-center gap-2 mb-3">
+                                <div className="size-6 rounded-full bg-[#4BF29C]/20 flex items-center justify-center text-[#4BF29C]">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M20 6 9 17l-5-5"></path>
+                                    </svg>
+                                </div>
+                                <h3 className="text-lg font-semibold text-white">Analysis Complete!</h3>
+                            </div>
+                            <p className="text-sm text-gray-300 mb-4">
+                                We've analyzed <span className="text-white font-medium">{websiteLink}</span> and filled out your profile information. Review the details below and make any necessary adjustments.
+                            </p>
+                            
+                            <div className="flex flex-wrap gap-2 mb-4">
+                                {websiteData.colors && websiteData.colors.length > 0 && (
+                                    <div className="bg-[#151925] px-3 py-2 rounded-lg">
+                                        <div className="text-xs text-gray-400 mb-1">Brand Colors</div>
+                                        <div className="flex gap-1.5">
+                                            {websiteData.colors.map((color, index) => (
+                                                <div key={index} className="flex flex-col items-center">
+                                                    <div 
+                                                        className="size-5 rounded border border-gray-600"
+                                                        style={{ backgroundColor: color }}
+                                                    ></div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                                
+                                {websiteData.fonts && websiteData.fonts.length > 0 && (
+                                    <div className="bg-[#151925] px-3 py-2 rounded-lg">
+                                        <div className="text-xs text-gray-400 mb-1">Fonts</div>
+                                        <div className="text-xs text-white">
+                                            {websiteData.fonts[0]}
+                                            {websiteData.fonts.length > 1 ? ` +${websiteData.fonts.length - 1} more` : ''}
+                                        </div>
+                                    </div>
+                                )}
+                                
+                                {foundPrivacyPolicy && (
+                                    <div className="bg-[#151925] px-3 py-2 rounded-lg">
+                                        <div className="text-xs text-gray-400 mb-1">Privacy Policy</div>
+                                        <div className="text-xs text-[#4BF29C]">Found</div>
+                                    </div>
+                                )}
+                            </div>
+                            
+                            <button
+                                className="w-full mt-2 px-4 py-2 bg-[#4BF29C] hover:bg-[#4BF29C]/90 text-black font-medium rounded-lg flex items-center justify-center gap-2 text-sm"
+                                onClick={() => {
+                                    // On click, use our smart navigation to skip to the first incomplete step
+                                    advanceToNextIncompleteStep();
+                                }}
+                            >
+                                Continue to Next Step
+                                <ArrowRight className="size-4" />
+                            </button>
+                        </div>
+                        
+                        <div className="bg-[#1A1D29] border border-gray-700 rounded-xl p-5">
+                            <h3 className="text-lg font-semibold text-white mb-3">Marketing Insight Report</h3>
+                            
+                            <div className="max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                                <div 
+                                    className="prose prose-sm prose-invert max-w-none"
+                                    dangerouslySetInnerHTML={{ 
+                                        __html: websiteData.contentSummary.replace(/\n/g, '<br />') 
+                                    }} 
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    };
+    
     // Function to render input based on field
     const renderField = (field: string) => {
         const value = getFieldValue(field);
@@ -925,7 +1551,7 @@ function Onboarding({
                         </p>
                         <textarea
                             id="company_description"
-                            rows={4}
+                            rows={8}
                             className={cn(
                                 "w-full px-3 py-2 rounded-lg text-sm transition-colors duration-200",
                                 "bg-[#1A1D29] dark:bg-[#1A1D29] border",
@@ -933,7 +1559,7 @@ function Onboarding({
                                     ? "border-red-500 dark:border-red-500 focus:ring-red-500"
                                     : "border-gray-700 dark:border-gray-700 focus:border-[#4BF29C] dark:focus:border-[#4BF29C]",
                                 "focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4BF29C] dark:focus:ring-offset-[#0F1117]",
-                                "resize-none text-white"
+                                "resize-y min-h-[160px] text-white"
                             )}
                             placeholder="Please share your company's advertising goals and any unique details about your company that our AI might not be able to gather from your website."
                             value={value}
@@ -1265,6 +1891,38 @@ function Onboarding({
                             <p className="text-xs sm:text-sm text-gray-400">Privacy Policy Link</p>
                             <p className="text-sm sm:text-base text-white break-words">{privacyPolicyLink}</p>
                         </div>
+                        
+                        {websiteData && (
+                            <>
+                                <div className="pt-2 border-t border-gray-700">
+                                    <p className="text-xs sm:text-sm text-gray-400 mb-2">Brand Colors</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {websiteData.colors.map((color, idx) => (
+                                            <div key={idx} className="flex items-center gap-1.5">
+                                                <div 
+                                                    className="size-4 rounded-sm border border-gray-600"
+                                                    style={{ backgroundColor: color }}
+                                                ></div>
+                                                <span className="text-xs text-gray-300">{color}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                                
+                                {websiteData.fonts && websiteData.fonts.length > 0 && (
+                                    <div className="pt-2 border-t border-gray-700">
+                                        <p className="text-xs sm:text-sm text-gray-400 mb-2">Typography</p>
+                                        <div className="space-y-1">
+                                            {websiteData.fonts.slice(0, 3).map((font, idx) => (
+                                                <div key={idx} className="text-sm text-white">
+                                                    {font}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </>
+                        )}
                     </div>
                 </div>
                 
@@ -1435,45 +2093,9 @@ function Onboarding({
                         <div className="flex flex-col md:flex-row h-full w-full max-w-[1400px] mx-auto">
                             {/* Left column - Form (100% on mobile, 60% on tablet/desktop) */}
                             <div className="w-full md:w-3/5 h-full flex flex-col p-4 sm:p-6 lg:p-8 overflow-auto">
-                                {/* Progress indicator */}
+                                {/* Progress indicator - only progress bar without step count */}
                                 <div className="w-full mb-6 lg:mb-8">
-                                    <div className="hidden sm:flex justify-between items-center w-full mb-2">
-                                        {STEPS.map((step, index) => (
-                                            <button 
-                                                key={step.id}
-                                                onClick={() => setCurrentStep(index)}
-                                                className={cn(
-                                                    "flex flex-col items-center justify-center",
-                                                    "transition-all duration-200",
-                                                    currentStep >= index ? "text-[#4BF29C]" : "text-gray-500"
-                                                )}
-                                            >
-                                                <div className={cn(
-                                                    "rounded-full flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 mb-1 sm:mb-2",
-                                                    "border-2 transition-all duration-200",
-                                                    currentStep > index 
-                                                        ? "bg-[#4BF29C] border-[#4BF29C]" 
-                                                        : currentStep === index
-                                                            ? "border-[#4BF29C] text-[#4BF29C]"
-                                                            : "border-gray-700 text-gray-500"
-                                                )}>
-                                                    {currentStep > index ? (
-                                                        <CheckCircle2 className="w-3 h-3 sm:w-4 sm:h-4 text-[#0F1117]" />
-                                                    ) : (
-                                                        <span>{index + 1}</span>
-                                                    )}
-                                                </div>
-                                                <span className="text-[10px] sm:text-xs font-medium hidden sm:block">{step.title}</span>
-                                            </button>
-                                        ))}
-                                    </div>
-                                    
-                                    {/* Mobile Stepper - Just show current step */}
-                                    <div className="flex sm:hidden items-center justify-center mb-4">
-                                        <span className="text-sm text-gray-400">Step {currentStep + 1} of {STEPS.length}</span>
-                                    </div>
-                                    
-                                    <div className="w-full bg-gray-700 h-1 rounded-full overflow-hidden">
+                                    <div className="w-full bg-gray-700 h-2 rounded-full overflow-hidden">
                                         <div 
                                             className="bg-gradient-to-r from-purple-500 to-[#4BF29C] h-full transition-all duration-300 ease-in-out" 
                                             style={{ width: `${(currentStep / (STEPS.length - 1)) * 100}%` }}
@@ -1482,7 +2104,7 @@ function Onboarding({
                                 </div>
                                 
                                 <Dialog.Title className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-white mb-2 sm:mb-4">
-                                    {STEPS[currentStep].title} <span className="text-sm sm:text-base text-gray-400">(Step {currentStep + 1}/{STEPS.length})</span>
+                                    {STEPS[currentStep].title}
                                 </Dialog.Title>
 
                                 <Dialog.Description className="text-sm sm:text-base lg:text-lg text-gray-400 mb-4 sm:mb-6 lg:mb-8">
@@ -1537,8 +2159,17 @@ function Onboarding({
                                                 onClick={handleNextStep}
                                                 className="px-3 py-2 rounded-lg flex items-center gap-1 text-sm bg-gradient-to-r from-[#4BF29C] to-[#38A169] hover:brightness-110 text-[#0F1117] font-medium transition-all duration-200"
                                             >
-                                                Next
-                                                <ArrowRight className="w-3 h-3" />
+                                                {currentStep === STEPS.findIndex(s => s.id === 'website_analysis') && !websiteAnalysisComplete ? (
+                                                    <>
+                                                        {isAnalyzingWebsite ? 'Analyzing...' : 'Analyze Website'}
+                                                        {isAnalyzingWebsite ? <Loader2 className="w-3 h-3 animate-spin" /> : <Search className="w-3 h-3" />}
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        Next
+                                                        <ArrowRight className="w-3 h-3" />
+                                                    </>
+                                                )}
                                             </button>
                                         )}
                                     </div>
@@ -1547,6 +2178,8 @@ function Onboarding({
                                 <div className="flex-1 space-y-4 sm:space-y-6 overflow-y-auto pr-2 sm:pr-4 custom-scrollbar min-h-[200px] pb-20">
                                     {currentStep === STEPS.length - 1 
                                         ? renderConfirmation()
+                                        : STEPS[currentStep].id === 'website_analysis'
+                                        ? renderWebsiteAnalysis()
                                         : STEPS[currentStep].fields.map(field => (
                                             <div key={field}>
                                                 {renderField(field)}
@@ -1595,8 +2228,17 @@ function Onboarding({
                                                 onClick={handleNextStep}
                                                 className="px-3 sm:px-4 lg:px-6 py-2 sm:py-3 rounded-lg flex items-center gap-1 sm:gap-2 text-sm sm:text-base bg-gradient-to-r from-[#4BF29C] to-[#38A169] hover:brightness-110 text-[#0F1117] font-medium transition-all duration-200 hover:scale-[1.02]"
                                             >
-                                                Next
-                                                <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4" />
+                                                {currentStep === STEPS.findIndex(s => s.id === 'website_analysis') && !websiteAnalysisComplete ? (
+                                                    <>
+                                                        {isAnalyzingWebsite ? 'Analyzing...' : 'Analyze Website'}
+                                                        {isAnalyzingWebsite ? <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" /> : <Search className="w-3 h-3 sm:w-4 sm:h-4" />}
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        Next
+                                                        <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4" />
+                                                    </>
+                                                )}
                                             </button>
                                         )}
                                     </div>
@@ -1650,6 +2292,18 @@ function Onboarding({
                 }
                 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
                     background: #3A3E4A;
+                }
+                
+                @keyframes loading-bar {
+                    0% { width: 0%; }
+                    25% { width: 50%; }
+                    50% { width: 70%; }
+                    75% { width: 85%; }
+                    100% { width: 100%; }
+                }
+                
+                .animate-loading-bar {
+                    animation: loading-bar 4s ease-in-out infinite;
                 }
             `}</style>
         </>

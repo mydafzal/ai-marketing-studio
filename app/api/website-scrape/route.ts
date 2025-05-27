@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { summarizeWebsiteContent } from '@/app/actions/summarize-website-content';
+import { summarizeWebsiteContent, generatePlainBrandOverview, extractCompanyName, findPrivacyPolicyUrl } from '@/app/actions/summarize-website-content';
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,6 +11,9 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+    
+    // Normalize and sanitize the URL to ensure it has a valid protocol
+    const fixedUrl = url.startsWith('http') ? url : `https://${url}`;
 
     const apiKey = process.env.SCRAPING_BEE;
     
@@ -645,6 +648,9 @@ export async function POST(req: NextRequest) {
     // Generate a summarized version of the content for display
     const contentSummary = await summarizeWebsiteContent(bodyText, colors, Array.from(fonts) as string[]);
     
+    // Generate a plain text brand overview for company description
+    const plainBrandOverview = await generatePlainBrandOverview(bodyText, colors, Array.from(fonts) as string[]);
+    
     // Extract images
     const imgRegex = /<img[^>]+src\s*=\s*["']([^"']+)["'][^>]*>/ig;
     let imgMatches;
@@ -805,11 +811,20 @@ export async function POST(req: NextRequest) {
       return `/api/image-proxy?url=${encodedImageUrl}`;
     });
 
+    // Extract company name using our specialized function
+    const companyName = extractCompanyName(html, url);
+    
+    // Find privacy policy URL
+    const privacyPolicyUrl = findPrivacyPolicyUrl(html, url);
+
     return NextResponse.json({
       colors,
       fonts: Array.from(fonts),
       contentSample,
       contentSummary,
+      plainBrandOverview,
+      companyName,
+      privacyPolicyUrl,
       images: proxiedImages,
       success: true
     });
