@@ -4,13 +4,17 @@ import {type User} from '@/lib/types'
 import {Cross2Icon} from "@radix-ui/react-icons"
 import {Button} from '@/components/ui/button'
 import {subscriptionBypassList} from '@/app/subscription/subscription-bypass-list'
+import {MemoizedReactMarkdown} from '@/components/markdown'
 import {
   AlertCircle, 
   ArrowLeft, 
   ArrowRight, 
+  BarChart3,
+  Building2,
   CheckCircle2, 
   Clock, 
   Globe, 
+  Lightbulb,
   Loader2, 
   MapPin,
   Save,
@@ -19,7 +23,8 @@ import {
   User as UserIcon, 
   FileText, 
   CheckCheck,
-  Facebook
+  Facebook,
+  Zap
 } from 'lucide-react'
 import {cn} from '@/lib/utils'
 import OnboardingLocationSelector, { LocationData } from './onboarding-location-selector'
@@ -202,7 +207,7 @@ const BenefitsPanel = ({ currentStep }: { currentStep: number }) => {
               <h3 className="text-base sm:text-lg font-semibold text-white">Instant Brand Analysis</h3>
             </div>
             <p className="text-gray-300 text-sm sm:text-base">
-              Our AI instantly analyzes your website's colors, fonts, and content to understand your brand identity and create perfectly matched ads.
+              Our AI instantly analyzes your website&apos;s colors, fonts, and content to understand your brand identity and create perfectly matched ads.
             </p>
           </div>
         </div>
@@ -1361,7 +1366,7 @@ function Onboarding({
                                 <h3 className="text-lg font-semibold text-white">Analysis Complete!</h3>
                             </div>
                             <p className="text-sm text-gray-300 mb-4">
-                                We've analyzed <span className="text-white font-medium">{websiteLink}</span> and filled out your profile information. Review the details below and make any necessary adjustments.
+                                We&apos;ve analyzed <span className="text-white font-medium">{websiteLink}</span> and filled out your profile information. Review the details below and make any necessary adjustments.
                             </p>
                             
                             <div className="flex flex-wrap gap-2 mb-4">
@@ -1415,12 +1420,11 @@ function Onboarding({
                             <h3 className="text-lg font-semibold text-white mb-3">Marketing Insight Report</h3>
                             
                             <div className="max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                                <div 
-                                    className="prose prose-sm prose-invert max-w-none"
-                                    dangerouslySetInnerHTML={{ 
-                                        __html: websiteData.contentSummary.replace(/\n/g, '<br />') 
-                                    }} 
-                                />
+                                <div className="prose prose-sm prose-invert max-w-none">
+                                    <MemoizedReactMarkdown>
+                                        {websiteData.contentSummary}
+                                    </MemoizedReactMarkdown>
+                                </div>
                             </div>
                         </div>
                     </div>

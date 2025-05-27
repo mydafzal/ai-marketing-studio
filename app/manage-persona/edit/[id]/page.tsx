@@ -7,6 +7,7 @@ import OnboardingLocationSelector, { LocationData } from '@/components/onboardin
 import { useRouter, useParams } from 'next/navigation'
 import DeletePersonaModal from '@/components/delete-persona-modal'
 import { validatePersonaForm } from '@/lib/validations'
+import { MemoizedReactMarkdown } from '@/components/markdown'
 
 // Utility function to map persona from snake_case to camelCase
 function mapPersona(persona: any) {
@@ -52,6 +53,7 @@ export default function EditPersonaPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [isPreviewMode, setIsPreviewMode] = useState(false)
   const [deleteModal, setDeleteModal] = useState({
     isOpen: false,
     isDeleting: false
@@ -310,25 +312,68 @@ export default function EditPersonaPage() {
           </div>
           
           <div>
-            <label className="block text-sm font-semibold mb-1">Company Description</label>
-            <textarea
-              name="companyDescription"
-              value={formData.companyDescription}
-              onChange={handleInputChange}
-              rows={3}
-              className={cn(
-                "w-full px-3 py-2 rounded-lg text-sm bg-[#232736] border",
-                inputError.companyDescription ? "border-red-500" : "border-gray-700",
-                "focus:outline-none focus:ring-2 focus:ring-[#4BF29C]"
-              )}
-              placeholder="Briefly explain what the company does"
-            />
+            <div className="flex justify-between items-center mb-1">
+              <label className="block text-sm font-semibold">Company Description</label>
+              <div className="flex items-center space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setIsPreviewMode(false)}
+                  className={cn(
+                    "px-3 py-1 text-xs rounded-lg border",
+                    !isPreviewMode 
+                      ? "bg-[#4BF29C]/20 border-[#4BF29C]/30 text-[#4BF29C]" 
+                      : "border-gray-700 text-gray-400 hover:bg-gray-800"
+                  )}
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsPreviewMode(true)}
+                  className={cn(
+                    "px-3 py-1 text-xs rounded-lg border",
+                    isPreviewMode 
+                      ? "bg-[#4BF29C]/20 border-[#4BF29C]/30 text-[#4BF29C]" 
+                      : "border-gray-700 text-gray-400 hover:bg-gray-800"
+                  )}
+                >
+                  Preview
+                </button>
+              </div>
+            </div>
+            
+            {isPreviewMode ? (
+              <div className="min-h-[160px] p-3 bg-[#232736] border border-gray-700 rounded-lg overflow-auto">
+                <div className="prose prose-invert prose-sm max-w-none">
+                  <MemoizedReactMarkdown>
+                    {formData.companyDescription || '*No description provided*'}
+                  </MemoizedReactMarkdown>
+                </div>
+              </div>
+            ) : (
+              <textarea
+                name="companyDescription"
+                value={formData.companyDescription}
+                onChange={handleInputChange}
+                rows={8}
+                className={cn(
+                  "w-full px-3 py-2 rounded-lg text-sm bg-[#232736] border",
+                  inputError.companyDescription ? "border-red-500" : "border-gray-700",
+                  "focus:outline-none focus:ring-2 focus:ring-[#4BF29C] resize-y min-h-[160px]"
+                )}
+                placeholder="Briefly explain what the company does. Markdown formatting is supported (bold, italic, lists, etc)."
+              />
+            )}
+            
             {inputError.companyDescription && (
               <p className="text-sm text-red-500 flex items-center gap-1 mt-1">
                 <AlertCircle className="size-3" />
                 {inputError.companyDescription}
               </p>
             )}
+            <p className="text-xs text-gray-400 mt-1">
+              Markdown formatting is supported: **bold**, *italic*, ### headers, - lists
+            </p>
           </div>
           
           <div>

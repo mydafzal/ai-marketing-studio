@@ -12,6 +12,7 @@ import { AspectRatio } from "@/app/actions/generate-image";
 import { generateImages, generateImageVariation } from "@/app/actions/generate-image";
 import Image from "next/image";
 import dynamic from "next/dynamic";
+import { MemoizedReactMarkdown } from "@/components/markdown";
 
 // Import our custom loading screen components
 import WebsiteAnalysisLoader from "@/components/website-analysis-loader";
@@ -439,7 +440,9 @@ The ad should be clean, professional and match the brand identity.
               
               <div className="prose prose-sm prose-invert max-w-none overflow-auto max-h-[500px] pr-2">
                 {websiteData.contentSummary ? (
-                  <div dangerouslySetInnerHTML={{ __html: websiteData.contentSummary.replace(/\n/g, '<br />') }} />
+                  <MemoizedReactMarkdown>
+                    {websiteData.contentSummary}
+                  </MemoizedReactMarkdown>
                 ) : (
                   <div className="text-amber-400 flex items-center">
                     <AlertCircle className="w-4 h-4 mr-2" />

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { summarizeWebsiteContent, generatePlainBrandOverview, extractCompanyName, findPrivacyPolicyUrl } from '@/app/actions/summarize-website-content';
+import { summarizeWebsiteContent, generateFormattedBrandOverview, extractCompanyName, findPrivacyPolicyUrl } from '@/app/actions/summarize-website-content';
 
 export async function POST(req: NextRequest) {
   try {
@@ -648,8 +648,8 @@ export async function POST(req: NextRequest) {
     // Generate a summarized version of the content for display
     const contentSummary = await summarizeWebsiteContent(bodyText, colors, Array.from(fonts) as string[]);
     
-    // Generate a plain text brand overview for company description
-    const plainBrandOverview = await generatePlainBrandOverview(bodyText, colors, Array.from(fonts) as string[]);
+    // Generate a formatted brand overview for company description
+    const formattedBrandOverview = await generateFormattedBrandOverview(bodyText, colors, Array.from(fonts) as string[]);
     
     // Extract images
     const imgRegex = /<img[^>]+src\s*=\s*["']([^"']+)["'][^>]*>/ig;
@@ -822,7 +822,7 @@ export async function POST(req: NextRequest) {
       fonts: Array.from(fonts),
       contentSample,
       contentSummary,
-      plainBrandOverview,
+      plainBrandOverview: formattedBrandOverview, // Keep same property name for backward compatibility
       companyName,
       privacyPolicyUrl,
       images: proxiedImages,

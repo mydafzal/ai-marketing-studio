@@ -17,16 +17,16 @@ const openai = new OpenAI({
  * @returns A structured, marketing-focused summary of the website content
  */
 /**
- * Generates a plain text brand overview from website content
- * without markdown formatting or emojis, specifically for
- * use in company profile descriptions.
+ * Generates a formatted brand overview from website content
+ * with appropriate markdown formatting (headers, bold, italic, lists)
+ * for improved readability in company profile descriptions.
  * 
  * @param content The raw website content to process
  * @param colors Array of brand colors extracted from the website
  * @param fonts Array of fonts extracted from the website
- * @returns A plain text brand overview without markdown or emojis
+ * @returns A markdown-formatted brand overview without emojis
  */
-export async function generatePlainBrandOverview(
+export async function generateFormattedBrandOverview(
   content: string,
   colors: string[] = [],
   fonts: string[] = []
@@ -49,28 +49,27 @@ export async function generatePlainBrandOverview(
           role: "system",
           content: `You are a professional marketing writer who creates concise, informative brand overviews.
 
-Your task is to analyze website content and create a purely plain text brand overview without any formatting.
+Your task is to analyze website content and create a well-formatted brand overview with effective use of markdown for clarity and emphasis.
 
-CRITICAL REQUIREMENTS:
-1. ABSOLUTELY NO MARKDOWN - No '#', '*', '-', or any other markdown syntax
-2. ABSOLUTELY NO EMOJIS - No emoji characters of any kind
-3. NO HEADERS - Do not use "Brand Overview:" or any other labeled sections
-4. NO BULLET POINTS - Present information in paragraphs only
-5. NO SECTION TITLES - Just write cohesive paragraphs of text
-6. NO SPECIAL CHARACTERS - No unicode symbols or decorative elements
+FORMATTING REQUIREMENTS:
+1. USE MARKDOWN - Use markdown for emphasis (bold, italic) where appropriate
+2. USE HEADERS - Use ### for section headers (no higher level headers)
+3. USE BULLET POINTS - Use bullet points for listing features or benefits
+4. NO EMOJIS - No emoji characters of any kind
+5. CLEAN STRUCTURE - Create a well-organized document with clear sections
 
-The overview should still include:
+The overview should include:
 - What the business does
 - Who their target audience is
 - Their unique value proposition
 - Key benefits they offer
 - Brand voice and tone
 
-Format the entire response as simple paragraphs of plain text with no headers, sections, markdown, or special formatting of any kind. The output should look like a normal business description that could appear in a company profile.`
+Format your response to be visually appealing with proper markdown styling for emphasis, headers, and lists. Make it professional and easy to read.`
         },
         {
           role: "user",
-          content: `Please create a plain text brand overview based on this website content. It MUST be pure text without ANY markdown, headers, bullet points, emojis, or special formatting.
+          content: `Please create a formatted brand overview based on this website content. Use markdown formatting (bold, italic, headers, bullet points) to structure the information clearly.
 
 CONTENT:
 ${cleanedContent.slice(0, 7500)} ${cleanedContent.length > 7500 ? '... [additional content truncated]' : ''}
@@ -81,35 +80,22 @@ ${colors.slice(0, 3).join(', ')}
 BRAND TYPOGRAPHY (for context only):
 ${fonts.slice(0, 5).join(', ')}
 
-The output should be a simple business description in plain text paragraphs only - no section titles, no markdown, no special characters, and no emojis. This text will be used in a company profile field that does not support any formatting.`
+Create a well-structured overview with appropriate markdown formatting. Make it professional and visually appealing. Use headers (###), bold (**text**), italic (*text*), and bullet points (- item) to organize the information.`
         }
       ],
       temperature: 0.4,
       max_tokens: 1000,
     });
 
-    // Extra processing to ensure NO markdown or emojis remain
-    let plainOverview = completion.choices[0]?.message?.content || "";
-    
-    // Remove any markdown headers
-    plainOverview = plainOverview.replace(/#+\s+[^\n]+\n/g, '');
-    
-    // Remove any bullet points
-    plainOverview = plainOverview.replace(/[-*]\s+/g, '');
+    // Get the formatted overview
+    let formattedOverview = completion.choices[0]?.message?.content || "";
     
     // Remove any emojis
-    plainOverview = plainOverview.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '');
+    formattedOverview = formattedOverview.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]|[\u2600-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|\uD83E[\uDD00-\uDDFF]/g, '');
     
-    // Remove any lines that might be section headers (e.g. "Brand Overview:")
-    plainOverview = plainOverview.replace(/^[A-Z][^:]+:\s*$/gm, '');
-    
-    // Remove any remaining markdown formatting characters
-    plainOverview = plainOverview.replace(/[*_~`#>]+/g, '');
-    
-    // Clean up any double spaces or newlines created during the cleanup
-    plainOverview = plainOverview.replace(/\n{3,}/g, '\n\n').replace(/\s{2,}/g, ' ').trim();
-    
-    return plainOverview;
+    // Clean up any excessive newlines
+    formattedOverview = formattedOverview.replace(/\n{4,}/g, '\n\n\n').trim();
+    return formattedOverview;
   } catch (error) {
     console.error("Error generating plain brand overview:", error);
     return "We encountered an error while generating your brand overview. Please try again or enter your description manually.";
@@ -169,7 +155,7 @@ export async function extractCompanyName(content: string, url: string): Promise<
   ];
   
   for (const pattern of metaTagPatterns) {
-    const matches = content.matchAll(new RegExp(pattern, 'gi'));
+    const matches = Array.from(content.matchAll(new RegExp(pattern, 'gi')));
     for (const match of matches) {
       if (match && match[1] && match[1].length > 2 && match[1].length < 50) {
         return match[1].trim();
@@ -258,7 +244,7 @@ export async function findPrivacyPolicyUrl(content: string, baseUrl: string): Pr
     
     // Try each pattern
     for (const pattern of privacyLinkPatterns) {
-      const matches = cleanedContent.matchAll(new RegExp(pattern, 'gi'));
+      const matches = Array.from(cleanedContent.matchAll(new RegExp(pattern, 'gi')));
       for (const match of matches) {
         if (match && match[1]) {
           const linkHref = match[1];
@@ -355,7 +341,7 @@ export async function summarizeWebsiteContent(
   try {
     // Check if content is empty or too short to be meaningful
     if (!content || content.trim().length < 100) {
-      return `## ⚠️ Website Content Analysis Failed
+      return `## ⚠️ Website Insights Analysis Failed
 
 ### Unable to Analyze Website Content
 The website could not be properly accessed or contains insufficient textual content to analyze. This may be due to:
@@ -420,7 +406,7 @@ Analyze and include the following essential marketing elements:
 
 Format your report beautifully with the following sections:
 
-## 📊 MARKETING INSIGHT REPORT
+## 📊 WEBSITE INSIGHTS REPORT
 
 ### 🏢 Brand Overview
 [Comprehensive yet concise description of the business and its core offerings]
