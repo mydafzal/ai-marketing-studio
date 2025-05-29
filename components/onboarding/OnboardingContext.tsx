@@ -486,6 +486,11 @@ export function OnboardingProvider({
                 console.log("[TEMPORARY DEBUG] Using default company description");
             }
             
+            // Extract website analysis data if available
+            const brandColors = websiteData?.colors || [];
+            const brandFonts = websiteData?.fonts || [];
+            const websiteImages = websiteData?.images || [];
+            
             const details = {
                 first_name: firstName,
                 last_name: lastName,
@@ -496,7 +501,11 @@ export function OnboardingProvider({
                 preferred_language: preferredLanguage,
                 goal: goal,
                 company_segment: companySegment,
-                locations: saveLocations
+                locations: saveLocations,
+                // Include website analysis data
+                brand_colors: brandColors,
+                brand_fonts: brandFonts,
+                website_images: websiteImages.slice(0, 8) // Store up to 8 reference images
             }
 
             // Manually set goal since it's removed from the form
