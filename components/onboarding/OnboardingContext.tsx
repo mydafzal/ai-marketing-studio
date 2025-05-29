@@ -576,8 +576,14 @@ export function OnboardingProvider({
                         // Check if user is in bypass list
                         const isInBypassList = userDetails?.email ? subscriptionBypassList.includes(userDetails.email) : false;
                         
+                        // For first-time onboarding, send to the AI image generator page
+                        // This checks if the defaultExtraDetails was NOT already set
+                        // This means it's a new user completing their profile for the first time
+                        if (!userDetails?.defaultExtraDetails) {
+                            window.location.href = '/ai-image-generator';
+                        }
                         // Only redirect to onboarding-complete if user is not subscribed and not in bypass list
-                        if (userDetails?.sub_status !== 'active' && 
+                        else if (userDetails?.sub_status !== 'active' && 
                             userDetails?.sub_status !== 'trialing' && 
                             !isInBypassList) {
                             window.location.href = '/onboarding-complete';
