@@ -5,8 +5,8 @@ import { Button } from '@/components/ui/button'
 import { useOnboarding, OnboardingProvider } from './OnboardingContext'
 import { Loader2, AlertCircle } from 'lucide-react'
 import { OnboardingProps, STEPS } from './types'
-import BenefitsPanel from './BenefitsPanel'
 import StepContent from './StepContent'
+import AIOnboardingView from './AIOnboardingView'
 
 function OnboardingDialog() {
   const { 
@@ -14,7 +14,6 @@ function OnboardingDialog() {
     error,
     setError,
     isSaving,
-    isMobile,
     handleNextStep,
     handlePrevStep,
     handleSave,
@@ -76,7 +75,7 @@ function OnboardingDialog() {
             if (!isSaving) handleCloseRequest()
           }}
         >
-          <div className="w-full h-full max-w-full max-h-full overflow-auto bg-[#0F1117] flex flex-col md:flex-row">
+          <div className="w-full h-full max-w-full max-h-full overflow-auto bg-[#0F1117] flex flex-col">
             {/* Saving overlay */}
             {isSaving && (
               <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#0F1117]/80 backdrop-blur-sm">
@@ -102,93 +101,90 @@ function OnboardingDialog() {
               </button>
             </div>
             
-            {/* Left side - Onboarding form */}
-            <div className="flex-1 border-r border-[#1A1D29] p-6 md:overflow-y-auto h-full">
-              <div className="max-w-2xl mx-auto">
-                {/* Simple Progress Bar */}
-                <div className="mb-6">
-                  <div className="w-full h-1.5 bg-gray-700 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-[#4BF29C] transition-all duration-300 ease-in-out" 
-                      style={{ 
-                        width: `${(currentStep / (STEPS.length - 1)) * 100}%` 
-                      }}
-                    />
+            {/* Onboarding content - full width when in AI mode */}
+            <div className="flex-1 p-6 md:overflow-y-auto h-full w-full">
+              {/* Error message - shown for both views */}
+              {error && (
+                <div className="bg-red-900/20 border border-red-900 rounded-lg p-3 mb-4 flex items-start gap-2.5 max-w-2xl mx-auto">
+                  <div className="flex-shrink-0 mt-0.5">
+                    <AlertCircle className="size-4 text-red-500" />
                   </div>
-                </div>
-                
-                {/* Error message */}
-                {error && (
-                  <div className="bg-red-900/20 border border-red-900 rounded-lg p-3 mb-4 flex items-start gap-2.5">
-                    <div className="flex-shrink-0 mt-0.5">
-                      <AlertCircle className="size-4 text-red-500" />
-                    </div>
-                    <div>
-                      <p className="text-red-500 text-sm">{error}</p>
-                    </div>
-                    <button
-                      onClick={() => setError(null)}
-                      className="ml-auto flex-shrink-0 mt-0.5 text-red-500 hover:text-red-400"
-                    >
-                      <Cross2Icon className="size-4" />
-                    </button>
+                  <div>
+                    <p className="text-red-500 text-sm">{error}</p>
                   </div>
-                )}
-                
-                {/* Step content */}
-                <div className="mb-6">
-                  <StepContent step={currentStep} />
-                </div>
-                
-                {/* Mobile benefits panel (shown between form and buttons on mobile) */}
-                {isMobile && (
-                  <div className="md:hidden mb-6">
-                    <BenefitsPanel currentStep={currentStep} />
-                  </div>
-                )}
-                
-                {/* Navigation buttons */}
-                <div className="flex justify-between items-center pt-4 border-t border-[#1A1D29]">
-                  <Button
-                    variant="outline"
-                    onClick={handlePrevStep}
-                    disabled={currentStep === 0 || isSaving}
-                    className="text-gray-300 border-gray-700 hover:text-white hover:bg-[#1A1D29] hover:border-gray-600"
+                  <button
+                    onClick={() => setError(null)}
+                    className="ml-auto flex-shrink-0 mt-0.5 text-red-500 hover:text-red-400"
                   >
-                    Back
-                  </Button>
-                  
-                  {currentStep < STEPS.length - 1 ? (
-                    <Button
-                      onClick={handleNextStep}
-                      disabled={isSaving}
-                      className="bg-[#4BF29C] text-[#0F1117] font-medium hover:bg-[#4BF29C]/90"
-                    >
-                      Next
-                    </Button>
-                  ) : (
-                    <Button
-                      onClick={handleSave}
-                      disabled={isSaving}
-                      className="bg-[#4BF29C] text-[#0F1117] font-medium hover:bg-[#4BF29C]/90"
-                    >
-                      {isSaving ? (
-                        <>
-                          <Loader2 className="mr-2 size-4 animate-spin" />
-                          Saving...
-                        </>
-                      ) : (
-                        "Save & Complete"
-                      )}
-                    </Button>
-                  )}
+                    <Cross2Icon className="size-4" />
+                  </button>
                 </div>
-              </div>
-            </div>
-            
-            {/* Right side - Benefits (only on desktop) */}
-            <div className="hidden md:block w-[300px] lg:w-[350px] p-6 overflow-y-auto h-full">
-              <BenefitsPanel currentStep={currentStep} />
+              )}
+              
+              {/* Conditionally render either the AI conversation UI or the standard UI */}
+              {!isAllFieldsFilled() ? (
+                // AI Conversation UI for new users - full height and centered
+                <div className="h-full flex flex-col items-center justify-start pt-4 w-full overflow-y-auto">
+                  <AIOnboardingView />
+                </div>
+              ) : (
+                // Standard UI for profile editing
+                <div className="max-w-2xl mx-auto">
+                  {/* Simple Progress Bar */}
+                  <div className="mb-6">
+                    <div className="w-full h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-[#4BF29C] transition-all duration-300 ease-in-out" 
+                        style={{ 
+                          width: `${(currentStep / (STEPS.length - 1)) * 100}%` 
+                        }}
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Step content */}
+                  <div className="mb-6">
+                    <StepContent step={currentStep} />
+                  </div>
+                  
+                  {/* Navigation buttons */}
+                  <div className="flex justify-between items-center pt-4 border-t border-[#1A1D29]">
+                    <Button
+                      variant="outline"
+                      onClick={handlePrevStep}
+                      disabled={currentStep === 0 || isSaving}
+                      className="text-gray-300 border-gray-700 hover:text-white hover:bg-[#1A1D29] hover:border-gray-600"
+                    >
+                      Back
+                    </Button>
+                    
+                    {currentStep < STEPS.length - 1 ? (
+                      <Button
+                        onClick={handleNextStep}
+                        disabled={isSaving}
+                        className="bg-[#4BF29C] text-[#0F1117] font-medium hover:bg-[#4BF29C]/90"
+                      >
+                        Next
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={handleSave}
+                        disabled={isSaving}
+                        className="bg-[#4BF29C] text-[#0F1117] font-medium hover:bg-[#4BF29C]/90"
+                      >
+                        {isSaving ? (
+                          <>
+                            <Loader2 className="mr-2 size-4 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          "Save & Complete"
+                        )}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </Dialog.Content>

@@ -259,8 +259,15 @@ export function OnboardingProvider({
             return true;
         }
         
-        // Check if all steps are complete
-        return STEPS.slice(0, -1).every(step => isStepComplete(step));
+        // Check if all steps except company_description are complete
+        // We're hiding the company_description step but still want to save its value
+        return STEPS.slice(0, -1).every(step => {
+            if (step.id === 'company_description') {
+                // Always consider company_description complete for UI purposes
+                return true;
+            }
+            return isStepComplete(step);
+        });
     };
 
     // Validate the current step and move to the next if valid
@@ -269,6 +276,12 @@ export function OnboardingProvider({
         if (currentStep >= STEPS.length - 1) return true;
         
         const currentStepId = STEPS[currentStep].id;
+        
+        // Skip validation for company_description step - we're hiding it in the UI
+        if (currentStepId === 'company_description') {
+            return true;
+        }
+        
         const currentFields = STEPS[currentStep].fields;
         const errors: InputErrors = { ...inputError };
         let hasErrors = false;
@@ -400,8 +413,17 @@ export function OnboardingProvider({
 
     const handleNextStep = () => {
         if (validateStep()) {
-            // Simply advance to the next step without any skipping
-            const nextStep = Math.min(currentStep + 1, STEPS.length - 1);
+            // Calculate the next step, checking for company_description to skip
+            let nextStep = currentStep + 1;
+            
+            // Skip company_description step (which is index 5 in STEPS)
+            // Check both by index and by id to be safe
+            if (nextStep === 5 || STEPS[nextStep]?.id === 'company_description') {
+                nextStep++;
+            }
+            
+            // Ensure we don't go past the last step
+            nextStep = Math.min(nextStep, STEPS.length - 1);
             
             console.log("Moving from step", currentStep, "to step", nextStep);
             
@@ -415,8 +437,21 @@ export function OnboardingProvider({
     };
 
     const handlePrevStep = () => {
-        const prevStep = Math.max(currentStep - 1, 0);
+        // Calculate the previous step, checking for company_description to skip
+        let prevStep = currentStep - 1;
+        
+        // Skip company_description step when going backwards too
+        if (prevStep === 5 || STEPS[prevStep]?.id === 'company_description') {
+            prevStep--;
+        }
+        
+        // Ensure we don't go before the first step
+        prevStep = Math.max(prevStep, 0);
+        
+        console.log("Moving from step", currentStep, "to step", prevStep);
+        
         setCurrentStep(prevStep);
+        
         // Scroll to top when changing steps on mobile
         if (isMobile) {
             window.scrollTo(0, 0);
@@ -444,11 +479,18 @@ export function OnboardingProvider({
                 console.log("[TEMPORARY DEBUG] Using default USA location:", saveLocations);
             }
             
+            // Ensure we have a company description, even if the step is hidden
+            let saveCompanyDescription = companyDescription;
+            if (!saveCompanyDescription || (typeof saveCompanyDescription === 'string' && saveCompanyDescription.trim() === "")) {
+                saveCompanyDescription = "Company description automatically generated from website analysis.";
+                console.log("[TEMPORARY DEBUG] Using default company description");
+            }
+            
             const details = {
                 first_name: firstName,
                 last_name: lastName,
                 company_name: companyName,
-                company_description: companyDescription,
+                company_description: saveCompanyDescription, // Use the possibly defaulted description
                 website_link: validateAndFixUrl(websiteLink),
                 privacy_policy_link: validateAndFixUrl(privacyPolicyLink),
                 preferred_language: preferredLanguage,
@@ -461,8 +503,9 @@ export function OnboardingProvider({
             details.goal = "";
 
             // Validate required fields before saving
+            // Note: we're still requiring company_description but not showing it in the UI
             const requiredFields = [
-                'first_name', 'last_name', 'company_name', 'company_description', 
+                'first_name', 'last_name', 'company_name', 
                 'website_link', 'privacy_policy_link', 'preferred_language', 'company_segment'
             ];
             
@@ -482,7 +525,10 @@ export function OnboardingProvider({
                     case 'preferred_language': value = preferredLanguage; break;
                 }
                 
-                if (!value || value.trim() === "") {
+                // Special handling for company_description - we still include it in save but don't validate it in the UI
+                if (field === 'company_description') {
+                    errors[field as keyof InputErrors] = "";
+                } else if (!value || value.trim() === "") {
                     errors[field as keyof InputErrors] = "This field is required";
                     hasErrors = true;
                 } else {
