@@ -68,7 +68,7 @@ export function MarkdownEditor({
     editorProps: {
       attributes: {
         class: `prose prose-sm lg:prose-base break-words dark:prose-invert prose-p:leading-relaxed prose-pre:p-0 prose-headings:text-white prose-a:text-[#4BF29C] prose-strong:text-white p-4 focus:outline-none w-full overflow-auto ${className}`,
-        style: `min-height: ${minHeight}; height: 100%;`
+        style: `min-height: ${minHeight}; height: 100%; overflow-wrap: break-word; word-wrap: break-word; word-break: normal;`
       }
     }
   })
@@ -160,14 +160,14 @@ export function MarkdownEditor({
         </div>
       </div>
       
-      {/* Editor */}
+      {/* Editor with improved scrolling and width */}
       <div
         className={`bg-[#1A1D29] rounded-b-lg border ${
           error ? 'border-red-500' : 'border-gray-700'
-        } overflow-auto`}
+        } overflow-auto w-full`}
         style={{ minHeight }}
       >
-        <EditorContent editor={editor} />
+        <EditorContent editor={editor} className="overflow-auto w-full" />
       </div>
       
       {error && (
