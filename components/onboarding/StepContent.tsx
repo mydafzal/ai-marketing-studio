@@ -13,6 +13,9 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import OnboardingLocationSelector from '../onboarding-location-selector'
 import FacebookConnect from '@/components/facebook-connect'
+import { MemoizedReactMarkdown } from '@/components/markdown'
+import remarkGfm from 'remark-gfm'
+import { MarkdownEditor } from '@/components/markdown-editor'
 
 export default function StepContent({ step }: { step: number }) {
   const { 
@@ -40,7 +43,9 @@ export default function StepContent({ step }: { step: number }) {
     websiteData,
     foundPrivacyPolicy,
     getFieldError,
-    userDetails
+    userDetails,
+    handleAnalyzeWebsite,
+    isValidUrl
   } = useOnboarding()
   
   const currentStep = STEPS[step]
@@ -95,6 +100,9 @@ export default function StepContent({ step }: { step: number }) {
     // Convert value to string safely
     const stringValue = typeof value === 'string' ? value : 
                         value ? String(value) : '';
+    
+    // Determine if this is the company description field to apply special styling
+    const isCompanyDescription = id === 'company_description';
                         
     return (
       <div className="space-y-2">
@@ -107,7 +115,9 @@ export default function StepContent({ step }: { step: number }) {
           onChange={onChange}
           placeholder={placeholder}
           rows={rows}
-          className={`bg-[#151925] border-gray-700 text-white placeholder:text-gray-500 focus:border-[#4BF29C] focus:ring-[#4BF29C]/10 ${error ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : ''}`}
+          className={`bg-[#151925] border-gray-700 text-white placeholder:text-gray-500 focus:border-[#4BF29C] focus:ring-[#4BF29C]/10 
+            ${error ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : ''}
+            ${isCompanyDescription ? 'text-base leading-relaxed min-h-[300px] resize-y' : ''}`}
         />
         {error && (
           <div className="flex items-center gap-1.5 mt-1.5">
@@ -193,19 +203,36 @@ export default function StepContent({ step }: { step: number }) {
           <div className="space-y-2">
             <h2 className="text-2xl font-semibold text-white">{currentStep.group}</h2>
             <p className="text-gray-400 text-sm">
-              Provide your website URL so our AI can analyze your business and customize your campaigns.
+              {userDetails?.defaultExtraDetails 
+                ? "Update your website URL. Website analysis is optional for profile updates."
+                : "Provide your website URL so our AI can analyze your business and customize your campaigns."
+              }
             </p>
           </div>
           
           <div className="space-y-4 pt-2">
-            {renderTextField(
-              'website_link',
-              'Website URL',
-              websiteLink,
-              (e) => setWebsiteLink(e.target.value),
-              'https://example.com',
-              'url'
-            )}
+            <div className="space-y-4">
+              {renderTextField(
+                'website_link',
+                'Website URL',
+                websiteLink,
+                (e) => setWebsiteLink(e.target.value),
+                'https://example.com',
+                'url'
+              )}
+              
+              {/* Only show the analyze button when this is not the initial setup */}
+              {userDetails?.defaultExtraDetails && !isAnalyzingWebsite && !websiteAnalysisComplete && (
+                <button
+                  type="button"
+                  onClick={() => handleAnalyzeWebsite && handleAnalyzeWebsite()}
+                  className="px-4 py-2 bg-[#4BF29C] text-black rounded-md font-medium hover:bg-[#3bd283] transition-colors text-sm"
+                  disabled={!websiteLink || !isValidUrl(websiteLink)}
+                >
+                  Analyze Website
+                </button>
+              )}
+            </div>
             
             {/* Analysis status */}
             {isAnalyzingWebsite && (
@@ -224,7 +251,7 @@ export default function StepContent({ step }: { step: number }) {
                   <CheckCircle2 className="size-5 text-[#4BF29C]" />
                   <div>
                     <p className="text-white font-medium">Analysis complete!</p>
-                    <p className="text-gray-400 text-sm">We've extracted key information about your business</p>
+                    <p className="text-gray-400 text-sm">We&apos;ve extracted key information about your business</p>
                   </div>
                 </div>
                 
@@ -254,14 +281,6 @@ export default function StepContent({ step }: { step: number }) {
                   </div>
                 )}
                 
-                {foundPrivacyPolicy && (
-                  <div className="bg-[#4BF29C]/10 border border-[#4BF29C]/30 rounded p-3 text-sm">
-                    <p className="text-[#4BF29C] font-medium">Privacy Policy Found</p>
-                    <p className="text-gray-300 text-xs mt-1">
-                      We found a privacy policy link on your website. It has been pre-filled in the form for later steps.
-                    </p>
-                  </div>
-                )}
               </div>
             )}
           </div>
@@ -329,19 +348,23 @@ export default function StepContent({ step }: { step: number }) {
             </p>
           </div>
           
-          <div className="space-y-4 pt-2">
-            {renderTextArea(
-              'company_description',
-              'Company Description',
-              companyDescription,
-              (e) => setCompanyDescription(e.target.value),
-              'Briefly describe what your company does, your products/services, and what makes you unique...',
-              10
-            )}
+          <div className="pt-2 space-y-4">
+            <Label htmlFor="company_description" className="text-white">
+              Company Description
+            </Label>
             
-            {/* Help text about markdown */}
-            <p className="text-gray-500 text-xs">
-              You can use markdown formatting (e.g., **bold**, *italic*, ### headers, - bullet points) to structure your description.
+            {/* WYSIWYG Markdown Editor */}
+            <MarkdownEditor
+              value={typeof companyDescription === 'string' ? companyDescription : companyDescription ? String(companyDescription) : ''}
+              onChange={(value) => setCompanyDescription(value)}
+              error={getFieldError('company_description') || undefined}
+              placeholder="Briefly describe what your company does, your products/services, and what makes you unique..."
+              minHeight="400px"
+            />
+            
+            {/* Add a simple help text */}
+            <p className="text-gray-400 text-xs">
+              Use the toolbar above to format your text. Select text and click a formatting button to apply styles.
             </p>
           </div>
         </div>
@@ -367,18 +390,6 @@ export default function StepContent({ step }: { step: number }) {
               'url'
             )}
             
-            {/* Show hint if privacy policy was found during website analysis */}
-            {foundPrivacyPolicy && (
-              <div className="bg-[#1A1D29] rounded-lg p-3 text-sm">
-                <p className="text-gray-300">
-                  <span className="text-[#4BF29C] font-medium">Privacy Policy Found: </span>
-                  {foundPrivacyPolicy}
-                </p>
-                <p className="text-gray-400 text-xs mt-1.5">
-                  We found this privacy policy link during website analysis. You can copy it into the field above if it's correct.
-                </p>
-              </div>
-            )}
           </div>
         </div>
       )
@@ -498,7 +509,7 @@ export default function StepContent({ step }: { step: number }) {
           <div className="space-y-4 pt-2">
             <OnboardingLocationSelector
               locations={locations || []}
-              setLocations={setLocations}
+              setLocations={setLocations as React.Dispatch<React.SetStateAction<any>>}
             />
             
             {inputError.locations && (
@@ -550,7 +561,13 @@ export default function StepContent({ step }: { step: number }) {
                   </div>
                   <div>
                     <p className="text-gray-400 text-xs">Company Description</p>
-                    <p className="text-white text-sm">{companyDescription || 'Not provided'}</p>
+                    {companyDescription ? (
+                      <div className="text-white text-sm overflow-auto max-h-80" 
+                           dangerouslySetInnerHTML={{ __html: typeof companyDescription === 'string' ? companyDescription : String(companyDescription) }}>
+                      </div>
+                    ) : (
+                      <p className="text-white text-sm">Not provided</p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -608,7 +625,7 @@ export default function StepContent({ step }: { step: number }) {
             
             <div className="bg-[#4BF29C]/10 border border-[#4BF29C]/30 rounded-lg p-4">
               <p className="text-[#4BF29C] text-sm">
-                By clicking "Save & Complete", your profile will be created and you'll be ready to create your first AI-powered campaign.
+                By clicking &quot;Save & Complete&quot;, your profile will be created and you&apos;ll be ready to create your first AI-powered campaign.
               </p>
             </div>
           </div>

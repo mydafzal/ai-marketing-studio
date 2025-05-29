@@ -55,7 +55,7 @@ type OnboardingContextType = {
     handleAnalyzeWebsite: () => Promise<void>
     isValidUrl: (url: string) => boolean
     validateAndFixUrl: (url: string) => string
-    isStepComplete: (step: { id: string, title: string, fields: string[] }) => boolean
+    isStepComplete: (step: { id: string, title: string, group: string, fields: string[] }) => boolean
     isAllFieldsFilled: () => boolean
     getFieldValue: (field: string) => string
     getFieldError: (field: string) => string | null
@@ -226,7 +226,16 @@ export function OnboardingProvider({
         
         // Special handling for website analysis step
         if (step.id === 'website_analysis') {
-            // Website analysis step is complete if the website link is valid and analysis is complete
+            // For initial setup, require website analysis
+            const isInitialSetup = !userDetails?.defaultExtraDetails;
+            
+            // If this is not the initial setup, the website analysis step is optional
+            if (!isInitialSetup) {
+                // Just require a valid website URL for subsequent edits
+                return websiteLink.trim() !== '' && isValidUrl(websiteLink);
+            }
+            
+            // For initial setup, require both valid URL and completed analysis
             return websiteLink.trim() !== '' && isValidUrl(websiteLink) && websiteAnalysisComplete;
         }
         
@@ -297,15 +306,24 @@ export function OnboardingProvider({
                 return false;
             }
             
-            // Analysis is mandatory - if not already in progress or completed, start it
-            if (!websiteAnalysisComplete && !isAnalyzingWebsite) {
-                // Start the analysis when user clicks Next
-                handleAnalyzeWebsite();
-                return false; // Stop navigation to next step until analysis completes
-            }
+            // Check if this is initial setup or a return visit
+            const isInitialSetup = !userDetails?.defaultExtraDetails;
             
-            // Analysis is complete or in progress
-            return websiteAnalysisComplete; // Only allow proceeding when analysis is complete
+            // For initial setup, website analysis is mandatory
+            if (isInitialSetup) {
+                // If analysis is not in progress or completed, start it
+                if (!websiteAnalysisComplete && !isAnalyzingWebsite) {
+                    // Start the analysis when user clicks Next
+                    handleAnalyzeWebsite();
+                    return false; // Stop navigation until analysis completes
+                }
+                
+                // Only allow proceeding when analysis is complete
+                return websiteAnalysisComplete;
+            } else {
+                // For return visits, analysis is optional - can proceed with just a valid URL
+                return true;
+            }
         }
         
         // Match field ID with value directly
@@ -563,9 +581,10 @@ export function OnboardingProvider({
     };
 
     // Function to get the field error
-    const getFieldError = (field: string) => {
-        return inputError[field as keyof InputErrors];
-    };
+const getFieldError = (field: string): string | null => {
+    const error = inputError[field as keyof InputErrors];
+    return error !== undefined ? error : null;
+};
 
     // Function to analyze website and extract data
     const handleAnalyzeWebsite = async () => {

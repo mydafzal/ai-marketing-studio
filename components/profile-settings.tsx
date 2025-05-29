@@ -106,6 +106,18 @@ export default function ProfileSettings({
           <div className="text-xs font-medium text-zinc-500 dark:text-zinc-400 px-3 py-2">
             Account Settings
           </div>
+          
+          {/* Profile button - Opens the onboarding dialog */}
+          <button
+            className="inline-flex items-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:text-accent-foreground h-9 px-4 py-2 w-full justify-start gap-2 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            type="button"
+            onClick={() => setOpenOnboarding(true)}
+          >
+            <div className="rounded-full size-6 flex items-center justify-center">
+              <User className="size-4 text-zinc-600 dark:text-zinc-400" />
+            </div>
+            Profile
+          </button>
 
           <button
             className="inline-flex items-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:text-accent-foreground h-9 px-4 py-2 w-full justify-start gap-2 hover:bg-zinc-100 dark:hover:bg-zinc-800"
