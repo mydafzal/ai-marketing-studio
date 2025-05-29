@@ -823,6 +823,7 @@ export async function POST(req: NextRequest) {
       contentSample,
       contentSummary,
       plainBrandOverview: formattedBrandOverview, // Keep same property name for backward compatibility
+      companyDescription: formattedBrandOverview, // Add explicit company description field
       companyName,
       privacyPolicyUrl,
       images: proxiedImages,
