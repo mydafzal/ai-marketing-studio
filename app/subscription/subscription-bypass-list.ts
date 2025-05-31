@@ -45,5 +45,6 @@ export const subscriptionBypassList: string[] = [
     'lena.zoller@bonvitagroup.com',
     'ayfer.stroehm-ilhan@bonvitagroup.com',
     'store@drillaz-clothing.com',
-    'ahmedtahir2000@gmail.com'
+    'ahmedtahir2000@gmail.com',
+    'ahmed@reeply.ai',
 ];
