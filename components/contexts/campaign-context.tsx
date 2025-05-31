@@ -63,8 +63,6 @@ export const CampaignContextProvider = ({ children }: { children: React.ReactNod
     const lastUpdatedRef = useRef<Date | null>(null)
 
     const fetchSummary = useCallback(async (campaignId: string) => {
-        const campaignList = await getCampaigns()
-        console.log('fetchSummary with campaignId', campaignId, campaignList)
         try {
           const result = await getCampaignSummary(campaignId)
           console.log('campaign summary', result)

@@ -210,7 +210,6 @@ export default function AICampaignAnalysisBoard({
 
   // Final data
   const [campaignSummary, setCampaignSummary] = useState<ICampaignSummary | null>(null);
-  const [otherCampaignData, setOtherCampaignData] = useState<any | undefined>([]);
   const [historicalMetrics, setHistoricalMetrics] = useState<IHistoricalMetrics | null>(null);
   const [rawCreatives, setRawCreatives] = useState<RawCreative[]>([]);
   const [adCreativeMetrics, setAdCreativeMetrics] = useState<AdCreativeMetrics[]>([]);
@@ -267,10 +266,6 @@ export default function AICampaignAnalysisBoard({
       }
 
       setCampaignSummary(summaryData);
-      if ("other_campaign_insights" in summaryData) {
-        console.log("Other campaign insights found:", summaryData.other_campaign_insights);
-        setOtherCampaignData(summaryData.other_campaign_insights)
-      }
 
       // 2) historical
       const histData = await getCampaignHistoricalMetrics(campaignId, "last_year", true);
@@ -665,7 +660,6 @@ ${summary.other_campaign_insights ? JSON.stringify(summary.other_campaign_insigh
 - Identify which campaigns had the best ROI based on their objectives.
 - Identify which campaigns had the best CTR, CPC, CPL, and conversion rates.
 - Identify which campaigns had the best performance in terms of reach, impressions, and engagement.
-- Create tables or charts to visualize the comparisons.
 It should cover comparative analysis of CAMPAIGN_NAME, OBJECTIVE, CTR, TYPE, BUDGET etc.
 COMPARE BUDGET, AUDIENCE, AND PERFORMANCE with other campaigns. 
 
