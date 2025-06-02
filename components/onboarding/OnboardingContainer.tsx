@@ -33,7 +33,7 @@ function OnboardingDialog() {
     if (canClose) {
       handleClose()
     } else {
-      setError("Please complete all required fields before closing this dialog.")
+      setError("Hey, you forgot to fill out something! Please complete all required fields before continuing.")
     }
   }
 
@@ -44,8 +44,12 @@ function OnboardingDialog() {
         // Only allow closing if all fields are filled or if opening
         if (isOpen || canClose) {
           setOpen(isOpen)
+          // Clear any existing error when opening
+          if (isOpen) {
+            setError(null)
+          }
         } else {
-          setError("Please complete all required fields before closing this dialog.")
+          setError("Hey, you forgot to fill out something! Please complete all required fields before continuing.")
         }
       }}
     >
