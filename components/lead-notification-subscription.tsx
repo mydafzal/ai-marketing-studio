@@ -114,38 +114,43 @@ export default function LeadNotificationSubscription({ userEmail, initialSubscri
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          {campaigns.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No campaigns found.</p>
-          ) : (
-            campaigns.map((campaign) => (
-              <div key={campaign.id} className="flex items-center space-x-2 border-b pb-2">
-                <Checkbox
-                  id={`campaign-${campaign.id}`}
-                  checked={subscribedCampaigns.includes(campaign.id)}
-                  onCheckedChange={() => toggleCampaignSubscription(campaign.id)}
-                />
-                <div className="flex-1">
-                  <label
-                    htmlFor={`campaign-${campaign.id}`}
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                  >
-                    {campaign.name}
-                  </label>
-                  <p className="text-xs text-muted-foreground">
-                    Status: {campaign.status} • Created: {new Date(campaign.created_time).toLocaleDateString()}
-                  </p>
+        <div className="max-h-[300px] overflow-y-auto border rounded p-2 mb-4">
+          <div className="space-y-3">
+            {campaigns.length === 0 ? (
+              <p className="text-sm text-muted-foreground p-2">No campaigns found.</p>
+            ) : (
+              campaigns.map((campaign) => (
+                <div key={campaign.id} className="flex items-center space-x-2 border-b pb-2 last:border-b-0">
+                  <Checkbox
+                    id={`campaign-${campaign.id}`}
+                    checked={subscribedCampaigns.includes(campaign.id)}
+                    onCheckedChange={() => toggleCampaignSubscription(campaign.id)}
+                  />
+                  <div className="flex-1">
+                    <label
+                      htmlFor={`campaign-${campaign.id}`}
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                    >
+                      {campaign.name}
+                    </label>
+                    <p className="text-xs text-muted-foreground">
+                      Status: {campaign.status} • Created: {new Date(campaign.created_time).toLocaleDateString()}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ))
-          )}
+              ))
+            )}
+          </div>
+        </div>
+        <div className="flex justify-between items-center w-full">
+          <p className="text-sm text-muted-foreground">
+            {subscribedCampaigns.length} campaign{subscribedCampaigns.length !== 1 ? 's' : ''} selected
+          </p>
+          <Button onClick={saveSubscriptions} disabled={isSaving}>
+            {isSaving ? 'Saving...' : 'Save Preferences'}
+          </Button>
         </div>
       </CardContent>
-      <CardFooter>
-        <Button onClick={saveSubscriptions} disabled={isSaving}>
-          {isSaving ? 'Saving...' : 'Save Preferences'}
-        </Button>
-      </CardFooter>
     </Card>
   )
 }
