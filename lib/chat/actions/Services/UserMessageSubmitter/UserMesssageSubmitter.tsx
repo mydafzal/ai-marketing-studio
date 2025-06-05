@@ -105,6 +105,7 @@ import { useEffect } from "react";
 import LeadsCountUI from "@/components/campaign-leads-count";
 
 import showAiVideoGenerator from "@/components/stocks/ai-video-generator/server"
+import leadNotificationsModule from "@/lib/ui-magic/modules/leadNotificationsModule"
 // Browser research component will be imported dynamically in the tool handler
 
 interface ExtractedMessage {
@@ -2620,6 +2621,64 @@ export async function submitUserMessage(content: string, contentImages?: Array<T
                     return showSupportComponent({
                         title
                     });
+                }
+            },
+            
+            showLeadNotifications: {
+                description: leadNotificationsModule.description,
+                parameters: leadNotificationsModule.parameters,
+                generate: async function* ({toolCallId}) {
+                    console.log("tool call showLeadNotifications")
+                    
+                    yield (
+                        <BotCard>
+                            <SpinnerMessage />
+                        </BotCard>
+                    )
+                    
+                    await sleep(1000)
+                    
+                    const generatedToolCallId = toolCallId || nanoid()
+                    const timestamp: string = new Date().toISOString()
+                    
+                    pushMessages([
+                        {
+                            id: nanoid(),
+                            role: "assistant",
+                            content: [
+                                {
+                                    type: "tool-call",
+                                    toolName: "showLeadNotifications",
+                                    toolCallId: generatedToolCallId,
+                                    args: { toolCallId: generatedToolCallId }
+                                }
+                            ],
+                            timestamp
+                        },
+                        {
+                            id: nanoid(),
+                            role: "tool",
+                            content: [
+                                {
+                                    type: "tool-result",
+                                    toolName: "showLeadNotifications",
+                                    toolCallId: generatedToolCallId,
+                                    result: { toolCallId: generatedToolCallId }
+                                }
+                            ],
+                            timestamp
+                        }
+                    ])
+                    
+                    // Instead of rendering client component, return a simple message
+                    return (
+                        <BotCard>
+                            <div className="p-4">
+                                <p>Lead notification preferences are now available. You can select which campaigns you want to receive notifications for.</p>
+                                <p className="mt-2">Please visit the <a href="/notifications" target="_blank" rel="noopener noreferrer" className="text-primary underline">Notifications page</a> to manage your preferences.</p>
+                            </div>
+                        </BotCard>
+                    )
                 }
             }
 

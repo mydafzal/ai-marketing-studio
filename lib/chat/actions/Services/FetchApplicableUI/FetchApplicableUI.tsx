@@ -280,6 +280,15 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                         </BotCard>
                                     </>
                                 );
+                            case 'showLeadNotifications':
+                                return (
+                                    <BotCard key={tool.toolCallId}>
+                                        <div className="p-4">
+                                            <p>Lead notification preferences are now available. You can select which campaigns you want to receive notifications for.</p>
+                                            <p className="mt-2">Please visit the <a href="/notifications" target="_blank" rel="noopener noreferrer" className="text-primary underline">Notifications page</a> to manage your preferences.</p>
+                                        </div>
+                                    </BotCard>
+                                );
                             default:
                                 return null;
                         }
