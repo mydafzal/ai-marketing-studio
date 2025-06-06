@@ -22,6 +22,8 @@ export function HomepageDashboard({ session }: HomepageDashboardProps) {
   const router = useRouter()
   const [userDetails, setUserDetails] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [aiGreeting, setAiGreeting] = useState<string>('')
+  const [greetingLoading, setGreetingLoading] = useState(true)
 
   useEffect(() => {
     const fetchUserDetails = async () => {
@@ -40,12 +42,55 @@ export function HomepageDashboard({ session }: HomepageDashboardProps) {
     fetchUserDetails()
   }, [])
 
-  const getGreeting = () => {
-    // Try to get first name from userDetails first, then from session email as fallback
+  useEffect(() => {
+    const fetchAiGreeting = async () => {
+      try {
+        // Get user context for the AI greeting
+        const firstName = userDetails?.first_name || 
+          (session?.user?.email ? session.user.email.split('@')[0].split('.')[0] : 'there')
+        
+        const response = await fetch('/api/generate-ai-greeting', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            firstName: firstName.charAt(0).toUpperCase() + firstName.slice(1),
+            timeOfDay: new Date().getHours(),
+            userDetails: userDetails
+          }),
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          setAiGreeting(data.greeting)
+        } else {
+          // Fallback to static greeting
+          setAiGreeting(getStaticGreeting())
+        }
+      } catch (error) {
+        console.error('Error fetching AI greeting:', error)
+        // Fallback to static greeting
+        setAiGreeting(getStaticGreeting())
+      } finally {
+        setGreetingLoading(false)
+      }
+    }
+
+    if (!isLoading && userDetails) {
+      fetchAiGreeting()
+    } else if (!isLoading) {
+      // If no user details, just use static greeting
+      setAiGreeting(getStaticGreeting())
+      setGreetingLoading(false)
+    }
+  }, [isLoading, userDetails, session])
+
+  const getStaticGreeting = () => {
+    // Fallback static greeting logic
     let firstName = userDetails?.first_name
     
     if (!firstName && session?.user?.email) {
-      // Extract name from email as fallback (e.g., "john.doe@example.com" -> "john")
       firstName = session.user.email.split('@')[0].split('.')[0]
       firstName = firstName.charAt(0).toUpperCase() + firstName.slice(1)
     }
@@ -113,15 +158,15 @@ export function HomepageDashboard({ session }: HomepageDashboardProps) {
   }
 
   return (
-    <div className="w-full h-full flex items-center justify-center px-6">
-      <div className="w-full max-w-4xl space-y-8">
+    <div className="w-full h-full flex items-center justify-center px-3 sm:px-6">
+      <div className="w-full max-w-4xl space-y-6 sm:space-y-8 py-4 sm:py-0">
         {/* AI Greeting Message - Centered */}
-        <div className="w-full max-w-2xl mx-auto">
+        <div className="w-full max-w-2xl mx-auto px-2 sm:px-0">
           <div className="flex justify-center">
             <div className="flex items-start max-w-xl w-full">
-              <div className="mr-4 flex-shrink-0">
-                {/* Enhanced Color Blob */}
-                <div className="w-14 h-14 rounded-full flex items-center justify-center relative overflow-hidden shadow-[0_0_20px_rgba(75,242,156,0.7)]">
+              <div className="mr-3 sm:mr-4 flex-shrink-0">
+                {/* Enhanced Color Blob - Responsive Size */}
+                <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-full flex items-center justify-center relative overflow-hidden shadow-[0_0_15px_rgba(75,242,156,0.7)] sm:shadow-[0_0_20px_rgba(75,242,156,0.7)]">
                   <div 
                     className="absolute inset-0 bg-gradient-to-br from-[#4BF29C] via-[#35d6ff] to-[#0a84ff]" 
                     style={{
@@ -161,34 +206,41 @@ export function HomepageDashboard({ session }: HomepageDashboardProps) {
                   ></div>
                 </div>
               </div>
-              <div className="bg-[#1A1D29] rounded-lg p-5 shadow flex-grow">
-                <div className="text-white text-base typing-container">
-                  {getGreeting()}
+              <div className="bg-[#1A1D29] rounded-lg p-3 sm:p-5 shadow flex-grow">
+                <div className="text-white text-sm sm:text-base typing-container">
+                  {greetingLoading ? (
+                    <div className="flex items-center gap-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#4BF29C]"></div>
+                      <span className="text-gray-400">Generating personalized greeting...</span>
+                    </div>
+                  ) : (
+                    aiGreeting
+                  )}
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Action Items - 2 Column Grid */}
-        <div className="w-full max-w-4xl mx-auto">
-          <h3 className="text-white text-lg font-medium px-2 mb-6 text-center">What would you like to do today?</h3>
+        {/* Action Items - Responsive Grid */}
+        <div className="w-full max-w-4xl mx-auto px-2 sm:px-0">
+          <h3 className="text-white text-lg sm:text-xl font-medium px-2 mb-4 sm:mb-6 text-center">What would you like to do today?</h3>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 px-2">
             {actionItems.map((item, index) => (
               <div 
                 key={index}
-                className="action-card bg-[#151925] p-5 rounded-lg shadow-lg border border-[#1A1D29]/50 cursor-pointer"
+                className="action-card bg-[#151925] p-4 sm:p-5 rounded-lg shadow-lg border border-[#1A1D29]/50 cursor-pointer min-h-[100px] sm:min-h-[120px] active:scale-95 transition-all"
                 onClick={() => handleActionClick(item.href)}
               >
-                <div className="flex items-start gap-4">
-                  <div className="text-2xl">{item.icon}</div>
-                  <div className="flex-1">
-                    <h4 className="text-white font-medium text-base mb-1">{item.title}</h4>
-                    <p className="text-gray-400 text-sm">{item.description}</p>
+                <div className="flex items-start gap-3 sm:gap-4 h-full">
+                  <div className="text-xl sm:text-2xl flex-shrink-0">{item.icon}</div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-white font-medium text-sm sm:text-base mb-1 leading-tight">{item.title}</h4>
+                    <p className="text-gray-400 text-xs sm:text-sm leading-relaxed">{item.description}</p>
                   </div>
-                  <div className="text-[#4BF29C] opacity-60">
-                    <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                  <div className="text-[#4BF29C] opacity-60 flex-shrink-0">
+                    <svg width="16" height="16" className="sm:w-5 sm:h-5" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
                     </svg>
                   </div>
@@ -199,19 +251,19 @@ export function HomepageDashboard({ session }: HomepageDashboardProps) {
         </div>
 
         {/* Recommendations Section */}
-        <div className="w-full max-w-2xl mx-auto">
+        <div className="w-full max-w-2xl mx-auto px-2 sm:px-0">
           <div 
-            className="recommendations-card p-5 rounded-lg cursor-pointer"
+            className="recommendations-card p-4 sm:p-5 rounded-lg cursor-pointer min-h-[80px] sm:min-h-[100px] active:scale-95 transition-all"
             onClick={handleRecommendationsClick}
           >
-            <div className="flex items-start gap-4">
-              <div className="text-2xl">🎯</div>
-              <div className="flex-1">
-                <h4 className="text-white font-medium text-base mb-1">My recommendations for your campaigns</h4>
-                <p className="text-gray-400 text-sm">Get AI-powered insights and suggestions to optimize your marketing performance</p>
+            <div className="flex items-start gap-3 sm:gap-4">
+              <div className="text-xl sm:text-2xl flex-shrink-0">🎯</div>
+              <div className="flex-1 min-w-0">
+                <h4 className="text-white font-medium text-sm sm:text-base mb-1 leading-tight">My recommendations for your campaigns</h4>
+                <p className="text-gray-400 text-xs sm:text-sm leading-relaxed">Get AI-powered insights and suggestions to optimize your marketing performance</p>
               </div>
-              <div className="text-[#4BF29C]">
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+              <div className="text-[#4BF29C] flex-shrink-0">
+                <svg width="16" height="16" className="sm:w-5 sm:h-5" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
                 </svg>
               </div>
@@ -220,8 +272,8 @@ export function HomepageDashboard({ session }: HomepageDashboardProps) {
         </div>
 
         {/* Quick Stats or Additional Info */}
-        <div className="w-full max-w-2xl mx-auto">
-          <div className="text-center text-gray-500 text-sm">
+        <div className="w-full max-w-2xl mx-auto px-4 sm:px-0">
+          <div className="text-center text-gray-500 text-xs sm:text-sm leading-relaxed">
             Need help getting started? Just ask me anything about creating campaigns, generating ads, or analyzing your results!
           </div>
         </div>

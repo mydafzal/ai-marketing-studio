@@ -399,6 +399,29 @@ body > [data-teleport-target] {
   box-shadow: 0 8px 25px rgba(75, 242, 156, 0.15);
 }
 
+/* Mobile-specific action card improvements */
+@media (max-width: 767px) {
+  .action-card:active {
+    transform: scale(0.95);
+    transition: transform 0.1s ease;
+  }
+  
+  /* Improve touch targets on mobile */
+  .action-card {
+    min-height: 100px;
+    touch-action: manipulation;
+  }
+  
+  /* Better mobile typography */
+  .action-card h4 {
+    line-height: 1.3;
+  }
+  
+  .action-card p {
+    line-height: 1.4;
+  }
+}
+
 .recommendations-card {
   background: linear-gradient(135deg, #1A1D29 0%, #151925 100%);
   border: 1px solid #4BF29C;
@@ -409,6 +432,19 @@ body > [data-teleport-target] {
   background: linear-gradient(135deg, #1A1D29 0%, #1F2330 100%);
   box-shadow: 0 8px 25px rgba(75, 242, 156, 0.2);
   transform: translateY(-2px);
+}
+
+/* Mobile-specific recommendations card */
+@media (max-width: 767px) {
+  .recommendations-card:active {
+    transform: scale(0.95);
+    transition: transform 0.1s ease;
+  }
+  
+  .recommendations-card {
+    min-height: 80px;
+    touch-action: manipulation;
+  }
 }
 
 /* Onboarding Animations */
@@ -426,5 +462,27 @@ body > [data-teleport-target] {
 @keyframes typing {
   to {
     opacity: 1;
+  }
+}
+
+/* Mobile responsiveness improvements */
+@media (max-width: 640px) {
+  /* Ensure proper spacing on small screens */
+  .homepage-dashboard {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+  }
+  
+  /* Better text wrapping on mobile */
+  .homepage-dashboard h3,
+  .homepage-dashboard h4 {
+    word-break: break-word;
+    hyphens: auto;
+  }
+  
+  /* Optimize AI blob animation performance on mobile */
+  .homepage-dashboard .ai-blob {
+    will-change: transform;
+    transform: translateZ(0);
   }
 }
