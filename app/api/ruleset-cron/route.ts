@@ -1,53 +1,244 @@
-import { NextResponse } from 'next/server'
+import { kv } from '@vercel/kv'
+import { NextRequest, NextResponse } from 'next/server'
+import { fetchLeadSubscriptions } from '@/lib/helpers/kv/fetch-lead-subscriptions'
+import { getUserByEmail } from '@/app/actions'
 
-export async function POST(request: Request) {
+export async function GET(request: NextRequest) {
   try {
-    // Sample endpoint URL - replace with actual endpoint
-    const endpoint = 'https://api.example.com/ruleset-execution'
+    // Verify API key for security
+    const authHeader = request.headers.get('Authorization')
+    const apiKey = authHeader?.replace('Bearer ', '')
+
+      // TODO: Create a new api key and add.
+    if (apiKey !== process.env.CRON_API_KEY) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     
-    // Make the API call to the external endpoint
-    const response = await fetch(endpoint, {
+    // Get all users with subscribed campaigns
+    const userKeys = await kv.keys('user:*')
+    
+    if (!userKeys || userKeys.length === 0) {
+      return NextResponse.json({ 
+        success: true,
+        message: 'No users found'
+      })
+    }
+    
+    const subscribers = []
+    
+    // Process each user to check for subscriptions
+    for (const userKey of userKeys) {
+      try {
+        const userEmail = userKey.replace('user:', '')
+        const subscribedCampaignsJson = await kv.hget(userKey, 'subscribed_campaigns')
+        
+        // Skip users without subscriptions
+        if (!subscribedCampaignsJson) continue
+        
+        // Parse subscribed campaigns
+        let subscribedCampaigns = []
+        try {
+          subscribedCampaigns = JSON.parse(subscribedCampaignsJson as string)
+          if (!Array.isArray(subscribedCampaigns) || subscribedCampaigns.length === 0) {
+            continue
+          }
+        } catch (e) {
+          console.error(`Error parsing subscribed campaigns for ${userEmail}:`, e)
+          continue
+        }
+        
+        // Get user details to get the fb_account_id and fb_api_key
+        const userDetailsResponse = await getUserByEmail(userEmail)
+        if (!userDetailsResponse.success || !userDetailsResponse.user) {
+          continue
+        }
+        
+        const user = userDetailsResponse.user
+        const fbAccountId = user.fbAccountId
+        const fbApiKey = user.fbMarketingApiKey
+        
+        // Skip users without required Facebook credentials
+        if (!fbAccountId || !fbApiKey) {
+          continue
+        }
+        
+        // Add each campaign subscription to the subscribers array
+        for (const campaignId of subscribedCampaigns) {
+          subscribers.push({
+            fb_account_id: fbAccountId,
+            campaign_id: campaignId,
+            user_email: userEmail,
+            fb_api_key: fbApiKey
+          })
+        }
+      } catch (userError) {
+        console.error(`Error processing user ${userKey}:`, userError)
+        // Continue with next user
+      }
+    }
+    
+    // If no subscribers found, return early
+    if (subscribers.length === 0) {
+      return NextResponse.json({ 
+        success: true,
+        message: 'No subscribers found'
+      })
+    }
+    
+    // Call the FastyBot endpoint to check for leads and notify subscribers
+    const fastyApiUrl = process.env.FASTY_API_URL || 'http://localhost:8000'
+    const response = await fetch(`${fastyApiUrl}/facebook/dashboard/check-leads-and-inform`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.API_TOKEN}`
+        'Authorization': `Bearer ${process.env.FASTY_API_TOKEN || ''}`
       },
-      // Sample request body - replace with actual required data
       body: JSON.stringify({
-        execution_time: new Date().toISOString(),
-        source: 'scheduled-cron'
+        subscribers,
+        date_preset: 'last_month' // todo: change it to yesterday
       })
     })
-
-    // Handle the response
-    if (!response.ok) {
-      throw new Error(`API call failed with status: ${response.status}`)
-    }
-
-    const data = await response.json()
     
-    return NextResponse.json({
-      success: true,
-      message: 'Ruleset execution triggered successfully',
-      data
-    })
-
-  } catch (error) {
-    console.error('Error executing ruleset cron job:', error)
-    return NextResponse.json(
-      { 
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      console.error('FastyBot error:', errorData)
+      return NextResponse.json({ 
         success: false,
-        error: 'Failed to execute ruleset' 
-      },
+        error: 'Error calling FastyBot endpoint',
+        details: errorData
+      }, { status: response.status })
+    }
+    
+    const result = await response.json()
+    
+    return NextResponse.json({ 
+      success: true,
+      message: `Successfully checked leads for ${subscribers.length} campaign subscriptions`,
+      notificationsSent: result.notifications_sent || 0
+    })
+  } catch (error) {
+    console.error('Error in lead notification ruleset cron:', error)
+    return NextResponse.json(
+      { error: 'Failed to process lead notifications' },
       { status: 500 }
     )
   }
 }
 
-// Optional GET method to check the endpoint status
-export async function GET() {
-  return NextResponse.json({
-    status: 'active',
-    message: 'Ruleset cron endpoint is operational'
-  })
+// Optional POST method for manual triggering or webhook integration
+export async function POST(request: Request) {
+  try {
+    // For manual triggering, you might want to pass different parameters
+    const body = await request.json()
+    const { date_preset = 'last_month' } = body // todo: change it to yesterday
+    
+    // Reuse the same logic as the GET endpoint but with custom date_preset
+    const userKeys = await kv.keys('user:*')
+    
+    if (!userKeys || userKeys.length === 0) {
+      return NextResponse.json({ 
+        success: true,
+        message: 'No users found'
+      })
+    }
+    
+    const subscribers = []
+    
+    // Process each user to check for subscriptions
+    for (const userKey of userKeys) {
+      try {
+        const userEmail = userKey.replace('user:', '')
+        const subscribedCampaignsJson = await kv.hget(userKey, 'subscribed_campaigns')
+        
+        // Skip users without subscriptions
+        if (!subscribedCampaignsJson) continue
+        
+        // Parse subscribed campaigns
+        let subscribedCampaigns = []
+        try {
+          subscribedCampaigns = JSON.parse(subscribedCampaignsJson as string)
+          if (!Array.isArray(subscribedCampaigns) || subscribedCampaigns.length === 0) {
+            continue
+          }
+        } catch (e) {
+          console.error(`Error parsing subscribed campaigns for ${userEmail}:`, e)
+          continue
+        }
+        
+        // Get user details to get the fb_account_id and fb_api_key
+        const userDetailsResponse = await getUserByEmail(userEmail)
+        if (!userDetailsResponse.success || !userDetailsResponse.user) {
+          continue
+        }
+        
+        const user = userDetailsResponse.user
+        const fbAccountId = user.fbAccountId
+        const fbApiKey = user.fbMarketingApiKey
+        
+        // Skip users without required Facebook credentials
+        if (!fbAccountId || !fbApiKey) {
+          continue
+        }
+        
+        // Add each campaign subscription to the subscribers array
+        for (const campaignId of subscribedCampaigns) {
+          subscribers.push({
+            fb_account_id: fbAccountId,
+            campaign_id: campaignId,
+            user_email: userEmail,
+            fb_api_key: fbApiKey
+          })
+        }
+      } catch (userError) {
+        console.error(`Error processing user ${userKey}:`, userError)
+        // Continue with next user
+      }
+    }
+    
+    // If no subscribers found, return early
+    if (subscribers.length === 0) {
+      return NextResponse.json({ 
+        success: true,
+        message: 'No subscribers found'
+      })
+    }
+    
+    // Call the FastyBot endpoint to check for leads and notify subscribers
+    const fastyApiUrl = process.env.FASTY_API_URL || 'http://localhost:8000'
+    const response = await fetch(`${fastyApiUrl}/facebook/dashboard/check-leads-and-inform`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.FASTY_API_TOKEN || ''}`
+      },
+      body: JSON.stringify({
+        subscribers,
+        date_preset
+      })
+    })
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      console.error('FastyBot error:', errorData)
+      return NextResponse.json({ 
+        success: false,
+        error: 'Error calling FastyBot endpoint',
+        details: errorData
+      }, { status: response.status })
+    }
+    
+    const result = await response.json()
+    
+    return NextResponse.json({ 
+      success: true,
+      message: `Successfully checked leads for ${subscribers.length} campaign subscriptions`,
+      notificationsSent: result.notifications_sent || 0
+    })
+  } catch (error) {
+    console.error('Error in lead notification ruleset cron:', error)
+    return NextResponse.json(
+      { error: 'Failed to process lead notifications' },
+      { status: 500 }
+    )
+  }
 }
