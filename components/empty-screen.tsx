@@ -5,7 +5,7 @@ import { useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { ExternalLink } from '@/components/external-link'
-import { IconArrowRight, IconBolt, IconChartBar, IconCog, IconDownload, IconMessage, IconPower } from '@/components/ui/icons'
+import { IconArrowRight, IconBell, IconBolt, IconChartBar, IconCog, IconDownload, IconMessage, IconPower } from '@/components/ui/icons'
 import { UpgradeModal } from '@/components/upgrade-modal'
 import { Zap, BarChart, PieChart, Download, DollarSign, Power, Plus } from 'lucide-react'
 
@@ -49,6 +49,12 @@ export function EmptyScreen() {
       description: 'I can help you manage the status of your campaigns.',
       icon: <IconPower className="h-6 w-6" />,
       prompt: 'I want to turn my campaign on/off'
+    },
+    {
+      title: 'Lead Notifications',
+      description: 'Receive notifications for campaign results of yesterday.',
+      icon: <IconBell className="h-6 w-6" />,
+      prompt: 'I want to manage my lead notifications'
     }
   ]
 
