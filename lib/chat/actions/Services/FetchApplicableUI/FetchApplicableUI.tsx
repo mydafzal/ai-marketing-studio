@@ -281,13 +281,23 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                     </>
                                 );
                             case 'showLeadNotifications':
+                                // Create a dynamic component for the UI
+                                const LeadNotificationsComponent = dynamic(() => 
+                                    import('@/lib/ui-magic/modules/showLeadNotificationsModule'), 
+                                    { ssr: false }
+                                );
+                                
+                                // Display only in sidebar
                                 return (
-                                    <BotCard key={tool.toolCallId}>
-                                        <div className="p-4">
-                                            <p>Lead notification preferences are now available. You can select which campaigns you want to receive notifications for.</p>
-                                            <p className="mt-2">Please visit the <a href="/notifications" target="_blank" rel="noopener noreferrer" className="text-primary underline">Notifications page</a> to manage your preferences.</p>
-                                        </div>
-                                    </BotCard>
+                                    <>
+                                        {/* This component handles showing in the sidebar */}
+                                        <LeadNotificationsComponent />
+                                        
+                                        {/* Just show a message in the chat */}
+                                        <BotCard key={tool.toolCallId}>
+                                            <p>Lead notification preferences are now available in the sidebar. You can select which campaigns you want to receive notifications for.</p>
+                                        </BotCard>
+                                    </>
                                 );
                             default:
                                 return null;

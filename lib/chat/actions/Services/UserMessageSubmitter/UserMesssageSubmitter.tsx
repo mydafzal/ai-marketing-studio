@@ -1,6 +1,6 @@
 // This is the completely clean and fixed  version of UserMessageSubmitter.tsx with the updated showAdBudgetUI tool
 import {ImagePart, TextPart} from "ai";
-
+import dynamic from 'next/dynamic';
 import AdCreativesComparison from '@/components/stocks/campaignresults-creatives';
 import { SidebarContentWrapper } from '@/components/sidebar-content-wrapper';
 import { checkUsageLimit, incrementUsageCounter } from '@/app/actions';
@@ -2670,14 +2670,20 @@ export async function submitUserMessage(content: string, contentImages?: Array<T
                         }
                     ])
                     
-                    // Instead of rendering client component, return a simple message
+                    // Create dynamic import for the sidebar component
+                    const LeadNotificationsComponent = dynamic(() => 
+                        import('@/lib/ui-magic/modules/showLeadNotificationsModule'), 
+                        { ssr: false }
+                    );
+                    
+                    // Return the sidebar component and a simple message in chat
                     return (
-                        <BotCard>
-                            <div className="p-4">
-                                <p>Lead notification preferences are now available. You can select which campaigns you want to receive notifications for.</p>
-                                <p className="mt-2">Please visit the <a href="/notifications" target="_blank" rel="noopener noreferrer" className="text-primary underline">Notifications page</a> to manage your preferences.</p>
-                            </div>
-                        </BotCard>
+                        <>
+                            <LeadNotificationsComponent />
+                            <BotCard>
+                                <p>Lead notification preferences are now available in the sidebar. You can select which campaigns you want to receive notifications for.</p>
+                            </BotCard>
+                        </>
                     )
                 }
             }
