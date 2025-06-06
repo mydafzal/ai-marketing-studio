@@ -51,7 +51,14 @@ export function BudgetStep({
         setFetchError(false)
       } catch (err) {
         console.error('Error fetching currency data:', err)
-        setFetchError(true)
+        // Silent fallback to defaults - don't show error state
+        setCurrencyData({
+          name: 'US Dollar',
+          code: DEFAULT_CURRENCY,
+          min_daily_budget_without_offset_closest_int: DEFAULT_MIN_BUDGET,
+          error: null
+        })
+        setFetchError(false) // Don't show error state, use fallback silently
       } finally {
         setIsLoading(false)
       }
