@@ -39,12 +39,8 @@ export default async function IndexPage() {
   // Show new homepage dashboard
   return (
     <AI initialAIState={{ chatId: nanoid(), title: "", messages: [] }}>
-      <div className="w-full max-w-3xl flex flex-col h-full overflow-hidden">
-        <div className="flex-1 overflow-y-auto hide-scrollbar">
-          <div className="pt-4 md:pt-10">
-            <HomepageDashboard session={session} />
-          </div>
-        </div>
+      <div className="w-full h-full">
+        <HomepageDashboard session={session} />
       </div>
     </AI>
   )

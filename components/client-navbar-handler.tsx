@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import { getFacebookBusinessAccounts, getFacebookAdAccounts } from '@/app/facebook-actions'
+import { isFeatureToggleEnabled } from '@/lib/helpers/feature-toggle/feature-toggle-manager'
 import NavbarDropdowns from './navbar-dropdowns'
 
 type ClientNavbarHandlerProps = {
@@ -35,15 +36,19 @@ export default function ClientNavbarHandler({
     // Check if we're on a non-chat screen
     const isNonChatScreen = NON_CHAT_PATHS.some(path => pathname?.includes(path))
     
-    // Update shouldRender state based on the current path
-    setShouldRender(!isNonChatScreen)
+    // Check if we're on homepage with new dashboard (legacy mode disabled)
+    const isHomepageWithNewDashboard = pathname === '/' && !isFeatureToggleEnabled('legacyChatMode')
+    
+    // Update shouldRender state based on the current path and dashboard mode
+    setShouldRender(!isNonChatScreen && !isHomepageWithNewDashboard)
     
     // Also set up a navigation event listener to hide/show the navbar
     // when navigating between pages without a full page reload
     const handleRouteChange = () => {
       const currentPath = window.location.pathname
       const isNonChatPage = NON_CHAT_PATHS.some(path => currentPath.includes(path))
-      setShouldRender(!isNonChatPage)
+      const isHomepageNewDashboard = currentPath === '/' && !isFeatureToggleEnabled('legacyChatMode')
+      setShouldRender(!isNonChatPage && !isHomepageNewDashboard)
     }
     
     // Listen for route changes
@@ -55,7 +60,7 @@ export default function ClientNavbarHandler({
     }
   }, [pathname]) // Re-run when pathname changes
   
-  // Only render on chat screens
+  // Only render on chat screens and legacy homepage
   if (!shouldRender) {
     return null
   }
