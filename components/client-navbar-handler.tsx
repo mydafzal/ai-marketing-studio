@@ -18,7 +18,8 @@ const NON_CHAT_PATHS = [
   '/ai-content',
   '/content-folder',
   '/admin',
-  '/subscription'
+  '/subscription',
+  '/create-campaign'
 ]
 
 export default function ClientNavbarHandler({
