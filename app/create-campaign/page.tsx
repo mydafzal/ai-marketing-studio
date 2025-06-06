@@ -8,8 +8,10 @@ import { StepByCampaignCreator } from '@/components/create-campaign-page/step-by
 export default function CreateCampaignPage() {
   return (
     <div className="relative flex h-[calc(100vh_-_theme(spacing.16))] overflow-hidden bg-[#0A0C14] text-white">
-      <div className="w-full h-full flex items-center justify-center">
-        <StepByCampaignCreator />
+      <div className="w-full h-full flex items-center justify-center overflow-y-auto overflow-x-hidden">
+        <div className="w-full h-fit min-h-full flex items-center justify-center py-4 sm:py-8">
+          <StepByCampaignCreator />
+        </div>
       </div>
     </div>
   )

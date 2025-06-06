@@ -165,10 +165,10 @@ export function UrlLinkStep({
             </div>
 
             {/* Navigation Buttons */}
-            <div className="flex justify-between">
+            <div className="flex flex-col sm:flex-row gap-3 sm:justify-between">
               <button
                 onClick={onPrevious}
-                className="flex items-center px-6 py-3 text-gray-300 hover:text-white border border-[#2A2E3A] hover:border-gray-500 rounded-lg font-medium transition-all duration-200"
+                className="flex items-center justify-center px-6 py-3 text-gray-300 hover:text-white border border-[#2A2E3A] hover:border-gray-500 rounded-lg font-medium transition-all duration-200 text-base active:scale-[0.98]"
               >
                 <ArrowLeft size={18} className="mr-2" />
                 Back
@@ -176,9 +176,9 @@ export function UrlLinkStep({
               <button
                 onClick={onNext}
                 disabled={!canProceed}
-                className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
+                className={`px-6 py-3 rounded-lg font-medium text-base transition-all duration-200 ${
                   canProceed
-                    ? 'bg-[#4BF29C] text-black hover:bg-[#4BF29C]/90 transform hover:scale-[1.02]'
+                    ? 'bg-[#4BF29C] text-black hover:bg-[#4BF29C]/90 transform hover:scale-[1.02] active:scale-[0.98]'
                     : 'bg-gray-600 text-gray-300 cursor-not-allowed'
                 }`}
               >

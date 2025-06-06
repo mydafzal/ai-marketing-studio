@@ -124,10 +124,10 @@ export function MediaUploadStep({
               >
                 {/* Status bar for cooldown */}
                 {cooldownActive && (
-                  <div className="absolute inset-0 bg-[#151925]/90 rounded-lg flex items-center justify-center z-10">
-                    <div className="flex flex-col items-center text-amber-500">
-                      <Clock className="mb-2" size={24} />
-                      <span className="text-sm font-medium">Thank you! Let me take a moment to review this.</span>
+                  <div className="absolute inset-0 bg-[#151925]/90 rounded-lg flex items-center justify-center z-10 p-4">
+                    <div className="flex flex-col items-center text-amber-500 text-center">
+                      <Clock className="mb-2" size={20} />
+                      <span className="text-xs sm:text-sm font-medium">Thank you! Let me take a moment to review this.</span>
                       <span className="text-xs mt-1 text-gray-400">
                         Please wait {cooldownTimeRemaining} seconds before uploading the next creative
                       </span>
@@ -138,7 +138,7 @@ export function MediaUploadStep({
                 {/* Upload in progress banner */}
                 {isUploading && !cooldownActive && (
                   <div className="absolute top-0 inset-x-0 bg-amber-500/20 border-b border-amber-500 p-2 rounded-t-lg text-center">
-                    <div className="flex items-center justify-center text-amber-500 text-sm">
+                    <div className="flex items-center justify-center text-amber-500 text-xs sm:text-sm">
                       <Loader2 className="animate-spin mr-2" size={16} />
                       <span>Upload in progress - please wait</span>
                     </div>
@@ -146,7 +146,7 @@ export function MediaUploadStep({
                 )}
 
                 {mediaItems.length === 0 ? (
-                  <div className="flex flex-col items-center text-gray-400 mx-auto">
+                  <div className="flex flex-col items-center text-gray-400 mx-auto py-4">
                     <Upload className="mb-2" size={24} />
                     <span className="text-sm">Click here to upload media</span>
                     <span className="text-xs mt-1">Images or videos</span>
@@ -156,32 +156,36 @@ export function MediaUploadStep({
                     {mediaItems.map(item => (
                       <div
                         key={item.id}
-                        className="flex items-center space-x-3 bg-[#1A1D29] rounded-lg p-3 border border-[#2A2E3A]"
+                        className="w-full flex items-center justify-between space-x-3 bg-[#1A1D29] rounded-lg p-3 border border-[#2A2E3A]"
                       >
-                        {item.progress !== undefined && item.progress < 100 && item.progress >= 0 ? (
-                          <Loader2 className="animate-spin text-[#4BF29C]" size={18} />
-                        ) : item.progress === -1 ? (
-                          <div className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center">
-                            <span className="text-xs text-white">✗</span>
+                        <div className="flex items-center space-x-3 min-w-0 flex-1">
+                          {item.progress !== undefined && item.progress < 100 && item.progress >= 0 ? (
+                            <Loader2 className="animate-spin text-[#4BF29C] flex-shrink-0" size={18} />
+                          ) : item.progress === -1 ? (
+                            <div className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0">
+                              <span className="text-xs text-white">✗</span>
+                            </div>
+                          ) : (
+                            <div className="w-5 h-5 rounded-full bg-[#4BF29C] flex items-center justify-center flex-shrink-0">
+                              <span className="text-xs text-black">✓</span>
+                            </div>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <div className="text-sm text-white truncate">
+                              {item.type.toUpperCase()} ({item.aspectRatio})
+                            </div>
+                            <div className="text-xs text-gray-400">
+                              {item.progress === -1 ? 'Failed' : `${item.progress ?? 0}%`}
+                            </div>
                           </div>
-                        ) : (
-                          <div className="w-5 h-5 rounded-full bg-[#4BF29C] flex items-center justify-center">
-                            <span className="text-xs text-black">✓</span>
-                          </div>
-                        )}
-                        <span className="text-sm text-white">
-                          {item.type.toUpperCase()} ({item.aspectRatio})
-                        </span>
-                        <span className="text-xs text-gray-400">
-                          {item.progress === -1 ? 'Failed' : `${item.progress ?? 0}%`}
-                        </span>
+                        </div>
                         <button
                           onClick={e => {
                             e.stopPropagation();
                             removeMediaItem(item.id);
                           }}
                           disabled={isUploading}
-                          className="ml-auto"
+                          className="flex-shrink-0 p-1 rounded-lg hover:bg-[#2A2E3A] transition-colors"
                         >
                           <XCircle 
                             size={18} 
@@ -191,7 +195,7 @@ export function MediaUploadStep({
                       </div>
                     ))}
                     {!isUploading && !cooldownActive && (
-                      <div className="flex items-center space-x-3 bg-[#1A1D29] rounded-lg p-3 border border-[#2A2E3A] hover:border-[#4BF29C] transition-all duration-200 cursor-pointer">
+                      <div className="w-full flex items-center space-x-3 bg-[#1A1D29] rounded-lg p-3 border border-[#2A2E3A] hover:border-[#4BF29C] transition-all duration-200 cursor-pointer">
                         <Plus size={18} className="text-gray-400" />
                         <span className="text-sm text-gray-400">Add more media</span>
                       </div>
@@ -219,9 +223,9 @@ export function MediaUploadStep({
               <button
                 onClick={onNext}
                 disabled={!canProceed}
-                className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
+                className={`w-full sm:w-auto px-6 py-3 sm:py-3 rounded-lg font-medium text-base transition-all duration-200 ${
                   canProceed
-                    ? 'bg-[#4BF29C] text-black hover:bg-[#4BF29C]/90 transform hover:scale-[1.02]'
+                    ? 'bg-[#4BF29C] text-black hover:bg-[#4BF29C]/90 transform hover:scale-[1.02] active:scale-[0.98]'
                     : 'bg-gray-600 text-gray-300 cursor-not-allowed'
                 }`}
               >

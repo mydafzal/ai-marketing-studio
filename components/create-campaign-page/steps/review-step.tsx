@@ -198,23 +198,23 @@ export function ReviewStep({
         <div className="w-full max-w-xl">
           <div className="bg-[#151925] rounded-lg p-4 sm:p-6 shadow-lg border border-[#1A1D29]/50">
             
-            <h3 className="text-lg font-medium text-white mb-6">Campaign Summary</h3>
+            <h3 className="text-lg sm:text-xl font-medium text-white mb-4 sm:mb-6">Campaign Summary</h3>
             
             {/* Media Items */}
-            <div className="mb-6">
+            <div className="mb-4 sm:mb-6">
               <div className="flex items-center gap-2 mb-3">
                 <Image size={18} className="text-[#4BF29C]" />
-                <span className="text-sm font-medium text-white">Creative Content</span>
+                <span className="text-sm sm:text-base font-medium text-white">Creative Content</span>
               </div>
               <div className="flex flex-wrap gap-2">
                 {mediaItems.map(item => (
-                  <div key={item.id} className="flex items-center gap-2 bg-[#1A1D29] px-3 py-2 rounded-lg border border-[#2A2E3A]">
+                  <div key={item.id} className="flex items-center gap-2 bg-[#1A1D29] px-3 py-2 rounded-lg border border-[#2A2E3A] text-xs sm:text-sm">
                     {item.type === 'image' ? (
-                      <Image size={16} className="text-[#4BF29C]" />
+                      <Image size={14} className="text-[#4BF29C] flex-shrink-0" />
                     ) : (
-                      <Video size={16} className="text-[#4BF29C]" />
+                      <Video size={14} className="text-[#4BF29C] flex-shrink-0" />
                     )}
-                    <span className="text-sm text-white">
+                    <span className="text-white">
                       {item.type.toUpperCase()} ({item.aspectRatio})
                     </span>
                   </div>
@@ -223,34 +223,34 @@ export function ReviewStep({
             </div>
 
             {/* Website URL */}
-            <div className="mb-6">
+            <div className="mb-4 sm:mb-6">
               <div className="flex items-center gap-2 mb-3">
                 <ExternalLink size={18} className="text-[#4BF29C]" />
-                <span className="text-sm font-medium text-white">Landing Page</span>
+                <span className="text-sm sm:text-base font-medium text-white">Landing Page</span>
               </div>
               <div className="bg-[#1A1D29] px-3 py-2 rounded-lg border border-[#2A2E3A]">
-                <span className="text-sm text-white break-all">{link}</span>
+                <span className="text-sm sm:text-base text-white break-all">{link}</span>
               </div>
             </div>
 
             {/* Budget */}
-            <div className="mb-6">
+            <div className="mb-4 sm:mb-6">
               <div className="flex items-center gap-2 mb-3">
                 <DollarSign size={18} className="text-[#4BF29C]" />
-                <span className="text-sm font-medium text-white">Daily Budget</span>
+                <span className="text-sm sm:text-base font-medium text-white">Daily Budget</span>
               </div>
               <div className="bg-[#1A1D29] px-3 py-2 rounded-lg border border-[#2A2E3A]">
-                <span className="text-sm text-white">${budget} per day</span>
+                <span className="text-sm sm:text-base text-white">${budget} per day</span>
               </div>
             </div>
 
             {/* AI Optimization Notice */}
-            <div className="mb-6 p-4 bg-[#1A1D29] rounded-lg border border-[#4BF29C]/30">
+            <div className="mb-6 p-3 sm:p-4 bg-[#1A1D29] rounded-lg border border-[#4BF29C]/30">
               <div className="flex items-start gap-3">
                 <Settings size={18} className="text-[#4BF29C] mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="text-sm font-medium text-white mb-1">AI-Powered Optimization</p>
-                  <p className="text-xs text-gray-400">
+                  <p className="text-sm sm:text-base font-medium text-white mb-1">AI-Powered Optimization</p>
+                  <p className="text-xs sm:text-sm text-gray-400">
                     I&apos;ll automatically handle targeting, audience selection, ad copy creation, and campaign optimization to maximize your results.
                   </p>
                 </div>
@@ -258,17 +258,17 @@ export function ReviewStep({
             </div>
 
             {/* Navigation Buttons */}
-            <div className="flex justify-between">
+            <div className="flex flex-col sm:flex-row gap-3 sm:justify-between">
               <button
                 onClick={onPrevious}
-                className="flex items-center px-6 py-3 text-gray-300 hover:text-white border border-[#2A2E3A] hover:border-gray-500 rounded-lg font-medium transition-all duration-200"
+                className="flex items-center justify-center px-6 py-3 text-gray-300 hover:text-white border border-[#2A2E3A] hover:border-gray-500 rounded-lg font-medium transition-all duration-200 text-base active:scale-[0.98]"
               >
                 <ArrowLeft size={18} className="mr-2" />
                 Back
               </button>
               <button
                 onClick={handleLaunchCampaign}
-                className="flex items-center px-6 py-3 bg-[#4BF29C] text-black rounded-lg font-medium hover:bg-[#4BF29C]/90 transform hover:scale-[1.02] transition-all duration-200"
+                className="flex items-center justify-center px-6 py-3 bg-[#4BF29C] text-black rounded-lg font-medium hover:bg-[#4BF29C]/90 transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 text-base"
               >
                 <Rocket size={18} className="mr-2" />
                 Launch Campaign

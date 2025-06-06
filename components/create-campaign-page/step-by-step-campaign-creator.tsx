@@ -4,9 +4,11 @@ import React, { useState, useRef } from 'react'
 import { MediaUploadStep } from './steps/media-upload-step'
 import { UrlLinkStep } from './steps/url-link-step'  
 import { BudgetStep } from './steps/budget-step'
-import { ReviewStep } from './steps/review-step'
 import { useStepByCampaignMediaUpload } from './hooks/use-step-by-step-media-upload'
 import { StepByStepMediaItem } from './types'
+
+// Import ReviewStep with explicit path
+import { ReviewStep } from '@/components/create-campaign-page/steps/review-step'
 
 type Step = 'media' | 'url' | 'budget' | 'review'
 
@@ -14,6 +16,7 @@ export function StepByCampaignCreator() {
   const [currentStep, setCurrentStep] = useState<Step>('media')
   const [link, setLink] = useState('')
   const [budget, setBudget] = useState('')
+  const [budgetIsValid, setBudgetIsValid] = useState(false)
   const [campaignObjective, setCampaignObjective] = useState('Lead Generation')
   const [selectedLeadFormId, setSelectedLeadFormId] = useState<string>("")
   const [selectedCustomerProfileId, setSelectedCustomerProfileId] = useState<string>("")
@@ -73,14 +76,19 @@ export function StepByCampaignCreator() {
       case 'url':
         return link.trim() !== ''
       case 'budget':
-        return budget.trim() !== '' && !isNaN(parseFloat(budget))
+        return budgetIsValid
       default:
         return false
     }
   }
 
+  // Handle budget validation state changes
+  const handleBudgetValidationChange = (isValid: boolean) => {
+    setBudgetIsValid(isValid)
+  }
+
   return (
-    <div className="w-full max-w-3xl space-y-6 sm:space-y-8 px-3 sm:px-6 py-4 sm:py-0">
+    <div className="w-full max-w-3xl space-y-4 sm:space-y-6 lg:space-y-8 px-3 sm:px-6 py-2 sm:py-4">
         
         {currentStep === 'media' && (
           <MediaUploadStep
@@ -114,6 +122,7 @@ export function StepByCampaignCreator() {
             onNext={handleNextStep}
             onPrevious={handlePreviousStep}
             canProceed={canProceed()}
+            onValidationChange={handleBudgetValidationChange}
           />
         )}
 
