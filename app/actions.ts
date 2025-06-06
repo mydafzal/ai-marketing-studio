@@ -7,7 +7,7 @@ import {kv} from '@vercel/kv'
 import {auth} from '@/auth'
 import {AdText, type Chat, User, VideoAdText} from '@/lib/types'
 import {getBaseUrl} from "@/lib/helpers/vercel/get-base-url"
-import crypto from 'crypto'
+import {nanoid} from '@/lib/utils'
 import { cookies } from 'next/headers'
 
 export async function getChats(userId?: string | null) {
@@ -2097,7 +2097,7 @@ export async function createUserWithoutPassword(
         }
     } else {
         const user = {
-            id: crypto.randomUUID(),
+            id: nanoid(),
             email,
             provider: "facebook",
             password: "",
