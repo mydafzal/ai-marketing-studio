@@ -29,6 +29,10 @@ export const featureToggles: FeatureToggle[] = [
     {
         name: "rightSideOverviewCard",
         description: "Show the right hand side campaign overview card"
+    },
+    {
+        name: "legacyChatMode",
+        description: "Enable legacy chat interface instead of the new homepage dashboard"
     }
     // Add more feature toggles as needed
 ];

@@ -7,6 +7,8 @@ import {kv} from '@vercel/kv'
 import {auth} from '@/auth'
 import {AdText, type Chat, User, VideoAdText} from '@/lib/types'
 import {getBaseUrl} from "@/lib/helpers/vercel/get-base-url"
+import crypto from 'crypto'
+import { cookies } from 'next/headers'
 
 export async function getChats(userId?: string | null) {
     if (!userId) {
@@ -2170,5 +2172,24 @@ export async function getFbFetchedObject(type: string, id: string): Promise<{
         return {
             error: 'Failed to fetch object'
         }
+    }
+}
+
+export async function toggleFeatureFlag(featureToggleName: string, isEnabled: boolean) {
+    'use server'
+    
+    try {
+        // Set the feature toggle cookie
+        cookies().set(featureToggleName, isEnabled.toString(), {
+            path: '/',
+            httpOnly: false,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax'
+        })
+        
+        return { success: true }
+    } catch (error) {
+        console.error('Failed to toggle feature flag:', error)
+        return { success: false, error: 'Failed to toggle feature flag' }
     }
 }

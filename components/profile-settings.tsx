@@ -8,11 +8,13 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
-import { Settings, User } from 'lucide-react'
+import { Settings, User, RotateCcw } from 'lucide-react'
 import { type User as UserType } from '@/lib/types'
 import Onboarding from './onboarding'
 import FacebookAccountSettings from '@/components/facebook-account-settings'
 import { cn } from '@/lib/utils'
+import { isFeatureToggleEnabled } from '@/lib/helpers/feature-toggle/feature-toggle-manager'
+import { toggleFeatureFlag } from '@/app/actions'
 
 type ProfileSettingsProps = {
   userDetails: UserType | undefined
@@ -58,6 +60,23 @@ export default function ProfileSettings({
     React.useState<boolean>(false)
   const [dropdownOpen, setDropdownOpen] =
     React.useState<boolean>(openOnboarding)
+
+  const isLegacyModeEnabled = isFeatureToggleEnabled('legacyChatMode')
+
+  const handleLegacyModeToggle = async () => {
+    try {
+      // Toggle the feature using the server action
+      const result = await toggleFeatureFlag('legacyChatMode', !isLegacyModeEnabled)
+      
+      if (result.success) {
+        window.location.reload()
+      } else {
+        console.error('Failed to toggle legacy mode:', result.error)
+      }
+    } catch (error) {
+      console.error('Failed to toggle legacy mode:', error)
+    }
+  }
 
   return (
     <>
@@ -167,6 +186,38 @@ export default function ProfileSettings({
               </svg>
             </div>
             Facebook Settings
+          </button>
+
+          <DropdownMenuSeparator className="my-2 bg-zinc-200 dark:bg-zinc-800" />
+
+          <div className="text-xs font-medium text-zinc-500 dark:text-zinc-400 px-3 py-2">
+            Interface
+          </div>
+
+          {/* Legacy Chat Mode Toggle */}
+          <button
+            className="inline-flex items-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:text-accent-foreground h-9 px-4 py-2 w-full justify-start gap-2 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            type="button"
+            onClick={handleLegacyModeToggle}
+          >
+            <div className="rounded-full size-6 flex items-center justify-center">
+              <RotateCcw className="size-4 text-zinc-600 dark:text-zinc-400" />
+            </div>
+            <span className="flex-1 text-left">
+              {isLegacyModeEnabled ? 'Switch to New Dashboard' : 'Activate Legacy Version'}
+            </span>
+            <div className={cn(
+              'size-4 rounded-full border-2 transition-colors',
+              isLegacyModeEnabled 
+                ? 'bg-green-500 border-green-500' 
+                : 'border-zinc-400 dark:border-zinc-600'
+            )}>
+              {isLegacyModeEnabled && (
+                <svg className="size-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              )}
+            </div>
           </button>
  
           <Onboarding
