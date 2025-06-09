@@ -12,7 +12,6 @@ export const authConfig = {
       const isOnLoginPage = nextUrl.pathname.startsWith('/login')
       const isOnSignupPage = nextUrl.pathname.startsWith('/signup')
       const isOnAIContentPage = nextUrl.pathname.startsWith('/ai-content')
-      const isOnNotificationsPage = nextUrl.pathname.startsWith('/notifications')
 
       // If user is logged in and trying to access login/signup pages, redirect to home
       if (isLoggedIn) {
@@ -22,8 +21,8 @@ export const authConfig = {
         return true
       }
 
-      // If user is not logged in and trying to access protected pages, redirect to login
-      if (!isLoggedIn && (isOnAIContentPage || isOnNotificationsPage)) {
+      // If user is not logged in and trying to access AI Content page, redirect to login
+      if (!isLoggedIn && isOnAIContentPage) {
         return Response.redirect(new URL('/login', nextUrl))
       }
 
@@ -48,5 +47,5 @@ export const authConfig = {
       return session
     }
   },
-  providers: [],
+  providers: []
 } satisfies NextAuthConfig
