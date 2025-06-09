@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
         },
         body: JSON.stringify({
           subscribers,
-          date_preset: 'last_month' // todo: change it to yesterday
+          date_preset: 'yesterday' // todo: change it to yesterday
         })
       }
     )
@@ -168,7 +168,7 @@ export async function POST(request: Request) {
   try {
     // For manual triggering, you might want to pass different parameters
     const body = await request.json()
-    const { date_preset = 'last_month' } = body // todo: change it to yesterday
+    const { date_preset = 'yesterday' } = body // todo: change it to yesterday
 
     // Reuse the same logic as the GET endpoint but with custom date_preset
     const userKeys = await kv.keys('user:*')
