@@ -24,6 +24,8 @@ export function HomepageDashboard({ session }: HomepageDashboardProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [aiGreeting, setAiGreeting] = useState<string>('')
   const [greetingLoading, setGreetingLoading] = useState(true)
+  const [displayedGreeting, setDisplayedGreeting] = useState<string>('')
+  const [isTyping, setIsTyping] = useState(false)
 
   useEffect(() => {
     const fetchUserDetails = async () => {
@@ -86,6 +88,27 @@ export function HomepageDashboard({ session }: HomepageDashboardProps) {
     }
   }, [isLoading, userDetails, session])
 
+  // Typing effect for AI greeting
+  useEffect(() => {
+    if (!greetingLoading && aiGreeting) {
+      setIsTyping(true)
+      setDisplayedGreeting('')
+      
+      let currentIndex = 0
+      const typingInterval = setInterval(() => {
+        if (currentIndex < aiGreeting.length) {
+          setDisplayedGreeting(aiGreeting.slice(0, currentIndex + 1))
+          currentIndex++
+        } else {
+          clearInterval(typingInterval)
+          setIsTyping(false)
+        }
+      }, 30) // Adjust speed here (lower = faster)
+
+      return () => clearInterval(typingInterval)
+    }
+  }, [aiGreeting, greetingLoading])
+
   const getStaticGreeting = () => {
     // Fallback static greeting logic
     let firstName = userDetails?.first_name
@@ -126,11 +149,21 @@ export function HomepageDashboard({ session }: HomepageDashboardProps) {
       description: "View performance metrics and insights for your active campaigns",
       href: "/marketing-insights",
       icon: "📊"
+    },
+    {
+      title: "My recommendations for your campaigns",
+      description: "Get AI-powered insights and suggestions to optimize your marketing performance",
+      href: "recommendations",
+      icon: "🎯"
     }
   ]
 
   const handleActionClick = (href: string) => {
-    router.push(href)
+    if (href === "recommendations") {
+      handleRecommendationsClick()
+    } else {
+      router.push(href)
+    }
   }
 
   const handleRecommendationsClick = () => {
@@ -214,7 +247,10 @@ export function HomepageDashboard({ session }: HomepageDashboardProps) {
                       <span className="text-gray-400">Generating personalized greeting...</span>
                     </div>
                   ) : (
-                    aiGreeting
+                    <span>
+                      {displayedGreeting}
+                      {isTyping && <span className="animate-pulse">|</span>}
+                    </span>
                   )}
                 </div>
               </div>
@@ -226,7 +262,7 @@ export function HomepageDashboard({ session }: HomepageDashboardProps) {
         <div className="w-full max-w-4xl mx-auto px-2 sm:px-0">
           <h3 className="text-white text-lg sm:text-xl font-medium px-2 mb-4 sm:mb-6 text-center">What would you like to do today?</h3>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 px-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-3 sm:gap-4 px-2">
             {actionItems.map((item, index) => (
               <div 
                 key={index}
@@ -247,27 +283,6 @@ export function HomepageDashboard({ session }: HomepageDashboardProps) {
                 </div>
               </div>
             ))}
-          </div>
-        </div>
-
-        {/* Recommendations Section */}
-        <div className="w-full max-w-2xl mx-auto px-2 sm:px-0">
-          <div 
-            className="recommendations-card p-4 sm:p-5 rounded-lg cursor-pointer min-h-[80px] sm:min-h-[100px] active:scale-95 transition-all"
-            onClick={handleRecommendationsClick}
-          >
-            <div className="flex items-start gap-3 sm:gap-4">
-              <div className="text-xl sm:text-2xl flex-shrink-0">🎯</div>
-              <div className="flex-1 min-w-0">
-                <h4 className="text-white font-medium text-sm sm:text-base mb-1 leading-tight">My recommendations for your campaigns</h4>
-                <p className="text-gray-400 text-xs sm:text-sm leading-relaxed">Get AI-powered insights and suggestions to optimize your marketing performance</p>
-              </div>
-              <div className="text-[#4BF29C] flex-shrink-0">
-                <svg width="16" height="16" className="sm:w-5 sm:h-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                </svg>
-              </div>
-            </div>
           </div>
         </div>
 
