@@ -7,7 +7,7 @@ import { StepByStepMediaItem } from '../types'
 import { AdSetupModal } from '@/components/create-campaign-page/ad-setup-modal'
 
 // Import types from the original implementation
-interface MasterFlowResponse {
+export interface MasterFlowResponse {
   status: string;
   fb_account_id: string;
   campaign_flow_session_id: string;
@@ -84,6 +84,90 @@ export function ReviewStep({
 
   // Modal state for editing ad setup
   const [isAdSetupModalOpen, setIsAdSetupModalOpen] = useState(false)
+
+  // New state for showing all previews
+  const [showAllPreviews, setShowAllPreviews] = useState(false)
+
+  // Preview formats for navigation
+  const previewFormats = ['INSTAGRAM_STANDARD', 'INSTAGRAM_STORY', 'FACEBOOK_PROFILE_FEED_MOBILE', 'FACEBOOK_STORY_MOBILE', 'INSTAGRAM_REELS', 'FACEBOOK_REELS_MOBILE']
+
+  // Auto-scroll functionality
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const [isAutoScrolling, setIsAutoScrolling] = useState(true)
+  const autoScrollIntervalRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Auto-scroll effect
+  useEffect(() => {
+    if (!showAllPreviews || !isAutoScrolling) return
+
+    const startAutoScroll = () => {
+      if (autoScrollIntervalRef.current) {
+        clearInterval(autoScrollIntervalRef.current)
+      }
+
+      autoScrollIntervalRef.current = setInterval(() => {
+        const container = scrollContainerRef.current
+        if (!container) return
+
+        const maxScroll = container.scrollWidth - container.clientWidth
+        const currentScroll = container.scrollLeft
+        
+        // Scroll right slowly (1px per interval)
+        if (currentScroll < maxScroll) {
+          container.scrollLeft += 1
+        } else {
+          // Reset to beginning when reaching the end
+          container.scrollLeft = 0
+        }
+      }, 50) // 50ms interval for smooth scrolling
+    }
+
+    startAutoScroll()
+
+    return () => {
+      if (autoScrollIntervalRef.current) {
+        clearInterval(autoScrollIntervalRef.current)
+      }
+    }
+  }, [showAllPreviews, isAutoScrolling])
+
+  // Pause auto-scroll on user interaction
+  const handleScrollInteraction = () => {
+    setIsAutoScrolling(false)
+    // Resume auto-scroll after 3 seconds of no interaction
+    setTimeout(() => {
+      setIsAutoScrolling(true)
+    }, 3000)
+  }
+
+  // Component for individual preview iframes
+  const PreviewIframe = ({ creativeId, format }: { creativeId: string, format: string }) => {
+    const [html, setHtml] = useState('')
+    const [loading, setLoading] = useState(true)
+    
+    useEffect(() => {
+      const fetchPreview = async () => {
+        if (!creativeId) return
+        setLoading(true)
+        try {
+          const res = await fetch(`/api/fasty-bot/proxy-get-ad-creative-preview?creative_id=${creativeId}&ad_format=${format}`)
+          const json = await res.json()
+          if (json.success) setHtml(processHtml(json.preview_html))
+        } catch (e) {
+          console.error(e)
+        } finally {
+          setLoading(false)
+        }
+      }
+      fetchPreview()
+    }, [creativeId, format])
+    
+    if (loading) {
+      return <div className="flex items-center justify-center w-full h-full"><div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"/></div>
+    }
+    
+    return <div dangerouslySetInnerHTML={{ __html: html }} className="w-full h-full" />
+  }
 
   // Call master flow API on component mount
   useEffect(() => {
@@ -466,37 +550,79 @@ export function ReviewStep({
 
   const renderAnalyzingStep = () => (
     <div className="space-y-4 sm:space-y-6">
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 sm:p-6">
-        <div className="flex items-start space-x-3">
-          <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center">
-            <Settings2 className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">
-              Perfect! Let me analyze your campaign and create the best setup for you...
-            </h3>
-            <p className="text-sm sm:text-base text-gray-600">
-              I&apos;m using AI to analyze your content, target audience, optimize your budget, create compelling ad copy, and set up the perfect targeting to maximize your results.
-            </p>
-            {isLoading && (
-              <div className="mt-4 flex items-center space-x-2">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                <span className="text-sm text-gray-500">Analyzing your campaign...</span>
+      {/* AI Message with Typing Effect */}
+      <div className="w-full flex justify-center px-2 sm:px-0">
+        <div className="w-full max-w-xl">
+          <div className="flex items-start">
+            <div className="mr-3 sm:mr-4 flex-shrink-0">
+              {/* Enhanced Color Blob */}
+              <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-full flex items-center justify-center relative overflow-hidden shadow-[0_0_15px_rgba(75,242,156,0.7)] sm:shadow-[0_0_20px_rgba(75,242,156,0.7)]">
+                <div 
+                  className="absolute inset-0 bg-gradient-to-br from-[#4BF29C] via-[#35d6ff] to-[#0a84ff]" 
+                  style={{
+                    animation: "pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite, gradient 6s ease infinite",
+                    backgroundSize: "300% 300%"
+                  }}
+                ></div>
+                <div 
+                  className="absolute inset-0" 
+                  style={{
+                    background: "radial-gradient(circle at 30% 30%, rgba(255,255,255,0.9), transparent 45%)",
+                    animation: "rotate 10s linear infinite, shimmer 3s ease-in-out infinite"
+                  }}
+                ></div>
+                <div 
+                  className="absolute inset-0" 
+                  style={{
+                    background: "linear-gradient(45deg, transparent 40%, rgba(255,255,255,0.95) 48%, rgba(255,255,255,0.95) 52%, transparent 60%)",
+                    backgroundSize: "400% 400%",
+                    animation: "shimmer 2s ease-in-out infinite, rotate 8s linear infinite reverse"
+                  }}
+                ></div>
+                <div 
+                  className="absolute inset-0" 
+                  style={{
+                    background: "linear-gradient(-60deg, transparent 75%, rgba(255,255,255,0.8) 80%, rgba(255,255,255,0.9) 85%, transparent 90%)",
+                    backgroundSize: "200% 200%",
+                    animation: "shimmer 3.5s ease-in-out infinite 0.5s, rotate 12s linear infinite"
+                  }}
+                ></div>
+                <div 
+                  className="absolute inset-[2px] rounded-full"
+                  style={{
+                    background: "radial-gradient(circle at center, rgba(255,255,255,0.5) 0%, transparent 70%)",
+                    animation: "pulse 2s ease-in-out infinite alternate"
+                  }}
+                ></div>
               </div>
-            )}
-            {error && (
-              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-sm text-red-600">{error}</p>
-                <Button 
-                  onClick={callMasterFlowAPI}
-                  className="mt-2 text-xs"
-                  variant="outline"
-                  size="sm"
-                >
-                  Try Again
-                </Button>
+            </div>
+            <div className="bg-[#1A1D29] rounded-lg p-3 sm:p-5 shadow flex-grow">
+              <div className="text-white text-sm sm:text-base typing-container">
+                Perfect! Let me create your complete campaign setup for you. I&apos;m building your targeting, ad copy, creatives, and all campaign settings. Once I&apos;m done, I&apos;ll show you everything so you can review it all before we launch.
+                <br /><br />
+                This will take about 45 seconds - perfect time to grab a coffee or stretch your legs! ☕
               </div>
-            )}
+              {isLoading && (
+                <div className="mt-4 pt-3 border-t border-gray-600 flex items-center space-x-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#4BF29C]"></div>
+                  <span className="text-gray-400 text-sm">Working my magic...</span>
+                </div>
+              )}
+              {error && (
+                <div className="mt-4 pt-3 border-t border-gray-600">
+                  <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                    <p className="text-red-400 text-sm mb-2">{error}</p>
+                    <Button 
+                      onClick={callMasterFlowAPI}
+                      className="text-xs bg-[#4BF29C] text-black hover:bg-[#4BF29C]/90"
+                      size="sm"
+                    >
+                      Try Again
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -504,65 +630,228 @@ export function ReviewStep({
   )
 
   const renderPreviewStep = () => (
-    <div className="space-y-4 sm:space-y-6">
-      <div className="bg-green-50 border border-green-200 rounded-lg p-4 sm:p-6">
-        <div className="flex items-start space-x-3">
-          <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center">
-            <Eye className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">
-              Excellent! Here&apos;s how your ad will look to your audience
-            </h3>
-            <p className="text-sm sm:text-base text-gray-600 mb-4">
-              I&apos;ve created compelling ad copy and optimized your creative for maximum engagement. You can preview it across different platforms below.
-            </p>
-          </div>
-        </div>
-      </div>
+    <>
+      {!showAllPreviews ? (
+        /* Standard Layout - Side by side with consistent spacing */
+        <div className="w-full grid gap-6 lg:gap-8 px-2 sm:px-0 grid-cols-1 lg:grid-cols-2">
+          {/* Left: AI Message */}
+          <div className="w-full flex justify-center lg:justify-start">
+            <div className="w-full max-w-xl">
+              <div className="flex items-start">
+                <div className="mr-3 sm:mr-4 flex-shrink-0">
+                  {/* Enhanced Color Blob */}
+                  <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-full flex items-center justify-center relative overflow-hidden shadow-[0_0_15px_rgba(75,242,156,0.7)] sm:shadow-[0_0_20px_rgba(75,242,156,0.7)]">
+                    <div 
+                      className="absolute inset-0 bg-gradient-to-br from-[#4BF29C] via-[#35d6ff] to-[#0a84ff]" 
+                      style={{
+                        animation: "pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite, gradient 6s ease infinite",
+                        backgroundSize: "300% 300%"
+                      }}
+                    ></div>
+                    <div 
+                      className="absolute inset-0" 
+                      style={{
+                        background: "radial-gradient(circle at 30% 30%, rgba(255,255,255,0.9), transparent 45%)",
+                        animation: "rotate 10s linear infinite, shimmer 3s ease-in-out infinite"
+                      }}
+                    ></div>
+                    <div 
+                      className="absolute inset-0" 
+                      style={{
+                        background: "linear-gradient(45deg, transparent 40%, rgba(255,255,255,0.95) 48%, rgba(255,255,255,0.95) 52%, transparent 60%)",
+                        backgroundSize: "400% 400%",
+                        animation: "shimmer 2s ease-in-out infinite, rotate 8s linear infinite reverse"
+                      }}
+                    ></div>
+                    <div 
+                      className="absolute inset-0" 
+                      style={{
+                        background: "linear-gradient(-60deg, transparent 75%, rgba(255,255,255,0.8) 80%, rgba(255,255,255,0.9) 85%, transparent 90%)",
+                        backgroundSize: "200% 200%",
+                        animation: "shimmer 3.5s ease-in-out infinite 0.5s, rotate 12s linear infinite"
+                      }}
+                    ></div>
+                    <div 
+                      className="absolute inset-[2px] rounded-full"
+                      style={{
+                        background: "radial-gradient(circle at center, rgba(255,255,255,0.5) 0%, transparent 70%)",
+                        animation: "pulse 2s ease-in-out infinite alternate"
+                      }}
+                    ></div>
+                  </div>
+                </div>
+                <div className="bg-[#1A1D29] rounded-lg p-3 sm:p-5 shadow flex-grow">
+                  <div className="text-white text-sm sm:text-base typing-container">
+                    Excellent! Here&apos;s how your ad will look on Instagram. I&apos;ve created compelling ad copy and optimized your creative for maximum engagement.
+                  </div>
+                  
+                  {/* Continue Button embedded in AI message */}
+                  <div className="mt-4 pt-3 border-t border-gray-600">
+                    <Button
+                      onClick={() => setCurrentSubStep('targeting')}
+                      className="w-full bg-[#4BF29C] text-black hover:bg-[#4BF29C]/90 transform hover:scale-[1.02] active:scale-[0.98]"
+                    >
+                      Continue to Targeting Review
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </Button>
+                  </div>
 
-      {masterFlowData && (
-        <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 space-y-6">
-          {/* Ad Creative Text */}
-          <div className="space-y-3">
-            <h4 className="font-medium text-gray-900">Ad Creative</h4>
-            <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-              <div>
-                <span className="text-sm font-medium text-gray-700">Headline:</span>
-                <p className="text-gray-900 mt-1">{masterFlowData.ad_creative_text?.ad_creative_title}</p>
-              </div>
-              <div>
-                <span className="text-sm font-medium text-gray-700">Description:</span>
-                <p className="text-gray-900 mt-1">{masterFlowData.ad_creative_text?.ad_creative_description}</p>
+                  {/* See All Previews Button embedded in AI message */}
+                  <div className="mt-3">
+                    <Button
+                      onClick={() => setShowAllPreviews(!showAllPreviews)}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      <Eye className="w-4 h-4 mr-2" />
+                      See All Previews
+                    </Button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Ad Preview Section */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Preview Controls */}
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Preview Format</label>
-                <select 
-                  value={adFormat} 
-                  onChange={(e) => setAdFormat(e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-md bg-white text-gray-900"
-                >
-                  <option value="INSTAGRAM_STANDARD">Instagram Feed</option>
-                  <option value="INSTAGRAM_STORY">Instagram Story</option>
-                  <option value="INSTAGRAM_EXPLORE_GRID_HOME">Instagram Explore</option>
-                  <option value="FACEBOOK_PROFILE_FEED_MOBILE">Facebook Feed</option>
-                  <option value="FACEBOOK_STORY_MOBILE">Facebook Story</option>
-                  <option value="FACEBOOK_REELS_MOBILE">Facebook Reels</option>
-                  <option value="INSTAGRAM_REELS">Instagram Reels</option>
-                </select>
-              </div>
+          {/* Right: Single Preview */}
+          <div className="w-full">
+            <div className="w-full flex justify-center lg:justify-start">
+              {masterFlowData && (
+                <div className="space-y-4 sm:space-y-6 w-full">
+                  {/* Creative Navigation */}
+                  {masterFlowData.creatives_and_previews?.creatives && masterFlowData.creatives_and_previews.creatives.length > 1 && (
+                    <div className="flex items-center justify-center space-x-4">
+                      <span className="text-sm text-gray-400">
+                        Creative {currentCreativeIndex + 1} of {masterFlowData.creatives_and_previews.creatives.length}
+                      </span>
+                      <div className="flex space-x-2">
+                        <Button onClick={navigateToPrevCreative} variant="outline" size="sm">
+                          <ArrowLeft className="w-4 h-4" />
+                        </Button>
+                        <Button onClick={navigateToNextCreative} variant="outline" size="sm">
+                          <ArrowRight className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
 
+                  {/* Single Preview */}
+                  <div className="flex justify-center">
+                    <div 
+                      className="relative bg-gray-900 rounded-lg overflow-hidden"
+                      style={{ width: '313px', height: '534px' }}
+                    >
+                      {isPreviewLoading ? (
+                        <div className="flex items-center justify-center w-full h-full">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+                        </div>
+                      ) : previewError ? (
+                        <div className="text-red-400 p-4 text-center text-sm">
+                          {previewError}
+                        </div>
+                      ) : (
+                        <div 
+                          ref={previewRef}
+                          className="w-full h-full" 
+                          dangerouslySetInnerHTML={{ __html: previewHtml }}
+                          style={{ 
+                            width: '313px',
+                            height: '534px',
+                            overflow: 'hidden'
+                          }}
+                        />
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* All Previews Layout - AI Message Centered, Previews Below */
+        <div className="w-full flex flex-col items-center justify-center space-y-6 px-2 sm:px-0 min-h-[80vh] pt-40">
+          {/* AI Message - Centered */}
+          <div className="w-full flex justify-center">
+            <div className="w-full max-w-xl">
+              <div className="flex items-start">
+                <div className="mr-3 sm:mr-4 flex-shrink-0">
+                  {/* Enhanced Color Blob */}
+                  <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-full flex items-center justify-center relative overflow-hidden shadow-[0_0_15px_rgba(75,242,156,0.7)] sm:shadow-[0_0_20px_rgba(75,242,156,0.7)]">
+                    <div 
+                      className="absolute inset-0 bg-gradient-to-br from-[#4BF29C] via-[#35d6ff] to-[#0a84ff]" 
+                      style={{
+                        animation: "pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite, gradient 6s ease infinite",
+                        backgroundSize: "300% 300%"
+                      }}
+                    ></div>
+                    <div 
+                      className="absolute inset-0" 
+                      style={{
+                        background: "radial-gradient(circle at 30% 30%, rgba(255,255,255,0.9), transparent 45%)",
+                        animation: "rotate 10s linear infinite, shimmer 3s ease-in-out infinite"
+                      }}
+                    ></div>
+                    <div 
+                      className="absolute inset-0" 
+                      style={{
+                        background: "linear-gradient(45deg, transparent 40%, rgba(255,255,255,0.95) 48%, rgba(255,255,255,0.95) 52%, transparent 60%)",
+                        backgroundSize: "400% 400%",
+                        animation: "shimmer 2s ease-in-out infinite, rotate 8s linear infinite reverse"
+                      }}
+                    ></div>
+                    <div 
+                      className="absolute inset-0" 
+                      style={{
+                        background: "linear-gradient(-60deg, transparent 75%, rgba(255,255,255,0.8) 80%, rgba(255,255,255,0.9) 85%, transparent 90%)",
+                        backgroundSize: "200% 200%",
+                        animation: "shimmer 3.5s ease-in-out infinite 0.5s, rotate 12s linear infinite"
+                      }}
+                    ></div>
+                    <div 
+                      className="absolute inset-[2px] rounded-full"
+                      style={{
+                        background: "radial-gradient(circle at center, rgba(255,255,255,0.5) 0%, transparent 70%)",
+                        animation: "pulse 2s ease-in-out infinite alternate"
+                      }}
+                    ></div>
+                  </div>
+                </div>
+                <div className="bg-[#1A1D29] rounded-lg p-3 sm:p-5 shadow flex-grow">
+                  <div className="text-white text-sm sm:text-base typing-container">
+                    Excellent! Here are all your ad previews across different platforms. I&apos;ve optimized your creative for maximum engagement on each platform.
+                  </div>
+                  
+                  {/* Action Buttons */}
+                  <div className="mt-4 pt-3 border-t border-gray-600 space-y-3">
+                    <Button
+                      onClick={() => setCurrentSubStep('targeting')}
+                      className="w-full bg-[#4BF29C] text-black hover:bg-[#4BF29C]/90 transform hover:scale-[1.02] active:scale-[0.98]"
+                    >
+                      Continue to Targeting Review
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </Button>
+                    
+                    <Button
+                      onClick={() => setShowAllPreviews(!showAllPreviews)}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      <Eye className="w-4 h-4 mr-2" />
+                      Show Single Preview
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* All Previews - Horizontal Layout */}
+          {masterFlowData && (
+            <div className="w-full space-y-4">
               {/* Creative Navigation */}
               {masterFlowData.creatives_and_previews?.creatives && masterFlowData.creatives_and_previews.creatives.length > 1 && (
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">
+                <div className="flex items-center justify-center space-x-4">
+                  <span className="text-sm text-gray-400">
                     Creative {currentCreativeIndex + 1} of {masterFlowData.creatives_and_previews.creatives.length}
                   </span>
                   <div className="flex space-x-2">
@@ -575,292 +864,355 @@ export function ReviewStep({
                   </div>
                 </div>
               )}
-            </div>
 
-            {/* Ad Preview */}
-            <div className="flex justify-center">
-              <div className="relative bg-gray-900 rounded-lg overflow-hidden flex items-center justify-center" style={{ width: '313px', height: '534px' }}>
-                {isPreviewLoading ? (
-                  <div className="flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
-                  </div>
-                ) : previewError ? (
-                  <div className="text-red-400 p-4 text-center text-sm">
-                    {previewError}
-                  </div>
-                ) : (
-                  <div 
-                    ref={previewRef}
-                    className="flex items-center justify-center" 
-                    dangerouslySetInnerHTML={{ __html: previewHtml }}
-                    style={{ 
-                      width: '313px',
-                      height: '534px',
-                      overflow: 'hidden'
-                    }}
-                  />
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Open Ad Setup modal */}
-          <Button
-            onClick={() => setIsAdSetupModalOpen(true)}
-            variant="outline"
-            size="sm"
-            className="w-full mt-2"
-          >
-            <Settings2 className="w-4 h-4 mr-2" />
-            View & Edit Ad Setup
-          </Button>
-        </div>
-      )}
-
-      <div className="flex flex-col sm:flex-row gap-3">
-        <Button
-          onClick={() => setCurrentSubStep('targeting')}
-          className="w-full sm:w-auto"
-        >
-          Continue to Targeting Review
-          <ArrowRight className="w-4 h-4 ml-2" />
-        </Button>
-      </div>
-    </div>
-  )
-
-  const renderTargetingStep = () => (
-    <div className="space-y-4 sm:space-y-6">
-      <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 sm:p-6">
-        <div className="flex items-start space-x-3">
-          <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center">
-            <Target className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">
-              Here&apos;s how I&apos;ve optimized your targeting for maximum reach
-            </h3>
-            <p className="text-sm sm:text-base text-gray-600">
-              Based on your content and goals, I&apos;ve selected the most effective audience targeting to get you the best results.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {masterFlowData && (
-        <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 space-y-6">
-          {/* Locations */}
-          <div className="space-y-3">
-            <div className="flex items-center space-x-2">
-              <MapPin className="w-5 h-5 text-purple-600" />
-              <h4 className="font-medium text-gray-900">Geographic Targeting</h4>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <p className="text-gray-900">
-                {formatObjectsForDisplay(masterFlowData.selected_locations)}
-              </p>
-              <p className="text-sm text-gray-600 mt-2">
-                Location Match: {masterFlowData.is_location_exact_match ? 'Exact' : 'Broad'}
-              </p>
-            </div>
-          </div>
-
-          {/* Debug Targeting Structure */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className="space-y-3">
-              <div className="flex items-center space-x-2">
-                <div className="w-5 h-5 bg-gray-100 rounded flex items-center justify-center">
-                  <span className="text-gray-600 text-xs">🔍</span>
+              <h4 className="font-medium text-white text-center mb-4">All Platform Previews</h4>
+              
+              {/* Mobile: Horizontal scroll */}
+              <div className="lg:hidden">
+                <div 
+                  ref={scrollContainerRef}
+                  className="flex gap-4 overflow-x-scroll pb-4 pr-4" 
+                  style={{ 
+                    scrollbarWidth: 'auto',
+                    scrollbarColor: '#4B5563 #1F2937',
+                    WebkitOverflowScrolling: 'touch'
+                  }}
+                  onScroll={handleScrollInteraction}
+                  onMouseEnter={handleScrollInteraction}
+                >
+                  {previewFormats.map((format, idx) => (
+                    <div key={format} className="flex flex-col items-center space-y-3 flex-shrink-0">
+                      <span className="text-xs font-medium text-gray-400 text-center">
+                        {format.replace(/_/g, ' ').replace('PROFILE FEED MOBILE', 'Feed').replace('STANDARD', 'Feed')}
+                      </span>
+                      <div 
+                        className="relative bg-gray-900 rounded-lg overflow-hidden"
+                        style={{ width: '313px', height: '534px' }}
+                      >
+                        <PreviewIframe 
+                          creativeId={masterFlowData.creatives_and_previews?.creatives?.[currentCreativeIndex]?.creative_id} 
+                          format={format} 
+                        />
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <h4 className="font-medium text-gray-900">Debug: Targeting Data Structure</h4>
               </div>
-              <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
-                <details className="text-xs">
-                  <summary className="cursor-pointer font-medium text-gray-700 mb-2">Click to view raw targeting data</summary>
-                  <pre className="text-gray-600 overflow-auto max-h-40 bg-white p-2 rounded border mt-2">
-                    {JSON.stringify(masterFlowData.suggested_targeting_filters, null, 2)}
-                  </pre>
-                </details>
-                <div className="mt-2 text-sm text-gray-700">
-                  <p>Interest filters found: {getInterestFilters().length}</p>
-                  <p>Behavior filters found: {getBehaviorFilters().length}</p>
-                  <p>Demographic filters found: {getDemographicFilters().length}</p>
+
+              {/* Desktop: All previews in a horizontal row */}
+              <div className="hidden lg:block">
+                <div className="flex gap-4 overflow-x-auto pb-4">
+                  {previewFormats.map((format, idx) => (
+                    <div key={format} className="flex flex-col items-center space-y-3 flex-shrink-0">
+                      <span className="text-xs font-medium text-gray-400 text-center">
+                        {format.replace(/_/g, ' ').replace('PROFILE FEED MOBILE', 'Feed').replace('STANDARD', 'Feed')}
+                      </span>
+                      <div 
+                        className="relative bg-gray-900 rounded-lg overflow-hidden"
+                        style={{ width: '250px', height: '427px' }}
+                      >
+                        <PreviewIframe 
+                          creativeId={masterFlowData.creatives_and_previews?.creatives?.[currentCreativeIndex]?.creative_id} 
+                          format={format} 
+                        />
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
           )}
+        </div>
+      )}
+    </>
+  )
 
-          {/* Interest Targeting */}
-          <div className="space-y-3">
-            <div className="flex items-center space-x-2">
-              <div className="w-5 h-5 bg-purple-100 rounded flex items-center justify-center">
-                <span className="text-purple-600 text-xs">❤️</span>
+  const renderTargetingStep = () => (
+    <>
+      {/* Desktop: Side-by-side layout, Mobile: Stacked */}
+      <div className="w-full flex flex-col lg:flex-row items-start gap-12 px-4 sm:px-6 lg:px-8 min-h-[70vh] pt-24 max-w-7xl mx-auto">
+        {/* AI Message - Left on desktop, top on mobile */}
+        <div className="w-full lg:w-[45%] lg:max-w-2xl">
+          <div className="flex items-start">
+            <div className="mr-3 sm:mr-4 flex-shrink-0">
+              {/* Enhanced Color Blob */}
+              <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-full flex items-center justify-center relative overflow-hidden shadow-[0_0_15px_rgba(147,51,234,0.7)] sm:shadow-[0_0_20px_rgba(147,51,234,0.7)]">
+                <div 
+                  className="absolute inset-0 bg-gradient-to-br from-[#9333ea] via-[#7c3aed] to-[#6366f1]" 
+                  style={{
+                    animation: "pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite, gradient 6s ease infinite",
+                    backgroundSize: "300% 300%"
+                  }}
+                ></div>
+                <div 
+                  className="absolute inset-0" 
+                  style={{
+                    background: "radial-gradient(circle at 30% 30%, rgba(255,255,255,0.9), transparent 45%)",
+                    animation: "rotate 10s linear infinite, shimmer 3s ease-in-out infinite"
+                  }}
+                ></div>
+                <div 
+                  className="absolute inset-0" 
+                  style={{
+                    background: "linear-gradient(45deg, transparent 40%, rgba(255,255,255,0.95) 48%, rgba(255,255,255,0.95) 52%, transparent 60%)",
+                    backgroundSize: "400% 400%",
+                    animation: "shimmer 2s ease-in-out infinite, rotate 8s linear infinite reverse"
+                  }}
+                ></div>
+                <div 
+                  className="absolute inset-0" 
+                  style={{
+                    background: "linear-gradient(-60deg, transparent 75%, rgba(255,255,255,0.8) 80%, rgba(255,255,255,0.9) 85%, transparent 90%)",
+                    backgroundSize: "200% 200%",
+                    animation: "shimmer 3.5s ease-in-out infinite 0.5s, rotate 12s linear infinite"
+                  }}
+                ></div>
+                <div 
+                  className="absolute inset-[2px] rounded-full"
+                  style={{
+                    background: "radial-gradient(circle at center, rgba(255,255,255,0.5) 0%, transparent 70%)",
+                    animation: "pulse 2s ease-in-out infinite alternate"
+                  }}
+                ></div>
               </div>
-              <h4 className="font-medium text-gray-900">Interest Targeting</h4>
-              <span className="text-sm text-gray-500">({getInterestFilters().length} interests)</span>
             </div>
-            {getInterestFilters().length > 0 ? (
-              <div className="bg-gray-50 rounded-lg p-4">
-                <div className="flex flex-wrap gap-2 mb-3">
+            <div className="bg-[#1A1D29] rounded-lg p-3 sm:p-5 shadow flex-grow">
+              <div className="text-white text-sm sm:text-base typing-container">
+                Perfect! I&apos;ve optimized your targeting for maximum reach and engagement. Here&apos;s how I&apos;ve set up your audience to get the best results for your campaign.
+                {masterFlowData?.age_gender_decision_reason && (
+                  <p className="mt-4">{masterFlowData.age_gender_decision_reason}</p>
+                )}
+              </div>
+              {/* Continue Button embedded in AI message */}
+              <div className="mt-4 pt-3 border-t border-gray-600">
+                <Button
+                  onClick={() => setCurrentSubStep('demographics')}
+                  className="w-full bg-[#9333ea] text-white hover:bg-[#9333ea]/90 transform hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  Continue to Demographics
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </div>
+              {/* Back Button embedded in AI message */}
+              <div className="mt-3">
+                <Button
+                  onClick={() => setCurrentSubStep('preview')}
+                  variant="outline"
+                  className="w-full"
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to Preview
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+        {/* Targeting Filters - Right on desktop, below on mobile */}
+        <div className="w-full lg:w-[55%] lg:border-l lg:border-[#23263A] lg:pl-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Interest Targeting */}
+            {getInterestFilters().length > 0 && (
+              <div className="flex flex-col items-center">
+                <h4 className="font-semibold text-white mb-2 tracking-wide">Interest Targeting</h4>
+                <div className="flex flex-wrap gap-2 justify-center">
                   {getInterestFilters().map((interest, index) => (
                     <span 
                       key={index}
-                      className="px-2 py-1 bg-white border border-purple-400 text-purple-700 rounded-full text-xs font-medium"
+                      className="px-3 py-1 bg-[#181B23] border border-[#4BF29C]/40 text-[#4BF29C] rounded-full text-xs font-semibold shadow-sm"
                     >
                       {interest}
                     </span>
                   ))}
                 </div>
-                <p className="text-xs text-gray-600 mt-2">
-                  These interests help target users based on their activities, preferences, and behaviors on Facebook and Instagram.
-                </p>
-              </div>
-            ) : (
-              <div className="bg-gray-50 rounded-lg p-4">
-                <p className="text-gray-500 text-sm">No specific interest targeting filters were set for this campaign.</p>
               </div>
             )}
-          </div>
-
-          {/* Behavior Targeting */}
-          <div className="space-y-3">
-            <div className="flex items-center space-x-2">
-              <div className="w-5 h-5 bg-blue-100 rounded flex items-center justify-center">
-                <span className="text-blue-600 text-xs">🎯</span>
-              </div>
-              <h4 className="font-medium text-gray-900">Behavioral Targeting</h4>
-              <span className="text-sm text-gray-500">({getBehaviorFilters().length} behaviors)</span>
-            </div>
-            {getBehaviorFilters().length > 0 ? (
-              <div className="bg-gray-50 rounded-lg p-4">
-                <div className="flex flex-wrap gap-2 mb-3">
+            {/* Behavior Targeting */}
+            {getBehaviorFilters().length > 0 && (
+              <div className="flex flex-col items-center">
+                <h4 className="font-semibold text-white mb-2 tracking-wide">Behavioral Targeting</h4>
+                <div className="flex flex-wrap gap-2 justify-center">
                   {getBehaviorFilters().map((behavior, index) => (
                     <span 
                       key={index}
-                      className="px-2 py-1 bg-white border border-blue-400 text-blue-700 rounded-full text-xs font-medium"
+                      className="px-3 py-1 bg-[#181B23] border border-blue-400/40 text-blue-300 rounded-full text-xs font-semibold shadow-sm"
                     >
                       {behavior}
                     </span>
                   ))}
                 </div>
-                <p className="text-xs text-gray-600 mt-2">
-                  Behavioral filters target users based on their actions, purchase history, and usage patterns.
-                </p>
-              </div>
-            ) : (
-              <div className="bg-gray-50 rounded-lg p-4">
-                <p className="text-gray-500 text-sm">No specific behavioral targeting filters were set for this campaign.</p>
               </div>
             )}
-          </div>
-
-          {/* Demographic Targeting */}
-          <div className="space-y-3">
-            <div className="flex items-center space-x-2">
-              <Users className="w-5 h-5 text-green-600" />
-              <h4 className="font-medium text-gray-900">Demographic Targeting</h4>
-              <span className="text-sm text-gray-500">({getDemographicFilters().length} demographics)</span>
-            </div>
-            {getDemographicFilters().length > 0 ? (
-              <div className="bg-gray-50 rounded-lg p-4">
-                <div className="flex flex-wrap gap-2 mb-3">
+            {/* Demographic Targeting */}
+            {getDemographicFilters().length > 0 && (
+              <div className="flex flex-col items-center">
+                <h4 className="font-semibold text-white mb-2 tracking-wide">Demographic Targeting</h4>
+                <div className="flex flex-wrap gap-2 justify-center">
                   {getDemographicFilters().map((demographic, index) => (
                     <span 
                       key={index}
-                      className="px-2 py-1 bg-white border border-orange-400 text-orange-700 rounded-full text-xs font-medium"
+                      className="px-3 py-1 bg-[#181B23] border border-green-400/40 text-green-300 rounded-full text-xs font-semibold shadow-sm"
                     >
                       {demographic}
                     </span>
                   ))}
                 </div>
-                <p className="text-xs text-gray-600 mt-2">
-                  Demographic filters help target specific population segments based on life events, family status, and other characteristics.
-                </p>
               </div>
-            ) : (
-              <div className="bg-gray-50 rounded-lg p-4">
-                <p className="text-gray-500 text-sm">No specific demographic targeting filters were set for this campaign.</p>
+            )}
+            {/* Ad Placements */}
+            {getPlacementList().length > 0 && (
+              <div className="flex flex-col items-center">
+                <h4 className="font-semibold text-white mb-2 tracking-wide">Ad Placements</h4>
+                <div className="flex flex-wrap gap-2 justify-center">
+                  {getPlacementList().map((placement, idx) => (
+                    <span
+                      key={idx}
+                      className="px-3 py-1 bg-[#181B23] border border-indigo-400/40 text-indigo-200 rounded-full text-xs font-semibold shadow-sm"
+                    >
+                      {placement}
+                    </span>
+                  ))}
+                </div>
               </div>
             )}
           </div>
+        </div>
+      </div>
+    </>
+  )
 
-          {/* Advanced Targeting Details */}
-          {masterFlowData.suggested_targeting_filters && (
-            <div className="space-y-3">
-              <div className="flex items-center space-x-2">
-                <Settings2 className="w-5 h-5 text-gray-600" />
-                <h4 className="font-medium text-gray-900">Advanced Targeting</h4>
-              </div>
-              <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-                {/* Targeting Summary */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
-                  <div>
-                    <span className="font-medium text-gray-700">Total Interests:</span>
-                    <p className="text-gray-900">{getInterestFilters().length}</p>
-                  </div>
-                  <div>
-                    <span className="font-medium text-gray-700">Behaviors:</span>
-                    <p className="text-gray-900">{getBehaviorFilters().length}</p>
-                  </div>
-                  <div>
-                    <span className="font-medium text-gray-700">Demographics:</span>
-                    <p className="text-gray-900">{getDemographicFilters().length}</p>
-                  </div>
-                </div>
-                
-                {/* Audience Estimate */}
-                {masterFlowData.audiences?.audiences && (
-                  <div className="pt-3 border-t border-gray-200">
-                    <span className="font-medium text-gray-700">Audience Groups:</span>
-                    <p className="text-gray-900 mt-1">{masterFlowData.audiences.audiences.length} targeted audience groups created</p>
-                  </div>
-                )}
+  const renderDemographicsStep = () => (
+    <div className="w-full flex flex-col items-center justify-center space-y-8 px-2 sm:px-0 min-h-[70vh] pt-24">
+      {/* AI Message - Centered */}
+      <div className="w-full flex justify-center">
+        <div className="w-full max-w-xl">
+          <div className="flex items-start">
+            <div className="mr-3 sm:mr-4 flex-shrink-0">
+              {/* Enhanced Color Blob */}
+              <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-full flex items-center justify-center relative overflow-hidden shadow-[0_0_15px_rgba(255,186,73,0.7)] sm:shadow-[0_0_20px_rgba(255,186,73,0.7)]">
+                <div 
+                  className="absolute inset-0 bg-gradient-to-br from-[#FFBA49] via-[#FF7D5A] to-[#FF3C6E]" 
+                  style={{
+                    animation: "pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite, gradient 6s ease infinite",
+                    backgroundSize: "300% 300%"
+                  }}
+                ></div>
+                <div 
+                  className="absolute inset-0" 
+                  style={{
+                    background: "radial-gradient(circle at 30% 30%, rgba(255,255,255,0.9), transparent 45%)",
+                    animation: "rotate 10s linear infinite, shimmer 3s ease-in-out infinite"
+                  }}
+                ></div>
+                <div 
+                  className="absolute inset-0" 
+                  style={{
+                    background: "linear-gradient(45deg, transparent 40%, rgba(255,255,255,0.95) 48%, rgba(255,255,255,0.95) 52%, transparent 60%)",
+                    backgroundSize: "400% 400%",
+                    animation: "shimmer 2s ease-in-out infinite, rotate 8s linear infinite reverse"
+                  }}
+                ></div>
+                <div 
+                  className="absolute inset-0" 
+                  style={{
+                    background: "linear-gradient(-60deg, transparent 75%, rgba(255,255,255,0.8) 80%, rgba(255,255,255,0.9) 85%, transparent 90%)",
+                    backgroundSize: "200% 200%",
+                    animation: "shimmer 3.5s ease-in-out infinite 0.5s, rotate 12s linear infinite"
+                  }}
+                ></div>
+                <div 
+                  className="absolute inset-[2px] rounded-full"
+                  style={{
+                    background: "radial-gradient(circle at center, rgba(255,255,255,0.5) 0%, transparent 70%)",
+                    animation: "pulse 2s ease-in-out infinite alternate"
+                  }}
+                ></div>
               </div>
             </div>
-          )}
-
-          {/* Placements */}
-          <div className="space-y-3">
-            <div className="flex items-center space-x-2">
-              <Target className="w-5 h-5 text-indigo-600" />
-              <h4 className="font-medium text-gray-900">Ad Placements</h4>
-              <span className="text-sm text-gray-500">({getPlacementList().length} placements)</span>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="flex flex-wrap gap-2 mb-3">
-                {getPlacementList().map((placement, idx) => (
-                  <span
-                    key={idx}
-                    className="px-2 py-1 bg-white border border-indigo-400 text-indigo-700 rounded-full text-xs font-medium"
-                  >
-                    {placement}
-                  </span>
-                ))}
+            <div className="bg-[#1A1D29] rounded-lg p-3 sm:p-5 shadow flex-grow">
+              <div className="text-white text-sm sm:text-base typing-container">
+                Here&apos;s the demographic breakdown I&apos;ve chosen for your campaign. I&apos;ve analyzed your content and selected the optimal age ranges and gender targeting to reach your ideal customers.
               </div>
-              <p className="text-xs text-gray-600">
-                Placements indicate where your ads will appear across Facebook and Instagram networks.
-              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {masterFlowData && (
+        <div className="w-full max-w-2xl mx-auto bg-[#181B23] rounded-xl border border-[#23263A] p-6 shadow space-y-8">
+          {/* Demographics Overview */}
+          <div className="flex flex-col md:flex-row md:space-x-8 space-y-6 md:space-y-0 items-center justify-center">
+            {/* Age Range */}
+            <div className="flex flex-col items-center flex-1">
+              <h4 className="font-semibold text-white mb-2 tracking-wide">Age Targeting</h4>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="px-4 py-2 bg-[#23263A] border border-[#FFBA49]/40 text-[#FFBA49] rounded-full text-lg font-bold shadow-sm">
+                  {masterFlowData.suggested_age_min} - {masterFlowData.suggested_age_max}
+                </span>
+              </div>
+              <span className="text-xs text-gray-400">years old</span>
+            </div>
+            {/* Gender Targeting */}
+            <div className="flex flex-col items-center flex-1">
+              <h4 className="font-semibold text-white mb-2 tracking-wide">Gender Targeting</h4>
+              <div className="flex gap-3 mb-2">
+                <span className={`px-4 py-2 rounded-full text-sm font-semibold shadow-sm border ${masterFlowData.include_male_gender ? 'bg-[#23263A] border-[#4BF29C]/40 text-[#4BF29C]' : 'bg-[#23263A] border-[#23263A] text-gray-500 opacity-60'}`}>Male</span>
+                <span className={`px-4 py-2 rounded-full text-sm font-semibold shadow-sm border ${masterFlowData.include_female_gender ? 'bg-[#23263A] border-[#FF3C6E]/40 text-[#FF3C6E]' : 'bg-[#23263A] border-[#23263A] text-gray-500 opacity-60'}`}>Female</span>
+              </div>
+              <span className="text-xs text-gray-400">targeted</span>
             </div>
           </div>
 
-          {/* AI Reasoning */}
-          {masterFlowData.age_gender_decision_reason && (
+          {/* Budget Breakdown by Audience */}
+          {masterFlowData.audiences?.audiences && (
             <div className="space-y-3">
-              <div className="flex items-center space-x-2">
-                <div className="w-5 h-5 bg-blue-100 rounded flex items-center justify-center">
-                  <span className="text-blue-600 text-xs">🤖</span>
-                </div>
-                <h4 className="font-medium text-gray-900">AI Targeting Reasoning</h4>
-              </div>
-              <div className="bg-blue-50 rounded-lg p-4">
-                <p className="text-gray-900">{masterFlowData.age_gender_decision_reason}</p>
+              <h4 className="font-semibold text-white mb-2 tracking-wide">Audience Budget Allocation</h4>
+              <div className="space-y-3">
+                {masterFlowData.audiences.audiences.map((audience: any, index: number) => (
+                  <div key={index} className="bg-[#23263A] rounded-lg p-4 border border-[#23263A]/60 flex flex-col md:flex-row md:items-center md:justify-between">
+                    <div className="flex items-center gap-2 mb-2 md:mb-0">
+                      <span className="font-semibold text-white">Audience {audience.audience_nr}</span>
+                      <span className="px-3 py-1 bg-[#181B23] border border-[#4BF29C]/40 text-[#4BF29C] rounded-full text-xs font-semibold shadow-sm ml-2">{audience.min_age}-{audience.max_age} yrs</span>
+                      <span className="px-3 py-1 bg-[#181B23] border border-[#FF3C6E]/40 text-[#FF3C6E] rounded-full text-xs font-semibold shadow-sm ml-2">{audience.male && audience.female ? 'All' : audience.male ? 'Male' : 'Female'}</span>
+                    </div>
+                    <span className="font-semibold text-green-400">${audience.budget}/{masterFlowData.currency_code} per day</span>
+                  </div>
+                ))}
               </div>
             </div>
           )}
+
+          {/* Campaign Demographics Summary */}
+          <div className="space-y-3">
+            <h4 className="font-semibold text-white mb-2 tracking-wide">Demographics Summary</h4>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+              <div className="bg-[#23263A] rounded p-3">
+                <p className="text-xs font-medium text-gray-400">Age Range</p>
+                <p className="text-lg font-bold text-white">{masterFlowData.suggested_age_max - masterFlowData.suggested_age_min}</p>
+                <p className="text-xs text-gray-500">year span</p>
+              </div>
+              <div className="bg-[#23263A] rounded p-3">
+                <p className="text-xs font-medium text-gray-400">Genders</p>
+                <p className="text-lg font-bold text-white">
+                  {(masterFlowData.include_male_gender ? 1 : 0) + (masterFlowData.include_female_gender ? 1 : 0)}
+                </p>
+                <p className="text-xs text-gray-500">targeted</p>
+              </div>
+              <div className="bg-[#23263A] rounded p-3">
+                <p className="text-xs font-medium text-gray-400">Audiences</p>
+                <p className="text-lg font-bold text-white">{masterFlowData.audiences?.audiences?.length || 0}</p>
+                <p className="text-xs text-gray-500">created</p>
+              </div>
+              <div className="bg-[#23263A] rounded p-3">
+                <p className="text-xs font-medium text-gray-400">Budget</p>
+                <p className="text-lg font-bold text-white">${budget}</p>
+                <p className="text-xs text-gray-500">per day</p>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
-      <div className="flex flex-col sm:flex-row gap-3">
+      <div className="flex flex-col sm:flex-row gap-3 w-full max-w-2xl mx-auto">
         <Button
           onClick={() => setCurrentSubStep('preview')}
           variant="outline"
@@ -874,183 +1226,6 @@ export function ReviewStep({
           className="w-full sm:w-auto"
         >
           Continue to Demographics
-          <ArrowRight className="w-4 h-4 ml-2" />
-        </Button>
-      </div>
-    </div>
-  )
-
-  const renderDemographicsStep = () => (
-    <div className="space-y-4 sm:space-y-6">
-      <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 sm:p-6">
-        <div className="flex items-start space-x-3">
-          <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center">
-            <Users className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">
-              Here&apos;s the demographic breakdown I&apos;ve chosen for your campaign
-            </h3>
-            <p className="text-sm sm:text-base text-gray-600">
-              I&apos;ve analyzed your content and selected the optimal age ranges and gender targeting to reach your ideal customers.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {masterFlowData && (
-        <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 space-y-6">
-          {/* Demographics Overview */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Age Range */}
-            <div className="space-y-3">
-              <div className="flex items-center space-x-2">
-                <div className="w-5 h-5 bg-orange-100 rounded flex items-center justify-center">
-                  <span className="text-orange-600 text-xs">📅</span>
-                </div>
-                <h4 className="font-medium text-gray-900">Age Targeting</h4>
-              </div>
-              <div className="bg-gray-50 rounded-lg p-4">
-                <p className="text-2xl font-bold text-gray-900 mb-2">
-                  {masterFlowData.suggested_age_min} - {masterFlowData.suggested_age_max}
-                </p>
-                <p className="text-sm text-gray-600">years old</p>
-                <div className="mt-3 bg-orange-100 rounded p-2">
-                  <p className="text-xs text-orange-800">
-                    Age range optimized for your campaign objective
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Gender Targeting */}
-            <div className="space-y-3">
-              <div className="flex items-center space-x-2">
-                <div className="w-5 h-5 bg-blue-100 rounded flex items-center justify-center">
-                  <span className="text-blue-600 text-xs">👥</span>
-                </div>
-                <h4 className="font-medium text-gray-900">Gender Targeting</h4>
-              </div>
-              <div className="bg-gray-50 rounded-lg p-4">
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-3">
-                    <input 
-                      type="checkbox" 
-                      checked={masterFlowData.include_male_gender}
-                      readOnly
-                      className="rounded border-gray-300"
-                    />
-                    <span className="text-gray-900 font-medium">Male</span>
-                    {masterFlowData.include_male_gender && (
-                      <span className="text-green-600 text-sm">✓ Included</span>
-                    )}
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <input 
-                      type="checkbox" 
-                      checked={masterFlowData.include_female_gender}
-                      readOnly
-                      className="rounded border-gray-300"
-                    />
-                    <span className="text-gray-900 font-medium">Female</span>
-                    {masterFlowData.include_female_gender && (
-                      <span className="text-green-600 text-sm">✓ Included</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Budget Breakdown by Audience */}
-          {masterFlowData.audiences?.audiences && (
-            <div className="space-y-3">
-              <div className="flex items-center space-x-2">
-                <div className="w-5 h-5 bg-green-100 rounded flex items-center justify-center">
-                  <span className="text-green-600 text-xs">💰</span>
-                </div>
-                <h4 className="font-medium text-gray-900">Audience Budget Allocation</h4>
-                <span className="text-sm text-gray-500">({masterFlowData.audiences.audiences.length} audiences)</span>
-              </div>
-              <div className="space-y-3">
-                {masterFlowData.audiences.audiences.map((audience: any, index: number) => (
-                  <div key={index} className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-4 border border-gray-200">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="font-medium text-gray-900">
-                        Audience {audience.audience_nr}
-                      </span>
-                      <span className="font-semibold text-green-600">
-                        ${audience.budget}/{masterFlowData.currency_code} per day
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
-                      <div>
-                        <span className="font-medium">Age Range:</span>
-                        <p className="text-gray-900">{audience.min_age}-{audience.max_age} years</p>
-                      </div>
-                      <div>
-                        <span className="font-medium">Gender:</span>
-                        <p className="text-gray-900">{audience.male && audience.female ? 'All Genders' : audience.male ? 'Male' : 'Female'}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Campaign Demographics Summary */}
-          <div className="space-y-3">
-            <div className="flex items-center space-x-2">
-              <div className="w-5 h-5 bg-purple-100 rounded flex items-center justify-center">
-                <span className="text-purple-600 text-xs">📊</span>
-              </div>
-              <h4 className="font-medium text-gray-900">Demographics Summary</h4>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
-                <div className="bg-white rounded p-3">
-                  <p className="text-sm font-medium text-gray-700">Age Range</p>
-                  <p className="text-lg font-bold text-gray-900">{masterFlowData.suggested_age_max - masterFlowData.suggested_age_min}</p>
-                  <p className="text-xs text-gray-500">year span</p>
-                </div>
-                <div className="bg-white rounded p-3">
-                  <p className="text-sm font-medium text-gray-700">Genders</p>
-                  <p className="text-lg font-bold text-gray-900">
-                    {(masterFlowData.include_male_gender ? 1 : 0) + (masterFlowData.include_female_gender ? 1 : 0)}
-                  </p>
-                  <p className="text-xs text-gray-500">targeted</p>
-                </div>
-                <div className="bg-white rounded p-3">
-                  <p className="text-sm font-medium text-gray-700">Audiences</p>
-                  <p className="text-lg font-bold text-gray-900">{masterFlowData.audiences?.audiences?.length || 0}</p>
-                  <p className="text-xs text-gray-500">created</p>
-                </div>
-                <div className="bg-white rounded p-3">
-                  <p className="text-sm font-medium text-gray-700">Budget</p>
-                  <p className="text-lg font-bold text-gray-900">${budget}</p>
-                  <p className="text-xs text-gray-500">per day</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="flex flex-col sm:flex-row gap-3">
-        <Button
-          onClick={() => setCurrentSubStep('targeting')}
-          variant="outline"
-          className="w-full sm:w-auto"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Targeting
-        </Button>
-        <Button
-          onClick={() => masterFlowData?.lead_form_content ? setCurrentSubStep('leadform') : setCurrentSubStep('final')}
-          className="w-full sm:w-auto"
-        >
-          {masterFlowData?.lead_form_content ? 'Review Lead Form' : 'Final Review'}
           <ArrowRight className="w-4 h-4 ml-2" />
         </Button>
       </div>
@@ -1474,7 +1649,7 @@ export function ReviewStep({
           targetedInterests={getInterestFilters()}
           behavioralFilters={getBehaviorFilters()}
           demographicFilters={getDemographicFilters()}
-          adPlacements={getPlacementList() as any}
+          adPlacements={getPlacementList()}
           budget={budget}
           creatives={masterFlowData.creatives_and_previews?.creatives || []}
           websiteUrl={link}
@@ -1482,8 +1657,35 @@ export function ReviewStep({
           onCreativesUpdated={(newCreatives:any)=>{
             setMasterFlowData(prev=> prev ? ({...prev, creatives_and_previews:{...prev.creatives_and_previews, creatives:newCreatives}}) : prev)
           }}
-          onLeadFormUpdated={(fields:any)=>{
-            setMasterFlowData(prev=> prev ? ({...prev, lead_form_content:{...prev.lead_form_content, lead_form_data:{...prev.lead_form_content.lead_form_data, ...fields}}}) : prev)
+          onTargetingUpdated={(targeting: any) => {
+            setMasterFlowData(prev => {
+              if (!prev) return null;
+              
+              const newFilters = [
+                ...targeting.targetedInterests.map((name: string) => ({ type: 'interest', name })),
+                ...targeting.behavioralFilters.map((name: string) => ({ type: 'behavior', name })),
+                ...targeting.demographicFilters.map((name: string) => ({ type: 'demographic', name })),
+              ]
+
+              return {
+                ...prev,
+                selected_locations: targeting.targetedLocations.map((name: string) => ({ name })),
+                suggested_age_min: targeting.ageRange[0],
+                suggested_age_max: targeting.ageRange[1],
+                include_male_gender: targeting.gender === 'All' || targeting.gender === 'Male',
+                include_female_gender: targeting.gender === 'All' || targeting.gender === 'Female',
+                suggested_targeting_filters: newFilters,
+              };
+            });
+          }}
+          onPlacementsUpdated={(placements: string[]) => {
+            setMasterFlowData(prev => {
+              if (!prev) return null;
+              return {
+                ...prev,
+                placements: placements
+              }
+            })
           }}
         />
       )}
