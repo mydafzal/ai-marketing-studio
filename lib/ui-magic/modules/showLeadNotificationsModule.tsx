@@ -22,9 +22,12 @@ function LeadNotificationsUI() {
       try {
         // First, fetch user's subscribed campaigns
         const subscriptionsResponse = await fetch('/api/user/get-lead-subscriptions')
+        let userSubscribedCampaigns: string[] = []
+        
         if (subscriptionsResponse.ok) {
           const { subscribedCampaigns } = await subscriptionsResponse.json()
           if (Array.isArray(subscribedCampaigns)) {
+            userSubscribedCampaigns = subscribedCampaigns
             setSubscribedCampaigns(subscribedCampaigns)
           }
         }
@@ -35,6 +38,11 @@ function LeadNotificationsUI() {
         
         const data = await response.json()
         setCampaigns(data.campaigns || [])
+        
+        // Make sure checkboxes are properly set for already subscribed campaigns
+        if (userSubscribedCampaigns.length > 0) {
+          setSubscribedCampaigns(userSubscribedCampaigns)
+        }
       } catch (error) {
         console.error('Error fetching campaigns:', error)
         toast({
