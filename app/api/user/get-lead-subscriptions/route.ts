@@ -1,6 +1,7 @@
 import { kv } from '@vercel/kv'
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
+import { parseSubscribedCampaigns } from '@/lib/helpers/kv/fetch-lead-subscriptions'
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,23 +15,10 @@ export async function GET(request: NextRequest) {
     const userKey = `user:${userEmail}`
     
     // Get subscribed campaigns from Redis
-    const subscribedCampaignsJson = await kv.hget(userKey, 'subscribed_campaigns')
+    const subscribedCampaignsRaw = await kv.hget(userKey, 'subscribed_campaigns')
     
-    // Parse the JSON string or return an empty array if not found
-    let subscribedCampaigns: string[] = []
-    
-    if (subscribedCampaignsJson) {
-      try {
-        subscribedCampaigns = JSON.parse(subscribedCampaignsJson as string)
-        
-        // Ensure it's an array
-        if (!Array.isArray(subscribedCampaigns)) {
-          subscribedCampaigns = []
-        }
-      } catch (e) {
-        console.error('Error parsing subscribed campaigns JSON:', e)
-      }
-    }
+    // Use the robust parser to handle the data
+    const subscribedCampaigns = parseSubscribedCampaigns(subscribedCampaignsRaw)
     
     return NextResponse.json({ subscribedCampaigns })
   } catch (error) {
