@@ -1,6 +1,6 @@
 // This is the completely clean and fixed  version of UserMessageSubmitter.tsx with the updated showAdBudgetUI tool
 import {ImagePart, TextPart} from "ai";
-
+import dynamic from 'next/dynamic';
 import AdCreativesComparison from '@/components/stocks/campaignresults-creatives';
 import { SidebarContentWrapper } from '@/components/sidebar-content-wrapper';
 import { checkUsageLimit, incrementUsageCounter } from '@/app/actions';
@@ -105,6 +105,7 @@ import { useEffect } from "react";
 import LeadsCountUI from "@/components/campaign-leads-count";
 
 import showAiVideoGenerator from "@/components/stocks/ai-video-generator/server"
+import leadNotificationsModule from "@/lib/ui-magic/modules/leadNotificationsModule"
 // Browser research component will be imported dynamically in the tool handler
 
 interface ExtractedMessage {
@@ -2620,6 +2621,70 @@ export async function submitUserMessage(content: string, contentImages?: Array<T
                     return showSupportComponent({
                         title
                     });
+                }
+            },
+            
+            showLeadNotifications: {
+                description: leadNotificationsModule.description,
+                parameters: leadNotificationsModule.parameters,
+                generate: async function* ({toolCallId}) {
+                    console.log("tool call showLeadNotifications")
+                    
+                    yield (
+                        <BotCard>
+                            <SpinnerMessage />
+                        </BotCard>
+                    )
+                    
+                    await sleep(1000)
+                    
+                    const generatedToolCallId = toolCallId || nanoid()
+                    const timestamp: string = new Date().toISOString()
+                    
+                    pushMessages([
+                        {
+                            id: nanoid(),
+                            role: "assistant",
+                            content: [
+                                {
+                                    type: "tool-call",
+                                    toolName: "showLeadNotifications",
+                                    toolCallId: generatedToolCallId,
+                                    args: { toolCallId: generatedToolCallId }
+                                }
+                            ],
+                            timestamp
+                        },
+                        {
+                            id: nanoid(),
+                            role: "tool",
+                            content: [
+                                {
+                                    type: "tool-result",
+                                    toolName: "showLeadNotifications",
+                                    toolCallId: generatedToolCallId,
+                                    result: { toolCallId: generatedToolCallId }
+                                }
+                            ],
+                            timestamp
+                        }
+                    ])
+                    
+                    // Create dynamic import for the sidebar component
+                    const LeadNotificationsComponent = dynamic(() => 
+                        import('@/lib/ui-magic/modules/showLeadNotificationsModule'), 
+                        { ssr: false }
+                    );
+                    
+                    // Return the sidebar component and a simple message in chat
+                    return (
+                        <>
+                            <LeadNotificationsComponent />
+                            <BotCard>
+                                <p>Lead notification preferences are now available in the sidebar. You can select which campaigns you want to receive notifications for.</p>
+                            </BotCard>
+                        </>
+                    )
                 }
             }
 

@@ -280,6 +280,25 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                         </BotCard>
                                     </>
                                 );
+                            case 'showLeadNotifications':
+                                // Create a dynamic component for the UI
+                                const LeadNotificationsComponent = dynamic(() => 
+                                    import('@/lib/ui-magic/modules/showLeadNotificationsModule'), 
+                                    { ssr: false }
+                                );
+                                
+                                // Display only in sidebar
+                                return (
+                                    <>
+                                        {/* This component handles showing in the sidebar */}
+                                        <LeadNotificationsComponent />
+                                        
+                                        {/* Just show a message in the chat */}
+                                        <BotCard key={tool.toolCallId}>
+                                            <p>Lead notification preferences are now available in the sidebar. You can select which campaigns you want to receive notifications for.</p>
+                                        </BotCard>
+                                    </>
+                                );
                             default:
                                 return null;
                         }

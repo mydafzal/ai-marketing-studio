@@ -93,6 +93,9 @@ export function getSimplifiedDefaultChatPrompt(campaignId: string, adsetId: stri
         <DownloadLeads>
             <Command>Call ('showLeadsCountUI').</Command>
         </DownloadLeads>
+        <LeadNotifications>
+            <Command>Call ('showLeadNotifications').</Command>
+        </LeadNotifications>
         <CampaignDuplication>
             <Command>Call ('show_supervised_task_ui').</Command>
         </CampaignDuplication>
