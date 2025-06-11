@@ -2,7 +2,7 @@ import { type Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
 
 import { auth } from '@/auth'
-import { getChat, getMissingKeys, getUserDetail } from '@/app/actions'
+import { getChat, getMissingKeys, getUserDetail, getSubscriptionInfo } from '@/app/actions'
 import { Chat } from '@/components/chat'
 import { AI } from '@/lib/chat/AIManager'
 import { Session } from '@/lib/types'
@@ -49,6 +49,12 @@ export default async function ChatPage({ params }: ChatPageProps) {
     const userDetail = await getUserDetail();
     if (userDetail.success && userDetail.user && !userDetail.user.fbMarketingApiKey) {
       redirect('/facebook-connect')
+    }
+    
+    // Check subscription status
+    const subscription = await getSubscriptionInfo();
+    if (!subscription || (subscription.sub_status !== 'active' && subscription.sub_status !== 'trialing')) {
+      redirect('/subscription')
     }
   }
 

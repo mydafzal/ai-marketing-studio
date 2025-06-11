@@ -101,9 +101,16 @@ export default function AiContentPage() {
     )
   }
 
-  // Allow all users to access the AI Creatives with usage limits for free plan users
-  // The usage limits are enforced in the respective components
-
+  // Check if user has an active subscription (including bypass list users)
+  if (subStatus !== 'active' && subStatus !== 'trialing') {
+    router.push('/subscription')
+    return (
+      <div className="flex items-center justify-center h-screen w-full">
+        <p>Redirecting to subscription page...</p>
+      </div>
+    )
+  }
+  
   return (
     <div className="container mx-auto p-3 sm:p-6 ai-content-page">
       <div className="flex flex-col space-y-4 sm:space-y-6">
