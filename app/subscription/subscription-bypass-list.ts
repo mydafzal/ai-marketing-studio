@@ -44,5 +44,6 @@ export const subscriptionBypassList: string[] = [
     'jessica.rheinberger@bonvitagroup.com',
     'lena.zoller@bonvitagroup.com',
     'ayfer.stroehm-ilhan@bonvitagroup.com',
-    'store@drillaz-clothing.com'
+    'store@drillaz-clothing.com',
+    'sales@reeply.ai'
 ];
