@@ -16,7 +16,7 @@ export interface StripePriceConfig {
 const stripePriceConfig = {
   monthly: {
     basic: {
-      lookupKey: 'reeply_marketing_basic_monthly_apr2025',
+      lookupKey: 'reeply_marketing_basic_monthly_june2025',
       sandbox_lookupKey: 'reeply_marketing_basic_monthly_test',
       pricePerMonth: 99,
       currency: '€',
@@ -35,7 +35,7 @@ const stripePriceConfig = {
       ]
     },
     standard: {
-      lookupKey: 'reeply_marketing_standard_monthly_apr2025',
+      lookupKey: 'reeply_marketing_standard_monthly_june2025',
       sandbox_lookupKey: 'reeply_marketing_standard_monthly_test',
       pricePerMonth: 299,
       currency: '€',
@@ -48,7 +48,7 @@ const stripePriceConfig = {
       ]
     },
     pro: {
-      lookupKey: 'reeply_marketing_pro_monthly_apr2025',
+      lookupKey: 'reeply_marketing_pro_monthly_june2025',
       sandbox_lookupKey: 'reeply_marketing_pro_monthly_test',
       pricePerMonth: 599,
       currency: '€',
