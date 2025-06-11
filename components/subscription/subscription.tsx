@@ -91,7 +91,7 @@ export function Subscription({
           {!user.sub_status || (user.sub_status !== 'active' && user.sub_status !== 'trialing') ? (
             <div className="text-center">
               <h1 className="text-[40px] font-bold text-white dark:text-white">
-                Power Your Marketing with AI for <span className="text-[#4BF29C] dark:text-[#4BF29C]">€{stripePriceConfig.monthly.pro.pricePerMonth}</span>/month
+                Power Your Marketing with AI from <span className="text-[#4BF29C] dark:text-[#4BF29C]">€{stripePriceConfig.monthly.basic.pricePerMonth}</span>/month
               </h1>
               <p className="mt-3 max-w-2xl mx-auto text-[#ADB0B8] dark:text-[#ADB0B8] text-lg">
                 Start today with our monthly subscription. You can cancel anytime on a monthly basis.
