@@ -2,6 +2,7 @@ import NextAuth from 'next-auth'
 import { authConfig } from './auth.config'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { subscriptionBypassList } from './app/subscription/subscription-bypass-list'
 
 const nextAuthMiddleware = NextAuth(authConfig).auth
 
@@ -24,6 +25,7 @@ function basicAuth(request: NextRequest) {
 
 async function middleware(request: NextRequest) {
   const protectedRoutes = ['/supervised','/feature-toggles', '/feature-toggles/demo', '/admin']
+  const subscriptionRequiredRoutes = ['/chat', '/ai-content']
 
   if (protectedRoutes.some(route => request.nextUrl.pathname.startsWith(route))) {
     if (basicAuth(request)) {
@@ -36,6 +38,29 @@ async function middleware(request: NextRequest) {
         'WWW-Authenticate': 'Basic realm="Protected Area"',
       },
     })
+  }
+
+  // Check subscription for specific routes
+  if (subscriptionRequiredRoutes.some(route => request.nextUrl.pathname.startsWith(route))) {
+    const response = await nextAuthMiddleware(request as any)
+    
+    // If the user is authenticated, check their subscription status
+    if (response !== Response.redirect(new URL('/login', request.nextUrl))) {
+      const session = await (response as any).session
+      const userEmail = session?.user?.email
+      
+      // Allow access if user is in the bypass list
+      if (userEmail && subscriptionBypassList.includes(userEmail)) {
+        return NextResponse.next()
+      }
+      
+      // Check if user has an active subscription from cookies
+      const hasSubscription = request.cookies.get('hasActiveSubscription')?.value === 'true'
+      
+      if (!hasSubscription) {
+        return NextResponse.redirect(new URL('/subscription', request.nextUrl))
+      }
+    }
   }
 
   // For all other routes, use NextAuth middleware

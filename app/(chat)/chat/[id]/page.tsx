@@ -6,6 +6,7 @@ import { getChat, getMissingKeys, getUserDetail } from '@/app/actions'
 import { Chat } from '@/components/chat'
 import { AI } from '@/lib/chat/AIManager'
 import { Session } from '@/lib/types'
+import { checkUserSubscription } from '@/lib/auth/check-subscription'
 
 export interface ChatPageProps {
   params: {
@@ -42,6 +43,12 @@ export default async function ChatPage({ params }: ChatPageProps) {
 
   if (chat && chat.userId !== session?.user?.id) {
     notFound()
+  }
+  
+  // Check if user has active subscription
+  const hasSubscription = await checkUserSubscription()
+  if (!hasSubscription) {
+    redirect('/subscription')
   }
   
   // Check if Facebook account is connected - if not, redirect to connect page

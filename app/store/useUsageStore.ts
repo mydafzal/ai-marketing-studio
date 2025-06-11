@@ -178,25 +178,45 @@ export const useUsageStore = create<UsageState>((set, get) => ({
   
   // Check if user can send messages
   canSendMessage: () => {
-    const { isSubscribed, messageCount, limits } = get()
+    const { isSubscribed } = get()
+    // Always require subscription
+    return isSubscribed
+    /* Commented out usage limits - keeping for future reference
+    const { messageCount, limits } = get()
     return isSubscribed || messageCount < limits.MAX_MESSAGES
+    */
   },
   
   // Check if user can generate images
   canGenerateImage: () => {
-    const { isSubscribed, imageCount, limits } = get()
+    const { isSubscribed } = get()
+    // Always require subscription
+    return isSubscribed
+    /* Commented out usage limits - keeping for future reference
+    const { imageCount, limits } = get()
     return isSubscribed || imageCount < limits.MAX_IMAGES
+    */
   },
   
   // Check if user can generate videos
   canGenerateVideo: () => {
-    const { isSubscribed, videoCount, limits } = get()
+    const { isSubscribed } = get()
+    // Always require subscription
+    return isSubscribed
+    /* Commented out usage limits - keeping for future reference
+    const { videoCount, limits } = get()
     return isSubscribed || videoCount < limits.MAX_VIDEOS
+    */
   },
   
   // Check if user can use inpainting
   canUseInpainting: () => {
-    const { isSubscribed, inpaintingCount, limits } = get()
+    const { isSubscribed } = get()
+    // Always require subscription
+    return isSubscribed
+    /* Commented out usage limits - keeping for future reference
+    const { inpaintingCount, limits } = get()
     return isSubscribed || inpaintingCount < limits.MAX_INPAINTING
+    */
   }
 }))

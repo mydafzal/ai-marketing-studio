@@ -18,6 +18,7 @@ import {getSubscriptionInfo} from "@/app/actions";
 import {IconSpinner} from "@/components/ui/icons";
 import {HomePageInfoCard} from "@/components/account-not-connected-screen";
 import {getEmailAndBypassStatus} from "@/lib/auth/get-user-email";
+import SubscriptionCheck from "@/components/subscription/subscription-check";
 
 // Default platform for content optimization (not visible to users)
 // Keeping this since it's used in the enhancedImprovePrompt function
@@ -36,6 +37,9 @@ export default function AiContentPage() {
 
   const router = useRouter()
 
+  // State for user email to pass to subscription check
+  const [userEmail, setUserEmail] = useState<string | null>(null)
+  
   useEffect(() => {
     const fetchSubscription = async () => {
       setIsFetchingSub(true)
@@ -51,6 +55,7 @@ export default function AiContentPage() {
           return
         }
         
+        setUserEmail(emailResult.email)
         const { isBypassed } = emailResult
 
         if (isBypassed) {
@@ -106,6 +111,9 @@ export default function AiContentPage() {
 
   return (
     <div className="container mx-auto p-3 sm:p-6 ai-content-page">
+      {/* Add subscription check component */}
+      <SubscriptionCheck userEmail={userEmail} />
+      
       <div className="flex flex-col space-y-4 sm:space-y-6">
         <div className="flex flex-col space-y-2 sm:space-y-3">
           <div className="flex items-center justify-between">

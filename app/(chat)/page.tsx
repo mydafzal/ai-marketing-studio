@@ -30,6 +30,7 @@ import { auth } from '@/auth'
 import { Session } from '@/lib/types'
 import { getMissingKeys, getUserDetail } from '@/app/actions'
 import { redirect } from 'next/navigation'
+import { checkUserSubscription } from '@/lib/auth/check-subscription'
 
 export const metadata = {
   title: 'Reeply AI Chatbot'
@@ -41,6 +42,12 @@ export default async function IndexPage() {
 
   if (!session) {
     redirect('/login')
+  }
+  
+  // Check if user has active subscription
+  const hasSubscription = await checkUserSubscription()
+  if (!hasSubscription) {
+    redirect('/subscription')
   }
   
   // Check if Facebook account is connected
