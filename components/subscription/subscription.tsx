@@ -34,7 +34,7 @@ export function Subscription({
   const router = useRouter()
   const searchParams = useSearchParams()
   const [user, setUser] = useState(initialUser)
-  // Removed yearly pricing option
+  const [selectedDuration, setSelectedDuration] = useState('monthly')
   const [openModal, setOpenModal] = useState(false)
   const [previousStatus, setPreviousStatus] = useState(initialUser.sub_status)
 
@@ -94,13 +94,32 @@ export function Subscription({
                 Power Your Marketing with AI from <span className="text-[#4BF29C] dark:text-[#4BF29C]">€{stripePriceConfig.monthly.basic.pricePerMonth}</span>/month
               </h1>
               <p className="mt-3 max-w-2xl mx-auto text-[#ADB0B8] dark:text-[#ADB0B8] text-lg">
-                Start today with our monthly subscription. You can cancel anytime on a monthly basis.
+                Choose your subscription duration. Longer plans offer better value.
               </p>
               {checkoutCanceled && (
                 <div className="mt-4 p-3 bg-[#1A1D29] rounded-lg border border-[#2A2E3A] text-white">
                   Your checkout was canceled. You can try again when you&apos;re ready.
                 </div>
               )}
+              
+              {/* Duration Tabs */}
+              <div className="flex justify-center mt-8 mb-4">
+                <div className="inline-flex bg-[#1A1D29] rounded-lg p-1">
+                  {['monthly', '3-month', '6-month', 'yearly'].map((duration) => (
+                    <button
+                      key={duration}
+                      onClick={() => setSelectedDuration(duration)}
+                      className={`px-6 py-2 text-sm font-medium rounded-md ${
+                        selectedDuration === duration
+                          ? 'bg-[#4BF29C] text-[#0A0C14]'
+                          : 'text-[#ADB0B8] hover:text-white'
+                      }`}
+                    >
+                      {duration.charAt(0).toUpperCase() + duration.slice(1)}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           ) : (
             <div className="text-center">
@@ -124,6 +143,7 @@ export function Subscription({
               <MonthlyPricing
                 currentPlanTag={getCurrentPlanTag(user)}
                 showBackButton={!user.sub_status || (user.sub_status !== 'active' && user.sub_status !== 'trialing')}
+                selectedDuration={selectedDuration}
               />
             </>
           )}
