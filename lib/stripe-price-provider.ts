@@ -183,7 +183,7 @@ const stripePriceConfig = {
       ]
     },
     standard: {
-      lookupKey: 'reeply_marketing_standard_yearly_june2025_taxauto',
+      lookupKey: 'reeply_marketing_standard_yearly_june2025_taxauto_fix',
       sandbox_lookupKey: 'reeply_marketing_standard_yearly_test',
       pricePerMonth: 249, // 16% discount
       currency: '€',
