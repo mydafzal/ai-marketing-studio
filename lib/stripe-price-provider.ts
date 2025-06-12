@@ -83,7 +83,7 @@ const stripePriceConfig = {
       ]
     },
     standard: {
-      lookupKey: 'reeply_marketing_standard_3month_june2025_taxauto',
+      lookupKey: 'reeply_marketing_standard_3month_june2025_taxauto_fix',
       sandbox_lookupKey: 'reeply_marketing_standard_3month_test',
       pricePerMonth: 284, // 5% discount
       currency: '€',
@@ -97,7 +97,7 @@ const stripePriceConfig = {
       ]
     },
     pro: {
-      lookupKey: 'reeply_marketing_pro_3month_june2025_taxauto_2',
+      lookupKey: 'reeply_marketing_pro_3month_june2025_taxauto_fix',
       sandbox_lookupKey: 'reeply_marketing_pro_3month_test',
       pricePerMonth: 569, // 5% discount
       currency: '€',
@@ -147,7 +147,7 @@ const stripePriceConfig = {
       ]
     },
     pro: {
-      lookupKey: 'reeply_marketing_pro_6month_june2025_taxauto',
+      lookupKey: 'reeply_marketing_pro_6month_june2025_taxauto_fix',
       sandbox_lookupKey: 'reeply_marketing_pro_6month_test',
       pricePerMonth: 539, // 10% discount
       currency: '€',
@@ -183,7 +183,7 @@ const stripePriceConfig = {
       ]
     },
     standard: {
-      lookupKey: 'reeply_marketing_standard_yearly_june2025_taxauto',
+      lookupKey: 'reeply_marketing_standard_yearly_june2025_taxauto_fix',
       sandbox_lookupKey: 'reeply_marketing_standard_yearly_test',
       pricePerMonth: 249, // 16% discount
       currency: '€',
@@ -197,7 +197,7 @@ const stripePriceConfig = {
       ]
     },
     pro: {
-      lookupKey: 'reeply_marketing_pro_yearly_june2025_taxauto',
+      lookupKey: 'reeply_marketing_pro_yearly_june2025_taxauto_fix',
       sandbox_lookupKey: 'reeply_marketing_pro_yearly_test',
       pricePerMonth: 499, // 16% discount
       currency: '€',
