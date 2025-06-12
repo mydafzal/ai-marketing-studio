@@ -61,11 +61,11 @@ const stripePriceConfig = {
       ]
     }
   },
-  yearly: {
+  '3-month': {
     basic: {
-      lookupKey: 'reeply_marketing_basic_yearly_apr2025',
-      sandbox_lookupKey: 'reeply_marketing_basic_yearly_test',
-      pricePerMonth: 83.25,
+      lookupKey: 'reeply_marketing_basic_3month_june2025_taxauto',
+      sandbox_lookupKey: 'reeply_marketing_basic_3month_test',
+      pricePerMonth: 94, // 5% discount
       currency: '€',
       name: 'AI Marketer Suite Basic',
       hidden: false,
@@ -78,13 +78,14 @@ const stripePriceConfig = {
         'Image editing with AI brushing',
         'Generate 5-10 second video scenes',
         'Product angle shots',
-        'Standard support via chat'
+        'Standard support via chat',
+        '5% discount compared to monthly'
       ]
     },
     standard: {
-      lookupKey: 'reeply_marketing_standard_yearly_apr2025',
-      sandbox_lookupKey: 'reeply_marketing_standard_yearly_test',
-      pricePerMonth: 249,
+      lookupKey: 'reeply_marketing_standard_3month_june2025_taxauto',
+      sandbox_lookupKey: 'reeply_marketing_standard_3month_test',
+      pricePerMonth: 284, // 5% discount
       currency: '€',
       name: 'AI Marketer Suite Standard',
       hidden: false,
@@ -92,17 +93,13 @@ const stripePriceConfig = {
         'All Basic features',
         'Premium support with priority response',
         'Training sessions included',
-        'Advanced campaign optimization',
-        'Custom ad creative templates',
-        'Weekly performance reports',
-        'Multi-user access (up to 3 users)',
-        'Extended video generation (up to 30 seconds)'
+        '5% discount compared to monthly'
       ]
     },
     pro: {
-      lookupKey: 'reeply_marketing_pro_yearly_apr2025',
-      sandbox_lookupKey: 'reeply_marketing_pro_yearly_test',
-      pricePerMonth: 499,
+      lookupKey: 'reeply_marketing_pro_3month_june2025_taxauto',
+      sandbox_lookupKey: 'reeply_marketing_pro_3month_test',
+      pricePerMonth: 569, // 5% discount
       currency: '€',
       name: 'AI Marketer Suite Pro',
       hidden: false,
@@ -110,12 +107,107 @@ const stripePriceConfig = {
         'All Standard features',
         'Dedicated account manager',
         'Tailored for larger organizations',
-        'Custom AI training for your brand',
-        'Unlimited multi-user access',
-        'API access for custom integrations',
-        'Advanced analytics dashboard',
-        'White-labeled reports',
-        'Quarterly strategy consultations'
+        '5% discount compared to monthly'
+      ]
+    }
+  },
+  '6-month': {
+    basic: {
+      lookupKey: 'reeply_marketing_basic_6month_june2025_taxauto',
+      sandbox_lookupKey: 'reeply_marketing_basic_6month_test',
+      pricePerMonth: 89, // 10% discount
+      currency: '€',
+      name: 'AI Marketer Suite Basic',
+      hidden: false,
+      features: [
+        'Campaign creation from scratch',
+        'Conversational campaign management',
+        'Meta Ad Campaign analysis',
+        'AI campaign recommendations',
+        'Ad creative generation',
+        'Image editing with AI brushing',
+        'Generate 5-10 second video scenes',
+        'Product angle shots',
+        'Standard support via chat',
+        '10% discount compared to monthly'
+      ]
+    },
+    standard: {
+      lookupKey: 'reeply_marketing_standard_6month_june2025_taxauto',
+      sandbox_lookupKey: 'reeply_marketing_standard_6month_test',
+      pricePerMonth: 269, // 10% discount
+      currency: '€',
+      name: 'AI Marketer Suite Standard',
+      hidden: false,
+      features: [
+        'All Basic features',
+        'Premium support with priority response',
+        'Training sessions included',
+        '10% discount compared to monthly'
+      ]
+    },
+    pro: {
+      lookupKey: 'reeply_marketing_pro_6month_june2025_taxauto',
+      sandbox_lookupKey: 'reeply_marketing_pro_6month_test',
+      pricePerMonth: 539, // 10% discount
+      currency: '€',
+      name: 'AI Marketer Suite Pro',
+      hidden: false,
+      features: [
+        'All Standard features',
+        'Dedicated account manager',
+        'Tailored for larger organizations',
+        '10% discount compared to monthly'
+      ]
+    }
+  },
+  yearly: {
+    basic: {
+      lookupKey: 'reeply_marketing_basic_yearly_june2025_taxauto',
+      sandbox_lookupKey: 'reeply_marketing_basic_yearly_test',
+      pricePerMonth: 83.25, // 16% discount
+      currency: '€',
+      name: 'AI Marketer Suite Basic',
+      hidden: false,
+      features: [
+        'Campaign creation from scratch',
+        'Conversational campaign management',
+        'Meta Ad Campaign analysis',
+        'AI campaign recommendations',
+        'Ad creative generation',
+        'Image editing with AI brushing',
+        'Generate 5-10 second video scenes',
+        'Product angle shots',
+        'Standard support via chat',
+        '16% discount compared to monthly'
+      ]
+    },
+    standard: {
+      lookupKey: 'reeply_marketing_standard_yearly_june2025_taxauto',
+      sandbox_lookupKey: 'reeply_marketing_standard_yearly_test',
+      pricePerMonth: 249, // 16% discount
+      currency: '€',
+      name: 'AI Marketer Suite Standard',
+      hidden: false,
+      features: [
+        'All Basic features',
+        'Premium support with priority response',
+        'Training sessions included',
+        '16% discount compared to monthly'
+      ]
+    },
+    pro: {
+      lookupKey: 'reeply_marketing_pro_yearly_june2025_taxauto',
+      sandbox_lookupKey: 'reeply_marketing_pro_yearly_test',
+      pricePerMonth: 499, // 16% discount
+      currency: '€',
+      name: 'AI Marketer Suite Pro',
+      hidden: false,
+      features: [
+        'All Standard features',
+        'Dedicated account manager',
+        'Tailored for larger organizations',
+        '16% discount compared to monthly'
       ]
     }
   }
