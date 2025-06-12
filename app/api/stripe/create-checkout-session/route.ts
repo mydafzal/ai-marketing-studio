@@ -99,11 +99,11 @@ export async function POST(req: NextRequest) {
     }
 
     // Only add trial for yearly plans, not for monthly plans
-    if (!hasHadTrialBefore && lookupKey.includes('yearly')) {
-      checkoutParams.subscription_data = {
-        trial_period_days: 7
-      }
-    }
+    // if (!hasHadTrialBefore && lookupKey.includes('yearly')) {
+    //   checkoutParams.subscription_data = {
+    //     trial_period_days: 7
+    //   }
+    // }
 
     const stripeSession = await stripe.checkout.sessions.create(checkoutParams)
 
