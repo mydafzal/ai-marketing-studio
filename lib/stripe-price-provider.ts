@@ -28,6 +28,8 @@ const stripePriceConfig = {
         'Meta Ad Campaign analysis',
         'AI campaign recommendations',
         'Ad creative generation',
+        'Up to 50 ad creatives included',
+        'Up to 10 new campaigns per month',
         'Image editing with AI brushing',
         'Generate 5-10 second video scenes',
         'Product angle shots',
@@ -43,6 +45,8 @@ const stripePriceConfig = {
       hidden: false,
       features: [
         'All Basic features',
+        'Up to 200 ad creatives included',
+        'Up to 50 new campaigns per month',
         'Premium support with priority response',
         'Training sessions included'
       ]
@@ -56,6 +60,8 @@ const stripePriceConfig = {
       hidden: false,
       features: [
         'All Standard features',
+        'Up to 750 ad creatives included',
+        'Unlimited new campaigns',
         'Dedicated account manager',
         'Tailored for larger organizations'
       ]
@@ -75,6 +81,8 @@ const stripePriceConfig = {
         'Meta Ad Campaign analysis',
         'AI campaign recommendations',
         'Ad creative generation',
+        'Up to 50 ad creatives included',
+        'Up to 10 new campaigns per month',
         'Image editing with AI brushing',
         'Generate 5-10 second video scenes',
         'Product angle shots',
@@ -91,6 +99,8 @@ const stripePriceConfig = {
       hidden: false,
       features: [
         'All Basic features',
+        'Up to 200 ad creatives included',
+        'Up to 50 new campaigns per month',
         'Premium support with priority response',
         'Training sessions included',
         '5% discount compared to monthly'
@@ -105,6 +115,8 @@ const stripePriceConfig = {
       hidden: false,
       features: [
         'All Standard features',
+        'Up to 750 ad creatives included',
+        'Unlimited new campaigns',
         'Dedicated account manager',
         'Tailored for larger organizations',
         '5% discount compared to monthly'
@@ -125,6 +137,8 @@ const stripePriceConfig = {
         'Meta Ad Campaign analysis',
         'AI campaign recommendations',
         'Ad creative generation',
+        'Up to 50 ad creatives included',
+        'Up to 10 new campaigns per month',
         'Image editing with AI brushing',
         'Generate 5-10 second video scenes',
         'Product angle shots',
@@ -141,6 +155,8 @@ const stripePriceConfig = {
       hidden: false,
       features: [
         'All Basic features',
+        'Up to 200 ad creatives included',
+        'Up to 50 new campaigns per month',
         'Premium support with priority response',
         'Training sessions included',
         '10% discount compared to monthly'
@@ -155,6 +171,8 @@ const stripePriceConfig = {
       hidden: false,
       features: [
         'All Standard features',
+        'Up to 750 ad creatives included',
+        'Unlimited new campaigns',
         'Dedicated account manager',
         'Tailored for larger organizations',
         '10% discount compared to monthly'
@@ -165,7 +183,7 @@ const stripePriceConfig = {
     basic: {
       lookupKey: 'reeply_marketing_basic_yearly_june2025_taxauto',
       sandbox_lookupKey: 'reeply_marketing_basic_yearly_test',
-      pricePerMonth: 83.25, // 16% discount
+      pricePerMonth: 84.15, // 15% discount
       currency: '€',
       name: 'AI Marketer Suite Basic',
       hidden: false,
@@ -175,39 +193,45 @@ const stripePriceConfig = {
         'Meta Ad Campaign analysis',
         'AI campaign recommendations',
         'Ad creative generation',
+        'Up to 50 ad creatives included',
+        'Up to 10 new campaigns per month',
         'Image editing with AI brushing',
         'Generate 5-10 second video scenes',
         'Product angle shots',
         'Standard support via chat',
-        '16% discount compared to monthly'
+        '15% discount compared to monthly'
       ]
     },
     standard: {
       lookupKey: 'reeply_marketing_standard_yearly_june2025_taxauto_fix',
       sandbox_lookupKey: 'reeply_marketing_standard_yearly_test',
-      pricePerMonth: 249, // 16% discount
+      pricePerMonth: 254.15, // 15% discount
       currency: '€',
       name: 'AI Marketer Suite Standard',
       hidden: false,
       features: [
         'All Basic features',
+        'Up to 200 ad creatives included',
+        'Up to 50 new campaigns per month',
         'Premium support with priority response',
         'Training sessions included',
-        '16% discount compared to monthly'
+        '15% discount compared to monthly'
       ]
     },
     pro: {
       lookupKey: 'reeply_marketing_pro_yearly_june2025_taxauto_fix',
       sandbox_lookupKey: 'reeply_marketing_pro_yearly_test',
-      pricePerMonth: 499, // 16% discount
+      pricePerMonth: 509.15, // 15% discount
       currency: '€',
       name: 'AI Marketer Suite Pro',
       hidden: false,
       features: [
         'All Standard features',
+        'Up to 750 ad creatives included',
+        'Unlimited new campaigns',
         'Dedicated account manager',
         'Tailored for larger organizations',
-        '16% discount compared to monthly'
+        '15% discount compared to monthly'
       ]
     }
   }
