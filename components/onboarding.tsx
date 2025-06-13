@@ -1085,6 +1085,7 @@ function Onboarding({
                             <option value="it">Italian</option>
                             <option value="fr">French</option>
                             <option value="pt">Portuguese</option>
+                            <option value="ro">Romanian</option>
                         </select>
                         {fieldError && (
                             <p className="text-sm text-red-500 flex items-center gap-1">
