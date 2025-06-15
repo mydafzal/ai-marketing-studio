@@ -12,7 +12,7 @@ export function SidebarToggle() {
   
   // Client-side check for non-sidebar pages
   React.useEffect(() => {
-    const nonSidebarPaths = ['/ai-content', '/content-folder', '/admin', '/subscription']
+    const nonSidebarPaths = ['/ai-campaign-analysis', '/ai-content', '/content-folder', '/admin', '/subscription']
     const currentPath = window.location.pathname
     const isNonSidebar = nonSidebarPaths.some(path => currentPath.includes(path))
     setIsNonSidebarPage(isNonSidebar)

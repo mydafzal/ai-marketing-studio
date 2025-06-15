@@ -149,6 +149,7 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 /* Hide sidebar on specific pages */
+[href*="/ai-campaign-analysis"] ~ .hidden-on-non-chat-pages,
 [href*="/ai-content"] ~ .hidden-on-non-chat-pages,
 [href*="/content-folder"] ~ .hidden-on-non-chat-pages,
 [href*="/admin"] ~ .hidden-on-non-chat-pages,

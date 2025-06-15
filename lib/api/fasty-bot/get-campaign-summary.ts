@@ -1,4 +1,5 @@
 import {getCampaignIdFromUrl} from "@/lib/api/fasty-bot/helpers/campaign-id-from-url-helper";
+import { List } from "lodash";
 
 export interface CampaignSummary {
     campaign_id: string;
@@ -13,8 +14,17 @@ export interface CampaignSummary {
     impressions: number;
     reach: number;
     unique_clicks: number;
-    daily_budget: number;
-    other_campaign_insights?: Record<string, any>;
+    daily_budget?: number; 
+    other_campaign_insights?: CampaignSummary[]; 
+    actions?: any[]; 
+    cost_per_action_type?: any[]; 
+    cost_per_result?: any[]; 
+    cpp?: number; 
+    cpc?: number; 
+    cpm?: number; 
+    result_rate?: any[]; 
+    optimization_goal?: string; 
+    cost_per_lead?: number; 
 }
 
 export async function getCampaignSummary(campaignId?: string): Promise<CampaignSummary> {

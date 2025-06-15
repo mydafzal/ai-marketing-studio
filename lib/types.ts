@@ -123,6 +123,8 @@ export interface FbCampaign {
   daily_budget: string
   created_time: string
   status: string
+  thumbnail_url?: string // Optional field for thumbnail URL
+  image_url?: string // Optional field for image URL
 }
 
 export interface FbVideoThumbnail {

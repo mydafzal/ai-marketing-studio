@@ -14,6 +14,7 @@ type ClientNavbarHandlerProps = {
 
 // List of paths where the navbar should NOT be shown
 const NON_CHAT_PATHS = [
+  '/ai-campaign-analysis',
   '/ai-content',
   '/content-folder',
   '/admin',

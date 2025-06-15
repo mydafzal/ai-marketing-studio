@@ -12,6 +12,7 @@ export const authConfig = {
       const isOnLoginPage = nextUrl.pathname.startsWith('/login')
       const isOnSignupPage = nextUrl.pathname.startsWith('/signup')
       const isOnAIContentPage = nextUrl.pathname.startsWith('/ai-content')
+      const isOnAICampaignAnalysisPage = nextUrl.pathname.startsWith('/ai-campaign-analysis')
 
       // If user is logged in and trying to access login/signup pages, redirect to home
       if (isLoggedIn) {
@@ -23,6 +24,10 @@ export const authConfig = {
 
       // If user is not logged in and trying to access AI Content page, redirect to login
       if (!isLoggedIn && isOnAIContentPage) {
+        return Response.redirect(new URL('/login', nextUrl))
+      }
+      // If user is not logged in and trying to access AI Campaign Analysis page, redirect to login
+      if (!isLoggedIn && isOnAICampaignAnalysisPage) {
         return Response.redirect(new URL('/login', nextUrl))
       }
 
