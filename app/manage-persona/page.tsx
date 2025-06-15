@@ -11,6 +11,7 @@ function mapPersona(persona: any) {
     id: persona.id,
     name: persona.name,
     companyName: persona.company_name,
+    companyDescription: persona.company_description,
     websiteLink: persona.website_link,
     language: persona.preferred_language,
     locations: persona.location_data,

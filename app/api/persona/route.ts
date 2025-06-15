@@ -9,6 +9,7 @@ export async function POST(req: NextRequest) {
     const {
       name,
       company_name,
+      company_description,
       website_link,
       privacy_policy_link,
       preferred_language,
@@ -16,7 +17,7 @@ export async function POST(req: NextRequest) {
       website_data
     } = body
 
-    if (!company_name || !website_link || !privacy_policy_link || !preferred_language) {
+    if (!company_name || !company_description || !website_link || !privacy_policy_link || !preferred_language) {
       return NextResponse.json({ success: false, error: 'Missing required fields' }, { status: 400 })
     }
 
@@ -41,6 +42,7 @@ export async function POST(req: NextRequest) {
       owner_email,
       name: profile_name,
       company_name,
+      company_description,
       website_link,
       privacy_policy_link,
       preferred_language,

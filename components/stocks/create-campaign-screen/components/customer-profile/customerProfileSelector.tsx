@@ -109,6 +109,7 @@ export function CustomerProfileSelector({
           id: persona.id,
           name: persona.name,
           companyName: persona.company_name,
+          companyDescription: persona.company_description || '',
           websiteLink: persona.website_link,
           language: persona.preferred_language,
           locations: persona.location_data,
@@ -143,6 +144,7 @@ export function CustomerProfileSelector({
           id: data.data.id,
           name: data.data.name,
           companyName: data.data.company_name,
+          companyDescription: data.data.company_description || '',
           websiteLink: data.data.website_link,
           language: data.data.preferred_language,
           locations: data.data.location_data,
@@ -155,7 +157,8 @@ export function CustomerProfileSelector({
           preferred_language: data.data.preferred_language,
           location_data: data.data.location_data,
           privacy_policy_link: data.data.privacy_policy_link,
-          website_data: data.data.website_data
+          website_data: data.data.website_data,
+          company_description: data.data.company_description || ''
         };
         
         return completeProfile;

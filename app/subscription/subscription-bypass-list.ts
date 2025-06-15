@@ -47,4 +47,5 @@ export const subscriptionBypassList: string[] = [
     'store@drillaz-clothing.com',
     'ahmedtahir2000@gmail.com',
     'ahmed@reeply.ai',
+    'sales@reeply.ai'
 ];

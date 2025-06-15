@@ -6,7 +6,7 @@ import Textarea from 'react-textarea-autosize'
 import { ImagePart, TextPart, FilePart, UserContent } from 'ai'
 import chatToCampaignMapping from '@/lib/api/fasty-bot/helpers/campaign-id-list'
 import { Button } from '@/components/ui/button'
-import { IconArrowElbow, IconPlus, IconSpinner } from '@/components/ui/icons'
+import { IconArrowElbow, IconPlus, IconSpinner, IconChevronUpDown } from '@/components/ui/icons'
 import {
   Tooltip,
   TooltipContent,
@@ -27,9 +27,10 @@ import {
   DialogHeader, 
   DialogTitle
 } from '@/components/ui/dialog'
-import { Zap, BarChart, PieChart, Download, DollarSign, Power, LifeBuoy, Plus } from 'lucide-react'
+import { Zap, BarChart, PieChart, Download, DollarSign, Power, LifeBuoy, Plus, ChevronDown, ChevronRight } from 'lucide-react'
 import { useUsageStore } from '@/app/store/useUsageStore'
 import { UpgradeModal } from '@/components/upgrade-modal'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 
 export interface PromtFormProps {
   onSendMessage: (message: string, userContent?: (TextPart | ImagePart | FilePart)[]) => Promise<void>
@@ -56,6 +57,107 @@ function QuickAction({ icon, label, message, onAction }: QuickActionProps) {
       </div>
       <span className="text-white font-medium">{label}</span>
     </button>
+  );
+}
+
+// Action List component that can be used both in the empty screen and in the collapsible
+function ActionsList({ onSendMessage, setActionsOpen }: { 
+  onSendMessage: (message: string) => Promise<void>, 
+  setActionsOpen?: React.Dispatch<React.SetStateAction<boolean>> 
+}) {
+  const { 
+    isMessageLimitReached, 
+    messageCount,
+    incrementMessageCount
+  } = useUsageStore();
+  
+  const [showUpgradeModal, setShowUpgradeModal] = React.useState(false);
+  
+  const handleAction = async (message: string) => {
+    // Check if message limit has been reached before sending
+    if (isMessageLimitReached) {
+      setShowUpgradeModal(true);
+      return;
+    }
+    
+    // Close the collapsible if setActionsOpen function is provided
+    if (setActionsOpen) {
+      setActionsOpen(false);
+    }
+    
+    await onSendMessage(message);
+    await incrementMessageCount();
+  };
+  
+  const actions = [
+    {
+      title: 'Create a Campaign',
+      description: 'I can help you set up a new advertising campaign.',
+      icon: <Plus className="h-6 w-6 text-primary-green" />,
+      prompt: 'I want to create a campaign'
+    },
+    {
+      title: 'View Campaign Results',
+      description: 'I can show you the performance metrics of your campaign.',
+      icon: <BarChart className="h-6 w-6 text-primary-green" />,
+      prompt: 'What are the results of my campaign for today?'
+    },
+    {
+      title: 'Analyse Campaign Results',
+      description: 'I can provide an analysis of your campaign\'s performance.',
+      icon: <PieChart className="h-6 w-6 text-primary-green" />,
+      prompt: 'Analyze my campaign performance'
+    },
+    {
+      title: 'Download Leads',
+      description: 'I can help you download leads from your campaign.',
+      icon: <Download className="h-6 w-6 text-primary-green" />,
+      prompt: 'I want to download leads from my campaign'
+    },
+    {
+      title: 'Change Campaign Budget',
+      description: 'I can assist in adjusting your campaign\'s budget.',
+      icon: <DollarSign className="h-6 w-6 text-primary-green" />,
+      prompt: 'I would like to change my campaign budget'
+    },
+    {
+      title: 'Turn Campaigns On/Off',
+      description: 'I can help you manage the status of your campaigns.',
+      icon: <Power className="h-6 w-6 text-primary-green" />,
+      prompt: 'I want to turn my campaign on/off'
+    }
+  ];
+  
+  return (
+    <>
+      <UpgradeModal 
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        usageType="messages"
+        currentCount={messageCount}
+      />
+      
+      <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 gap-3">
+        {actions.map((action, index) => (
+          <div
+            key={index}
+            onClick={() => handleAction(action.prompt)}
+            className="flex flex-col p-3 rounded-lg bg-[#1E2433] border border-[#2D3343] hover:border-primary-green active:bg-[#2D3343] active:border-primary-green transition-all cursor-pointer group"
+          >
+            <div className="flex items-center mb-2">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#192133] flex items-center justify-center mr-2 text-primary-green group-hover:bg-primary-green/10">
+                {action.icon}
+              </div>
+              <h3 className="font-medium text-white text-sm leading-tight">{action.title}</h3>
+            </div>
+            <p className="text-xs text-gray-400 mb-2">{action.description}</p>
+            <div className="mt-auto text-primary-green text-xs font-medium flex items-center opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity">
+              <span className="hidden sm:inline">Try this</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
   );
 }
 
@@ -189,6 +291,7 @@ export function PromptForm({
   const [isHandling, setIsHandling] = React.useState(false)
   const [openUploadMenu, setOpenUploadMenu] = React.useState(false);
   const [videoUploadDataInfo, setVideoUploadDataInfo] = React.useState<ChunkUploadProps>({});
+  const [isActionsOpen, setIsActionsOpen] = React.useState(false);
 
   // Usage limits state
   const { 
@@ -564,6 +667,35 @@ export function PromptForm({
         currentCount={limitType === 'messages' ? messageCount : 0}
       />
       
+      {/* Actions Collapsible */}
+      <Collapsible
+        open={isActionsOpen}
+        onOpenChange={setIsActionsOpen}
+        className="w-full mb-2"
+      >
+        <div className="flex justify-between items-center mb-1">
+          <CollapsibleTrigger asChild>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="p-1 h-8 flex items-center justify-center gap-1 text-primary-green hover:bg-[#1E2336]/20 hover:text-primary-green"
+            >
+              {isActionsOpen ? 
+                <ChevronDown className="h-5 w-5" /> : 
+                <ChevronRight className="h-5 w-5" />
+              }
+              <span className="text-sm font-medium">View list of supported actions</span>
+            </Button>
+          </CollapsibleTrigger>
+        </div>
+        
+        <CollapsibleContent className="overflow-hidden transition-all data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
+          <div className="rounded-lg p-3 sm:p-4 bg-[#0D1117] border border-[#1E2433] mb-2">
+            <ActionsList onSendMessage={onSendMessage} setActionsOpen={setIsActionsOpen} />
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+      
       <form
         ref={formRef}
         onSubmit={async (e: any) => {
@@ -595,7 +727,7 @@ export function PromptForm({
       }}
     >
       {progressBar.isShow && <ProgressBar value={progressBar.value} max={100} width="w-full" height="h-[2px]" color="bg-gray-500"/>}
-      <div className="relative flex max-h-60 w-full grow flex-col overflow-hidden bg-container-bg border border-border-dark px-8 sm:rounded-xl sm:px-12 shadow-sm">
+      <div className="relative flex max-h-60 w-full grow flex-col overflow-hidden bg-container-bg border border-border-dark px-2 sm:rounded-xl sm:px-4 shadow-sm">
         <input
           ref={imageInputRef}
           style={{ display: 'none' }}
@@ -650,15 +782,14 @@ export function PromptForm({
           </PopoverContent>
         </Popover>
         
-        {/* Quick Actions Button */}
-        <QuickActionsDialog onSendMessage={onSendMessage} />
+        {/* Quick Actions Button - Hidden */}
         <Textarea
           ref={inputRef}
           disabled={isTextareaDisabled}
           tabIndex={0}
           onKeyDown={onKeyDown}
           placeholder="Send a message."
-          className="min-h-[60px] w-full resize-none bg-transparent px-4 py-[1.3rem] focus-within:outline-none sm:text-sm text-text-white placeholder:text-text-light-gray"
+          className="min-h-[60px] w-full resize-none bg-transparent pl-0 pr-12 py-[1.3rem] focus-within:outline-none sm:text-sm text-text-white placeholder:text-text-light-gray"
           autoFocus
           spellCheck={false}
           autoComplete="off"

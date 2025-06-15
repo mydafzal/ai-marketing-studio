@@ -138,23 +138,13 @@ export default async function OnboardingCompletePage() {
             <h2 className="text-2xl sm:text-3xl font-bold text-white text-center mb-5 sm:mb-8">FAQ — Getting Started with Reeply</h2>
             <div className="bg-[#1A1D29] border border-[#2A2E3A] rounded-lg divide-y divide-[#2A2E3A]">
               <div className="p-4 sm:p-6">
-                <h3 className="font-medium text-white text-base sm:text-lg mb-1.5 sm:mb-2">Is Reeply really free to start?</h3>
-                <p className="text-[#ADB0B8] text-sm sm:text-base">Yes! Free to get started and explore what Reeply can do for you. When you&apos;re ready for more, you can upgrade to a premium plan anytime.</p>
-              </div>
-              
-              <div className="p-4 sm:p-6">
-                <h3 className="font-medium text-white text-base sm:text-lg mb-1.5 sm:mb-2">What happens after I sign up?</h3>
-                <p className="text-[#ADB0B8] text-sm sm:text-base">You can start immediately with basic access. For unlimited usage, you can upgrade to our premium plan at any time.</p>
+                <h3 className="font-medium text-white text-base sm:text-lg mb-1.5 sm:mb-2">Do you have a free plan?</h3>
+                <p className="text-[#ADB0B8] text-sm sm:text-base">Our platform is paid to use, however we guarantee 100% satisfaction. If you are not happy within the first month of purchase, you can get a full refund—no questions asked.</p>
               </div>
               
               <div className="p-4 sm:p-6">
                 <h3 className="font-medium text-white text-base sm:text-lg mb-1.5 sm:mb-2">Can I cancel anytime?</h3>
                 <p className="text-[#ADB0B8] text-sm sm:text-base">Yes. You&apos;re fully in control. You can cancel whenever you want—no strings attached.</p>
-              </div>
-              
-              <div className="p-4 sm:p-6">
-                <h3 className="font-medium text-white text-base sm:text-lg mb-1.5 sm:mb-2">How can I access all features?</h3>
-                <p className="text-[#ADB0B8] text-sm sm:text-base">You can upgrade to the premium plan anytime to get unlimited usage of all features. You&apos;ll be prompted to upgrade when you reach usage limits.</p>
               </div>
               
               <div className="p-4 sm:p-6">

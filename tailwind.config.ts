@@ -117,6 +117,14 @@ module.exports = {
             opacity: '1',
             transform: 'translateY(0)'
           }
+        },
+        'collapsible-down': {
+          from: { height: 0 },
+          to: { height: 'var(--radix-collapsible-content-height)' }
+        },
+        'collapsible-up': {
+          from: { height: 'var(--radix-collapsible-content-height)' },
+          to: { height: 0 }
         }
       },
       animation: {
@@ -124,7 +132,9 @@ module.exports = {
         'accordion-up': 'accordion-up 0.2s ease-out',
         'loading-bar': 'loading-bar 2s ease-in-out infinite',
         'pulse-green': 'pulse-green 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-        'fadeIn': 'fade-in 0.3s ease-out'
+        'fadeIn': 'fade-in 0.3s ease-out',
+        'collapsible-down': 'collapsible-down 0.2s ease-out',
+        'collapsible-up': 'collapsible-up 0.2s ease-out'
       }
     }
   },

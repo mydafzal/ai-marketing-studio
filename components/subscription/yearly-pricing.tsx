@@ -57,10 +57,113 @@ export function YearlyPricing({ currentPlanTag }: YearlyPricingProps) {
           </div>
 
           {/* Cards */}
-          <div className="flex justify-center mt-10">
-            {/* Only render if the plan is not hidden */}
+          <div className="flex flex-col lg:flex-row justify-center gap-6 mt-10">
+            {/* Basic Plan */}
+            {!stripePriceConfig.yearly.basic.hidden && (
+              <div className="border border-[#2A2E3A] rounded-lg p-6 flex flex-col bg-[#1A1D29] dark:bg-[#1A1D29] text-white dark:text-white shadow-md max-w-lg w-full">
+                <div className="flex items-center mb-4">
+                  <div className="flex justify-between items-center w-full">
+                    <div className="bg-[#151925] dark:bg-[#151925] text-[#4BF29C] dark:text-[#4BF29C] rounded-full p-2 flex items-center justify-center">
+                      <MarketerSuiteIcon />
+                    </div>
+                    {currentPlanTag === 'year_basic' && (
+                      <div className="bg-[#4BF29C] dark:bg-[#4BF29C] text-[#0A0C14] px-4 py-1 text-xs font-medium rounded-full">
+                        Current Plan
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <h3 className="ml-2 mb-4 font-bold text-[#4BF29C] dark:text-[#4BF29C] text-[18px]">
+                  {stripePriceConfig.yearly.basic.name}
+                </h3>
+                <div className="flex flex-col">
+                  <div className="bg-[#252A3A] px-4 py-2 rounded-full text-[#4BF29C] text-base font-bold self-start mb-2">
+                    START WITH 7-DAY FREE TRIAL
+                  </div>
+                  <p className="text-4xl font-bold text-white dark:text-white">{stripePriceConfig.yearly.basic.currency}{Math.round(stripePriceConfig.yearly.basic.pricePerMonth * 12)}</p>
+                  <p className="text-[#8A8F99] dark:text-[#8A8F99] text-sm">/ Year (Billed annually at {stripePriceConfig.yearly.basic.currency}{stripePriceConfig.yearly.basic.pricePerMonth} per month)</p>
+                </div>
+                <hr className="my-4 border-[#2A2E3A] dark:border-[#2A2E3A]" />
+                <p className="font-medium mb-4 text-white dark:text-white">
+                  AI Marketer:
+                </p>
+                <ul className="text-sm space-y-2 grow text-[#ADB0B8] dark:text-[#ADB0B8]">
+                  {stripePriceConfig.yearly.basic.features.map((feature, index) => (
+                    <li key={index} className="flex items-center"><BadgeIcon /> {feature}</li>
+                  ))}
+                </ul>
+
+                {currentPlanTag === 'year_basic' ? (
+                  <button className="mt-6 w-full bg-[#151925] dark:bg-[#151925] text-[#4BF29C] dark:text-[#4BF29C] py-2 rounded-lg font-medium border border-[#2A2E3A] dark:border-[#2A2E3A]">
+                    Current Plan
+                  </button>
+                ) : (
+                  <form action="/api/stripe/create-checkout-session" method="POST">
+                    <input type="hidden" name="lookup_key" value={getLookupKey(stripePriceConfig.yearly.basic)} />
+                    <button className="mt-6 w-full bg-[#4BF29C] dark:bg-[#4BF29C] text-[#0A0C14] py-2 rounded-lg font-medium hover:bg-[#3AD88C] transition-colors" type="submit">
+                      Start with free trial
+                    </button>
+                  </form>
+                )}
+              </div>
+            )}
+
+            {/* Standard Plan */}
+            {!stripePriceConfig.yearly.standard.hidden && (
+              <div className="border-2 border-[#4BF29C] rounded-lg p-6 flex flex-col bg-[#1A1D29] dark:bg-[#1A1D29] text-white dark:text-white shadow-md max-w-lg w-full relative">
+                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-[#4BF29C] text-black px-4 py-1 rounded-full text-xs font-bold">
+                  MOST POPULAR
+                </div>
+                <div className="flex items-center mb-4">
+                  <div className="flex justify-between items-center w-full">
+                    <div className="bg-[#151925] dark:bg-[#151925] text-[#4BF29C] dark:text-[#4BF29C] rounded-full p-2 flex items-center justify-center">
+                      <MarketerSuiteIcon />
+                    </div>
+                    {currentPlanTag === 'year_standard' && (
+                      <div className="bg-[#4BF29C] dark:bg-[#4BF29C] text-[#0A0C14] px-4 py-1 text-xs font-medium rounded-full">
+                        Current Plan
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <h3 className="ml-2 mb-4 font-bold text-[#4BF29C] dark:text-[#4BF29C] text-[18px]">
+                  {stripePriceConfig.yearly.standard.name}
+                </h3>
+                <div className="flex flex-col">
+                  <div className="bg-[#252A3A] px-4 py-2 rounded-full text-[#4BF29C] text-base font-bold self-start mb-2">
+                    START WITH 7-DAY FREE TRIAL
+                  </div>
+                  <p className="text-4xl font-bold text-white dark:text-white">{stripePriceConfig.yearly.standard.currency}{Math.round(stripePriceConfig.yearly.standard.pricePerMonth * 12)}</p>
+                  <p className="text-[#8A8F99] dark:text-[#8A8F99] text-sm">/ Year (Billed annually at {stripePriceConfig.yearly.standard.currency}{stripePriceConfig.yearly.standard.pricePerMonth} per month)</p>
+                </div>
+                <hr className="my-4 border-[#2A2E3A] dark:border-[#2A2E3A]" />
+                <p className="font-medium mb-4 text-white dark:text-white">
+                  Premium Support & Training:
+                </p>
+                <ul className="text-sm space-y-2 grow text-[#ADB0B8] dark:text-[#ADB0B8]">
+                  {stripePriceConfig.yearly.standard.features.map((feature, index) => (
+                    <li key={index} className="flex items-center"><BadgeIcon /> {feature}</li>
+                  ))}
+                </ul>
+
+                {currentPlanTag === 'year_standard' ? (
+                  <button className="mt-6 w-full bg-[#151925] dark:bg-[#151925] text-[#4BF29C] dark:text-[#4BF29C] py-2 rounded-lg font-medium border border-[#2A2E3A] dark:border-[#2A2E3A]">
+                    Current Plan
+                  </button>
+                ) : (
+                  <form action="/api/stripe/create-checkout-session" method="POST">
+                    <input type="hidden" name="lookup_key" value={getLookupKey(stripePriceConfig.yearly.standard)} />
+                    <button className="mt-6 w-full bg-[#4BF29C] dark:bg-[#4BF29C] text-[#0A0C14] py-2 rounded-lg font-medium hover:bg-[#3AD88C] transition-colors" type="submit">
+                      Start with free trial
+                    </button>
+                  </form>
+                )}
+              </div>
+            )}
+
+            {/* Pro Plan */}
             {!stripePriceConfig.yearly.pro.hidden && (
-              <div className="border-2 border-[#4BF29C] rounded-lg p-6 flex flex-col bg-[#1A1D29] dark:bg-[#1A1D29] text-white dark:text-white shadow-md max-w-lg w-full">
+              <div className="border border-[#2A2E3A] rounded-lg p-6 flex flex-col bg-[#1A1D29] dark:bg-[#1A1D29] text-white dark:text-white shadow-md max-w-lg w-full">
                 <div className="flex items-center mb-4">
                   <div className="flex justify-between items-center w-full">
                     <div className="bg-[#151925] dark:bg-[#151925] text-[#4BF29C] dark:text-[#4BF29C] rounded-full p-2 flex items-center justify-center">
@@ -85,7 +188,7 @@ export function YearlyPricing({ currentPlanTag }: YearlyPricingProps) {
                 </div>
                 <hr className="my-4 border-[#2A2E3A] dark:border-[#2A2E3A]" />
                 <p className="font-medium mb-4 text-white dark:text-white">
-                  AI Marketer + Ad Creatives Generator:
+                  Enterprise-grade Solution:
                 </p>
                 <ul className="text-sm space-y-2 grow text-[#ADB0B8] dark:text-[#ADB0B8]">
                   {stripePriceConfig.yearly.pro.features.map((feature, index) => (

@@ -17,6 +17,7 @@ export const validateUrl = (url: string): { isValid: boolean; error: string } =>
 export const validatePersonaForm = (formData: {
   name?: string
   companyName: string
+  companyDescription: string
   websiteLink: string
   privacyPolicyLink: string
   language: string
@@ -24,6 +25,7 @@ export const validatePersonaForm = (formData: {
   const errors = {
     name: '',
     companyName: '',
+    companyDescription: '',
     websiteLink: '',
     privacyPolicyLink: '',
     language: '',
@@ -36,6 +38,12 @@ export const validatePersonaForm = (formData: {
   // Company name validation
   if (!formData.companyName.trim()) {
     errors.companyName = 'Company name is required'
+    hasErrors = true
+  }
+  
+  // Company description validation
+  if (!formData.companyDescription.trim()) {
+    errors.companyDescription = 'Company description is required'
     hasErrors = true
   }
 

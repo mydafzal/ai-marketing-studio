@@ -55,5 +55,10 @@ export const paletteActions: PaletteAction[] = [
     action: 'Switch Adset',
     explanation: 'Connect your chat to a different ad set.',
     exampleMessage: 'Show me adset connection UI.',
+  },
+  {
+    action: 'Lead Notifications',
+    explanation: 'Receive notifications for campaign results of yesterday for the selected campaigns.',
+    exampleMessage: 'I want to manage my lead notifications',
   }
 ]

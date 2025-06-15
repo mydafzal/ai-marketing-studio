@@ -1,7 +1,7 @@
 import { kv } from '@vercel/kv'
 import { auth } from '@/auth'
 import { redirect } from 'next/navigation'
-import { getUserDetail } from '@/app/actions'
+import { getUserDetail, getSubscriptionInfo } from '@/app/actions'
 import { SidebarDesktop } from '@/components/sidebar-desktop'
 import Link from 'next/link'
 import FacebookConnect from '@/components/facebook-connect'
@@ -30,6 +30,12 @@ export default async function FacebookConnectPage() {
   
   if (!user) {
     redirect('/login')
+  }
+  
+  // Check subscription status
+  const subscription = await getSubscriptionInfo()
+  if (!subscription || (subscription.sub_status !== 'active' && subscription.sub_status !== 'trialing')) {
+    redirect('/subscription')
   }
   
   // If Facebook is already connected, redirect to main app

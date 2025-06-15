@@ -7,6 +7,7 @@ import stripePriceConfig, { getLookupKey } from '@/lib/stripe-price-provider'
 export interface MonthlyPricingProps {
   currentPlanTag: string
   showBackButton?: boolean
+  selectedDuration?: string
 }
 
 // Create a reusable BadgeIcon component
@@ -54,8 +55,23 @@ const BackArrowIcon = () => (
   </svg>
 )
 
-export function MonthlyPricing({ currentPlanTag, showBackButton = true }: MonthlyPricingProps) {
+export function MonthlyPricing({ currentPlanTag, showBackButton = true, selectedDuration = 'monthly' }: MonthlyPricingProps) {
   const router = useRouter()
+  
+  // Helper function to get the billing period display text
+  const getBillingPeriodText = (duration: string) => {
+    switch(duration) {
+      case 'monthly': return 'per month';
+      case '3-month': return 'per month, billed quarterly';
+      case '6-month': return 'per month, billed semi-annually';
+      case 'yearly': return 'per month, billed annually';
+      default: return 'per month';
+    }
+  };
+  
+  // Get the selected pricing plans based on the duration
+  const selectedPlans = stripePriceConfig[selectedDuration as keyof typeof stripePriceConfig];
+  
   return (
     <div className="bg-[#0F1117] dark:bg-[#0F1117] py-12">
       <div className="max-w-7xl mx-auto px-4">
@@ -72,33 +88,17 @@ export function MonthlyPricing({ currentPlanTag, showBackButton = true }: Monthl
           </div>
         )}
         
-        {/* Feedback CTA */}
-        <div className="mb-10 p-6 bg-gradient-to-r from-[#166D4A] to-[#1A8D60] rounded-lg text-center shadow-lg relative overflow-hidden">
-          <div className="absolute inset-0 bg-[url('/diamond1.png')] opacity-5 bg-repeat-space"></div>
-          <div className="relative z-10">
-            <h3 className="text-white text-xl font-bold mb-3">Provide us your feedback via a short meeting and receive <span className="text-[#4BF29C]">20% discount</span> on our product price.</h3>
-            {/* ADJUST LINK */}
-            <Link 
-              href="https://tidycal.com/farzammadani/feedback-call-reeply-ai"
-              className="inline-block bg-[#0A0C14] text-white px-8 py-2.5 rounded-lg font-medium border border-[#2A2E3A] hover:bg-[#151925] transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
-              target="_blank"
-            >
-              Schedule Your Meeting
-            </Link>
-          </div>
-        </div>
-
         {/* Plan Cards */}
-        <div className="flex justify-center mt-6">
-          {/* Only render if the plan is not hidden */}
-          {!stripePriceConfig.monthly.pro.hidden && (
-            <div className="border-2 border-[#4BF29C] rounded-lg p-6 flex flex-col flex-grow bg-[#1A1D29] dark:bg-[#1A1D29] text-white dark:text-white shadow-md max-w-lg w-full">
+        <div className="flex flex-col lg:flex-row justify-center gap-6 mt-6">
+          {/* Basic Plan */}
+          {selectedPlans && !selectedPlans.basic.hidden && (
+            <div className="border border-[#2A2E3A] rounded-lg p-6 flex flex-col flex-grow bg-[#1A1D29] dark:bg-[#1A1D29] text-white dark:text-white shadow-md max-w-lg w-full">
               <div className="flex items-center mb-4">
                 <div className="flex justify-between items-center w-full">
                   <div className="bg-[#151925] dark:bg-[#151925] text-[#4BF29C] dark:text-[#4BF29C] rounded-full p-2 flex items-center justify-center">
                     <MarketerSuiteIcon />
                   </div>
-                  {currentPlanTag === 'month_pro' && (
+                  {currentPlanTag === `${selectedDuration.replace('-', '')}_basic` && (
                     <div className="bg-[#4BF29C] dark:bg-[#4BF29C] text-[#0A0C14] px-4 py-1 text-xs font-medium rounded-full">
                       Current Plan
                     </div>
@@ -106,15 +106,17 @@ export function MonthlyPricing({ currentPlanTag, showBackButton = true }: Monthl
                 </div>
               </div>
               <h3 className="ml-2 mb-1 font-bold text-[#4BF29C] dark:text-[#4BF29C] text-[18px]">
-                {stripePriceConfig.monthly.pro.name}
+                {selectedPlans.basic.name}
               </h3>
-              <p className="ml-2 mb-4 font-bold text-white text-[16px]">{stripePriceConfig.monthly.pro.currency}{stripePriceConfig.monthly.pro.pricePerMonth} per month</p>
+              <p className="ml-2 mb-4 font-bold text-white text-[16px]">
+                {selectedPlans.basic.currency}{selectedPlans.basic.pricePerMonth} {getBillingPeriodText(selectedDuration)}
+              </p>
               <div className="flex flex-col">
               </div>
               <hr className="my-4 border-[#2A2E3A] dark:border-[#2A2E3A]" />
               <div className="flex flex-wrap gap-3 mb-6">
                 <div className="bg-[#151925] px-4 py-2 rounded-full text-[#4BF29C] text-sm border border-[#2A2E3A]">
-                  AI Marketer (Unlimited Ad Accounts)
+                  AI Marketer
                 </div>
                 <div className="bg-[#151925] px-4 py-2 rounded-full text-[#4BF29C] text-sm border border-[#2A2E3A]">
                   AI Creatives Generator
@@ -122,18 +124,129 @@ export function MonthlyPricing({ currentPlanTag, showBackButton = true }: Monthl
               </div>
               
               <ul className="text-sm space-y-2 grow text-[#ADB0B8] dark:text-[#ADB0B8] mb-4">
-                {stripePriceConfig.monthly.pro.features.map((feature, index) => (
+                {selectedPlans.basic.features.map((feature, index) => (
                   <li key={index} className="flex items-center"><BadgeIcon /> {feature}</li>
                 ))}
               </ul>
 
-              {currentPlanTag === 'month_pro' ? (
+              {currentPlanTag === `${selectedDuration.replace('-', '')}_basic` ? (
                 <button className="mt-6 w-full bg-[#151925] dark:bg-[#151925] text-[#4BF29C] dark:text-[#4BF29C] py-2 rounded-lg font-medium border border-[#2A2E3A] dark:border-[#2A2E3A]">
                   Current Plan
                 </button>
               ) : (
                 <form action="/api/stripe/create-checkout-session" method="POST">
-                  <input type="hidden" name="lookup_key" value={getLookupKey(stripePriceConfig.monthly.pro)} />
+                  <input type="hidden" name="lookup_key" value={getLookupKey(selectedPlans.basic)} />
+                  <button className="mt-6 w-full bg-[#4BF29C] dark:bg-[#4BF29C] text-[#0A0C14] py-2 rounded-lg font-medium hover:bg-[#3AD88C] transition-colors" type="submit">
+                    Subscribe Now
+                  </button>
+                </form>
+              )}
+            </div>
+          )}
+
+          {/* Standard Plan */}
+          {selectedPlans && !selectedPlans.standard.hidden && (
+            <div className="border-2 border-[#4BF29C] rounded-lg p-6 flex flex-col flex-grow bg-[#1A1D29] dark:bg-[#1A1D29] text-white dark:text-white shadow-md max-w-lg w-full relative">
+              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-[#4BF29C] text-black px-4 py-1 rounded-full text-xs font-bold">
+                MOST POPULAR
+              </div>
+              <div className="flex items-center mb-4">
+                <div className="flex justify-between items-center w-full">
+                  <div className="bg-[#151925] dark:bg-[#151925] text-[#4BF29C] dark:text-[#4BF29C] rounded-full p-2 flex items-center justify-center">
+                    <MarketerSuiteIcon />
+                  </div>
+                  {currentPlanTag === `${selectedDuration.replace('-', '')}_standard` && (
+                    <div className="bg-[#4BF29C] dark:bg-[#4BF29C] text-[#0A0C14] px-4 py-1 text-xs font-medium rounded-full">
+                      Current Plan
+                    </div>
+                  )}
+                </div>
+              </div>
+              <h3 className="ml-2 mb-1 font-bold text-[#4BF29C] dark:text-[#4BF29C] text-[18px]">
+                {selectedPlans.standard.name}
+              </h3>
+              <p className="ml-2 mb-4 font-bold text-white text-[16px]">
+                {selectedPlans.standard.currency}{selectedPlans.standard.pricePerMonth} {getBillingPeriodText(selectedDuration)}
+              </p>
+              <div className="flex flex-col">
+              </div>
+              <hr className="my-4 border-[#2A2E3A] dark:border-[#2A2E3A]" />
+              <div className="flex flex-wrap gap-3 mb-6">
+                <div className="bg-[#151925] px-4 py-2 rounded-full text-[#4BF29C] text-sm border border-[#2A2E3A]">
+                  Premium Support
+                </div>
+                <div className="bg-[#151925] px-4 py-2 rounded-full text-[#4BF29C] text-sm border border-[#2A2E3A]">
+                  Training Included
+                </div>
+              </div>
+              
+              <ul className="text-sm space-y-2 grow text-[#ADB0B8] dark:text-[#ADB0B8] mb-4">
+                {selectedPlans.standard.features.map((feature, index) => (
+                  <li key={index} className="flex items-center"><BadgeIcon /> {feature}</li>
+                ))}
+              </ul>
+
+              {currentPlanTag === `${selectedDuration.replace('-', '')}_standard` ? (
+                <button className="mt-6 w-full bg-[#151925] dark:bg-[#151925] text-[#4BF29C] dark:text-[#4BF29C] py-2 rounded-lg font-medium border border-[#2A2E3A] dark:border-[#2A2E3A]">
+                  Current Plan
+                </button>
+              ) : (
+                <form action="/api/stripe/create-checkout-session" method="POST">
+                  <input type="hidden" name="lookup_key" value={getLookupKey(selectedPlans.standard)} />
+                  <button className="mt-6 w-full bg-[#4BF29C] dark:bg-[#4BF29C] text-[#0A0C14] py-2 rounded-lg font-medium hover:bg-[#3AD88C] transition-colors" type="submit">
+                    Subscribe Now
+                  </button>
+                </form>
+              )}
+            </div>
+          )}
+
+          {/* Pro Plan */}
+          {selectedPlans && !selectedPlans.pro.hidden && (
+            <div className="border border-[#2A2E3A] rounded-lg p-6 flex flex-col flex-grow bg-[#1A1D29] dark:bg-[#1A1D29] text-white dark:text-white shadow-md max-w-lg w-full">
+              <div className="flex items-center mb-4">
+                <div className="flex justify-between items-center w-full">
+                  <div className="bg-[#151925] dark:bg-[#151925] text-[#4BF29C] dark:text-[#4BF29C] rounded-full p-2 flex items-center justify-center">
+                    <MarketerSuiteIcon />
+                  </div>
+                  {currentPlanTag === `${selectedDuration.replace('-', '')}_pro` && (
+                    <div className="bg-[#4BF29C] dark:bg-[#4BF29C] text-[#0A0C14] px-4 py-1 text-xs font-medium rounded-full">
+                      Current Plan
+                    </div>
+                  )}
+                </div>
+              </div>
+              <h3 className="ml-2 mb-1 font-bold text-[#4BF29C] dark:text-[#4BF29C] text-[18px]">
+                {selectedPlans.pro.name}
+              </h3>
+              <p className="ml-2 mb-4 font-bold text-white text-[16px]">
+                {selectedPlans.pro.currency}{selectedPlans.pro.pricePerMonth} {getBillingPeriodText(selectedDuration)}
+              </p>
+              <div className="flex flex-col">
+              </div>
+              <hr className="my-4 border-[#2A2E3A] dark:border-[#2A2E3A]" />
+              <div className="flex flex-wrap gap-3 mb-6">
+                <div className="bg-[#151925] px-4 py-2 rounded-full text-[#4BF29C] text-sm border border-[#2A2E3A]">
+                  Enterprise-grade
+                </div>
+                <div className="bg-[#151925] px-4 py-2 rounded-full text-[#4BF29C] text-sm border border-[#2A2E3A]">
+                  Dedicated Manager
+                </div>
+              </div>
+              
+              <ul className="text-sm space-y-2 grow text-[#ADB0B8] dark:text-[#ADB0B8] mb-4">
+                {selectedPlans.pro.features.map((feature, index) => (
+                  <li key={index} className="flex items-center"><BadgeIcon /> {feature}</li>
+                ))}
+              </ul>
+
+              {currentPlanTag === `${selectedDuration.replace('-', '')}_pro` ? (
+                <button className="mt-6 w-full bg-[#151925] dark:bg-[#151925] text-[#4BF29C] dark:text-[#4BF29C] py-2 rounded-lg font-medium border border-[#2A2E3A] dark:border-[#2A2E3A]">
+                  Current Plan
+                </button>
+              ) : (
+                <form action="/api/stripe/create-checkout-session" method="POST">
+                  <input type="hidden" name="lookup_key" value={getLookupKey(selectedPlans.pro)} />
                   <button className="mt-6 w-full bg-[#4BF29C] dark:bg-[#4BF29C] text-[#0A0C14] py-2 rounded-lg font-medium hover:bg-[#3AD88C] transition-colors" type="submit">
                     Subscribe Now
                   </button>

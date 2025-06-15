@@ -52,5 +52,5 @@ export const authConfig = {
       return session
     }
   },
-  providers: [],
+  providers: []
 } satisfies NextAuthConfig

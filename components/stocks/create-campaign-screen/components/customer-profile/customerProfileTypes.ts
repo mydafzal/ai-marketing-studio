@@ -2,6 +2,7 @@ export interface CustomerProfile {
   id: string;
   name?: string; // New profile name field
   companyName: string;
+  companyDescription: string; // Added company description field
   websiteLink: string;
   language?: string;
   locations?: any; // Keep flexible for now
@@ -14,6 +15,7 @@ export interface CustomerProfile {
   location_data?: any; // Match API naming convention
   privacy_policy_link?: string; // Match API naming convention
   website_data?: any; // Match API naming convention
+  company_description?: string; // Match API naming convention
 }
 
 export type CustomerProfileBehavior = "own" | "select";

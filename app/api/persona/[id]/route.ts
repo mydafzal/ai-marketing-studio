@@ -59,13 +59,14 @@ export async function PUT(
     const {
       name,
       company_name,
+      company_description,
       website_link,
       privacy_policy_link,
       preferred_language,
       location_data
     } = body
 
-    if (!company_name || !website_link || !privacy_policy_link || !preferred_language) {
+    if (!company_name || !company_description || !website_link || !privacy_policy_link || !preferred_language) {
       return NextResponse.json(
         { success: false, error: 'Missing required fields' },
         { status: 400 }
@@ -79,6 +80,7 @@ export async function PUT(
       ...existingData,
       name: profile_name,
       company_name,
+      company_description,
       website_link,
       privacy_policy_link,
       preferred_language,
