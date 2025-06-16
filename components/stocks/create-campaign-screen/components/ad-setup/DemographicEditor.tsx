@@ -90,76 +90,83 @@ const DemographicEditor: React.FC<DemographicEditorProps> = ({
         ) : (
           <>
             <div className="mb-4 mt-2">
-              <div className="flex justify-between items-center mb-1">
-                <label className="text-sm text-text-light-gray">Age Range</label>
-                <div className="text-sm text-text-light-gray">
-                  {minAge} - {maxAge}
+              <label className="block text-sm text-text-light-gray mb-2">Age Range</label>
+              
+              <div className="mb-6 relative w-3/4">
+                <Slider.Root
+                  className="relative flex items-center select-none touch-none w-full h-5"
+                  defaultValue={[minAge, maxAge]}
+                  value={[minAge, maxAge]}
+                  onValueChange={([min, max]) => {
+                    setMinAge(min);
+                    setMaxAge(max);
+                  }}
+                  min={18}
+                  max={65}
+                  step={1}
+                  minStepsBetweenThumbs={1}
+                  aria-label="Age Range"
+                >
+                  <Slider.Track className="bg-dark-bg relative grow rounded-full h-2">
+                    <Slider.Range className="absolute bg-coral rounded-full h-full" />
+                  </Slider.Track>
+                  
+                  <Slider.Thumb 
+                    className="block w-6 h-6 bg-white rounded-full shadow-md hover:bg-white focus:outline-none focus:ring-2 focus:ring-coral"
+                    aria-label="Minimum age"
+                  >
+                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-coral px-2 py-1 rounded text-white font-medium">
+                      {minAge}
+                    </div>
+                  </Slider.Thumb>
+                  
+                  <Slider.Thumb 
+                    className="block w-6 h-6 bg-white rounded-full shadow-md hover:bg-white focus:outline-none focus:ring-2 focus:ring-coral"
+                    aria-label="Maximum age"
+                  >
+                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-coral px-2 py-1 rounded text-white font-medium">
+                      {maxAge}
+                    </div>
+                  </Slider.Thumb>
+                </Slider.Root>
+                
+                <div className="flex justify-between mt-1 text-sm font-medium text-text-light-gray">
+                  <span>18</span>
+                  <span>65+</span>
                 </div>
-              </div>
-              
-              <Slider.Root
-                className="relative flex items-center select-none touch-none w-full h-5"
-                defaultValue={[minAge, maxAge]}
-                value={[minAge, maxAge]}
-                onValueChange={([min, max]) => {
-                  setMinAge(min);
-                  setMaxAge(max);
-                }}
-                min={18}
-                max={65}
-                step={1}
-                minStepsBetweenThumbs={1}
-                aria-label="Age Range"
-              >
-                <Slider.Track className="bg-dark-bg relative grow rounded-full h-1.5">
-                  <Slider.Range className="absolute bg-coral rounded-full h-full" />
-                </Slider.Track>
-                <Slider.Thumb 
-                  className="block w-5 h-5 bg-white rounded-full shadow-md hover:bg-white focus:outline-none"
-                  aria-label="Minimum age"
-                />
-                <Slider.Thumb 
-                  className="block w-5 h-5 bg-white rounded-full shadow-md hover:bg-white focus:outline-none"
-                  aria-label="Maximum age"
-                />
-              </Slider.Root>
-              
-              <div className="flex justify-between mt-1 text-xs text-text-light-gray">
-                <span>18</span>
-                <span>65+</span>
               </div>
             </div>
             
-            <div className="mb-3">
-              <label className="block text-sm text-text-light-gray mb-1">Gender</label>
-              <div className="flex space-x-4">
+            <div className="mb-5">
+              <label className="block text-sm text-text-light-gray mb-2">Gender</label>
+              <div className="flex space-x-6 mb-6">
                 <label className="flex items-center cursor-pointer">
                   <input
                     type="checkbox"
-                    className="h-4 w-4 mr-2 accent-coral"
+                    className="h-5 w-5 mr-2 accent-coral"
                     checked={includeMale}
                     onChange={(e) => handleGenderChange(true, e.target.checked)}
                   />
-                  <span className="text-text-light-gray">Male</span>
+                  <span className="text-text-light-gray text-base">Male</span>
                 </label>
                 <label className="flex items-center cursor-pointer">
                   <input
                     type="checkbox"
-                    className="h-4 w-4 mr-2 accent-coral"
+                    className="h-5 w-5 mr-2 accent-coral"
                     checked={includeFemale}
                     onChange={(e) => handleGenderChange(false, e.target.checked)}
                   />
-                  <span className="text-text-light-gray">Female</span>
+                  <span className="text-text-light-gray text-base">Female</span>
                 </label>
               </div>
+              
+              <Button 
+                className="bg-coral hover:bg-coral/90 text-white px-6 py-2 rounded-md text-sm font-medium"
+                onClick={handleSave}
+              >
+                Save Demographics
+              </Button>
             </div>
-            
-            <Button 
-              className="bg-coral hover:bg-coral/90 text-white px-3 py-1 rounded-md text-sm"
-              onClick={handleSave}
-            >
-              Save Demographics
-            </Button>
           </>
         )}
       </div>
