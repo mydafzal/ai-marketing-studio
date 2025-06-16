@@ -1,0 +1,1 @@
+export { default as DemographicEditor } from './DemographicEditor';

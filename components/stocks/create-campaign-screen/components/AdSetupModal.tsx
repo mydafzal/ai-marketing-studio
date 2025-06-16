@@ -16,6 +16,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Gender, MasterFlowResponse, AdPlacements, LocationsFullDetails, AudienceFilters as OldAudienceFilters, AudienceFilterData } from '../types'; // Renamed imported AudienceFilters
 import AudienceLocationSelector from '@/components/audience-locations-selector';
 import AudienceTargetingSelector, { AudienceTargeting, TargetingFilters, FilterDetail } from './AudienceTargetingSelector'; // Import new types
+import { DemographicEditor } from './ad-setup';
 
 // Extended interface with union from both LibCreative and our additional fields
 interface ExtendedCreative extends Partial<LibCreative> {
@@ -1741,23 +1742,17 @@ export function AdSetupModal({
                         </div>
                       </div>
 
-                      <div className="flex items-start mb-3">
-                        <Users className="size-5 text-coral mr-3 mt-1" />
-                        <div>
-                          <h4 className="font-medium text-text-white">Demographics</h4>
-                          <p className="text-text-light-gray">
-                            Age: {masterFlowData?.suggested_age_min || ageRange[0]} -{' '}
-                            {masterFlowData?.suggested_age_max || ageRange[1]}
-                            <br />
-                            Gender:{' '}
-                            {masterFlowData
-                                ? `${
-                                    masterFlowData.include_male_gender ? 'Male ' : ''
-                                }${masterFlowData.include_female_gender ? 'Female' : ''}`
-                                : gender}
-                          </p>
-                        </div>
-                      </div>
+                      <DemographicEditor 
+                        masterFlowData={masterFlowData}
+                        isRecruitmentCampaign={masterFlowData?.campaign_objective === 'RECRUITMENT'}
+                        ageRange={ageRange}
+                        gender={gender}
+                        onSave={(data) => {
+                          // Will implement saving functionality later
+                          console.log('Demographics data to save:', data);
+                          alert('Demographics save functionality will be implemented later');
+                        }}
+                      />
                     </div>
 
                     <AudienceTargetingSelector 
