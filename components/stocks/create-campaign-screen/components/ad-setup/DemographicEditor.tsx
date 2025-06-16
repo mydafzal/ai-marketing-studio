@@ -121,8 +121,9 @@ const DemographicEditor: React.FC<DemographicEditorProps> = ({
             <br />
             Gender:{' '}
             {masterFlowData
-                ? `${masterFlowData.include_male_gender ? 'Male ' : ''}
-                   ${masterFlowData.include_female_gender ? 'Female' : ''}`
+                ? (masterFlowData.include_male_gender && masterFlowData.include_female_gender 
+                    ? 'Male and Female' 
+                    : (masterFlowData.include_male_gender ? 'Male' : 'Female'))
                 : gender}
           </p>
         ) : (

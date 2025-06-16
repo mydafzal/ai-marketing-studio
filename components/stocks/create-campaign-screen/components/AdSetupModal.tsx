@@ -1745,8 +1745,8 @@ export function AdSetupModal({
                       </div>
 
                       <DemographicEditor 
-                        masterFlowData={masterFlowData}
-                        isRecruitmentCampaign={masterFlowData?.campaign_objective === 'RECRUITMENT'}
+                        masterFlowData={masterFlowData ?? null}
+                        isRecruitmentCampaign={masterFlowData?.campaign_objective?.toLowerCase() === 'recruitment'}
                         ageRange={ageRange}
                         gender={gender}
                         onSave={(data) => {
