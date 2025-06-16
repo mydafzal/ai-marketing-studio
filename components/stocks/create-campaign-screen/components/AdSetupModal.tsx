@@ -34,6 +34,7 @@ interface AdSetupModalProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   masterFlowData?: MasterFlowResponse | null;
+  onMasterFlowDataUpdated?: (updatedData: MasterFlowResponse) => void;
   adHeadline: string;
   adText: string;
   campaignName?: string;
@@ -57,6 +58,7 @@ export function AdSetupModal({
                                isOpen,
                                onOpenChange,
                                masterFlowData,
+                               onMasterFlowDataUpdated,
                                adHeadline,
                                adText,
                                campaignName,
@@ -1748,9 +1750,22 @@ export function AdSetupModal({
                         ageRange={ageRange}
                         gender={gender}
                         onSave={(data) => {
-                          // Will implement saving functionality later
-                          console.log('Demographics data to save:', data);
-                          alert('Demographics save functionality will be implemented later');
+                          console.log('Demographics updated:', data);
+                          
+                          // Update parent component state if we have masterFlowData and the callback
+                          if (masterFlowData && onMasterFlowDataUpdated) {
+                            // Create a new object with updated values
+                            const updatedMasterFlowData = {
+                              ...masterFlowData,
+                              suggested_age_min: data.minAge,
+                              suggested_age_max: data.maxAge,
+                              include_male_gender: data.includeMale,
+                              include_female_gender: data.includeFemale
+                            };
+                            
+                            // Call the callback to update parent state
+                            onMasterFlowDataUpdated(updatedMasterFlowData);
+                          }
                         }}
                       />
                     </div>

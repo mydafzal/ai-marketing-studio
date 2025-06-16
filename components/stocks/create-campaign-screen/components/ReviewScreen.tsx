@@ -43,6 +43,7 @@ interface ReviewScreenProps {
   openEditModal: (section: string) => void;
   handlePublish: (publishCampaign: boolean) => void;
   masterFlowData?: MasterFlowResponse | null;
+  onMasterFlowDataUpdated?: (updatedData: MasterFlowResponse) => void;
 }
 
 export function ReviewScreen({
@@ -63,7 +64,8 @@ export function ReviewScreen({
   link,
   openEditModal,
   handlePublish,
-  masterFlowData
+  masterFlowData,
+  onMasterFlowDataUpdated
 }: ReviewScreenProps) {
   // State for publish checkbox
   const [publishCampaign, setPublishCampaign] = useState<boolean>(true);
@@ -577,6 +579,7 @@ export function ReviewScreen({
         isOpen={isAdSetupModalOpen}
         onOpenChange={setIsAdSetupModalOpen}
         masterFlowData={masterFlowData}
+        onMasterFlowDataUpdated={onMasterFlowDataUpdated}
         adHeadline={adHeadline}
         adText={adText}
         campaignName={campaignName}
