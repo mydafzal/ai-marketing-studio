@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MasterFlowResponse, Gender } from '../../types';
+import * as Slider from '@radix-ui/react-slider';
 
 interface DemographicEditorProps {
   masterFlowData: MasterFlowResponse | null;
@@ -19,14 +20,51 @@ const DemographicEditor: React.FC<DemographicEditorProps> = ({
   onSave
 }) => {
   // Local state for editing
-  const [minAge, setMinAge] = useState<number>(masterFlowData?.suggested_age_min || ageRange[0]);
-  const [maxAge, setMaxAge] = useState<number>(masterFlowData?.suggested_age_max || ageRange[1]);
+  const [minAge, setMinAge] = useState<number>(
+    Math.max(18, Math.min(65, masterFlowData?.suggested_age_min || ageRange[0]))
+  );
+  const [maxAge, setMaxAge] = useState<number>(
+    Math.max(18, Math.min(65, masterFlowData?.suggested_age_max || ageRange[1]))
+  );
   const [includeMale, setIncludeMale] = useState<boolean>(masterFlowData?.include_male_gender ?? true);
   const [includeFemale, setIncludeFemale] = useState<boolean>(masterFlowData?.include_female_gender ?? true);
 
+  // We no longer need this effect because the slider component
+  // enforces min <= max automatically via minStepsBetweenThumbs
+
+  // Ensure at least one gender is always selected
+  const handleGenderChange = (isMale: boolean, isSelected: boolean) => {
+    if (isMale) {
+      // If trying to uncheck male, make sure female is checked
+      if (!isSelected && !includeFemale) {
+        setIncludeFemale(true);
+      }
+      setIncludeMale(isSelected);
+    } else {
+      // If trying to uncheck female, make sure male is checked
+      if (!isSelected && !includeMale) {
+        setIncludeMale(true);
+      }
+      setIncludeFemale(isSelected);
+    }
+  };
+
   const handleSave = () => {
+    // Validate age range
+    const validMinAge = Math.max(18, Math.min(65, minAge));
+    const validMaxAge = Math.max(validMinAge, Math.min(65, maxAge));
+    
+    // Ensure at least one gender is selected
+    const validIncludeMale = includeMale || !includeFemale;
+    const validIncludeFemale = includeFemale || !includeMale;
+    
     if (onSave) {
-      onSave({ minAge, maxAge, includeMale, includeFemale });
+      onSave({ 
+        minAge: validMinAge, 
+        maxAge: validMaxAge, 
+        includeMale: validIncludeMale, 
+        includeFemale: validIncludeFemale 
+      });
     } else {
       // Default behavior if no onSave provided
       alert('Demographics save functionality will be implemented later');
@@ -51,26 +89,44 @@ const DemographicEditor: React.FC<DemographicEditorProps> = ({
           </p>
         ) : (
           <>
-            <div className="mb-2 mt-2">
-              <label className="block text-sm text-text-light-gray mb-1">Age Range</label>
-              <div className="flex items-center space-x-2">
-                <input 
-                  type="number" 
-                  min="18" 
-                  max="65" 
-                  value={minAge} 
-                  onChange={(e) => setMinAge(Math.min(parseInt(e.target.value) || 18, maxAge))} 
-                  className="w-16 bg-dark-bg border border-border-dark rounded px-2 py-1"
+            <div className="mb-4 mt-2">
+              <div className="flex justify-between items-center mb-1">
+                <label className="text-sm text-text-light-gray">Age Range</label>
+                <div className="text-sm text-text-light-gray">
+                  {minAge} - {maxAge}
+                </div>
+              </div>
+              
+              <Slider.Root
+                className="relative flex items-center select-none touch-none w-full h-5"
+                defaultValue={[minAge, maxAge]}
+                value={[minAge, maxAge]}
+                onValueChange={([min, max]) => {
+                  setMinAge(min);
+                  setMaxAge(max);
+                }}
+                min={18}
+                max={65}
+                step={1}
+                minStepsBetweenThumbs={1}
+                aria-label="Age Range"
+              >
+                <Slider.Track className="bg-dark-bg relative grow rounded-full h-1.5">
+                  <Slider.Range className="absolute bg-coral rounded-full h-full" />
+                </Slider.Track>
+                <Slider.Thumb 
+                  className="block w-5 h-5 bg-white rounded-full shadow-md hover:bg-white focus:outline-none"
+                  aria-label="Minimum age"
                 />
-                <span className="text-text-light-gray">to</span>
-                <input 
-                  type="number" 
-                  min="18" 
-                  max="65" 
-                  value={maxAge} 
-                  onChange={(e) => setMaxAge(Math.max(parseInt(e.target.value) || 18, minAge))} 
-                  className="w-16 bg-dark-bg border border-border-dark rounded px-2 py-1"
+                <Slider.Thumb 
+                  className="block w-5 h-5 bg-white rounded-full shadow-md hover:bg-white focus:outline-none"
+                  aria-label="Maximum age"
                 />
+              </Slider.Root>
+              
+              <div className="flex justify-between mt-1 text-xs text-text-light-gray">
+                <span>18</span>
+                <span>65+</span>
               </div>
             </div>
             
@@ -82,7 +138,7 @@ const DemographicEditor: React.FC<DemographicEditorProps> = ({
                     type="checkbox"
                     className="h-4 w-4 mr-2 accent-coral"
                     checked={includeMale}
-                    onChange={(e) => setIncludeMale(e.target.checked)}
+                    onChange={(e) => handleGenderChange(true, e.target.checked)}
                   />
                   <span className="text-text-light-gray">Male</span>
                 </label>
@@ -91,7 +147,7 @@ const DemographicEditor: React.FC<DemographicEditorProps> = ({
                     type="checkbox"
                     className="h-4 w-4 mr-2 accent-coral"
                     checked={includeFemale}
-                    onChange={(e) => setIncludeFemale(e.target.checked)}
+                    onChange={(e) => handleGenderChange(false, e.target.checked)}
                   />
                   <span className="text-text-light-gray">Female</span>
                 </label>
