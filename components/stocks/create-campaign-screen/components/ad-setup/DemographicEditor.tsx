@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users } from 'lucide-react';
+import { Users, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MasterFlowResponse, Gender } from '../../types';
 import * as Slider from '@radix-ui/react-slider';
@@ -28,6 +28,7 @@ const DemographicEditor: React.FC<DemographicEditorProps> = ({
   );
   const [includeMale, setIncludeMale] = useState<boolean>(masterFlowData?.include_male_gender ?? true);
   const [includeFemale, setIncludeFemale] = useState<boolean>(masterFlowData?.include_female_gender ?? true);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
 
   // We no longer need this effect because the slider component
   // enforces min <= max automatically via minStepsBetweenThumbs
@@ -49,7 +50,7 @@ const DemographicEditor: React.FC<DemographicEditorProps> = ({
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     // Validate age range
     const validMinAge = Math.max(18, Math.min(65, minAge));
     const validMaxAge = Math.max(validMinAge, Math.min(65, maxAge));
@@ -57,17 +58,54 @@ const DemographicEditor: React.FC<DemographicEditorProps> = ({
     // Ensure at least one gender is selected
     const validIncludeMale = includeMale || !includeFemale;
     const validIncludeFemale = includeFemale || !includeMale;
-    
-    if (onSave) {
-      onSave({ 
-        minAge: validMinAge, 
-        maxAge: validMaxAge, 
-        includeMale: validIncludeMale, 
-        includeFemale: validIncludeFemale 
+
+    if (!masterFlowData?.campaign_flow_session_id) {
+      alert('Campaign session ID is missing. Cannot save demographics.');
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      const response = await fetch('/api/fasty-bot/proxy-adjust-demographics', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          campaign_creation_flow_session_id: masterFlowData.campaign_flow_session_id,
+          min_age: validMinAge,
+          max_age: validMaxAge,
+          include_male: validIncludeMale,
+          include_female: validIncludeFemale
+        }),
       });
-    } else {
-      // Default behavior if no onSave provided
-      alert('Demographics save functionality will be implemented later');
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to save demographics');
+      }
+
+      const data = await response.json();
+      console.log('Demographics saved successfully:', data);
+      
+      // Show success message
+      alert('Demographics saved successfully!');
+      
+      // Call onSave callback if provided
+      if (onSave) {
+        onSave({ 
+          minAge: validMinAge, 
+          maxAge: validMaxAge, 
+          includeMale: validIncludeMale, 
+          includeFemale: validIncludeFemale 
+        });
+      }
+    } catch (error) {
+      console.error('Error saving demographics:', error);
+      alert(`Error: ${error instanceof Error ? error.message : 'Failed to save demographics'}`);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -163,8 +201,16 @@ const DemographicEditor: React.FC<DemographicEditorProps> = ({
               <Button 
                 className="bg-coral hover:bg-coral/90 text-white px-6 py-2 rounded-md text-sm font-medium"
                 onClick={handleSave}
+                disabled={isSaving}
               >
-                Save Demographics
+                {isSaving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  'Save Demographics'
+                )}
               </Button>
             </div>
           </>
