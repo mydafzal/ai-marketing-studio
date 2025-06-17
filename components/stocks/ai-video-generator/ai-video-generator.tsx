@@ -8,6 +8,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { toast } from "sonner"
 import confetti from "canvas-confetti"
 import { Brain, Sparkles, Check, Download } from "lucide-react"
+import { useT } from "@/lib/i18n/context"
 
 // 1) SERVER ACTION that improves the prompt text
 // Ensure you have this action: /app/actions/generate-prompt.ts
@@ -16,11 +17,13 @@ import { improvePrompt } from "@/app/actions/generate-prompt"
 /**
  * A client component that:
  *  - Lets user enter a prompt, optionally upload an image, pick duration/ratio
- *  - Has a button to “Improve with AI” (calls `improvePrompt(...)`)
+ *  - Has a button to "Improve with AI" (calls `improvePrompt(...)`)
  *  - Generates a video with /api/generate-video
  *  - Offers a Download button for the final MP4
  */
 export function AiVideoGenerator() {
+  const t = useT()
+  
   // -------------------------
   // COMPONENT STATE
   // -------------------------
@@ -36,14 +39,14 @@ export function AiVideoGenerator() {
 
   // Steps displayed while generating
   const generationSteps = useMemo(() => [
-    "Understanding your video concept...",
-    "Analyzing your uploaded image...",
-    "Synthesizing transitions and animations...",
-    "Finalizing your AI video..."
-  ], [])
+    t('aiVideoGenerator.steps.understanding'),
+    t('aiVideoGenerator.steps.analyzing'),
+    t('aiVideoGenerator.steps.synthesizing'),
+    t('aiVideoGenerator.steps.finalizing')
+  ], [t])
   const [currentStepIndex, setCurrentStepIndex] = useState(0)
 
-  // For the “Improve with AI” flow
+  // For the "Improve with AI" flow
   const [isImproving, setIsImproving] = useState(false)
 
   // -------------------------
@@ -89,10 +92,10 @@ export function AiVideoGenerator() {
       document.body.removeChild(link)
       window.URL.revokeObjectURL(tempUrl)
 
-      toast.success("Video downloaded successfully!")
+      toast.success(t('aiVideoGenerator.success.videoDownloaded'))
     } catch (err) {
       console.error("Error downloading video:", err)
-      toast.error("Failed to download video. Please try again.")
+      toast.error(t('aiVideoGenerator.errors.downloadFailed'))
     }
   }
 
@@ -101,17 +104,17 @@ export function AiVideoGenerator() {
   // -------------------------
   async function handleImprovePrompt() {
     if (!videoPrompt.trim()) {
-      toast.error("Please enter a prompt first.")
+      toast.error(t('aiVideoGenerator.errors.enterPrompt'))
       return
     }
     setIsImproving(true)
     try {
       const improved = await improvePrompt(videoPrompt)
       setVideoPrompt(improved)
-      toast.success("Prompt improved with AI!")
+      toast.success(t('aiVideoGenerator.success.promptImproved'))
     } catch (error: any) {
       console.error("Error improving prompt:", error)
-      toast.error(error.message || "Failed to improve prompt.")
+      toast.error(error.message || t('aiVideoGenerator.errors.improveFailed'))
     } finally {
       setIsImproving(false)
     }
@@ -122,11 +125,11 @@ export function AiVideoGenerator() {
   // -------------------------
   const handleGenerateVideo = async () => {
     if (!videoPrompt.trim()) {
-      toast.error("Please enter a prompt first.")
+      toast.error(t('aiVideoGenerator.errors.enterPrompt'))
       return
     }
     if (!videoImageFile) {
-      toast.error("Please upload an image first.")
+      toast.error(t('aiVideoGenerator.errors.uploadImage'))
       return
     }
 
@@ -165,12 +168,12 @@ export function AiVideoGenerator() {
 
       if (!res.ok) {
         const errData = await res.json()
-        throw new Error(errData.error || "Failed to generate video.")
+        throw new Error(errData.error || t('aiVideoGenerator.errors.generationFailed'))
       }
 
       const json = await res.json()
       if (!json.success) {
-        throw new Error(json.error || "No success from replicate.")
+        throw new Error(json.error || t('aiVideoGenerator.errors.generationFailed'))
       }
 
       // SUCCESS: set the final video URL & states
@@ -181,13 +184,13 @@ export function AiVideoGenerator() {
         spread: 70,
         origin: { y: 0.6 }
       })
-      toast.success("Your AI video has been generated!")
+      toast.success(t('aiVideoGenerator.success.videoGenerated'))
 
       // IMPORTANT: if successful => turn off "generating"
       setIsVideoGenerating(false)
     } catch (error: any) {
       console.error("Error generating video:", error)
-      toast.error(error.message || "Failed to generate video. Please try again.")
+      toast.error(error.message || t('aiVideoGenerator.errors.generationFailed'))
       // If error => turn off "generating"
       setIsVideoGenerating(false)
     }
@@ -242,10 +245,10 @@ export function AiVideoGenerator() {
         </div>
         <div className="space-y-3">
           <p className="text-[20px] font-bold text-text-white">
-            AI Brain is Processing
+            {t('aiVideoGenerator.aiProcessing')}
           </p>
           <p className="text-[15px] text-text-light-gray">
-            Creating your custom video...
+            {t('aiVideoGenerator.creatingCustomVideo')}
           </p>
         </div>
         <div className="flex justify-center space-x-3">
@@ -272,7 +275,7 @@ export function AiVideoGenerator() {
               muted
             >
               <source src={videoUrl || "/aiclothing.mp4"} type="video/mp4" />
-              Your browser does not support the video tag.
+              {t('aiVideoGenerator.browserNotSupported')}
             </video>
           </div>
 
@@ -284,7 +287,7 @@ export function AiVideoGenerator() {
               className="flex gap-3 items-center border-border-dark text-text-white hover:bg-container-bg transition-all duration-200 h-12 px-5 rounded-lg"
             >
               <Download className="size-5" />
-              <span className="text-[15px] font-medium">Download Video</span>
+              <span className="text-[15px] font-medium">{t('aiVideoGenerator.downloadVideo')}</span>
             </Button>
           </div>
         </div>
@@ -295,8 +298,11 @@ export function AiVideoGenerator() {
     return (
       <div className="text-center space-y-4">
         <Brain className="size-16 mx-auto text-text-light-gray mb-4 opacity-50" />
-        <span className="text-text-light-gray text-[16px] block max-w-xs mx-auto">
-          Your AI-generated video will appear here once created.
+        <h3 className="text-[18px] font-medium text-text-white">
+          {t('aiVideoGenerator.noVideosGenerated')}
+        </h3>
+        <span className="text-text-light-gray text-[14px] block max-w-md mx-auto">
+          {t('aiVideoGenerator.noVideosDescription')}
         </span>
       </div>
     )
@@ -318,12 +324,12 @@ export function AiVideoGenerator() {
         {/* Video Prompt */}
         <div className="space-y-3">
           <h3 className="text-[18px] font-bold text-text-white">
-            Describe the video you want
+            {t('aiVideoGenerator.describeVideo')}
           </h3>
           <Textarea
             value={videoPrompt}
             onChange={(e) => setVideoPrompt(e.target.value)}
-            placeholder="A cinematic panning shot of a modern office space with natural lighting, showing professionals collaborating..."
+            placeholder={t('aiVideoGenerator.placeholderPrompt')}
             className="w-full min-h-[120px] border-border-dark bg-dark-bg text-text-white placeholder:text-text-light-gray focus:ring-primary-green focus:border-primary-green rounded-lg text-[15px] leading-relaxed transition-all duration-200"
           />
           
@@ -337,12 +343,12 @@ export function AiVideoGenerator() {
             {isImproving ? (
               <div className="flex items-center gap-2">
                 <Sparkles className="size-4 animate-spin" />
-                <span className="text-[14px]">Enhancing...</span>
+                <span className="text-[14px]">{t('aiVideoGenerator.enhancing')}</span>
               </div>
             ) : (
               <div className="flex items-center gap-2">
                 <Sparkles className="size-4" />
-                <span className="text-[14px]">Enhance prompt with AI</span>
+                <span className="text-[14px]">{t('aiVideoGenerator.enhancePrompt')}</span>
               </div>
             )}
           </Button>
@@ -351,13 +357,13 @@ export function AiVideoGenerator() {
         {/* Video Settings Section */}
         <div className="space-y-5">
           <h3 className="text-[18px] font-bold text-text-white">
-            Video Settings
+            {t('aiVideoGenerator.videoSettings')}
           </h3>
           
           {/* Duration */}
           <div className="space-y-3">
             <label className="text-[14px] font-medium text-text-light-gray">
-              Duration
+              {t('aiVideoGenerator.duration')}
             </label>
             <div className="flex space-x-3">
               <Button
@@ -368,7 +374,7 @@ export function AiVideoGenerator() {
                   : "flex-1 bg-transparent border-border-dark text-text-light-gray hover:bg-container-bg hover:text-text-white transition-all duration-200 h-12 rounded-lg"
                 }
               >
-                <span className="text-[14px]">5 seconds</span>
+                <span className="text-[14px]">{t('aiVideoGenerator.duration5')}</span>
               </Button>
               <Button
                 variant="outline"
@@ -378,7 +384,7 @@ export function AiVideoGenerator() {
                   : "flex-1 bg-transparent border-border-dark text-text-light-gray hover:bg-container-bg hover:text-text-white transition-all duration-200 h-12 rounded-lg"
                 }
               >
-                <span className="text-[14px]">10 seconds</span>
+                <span className="text-[14px]">{t('aiVideoGenerator.duration10')}</span>
               </Button>
             </div>
           </div>
@@ -386,7 +392,7 @@ export function AiVideoGenerator() {
           {/* Aspect Ratio */}
           <div className="space-y-3">
             <label className="text-[14px] font-medium text-text-light-gray">
-              Aspect Ratio
+              {t('aiVideoGenerator.aspectRatio')}
             </label>
             <div className="flex space-x-3">
               <Button
@@ -397,7 +403,7 @@ export function AiVideoGenerator() {
                   : "flex-1 bg-transparent border-border-dark text-text-light-gray hover:bg-container-bg hover:text-text-white transition-all duration-200 h-12 rounded-lg"
                 }
               >
-                <span className="text-[14px]">Landscape (16:9)</span>
+                <span className="text-[14px]">{t('aiVideoGenerator.landscape')}</span>
               </Button>
               <Button
                 variant="outline"
@@ -407,7 +413,7 @@ export function AiVideoGenerator() {
                   : "flex-1 bg-transparent border-border-dark text-text-light-gray hover:bg-container-bg hover:text-text-white transition-all duration-200 h-12 rounded-lg"
                 }
               >
-                <span className="text-[14px]">Portrait (9:16)</span>
+                <span className="text-[14px]">{t('aiVideoGenerator.portrait')}</span>
               </Button>
             </div>
           </div>
@@ -415,7 +421,7 @@ export function AiVideoGenerator() {
           {/* Image Upload */}
           <div className="space-y-3">
             <label className="text-[14px] font-medium text-text-light-gray">
-              Starting Image (Required)
+              {t('aiVideoGenerator.startingImage')}
             </label>
             <div className="flex flex-col">
               <Input
@@ -429,7 +435,7 @@ export function AiVideoGenerator() {
                 htmlFor="videoImage" 
                 className="flex items-center justify-center w-full h-12 rounded-lg border border-dashed border-border-dark bg-transparent text-text-light-gray hover:bg-container-bg hover:text-text-white cursor-pointer transition-all duration-200"
               >
-                <span className="text-[14px]">{videoImageFile ? videoImageFile.name : "Upload image"}</span>
+                <span className="text-[14px]">{videoImageFile ? videoImageFile.name : t('aiVideoGenerator.uploadImage')}</span>
               </label>
             </div>
           </div>
@@ -441,7 +447,7 @@ export function AiVideoGenerator() {
           disabled={isVideoGenerating}
           className="w-full h-12 mt-2 bg-primary-green hover:bg-primary-green/90 text-deep-black font-bold text-[16px] rounded-lg transition-all duration-200 transform hover:scale-[1.02]"
         >
-          {isVideoGenerating ? "Creating video..." : "Create video"}
+          {isVideoGenerating ? t('aiVideoGenerator.creatingVideo') : t('aiVideoGenerator.createVideo')}
         </Button>
       </div>
     )
@@ -455,10 +461,10 @@ export function AiVideoGenerator() {
       <Card className="bg-white dark:bg-container-bg border border-border-dark rounded-xl overflow-hidden shadow-[0_4px_12px_rgba(0,0,0,0.1)]">
         <CardHeader className="border-b border-border-dark px-6 py-5">
           <CardTitle className="text-gray-900 dark:text-text-white text-[20px] font-bold">
-            AI Video Generator
+            {t('aiVideoGenerator.title')}
           </CardTitle>
           <CardDescription className="text-gray-700 dark:text-text-light-gray text-[14px] mt-1">
-            Create engaging user-generated style videos using AI
+            {t('aiVideoGenerator.description')}
           </CardDescription>
         </CardHeader>
 

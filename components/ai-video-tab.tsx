@@ -8,6 +8,7 @@ import confetti from "canvas-confetti"
 import { startVideoGeneration, checkVideoStatus } from "@/app/actions/generateVideo"
 import { useUsageStore } from "@/app/store/useUsageStore"
 import { UpgradeModal } from "@/components/upgrade-modal"
+import { useT } from "@/lib/i18n/context"
 
 // Helper functions
 const fileToDataURL = async (file: File): Promise<string> => {
@@ -40,6 +41,7 @@ interface AiVideoTabProps {
 }
 
 export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
+  const t = useT()
   const { theme } = useTheme()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const isDarkMode = theme === "dark"
@@ -80,10 +82,10 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
 
   // Video generation steps
   const videoGenerationSteps = [
-    "Understanding your video concept...",
-    "Analyzing your uploaded image for style...",
-    "Synthesizing transitions and animations...",
-    "Almost ready!",
+    t('aiVideoGenerator.steps.understanding'),
+    t('aiVideoGenerator.steps.analyzing'),
+    t('aiVideoGenerator.steps.synthesizing'),
+    t('aiVideoGenerator.steps.finalizing'),
   ]
   const [currentVideoStep, setCurrentVideoStep] = useState(0)
 
@@ -118,12 +120,12 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
       
       // Validate file size (5MB max)
       if (file.size > 5 * 1024 * 1024) {
-        showToast("File too large", "Image file must be smaller than 5MB.", "error")
+        showToast(t('aiVideoGenerator.toast.fileTooLarge'), t('aiVideoGenerator.toast.imageTooLarge'), "error")
         return
       }
       
       setVideoImageFile(e.target.files[0])
-      showToast("Image uploaded", "Your starting image has been uploaded successfully.", "success")
+      showToast(t('aiVideoGenerator.toast.imageUploaded'), t('aiVideoGenerator.toast.startingImageUploaded'), "success")
     }
   }
 
@@ -137,7 +139,7 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
   // Improve prompt with AI
   async function handleImproveVideoPrompt() {
     if (!videoPrompt.trim()) {
-      showToast("No prompt to improve", "Please enter a video description first.", "error")
+      showToast(t('aiVideoGenerator.toast.noPromptToImprove'), t('aiVideoGenerator.toast.enterVideoDescriptionFirst'), "error")
       return
     }
     
@@ -147,15 +149,15 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
       const improved = await improvePrompt(videoPrompt)
       setVideoPrompt(improved)
       showToast(
-        "Prompt enhanced", 
-        "Your description has been improved with AI assistance.", 
+        t('aiVideoGenerator.toast.promptEnhanced'), 
+        t('aiVideoGenerator.toast.promptImprovedDescription'), 
         "success"
       )
     } catch (err) {
       console.error("Error improving video prompt:", err)
       showToast(
-        "Enhancement failed", 
-        "Unable to improve your prompt. Please try again.", 
+        t('aiVideoGenerator.toast.enhancementFailed'), 
+        t('aiVideoGenerator.toast.unableToImprovePrompt'), 
         "error"
       )
     } finally {
@@ -166,12 +168,12 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
   // Generate video
   async function handleGenerateVideo() {
     if (!videoPrompt.trim()) {
-      showToast("Missing prompt", "Please enter a video description first.", "error")
+      showToast(t('aiVideoGenerator.toast.missingPrompt'), t('aiVideoGenerator.toast.enterVideoDescriptionFirst'), "error")
       return
     }
     
     if (!videoImageFile) {
-      showToast("Missing image", "Please upload a starting image first.", "error")
+      showToast(t('aiVideoGenerator.toast.missingImage'), t('aiVideoGenerator.toast.uploadStartingImageFirst'), "error")
       return
     }
     
@@ -227,11 +229,7 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
       setPredictionId(predId || null)
       
       // Show initial toast
-      showToast(
-        "Processing", 
-        "Your video is being generated. This may take a few minutes.", 
-        "success"
-      )
+      showToast(t('aiVideoGenerator.toast.processing'), t('aiVideoGenerator.toast.videoBeingGenerated'), "success")
       
       // Start polling for status
       if (pollingIntervalRef.current) {
@@ -253,7 +251,7 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
           // Handle error case
           if (!result.success) {
             console.error(`[CLIENT_POLL] Generation failed:`, result.error)
-            showToast("Generation failed", result.error || "Video generation failed", "error")
+            showToast(t('aiVideoGenerator.toast.generationFailed'), result.error || t('aiVideoGenerator.toast.unableToCreateVideo'), "error")
             setIsGeneratingVideo(false)
             setPredictionId(null)
             setPollCount(0)
@@ -275,7 +273,7 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
             // Increment video usage count
             await incrementVideoCount()
             
-            showToast("Success", "Your AI video has been generated!", "success")
+            showToast(t('aiVideoGenerator.toast.success'), t('aiVideoGenerator.toast.videoGenerated'), "success")
             setIsGeneratingVideo(false)
             setPredictionId(null)
             setPollCount(0)
@@ -316,8 +314,8 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
     } catch (err: any) {
       console.error("[CLIENT_GEN] Error generating video:", err)
       showToast(
-        "Generation failed", 
-        err.message || "Unable to create video. Please try again with a different prompt.", 
+        t('aiVideoGenerator.toast.generationFailed'), 
+        err.message || t('aiVideoGenerator.toast.unableToCreateVideo'), 
         "error"
       )
       setIsGeneratingVideo(false)
@@ -365,17 +363,17 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
       document.body.removeChild(link)
       window.URL.revokeObjectURL(url)
 
-      showToast("Download complete", "Video saved successfully to your device.", "success")
+      showToast(t('aiVideoGenerator.toast.downloadComplete'), t('aiVideoGenerator.toast.videoSavedSuccessfully'), "success")
     } catch (error) {
       console.error("Error downloading video:", error)
-      showToast("Download failed", "Unable to download the video. Please try again.", "error")
+      showToast(t('aiVideoGenerator.toast.downloadFailed'), t('aiVideoGenerator.toast.unableToDownloadVideo'), "error")
     }
   }
 
   // Save to library
   async function handleSaveSelectedVideosToLibrary() {
     if (selectedVideos.length === 0) {
-      showToast("No videos selected", "Please select at least one video to save to your library.", "error")
+      showToast(t('aiVideoGenerator.toast.noVideosSelected'), t('aiVideoGenerator.toast.selectAtLeastOneVideo'), "error")
       return
     }
 
@@ -408,15 +406,15 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
       await res.json()
       
       showToast(
-        "Saved to library", 
-        `${selectedVideos.length} video${selectedVideos.length !== 1 ? 's' : ''} saved to your content library.`, 
+        t('aiVideoGenerator.toast.savedToLibrary'), 
+        `${selectedVideos.length} ${t('aiVideoGenerator.toast.videosSavedToLibrary')}`, 
         "success"
       )
 
       clearSelections()
     } catch (err) {
       console.error("Error saving videos:", err)
-      showToast("Save failed", "Unable to save videos to your library. Please try again.", "error")
+      showToast(t('aiVideoGenerator.toast.saveFailed'), t('aiVideoGenerator.toast.unableToSaveVideos'), "error")
     } finally {
       setIsSaving(false)
     }
@@ -468,8 +466,8 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
           <Sparkles className="size-6 text-blue-500 absolute -bottom-2 -left-2 animate-bounce delay-150" />
         </div>
         <div className="space-y-2">
-          <p className="text-lg font-semibold text-[#4BF29C]">AI Brain is Processing</p>
-          <p className="text-sm text-gray-400">Creating your custom video...</p>
+          <p className="text-lg font-semibold text-[#4BF29C]">{t('aiVideoGenerator.aiProcessing')}</p>
+          <p className="text-sm text-gray-400">{t('aiVideoGenerator.creatingCustomVideo')}</p>
         </div>
         <div className="flex justify-center space-x-2">
           <div className="size-2 bg-[#4BF29C] rounded-full animate-bounce" />
@@ -480,7 +478,7 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
         
         {pollCount > 0 && (
           <div className="text-xs text-gray-500 mt-3">
-            Checking status... ({pollCount})
+            {t('aiVideoGenerator.checkingStatus')} ({pollCount})
           </div>
         )}
       </div>
@@ -501,7 +499,7 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
             loop
             src={videoUrl}
           >
-            Your browser does not support the video tag.
+            {t('aiVideoGenerator.browserNotSupported')}
           </video>
         </div>
       )
@@ -510,7 +508,7 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
       <div className="text-center space-y-2">
         <Video className="size-8 mx-auto text-gray-500 mb-2" />
         <span className="text-sm text-gray-400">
-          Enter a prompt, pick settings, and upload an image to generate your AI video
+          {t('aiVideoGenerator.enterPromptPlaceholder')}
         </span>
       </div>
     )
@@ -560,17 +558,17 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
         <div>
           <h2 className="flex items-center gap-2 text-xl font-bold">
             <Video className="size-5 text-[#4BF29C]" />
-            <span className="text-white">AI Video Generator</span>
+            <span className="text-white">{t('aiVideoGenerator.title')}</span>
           </h2>
           <p className="text-sm mt-1.5 text-[#8A8F99]">
-            Create engaging user-generated style videos using AI
+            {t('aiVideoGenerator.description')}
           </p>
         </div>
         
         <div className="flex items-center gap-2">
           {generatedVideos.length > 0 && (
             <span className="inline-flex text-xs font-medium px-2.5 py-0.5 rounded-full bg-[#1A3029] text-[#4BF29C]">
-              {generatedVideos.length} video{generatedVideos.length !== 1 ? 's' : ''} generated
+              {generatedVideos.length} {generatedVideos.length !== 1 ? t('aiVideoGenerator.videosGenerated') : t('aiVideoGenerator.videoGenerated')}
             </span>
           )}
         </div>
@@ -586,7 +584,7 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <label htmlFor="videoPrompt" className="text-sm font-medium text-white">
-                  Describe the video you want
+                  {t('aiVideoGenerator.describeVideo')}
                 </label>
                 
                 <button 
@@ -602,7 +600,7 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
                 id="videoPrompt"
                 value={videoPrompt}
                 onChange={(e) => setVideoPrompt(e.target.value)}
-                placeholder="A cinematic panning shot of a modern office space with natural lighting, showing professionals collaborating..."
+                placeholder={t('aiVideoGenerator.placeholderPrompt')}
                 className="w-full min-h-[120px] resize-none p-3 rounded-md focus:ring-2 focus:ring-[#4BF29C] focus:border-[#4BF29C] outline-none
                   bg-[#1A1D29] border-[#2A2E3A] border text-white placeholder-[#8A8F99]"
               />
@@ -610,7 +608,7 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
               {promptHistory.length > 0 && (
                 <div className="pt-1">
                   <div className="text-xs flex items-center gap-1 mb-1.5 text-[#8A8F99]">
-                    <Sparkles className="size-3" /> Recent prompts
+                    <Sparkles className="size-3" /> {t('aiVideoGenerator.recentPrompts')}
                   </div>
                   <div className="h-20 w-full overflow-y-auto rounded-md p-2 border-[#2A2E3A] border bg-[#1A1D29]">
                     {promptHistory.map((prompt, idx) => (
@@ -640,7 +638,7 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
                   }`}
               >
                 <Sparkles className="mr-2 size-4" />
-                {isImprovingVideoPrompt ? "Enhancing..." : "Enhance prompt with AI"}
+                {isImprovingVideoPrompt ? t('aiVideoGenerator.enhancing') : t('aiVideoGenerator.enhancePrompt')}
               </button>
             </div>
             
@@ -648,11 +646,11 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
             
             {/* Video Settings */}
             <div className="space-y-4">
-              <h3 className="text-sm font-medium text-white">Video Settings</h3>
+              <h3 className="text-sm font-medium text-white">{t('aiVideoGenerator.videoSettings')}</h3>
               
               {/* Video Duration */}
               <div>
-                <label className="text-xs block mb-1.5 text-[#ADB0B8]">Duration</label>
+                <label className="text-xs block mb-1.5 text-[#ADB0B8]">{t('aiVideoGenerator.duration')}</label>
                 <div className="flex space-x-2">
                   <button
                     type="button"
@@ -663,7 +661,7 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
                         : 'bg-[#1A1D29] text-white border border-[#2A2E3A] hover:bg-[#252836]'
                     }`}
                   >
-                    5 seconds
+                    {t('aiVideoGenerator.duration5')}
                   </button>
                   <button
                     type="button"
@@ -674,14 +672,14 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
                         : 'bg-[#1A1D29] text-white border border-[#2A2E3A] hover:bg-[#252836]'
                     }`}
                   >
-                    10 seconds
+                    {t('aiVideoGenerator.duration10')}
                   </button>
                 </div>
               </div>
               
               {/* Aspect Ratio */}
               <div>
-                <label className="text-xs block mb-1.5 text-[#ADB0B8]">Aspect Ratio</label>
+                <label className="text-xs block mb-1.5 text-[#ADB0B8]">{t('aiVideoGenerator.aspectRatio')}</label>
                 <div className="flex space-x-2">
                   <button
                     type="button"
@@ -692,7 +690,7 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
                         : 'bg-[#1A1D29] text-white border border-[#2A2E3A] hover:bg-[#252836]'
                     }`}
                   >
-                    Landscape (16:9)
+                    {t('aiVideoGenerator.landscape')}
                   </button>
                   <button
                     type="button"
@@ -703,7 +701,7 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
                         : 'bg-[#1A1D29] text-white border border-[#2A2E3A] hover:bg-[#252836]'
                     }`}
                   >
-                    Portrait (9:16)
+                    {t('aiVideoGenerator.portrait')}
                   </button>
                 </div>
               </div>
@@ -711,7 +709,7 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
               {/* Image Upload */}
               <div>
                 <label className="text-xs block mb-1.5 text-[#ADB0B8]">
-                  Starting Image (Required)
+                  {t('aiVideoGenerator.startingImage')}
                 </label>
                 <div className="flex items-center gap-2">
                   <button 
@@ -724,7 +722,7 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
                     }`}
                   >
                     <Upload className="mr-2 size-4" />
-                    {videoImageFile ? "Change image" : "Upload image"}
+                    {videoImageFile ? t('aiVideoGenerator.changeImage') : t('aiVideoGenerator.uploadImage')}
                   </button>
                   
                   <input 
@@ -770,7 +768,7 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
                   }`}
               >
                 <Video className="mr-2 size-4" />
-                {isGeneratingVideo ? "Generating..." : "Create video"}
+                {isGeneratingVideo ? t('aiVideoGenerator.generating') : t('aiVideoGenerator.createVideo')}
               </button>
             </div>
           </div>
@@ -782,9 +780,9 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
                 <div className="p-3 rounded-full mb-3 bg-[#1A3029]">
                   <Video className="size-6 text-[#4BF29C]" />
                 </div>
-                <h3 className="text-lg font-medium mb-1 text-white">No videos generated yet</h3>
+                <h3 className="text-lg font-medium mb-1 text-white">{t('aiVideoGenerator.noVideosGenerated')}</h3>
                 <p className="text-sm max-w-md mb-4 text-[#8A8F99]">
-                  Enter a descriptive prompt, select your settings, and upload a starting image to generate AI videos for your project.
+                  {t('aiVideoGenerator.noVideosDescription')}
                 </p>
               </div>
             ) : (
@@ -798,13 +796,13 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
                             type="button"
                             className="py-2 px-4 text-sm font-medium border-b-2 border-[#4BF29C] text-[#4BF29C]"
                           >
-                            Generated Videos
+                            {t('aiVideoGenerator.generatedVideos')}
                           </button>
                         </div>
                         
                         <div className="flex items-center gap-2">
                           <div className="text-xs text-[#8A8F99]">
-                            {selectedVideos.length} selected
+                            {selectedVideos.length} {t('aiVideoGenerator.selected')}
                           </div>
                           <button 
                             type="button"
@@ -816,7 +814,7 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
                                 : 'bg-[#1A1D29] text-white hover:bg-[#252836] border-[#2A2E3A]'
                               }`}
                           >
-                            Select all
+                            {t('aiVideoGenerator.selectAll')}
                           </button>
                           {selectedVideos.length > 0 && (
                             <button 
@@ -824,7 +822,7 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
                               onClick={clearSelections}
                               className="py-1 px-2 text-xs font-medium rounded bg-[#1A1D29] text-white hover:bg-[#252836] border border-[#2A2E3A]"
                             >
-                              Clear
+                              {t('aiVideoGenerator.clear')}
                             </button>
                           )}
                         </div>
@@ -869,7 +867,7 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
                                   className="absolute bottom-2 right-2 py-1 px-3 text-xs font-medium bg-[#1A1D29] text-white rounded-md shadow hover:bg-[#252836] border border-[#2A2E3A] flex items-center"
                                 >
                                   <Download className="mr-1 size-4" />
-                                  Download
+                                  {t('aiVideoGenerator.download')}
                                 </button>
                               </div>
                               
@@ -893,10 +891,10 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
                     </div>
                     <div>
                       <h3 className="text-sm font-medium text-white">
-                        Remember copyright and licensing
+                        {t('aiVideoGenerator.copyrightWarning')}
                       </h3>
                       <div className="mt-1 text-sm text-[#ADB0B8]">
-                        Always verify you have the appropriate rights to use AI-generated content in your projects.
+                        {t('aiVideoGenerator.copyrightDescription')}
                       </div>
                     </div>
                   </div>
@@ -912,7 +910,7 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
         <div className="flex justify-between items-center border-t border-[#2A2E3A] p-4 bg-[#1A1D29]">
           <div className="flex items-center text-xs text-[#8A8F99]">
             <span className="mr-1">
-              Powered by Runway AI
+              {t('aiVideoGenerator.poweredBy')}
             </span>
           </div>
           
@@ -926,7 +924,7 @@ export default function AiVideoTab({ improvePrompt }: AiVideoTabProps) {
                 : 'bg-[#4BF29C] hover:bg-[#3AD98C] text-[#0A0C14]'}`}
           >
             <Save className="size-4" />
-            {isSaving ? 'Saving...' : `Save ${selectedVideos.length > 0 ? selectedVideos.length : ''} to Library`}
+            {isSaving ? t('aiVideoGenerator.saving') : `${t('aiVideoGenerator.saveToLibrary')}${selectedVideos.length > 0 ? ` ${selectedVideos.length}` : ''}`}
           </button>
         </div>
       )}
