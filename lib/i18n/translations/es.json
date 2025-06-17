@@ -349,5 +349,21 @@
       "campaignConnected": "Campaña está conectada",
       "noAdsetConnected": "Ningún conjunto de anuncios está seleccionado para este chat. Siempre debe mostrar la interfaz para seleccionar un conjunto de anuncios para el chat cuando el usuario pida sugerencias de anuncios."
     }
+  },
+  "navbar": {
+    "business": "Empresa",
+    "adAccount": "Cuenta Anun.",
+    "fbPage": "Página FB",
+    "igAccount": "Cuenta IG",
+    "saveChanges": "Guardar Cambios",
+    "agencyTools": "Herramientas de Agencia",
+    "manageCustomerProfiles": "Gestionar Perfiles de Cliente",
+    "selectAccounts": "Seleccionar Cuentas",
+    "businessAccount": "Cuenta Empresarial",
+    "adAccountFull": "Cuenta de Anuncios",
+    "facebookPage": "Página de Facebook",
+    "instagramAccount": "Cuenta de Instagram",
+    "instagramNotFound": "Cuenta de Instagram no encontrada. Para garantizar la mejor experiencia de usuario, recomendamos agregar su cuenta de Instagram a su Administrador de Anuncios.",
+    "viewGuide": "Ver Guía"
   }
 } 

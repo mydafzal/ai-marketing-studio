@@ -349,5 +349,21 @@
     "changeBudget": "Aș vrea să schimb bugetul campaniei mele",
     "toggleCampaign": "Vreau să activez/dezactivez campania mea",
     "manageNotifications": "Vreau să gestionez notificările mele de lead-uri"
+  },
+  "navbar": {
+    "business": "Afacere",
+    "adAccount": "Cont Reclame",
+    "fbPage": "Pagină FB",
+    "igAccount": "Cont IG",
+    "saveChanges": "Salvează Modificările",
+    "agencyTools": "Instrumente Agenție",
+    "manageCustomerProfiles": "Gestionează Profilurile Clienților",
+    "selectAccounts": "Selectează Conturile",
+    "businessAccount": "Cont de Afaceri",
+    "adAccountFull": "Cont de Publicitate",
+    "facebookPage": "Pagina Facebook",
+    "instagramAccount": "Cont Instagram",
+    "instagramNotFound": "Contul Instagram nu a fost găsit. Pentru a asigura cea mai bună experiență de utilizator, recomandăm să adăugați contul dvs. Instagram la Managerul de Reclame.",
+    "viewGuide": "Vezi Ghidul"
   }
 } 

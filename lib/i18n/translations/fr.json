@@ -5,6 +5,22 @@
     "login": "Se connecter",
     "signOut": "Se déconnecter"
   },
+  "navbar": {
+    "business": "Entreprise",
+    "adAccount": "Compte Pub",
+    "fbPage": "Page FB",
+    "igAccount": "Compte IG",
+    "saveChanges": "Enregistrer les Modifications",
+    "agencyTools": "Outils d'Agence",
+    "manageCustomerProfiles": "Gérer les Profils Clients",
+    "selectAccounts": "Sélectionner les Comptes",
+    "businessAccount": "Compte Professionnel",
+    "adAccountFull": "Compte Publicitaire",
+    "facebookPage": "Page Facebook",
+    "instagramAccount": "Compte Instagram",
+    "instagramNotFound": "Compte Instagram non trouvé. Pour garantir la meilleure expérience utilisateur, nous recommandons d'ajouter votre compte Instagram à votre Gestionnaire de Publicités.",
+    "viewGuide": "Voir le Guide"
+  },
   "sidebar": {
     "shareChat": "Partager le chat",
     "deleteChat": "Supprimer le chat",

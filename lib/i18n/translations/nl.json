@@ -349,5 +349,21 @@
       "campaignConnected": "Campagne is verbonden",
       "noAdsetConnected": "Er is geen advertentieset geselecteerd voor deze chat. Je moet altijd een interface tonen om een advertentieset voor de chat te selecteren wanneer de gebruiker om advertentiesuggesties vraagt."
     }
+  },
+  "navbar": {
+    "business": "Bedrijf",
+    "adAccount": "Advertentie Acc",
+    "fbPage": "FB Pagina",
+    "igAccount": "IG Account",
+    "saveChanges": "Wijzigingen Opslaan",
+    "agencyTools": "Bureau Tools",
+    "manageCustomerProfiles": "Klantprofielen Beheren",
+    "selectAccounts": "Accounts Selecteren",
+    "businessAccount": "Bedrijfsaccount",
+    "adAccountFull": "Advertentieaccount",
+    "facebookPage": "Facebook Pagina",
+    "instagramAccount": "Instagram Account",
+    "instagramNotFound": "Instagram account niet gevonden. Voor de beste gebruikerservaring raden we aan om uw Instagram account toe te voegen aan uw Advertentiebeheer.",
+    "viewGuide": "Bekijk Gids"
   }
 } 

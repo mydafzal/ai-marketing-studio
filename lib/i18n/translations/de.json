@@ -349,5 +349,21 @@
     "changeBudget": "Ich möchte mein Kampagnenbudget ändern",
     "toggleCampaign": "Ich möchte meine Kampagne ein-/ausschalten",
     "manageNotifications": "Ich möchte meine Lead-Benachrichtigungen verwalten"
+  },
+  "navbar": {
+    "business": "Unternehmen",
+    "adAccount": "Anzeigen-Konto",
+    "fbPage": "FB-Seite",
+    "igAccount": "IG-Konto",
+    "saveChanges": "Änderungen speichern",
+    "agencyTools": "Agentur-Tools",
+    "manageCustomerProfiles": "Kundenprofile verwalten",
+    "selectAccounts": "Konten auswählen",
+    "businessAccount": "Geschäftskonto",
+    "adAccountFull": "Anzeigenkonto",
+    "facebookPage": "Facebook-Seite",
+    "instagramAccount": "Instagram-Konto",
+    "instagramNotFound": "Instagram-Konto nicht gefunden. Für die beste Benutzererfahrung empfehlen wir, Ihr Instagram-Konto zu Ihrem Ads Manager hinzuzufügen.",
+    "viewGuide": "Anleitung anzeigen"
   }
 } 

@@ -5,6 +5,22 @@
     "login": "Login",
     "signOut": "Sign Out"
   },
+  "navbar": {
+    "business": "Business",
+    "adAccount": "Ad Acc",
+    "fbPage": "FB Page",
+    "igAccount": "IG Acc",
+    "saveChanges": "Save Changes",
+    "agencyTools": "Agency Tools",
+    "manageCustomerProfiles": "Manage Customer Profiles",
+    "selectAccounts": "Select Accounts",
+    "businessAccount": "Business Account",
+    "adAccountFull": "Ad Account",
+    "facebookPage": "Facebook Page",
+    "instagramAccount": "Instagram Account",
+    "instagramNotFound": "Instagram account not found. To ensure the best user experience, we recommend adding your Instagram account to your Ads Manager.",
+    "viewGuide": "View Guide"
+  },
   "sidebar": {
     "shareChat": "Share chat",
     "deleteChat": "Delete chat",

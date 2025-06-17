@@ -6,6 +6,7 @@ import { AccountConnectionModal } from './account-not-connected-screen'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useT } from '@/lib/i18n/context'
 
 type Account = {
   name: string;
@@ -37,11 +38,14 @@ const NavbarDropdowns = ({
   updateFbAccountId,
   updateFbPageId,
 }: NavbarDropdownsProps) => {
-  const [selectedFbBusinessAcc, setSelectedFbBusinessAcc] = useState<Account | undefined>();
-  const [fbBusinessAccs, setFbBusinessAccs] = useState<Account[] | undefined>(undefined);
-  const [selectedFbAdAcc, setSelectedFbAdAcc] = useState<Account | undefined>(undefined);
-  const [fbAdAccs, setFbAdAccs] = useState<Account[] | undefined>(undefined);
-  const [selectedFbPage, setSelectedFbPage] = useState<Account | undefined>(undefined);
+  const router = useRouter()
+  const t = useT()
+  
+  const [fbBusinessAccs, setFbBusinessAccs] = useState<Account[]>([])
+  const [selectedFbBusinessAcc, setSelectedFbBusinessAcc] = useState<Account | undefined>(undefined)
+  const [selectedFbAdAcc, setSelectedFbAdAcc] = useState<Account | undefined>(undefined)
+  const [fbAdAccs, setFbAdAccs] = useState<Account[] | undefined>(undefined)
+  const [selectedFbPage, setSelectedFbPage] = useState<Account | undefined>(undefined)
   const [fbPages, setFbPages] = useState<Account[] | undefined>(undefined);
   const [instagramAccounts, setInstagramAccounts] = useState<Account[] | undefined>(undefined);
   const [selectedInstagramAccount, setSelectedInstagramAccount] = useState<Account | undefined>(undefined);
@@ -55,8 +59,6 @@ const NavbarDropdowns = ({
   // Move this useState hook before any conditional returns to fix the ESLint error
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showConnectionModal, setShowConnectionModal] = useState(false);
-
-  const router = useRouter();
 
   async function getBusinessAPICall() {
     if (userDetails?.fbMarketingApiKey) {
@@ -473,11 +475,11 @@ const NavbarDropdowns = ({
           <div className="w-full bg-amber-800/20 border-y border-amber-800/30 py-1 px-4 relative z-50">
             <div className="flex items-center justify-center">
               <p className="text-amber-400 text-xs text-center">
-                Instagram account not found. To ensure the best user experience, we recommend adding your Instagram account to your Ads Manager.
+                {t('navbar.instagramNotFound')}
               </p>
               <div className="relative inline-block ml-1">
                 <a href="https://joyous-brow-6da.notion.site/Instagram-not-configured-1ed16186aac98085a1b6d611885d1950" target="_blank" rel="noopener noreferrer" className="text-amber-400 text-xs underline hover:text-amber-300 ml-1 cursor-pointer">
-                  View Guide
+                  {t('navbar.viewGuide')}
                 </a>
               </div>
             </div>
@@ -485,7 +487,7 @@ const NavbarDropdowns = ({
         )}
         <div className="flex flex-nowrap items-center justify-center space-x-4 lg:space-x-6 px-6 py-2 bg-dark-bg border-b border-border-dark w-full">
           <div className="flex items-center relative">
-            <span className="text-xs text-zinc-400 mr-2 whitespace-nowrap">Business:</span>
+            <span className="text-xs text-zinc-400 mr-2 whitespace-nowrap">{t('navbar.business')}:</span>
             {businessAccLoading && <Spinner />}
             <FBAccountDropdown
               title=""
@@ -498,7 +500,7 @@ const NavbarDropdowns = ({
           </div>
           
           <div className="flex items-center relative">
-            <span className="text-xs text-zinc-400 mr-2 whitespace-nowrap">Ad Acc:</span>
+            <span className="text-xs text-zinc-400 mr-2 whitespace-nowrap">{t('navbar.adAccount')}:</span>
             {adAccLoading && <Spinner />}
             <FBAccountDropdown
               title=""
@@ -511,7 +513,7 @@ const NavbarDropdowns = ({
           </div>
           
           <div className="flex items-center relative">
-            <span className="text-xs text-zinc-400 mr-2 whitespace-nowrap">FB Page:</span>
+            <span className="text-xs text-zinc-400 mr-2 whitespace-nowrap">{t('navbar.fbPage')}:</span>
             {fbPageLoading && <Spinner />}
             <FBAccountDropdown
               title=""
@@ -524,7 +526,7 @@ const NavbarDropdowns = ({
           </div>
           
           <div className="flex items-center relative">
-            <span className="text-xs text-zinc-400 mr-2 whitespace-nowrap">IG Acc:</span>
+            <span className="text-xs text-zinc-400 mr-2 whitespace-nowrap">{t('navbar.igAccount')}:</span>
             {igAccountLoading && <Spinner />}
             <FBAccountDropdown
               title=""
@@ -542,7 +544,7 @@ const NavbarDropdowns = ({
               onClick={refreshPage}
               className="bg-primary-green hover:bg-primary-green/90 text-black text-xs font-medium py-1 px-3 rounded-full transition-colors whitespace-nowrap"
             >
-              Save Changes
+              {t('navbar.saveChanges')}
             </button>
           </div>
           <div className="flex space-x-2 relative">
@@ -555,7 +557,7 @@ const NavbarDropdowns = ({
                 }
               }}
             >
-              Agency Tools
+              {t('navbar.agencyTools')}
               <svg 
                 className="w-4 h-4 ml-1" 
                 fill="none" 
@@ -577,7 +579,7 @@ const NavbarDropdowns = ({
                   onClick={() => router.push('/manage-persona')}
                   className="block w-full text-left px-4 py-2 text-sm text-white hover:bg-primary-green/20 transition-colors whitespace-nowrap"
                 >
-                  Manage Customer Profiles
+                  {t('navbar.manageCustomerProfiles')}
                 </button>
               </div>
             </div>
@@ -591,11 +593,11 @@ const NavbarDropdowns = ({
           <div className="w-full bg-amber-800/20 border-y border-amber-800/30 py-1 px-4 relative z-50">
             <div className="flex items-center justify-center">
               <p className="text-amber-400 text-xs text-center">
-                Instagram account not found. To ensure the best user experience, we recommend adding your Instagram account to your Ads Manager.
+                {t('navbar.instagramNotFound')}
               </p>
               <div className="relative inline-block ml-1">
                 <a href="https://joyous-brow-6da.notion.site/Instagram-not-configured-1ed16186aac98085a1b6d611885d1950" target="_blank" rel="noopener noreferrer" className="text-amber-400 text-xs underline hover:text-amber-300 ml-1 cursor-pointer">
-                  View Guide
+                  {t('navbar.viewGuide')}
                 </a>
               </div>
             </div>
@@ -608,7 +610,7 @@ const NavbarDropdowns = ({
             className="flex items-center justify-between space-x-2 text-white"
           >
             <span className="text-sm font-medium relative">
-              {selectedFbBusinessAcc ? `Business: ${selectedFbBusinessAcc.name}` : 'Select Accounts'}
+              {selectedFbBusinessAcc ? `${t('navbar.business')}: ${selectedFbBusinessAcc.name}` : t('navbar.selectAccounts')}
               {!selectedFbBusinessAcc && (
                 <span className="absolute inset-0 animate-pulse-green rounded-full ring-2 ring-[#4BF29C] shadow-[0_0_8px_2px_rgba(75,242,156,0.7)] ring-offset-1 ring-offset-[#1a1a1a]"></span>
               )}
@@ -628,7 +630,7 @@ const NavbarDropdowns = ({
             onClick={refreshPage}
             className="bg-primary-green hover:bg-primary-green/90 text-black text-xs font-medium py-1 px-2 rounded-full transition-colors whitespace-nowrap"
           >
-            Save Changes
+            {t('navbar.saveChanges')}
           </button>
         </div>
         
@@ -638,7 +640,7 @@ const NavbarDropdowns = ({
             {/* Business Account */}
             <div className="w-full">
               <div className="flex items-center mb-2">
-                <span className="text-sm text-zinc-400">Business Account</span>
+                <span className="text-sm text-zinc-400">{t('navbar.businessAccount')}</span>
                 {businessAccLoading && <Spinner />}
               </div>
               <FBAccountDropdown
@@ -654,7 +656,7 @@ const NavbarDropdowns = ({
             {/* Ad Account */}
             <div className="w-full">
               <div className="flex items-center mb-2">
-                <span className="text-sm text-zinc-400">Ad Account</span>
+                <span className="text-sm text-zinc-400">{t('navbar.adAccountFull')}</span>
                 {adAccLoading && <Spinner />}
               </div>
               <FBAccountDropdown
@@ -670,7 +672,7 @@ const NavbarDropdowns = ({
             {/* Facebook Page */}
             <div className="w-full">
               <div className="flex items-center mb-2">
-                <span className="text-sm text-zinc-400">Facebook Page</span>
+                <span className="text-sm text-zinc-400">{t('navbar.facebookPage')}</span>
                 {fbPageLoading && <Spinner />}
               </div>
               <FBAccountDropdown
@@ -686,7 +688,7 @@ const NavbarDropdowns = ({
             {/* Instagram Account */}
             <div className="w-full">
               <div className="flex items-center mb-2">
-                <span className="text-sm text-zinc-400">Instagram Account</span>
+                <span className="text-sm text-zinc-400">{t('navbar.instagramAccount')}</span>
                 {igAccountLoading && <Spinner />}
               </div>
               <FBAccountDropdown
@@ -763,7 +765,7 @@ const NavbarDropdowns = ({
               onClick={refreshPage}
               className="bg-primary-green hover:bg-primary-green/90 text-black text-xs font-medium py-1 px-2 rounded-full transition-colors whitespace-nowrap"
             >
-              Save Changes
+              {t('navbar.saveChanges')}
             </button>
           </div>
         </div>

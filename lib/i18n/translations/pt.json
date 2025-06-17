@@ -5,6 +5,22 @@
     "login": "Entrar",
     "signOut": "Sair"
   },
+  "navbar": {
+    "business": "Empresa",
+    "adAccount": "Conta Anún.",
+    "fbPage": "Página FB",
+    "igAccount": "Conta IG",
+    "saveChanges": "Salvar Alterações",
+    "agencyTools": "Ferramentas de Agência",
+    "manageCustomerProfiles": "Gerenciar Perfis de Cliente",
+    "selectAccounts": "Selecionar Contas",
+    "businessAccount": "Conta Empresarial",
+    "adAccountFull": "Conta de Anúncios",
+    "facebookPage": "Página do Facebook",
+    "instagramAccount": "Conta do Instagram",
+    "instagramNotFound": "Conta do Instagram não encontrada. Para garantir a melhor experiência do usuário, recomendamos adicionar sua conta do Instagram ao seu Gerenciador de Anúncios.",
+    "viewGuide": "Ver Guia"
+  },
   "sidebar": {
     "shareChat": "Compartilhar chat",
     "deleteChat": "Excluir chat",

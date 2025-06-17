@@ -5,6 +5,22 @@
     "login": "Accedi",
     "signOut": "Esci"
   },
+  "navbar": {
+    "business": "Azienda",
+    "adAccount": "Account Ann.",
+    "fbPage": "Pagina FB",
+    "igAccount": "Account IG",
+    "saveChanges": "Salva Modifiche",
+    "agencyTools": "Strumenti Agenzia",
+    "manageCustomerProfiles": "Gestisci Profili Cliente",
+    "selectAccounts": "Seleziona Account",
+    "businessAccount": "Account Aziendale",
+    "adAccountFull": "Account Pubblicitario",
+    "facebookPage": "Pagina Facebook",
+    "instagramAccount": "Account Instagram",
+    "instagramNotFound": "Account Instagram non trovato. Per garantire la migliore esperienza utente, consigliamo di aggiungere il tuo account Instagram al Gestore Inserzioni.",
+    "viewGuide": "Visualizza Guida"
+  },
   "sidebar": {
     "shareChat": "Condividi chat",
     "deleteChat": "Elimina chat",
