@@ -18,6 +18,7 @@ import {
 import ImagePreviewModal from "@/components/image-preview-modal"
 import { useUsageStore } from "@/app/store/useUsageStore"
 import { UpgradeModal } from "@/components/upgrade-modal"
+import { useT } from "@/lib/i18n/context"
 
 // Helper function to resize an image to a maximum file size
 async function resizeImageToMaxSize(file: File, maxSizeKB: number = 1024): Promise<File> {
@@ -159,17 +160,17 @@ const Magic = ({ className }: { className?: string }) => (
 )
 
 // Loading screen component
-const LoadingScreen = ({ isDarkMode, generationMode, numImages }: { isDarkMode: boolean, generationMode: 'text' | 'variations', numImages: number }) => {
+const LoadingScreen = ({ isDarkMode, generationMode, numImages, t }: { isDarkMode: boolean, generationMode: 'text' | 'variations', numImages: number, t: any }) => {
   let statusText = '';
   let icon = null;
   
   switch(generationMode) {
     case 'text':
-      statusText = `Creating ${numImages} images from your description...`;
+      statusText = t('aiCreativesDirector.loading.statusText', { count: numImages });
       icon = <ImagePlus className={`size-10 mb-4 ${isDarkMode ? 'text-primary-green' : 'text-blue-500'}`} />;
       break;
     case 'variations':
-      statusText = `Creating ${numImages} variations of your image...`;
+      statusText = t('aiCreativesDirector.loading.statusReference', { count: numImages });
       icon = <Magic className={`size-10 mb-4 ${isDarkMode ? 'text-primary-green' : 'text-blue-500'}`} />;
       break;
   }
@@ -193,8 +194,8 @@ const LoadingScreen = ({ isDarkMode, generationMode, numImages }: { isDarkMode: 
       </div>
       
       <div className={`mt-4 sm:mt-6 text-xs sm:text-sm px-4 text-center ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-        <p>This may take a few moments...</p>
-        <p className="mt-1">Please don&apos;t refresh the page.</p>
+        <p>{t('aiCreativesDirector.loading.pleaseWait')}</p>
+        <p className="mt-1">{t('aiCreativesDirector.loading.dontRefresh')}</p>
       </div>
     </div>
   );
@@ -256,6 +257,8 @@ function getAspectRatioClass(format: string): string {
 }
 
 export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
+  const t = useT()
+  
   // Usage tracking
   const { 
     fetchUsageData, 
@@ -1443,7 +1446,7 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
             <div className={`absolute -top-8 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-xs font-medium px-2 py-1 rounded-md ${
               isDarkMode ? 'bg-blue-600 text-white' : 'bg-blue-100 text-blue-800'
             }`}>
-              Drag me to position
+              {t('aiCreativesDirector.branding.dragToPosition')}
             </div>
           )}
         </div>
@@ -1498,10 +1501,10 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
         <div>
           <h2 className="flex items-center gap-2 text-xl font-bold">
             <Wand2 className={`size-5 ${isDarkMode ? 'text-primary-green' : 'text-blue-600'}`} />
-            <span className={isDarkMode ? 'text-text-white' : 'text-gray-900'}>AI Creatives Director</span>
+            <span className={isDarkMode ? 'text-text-white' : 'text-gray-900'}>{t('aiCreativesDirector.title')}</span>
           </h2>
           <p className={`text-sm mt-1.5 ${isDarkMode ? 'text-text-light-gray' : 'text-gray-500'}`}>
-            Create professional images using AI from text descriptions or reference images
+            {t('aiCreativesDirector.description')}
           </p>
         </div>
         
@@ -1510,7 +1513,7 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
             <span className={`inline-flex text-xs font-medium px-2.5 py-0.5 rounded-full ${
               isDarkMode ? 'bg-primary-green/20 text-primary-green' : 'bg-blue-100 text-blue-800'
             }`}>
-              {generatedImages.length} image{generatedImages.length !== 1 ? 's' : ''} generated
+              {generatedImages.length} {generatedImages.length === 1 ? t('aiCreativesDirector.imageGenerated') : t('aiCreativesDirector.imagesGenerated')}
             </span>
           )}
         </div>
@@ -1524,11 +1527,11 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
           <TabsList className="grid w-full grid-cols-2 mb-4">
             <TabsTrigger value="text" className="flex gap-2 items-center">
               <ImagePlus className="size-4" />
-              Text to Image
+              {t('aiCreativesDirector.modes.textToImage')}
             </TabsTrigger>
             <TabsTrigger value="variations" className="flex gap-2 items-center">
               <Magic className="size-4" />
-              Reference Images
+              {t('aiCreativesDirector.modes.referenceImages')}
             </TabsTrigger>
           </TabsList>
           
@@ -1536,7 +1539,7 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
           <TabsContent value="text">
             <div className="text-sm text-muted-foreground mb-4">
               <div className={`p-3 rounded-lg ${isDarkMode ? 'bg-gray-800/50' : 'bg-gray-50'}`}>
-                <p>Describe the image you want to create, and our AI will generate it for you. Be as detailed as possible for best results.</p>
+                <p>{t('aiCreativesDirector.descriptions.textToImage')}</p>
               </div>
             </div>
           </TabsContent>
@@ -1545,9 +1548,9 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
           <TabsContent value="variations">
             <div className="text-sm text-muted-foreground mb-4">
               <div className={`p-3 rounded-lg ${isDarkMode ? 'bg-gray-800/50' : 'bg-gray-50'}`}>
-                <p>Upload up to 4 reference images and our AI will generate creative images inspired by them. Perfect for creating variations of your ads, combining elements from competitor creatives, or generating gift baskets with your products.</p>
+                <p>{t('aiCreativesDirector.descriptions.referenceImages')}</p>
                 <p className="mt-2 text-xs font-medium">
-                  <span className={isDarkMode ? 'text-amber-400' : 'text-amber-600'}>Note:</span> Upload PNG, JPEG, or WebP images (max 20MB each). You can add up to 4 reference images.
+                  <span className={isDarkMode ? 'text-amber-400' : 'text-amber-600'}>Note:</span> {t('aiCreativesDirector.descriptions.referenceImagesNote')}
                 </p>
               </div>
             </div>
@@ -1556,7 +1559,7 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
             <div className="mb-4">
               <div className="flex items-center justify-between mb-2">
                 <label className={`text-sm font-medium ${isDarkMode ? 'text-text-white' : 'text-gray-700'}`}>
-                  Reference Images (1-4)
+                  {t('aiCreativesDirector.referenceImages.label')}
                 </label>
                 {referenceImages.length > 0 && (
                   <button 
@@ -1564,7 +1567,7 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
                     onClick={handleClearReferenceImages}
                     className={`text-xs ${isDarkMode ? 'text-red-400 hover:text-red-300' : 'text-red-500 hover:text-red-600'}`}
                   >
-                    Clear all
+                    {t('aiCreativesDirector.referenceImages.clearAll')}
                   </button>
                 )}
               </div>
@@ -1592,7 +1595,7 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <label htmlFor="imagePrompt" className={`text-sm font-medium ${isDarkMode ? 'text-text-white' : 'text-gray-700'}`}>
-                  {generationMode === 'text' ? 'Describe the image you want' : 'Describe what to create from reference images'}
+                  {generationMode === 'text' ? t('aiCreativesDirector.prompts.labelText') : t('aiCreativesDirector.prompts.labelReference')}
                 </label>
                 
                 <button 
@@ -1609,8 +1612,8 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
                 value={imagePrompt}
                 onChange={(e) => setImagePrompt(e.target.value)}
                 placeholder={generationMode === 'text' 
-                  ? "A professional image of a business person working in a modern office, soft lighting, deep focus..." 
-                  : "Create a cohesive collection combining elements from the reference images in a professional style..."}
+                  ? t('aiCreativesDirector.prompts.placeholderText')
+                  : t('aiCreativesDirector.prompts.placeholderReference')}
                 className={`w-full min-h-[120px] resize-none p-3 rounded-md focus:ring-2 focus:ring-primary-green focus:border-primary-green outline-none ${
                   isDarkMode 
                     ? 'bg-dark-bg border-border-dark text-text-white placeholder-text-light-gray' 
@@ -1622,10 +1625,10 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
                 <div className={`space-y-2 ${isDarkMode ? 'text-text-white' : 'text-gray-700'}`}>
                   <div className="flex justify-between items-center">
                     <label htmlFor="imageFormat" className="block text-sm font-medium">
-                      Image Format
+                      {t('aiCreativesDirector.settings.imageFormat')}
                     </label>
                     <div className="flex items-center gap-2">
-                      <label className="text-sm">Number of images:</label>
+                      <label className="text-sm">{t('aiCreativesDirector.settings.numberOfImages')}</label>
                       <div className="flex">
                         <button 
                           type="button"
@@ -1662,13 +1665,13 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
                         : 'bg-white border-gray-300 text-gray-700'
                     }`}
                   >
-                    <option value="1:1">Square (1:1)</option>
-                    <option value="16:9">Landscape (16:9)</option>
-                    <option value="9:16">Portrait (9:16)</option>
-                    <option value="4:3">Landscape (4:3)</option>
-                    <option value="3:4">Portrait (3:4)</option>
-                    <option value="2:3">Portrait (2:3)</option>
-                    <option value="3:2">Landscape (3:2)</option>
+                    <option value="1:1">{t('aiCreativesDirector.settings.formats.square')}</option>
+                    <option value="16:9">{t('aiCreativesDirector.settings.formats.landscapeWide')}</option>
+                    <option value="9:16">{t('aiCreativesDirector.settings.formats.portraitTall')}</option>
+                    <option value="4:3">{t('aiCreativesDirector.settings.formats.landscape43')}</option>
+                    <option value="3:4">{t('aiCreativesDirector.settings.formats.portrait34')}</option>
+                    <option value="2:3">{t('aiCreativesDirector.settings.formats.portrait23')}</option>
+                    <option value="3:2">{t('aiCreativesDirector.settings.formats.landscape32')}</option>
                   </select>
                 </div>
               </div>
@@ -1676,7 +1679,7 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
               {promptHistory.length > 0 && (
                 <div className="pt-1">
                   <div className={`text-xs flex items-center gap-1 mb-1.5 ${isDarkMode ? 'text-text-light-gray' : 'text-gray-500'}`}>
-                    <Sparkles className="size-3" /> Recent prompts
+                    <Sparkles className="size-3" /> {t('aiCreativesDirector.prompts.recentPrompts')}
                   </div>
                   <div className={`h-20 w-full overflow-y-auto rounded-md p-2 ${
                     isDarkMode ? 'border-border-dark border bg-dark-bg' : 'border border-gray-200 bg-white'
@@ -1716,7 +1719,7 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
                   }`}
               >
                 <Magic className="mr-2 size-4" />
-                {isImprovingImagePrompt ? "Enhancing..." : "Enhance prompt with AI"}
+                {isImprovingImagePrompt ? t('aiCreativesDirector.buttons.enhancing') : t('aiCreativesDirector.buttons.enhancePrompt')}
               </button>
 
               <button
@@ -1748,10 +1751,10 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
                   : <Magic className="mr-2 size-4" />
                 }
                 {isGeneratingImages 
-                  ? "Generating..." 
+                  ? t('aiCreativesDirector.buttons.generating')
                   : generationMode === 'text' 
-                    ? `Create ${numGeneratedImages} images`
-                    : `Create ${numGeneratedImages} images from references`
+                    ? t('aiCreativesDirector.buttons.createImages').replace('{count}', numGeneratedImages.toString())
+                    : t('aiCreativesDirector.buttons.createImagesFromReferences').replace('{count}', numGeneratedImages.toString())
                 }
               </button>
             </div>
@@ -1761,7 +1764,7 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
             {/* Logo and branding section */}
             <div className="space-y-4">
               <div>
-                <h3 className={`text-sm font-medium mb-2 ${isDarkMode ? 'text-text-white' : 'text-gray-700'}`}>Brand your images</h3>
+                <h3 className={`text-sm font-medium mb-2 ${isDarkMode ? 'text-text-white' : 'text-gray-700'}`}>{t('aiCreativesDirector.branding.title')}</h3>
                 
                 <div className="flex items-center gap-2">
                   <button 
@@ -1778,7 +1781,7 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
                       }`}
                   >
                     <Upload className="mr-2 size-4" />
-                    {logoUrl ? "Change logo" : "Upload logo"}
+                    {logoUrl ? t('aiCreativesDirector.branding.changeLogo') : t('aiCreativesDirector.branding.uploadLogo')}
                   </button>
                   
                   {logoUrl && (
@@ -1791,7 +1794,7 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
                           : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
                       }`}
                     >
-                      Clear
+                      {t('aiCreativesDirector.branding.clear')}
                     </button>
                   )}
                   
@@ -1823,7 +1826,7 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
                       <div className="flex-1">
                         <div className="grid grid-cols-2 gap-2">
                           <div>
-                            <label htmlFor="logo-position" className={`text-xs block mb-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Position</label>
+                            <label htmlFor="logo-position" className={`text-xs block mb-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>{t('aiCreativesDirector.branding.position')}</label>
                             <select 
                               id="logo-position" 
                               value={overlayPosition} 
@@ -1834,18 +1837,18 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
                                   : 'bg-white border-gray-300 text-gray-700'
                               }`}
                             >
-                              <option value="top-left">Top Left</option>
-                              <option value="top-center">Top Center</option>
-                              <option value="top-right">Top Right</option>
-                              <option value="middle-center">Center</option>
-                              <option value="bottom-left">Bottom Left</option>
-                              <option value="bottom-center">Bottom Center</option>
-                              <option value="bottom-right">Bottom Right</option>
-                              <option value="custom">Custom (Drag & Drop)</option>
+                              <option value="top-left">{t('aiCreativesDirector.branding.positions.topLeft')}</option>
+                              <option value="top-center">{t('aiCreativesDirector.branding.positions.topCenter')}</option>
+                              <option value="top-right">{t('aiCreativesDirector.branding.positions.topRight')}</option>
+                              <option value="middle-center">{t('aiCreativesDirector.branding.positions.middleCenter')}</option>
+                              <option value="bottom-left">{t('aiCreativesDirector.branding.positions.bottomLeft')}</option>
+                              <option value="bottom-center">{t('aiCreativesDirector.branding.positions.bottomCenter')}</option>
+                              <option value="bottom-right">{t('aiCreativesDirector.branding.positions.bottomRight')}</option>
+                              <option value="custom">{t('aiCreativesDirector.branding.positions.custom')}</option>
                             </select>
                           </div>
                           <div>
-                            <label htmlFor="logo-size" className={`text-xs block mb-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Size (%)</label>
+                            <label htmlFor="logo-size" className={`text-xs block mb-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>{t('aiCreativesDirector.branding.size')}</label>
                             <select 
                               id="logo-size" 
                               value={logoSize.toString()} 
@@ -1876,7 +1879,7 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
                       }`}>
                         <p className="text-xs flex items-center">
                           <Info className="size-3 mr-1 flex-shrink-0" />
-                          Click and drag to position your logo on each image
+                          {t('aiCreativesDirector.branding.customPositionHelp')}
                         </p>
                       </div>
                     )}
@@ -1893,6 +1896,7 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
                 isDarkMode={isDarkMode} 
                 generationMode={generationMode} 
                 numImages={numGeneratedImages} 
+                t={t}
               />
             ) : generatedImages.length === 0 ? (
               <div className={`border border-dashed rounded-lg p-8 flex flex-col items-center justify-center h-full min-h-[300px] text-center ${
@@ -1901,11 +1905,11 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
                 <div className={`p-3 rounded-full mb-3 ${isDarkMode ? 'bg-blue-900' : 'bg-blue-100'}`}>
                   <ImagePlus className={`size-6 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
                 </div>
-                <h3 className={`text-lg font-medium mb-1 ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>No images generated yet</h3>
+                <h3 className={`text-lg font-medium mb-1 ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>{t('aiCreativesDirector.emptyState.title')}</h3>
                 <p className={`text-sm max-w-md mb-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                   {generationMode === 'text' 
-                    ? "Enter a descriptive prompt and click \"Create images\" to generate AI images for your project."
-                    : "Upload a source image and click \"Create variations\" to generate AI variations of your image."
+                    ? t('aiCreativesDirector.emptyState.descriptionText')
+                    : t('aiCreativesDirector.emptyState.descriptionReference')
                   }
                 </p>
               </div>
@@ -1929,7 +1933,7 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
                                   : 'border-transparent text-gray-500 hover:text-gray-700'
                             }`}
                           >
-                            Original
+                            {t('aiCreativesDirector.results.tabs.original')}
                           </button>
                           
                           {logoUrl && combinedPreviews.length > 0 && (
@@ -1946,14 +1950,14 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
                                     : 'border-transparent text-gray-500 hover:text-gray-700'
                               }`}
                             >
-                              With Logo
+                              {t('aiCreativesDirector.results.tabs.withLogo')}
                             </button>
                           )}
                         </div>
                         
                         <div className="flex items-center gap-2">
                           <div className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                            {selectedImages.length} selected
+                            {selectedImages.length} {t('aiCreativesDirector.results.selected')}
                           </div>
                           <button 
                             type="button"
@@ -1969,7 +1973,7 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
                                   : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-300'
                               }`}
                           >
-                            Select all
+                            {t('aiCreativesDirector.results.selectAll')}
                           </button>
                           {selectedImages.length > 0 && (
                             <button 
@@ -1981,7 +1985,7 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
                                   : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
                               }`}
                             >
-                              Clear
+                              {t('aiCreativesDirector.results.clear')}
                             </button>
                           )}
                         </div>
@@ -2046,8 +2050,8 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
                                     className="absolute bottom-2 right-2 py-1 px-2 sm:px-3 text-xs font-medium bg-white text-gray-700 rounded-md shadow hover:bg-gray-50 flex items-center z-30 pointer-events-auto"
                                   >
                                     <Download className="mr-0.5 sm:mr-1 size-3 sm:size-4" />
-                                    <span className="hidden sm:inline">Download</span>
-                                    <span className="inline sm:hidden">DL</span>
+                                    <span className="hidden sm:inline">{t('aiCreativesDirector.results.download')}</span>
+                                    <span className="inline sm:hidden">{t('aiCreativesDirector.results.downloadShort')}</span>
                                   </button>
                                 </div>
                                 
@@ -2124,8 +2128,8 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
                                     className="absolute bottom-2 right-2 py-1 px-2 sm:px-3 text-xs font-medium bg-white text-gray-700 rounded-md shadow hover:bg-gray-50 flex items-center z-30 pointer-events-auto"
                                   >
                                     <Download className="mr-0.5 sm:mr-1 size-3 sm:size-4" />
-                                    <span className="hidden sm:inline">Download</span>
-                                    <span className="inline sm:hidden">DL</span>
+                                    <span className="hidden sm:inline">{t('aiCreativesDirector.results.download')}</span>
+                                    <span className="inline sm:hidden">{t('aiCreativesDirector.results.downloadShort')}</span>
                                   </button>
                                 </div>
                                 
@@ -2154,10 +2158,10 @@ export default function AiImageTab({ improvePrompt }: AiImageTabProps) {
                     </div>
                     <div>
                       <h3 className={`text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
-                        Remember copyright and licensing
+                        {t('aiCreativesDirector.copyright.title')}
                       </h3>
                       <div className={`mt-1 text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                        Always verify you have the appropriate rights to use AI-generated content in your projects.
+                        {t('aiCreativesDirector.copyright.description')}
                       </div>
                     </div>
                   </div>

@@ -457,5 +457,194 @@
       "videoGenerated": "Your AI video has been generated!",
       "videoDownloaded": "Video downloaded successfully!"
     }
+  },
+  "aiCreativesDirector": {
+    "title": "AI Creatives Director",
+    "description": "Create professional images using AI from text descriptions or reference images",
+    "imageGenerated": "image generated",
+    "imagesGenerated": "images generated",
+    "modes": {
+      "textToImage": "Text to Image",
+      "referenceImages": "Reference Images"
+    },
+    "descriptions": {
+      "textToImage": "Describe the image you want to create, and our AI will generate it for you. Be as detailed as possible for best results.",
+      "referenceImages": "Upload up to 4 reference images and our AI will generate creative images inspired by them. Perfect for creating variations of your ads, combining elements from competitor creatives, or generating gift baskets with your products.",
+      "referenceImagesNote": "Note: Upload PNG, JPEG, or WebP images (max 20MB each). You can add up to 4 reference images."
+    },
+    "referenceImages": {
+      "label": "Reference Images (1-4)",
+      "clearAll": "Clear all",
+      "uploadButton": "Upload reference images",
+      "dragDropText": "Drag and drop images here or click to browse",
+      "maxFiles": "Maximum 4 images"
+    },
+    "prompts": {
+      "labelText": "Describe the image you want",
+      "labelReference": "Describe what to create from reference images",
+      "placeholderText": "A professional image of a business person working in a modern office, soft lighting, deep focus...",
+      "placeholderReference": "Create a cohesive collection combining elements from the reference images in a professional style...",
+      "recentPrompts": "Recent prompts"
+    },
+    "settings": {
+      "imageFormat": "Image Format",
+      "numberOfImages": "Number of images:",
+      "formats": {
+        "square": "Square (1:1)",
+        "landscapeWide": "Landscape (16:9)",
+        "portraitTall": "Portrait (9:16)",
+        "landscape43": "Landscape (4:3)",
+        "portrait34": "Portrait (3:4)",
+        "portrait23": "Portrait (2:3)",
+        "landscape32": "Landscape (3:2)"
+      }
+    },
+    "buttons": {
+      "enhancing": "Enhancing...",
+      "enhancePrompt": "Enhance prompt with AI",
+      "generating": "Generating...",
+      "createImages": "Create {count} images",
+      "createImagesFromReferences": "Create {count} images from references"
+    },
+    "branding": {
+      "title": "Brand your images",
+      "uploadLogo": "Upload logo",
+      "changeLogo": "Change logo",
+      "clear": "Clear",
+      "position": "Position",
+      "size": "Size (%)",
+      "positions": {
+        "topLeft": "Top Left",
+        "topCenter": "Top Center",
+        "topRight": "Top Right",
+        "middleCenter": "Center",
+        "bottomLeft": "Bottom Left",
+        "bottomCenter": "Bottom Center",
+        "bottomRight": "Bottom Right",
+        "custom": "Custom (Drag & Drop)"
+      },
+      "customPositionHelp": "Click and drag to position your logo on each image",
+      "dragToPosition": "Drag me to position"
+    },
+    "results": {
+      "tabs": {
+        "original": "Original",
+        "withLogo": "With Logo"
+      },
+      "selected": "selected",
+      "selectAll": "Select all",
+      "clear": "Clear",
+      "download": "Download",
+      "downloadShort": "DL"
+    },
+    "emptyState": {
+      "title": "No images generated yet",
+      "descriptionText": "Enter a descriptive prompt and click \"Create images\" to generate AI images for your project.",
+      "descriptionReference": "Upload a source image and click \"Create variations\" to generate AI variations of your image."
+    },
+    "loading": {
+      "statusText": "Creating {count} images from your description...",
+      "statusReference": "Creating {count} variations of your image...",
+      "pleaseWait": "This may take a few moments...",
+      "dontRefresh": "Please don't refresh the page."
+    },
+    "copyright": {
+      "title": "Remember copyright and licensing",
+      "description": "Always verify you have the appropriate rights to use AI-generated content in your projects."
+    },
+    "toast": {
+      "unsupportedFileType": "Unsupported file type",
+      "unsupportedFileTypeDesc": "{fileName} has unsupported type ({fileType}). Please use PNG or JPEG.",
+      "fileWillBeResized": "File will be resized",
+      "fileWillBeResizedDesc": "{fileName} ({fileSize}MB) will be automatically optimized for API compatibility.",
+      "processingImages": "Processing images",
+      "processingImagesDesc": "Optimizing images for upload...",
+      "imagesUploaded": "Images uploaded",
+      "imagesUploadedDesc": "{count} reference image{plural} uploaded successfully.",
+      "nextStep": "Next step",
+      "nextStepDesc": "Now enter a descriptive prompt about what you want to create with these images.",
+      "uploadError": "Upload error",
+      "uploadErrorDesc": "There was a problem processing the images. Please try again with different images.",
+      "promptEnhanced": "Prompt enhanced",
+      "promptEnhancedDesc": "Your description has been improved with AI assistance.",
+      "enhancementFailed": "Enhancement failed",
+      "enhancementFailedDesc": "Unable to improve your prompt. Please try again.",
+      "generationStarted": "Generation started",
+      "generationStartedDesc": "Your images are being generated. This may take a few moments.",
+      "generationFailed": "Generation failed",
+      "generationFailedDesc": "Unable to generate images. Please try again with a different prompt.",
+      "generationSuccess": "Images generated",
+      "generationSuccessDesc": "Your AI images have been generated successfully!",
+      "downloadSuccess": "Download successful",
+      "downloadSuccessDesc": "Image downloaded successfully to your device.",
+      "downloadFailed": "Download failed",
+      "downloadFailedDesc": "Unable to download the image. Please try again."
+    }
+  },
+  "aiImageInpainting": {
+    "title": "AI Image Inpainting",
+    "description": "Remove or replace parts of an image by brushing them out and describing what you want",
+    "form": {
+      "uploadImage": "Upload image",
+      "chooseFile": "Choose File",
+      "promptLabel": "Describe what to add in the areas you painted red",
+      "promptPlaceholder": "e.g. A beautiful mountain landscape, or Replace with a bouquet of flowers, or Add a cute dog here",
+      "brushSize": "Brush Size",
+      "brushInstructions": "Brush Instructions",
+      "brushInstructionsText": "Paint with red brush over areas you want to change. These areas will be replaced based on your prompt."
+    },
+    "buttons": {
+      "enhancePrompt": "Enhance Prompt",
+      "enhancing": "Enhancing...",
+      "resetSelection": "Reset Selection",
+      "inpaint": "Inpaint",
+      "inpainting": "Inpainting...",
+      "continueEditing": "Continue Editing",
+      "download": "Download"
+    },
+    "canvas": {
+      "inputImage": "Input Image",
+      "inpaintedResult": "Inpainted Result"
+    },
+    "instructions": {
+      "title": "How to use the inpainting tool:",
+      "step1": "Paint over the specific areas you want to replace (they will appear red)",
+      "step2": "Describe what should replace these red areas in the prompt field",
+      "step3": "Click \"Inpaint\" to generate your edited image",
+      "note": "Note: Only the red-painted areas will be changed with Ideogram's AI. The rest of the image will stay the same."
+    },
+    "emptyState": {
+      "noImage": "No image loaded. Please upload an image to begin inpainting.",
+      "useControls": "Use the controls to generate your inpainted image",
+      "processing": "Processing your image..."
+    },
+    "toast": {
+      "missingImage": "Missing image",
+      "missingImageDesc": "Please upload and paint on an image first.",
+      "missingPrompt": "Missing prompt",
+      "missingPromptDesc": "Describe how to inpaint your image.",
+      "success": "Success",
+      "inpaintingCompleted": "Inpainting completed!",
+      "imageProcessingFailed": "Image processing failed",
+      "connectionError": "Connection error. Please check your internet connection and try again.",
+      "quotaExceeded": "API quota exceeded. Please try again later.",
+      "invalidRequest": "Invalid request. The image dimensions or format may be unsupported.",
+      "maskReset": "Mask Reset",
+      "maskResetDesc": "You can now redraw your selection",
+      "downloadComplete": "Download complete",
+      "downloadCompleteDesc": "Inpainted image saved successfully to your device.",
+      "downloadFailed": "Download failed",
+      "downloadFailedDesc": "Unable to download the inpainted image. Please try again.",
+      "readyToEdit": "Ready to Edit",
+      "readyToEditDesc": "You can now continue editing your image",
+      "error": "Error",
+      "errorDesc": "Failed to prepare image for continued editing",
+      "emptyPrompt": "Empty prompt",
+      "emptyPromptDesc": "Enter a prompt to enhance.",
+      "promptEnhanced": "Prompt enhanced",
+      "promptEnhancedDesc": "Your prompt was improved with AI",
+      "enhanceError": "Enhance error",
+      "enhanceErrorDesc": "Could not improve prompt"
+    }
   }
 } 

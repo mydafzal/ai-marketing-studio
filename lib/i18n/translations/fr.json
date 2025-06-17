@@ -457,5 +457,194 @@
       "videoGenerated": "Votre vidéo IA a été générée !",
       "videoDownloaded": "Vidéo téléchargée avec succès !"
     }
+  },
+  "aiCreativesDirector": {
+    "title": "Directeur Créatif IA",
+    "description": "Créez des images professionnelles en utilisant l'IA à partir de descriptions textuelles ou d'images de référence",
+    "imageGenerated": "image générée",
+    "imagesGenerated": "images générées",
+    "modes": {
+      "textToImage": "Texte vers Image",
+      "referenceImages": "Images de Référence"
+    },
+    "descriptions": {
+      "textToImage": "Décrivez l'image que vous voulez créer, et notre IA la générera pour vous. Soyez aussi détaillé que possible pour de meilleurs résultats.",
+      "referenceImages": "Téléchargez jusqu'à 4 images de référence et notre IA générera des images créatives inspirées par celles-ci. Parfait pour créer des variations de vos publicités, combiner des éléments de créatifs concurrents, ou générer des paniers cadeaux avec vos produits.",
+      "referenceImagesNote": "Note : Téléchargez des images PNG, JPEG ou WebP (max 20MB chacune). Vous pouvez ajouter jusqu'à 4 images de référence."
+    },
+    "referenceImages": {
+      "label": "Images de Référence (1-4)",
+      "clearAll": "Tout effacer",
+      "uploadButton": "Télécharger des images de référence",
+      "dragDropText": "Glissez et déposez des images ici ou cliquez pour parcourir",
+      "maxFiles": "Maximum 4 images"
+    },
+    "prompts": {
+      "labelText": "Décrivez l'image que vous voulez",
+      "labelReference": "Décrivez ce qu'il faut créer à partir des images de référence",
+      "placeholderText": "Une image professionnelle d'une personne d'affaires travaillant dans un bureau moderne, éclairage doux, mise au point nette...",
+      "placeholderReference": "Créez une collection cohérente combinant des éléments des images de référence dans un style professionnel...",
+      "recentPrompts": "Prompts récents"
+    },
+    "settings": {
+      "imageFormat": "Format d'Image",
+      "numberOfImages": "Nombre d'images :",
+      "formats": {
+        "square": "Carré (1:1)",
+        "landscapeWide": "Paysage (16:9)",
+        "portraitTall": "Portrait (9:16)",
+        "landscape43": "Paysage (4:3)",
+        "portrait34": "Portrait (3:4)",
+        "portrait23": "Portrait (2:3)",
+        "landscape32": "Paysage (3:2)"
+      }
+    },
+    "buttons": {
+      "enhancing": "Amélioration...",
+      "enhancePrompt": "Améliorer le prompt avec l'IA",
+      "generating": "Génération...",
+      "createImages": "Créer {count} images",
+      "createImagesFromReferences": "Créer {count} images à partir des références"
+    },
+    "branding": {
+      "title": "Marquez vos images",
+      "uploadLogo": "Télécharger le logo",
+      "changeLogo": "Changer le logo",
+      "clear": "Effacer",
+      "position": "Position",
+      "size": "Taille (%)",
+      "positions": {
+        "topLeft": "Haut Gauche",
+        "topCenter": "Haut Centre",
+        "topRight": "Haut Droite",
+        "middleCenter": "Centre",
+        "bottomLeft": "Bas Gauche",
+        "bottomCenter": "Bas Centre",
+        "bottomRight": "Bas Droite",
+        "custom": "Personnalisé (Glisser-Déposer)"
+      },
+      "customPositionHelp": "Cliquez et glissez pour positionner votre logo sur chaque image",
+      "dragToPosition": "Glissez-moi pour positionner"
+    },
+    "results": {
+      "tabs": {
+        "original": "Original",
+        "withLogo": "Avec Logo"
+      },
+      "selected": "sélectionné",
+      "selectAll": "Tout sélectionner",
+      "clear": "Effacer",
+      "download": "Télécharger",
+      "downloadShort": "TL"
+    },
+    "emptyState": {
+      "title": "Aucune image générée encore",
+      "descriptionText": "Entrez un prompt descriptif et cliquez sur \"Créer des images\" pour générer des images IA pour votre projet.",
+      "descriptionReference": "Téléchargez une image source et cliquez sur \"Créer des variations\" pour générer des variations IA de votre image."
+    },
+    "loading": {
+      "statusText": "Création de {count} images à partir de votre description...",
+      "statusReference": "Création de {count} variations de votre image...",
+      "pleaseWait": "Cela peut prendre quelques instants...",
+      "dontRefresh": "Veuillez ne pas actualiser la page."
+    },
+    "copyright": {
+      "title": "N'oubliez pas les droits d'auteur et les licences",
+      "description": "Vérifiez toujours que vous avez les droits appropriés pour utiliser du contenu généré par l'IA dans vos projets."
+    },
+    "toast": {
+      "unsupportedFileType": "Type de fichier non pris en charge",
+      "unsupportedFileTypeDesc": "{fileName} a un type non pris en charge ({fileType}). Veuillez utiliser PNG ou JPEG.",
+      "fileWillBeResized": "Le fichier sera redimensionné",
+      "fileWillBeResizedDesc": "{fileName} ({fileSize}MB) sera automatiquement optimisé pour la compatibilité API.",
+      "processingImages": "Traitement des images",
+      "processingImagesDesc": "Optimisation des images pour le téléchargement...",
+      "imagesUploaded": "Images téléchargées",
+      "imagesUploadedDesc": "{count} image{plural} de référence téléchargées avec succès.",
+      "nextStep": "Étape suivante",
+      "nextStepDesc": "Maintenant entrez un prompt descriptif sur ce que vous voulez créer avec ces images.",
+      "uploadError": "Erreur de téléchargement",
+      "uploadErrorDesc": "Il y a eu un problème lors du traitement des images. Veuillez réessayer avec différentes images.",
+      "promptEnhanced": "Prompt amélioré",
+      "promptEnhancedDesc": "Votre description a été améliorée avec l'assistance de l'IA.",
+      "enhancementFailed": "Amélioration échouée",
+      "enhancementFailedDesc": "Impossible d'améliorer votre prompt. Veuillez réessayer.",
+      "generationStarted": "Génération commencée",
+      "generationStartedDesc": "Vos images sont en cours de génération. Cela peut prendre quelques instants.",
+      "generationFailed": "Génération échouée",
+      "generationFailedDesc": "Impossible de générer les images. Veuillez réessayer avec un prompt différent.",
+      "generationSuccess": "Images générées",
+      "generationSuccessDesc": "Vos images IA ont été générées avec succès !",
+      "downloadSuccess": "Téléchargement réussi",
+      "downloadSuccessDesc": "Image téléchargée avec succès sur votre appareil.",
+      "downloadFailed": "Téléchargement échoué",
+      "downloadFailedDesc": "Impossible de télécharger l'image. Veuillez réessayer."
+    }
+  },
+  "aiImageInpainting": {
+    "title": "Inpainting d'Images IA",
+    "description": "Supprimez ou remplacez des parties d'une image en les peignant et en décrivant ce que vous voulez",
+    "form": {
+      "uploadImage": "Télécharger une image",
+      "chooseFile": "Choisir un fichier",
+      "promptLabel": "Décrivez ce qu'il faut ajouter dans les zones peintes en rouge",
+      "promptPlaceholder": "ex. Un beau paysage de montagne, ou Remplacer par un bouquet de fleurs, ou Ajouter un chien mignon ici",
+      "brushSize": "Taille du pinceau",
+      "brushInstructions": "Instructions du pinceau",
+      "brushInstructionsText": "Peignez avec le pinceau rouge sur les zones que vous voulez changer. Ces zones seront remplacées selon votre description."
+    },
+    "buttons": {
+      "enhancePrompt": "Améliorer la description",
+      "enhancing": "Amélioration...",
+      "resetSelection": "Réinitialiser la sélection",
+      "inpaint": "Inpaint",
+      "inpainting": "Inpainting...",
+      "continueEditing": "Continuer l'édition",
+      "download": "Télécharger"
+    },
+    "canvas": {
+      "inputImage": "Image d'entrée",
+      "inpaintedResult": "Résultat d'inpainting"
+    },
+    "instructions": {
+      "title": "Comment utiliser l'outil d'inpainting :",
+      "step1": "Peignez sur les zones spécifiques que vous voulez remplacer (elles apparaîtront en rouge)",
+      "step2": "Décrivez ce qui doit remplacer ces zones rouges dans le champ de description",
+      "step3": "Cliquez sur \"Inpaint\" pour générer votre image éditée",
+      "note": "Note : Seules les zones peintes en rouge seront modifiées avec l'IA d'Ideogram. Le reste de l'image restera identique."
+    },
+    "emptyState": {
+      "noImage": "Aucune image chargée. Veuillez télécharger une image pour commencer l'inpainting.",
+      "useControls": "Utilisez les contrôles pour générer votre image avec inpainting",
+      "processing": "Traitement de votre image..."
+    },
+    "toast": {
+      "missingImage": "Image manquante",
+      "missingImageDesc": "Veuillez d'abord télécharger une image et peindre dessus.",
+      "missingPrompt": "Description manquante",
+      "missingPromptDesc": "Décrivez comment faire l'inpainting de votre image.",
+      "success": "Succès",
+      "inpaintingCompleted": "Inpainting terminé !",
+      "imageProcessingFailed": "Échec du traitement de l'image",
+      "connectionError": "Erreur de connexion. Veuillez vérifier votre connexion internet et réessayer.",
+      "quotaExceeded": "Quota API dépassé. Veuillez réessayer plus tard.",
+      "invalidRequest": "Requête invalide. Les dimensions ou le format de l'image peuvent ne pas être supportés.",
+      "maskReset": "Masque réinitialisé",
+      "maskResetDesc": "Vous pouvez maintenant redessiner votre sélection",
+      "downloadComplete": "Téléchargement terminé",
+      "downloadCompleteDesc": "Image avec inpainting sauvegardée avec succès sur votre appareil.",
+      "downloadFailed": "Échec du téléchargement",
+      "downloadFailedDesc": "Impossible de télécharger l'image avec inpainting. Veuillez réessayer.",
+      "readyToEdit": "Prêt à éditer",
+      "readyToEditDesc": "Vous pouvez maintenant continuer à éditer votre image",
+      "error": "Erreur",
+      "errorDesc": "Échec de la préparation de l'image pour continuer l'édition",
+      "emptyPrompt": "Description vide",
+      "emptyPromptDesc": "Entrez une description à améliorer.",
+      "promptEnhanced": "Description améliorée",
+      "promptEnhancedDesc": "Votre description a été améliorée avec l'IA",
+      "enhanceError": "Erreur d'amélioration",
+      "enhanceErrorDesc": "Impossible d'améliorer la description"
+    }
   }
 } 

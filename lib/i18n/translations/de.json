@@ -450,5 +450,194 @@
       "videoGenerated": "Ihr KI-Video wurde generiert!",
       "videoDownloaded": "Video erfolgreich heruntergeladen!"
     }
+  },
+  "aiCreativesDirector": {
+    "title": "KI-Kreativ-Direktor",
+    "description": "Erstellen Sie professionelle Bilder mit KI aus Textbeschreibungen oder Referenzbildern",
+    "imageGenerated": "Bild generiert",
+    "imagesGenerated": "Bilder generiert",
+    "modes": {
+      "textToImage": "Text zu Bild",
+      "referenceImages": "Referenzbilder"
+    },
+    "descriptions": {
+      "textToImage": "Beschreiben Sie das Bild, das Sie erstellen möchten, und unsere KI wird es für Sie generieren. Seien Sie so detailliert wie möglich für beste Ergebnisse.",
+      "referenceImages": "Laden Sie bis zu 4 Referenzbilder hoch und unsere KI wird kreative Bilder erstellen, die von ihnen inspiriert sind. Perfekt für die Erstellung von Variationen Ihrer Anzeigen, die Kombination von Elementen aus Konkurrenz-Creatives oder die Generierung von Geschenkkörben mit Ihren Produkten.",
+      "referenceImagesNote": "Hinweis: Laden Sie PNG, JPEG oder WebP-Bilder hoch (max. 20MB pro Bild). Sie können bis zu 4 Referenzbilder hinzufügen."
+    },
+    "referenceImages": {
+      "label": "Referenzbilder (1-4)",
+      "clearAll": "Alle löschen",
+      "uploadButton": "Referenzbilder hochladen",
+      "dragDropText": "Bilder hier hinziehen oder klicken zum Durchsuchen",
+      "maxFiles": "Maximal 4 Bilder"
+    },
+    "prompts": {
+      "labelText": "Beschreiben Sie das gewünschte Bild",
+      "labelReference": "Beschreiben Sie was aus den Referenzbildern erstellt werden soll",
+      "placeholderText": "Ein professionelles Bild einer Geschäftsperson, die in einem modernen Büro arbeitet, weiches Licht, scharfer Fokus...",
+      "placeholderReference": "Erstellen Sie eine kohärente Sammlung, die Elemente aus den Referenzbildern in einem professionellen Stil kombiniert...",
+      "recentPrompts": "Aktuelle Eingaben"
+    },
+    "settings": {
+      "imageFormat": "Bildformat",
+      "numberOfImages": "Anzahl Bilder:",
+      "formats": {
+        "square": "Quadrat (1:1)",
+        "landscapeWide": "Querformat (16:9)",
+        "portraitTall": "Hochformat (9:16)",
+        "landscape43": "Querformat (4:3)",
+        "portrait34": "Hochformat (3:4)",
+        "portrait23": "Hochformat (2:3)",
+        "landscape32": "Querformat (3:2)"
+      }
+    },
+    "buttons": {
+      "enhancing": "Wird verbessert...",
+      "enhancePrompt": "Prompt mit KI verbessern",
+      "generating": "Wird generiert...",
+      "createImages": "{count} Bilder erstellen",
+      "createImagesFromReferences": "{count} Bilder aus Referenzen erstellen"
+    },
+    "branding": {
+      "title": "Ihre Bilder markieren",
+      "uploadLogo": "Logo hochladen",
+      "changeLogo": "Logo ändern",
+      "clear": "Löschen",
+      "position": "Position",
+      "size": "Größe (%)",
+      "positions": {
+        "topLeft": "Oben Links",
+        "topCenter": "Oben Mitte",
+        "topRight": "Oben Rechts",
+        "middleCenter": "Mitte",
+        "bottomLeft": "Unten Links",
+        "bottomCenter": "Unten Mitte",
+        "bottomRight": "Unten Rechts",
+        "custom": "Benutzerdefiniert (Ziehen & Ablegen)"
+      },
+      "customPositionHelp": "Klicken und ziehen Sie, um Ihr Logo auf jedem Bild zu positionieren",
+      "dragToPosition": "Ziehen Sie mich zur Position"
+    },
+    "results": {
+      "tabs": {
+        "original": "Original",
+        "withLogo": "Mit Logo"
+      },
+      "selected": "ausgewählt",
+      "selectAll": "Alle auswählen",
+      "clear": "Löschen",
+      "download": "Herunterladen",
+      "downloadShort": "DL"
+    },
+    "emptyState": {
+      "title": "Noch keine Bilder generiert",
+      "descriptionText": "Geben Sie eine beschreibende Eingabe ein und klicken Sie auf \"Bilder erstellen\", um KI-Bilder für Ihr Projekt zu generieren.",
+      "descriptionReference": "Laden Sie ein Quellbild hoch und klicken Sie auf \"Variationen erstellen\", um KI-Variationen Ihres Bildes zu generieren."
+    },
+    "loading": {
+      "statusText": "Erstelle {count} Bilder aus Ihrer Beschreibung...",
+      "statusReference": "Erstelle {count} Variationen Ihres Bildes...",
+      "pleaseWait": "Dies kann einen Moment dauern...",
+      "dontRefresh": "Bitte aktualisieren Sie die Seite nicht."
+    },
+    "copyright": {
+      "title": "Urheberrecht und Lizenzierung beachten",
+      "description": "Stellen Sie immer sicher, dass Sie die entsprechenden Rechte zur Nutzung von KI-generierten Inhalten in Ihren Projekten haben."
+    },
+    "toast": {
+      "unsupportedFileType": "Nicht unterstützter Dateityp",
+      "unsupportedFileTypeDesc": "{fileName} hat nicht unterstützten Typ ({fileType}). Bitte verwenden Sie PNG oder JPEG.",
+      "fileWillBeResized": "Datei wird angepasst",
+      "fileWillBeResizedDesc": "{fileName} ({fileSize}MB) wird automatisch für API-Kompatibilität optimiert.",
+      "processingImages": "Bilder werden verarbeitet",
+      "processingImagesDesc": "Bilder werden für Upload optimiert...",
+      "imagesUploaded": "Bilder hochgeladen",
+      "imagesUploadedDesc": "{count} Referenzbild{plural} erfolgreich hochgeladen.",
+      "nextStep": "Nächster Schritt",
+      "nextStepDesc": "Geben Sie nun eine beschreibende Eingabe darüber ein, was Sie mit diesen Bildern erstellen möchten.",
+      "uploadError": "Upload-Fehler",
+      "uploadErrorDesc": "Es gab ein Problem beim Verarbeiten der Bilder. Bitte versuchen Sie es mit anderen Bildern erneut.",
+      "promptEnhanced": "Eingabe verbessert",
+      "promptEnhancedDesc": "Ihre Beschreibung wurde mit KI-Unterstützung verbessert.",
+      "enhancementFailed": "Verbesserung fehlgeschlagen",
+      "enhancementFailedDesc": "Eingabe konnte nicht verbessert werden. Bitte versuchen Sie es erneut.",
+      "generationStarted": "Generierung gestartet",
+      "generationStartedDesc": "Ihre Bilder werden generiert. Dies kann einen Moment dauern.",
+      "generationFailed": "Generierung fehlgeschlagen",
+      "generationFailedDesc": "Bilder konnten nicht generiert werden. Bitte versuchen Sie es mit einer anderen Eingabe erneut.",
+      "generationSuccess": "Bilder generiert",
+      "generationSuccessDesc": "Ihre KI-Bilder wurden erfolgreich generiert!",
+      "downloadSuccess": "Download erfolgreich",
+      "downloadSuccessDesc": "Bild erfolgreich auf Ihr Gerät heruntergeladen.",
+      "downloadFailed": "Download fehlgeschlagen",
+      "downloadFailedDesc": "Bild konnte nicht heruntergeladen werden. Bitte versuchen Sie es erneut."
+    }
+  },
+  "aiImageInpainting": {
+    "title": "KI-Bild-Inpainting",
+    "description": "Entfernen oder ersetzen Sie Teile eines Bildes, indem Sie sie ausmalen und beschreiben, was Sie möchten",
+    "form": {
+      "uploadImage": "Bild hochladen",
+      "chooseFile": "Datei auswählen",
+      "promptLabel": "Beschreiben Sie, was in den rot gemalten Bereichen hinzugefügt werden soll",
+      "promptPlaceholder": "z.B. Eine schöne Berglandschaft, oder Ersetzen mit einem Blumenstrauß, oder Fügen Sie hier einen süßen Hund hinzu",
+      "brushSize": "Pinselgröße",
+      "brushInstructions": "Pinselanweisungen",
+      "brushInstructionsText": "Malen Sie mit dem roten Pinsel über Bereiche, die Sie ändern möchten. Diese Bereiche werden basierend auf Ihrer Eingabe ersetzt."
+    },
+    "buttons": {
+      "enhancePrompt": "Eingabe verbessern",
+      "enhancing": "Wird verbessert...",
+      "resetSelection": "Auswahl zurücksetzen",
+      "inpaint": "Inpainting",
+      "inpainting": "Inpainting läuft...",
+      "continueEditing": "Bearbeitung fortsetzen",
+      "download": "Herunterladen"
+    },
+    "canvas": {
+      "inputImage": "Eingabebild",
+      "inpaintedResult": "Inpainting-Ergebnis"
+    },
+    "instructions": {
+      "title": "So verwenden Sie das Inpainting-Tool:",
+      "step1": "Malen Sie über die spezifischen Bereiche, die Sie ersetzen möchten (sie werden rot angezeigt)",
+      "step2": "Beschreiben Sie, was diese roten Bereiche im Eingabefeld ersetzen soll",
+      "step3": "Klicken Sie auf \"Inpainting\", um Ihr bearbeitetes Bild zu generieren",
+      "note": "Hinweis: Nur die rot gemalten Bereiche werden mit Ideograms KI geändert. Der Rest des Bildes bleibt gleich."
+    },
+    "emptyState": {
+      "noImage": "Kein Bild geladen. Bitte laden Sie ein Bild hoch, um mit dem Inpainting zu beginnen.",
+      "useControls": "Verwenden Sie die Steuerung, um Ihr Inpainting-Bild zu generieren",
+      "processing": "Ihr Bild wird verarbeitet..."
+    },
+    "toast": {
+      "missingImage": "Fehlendes Bild",
+      "missingImageDesc": "Bitte laden Sie zuerst ein Bild hoch und malen darauf.",
+      "missingPrompt": "Fehlende Eingabe",
+      "missingPromptDesc": "Beschreiben Sie, wie Ihr Bild mit Inpainting bearbeitet werden soll.",
+      "success": "Erfolg",
+      "inpaintingCompleted": "Inpainting abgeschlossen!",
+      "imageProcessingFailed": "Bildverarbeitung fehlgeschlagen",
+      "connectionError": "Verbindungsfehler. Bitte überprüfen Sie Ihre Internetverbindung und versuchen Sie es erneut.",
+      "quotaExceeded": "API-Kontingent überschritten. Bitte versuchen Sie es später erneut.",
+      "invalidRequest": "Ungültige Anfrage. Die Bildabmessungen oder das Format werden möglicherweise nicht unterstützt.",
+      "maskReset": "Maske zurückgesetzt",
+      "maskResetDesc": "Sie können jetzt Ihre Auswahl neu zeichnen",
+      "downloadComplete": "Download abgeschlossen",
+      "downloadCompleteDesc": "Inpainting-Bild erfolgreich auf Ihr Gerät gespeichert.",
+      "downloadFailed": "Download fehlgeschlagen",
+      "downloadFailedDesc": "Inpainting-Bild konnte nicht heruntergeladen werden. Bitte versuchen Sie es erneut.",
+      "readyToEdit": "Bereit zum Bearbeiten",
+      "readyToEditDesc": "Sie können jetzt Ihr Bild weiter bearbeiten",
+      "error": "Fehler",
+      "errorDesc": "Bild konnte nicht für weitere Bearbeitung vorbereitet werden",
+      "emptyPrompt": "Leere Eingabe",
+      "emptyPromptDesc": "Geben Sie eine Eingabe zum Verbessern ein.",
+      "promptEnhanced": "Eingabe verbessert",
+      "promptEnhancedDesc": "Ihre Eingabe wurde mit KI verbessert",
+      "enhanceError": "Verbesserungsfehler",
+      "enhanceErrorDesc": "Eingabe konnte nicht verbessert werden"
+    }
   }
 } 

@@ -7,6 +7,7 @@ import { AlertCircle, CheckCircle2, Brush, Upload, RefreshCw, Download, ArrowLef
 import { inpaintImage } from "@/app/actions/generate-image" // Same file as generateImages
 import { useUsageStore } from "@/app/store/useUsageStore"
 import { UpgradeModal } from "@/components/upgrade-modal"
+import { useT } from "@/lib/i18n/context"
 
 // If you want to let the user enhance the prompt, pass `improvePrompt` prop
 interface AiImageInpaintProps {
@@ -16,6 +17,7 @@ interface AiImageInpaintProps {
 export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
   const { theme } = useTheme()
   const isDarkMode = theme === "dark"
+  const t = useT()
   
   // Usage tracking
   const { 
@@ -373,11 +375,11 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
   /** Call the server action to do inpainting */
   async function handleInpaint() {
     if (!baseCanvasRef.current) {
-      showToast("Missing image", "Please upload and paint on an image first.", "error")
+      showToast(t("aiImageInpainting.toast.missingImage"), t("aiImageInpainting.toast.missingImageDesc"), "error")
       return
     }
     if (!prompt.trim()) {
-      showToast("Missing prompt", "Describe how to inpaint your image.", "error")
+      showToast(t("aiImageInpainting.toast.missingPrompt"), t("aiImageInpainting.toast.missingPromptDesc"), "error")
       return
     }
     
@@ -498,7 +500,7 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
       if (res.success && res.image) {
         await incrementInpaintingCount()
         setInpaintResult(res.image)
-        showToast("Success", "Inpainting completed!", "success")
+        showToast(t("aiImageInpainting.toast.success"), t("aiImageInpainting.toast.inpaintingCompleted"), "success")
       } else {
         throw new Error(res.error || "Inpainting failed")
       }
@@ -512,17 +514,17 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
       if (errorMessage.includes('API Error:')) {
         // Try to make it more user-friendly
         if (errorMessage.includes('Connection error')) {
-          errorMessage = 'Connection error. Please check your internet connection and try again.'
+          errorMessage = t("aiImageInpainting.toast.connectionError")
         } else if (errorMessage.includes('insufficient_quota')) {
-          errorMessage = 'API quota exceeded. Please try again later.'
+          errorMessage = t("aiImageInpainting.toast.quotaExceeded")
         } else if (errorMessage.includes('invalid_request_error')) {
-          errorMessage = 'Invalid request. The image dimensions or format may be unsupported.'
+          errorMessage = t("aiImageInpainting.toast.invalidRequest")
         }
       }
       
       // Show a friendly error message to the user
       showToast(
-        "Image processing failed", 
+        t("aiImageInpainting.toast.imageProcessingFailed"), 
         errorMessage.length > 100 ? errorMessage.substring(0, 100) + '...' : errorMessage, 
         "error"
       )
@@ -541,7 +543,7 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
     // Clear the mask canvas
     maskCtx.clearRect(0, 0, maskCanvasRef.current.width, maskCanvasRef.current.height)
     
-    showToast("Mask Reset", "You can now redraw your selection", "success")
+    showToast(t("aiImageInpainting.toast.maskReset"), t("aiImageInpainting.toast.maskResetDesc"), "success")
   }
 
   /** Download the inpainted result directly as a file download */
@@ -569,10 +571,10 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
       // Clean up by revoking the object URL
       window.URL.revokeObjectURL(url)
       
-      showToast("Download complete", "Inpainted image saved successfully to your device.", "success")
+      showToast(t("aiImageInpainting.toast.downloadComplete"), t("aiImageInpainting.toast.downloadCompleteDesc"), "success")
     } catch (error) {
       console.error("Error downloading inpainted image:", error)
-      showToast("Download failed", "Unable to download the inpainted image. Please try again.", "error")
+      showToast(t("aiImageInpainting.toast.downloadFailed"), t("aiImageInpainting.toast.downloadFailedDesc"), "error")
     }
   }
 
@@ -607,7 +609,7 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
             maskCtx?.clearRect(0, 0, maskCanvasRef.current.width, maskCanvasRef.current.height);
           }
           
-          showToast("Ready to Edit", "You can now continue editing your image", "success");
+          showToast(t("aiImageInpainting.toast.readyToEdit"), t("aiImageInpainting.toast.readyToEditDesc"), "success");
           setIsProcessing(false);
         };
         img.src = dataUrl;
@@ -616,7 +618,7 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
       reader.readAsDataURL(blob);
     } catch (error) {
       console.error("Error converting image URL to data URL:", error);
-      showToast("Error", "Failed to prepare image for continued editing", "error");
+      showToast(t("aiImageInpainting.toast.error"), t("aiImageInpainting.toast.errorDesc"), "error");
       setIsProcessing(false);
     }
   }
@@ -625,16 +627,16 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
   async function handleEnhancePrompt() {
     if (!improvePrompt) return
     if (!prompt.trim()) {
-      showToast("Empty prompt", "Enter a prompt to enhance.", "error")
+      showToast(t("aiImageInpainting.toast.emptyPrompt"), t("aiImageInpainting.toast.emptyPromptDesc"), "error")
       return
     }
     try {
       const newPrompt = await improvePrompt(prompt)
       setPrompt(newPrompt)
-      showToast("Prompt enhanced", "Your prompt was improved with AI", "success")
+      showToast(t("aiImageInpainting.toast.promptEnhanced"), t("aiImageInpainting.toast.promptEnhancedDesc"), "success")
     } catch (err) {
       console.error("Prompt enhance error:", err)
-      showToast("Enhance error", "Could not improve prompt", "error")
+      showToast(t("aiImageInpainting.toast.enhanceError"), t("aiImageInpainting.toast.enhanceErrorDesc"), "error")
     }
   }
 
@@ -730,10 +732,10 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
         <div>
           <h2 className="flex items-center gap-2 text-xl font-bold">
             <Brush className={`size-5 ${isDarkMode ? "text-primary-green" : "text-blue-600"}`} />
-            <span className={isDarkMode ? "text-text-white" : "text-gray-900"}>AI Image Inpainting</span>
+            <span className={isDarkMode ? "text-text-white" : "text-gray-900"}>{t("aiImageInpainting.title")}</span>
           </h2>
           <p className={`text-sm mt-1.5 ${isDarkMode ? "text-text-light-gray" : "text-gray-500"}`}>
-            Remove or replace parts of an image by brushing them out and describing what you want
+            {t("aiImageInpainting.description")}
           </p>
         </div>
       </div>
@@ -750,7 +752,7 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
                   isDarkMode ? "text-text-white" : "text-gray-700"
                 }`}
               >
-                Upload image
+                {t("aiImageInpainting.form.uploadImage")}
               </label>
               <div className="flex items-center gap-2">
                 <label
@@ -761,7 +763,7 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
                   }`}
                 >
                   <Upload className="mr-2 size-4" />
-                  Choose File
+                  {t("aiImageInpainting.form.chooseFile")}
                   <input
                     type="file"
                     accept="image/*"
@@ -785,13 +787,13 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
                     isDarkMode ? "text-text-white" : "text-gray-700"
                   }`}
                 >
-                  Describe what to add in the areas you painted red
+                  {t("aiImageInpainting.form.promptLabel")}
                 </label>
                 <textarea
                   id="inpaintPrompt"
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
-                  placeholder='e.g. A beautiful mountain landscape, or Replace with a bouquet of flowers, or Add a cute dog here'
+                  placeholder={t("aiImageInpainting.form.promptPlaceholder")}
                   className={`w-full min-h-[100px] resize-none p-3 rounded-md outline-none focus:ring-2 focus:ring-primary-green focus:border-primary-green ${
                     isDarkMode
                       ? "bg-dark-bg border-border-dark text-text-white placeholder-text-light-gray"
@@ -817,7 +819,7 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
                   }`}
                 >
                   <RefreshCw className="mr-2 size-4" />
-                  {isProcessing ? "Enhancing..." : "Enhance Prompt"}
+                  {isProcessing ? t("aiImageInpainting.buttons.enhancing") : t("aiImageInpainting.buttons.enhancePrompt")}
                 </button>
               )}
             </div>
@@ -829,7 +831,7 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
                   isDarkMode ? "text-text-white" : "text-gray-700"
                 }`}
               >
-                Brush Size
+                {t("aiImageInpainting.form.brushSize")}
               </label>
               <input
                 type="range"
@@ -853,12 +855,12 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
                   isDarkMode ? "text-text-white" : "text-gray-700"
                 }`}
               >
-                Brush Instructions
+                {t("aiImageInpainting.form.brushInstructions")}
               </label>
               <div className={`p-2 text-xs rounded-md ${
                 isDarkMode ? "bg-gray-700" : "bg-gray-100"
               }`}>
-                Paint with red brush over areas you want to change. These areas will be replaced based on your prompt.
+                {t("aiImageInpainting.form.brushInstructionsText")}
               </div>
             </div>
 
@@ -879,7 +881,7 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
                 }`}
               >
                 <RefreshCw className="mr-2 size-4" />
-                Reset Selection
+                {t("aiImageInpainting.buttons.resetSelection")}
               </button>
               
               <button
@@ -897,7 +899,7 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
                 }`}
               >
                 <Brush className="mr-2 size-4" />
-                {isProcessing ? "Inpainting..." : "Inpaint"}
+                {isProcessing ? t("aiImageInpainting.buttons.inpainting") : t("aiImageInpainting.buttons.inpaint")}
               </button>
             </div>
           </div>
@@ -912,13 +914,13 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
                 <div className="flex gap-2 items-start">
                   <Info className="size-4 mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="font-medium mb-1">How to use the inpainting tool:</p>
+                    <p className="font-medium mb-1">{t("aiImageInpainting.instructions.title")}</p>
                     <ol className="list-decimal ml-4 space-y-1">
-                      <li>Paint over the specific areas you want to replace (they will appear red)</li> 
-                      <li>Describe what should replace these red areas in the prompt field</li>
-                      <li>Click &ldquo;Inpaint&rdquo; to generate your edited image</li>
+                      <li>{t("aiImageInpainting.instructions.step1")}</li> 
+                      <li>{t("aiImageInpainting.instructions.step2")}</li>
+                      <li>{t("aiImageInpainting.instructions.step3")}</li>
                     </ol>
-                    <p className="mt-2 text-xs italic">Note: Only the red-painted areas will be changed with Ideogram&apos;s AI. The rest of the image will stay the same.</p>
+                    <p className="mt-2 text-xs italic">{t("aiImageInpainting.instructions.note")}</p>
                   </div>
                 </div>
               </div>
@@ -938,7 +940,7 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
                     isDarkMode ? "text-text-white" : "text-gray-800"
                   }`}
                 >
-                  Input Image
+                  {t("aiImageInpainting.canvas.inputImage")}
                 </h3>
                 
                 {/* Base canvas + mask overlay */}
@@ -971,7 +973,7 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
                 ) : (
                   <div className="text-center text-sm py-10">
                     <p className={isDarkMode ? "text-text-light-gray" : "text-gray-500"}>
-                      No image loaded. Please upload an image to begin inpainting.
+                      {t("aiImageInpainting.emptyState.noImage")}
                     </p>
                   </div>
                 )}
@@ -989,7 +991,7 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
                       isDarkMode ? "text-text-white" : "text-gray-800"
                     }`}
                   >
-                    Inpainted Result
+                    {t("aiImageInpainting.canvas.inpaintedResult")}
                   </h3>
                   
                   {inpaintResult && (
@@ -1004,7 +1006,7 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
                         }`}
                       >
                         <Repeat className="mr-2 size-4" />
-                        Continue Editing
+                        {t("aiImageInpainting.buttons.continueEditing")}
                       </button>
                       
                       {/* Download button */}
@@ -1017,7 +1019,7 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
                         }`}
                       >
                         <Download className="mr-2 size-4" />
-                        Download
+                        {t("aiImageInpainting.buttons.download")}
                       </button>
                     </div>
                   )}
@@ -1040,14 +1042,14 @@ export default function AiImageInpaint({ improvePrompt }: AiImageInpaintProps) {
                       <div className="flex flex-col items-center gap-3">
                         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-green"></div>
                         <p className={isDarkMode ? "text-text-white" : "text-gray-600"}>
-                          Processing your image...
+                          {t("aiImageInpainting.emptyState.processing")}
                         </p>
                       </div>
                     ) : (
                       <div className="flex flex-col items-center gap-2">
                         <ArrowLeft className={`size-5 ${isDarkMode ? "text-text-light-gray" : "text-gray-500"}`} />
                         <p className={isDarkMode ? "text-text-light-gray" : "text-gray-500"}>
-                          Use the controls to generate your inpainted image
+                          {t("aiImageInpainting.emptyState.useControls")}
                         </p>
                       </div>
                     )}

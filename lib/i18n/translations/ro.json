@@ -367,19 +367,19 @@
     "viewGuide": "Vezi Ghidul"
   },
   "aiVideoGenerator": {
-    "title": "Generator Video IA",
-    "description": "Creează videoclipuri captivante în stil conținut generat de utilizatori folosind IA",
+    "title": "Generator Video AI",
+    "description": "Creează videoclipuri captivante în stil conținut generat de utilizatori folosind AI",
     "describeVideo": "Descrie videoclipul pe care îl vrei",
     "videoSettings": "Setări Video",
     "duration": "Durată",
-    "aspectRatio": "Raportul de Aspect",
-    "startingImage": "Imaginea de Start (Obligatorie)",
-    "enhancePrompt": "Îmbunătățește prompt-ul cu IA",
+    "aspectRatio": "Raport de Aspect",
+    "startingImage": "Imagine de Început (Obligatorie)",
+    "enhancePrompt": "Îmbunătățește prompt-ul cu AI",
     "enhancing": "Se îmbunătățește...",
-    "createVideo": "Creează videoclip",
+    "createVideo": "Creează video",
     "creatingVideo": "Se creează videoclipul...",
     "generating": "Se generează...",
-    "downloadVideo": "Descarcă Videoclip",
+    "downloadVideo": "Descarcă Video",
     "download": "Descarcă",
     "duration5": "5 secunde",
     "duration10": "10 secunde",
@@ -387,12 +387,12 @@
     "portrait": "Portret (9:16)",
     "uploadImage": "Încarcă imagine",
     "changeImage": "Schimbă imaginea",
-    "placeholderPrompt": "O panoramare cinematografică a unui spațiu de birou modern cu iluminare naturală, arătând profesioniști care colaborează...",
-    "videoPlaceholder": "Videoclipul tău generat de IA va apărea aici odată creat.",
-    "noVideosGenerated": "Încă nu au fost generate videoclipuri",
-    "noVideosDescription": "Introdu un prompt descriptiv, selectează setările și încarcă o imagine de pornire pentru a genera videoclipuri IA pentru proiectul tău.",
+    "placeholderPrompt": "O filmare panoramică cinematografică a unui spațiu de birou modern cu lumină naturală, arătând profesioniști care colaborează...",
+    "videoPlaceholder": "Videoclipul tău generat de AI va apărea aici odată creat.",
+    "noVideosGenerated": "Încă nu s-au generat videoclipuri",
+    "noVideosDescription": "Introdu un prompt descriptiv, selectează setările și încarcă o imagine de început pentru a genera videoclipuri AI pentru proiectul tău.",
     "browserNotSupported": "Browserul tău nu suportă tag-ul video.",
-    "aiProcessing": "Creierul IA Procesează",
+    "aiProcessing": "Creierul AI Procesează",
     "creatingCustomVideo": "Se creează videoclipul tău personalizat...",
     "checkingStatus": "Se verifică statusul...",
     "recentPrompts": "Prompt-uri recente",
@@ -405,38 +405,38 @@
     "saveToLibrary": "Salvează în Bibliotecă",
     "saving": "Se salvează...",
     "poweredBy": "Alimentat de Runway AI",
-    "copyrightWarning": "Reține drepturile de autor și licențierea",
-    "copyrightDescription": "Verifică întotdeauna că ai drepturile corespunzătoare pentru a folosi conținut generat de IA în proiectele tale.",
-    "enterPromptPlaceholder": "Introdu un prompt, alege setările și încarcă o imagine pentru a genera videoclipul tău IA",
+    "copyrightWarning": "Amintește-ți de drepturi de autor și licențe",
+    "copyrightDescription": "Verifică întotdeauna că ai drepturile corespunzătoare pentru a folosi conținut generat de AI în proiectele tale.",
+    "enterPromptPlaceholder": "Introdu un prompt, alege setările și încarcă o imagine pentru a genera videoclipul tău AI",
     "steps": {
       "understanding": "Se înțelege conceptul tău de video...",
-      "analyzing": "Se analizează imaginea ta încărcată pentru stil...",
+      "analyzing": "Se analizează imaginea încărcată pentru stil...",
       "synthesizing": "Se sintetizează tranzițiile și animațiile...",
       "finalizing": "Aproape gata!"
     },
     "toast": {
       "noPromptToImprove": "Niciun prompt de îmbunătățit",
-      "enterVideoDescriptionFirst": "Te rugăm să introduci primul o descriere video.",
+      "enterVideoDescriptionFirst": "Te rugăm să introduci mai întâi o descriere video.",
       "promptEnhanced": "Prompt îmbunătățit",
-      "promptImprovedDescription": "Descrierea ta a fost îmbunătățită cu asistența IA.",
+      "promptImprovedDescription": "Descrierea ta a fost îmbunătățită cu asistența AI.",
       "enhancementFailed": "Îmbunătățirea a eșuat",
-      "unableToImprovePrompt": "Nu se poate îmbunătăți prompt-ul. Te rugăm să încerci din nou.",
+      "unableToImprovePrompt": "Nu se poate îmbunătăți prompt-ul tău. Te rugăm să încerci din nou.",
       "missingPrompt": "Prompt lipsă",
       "missingImage": "Imagine lipsă",
-      "uploadStartingImageFirst": "Te rugăm să încarci primul o imagine de pornire.",
+      "uploadStartingImageFirst": "Te rugăm să încarci mai întâi o imagine de început.",
       "fileTooLarge": "Fișier prea mare",
       "imageTooLarge": "Fișierul imagine trebuie să fie mai mic de 5MB.",
       "imageUploaded": "Imagine încărcată",
-      "startingImageUploaded": "Imaginea ta de pornire a fost încărcată cu succes.",
+      "startingImageUploaded": "Imaginea ta de început a fost încărcată cu succes.",
       "processing": "Se procesează",
-      "videoBeingGenerated": "Videoclipul tău este generat. Acest lucru poate dura câteva minute.",
+      "videoBeingGenerated": "Videoclipul tău se generează. Acest lucru poate dura câteva minute.",
       "success": "Succes",
-      "videoGenerated": "Videoclipul tău IA a fost generat!",
+      "videoGenerated": "Videoclipul tău AI a fost generat!",
       "generationFailed": "Generarea a eșuat",
       "unableToCreateVideo": "Nu se poate crea videoclipul. Te rugăm să încerci din nou cu un prompt diferit.",
       "downloadComplete": "Descărcare completă",
-      "videoSavedSuccessfully": "Videoclip salvat cu succes pe dispozitivul tău.",
-      "downloadFailed": "Descărcare eșuată",
+      "videoSavedSuccessfully": "Video salvat cu succes pe dispozitivul tău.",
+      "downloadFailed": "Descărcarea a eșuat",
       "unableToDownloadVideo": "Nu se poate descărca videoclipul. Te rugăm să încerci din nou.",
       "noVideosSelected": "Niciun videoclip selectat",
       "selectAtLeastOneVideo": "Te rugăm să selectezi cel puțin un videoclip pentru a salva în biblioteca ta.",
@@ -446,16 +446,205 @@
       "unableToSaveVideos": "Nu se pot salva videoclipurile în biblioteca ta. Te rugăm să încerci din nou."
     },
     "errors": {
-      "enterPrompt": "Te rugăm să introduci primul un prompt.",
-      "uploadImage": "Te rugăm să încarci primul o imagine.",
-      "downloadFailed": "Descărcarea videoclipului a eșuat. Te rugăm să încerci din nou.",
-      "generationFailed": "Generarea videoclipului a eșuat. Te rugăm să încerci din nou.",
+      "enterPrompt": "Te rugăm să introduci mai întâi un prompt.",
+      "uploadImage": "Te rugăm să încarci mai întâi o imagine.",
+      "downloadFailed": "Descărcarea video a eșuat. Încearcă din nou.",
+      "generationFailed": "Generarea video a eșuat. Încearcă din nou.",
       "improveFailed": "Îmbunătățirea prompt-ului a eșuat."
     },
     "success": {
-      "promptImproved": "Prompt îmbunătățit cu IA!",
-      "videoGenerated": "Videoclipul tău IA a fost generat!",
-      "videoDownloaded": "Videoclip descărcat cu succes!"
+      "promptImproved": "Prompt îmbunătățit cu AI!",
+      "videoGenerated": "Videoclipul tău AI a fost generat!",
+      "videoDownloaded": "Video descărcat cu succes!"
+    }
+  },
+  "aiCreativesDirector": {
+    "title": "Director Creativ AI",
+    "description": "Creează imagini profesionale folosind AI din descrieri text sau imagini de referință",
+    "imageGenerated": "imagine generată",
+    "imagesGenerated": "imagini generate",
+    "modes": {
+      "textToImage": "Text la Imagine",
+      "referenceImages": "Imagini de Referință"
+    },
+    "descriptions": {
+      "textToImage": "Descrie imaginea pe care vrei să o creezi și AI-ul nostru o va genera pentru tine. Fii cât mai detaliat posibil pentru cele mai bune rezultate.",
+      "referenceImages": "Încarcă până la 4 imagini de referință și AI-ul nostru va genera imagini creative inspirate de acestea. Perfect pentru crearea de variații ale anunțurilor tale, combinarea elementelor din creații ale concurenței sau generarea de coșuri cadou cu produsele tale.",
+      "referenceImagesNote": "Notă: Încarcă imagini PNG, JPEG sau WebP (max 20MB fiecare). Poți adăuga până la 4 imagini de referință."
+    },
+    "referenceImages": {
+      "label": "Imagini de Referință (1-4)",
+      "clearAll": "Șterge toate",
+      "uploadButton": "Încarcă imagini de referință",
+      "dragDropText": "Trage și lasă imagini aici sau dă click pentru a naviga",
+      "maxFiles": "Maxim 4 imagini"
+    },
+    "prompts": {
+      "labelText": "Descrie imaginea pe care o vrei",
+      "labelReference": "Descrie ce să creez din imaginile de referință",
+      "placeholderText": "O imagine profesională a unei persoane de afaceri care lucrează într-un birou modern, lumină blândă, focalizare precisă...",
+      "placeholderReference": "Creează o colecție coerentă combinând elemente din imaginile de referință într-un stil profesional...",
+      "recentPrompts": "Prompt-uri recente"
+    },
+    "settings": {
+      "imageFormat": "Format Imagine",
+      "numberOfImages": "Număr de imagini:",
+      "formats": {
+        "square": "Pătrat (1:1)",
+        "landscapeWide": "Peisaj (16:9)",
+        "portraitTall": "Portret (9:16)",
+        "landscape43": "Peisaj (4:3)",
+        "portrait34": "Portret (3:4)",
+        "portrait23": "Portret (2:3)",
+        "landscape32": "Peisaj (3:2)"
+      }
+    },
+    "buttons": {
+      "enhancing": "Se îmbunătățește...",
+      "enhancePrompt": "Îmbunătățește prompt-ul cu AI",
+      "generating": "Se generează...",
+      "createImages": "Creează {count} imagini",
+      "createImagesFromReferences": "Creează {count} imagini din referințe"
+    },
+    "branding": {
+      "title": "Marchează imaginile tale",
+      "uploadLogo": "Încarcă logo",
+      "changeLogo": "Schimbă logo-ul",
+      "clear": "Șterge",
+      "position": "Poziție",
+      "size": "Mărime (%)",
+      "positions": {
+        "topLeft": "Stânga Sus",
+        "topCenter": "Sus Centru",
+        "topRight": "Dreapta Sus",
+        "middleCenter": "Centru",
+        "bottomLeft": "Stânga Jos",
+        "bottomCenter": "Jos Centru",
+        "bottomRight": "Dreapta Jos",
+        "custom": "Personalizat (Trage și Lasă)"
+      },
+      "customPositionHelp": "Dă click și trage pentru a poziționa logo-ul pe fiecare imagine",
+      "dragToPosition": "Trage-mă pentru a poziționa"
+    },
+    "results": {
+      "tabs": {
+        "original": "Original",
+        "withLogo": "Cu Logo"
+      },
+      "selected": "selectat",
+      "selectAll": "Selectează toate",
+      "clear": "Șterge",
+      "download": "Descarcă",
+      "downloadShort": "DL"
+    },
+    "emptyState": {
+      "title": "Încă nu s-au generat imagini",
+      "descriptionText": "Introdu un prompt descriptiv și dă click pe \"Creează imagini\" pentru a genera imagini AI pentru proiectul tău.",
+      "descriptionReference": "Încarcă o imagine sursă și dă click pe \"Creează variații\" pentru a genera variații AI ale imaginii tale."
+    },
+    "loading": {
+      "statusText": "Se creează {count} imagini din descrierea ta...",
+      "statusReference": "Se creează {count} variații ale imaginii tale...",
+      "pleaseWait": "Acest lucru poate dura câteva momente...",
+      "dontRefresh": "Te rugăm să nu reîmprospătezi pagina."
+    },
+    "copyright": {
+      "title": "Amintește-ți de drepturi de autor și licențe",
+      "description": "Verifică întotdeauna că ai drepturile corespunzătoare pentru a folosi conținut generat de AI în proiectele tale."
+    },
+    "toast": {
+      "unsupportedFileType": "Tip de fișier nesuportat",
+      "unsupportedFileTypeDesc": "{fileName} are tip nesuportat ({fileType}). Te rugăm să folosești PNG sau JPEG.",
+      "fileWillBeResized": "Fișierul va fi redimensionat",
+      "fileWillBeResizedDesc": "{fileName} ({fileSize}MB) va fi optimizat automat pentru compatibilitatea API.",
+      "processingImages": "Se procesează imaginile",
+      "processingImagesDesc": "Se optimizează imaginile pentru încărcare...",
+      "imagesUploaded": "Imagini încărcate",
+      "imagesUploadedDesc": "{count} imagine{plural} de referință încărcate cu succes.",
+      "nextStep": "Pasul următor",
+      "nextStepDesc": "Acum introdu un prompt descriptiv despre ce vrei să creezi cu aceste imagini.",
+      "uploadError": "Eroare de încărcare",
+      "uploadErrorDesc": "A fost o problemă la procesarea imaginilor. Te rugăm să încerci din nou cu imagini diferite.",
+      "promptEnhanced": "Prompt îmbunătățit",
+      "promptEnhancedDesc": "Descrierea ta a fost îmbunătățită cu asistența AI.",
+      "enhancementFailed": "Îmbunătățirea a eșuat",
+      "enhancementFailedDesc": "Nu se poate îmbunătăți prompt-ul tău. Te rugăm să încerci din nou.",
+      "generationStarted": "Generarea a început",
+      "generationStartedDesc": "Imaginile tale se generează. Acest lucru poate dura câteva momente.",
+      "generationFailed": "Generarea a eșuat",
+      "generationFailedDesc": "Nu se pot genera imaginile. Te rugăm să încerci din nou cu un prompt diferit.",
+      "generationSuccess": "Imaginile generate",
+      "generationSuccessDesc": "Imaginile tale AI au fost generate cu succes!",
+      "downloadSuccess": "Descărcare reușită",
+      "downloadSuccessDesc": "Imagine descărcată cu succes pe dispozitivul tău.",
+      "downloadFailed": "Descărcarea a eșuat",
+      "downloadFailedDesc": "Nu s-a putut descărca imaginea. Încercați din nou."
+    }
+  },
+  "aiImageInpainting": {
+    "title": "Inpainting Imagini AI",
+    "description": "Eliminați sau înlocuiți părți dintr-o imagine pictându-le și descriind ce doriți",
+    "form": {
+      "uploadImage": "Încărcați imagine",
+      "chooseFile": "Alegeți fișier",
+      "promptLabel": "Descrieți ce să adăugați în zonele pictate cu roșu",
+      "promptPlaceholder": "ex. Un peisaj montan frumos, sau Înlocuiți cu un buchet de flori, sau Adăugați un căței drăguț aici",
+      "brushSize": "Dimensiune pensulă",
+      "brushInstructions": "Instrucțiuni pensulă",
+      "brushInstructionsText": "Pictați cu pensula roșie peste zonele pe care doriți să le schimbați. Aceste zone vor fi înlocuite pe baza descrierii dumneavoastră."
+    },
+    "buttons": {
+      "enhancePrompt": "Îmbunătățiți descrierea",
+      "enhancing": "Se îmbunătățește...",
+      "resetSelection": "Resetați selecția",
+      "inpaint": "Inpaint",
+      "inpainting": "Se face inpainting...",
+      "continueEditing": "Continuați editarea",
+      "download": "Descărcați"
+    },
+    "canvas": {
+      "inputImage": "Imagine de intrare",
+      "inpaintedResult": "Rezultat inpainting"
+    },
+    "instructions": {
+      "title": "Cum să folosiți instrumentul de inpainting:",
+      "step1": "Pictați peste zonele specifice pe care doriți să le înlocuiți (vor apărea în roșu)",
+      "step2": "Descrieți ce ar trebui să înlocuiască aceste zone roșii în câmpul de descriere",
+      "step3": "Faceți clic pe \"Inpaint\" pentru a genera imaginea editată",
+      "note": "Notă: Doar zonele pictate cu roșu vor fi schimbate cu AI-ul Ideogram. Restul imaginii va rămâne la fel."
+    },
+    "emptyState": {
+      "noImage": "Nicio imagine încărcată. Încărcați o imagine pentru a începe inpainting-ul.",
+      "useControls": "Folosiți controalele pentru a genera imaginea cu inpainting",
+      "processing": "Se procesează imaginea..."
+    },
+    "toast": {
+      "missingImage": "Imagine lipsă",
+      "missingImageDesc": "Încărcați mai întâi o imagine și pictați pe ea.",
+      "missingPrompt": "Descriere lipsă",
+      "missingPromptDesc": "Descrieți cum să faceți inpainting pe imagine.",
+      "success": "Succes",
+      "inpaintingCompleted": "Inpainting finalizat!",
+      "imageProcessingFailed": "Procesarea imaginii a eșuat",
+      "connectionError": "Eroare de conexiune. Verificați conexiunea la internet și încercați din nou.",
+      "quotaExceeded": "Cota API depășită. Încercați din nou mai târziu.",
+      "invalidRequest": "Cerere invalidă. Dimensiunile sau formatul imaginii s-ar putea să nu fie suportate.",
+      "maskReset": "Mască resetată",
+      "maskResetDesc": "Acum puteți redesena selecția",
+      "downloadComplete": "Descărcare completă",
+      "downloadCompleteDesc": "Imaginea cu inpainting a fost salvată cu succes pe dispozitiv.",
+      "downloadFailed": "Descărcare eșuată",
+      "downloadFailedDesc": "Nu s-a putut descărca imaginea cu inpainting. Încercați din nou.",
+      "readyToEdit": "Gata de editare",
+      "readyToEditDesc": "Acum puteți continua să editați imaginea",
+      "error": "Eroare",
+      "errorDesc": "Nu s-a putut pregăti imaginea pentru editare continuă",
+      "emptyPrompt": "Descriere goală",
+      "emptyPromptDesc": "Introduceți o descriere pentru îmbunătățire.",
+      "promptEnhanced": "Descriere îmbunătățită",
+      "promptEnhancedDesc": "Descrierea a fost îmbunătățită cu AI",
+      "enhanceError": "Eroare îmbunătățire",
+      "enhanceErrorDesc": "Nu s-a putut îmbunătăți descrierea"
     }
   }
 } 

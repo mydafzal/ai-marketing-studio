@@ -457,5 +457,194 @@
       "videoGenerated": "Je AI video is gegenereerd!",
       "videoDownloaded": "Video succesvol gedownload!"
     }
+  },
+  "aiCreativesDirector": {
+    "title": "AI Creatief Directeur",
+    "description": "Creëer professionele afbeeldingen met AI uit tekstbeschrijvingen of referentieafbeeldingen",
+    "imageGenerated": "afbeelding gegenereerd",
+    "imagesGenerated": "afbeeldingen gegenereerd",
+    "modes": {
+      "textToImage": "Tekst naar Afbeelding",
+      "referenceImages": "Referentieafbeeldingen"
+    },
+    "descriptions": {
+      "textToImage": "Beschrijf de afbeelding die je wilt maken en onze AI genereert deze voor je. Wees zo gedetailleerd mogelijk voor de beste resultaten.",
+      "referenceImages": "Upload tot 4 referentieafbeeldingen en onze AI genereert creatieve afbeeldingen geïnspireerd door deze. Perfect voor het maken van variaties van je advertenties, het combineren van elementen van concurrerende creatieven of het genereren van cadeaupakketten met je producten.",
+      "referenceImagesNote": "Opmerking: Upload PNG, JPEG of WebP afbeeldingen (max 20MB elk). Je kunt tot 4 referentieafbeeldingen toevoegen."
+    },
+    "referenceImages": {
+      "label": "Referentieafbeeldingen (1-4)",
+      "clearAll": "Alles wissen",
+      "uploadButton": "Referentieafbeeldingen uploaden",
+      "dragDropText": "Sleep afbeeldingen hier naartoe of klik om te bladeren",
+      "maxFiles": "Maximaal 4 afbeeldingen"
+    },
+    "prompts": {
+      "labelText": "Beschrijf de afbeelding die je wilt",
+      "labelReference": "Beschrijf wat je wilt maken van de referentieafbeeldingen",
+      "placeholderText": "Een professionele afbeelding van een zakenman die werkt in een modern kantoor, zachte belichting, scherpe focus...",
+      "placeholderReference": "Creëer een samenhangende collectie die elementen van de referentieafbeeldingen combineert in een professionele stijl...",
+      "recentPrompts": "Recente prompts"
+    },
+    "settings": {
+      "imageFormat": "Afbeeldingsformaat",
+      "numberOfImages": "Aantal afbeeldingen:",
+      "formats": {
+        "square": "Vierkant (1:1)",
+        "landscapeWide": "Landschap (16:9)",
+        "portraitTall": "Portret (9:16)",
+        "landscape43": "Landschap (4:3)",
+        "portrait34": "Portret (3:4)",
+        "portrait23": "Portret (2:3)",
+        "landscape32": "Landschap (3:2)"
+      }
+    },
+    "buttons": {
+      "enhancing": "Verbeteren...",
+      "enhancePrompt": "Prompt verbeteren met AI",
+      "generating": "Genereren...",
+      "createImages": "{count} afbeeldingen maken",
+      "createImagesFromReferences": "{count} afbeeldingen maken van referenties"
+    },
+    "branding": {
+      "title": "Brand je afbeeldingen",
+      "uploadLogo": "Logo uploaden",
+      "changeLogo": "Logo wijzigen",
+      "clear": "Wissen",
+      "position": "Positie",
+      "size": "Grootte (%)",
+      "positions": {
+        "topLeft": "Linksboven",
+        "topCenter": "Bovenkant Midden",
+        "topRight": "Rechtsboven",
+        "middleCenter": "Midden",
+        "bottomLeft": "Linksonder",
+        "bottomCenter": "Onderkant Midden",
+        "bottomRight": "Rechtsonder",
+        "custom": "Aangepast (Slepen en Neerzetten)"
+      },
+      "customPositionHelp": "Klik en sleep om je logo op elke afbeelding te positioneren",
+      "dragToPosition": "Sleep mij om te positioneren"
+    },
+    "results": {
+      "tabs": {
+        "original": "Origineel",
+        "withLogo": "Met Logo"
+      },
+      "selected": "geselecteerd",
+      "selectAll": "Alles selecteren",
+      "clear": "Wissen",
+      "download": "Downloaden",
+      "downloadShort": "DL"
+    },
+    "emptyState": {
+      "title": "Nog geen afbeeldingen gegenereerd",
+      "descriptionText": "Voer een beschrijvende prompt in en klik op \"Afbeeldingen maken\" om AI-afbeeldingen voor je project te genereren.",
+      "descriptionReference": "Upload een bronafbeelding en klik op \"Variaties maken\" om AI-variaties van je afbeelding te genereren."
+    },
+    "loading": {
+      "statusText": "{count} afbeeldingen maken van je beschrijving...",
+      "statusReference": "{count} variaties van je afbeelding maken...",
+      "pleaseWait": "Dit kan een paar momenten duren...",
+      "dontRefresh": "Ververs de pagina niet."
+    },
+    "copyright": {
+      "title": "Onthoud copyright en licenties",
+      "description": "Controleer altijd of je de juiste rechten hebt om AI-gegenereerde content in je projecten te gebruiken."
+    },
+    "toast": {
+      "unsupportedFileType": "Niet-ondersteund bestandstype",
+      "unsupportedFileTypeDesc": "{fileName} heeft niet-ondersteund type ({fileType}). Gebruik PNG of JPEG.",
+      "fileWillBeResized": "Bestand wordt aangepast",
+      "fileWillBeResizedDesc": "{fileName} ({fileSize}MB) wordt automatisch geoptimaliseerd voor API-compatibiliteit.",
+      "processingImages": "Afbeeldingen verwerken",
+      "processingImagesDesc": "Afbeeldingen optimaliseren voor upload...",
+      "imagesUploaded": "Afbeeldingen geüpload",
+      "imagesUploadedDesc": "{count} referentieafbeelding{plural} succesvol geüpload.",
+      "nextStep": "Volgende stap",
+      "nextStepDesc": "Voer nu een beschrijvende prompt in over wat je wilt maken met deze afbeeldingen.",
+      "uploadError": "Upload fout",
+      "uploadErrorDesc": "Er was een probleem bij het verwerken van de afbeeldingen. Probeer het opnieuw met andere afbeeldingen.",
+      "promptEnhanced": "Prompt verbeterd",
+      "promptEnhancedDesc": "Je beschrijving is verbeterd met AI-assistentie.",
+      "enhancementFailed": "Verbetering mislukt",
+      "enhancementFailedDesc": "Kan je prompt niet verbeteren. Probeer het opnieuw.",
+      "generationStarted": "Generatie gestart",
+      "generationStartedDesc": "Je afbeeldingen worden gegenereerd. Dit kan een paar momenten duren.",
+      "generationFailed": "Generatie mislukt",
+      "generationFailedDesc": "Kan afbeeldingen niet genereren. Probeer het opnieuw met een andere prompt.",
+      "generationSuccess": "Afbeeldingen gegenereerd",
+      "generationSuccessDesc": "Je AI-afbeeldingen zijn succesvol gegenereerd!",
+      "downloadSuccess": "Download succesvol",
+      "downloadSuccessDesc": "Afbeelding succesvol gedownload naar je apparaat.",
+      "downloadFailed": "Download mislukt",
+      "downloadFailedDesc": "Kan de afbeelding niet downloaden. Probeer het opnieuw."
+    }
+  },
+  "aiImageInpainting": {
+    "title": "AI Afbeelding Inpainting",
+    "description": "Verwijder of vervang delen van een afbeelding door ze te beschilderen en te beschrijven wat je wilt",
+    "form": {
+      "uploadImage": "Afbeelding uploaden",
+      "chooseFile": "Bestand kiezen",
+      "promptLabel": "Beschrijf wat toe te voegen in de rood gekleurde gebieden",
+      "promptPlaceholder": "bijv. Een prachtig berglandschap, of Vervangen door een boeket bloemen, of Voeg hier een schattige hond toe",
+      "brushSize": "Penselgrootte",
+      "brushInstructions": "Penseelinstructies",
+      "brushInstructionsText": "Verf met het rode penseel over gebieden die je wilt veranderen. Deze gebieden worden vervangen op basis van je beschrijving."
+    },
+    "buttons": {
+      "enhancePrompt": "Beschrijving verbeteren",
+      "enhancing": "Verbeteren...",
+      "resetSelection": "Selectie resetten",
+      "inpaint": "Inpaint",
+      "inpainting": "Inpainting...",
+      "continueEditing": "Verder bewerken",
+      "download": "Downloaden"
+    },
+    "canvas": {
+      "inputImage": "Invoer afbeelding",
+      "inpaintedResult": "Inpainting resultaat"
+    },
+    "instructions": {
+      "title": "Hoe de inpainting tool te gebruiken:",
+      "step1": "Verf over de specifieke gebieden die je wilt vervangen (ze zullen rood verschijnen)",
+      "step2": "Beschrijf wat deze rode gebieden moet vervangen in het beschrijvingsveld",
+      "step3": "Klik op \"Inpaint\" om je bewerkte afbeelding te genereren",
+      "note": "Opmerking: Alleen de rood geverfde gebieden zullen worden veranderd met Ideogram's AI. De rest van de afbeelding blijft hetzelfde."
+    },
+    "emptyState": {
+      "noImage": "Geen afbeelding geladen. Upload een afbeelding om te beginnen met inpainting.",
+      "useControls": "Gebruik de bedieningselementen om je inpainting afbeelding te genereren",
+      "processing": "Je afbeelding wordt verwerkt..."
+    },
+    "toast": {
+      "missingImage": "Ontbrekende afbeelding",
+      "missingImageDesc": "Upload eerst een afbeelding en verf erop.",
+      "missingPrompt": "Ontbrekende beschrijving",
+      "missingPromptDesc": "Beschrijf hoe je afbeelding moet worden in-painted.",
+      "success": "Succes",
+      "inpaintingCompleted": "Inpainting voltooid!",
+      "imageProcessingFailed": "Afbeeldingsverwerking mislukt",
+      "connectionError": "Verbindingsfout. Controleer je internetverbinding en probeer het opnieuw.",
+      "quotaExceeded": "API-quota overschreden. Probeer het later opnieuw.",
+      "invalidRequest": "Ongeldig verzoek. De afbeeldingsafmetingen of formaat worden mogelijk niet ondersteund.",
+      "maskReset": "Masker gereset",
+      "maskResetDesc": "Je kunt nu je selectie opnieuw tekenen",
+      "downloadComplete": "Download voltooid",
+      "downloadCompleteDesc": "Inpainted afbeelding succesvol opgeslagen op je apparaat.",
+      "downloadFailed": "Download mislukt",
+      "downloadFailedDesc": "Kan de inpainted afbeelding niet downloaden. Probeer het opnieuw.",
+      "readyToEdit": "Klaar om te bewerken",
+      "readyToEditDesc": "Je kunt nu doorgaan met het bewerken van je afbeelding",
+      "error": "Fout",
+      "errorDesc": "Afbeelding voorbereiden voor verdere bewerking mislukt",
+      "emptyPrompt": "Lege beschrijving",
+      "emptyPromptDesc": "Voer een beschrijving in om te verbeteren.",
+      "promptEnhanced": "Beschrijving verbeterd",
+      "promptEnhancedDesc": "Je beschrijving is verbeterd met AI",
+      "enhanceError": "Verbeterfout",
+      "enhanceErrorDesc": "Kan de beschrijving niet verbeteren"
+    }
   }
 } 
