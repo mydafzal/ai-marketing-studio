@@ -118,10 +118,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: `Successfully ran optimizations for ${subscribers.length} campaign subscriptions`,
-      total_subscribers: result.total_subscribers || 0,
-      scanned_subscribers: result.scanned_subscribers || 0,
-      emails_sent: result.emails_sent || 0,
-      dry_run: result.dry_run,
+      total_subscribers: result?.total_subscribers || 0,
+      scanned_subscribers: result?.scanned_subscribers || 0,
+      emails_sent: result?.emails_sent || 0,
+      dry_run: true // for now keep dry run true
     })
   } catch (error) {
     console.error('Error in campaign optimization ruleset cron:', error)
