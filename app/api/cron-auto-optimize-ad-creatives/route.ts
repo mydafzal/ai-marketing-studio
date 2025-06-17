@@ -110,7 +110,7 @@ export async function GET(request: NextRequest) {
         },
         body: JSON.stringify({
           subscribers,
-          dry_run: true // todo: remove dry run later on
+          dry_run: false // you can later on turn on for testing.
         })
       }
     )
