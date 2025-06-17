@@ -124,6 +124,9 @@ export default function AutoOptimizeCampaignSubscription({ userEmail, initialSub
         <CardTitle>Auto Optimize Campaigns</CardTitle>
         <CardDescription>
           Select campaigns to enable automatic optimization of ad creatives.
+          <div className="inline-flex items-center px-2.5 py-0.5 mt-2 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
+            Optimization: Pause low-performing creatives (15% higher CPL)
+          </div>
         </CardDescription>
       </CardHeader>
       <CardContent>
