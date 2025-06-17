@@ -302,7 +302,7 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                             case 'showCampaignOptimization':
                                 // Create a dynamic component for the UI
                                 const CampaignOptimizationComponent = dynamic(() => 
-                                    import('@/lib/ui-magic/modules/campaignOptimizationModule'), 
+                                    import('@/lib/ui-magic/modules/showCampaignOptimizationModule'), 
                                     { ssr: false }
                                 );
                                 
