@@ -13,6 +13,7 @@ import { type User as UserType } from '@/lib/types'
 import Onboarding from './onboarding'
 import FacebookAccountSettings from '@/components/facebook-account-settings'
 import { cn } from '@/lib/utils'
+import { useT } from '@/lib/i18n/context'
 
 type ProfileSettingsProps = {
   userDetails: UserType | undefined
@@ -51,6 +52,7 @@ export default function ProfileSettings({
   disconnectFacebook,
   updateOnboardingDetails
 }: ProfileSettingsProps) {
+  const t = useT()
   const [openOnboarding, setOpenOnboarding] = React.useState<boolean>(
     userDetails?.defaultExtraDetails ? false : true
   )
@@ -74,7 +76,7 @@ export default function ProfileSettings({
             )}
           >
             <Settings className="size-4 text-zinc-600 dark:text-zinc-400" />
-            <span className="sr-only">Settings</span>
+            <span className="sr-only">{t('settings.title')}</span>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent
@@ -104,7 +106,7 @@ export default function ProfileSettings({
           <DropdownMenuSeparator className="my-2 bg-zinc-200 dark:bg-zinc-800" />
 
           <div className="text-xs font-medium text-zinc-500 dark:text-zinc-400 px-3 py-2">
-            Account Settings
+            {t('settings.accountSettings')}
           </div>
 
           <button
@@ -132,7 +134,7 @@ export default function ProfileSettings({
                 stroke-linejoin="round"
               />
             </svg>
-            Billing
+            {t('settings.billing')}
           </button>
           
           <button
@@ -154,7 +156,7 @@ export default function ProfileSettings({
                 />
               </svg>
             </div>
-            Facebook Settings
+            {t('settings.facebookSettings')}
           </button>
  
           <Onboarding

@@ -646,5 +646,12 @@
       "enhanceError": "Eroare îmbunătățire",
       "enhanceErrorDesc": "Nu s-a putut îmbunătăți descrierea"
     }
+  },
+  "settings": {
+    "title": "Setări",
+    "accountSettings": "Setări Cont",
+    "billing": "Facturare",
+    "facebookSettings": "Setări Facebook",
+    "profile": "Profil"
   }
 } 

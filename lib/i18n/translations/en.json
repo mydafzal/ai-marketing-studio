@@ -646,5 +646,12 @@
       "enhanceError": "Enhance error",
       "enhanceErrorDesc": "Could not improve prompt"
     }
+  },
+  "settings": {
+    "title": "Settings",
+    "accountSettings": "Account Settings",
+    "billing": "Billing",
+    "facebookSettings": "Facebook Settings",
+    "profile": "Profile"
   }
 } 

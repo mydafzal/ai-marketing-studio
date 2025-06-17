@@ -646,5 +646,12 @@
       "enhanceError": "Verbeterfout",
       "enhanceErrorDesc": "Kan de beschrijving niet verbeteren"
     }
+  },
+  "settings": {
+    "title": "Instellingen",
+    "accountSettings": "Account Instellingen",
+    "billing": "Facturering",
+    "facebookSettings": "Facebook Instellingen",
+    "profile": "Profiel"
   }
 } 

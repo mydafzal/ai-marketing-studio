@@ -639,5 +639,12 @@
       "enhanceError": "Verbesserungsfehler",
       "enhanceErrorDesc": "Eingabe konnte nicht verbessert werden"
     }
+  },
+  "settings": {
+    "title": "Einstellungen",
+    "accountSettings": "Kontoeinstellungen",
+    "billing": "Abrechnung",
+    "facebookSettings": "Facebook-Einstellungen",
+    "profile": "Profil"
   }
 } 

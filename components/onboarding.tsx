@@ -1419,7 +1419,7 @@ function Onboarding({
                         className="w-full justify-start gap-2 hover:bg-[#1A1D29] dark:hover:bg-[#1A1D29] text-white"
                     >
                         <UserIcon className="size-4"/>
-                        Profile
+                        {t('settings.profile')}
                     </Button>
                 </Dialog.Trigger>
                 <Dialog.Portal>

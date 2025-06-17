@@ -646,5 +646,12 @@
       "enhanceError": "Erreur d'amélioration",
       "enhanceErrorDesc": "Impossible d'améliorer la description"
     }
+  },
+  "settings": {
+    "title": "Paramètres",
+    "accountSettings": "Paramètres du Compte",
+    "billing": "Facturation",
+    "facebookSettings": "Paramètres Facebook",
+    "profile": "Profil"
   }
 } 
