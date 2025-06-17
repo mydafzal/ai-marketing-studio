@@ -11,6 +11,10 @@ export async function GET(request: NextRequest) {
 
     // Get all users with subscribed campaigns
     const userKeys = await kv.keys('user:*')
+    const realUserKeys = userKeys.filter(key => {
+      const value = key.replace('user:', '')
+      return value.includes('@') // crude but effective filter for real users
+    })
 
     if (!userKeys || userKeys.length === 0) {
       return NextResponse.json({
@@ -22,7 +26,7 @@ export async function GET(request: NextRequest) {
     const subscribers = []
 
     // Process each user to check for subscriptions
-    for (const userKey of userKeys) {
+    for (const userKey of realUserKeys) {
       try {
         const userEmail = userKey.replace('user:', '')
         let subscribedCampaignsraw: string | null = await kv.hget(
