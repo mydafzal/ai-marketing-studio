@@ -2,6 +2,7 @@ import { UseChatHelpers } from 'ai/react'
 import { trackEvent } from '@/lib/utils'
 import { useUsageStore } from '@/app/store/useUsageStore'
 import { useState } from 'react'
+import { useT } from '@/lib/i18n/context'
 
 import { Button } from '@/components/ui/button'
 import { ExternalLink } from '@/components/external-link'
@@ -12,49 +13,50 @@ import { Zap, BarChart, PieChart, Download, DollarSign, Power, Plus } from 'luci
 export function EmptyScreen() {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const { isMessageLimitReached, messageCount, incrementMessageCount } = useUsageStore()
+  const t = useT()
 
   const actions = [
     {
-      title: 'Create a Campaign',
-      description: 'I can help you set up a new advertising campaign.',
+      title: t('emptyScreen.actions.createCampaign.title'),
+      description: t('emptyScreen.actions.createCampaign.description'),
       icon: <IconMessage className="h-6 w-6" />,
-      prompt: 'I want to create a campaign'
+      prompt: t('prompts.createCampaign')
     },
     {
-      title: 'View Campaign Results',
-      description: 'I can show you the performance metrics of your campaign.',
+      title: t('emptyScreen.actions.viewResults.title'),
+      description: t('emptyScreen.actions.viewResults.description'),
       icon: <IconChartBar className="h-6 w-6" />,
-      prompt: 'What are the results of my campaign for today?'
+      prompt: t('prompts.viewResults')
     },
     {
-      title: 'Analyse Campaign Results',
-      description: 'I can provide an analysis of your campaign\'s performance.',
+      title: t('emptyScreen.actions.analyzeResults.title'),
+      description: t('emptyScreen.actions.analyzeResults.description'),
       icon: <IconBolt className="h-6 w-6" />,
-      prompt: 'Analyze my campaign performance'
+      prompt: t('prompts.analyzePerformance')
     },
     {
-      title: 'Download Leads',
-      description: 'I can help you download leads from your campaign.',
+      title: t('emptyScreen.actions.downloadLeads.title'),
+      description: t('emptyScreen.actions.downloadLeads.description'),
       icon: <IconDownload className="h-6 w-6" />,
-      prompt: 'I want to download leads from my campaign'
+      prompt: t('prompts.downloadLeads')
     },
     {
-      title: 'Change Campaign Budget',
-      description: 'I can assist in adjusting your campaign\'s budget.',
+      title: t('emptyScreen.actions.changeBudget.title'),
+      description: t('emptyScreen.actions.changeBudget.description'),
       icon: <IconCog className="h-6 w-6" />,
-      prompt: 'I would like to change my campaign budget'
+      prompt: t('prompts.changeBudget')
     },
     {
-      title: 'Turn Campaigns On/Off',
-      description: 'I can help you manage the status of your campaigns.',
+      title: t('emptyScreen.actions.toggleCampaigns.title'),
+      description: t('emptyScreen.actions.toggleCampaigns.description'),
       icon: <IconPower className="h-6 w-6" />,
-      prompt: 'I want to turn my campaign on/off'
+      prompt: t('prompts.toggleCampaign')
     },
     {
-      title: 'Lead Notifications',
-      description: 'Receive notifications for campaign results of yesterday.',
+      title: t('emptyScreen.actions.leadNotifications.title'),
+      description: t('emptyScreen.actions.leadNotifications.description'),
       icon: <IconBell className="h-6 w-6" />,
-      prompt: 'I want to manage my lead notifications'
+      prompt: t('prompts.manageNotifications')
     }
   ]
 
@@ -90,7 +92,7 @@ export function EmptyScreen() {
       <div className="flex justify-center w-full pt-4 sm:pt-6 pb-32 sm:pb-24">
         <div className="w-full max-w-sm xs:max-w-md sm:max-w-2xl md:max-w-3xl px-3 sm:px-4 mx-auto">
           <div className="rounded-lg p-3 sm:p-6 bg-[#0D1117] border border-[#1E2433]">
-            <h1 className="text-lg sm:text-xl font-semibold text-white mb-3 text-center">How can I help you today?</h1>
+            <h1 className="text-lg sm:text-xl font-semibold text-white mb-3 text-center">{t('emptyScreen.title')}</h1>
             
             <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 gap-3">
               {actions.map((action, index) => (
@@ -107,7 +109,7 @@ export function EmptyScreen() {
                   </div>
                   <p className="text-xs text-gray-400 mb-2">{action.description}</p>
                   <div className="mt-auto text-primary-green text-xs font-medium flex items-center opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity">
-                    <span className="hidden sm:inline">Try this</span> <IconArrowRight className="ml-0.5 h-2 w-2" />
+                    <span className="hidden sm:inline">{t('actions.tryThis')}</span> <IconArrowRight className="ml-0.5 h-2 w-2" />
                   </div>
                 </div>
               ))}

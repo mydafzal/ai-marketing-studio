@@ -3,6 +3,7 @@ import { useAIState, useActions, useUIState } from 'ai/rsc'
 import { nanoid } from 'nanoid'
 import * as React from 'react'
 import { trackEvent } from '@/lib/utils'
+import { useT } from '@/lib/i18n/context'
 
 import { shareChat } from '@/app/actions'
 import { Button } from '@/components/ui/button'
@@ -59,6 +60,8 @@ export function ChatPanel({
     messageCount,
     incrementMessageCount 
   } = useUsageStore();
+  
+  const t = useT()
   
   const sendMessage = React.useCallback(async (message: string, userContent?: (TextPart | ImagePart | FilePart)[]) => {
     // Check for message limit in PromptForm now handles this check separately
@@ -159,7 +162,7 @@ export function ChatPanel({
                     onClick={() => setShareDialogOpen(true)}
                   >
                     <IconShare className="mr-2" />
-                    Share
+                    {t('actions.share')}
                   </Button>
                   <ChatShareDialog
                     open={shareDialogOpen}

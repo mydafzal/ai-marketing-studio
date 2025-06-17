@@ -1,6 +1,7 @@
 'use client'
 
 import * as React from 'react'
+import { useT } from '@/lib/i18n/context'
 
 import Textarea from 'react-textarea-autosize'
 import { ImagePart, TextPart, FilePart, UserContent } from 'ai'
@@ -72,6 +73,7 @@ function ActionsList({ onSendMessage, setActionsOpen }: {
   } = useUsageStore();
   
   const [showUpgradeModal, setShowUpgradeModal] = React.useState(false);
+  const t = useT();
   
   const handleAction = async (message: string) => {
     // Check if message limit has been reached before sending
@@ -91,40 +93,40 @@ function ActionsList({ onSendMessage, setActionsOpen }: {
   
   const actions = [
     {
-      title: 'Create a Campaign',
-      description: 'I can help you set up a new advertising campaign.',
+      title: t('emptyScreen.actions.createCampaign.title'),
+      description: t('emptyScreen.actions.createCampaign.description'),
       icon: <Plus className="h-6 w-6 text-primary-green" />,
-      prompt: 'I want to create a campaign'
+      prompt: t('prompts.createCampaign')
     },
     {
-      title: 'View Campaign Results',
-      description: 'I can show you the performance metrics of your campaign.',
+      title: t('emptyScreen.actions.viewResults.title'),
+      description: t('emptyScreen.actions.viewResults.description'),
       icon: <BarChart className="h-6 w-6 text-primary-green" />,
-      prompt: 'What are the results of my campaign for today?'
+      prompt: t('prompts.viewResults')
     },
     {
-      title: 'Analyse Campaign Results',
-      description: 'I can provide an analysis of your campaign\'s performance.',
+      title: t('emptyScreen.actions.analyzeResults.title'),
+      description: t('emptyScreen.actions.analyzeResults.description'),
       icon: <PieChart className="h-6 w-6 text-primary-green" />,
-      prompt: 'Analyze my campaign performance'
+      prompt: t('prompts.analyzePerformance')
     },
     {
-      title: 'Download Leads',
-      description: 'I can help you download leads from your campaign.',
+      title: t('emptyScreen.actions.downloadLeads.title'),
+      description: t('emptyScreen.actions.downloadLeads.description'),
       icon: <Download className="h-6 w-6 text-primary-green" />,
-      prompt: 'I want to download leads from my campaign'
+      prompt: t('prompts.downloadLeads')
     },
     {
-      title: 'Change Campaign Budget',
-      description: 'I can assist in adjusting your campaign\'s budget.',
+      title: t('emptyScreen.actions.changeBudget.title'),
+      description: t('emptyScreen.actions.changeBudget.description'),
       icon: <DollarSign className="h-6 w-6 text-primary-green" />,
-      prompt: 'I would like to change my campaign budget'
+      prompt: t('prompts.changeBudget')
     },
     {
-      title: 'Turn Campaigns On/Off',
-      description: 'I can help you manage the status of your campaigns.',
+      title: t('emptyScreen.actions.toggleCampaigns.title'),
+      description: t('emptyScreen.actions.toggleCampaigns.description'),
       icon: <Power className="h-6 w-6 text-primary-green" />,
-      prompt: 'I want to turn my campaign on/off'
+      prompt: t('prompts.toggleCampaign')
     }
   ];
   
@@ -152,7 +154,7 @@ function ActionsList({ onSendMessage, setActionsOpen }: {
             </div>
             <p className="text-xs text-gray-400 mb-2">{action.description}</p>
             <div className="mt-auto text-primary-green text-xs font-medium flex items-center opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity">
-              <span className="hidden sm:inline">Try this</span>
+              <span className="hidden sm:inline">{t('actions.tryThis')}</span>
             </div>
           </div>
         ))}
@@ -164,6 +166,7 @@ function ActionsList({ onSendMessage, setActionsOpen }: {
 function QuickActionsDialog({ onSendMessage }: { onSendMessage: (message: string) => Promise<void> }) {
   const [open, setOpen] = React.useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = React.useState(false);
+  const t = useT();
   
   // Get message limit status from usage store
   const { 
@@ -214,50 +217,50 @@ function QuickActionsDialog({ onSendMessage }: { onSendMessage: (message: string
             className="absolute left-0 top-[14px] size-8 rounded-full bg-light-container border-border-dark p-0 sm:left-4 hover:bg-light-container/80 hover:border-border-dark/80 transition-colors"
           >
             <Zap className="size-4 text-primary-green" />
-            <span className="sr-only">Quick Actions</span>
+            <span className="sr-only">{t('quickActions.title')}</span>
           </Button>
         </DialogTrigger>
         
         <DialogContent className="bg-[#1A1D29] border-[#2A2E3A] text-white">
           <DialogHeader>
-            <DialogTitle className="text-xl font-semibold text-white">Quick Actions</DialogTitle>
+            <DialogTitle className="text-xl font-semibold text-white">{t('quickActions.title')}</DialogTitle>
           </DialogHeader>
           
           <div className="mt-4 grid gap-3">
             <QuickAction 
               icon={<Plus className="size-5 text-primary-green" />}
-              label="Create a campaign" 
-              message="I want to create a campaign" 
+              label={t('quickActions.createCampaign')} 
+              message={t('prompts.createCampaign')} 
               onAction={handleAction}
             />
             <QuickAction 
               icon={<BarChart className="size-5 text-primary-green" />}
-              label="View Campaign Results" 
-              message="What are the results of my campaign?" 
+              label={t('quickActions.viewResults')} 
+              message={t('prompts.viewResults')} 
               onAction={handleAction}
             />
             <QuickAction 
               icon={<PieChart className="size-5 text-primary-green" />}
-              label="Analyse Campaign Results" 
-              message="Analyse my campaign results in detail" 
+              label={t('quickActions.analyzeResults')} 
+              message={t('prompts.analyzePerformance')} 
               onAction={handleAction}
             />
             <QuickAction 
               icon={<Download className="size-5 text-primary-green" />}
-              label="Download Leads of my Campaign" 
-              message="I want to download leads from my campaign" 
+              label={t('quickActions.downloadLeads')} 
+              message={t('prompts.downloadLeads')} 
               onAction={handleAction}
             />
             <QuickAction 
               icon={<DollarSign className="size-5 text-primary-green" />}
-              label="Change my Campaign Budget" 
-              message="I would like to change my campaign budget" 
+              label={t('quickActions.changeBudget')} 
+              message={t('prompts.changeBudget')} 
               onAction={handleAction}
             />
             <QuickAction 
               icon={<Power className="size-5 text-primary-green" />}
-              label="Turn my Campaign On/Off" 
-              message="I want to turn my campaign on/off" 
+              label={t('quickActions.toggleCampaign')} 
+              message={t('prompts.toggleCampaign')} 
               onAction={handleAction}
             />
             {/* Support action removed - now using Crisp chat in the navbar */}
@@ -292,6 +295,7 @@ export function PromptForm({
   const [openUploadMenu, setOpenUploadMenu] = React.useState(false);
   const [videoUploadDataInfo, setVideoUploadDataInfo] = React.useState<ChunkUploadProps>({});
   const [isActionsOpen, setIsActionsOpen] = React.useState(false);
+  const t = useT();
 
   // Usage limits state
   const { 
@@ -331,7 +335,7 @@ export function PromptForm({
     if (!files || files.length === 0) return
     if (files.length > 1) {
       toast.error(
-        'You can select only 1 image a t time. Please select 1 image.'
+        t('chat.upload.imageError')
       )
       return
     }
@@ -353,7 +357,7 @@ export function PromptForm({
     })
     if (!checkSize) {
       toast.error(
-        'This image is too big. Please use images which are smaller than 4MB.'
+        t('chat.upload.imageSizeError')
       )
       return
     }    
@@ -389,7 +393,7 @@ export function PromptForm({
           }
         })
     })
-    toast.info('Uploading your images, please wait...')
+    toast.info(t('chat.upload.imageUploadStart'))
     try {
       const response = await fetch('/api/upload', {
         method: 'POST',
@@ -398,7 +402,7 @@ export function PromptForm({
 
       const data = await response.json()
       if (!response.ok) {
-        toast.error('Failed to upload the image. Please try again.')
+        toast.error(t('chat.upload.imageUploadError'))
         return
       }
 
@@ -438,9 +442,9 @@ export function PromptForm({
       console.log('userContent', userContent);
       // await onSendMessage(textPrompt, userContent);
       await incrementImageCount()
-      toast.success('Images uploaded successfully!')
+      toast.success(t('chat.upload.imageUploadSuccess'))
     } catch (error) {
-      toast.error('Failed to upload the image. Please try again.')
+      toast.error(t('chat.upload.imageUploadError'))
     }
 
     setUploading(false)
@@ -477,7 +481,7 @@ export function PromptForm({
 
     if (file.size >= MAX_VIDEO_SIZE) {
       toast.error(
-          'This video is too big. Please use videos which are smaller than 1GB.'
+          t('chat.upload.videoSizeError')
       )
       return
     }
@@ -490,7 +494,7 @@ export function PromptForm({
     try {
       const formData = new FormData()
       formData.append('file', file)
-      toast.info('Uploading your videos, please wait...')
+      toast.info(t('chat.upload.videoUploadStart'))
       const totalChunks = Math.ceil(file.size / CHUNK_VIDEO_SIZE)
       const formDataStart = new FormData()
       formDataStart.append('file_size', file.size.toString())
@@ -536,15 +540,15 @@ export function PromptForm({
 
           await onSendMessage(textPrompt, userContent)
           await incrementVideoCount()
-          toast.success('Videos uploaded successfully!')
+          toast.success(t('chat.upload.videoUploadSuccess'))
         } else {
-          toast.error('Failed to upload the video. Please try again.')
+          toast.error(t('chat.upload.videoUploadError'))
         }
       }else{
-        toast.error('Failed to upload the video. Please try again.')
+        toast.error(t('chat.upload.videoUploadError'))
       }
     } catch (error) {
-      toast.error('Failed to upload the video. Please try again.')
+      toast.error(t('chat.upload.videoUploadError'))
     }
     setProgressBar({
       isShow: false,
@@ -684,7 +688,7 @@ export function PromptForm({
                 <ChevronDown className="h-5 w-5" /> : 
                 <ChevronRight className="h-5 w-5" />
               }
-              <span className="text-sm font-medium">View list of supported actions</span>
+              <span className="text-sm font-medium">{t('chat.input.supportedActions')}</span>
             </Button>
           </CollapsibleTrigger>
         </div>
@@ -788,7 +792,7 @@ export function PromptForm({
           disabled={isTextareaDisabled}
           tabIndex={0}
           onKeyDown={onKeyDown}
-          placeholder="Send a message."
+          placeholder={t('chat.input.placeholder')}
           className="min-h-[60px] w-full resize-none bg-transparent pl-0 pr-12 py-[1.3rem] focus-within:outline-none sm:text-sm text-text-white placeholder:text-text-light-gray"
           autoFocus
           spellCheck={false}
@@ -810,10 +814,10 @@ export function PromptForm({
                 disabled={isDisabled || uploading || isHandling}
               >
                 <IconArrowElbow className="text-deep-black" />
-                <span className="sr-only">Send message</span>
+                <span className="sr-only">{t('chat.input.sendMessage')}</span>
               </Button>
             </TooltipTrigger>
-            <TooltipContent className="bg-container-bg border border-border-dark text-text-white">Send message</TooltipContent>
+            <TooltipContent className="bg-container-bg border border-border-dark text-text-white">{t('chat.input.sendMessage')}</TooltipContent>
           </Tooltip>
         </div>
       </div>

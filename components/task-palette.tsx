@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useT } from '@/lib/i18n/context'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
@@ -13,6 +14,7 @@ interface TaskPaletteProps {
 
 export function TaskPalette({ isOpen, onClose, onShowMe }: TaskPaletteProps) {
   const [visibleMessages, setVisibleMessages] = useState<{ [key: string]: boolean }>({})
+  const t = useT()
 
   const toggleMessageVisibility = (action: string) => {
     setVisibleMessages(prev => ({ ...prev, [action]: !prev[action] }))
@@ -27,15 +29,15 @@ export function TaskPalette({ isOpen, onClose, onShowMe }: TaskPaletteProps) {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[80%] max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Things to ask Reeply AI</DialogTitle>
+          <DialogTitle>{t('taskPalette.title')}</DialogTitle>
         </DialogHeader>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Action</TableHead>
-              <TableHead>Explanation</TableHead>
-              <TableHead>Example Message</TableHead>
-              <TableHead>Show Me</TableHead>
+              <TableHead>{t('taskPalette.headers.action')}</TableHead>
+              <TableHead>{t('taskPalette.headers.explanation')}</TableHead>
+              <TableHead>{t('taskPalette.headers.exampleMessage')}</TableHead>
+              <TableHead>{t('taskPalette.headers.showMe')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

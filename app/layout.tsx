@@ -8,6 +8,7 @@ import { Providers } from '@/components/providers'
 import { Header } from '@/components/header'
 import { Toaster } from '@/components/ui/toaster'
 import { auth } from '@/auth'
+import { getUserLanguage } from '@/lib/i18n/server'
 
 import { getUser } from '@/app/login/actions'
 import AnalyticsSetup from '@/components/analytics-setup'
@@ -40,9 +41,12 @@ interface RootLayoutProps {
 export default async function RootLayout({ children }: RootLayoutProps) {
   const session = await auth()
   const user = session?.user?.email ? await getUser(session.user.email) : null
+  
+  // Get user's preferred language for internationalization
+  const userLanguage = session?.user ? await getUserLanguage() : 'en'
 
   return (
-    <html lang="en" suppressHydrationWarning className="dark">
+    <html lang={userLanguage} suppressHydrationWarning className="dark">
       <head>
         <MetaPixel />
       </head>
@@ -56,6 +60,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
         <Toaster />
         <Providers
           attribute="class"
+          userLanguage={userLanguage}
         >
           <div className="flex flex-col min-h-screen bg-[#0A0C14]">
             <Header />

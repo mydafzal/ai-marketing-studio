@@ -3,6 +3,7 @@
 import {useRouter} from 'next/navigation'
 import * as React from 'react'
 import {toast} from 'sonner'
+import {useT} from '@/lib/i18n/context'
 
 import {type Chat, ServerActionResult} from '@/lib/types'
 import {
@@ -32,6 +33,7 @@ export function SidebarActions({
                                    shareChat
                                }: SidebarActionsProps) {
     const router = useRouter()
+    const t = useT()
     const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false)
     const [shareDialogOpen, setShareDialogOpen] = React.useState(false)
     const [isRemovePending, startRemoveTransition] = React.useTransition()
@@ -47,10 +49,10 @@ export function SidebarActions({
                             onClick={() => setShareDialogOpen(true)}
                         >
                             <IconShare className="size-4"/>
-                            <span className="sr-only">Share</span>
+                            <span className="sr-only">{t('actions.share')}</span>
                         </Button>
                     </TooltipTrigger>
-                    <TooltipContent className="bg-[#1A1D29] border border-[#2A2E3A] text-white">Share chat</TooltipContent>
+                    <TooltipContent className="bg-[#1A1D29] border border-[#2A2E3A] text-white">{t('sidebar.shareChat')}</TooltipContent>
                 </Tooltip>
                 <Tooltip>
                     <TooltipTrigger asChild>
@@ -61,10 +63,10 @@ export function SidebarActions({
                             onClick={() => setDeleteDialogOpen(true)}
                         >
                             <IconTrash className="size-4"/>
-                            <span className="sr-only">Delete</span>
+                            <span className="sr-only">{t('actions.delete')}</span>
                         </Button>
                     </TooltipTrigger>
-                    <TooltipContent className="bg-[#1A1D29] border border-[#2A2E3A] text-white">Delete chat</TooltipContent>
+                    <TooltipContent className="bg-[#1A1D29] border border-[#2A2E3A] text-white">{t('sidebar.deleteChat')}</TooltipContent>
                 </Tooltip>
             </div>
             <ChatShareDialog
@@ -77,15 +79,14 @@ export function SidebarActions({
             <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
                 <AlertDialogContent className="bg-[#1A1D29] border border-[#2A2E3A] text-white">
                     <AlertDialogHeader>
-                        <AlertDialogTitle className="text-white">Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogTitle className="text-white">{t('dialogs.deleteConfirmation.title')}</AlertDialogTitle>
                         <AlertDialogDescription className="text-[#ADB0B8]">
-                            This will permanently delete your chat message and remove your
-                            data from our servers.
+                            {t('dialogs.deleteConfirmation.description')}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel disabled={isRemovePending} className="bg-[#151925] text-white border-[#2A2E3A] hover:bg-[#212534] hover:text-white">
-                            Cancel
+                            {t('actions.cancel')}
                         </AlertDialogCancel>
                         <AlertDialogAction
                             disabled={isRemovePending}
@@ -105,7 +106,7 @@ export function SidebarActions({
                                     }
 
                                     setDeleteDialogOpen(false)
-                                    toast.success('Chat deleted')
+                                    toast.success(t('messages.chatDeleted'))
                                     
                                     // Force a complete page reload to ensure all server components get refreshed
                                     setTimeout(() => {
@@ -115,7 +116,7 @@ export function SidebarActions({
                             }}
                         >
                             {isRemovePending && <IconSpinner className="mr-2 animate-spin"/>}
-                            Delete
+                            {t('dialogs.deleteConfirmation.confirmDelete')}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

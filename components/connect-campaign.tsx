@@ -4,6 +4,7 @@ import {useActions, useAIState, useUIState} from 'ai/rsc'
 import {format} from 'date-fns'
 import {useContext, useEffect, useRef, useState} from 'react'
 import {cn} from '@/lib/utils'
+import {useT} from '@/lib/i18n/context'
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select'
 import {updateChatFbCampaignId} from '@/app/actions'
 import {ConnectCampaignResult} from '@/components/connect-campaign-result'
@@ -166,6 +167,7 @@ export function ConnectingStatus({ campaignName }: { campaignName: string }) {
 export function ConnectCampaign({ connectingUiProps }: ConnectCampaignProps) {
   const [aiState, setAIState] = useAIState()
   const { submitUserMessage } = useActions()
+  const t = useT();
   const [connectingUI, setConnectingUI] = useState<null | React.ReactNode>(
     connectingUiProps ? <ConnectCampaignResult {...connectingUiProps} /> : null
   )
@@ -265,14 +267,14 @@ export function ConnectCampaign({ connectingUiProps }: ConnectCampaignProps) {
     }
     if (aiMessages.length) {
       const { content, id, role } = aiMessages[0];
-      if (role === 'system' && id === 'campaign-info-data' && content?.slice(0, 21) === 'Campaign is connected') {
+      if (role === 'system' && id === 'campaign-info-data' && content?.slice(0, t('chat.campaignStatus.campaignConnected').length) === t('chat.campaignStatus.campaignConnected')) {
         if (shouldSendSilentMessage.current) {
           setTimeout(refresh, 0);
           shouldSendSilentMessage.current = false;
         }
       }
     }
-  }, [aiMessages, setMessages, submitUserMessage]);
+  }, [aiMessages, setMessages, submitUserMessage, t]);
 
   async function handleCampaignSelection(campaign: FbCampaign) {
     setConnectingUI(<ConnectingStatus campaignName={campaign.name} />)

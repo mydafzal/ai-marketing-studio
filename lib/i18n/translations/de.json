@@ -1,0 +1,353 @@
+{
+  "navigation": {
+    "aiMarketer": "KI-Vermarkter",
+    "aiCreatives": "KI-Creatives",
+    "login": "Anmelden",
+    "signOut": "Abmelden"
+  },
+  "sidebar": {
+    "shareChat": "Chat teilen",
+    "deleteChat": "Chat löschen",
+    "newChat": "Neuer Chat",
+    "clearHistory": "Verlauf löschen",
+    "sharedChat": "Dies ist ein geteilter Chat.",
+    "chatHistory": "Chat-Verlauf",
+    "noChatHistory": "Kein Chat-Verlauf",
+    "loadingChats": "Chats werden geladen..."
+  },
+  "actions": {
+    "save": "Speichern",
+    "saveProfile": "Profil speichern",
+    "cancel": "Abbrechen",
+    "delete": "Löschen",
+    "edit": "Bearbeiten",
+    "share": "Teilen",
+    "create": "Erstellen",
+    "update": "Aktualisieren",
+    "confirm": "Bestätigen",
+    "back": "Zurück",
+    "previous": "Vorherige",
+    "next": "Weiter",
+    "skip": "Überspringen",
+    "continue": "Fortfahren",
+    "finish": "Beenden",
+    "tryThis": "Probiere das aus"
+  },
+  "onboarding": {
+    "profileCompletionMessage": "Vervollständigen Sie Ihr Profil, um das Beste aus unserer Plattform herauszuholen.",
+    "reviewMessage": "Bitte überprüfen Sie Ihre Informationen, bevor Sie speichern.",
+    "steps": {
+      "personal": "Persönliche Informationen",
+      "company": "Unternehmensinformationen",
+      "website": "Website-Details",
+      "preferences": "Einstellungen",
+      "locations": "Bevorzugte Standorte",
+      "confirm": "Bestätigen & Speichern"
+    },
+    "fields": {
+      "firstName": "Vorname",
+      "lastName": "Nachname",
+      "companyName": "Firmenname",
+      "companyDescription": "Unternehmensbeschreibung",
+      "websiteLink": "Website-Link",
+      "privacyPolicyLink": "Datenschutzrichtlinien-Link",
+      "preferredLanguage": "Bevorzugte Sprache",
+      "preferredLanguageDescription": "Wählen Sie die Sprache, die Sie für KI-generierte Inhalte bevorzugen.",
+      "companySegment": "Unternehmenssegment",
+      "companySegmentDescription": "Wählen Sie die Kategorie, die Ihre Organisation am besten beschreibt.",
+      "preferredLocations": "Bevorzugte Standorte",
+      "preferredLocationsDescription": "Wählen Sie die Standorte aus, in denen Sie häufig werben. Dies hilft unserer KI, gezieltere Kampagnen zu erstellen. Mindestens ein Standort ist erforderlich."
+    },
+    "segments": {
+      "freelancer": "Freiberufler / Einzelunternehmer",
+      "startup": "Startup (1–10 Mitarbeiter)",
+      "smallBusiness": "Kleines Unternehmen (11–50 Mitarbeiter)",
+      "midSized": "Mittelständisches Unternehmen (51–200 Mitarbeiter)",
+      "enterprise": "Großunternehmen (200+ Mitarbeiter)",
+      "nonprofit": "Non-Profit / NGO",
+      "education": "Bildungseinrichtung",
+      "government": "Regierung / Öffentlicher Sektor",
+      "other": "Sonstiges"
+    },
+    "goals": {
+      "generateLeads": "Ich möchte mehr Leads generieren",
+      "recruitEmployees": "Ich möchte Mitarbeiter rekrutieren",
+      "increaseConversions": "Ich möchte Conversions steigern"
+    },
+    "placeholders": {
+      "firstName": "Geben Sie Ihren Vornamen ein",
+      "lastName": "Geben Sie Ihren Nachnamen ein",
+      "companyName": "Geben Sie Ihren Firmennamen ein",
+      "companyDescription": "Teilen Sie die Werbeziele Ihres Unternehmens und einzigartige Details mit, die unsere KI möglicherweise nicht von Ihrer Website erfassen kann.",
+      "websiteLink": "Geben Sie Ihre Website-URL ein",
+      "privacyPolicyLink": "Geben Sie Ihre Datenschutzrichtlinien-URL ein"
+    },
+    "descriptions": {
+      "companyGoals": "Teilen Sie Ihre Unternehmenswerbeziele und einzigartige Details mit, die nicht auf Ihrer Website stehen.",
+      "profileName": "Wählen Sie einen Namen, um sich an dieses Profil zu erinnern",
+      "profileNameNote": "Automatisch vom Firmennamen generiert, wenn leer gelassen",
+      "websiteAnalysis": "Unsere KI wird Ihre Website analysieren, um Ihr Unternehmen besser zu verstehen und relevantere Vorschläge zu machen."
+    },
+    "benefits": {
+      "step0": {
+        "fasterCampaigns": {
+          "title": "30x Schnellere Kampagnenerstellung",
+          "description": "Die traditionelle Kampagnenerstellung dauert 30+ Minuten. Reeply AI macht alles automatisch in Sekunden.",
+          "traditional": "Traditionell:",
+          "traditionalTime": "30+ Min",
+          "reeplyAI": "Reeply AI:",
+          "reeplyTime": "60 Sek"
+        },
+        "testimonial1": {
+          "quote": "Wir generieren jetzt 80% unserer Leads durch Kampagnen, die mit Reeply AI verwaltet werden. Dank der durchweg exzellenten Unterstützung freuen wir uns darauf, weitere Projekte mit Max und Reeply AI zu planen und umzusetzen.",
+          "name": "Christian Schmitt",
+          "title": "Geschäftsinhaber bei Boldbrands"
+        }
+      },
+      "step1": {
+        "websiteAnalysis": {
+          "title": "Intelligente Website-Analyse",
+          "description": "Reeply AI scannt Ihre Website-URL, um Ihr Unternehmen, Ihre Zielgruppe und Produkte zu verstehen—automatische Auswahl des perfekten Kampagnentyps für Ihre Ziele."
+        },
+        "adCopy": {
+          "title": "KI-Generierte Anzeigentexte",
+          "description": "Basierend auf Ihrer Unternehmensbeschreibung schreibt unsere KI überzeugende Anzeigentexte, die bei Ihrer Zielgruppe ankommen und Ihr einzigartiges Wertversprechen hervorheben."
+        }
+      },
+      "step2": {
+        "streamlinedProcess": {
+          "title": "Optimierter Prozess",
+          "step1": {
+            "title": "Website-Link",
+            "description": "Sie stellen Ihre Website bereit"
+          },
+          "step2": {
+            "title": "Intelligente Analyse",
+            "description": "KI analysiert Ihre Website"
+          },
+          "step3": {
+            "title": "Anzeigenerstellung",
+            "description": "KI erstellt Ihre Werbekampagne"
+          },
+          "step4": {
+            "title": "Lead-Generierung",
+            "description": "Sie erhalten sofort Leads"
+          },
+          "traditional": "Traditionell:",
+          "traditionalTime": "30-60+ Min",
+          "reeplyAI": "Reeply AI:",
+          "reeplyTime": "Unter 60 Sek"
+        }
+      },
+      "step3": {
+        "geoTargeting": {
+          "title": "Intelligente Geo-Targeting",
+          "description": "Reeply AI bestimmt das optimale Geolokations-Targeting basierend auf Ihrer Website und Profil-Einstellungen, um sicherzustellen, dass Ihre Anzeigen die richtige Zielgruppe an den richtigen Orten erreichen."
+        },
+        "audienceTargeting": {
+          "title": "Erweiterte Zielgruppenerstellung",
+          "description": "Unser KI-Agent recherchiert die besten potenziellen Filter auf Meta Ads, um Ihre ideale Zielgruppe anzusprechen und versteckte Möglichkeiten zu finden, die andere Vermarkter übersehen könnten."
+        }
+      },
+      "step4": {
+        "localAdvertising": {
+          "title": "Gezieltes lokales Marketing",
+          "description": "Durch die Festlegung Ihrer bevorzugten Standorte helfen Sie unserer KI, Ihre Kampagnen effektiver auf die Regionen auszurichten, die für Ihr Unternehmen am wichtigsten sind."
+        },
+        "locationBenefits": {
+          "title": "Vorteile des Standort-Targetings",
+          "benefit1": "Höhere Konversionsraten von lokalen Zielgruppen",
+          "benefit2": "Reduzierte Anzeigenausgaben-Verschwendung bei irrelevanten Regionen",
+          "benefit3": "Relevantere Botschaften für spezifische geografische Gebiete"
+        }
+      },
+      "step5": {
+        "facebookIntegration": {
+          "title": "Nahtlose Facebook-Integration",
+          "description": "Verbinden Sie Ihr Facebook-Konto, um das volle Potenzial von Reeply AI zu nutzen. Erstellen und verwalten Sie Kampagnen direkt, ohne zwischen Plattformen zu wechseln."
+        },
+        "whyConnect": {
+          "title": "Warum mit Facebook verbinden?",
+          "benefit1": "Ein-Klick-Kampagnenerstellung und -verwaltung",
+          "benefit2": "Zugriff auf detaillierte Analysen und Leistungsmetriken",
+          "benefit3": "Automatische Optimierung von Kampagnen basierend auf Echtzeitdaten",
+          "benefit4": "Leads direkt von Reeply AI aus verwalten"
+        }
+      },
+      "step6": {
+        "profileReady": {
+          "title": "Ihr Profil ist bereit!",
+          "description": "Sie sind bereit, Ihre erste KI-gestützte Kampagne in 60 Sekunden zu erstellen."
+        },
+        "testimonial2": {
+          "quote": "Ich liebte die Zusammenarbeit mit dem Reeply-Team - engagiert, geduldig, professionell. Sie sind erfahren und konnten bei der Problemlösung einspringen, egal wie groß oder klein das Problem war. Ich genoss es, die Reeply-Plattform zu nutzen, um mir den Einstieg in meine Meta-Ads-Reise zu erleichtern. Es ist einfach und benutzerfreundlich. Sie halfen mir dabei, meine allerersten Lead-Generierungs-, Awareness- und Conversion-Anzeigen zu starten. Es war einfach, alle meine Kampagnenergebnisse in einer praktischen Oberfläche zu sehen. Ich schaffte es, in nur wenigen Tagen eine halbe Million Aufrufe für eines meiner Videos zu erhalten. Ich gewann auch viele Erkenntnisse darüber, welche Art von Anzeigen funktionierte und welche nicht. Danke Reeply.",
+          "name": "Lin Loke",
+          "title": "Gründerin von Nuwa Wellness"
+        }
+      }
+    },
+    "facebookConnect": {
+      "title": "Mit Facebook verbinden",
+      "description": "Um Kampagnen einfach zu erstellen und zu verwalten, müssen Sie sich mit Facebook verbinden und der Reeply AI Software die folgenden Zugriffsrechte gewähren:",
+      "permissions": {
+        "email": "Ihre E-Mail-Adresse erhalten",
+        "manageAds": "Werbeanzeigen für Werbekonten verwalten, auf die Sie Zugriff haben",
+        "accessStats": "Auf Ihre Facebook-Anzeigen und zugehörigen Statistiken zugreifen",
+        "manageBusiness": "Ihr Unternehmen verwalten",
+        "accessLeads": "Auf Leads für Ihre Seiten zugreifen",
+        "createAds": "Anzeigen für Ihre Seite erstellen und verwalten",
+        "showPages": "Eine Liste der von Ihnen verwalteten Seiten anzeigen"
+      },
+      "laterMessage": "Sie können Ihr Facebook-Konto auch später verbinden, wenn Sie möchten.",
+      "connected": "Verbunden",
+      "notConnected": "Nicht verbunden",
+      "connectLaterNote": "(Sie können später in den Einstellungen verbinden)"
+    },
+    "confirmation": {
+      "facebookConnection": "Facebook-Verbindung",
+      "status": "Status",
+      "noLocationsSelected": "Keine Standorte ausgewählt"
+    }
+  },
+  "dialogs": {
+    "deleteConfirmation": {
+      "title": "Sind Sie absolut sicher?",
+      "description": "Dadurch wird Ihre Chatnachricht dauerhaft gelöscht und Ihre Daten von unseren Servern entfernt.",
+      "confirmDelete": "Löschen"
+    },
+    "clearHistory": {
+      "title": "Sind Sie absolut sicher?",
+      "description": "Dadurch wird Ihr Chat-Verlauf permanent gelöscht und Ihre Daten von unseren Servern entfernt."
+    },
+    "shareChat": {
+      "title": "Link zum Chat teilen",
+      "description": "Jeder mit der URL kann den geteilten Chat einsehen.",
+      "copyError": "Link zum Teilen konnte nicht in die Zwischenablage kopiert werden",
+      "copySuccess": "Teilungslink in die Zwischenablage kopiert"
+    }
+  },
+  "messages": {
+    "chatDeleted": "Chat gelöscht",
+    "error": "Fehler",
+    "success": "Erfolg",
+    "loading": "Wird geladen...",
+    "saving": "Speichern...",
+    "savingProfile": "Ihr Profil wird gespeichert",
+    "savingProfileDescription": "Bitte warten Sie, während wir Ihre Profilinformationen speichern. Das dauert nur einen Moment."
+  },
+  "profile": {
+    "personalInformation": "Persönliche Informationen",
+    "companyInformation": "Unternehmensinformationen",
+    "websiteDetails": "Website-Details",
+    "preferences": "Einstellungen"
+  },
+  "forms": {
+    "required": "Dieses Feld ist erforderlich",
+    "selectLanguage": "Sprache auswählen",
+    "selectSegment": "Segment auswählen",
+    "searchLocations": "Standorte suchen",
+    "searchPlaceholder": "Suchen Sie nach Ländern, Regionen oder Städten...",
+    "validation": {
+      "companyNameRequired": "Firmenname ist erforderlich",
+      "companyDescriptionRequired": "Unternehmensbeschreibung ist erforderlich",
+      "languageRequired": "Sprachauswahl ist erforderlich",
+      "invalidUrl": "Bitte geben Sie eine gültige URL ein",
+      "noCommasAllowed": "Facebook-Lead-Formulare erlauben keine Kommata in diesem Feld"
+    }
+  },
+  "footer": {
+    "marketingExpertise": "Reeply AIs Entscheidungen zu Marketingkampagnen werden von Marketingexperten überprüft und überwacht, um qualitativ hochwertige Ergebnisse zu gewährleisten."
+  },
+  "quickActions": {
+    "title": "Schnellaktionen",
+    "createCampaign": "Eine Kampagne erstellen",
+    "viewResults": "Kampagnenergebnisse anzeigen",
+    "analyzeResults": "Kampagnenergebnisse analysieren",
+    "downloadLeads": "Leads meiner Kampagne herunterladen",
+    "changeBudget": "Mein Kampagnenbudget ändern",
+    "toggleCampaign": "Meine Kampagne ein-/ausschalten"
+  },
+  "taskPalette": {
+    "title": "Dinge, die Sie Reeply AI fragen können",
+    "headers": {
+      "action": "Aktion",
+      "explanation": "Erklärung",
+      "exampleMessage": "Beispielnachricht",
+      "showMe": "Zeig mir"
+    }
+  },
+  "chat": {
+    "loginPrompt": {
+      "text": "Bitte melden Sie sich an oder registrieren Sie sich, um Ihren Chat-Verlauf zu speichern und erneut zu besuchen!",
+      "logIn": "anmelden",
+      "signUp": "registrieren"
+    },
+    "upload": {
+      "imageError": "Sie können nur 1 Bild gleichzeitig auswählen. Bitte wählen Sie 1 Bild aus.",
+      "imageSizeError": "Dieses Bild ist zu groß. Bitte verwenden Sie Bilder, die kleiner als 4MB sind.",
+      "videoSizeError": "Dieses Video ist zu groß. Bitte verwenden Sie Videos, die kleiner als 1GB sind.",
+      "imageUploadStart": "Ihre Bilder werden hochgeladen, bitte warten...",
+      "videoUploadStart": "Ihre Videos werden hochgeladen, bitte warten...",
+      "imageUploadSuccess": "Bilder erfolgreich hochgeladen!",
+      "videoUploadSuccess": "Videos erfolgreich hochgeladen!",
+      "imageUploadError": "Fehler beim Hochladen des Bildes. Bitte versuchen Sie es erneut.",
+      "videoUploadError": "Fehler beim Hochladen des Videos. Bitte versuchen Sie es erneut."
+    },
+    "shareDialog": {
+      "copyLink": "Link kopieren",
+      "messages": "Nachrichten"
+    },
+    "input": {
+      "placeholder": "Nachricht senden.",
+      "sendMessage": "Nachricht senden",
+      "supportedActions": "Liste der unterstützten Aktionen anzeigen"
+    },
+    "campaignStatus": {
+      "noCampaignConnected": "Keine Kampagne ist mit diesem Chat verbunden. Sie sollten immer eine Benutzeroberfläche anzeigen, um eine Kampagne mit dem Chat zu verbinden, wenn der Benutzer nach \"Kampagnenbudget festlegen\", \"Kampagnenbudget ändern\", \"Kampagnenergebnis\" oder \"Kampagnenstatus\" fragt.",
+      "campaignConnected": "Kampagne ist verbunden",
+      "noAdsetConnected": "Keine Anzeigengruppe ist für diesen Chat ausgewählt. Sie sollten immer eine Benutzeroberfläche anzeigen, um eine Anzeigengruppe für den Chat auszuwählen, wenn der Benutzer nach Anzeigenvorschlägen fragt."
+    }
+  },
+  "emptyScreen": {
+    "title": "Wie kann ich Ihnen heute helfen?",
+    "actions": {
+      "createCampaign": {
+        "title": "Kampagne Erstellen",
+        "description": "Ich kann Ihnen beim Einrichten einer neuen Werbekampagne helfen."
+      },
+      "viewResults": {
+        "title": "Kampagnenergebnisse Anzeigen",
+        "description": "Ich kann Ihnen die Leistungsmetriken Ihrer Kampagne zeigen."
+      },
+      "analyzeResults": {
+        "title": "Kampagnenergebnisse Analysieren",
+        "description": "Ich kann eine Analyse der Leistung Ihrer Kampagne bereitstellen."
+      },
+      "downloadLeads": {
+        "title": "Leads Herunterladen",
+        "description": "Ich kann Ihnen beim Herunterladen von Leads aus Ihrer Kampagne helfen."
+      },
+      "changeBudget": {
+        "title": "Kampagnenbudget Ändern",
+        "description": "Ich kann bei der Anpassung des Budgets Ihrer Kampagne helfen."
+      },
+      "toggleCampaigns": {
+        "title": "Kampagnen Ein-/Ausschalten",
+        "description": "Ich kann Ihnen beim Verwalten des Status Ihrer Kampagnen helfen."
+      },
+      "leadNotifications": {
+        "title": "Lead-Benachrichtigungen",
+        "description": "Erhalten Sie Benachrichtigungen für Kampagnenergebnisse von gestern."
+      }
+    }
+  },
+  "prompts": {
+    "createCampaign": "Ich möchte eine Kampagne erstellen",
+    "viewResults": "Was sind die Ergebnisse meiner Kampagne für heute?",
+    "analyzePerformance": "Analysiere meine Kampagnenleistung",
+    "downloadLeads": "Ich möchte Leads aus meiner Kampagne herunterladen",
+    "changeBudget": "Ich möchte mein Kampagnenbudget ändern",
+    "toggleCampaign": "Ich möchte meine Kampagne ein-/ausschalten",
+    "manageNotifications": "Ich möchte meine Lead-Benachrichtigungen verwalten"
+  }
+} 

@@ -21,7 +21,9 @@ import {
 
     updateChat,
 
-    updateChatTitle
+    updateChatTitle,
+
+    getUserDetail
 
 } from "@/app/actions";
 
@@ -176,9 +178,17 @@ export async function submitUserMessage(content: string, contentImages?: Array<T
 
     let extraDetailsFinalText = '';
 
+    let userLanguage = 'en'; // Default to English
+
 
 
     try {
+
+        // Get user details to fetch language preference
+        const userDetailResp = await getUserDetail();
+        if (userDetailResp.success && userDetailResp.user?.preferred_language) {
+            userLanguage = userDetailResp.user.preferred_language;
+        }
 
         if (chatId) {
 
@@ -308,7 +318,7 @@ export async function submitUserMessage(content: string, contentImages?: Array<T
 
 
 
-    let systemMessage = getDefaultChatPrompt(campaignId, adsetId, extraDetailsFinalText);
+    let systemMessage = getDefaultChatPrompt(campaignId, adsetId, extraDetailsFinalText, userLanguage);
 
     // TODO: Tool builder factory (for each tool we should have a factory),
 

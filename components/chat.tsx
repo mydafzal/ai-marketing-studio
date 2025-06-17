@@ -5,6 +5,7 @@ import React, { useCallback, useContext, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { trackEvent } from '@/lib/utils'
 import { useUsageStore } from '@/app/store/useUsageStore'
+import { useT } from '@/lib/i18n/context'
 
 import {
   fetchChatFbAdsetId,
@@ -12,7 +13,8 @@ import {
   getFbFetchedObject,
   getSubscriptionInfo,
   updateChatFbCampaignId,
-  updateChatTitle
+  updateChatTitle,
+  getUserDetail
 } from '@/app/actions'
 import {
   CampaignContext,
@@ -84,6 +86,8 @@ export interface ChatProps extends React.ComponentProps<'div'> {
 function ChatCore({ id, chat, className, session, missingKeys }: ChatProps) {
   const [aiState, setAIState] = useAIState()
   const [_, setNewChatId] = useLocalStorage('newChatId', id)
+  const t = useT();
+  const [userLanguage, setUserLanguage] = useState<string>('en')
   const {
     id: campaignId,
     setId: setCampaignId,
@@ -209,29 +213,72 @@ function ChatCore({ id, chat, className, session, missingKeys }: ChatProps) {
     [sendMessage]
   )
 
+  // Fetch user's preferred language and set initial system messages
   useEffect(() => {
-    if (!aiState.messages.length) {
-      setAIState((aiState: any) => ({
-        ...aiState,
-        messages: [
+    const initializeChat = async () => {
+      if (!aiState.messages.length) {
+        // Get user's preferred language
+        let detectedLanguage = 'en';
+        try {
+          const userDetailResp = await getUserDetail();
+          if (userDetailResp.success && userDetailResp.user?.preferred_language) {
+            detectedLanguage = userDetailResp.user.preferred_language;
+            setUserLanguage(detectedLanguage);
+          }
+        } catch (error) {
+          // Failed to get user language, using default
+        }
+
+        // Set system messages with appropriate language context
+        const systemMessages = [
           {
             id: 'campaign-info-data',
             role: 'system',
-            content:
-              'No campaign is connected to this chat. You should always show UI to connect a campaign to the chat when user asks about one of "setting campaign budget", "changing campaign budget" "campaign result" and "campaign status".',
+            content: getTranslatedMessage('chat.campaignStatus.noCampaignConnected', detectedLanguage),
             timestamp: new Date().toISOString()
           },
           {
             id: 'adset-info-data',
             role: 'system',
-            content:
-              'No adset is selected to this chat. You should always show UI to select an adset for the chat when user asks to generate ad suggestion.',
+            content: getTranslatedMessage('chat.campaignStatus.noAdsetConnected', detectedLanguage),
             timestamp: new Date().toISOString()
           }
-        ]
-      }))
-    }
+        ];
+
+        setAIState((aiState: any) => ({
+          ...aiState,
+          messages: systemMessages
+        }));
+      }
+    };
+
+    initializeChat();
   }, [])
+
+  // Helper function to get translated message based on language
+  const getTranslatedMessage = (key: string, language: string) => {
+    // Import the translation files dynamically based on language
+    const translations: Record<string, any> = {
+      'en': require('@/lib/i18n/translations/en.json'),
+      'de': require('@/lib/i18n/translations/de.json'),
+      'es': require('@/lib/i18n/translations/es.json'),
+      'fr': require('@/lib/i18n/translations/fr.json'),
+      'it': require('@/lib/i18n/translations/it.json'),
+      'pt': require('@/lib/i18n/translations/pt.json'),
+      'nl': require('@/lib/i18n/translations/nl.json'),
+      'ro': require('@/lib/i18n/translations/ro.json')
+    };
+
+    const langData = translations[language] || translations['en'];
+    const keys = key.split('.');
+    let result = langData;
+    
+    for (const k of keys) {
+      result = result?.[k];
+    }
+    
+    return result || key;
+  };
 
   // Fetch campaign ID and update title
   useEffect(() => {

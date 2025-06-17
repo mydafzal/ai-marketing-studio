@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useCallback, useEffect } from 'react'
+import { useT } from '@/lib/i18n/context'
 import { Country, Region, City } from '@/lib/types'
 import debounce from 'lodash/debounce'
 import { MapPin, X, Search, Loader2, Globe, AlertCircle } from 'lucide-react'
@@ -1081,24 +1082,26 @@ export default function OnboardingLocationSelector({
     loadSavedLocations();
   }, [countryData.length, locations, getRegionList, hasLoadedLocations]);
 
+  const t = useT();
+
   return (
     <div className="space-y-6">
       <div className="space-y-2 mb-4">
-        <h3 className="text-lg font-semibold text-white">Preferred Locations</h3>
+        <h3 className="text-lg font-semibold text-white">{t('onboarding.fields.preferredLocations')}</h3>
         <p className="text-gray-400 text-sm">
-          Select the locations where you frequently advertise. This helps our AI create more targeted campaigns. <span className="text-[#4BF29C]">At least one location is required.</span>
+          {t('onboarding.fields.preferredLocationsDescription')}
         </p>
       </div>
       
       {/* Universal location search */}
       <div className="space-y-2 mb-6">
-        <Label className="text-gray-300">Search Locations</Label>
+        <Label className="text-gray-300">{t('forms.searchLocations')}</Label>
         <div className="relative">
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search for countries, regions, or cities..."
+            placeholder={t('forms.searchPlaceholder')}
             className="w-full px-3 py-2 pl-10 rounded-lg text-sm transition-colors duration-200 bg-[#151925] border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4BF29C] dark:focus:ring-offset-[#0F1117]"
           />
           <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">

@@ -25,6 +25,7 @@ import {cn} from '@/lib/utils'
 import OnboardingLocationSelector, { LocationData } from './onboarding-location-selector'
 import posthog from 'posthog-js'
 import FacebookConnect from '@/components/facebook-connect'
+import {useT} from '@/lib/i18n/context'
 
 type Details = {
     first_name: string | null
@@ -88,43 +89,43 @@ const SEGMENT_OPTIONS = {
     OTHER: "Other"
 } as const;
 
-// Define the steps for the onboarding process
-const STEPS = [
+// Use a function to get steps with translations
+const getSteps = (t: (key: string) => string) => [
     { 
         id: 'personal', 
-        title: 'Personal Information', 
+        title: t('onboarding.steps.personal'), 
         fields: ['first_name', 'last_name'] 
     },
     { 
         id: 'company', 
-        title: 'Company Information', 
+        title: t('onboarding.steps.company'), 
         fields: ['company_name', 'company_segment', 'company_description'] 
     },
     { 
         id: 'website', 
-        title: 'Website Details', 
+        title: t('onboarding.steps.website'), 
         fields: ['website_link', 'privacy_policy_link'] 
     },
     { 
         id: 'preferences', 
-        title: 'Preferences', 
+        title: t('onboarding.steps.preferences'), 
         fields: ['preferred_language'] 
     },
     { 
         id: 'locations', 
-        title: 'Preferred Locations', 
+        title: t('onboarding.steps.locations'), 
         fields: ['locations'] 
     },
     { 
         id: 'confirm', 
-        title: 'Confirm & Save', 
+        title: t('onboarding.steps.confirm'), 
         fields: [] 
     },
 ];
 
 // Benefits panel component for the right side of the dialog on desktop
 // Or for displaying at the bottom of each step on mobile
-const BenefitsPanel = ({ currentStep }: { currentStep: number }) => {
+const BenefitsPanel = ({ currentStep, t }: { currentStep: number, t: (key: string) => string }) => {
   switch(currentStep) {
     case 0: // Personal Information
       return (
@@ -132,19 +133,19 @@ const BenefitsPanel = ({ currentStep }: { currentStep: number }) => {
           <div className="bg-[#1A1D29] rounded-xl border border-gray-700 p-4 sm:p-6">
             <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
               <Clock className="size-4 sm:size-5 text-[#4BF29C]" />
-              <h3 className="text-base sm:text-lg font-semibold text-white">30x Faster Campaign Creation</h3>
+              <h3 className="text-base sm:text-lg font-semibold text-white">{t('onboarding.benefits.step0.fasterCampaigns.title')}</h3>
             </div>
             <p className="text-gray-300 text-sm sm:text-base mb-3 sm:mb-4">
-              Traditional campaign setup takes 30+ minutes. Reeply AI does it all automatically in seconds.
+              {t('onboarding.benefits.step0.fasterCampaigns.description')}
             </p>
             <div className="flex items-center justify-between bg-[#151925] p-2 sm:p-3 rounded-lg text-xs sm:text-sm">
               <div className="flex items-center gap-1 sm:gap-2">
-                <div className="text-gray-400">Traditional:</div>
-                <div className="text-white font-medium">30+ min</div>
+                <div className="text-gray-400">{t('onboarding.benefits.step0.fasterCampaigns.traditional')}</div>
+                <div className="text-white font-medium">{t('onboarding.benefits.step0.fasterCampaigns.traditionalTime')}</div>
               </div>
               <div className="flex items-center gap-1 sm:gap-2">
-                <div className="text-gray-400">Reeply AI:</div>
-                <div className="text-[#4BF29C] font-semibold">60 sec</div>
+                <div className="text-gray-400">{t('onboarding.benefits.step0.fasterCampaigns.reeplyAI')}</div>
+                <div className="text-[#4BF29C] font-semibold">{t('onboarding.benefits.step0.fasterCampaigns.reeplyTime')}</div>
               </div>
             </div>
           </div>
@@ -160,13 +161,13 @@ const BenefitsPanel = ({ currentStep }: { currentStep: number }) => {
               </div>
             </div>
             <p className="text-white italic text-xs sm:text-sm mb-3 sm:mb-4">
-              &ldquo;We now generate 80% of our leads through campaigns managed with Reeply AI. Thanks to the consistently excellent support, we look forward to planning and executing more projects with Max and Reeply AI in the future.&rdquo;
+              &ldquo;{t('onboarding.benefits.step0.testimonial1.quote')}&rdquo;
             </p>
             <div className="flex items-center gap-2 sm:gap-3">
               <img src="/Christian.png" alt="Christian Schmitt" className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-cover" />
               <div>
-                <div className="text-white text-xs sm:text-sm font-medium">Christian Schmitt</div>
-                <div className="text-gray-400 text-[10px] sm:text-xs">Business owner at Boldbrands</div>
+                <div className="text-white text-xs sm:text-sm font-medium">{t('onboarding.benefits.step0.testimonial1.name')}</div>
+                <div className="text-gray-400 text-[10px] sm:text-xs">{t('onboarding.benefits.step0.testimonial1.title')}</div>
               </div>
             </div>
           </div>
@@ -179,20 +180,20 @@ const BenefitsPanel = ({ currentStep }: { currentStep: number }) => {
           <div className="bg-[#1A1D29] rounded-xl border border-gray-700 p-4 sm:p-6">
             <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
               <Search className="size-4 sm:size-5 text-[#4BF29C]" />
-              <h3 className="text-base sm:text-lg font-semibold text-white">Smart Website Analysis</h3>
+              <h3 className="text-base sm:text-lg font-semibold text-white">{t('onboarding.benefits.step1.websiteAnalysis.title')}</h3>
             </div>
             <p className="text-gray-300 text-sm sm:text-base">
-              Reeply AI scans your website URL to understand your business, audience, and products—automatically selecting the perfect campaign type for your goals.
+              {t('onboarding.benefits.step1.websiteAnalysis.description')}
             </p>
           </div>
           
           <div className="bg-[#1A1D29] rounded-xl border border-gray-700 p-4 sm:p-6">
             <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
               <FileText className="size-4 sm:size-5 text-[#4BF29C]" />
-              <h3 className="text-base sm:text-lg font-semibold text-white">AI-Generated Ad Copy</h3>
+              <h3 className="text-base sm:text-lg font-semibold text-white">{t('onboarding.benefits.step1.adCopy.title')}</h3>
             </div>
             <p className="text-gray-300 text-sm sm:text-base">
-              Based on your company description, our AI writes compelling ad text that resonates with your audience and highlights your unique value proposition.
+              {t('onboarding.benefits.step1.adCopy.description')}
             </p>
           </div>
         </div>
@@ -202,45 +203,45 @@ const BenefitsPanel = ({ currentStep }: { currentStep: number }) => {
       return (
         <div className="space-y-4 sm:space-y-6">
           <div className="bg-[#1A1D29] rounded-xl border border-gray-700 p-4 sm:p-6">
-            <h3 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4">Streamlined Process</h3>
+            <h3 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4">{t('onboarding.benefits.step2.streamlinedProcess.title')}</h3>
             <div className="space-y-3 sm:space-y-4">
               <div className="flex items-center gap-2 sm:gap-3">
                 <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-[#151925] flex items-center justify-center text-white text-xs sm:text-sm">1</div>
                 <div>
-                  <div className="text-white font-medium text-sm sm:text-base">Website Link</div>
-                  <div className="text-gray-400 text-xs sm:text-sm">You provide your website</div>
+                  <div className="text-white font-medium text-sm sm:text-base">{t('onboarding.benefits.step2.streamlinedProcess.step1.title')}</div>
+                  <div className="text-gray-400 text-xs sm:text-sm">{t('onboarding.benefits.step2.streamlinedProcess.step1.description')}</div>
                 </div>
               </div>
               <div className="flex items-center gap-2 sm:gap-3">
                 <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-[#151925] flex items-center justify-center text-white text-xs sm:text-sm">2</div>
                 <div>
-                  <div className="text-white font-medium text-sm sm:text-base">Smart Analysis</div>
-                  <div className="text-gray-400 text-xs sm:text-sm">AI analyzes your website</div>
+                  <div className="text-white font-medium text-sm sm:text-base">{t('onboarding.benefits.step2.streamlinedProcess.step2.title')}</div>
+                  <div className="text-gray-400 text-xs sm:text-sm">{t('onboarding.benefits.step2.streamlinedProcess.step2.description')}</div>
                 </div>
               </div>
               <div className="flex items-center gap-2 sm:gap-3">
                 <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-[#151925] flex items-center justify-center text-white text-xs sm:text-sm">3</div>
                 <div>
-                  <div className="text-white font-medium text-sm sm:text-base">Ad Creation</div>
-                  <div className="text-gray-400 text-xs sm:text-sm">AI creates your ad campaign</div>
+                  <div className="text-white font-medium text-sm sm:text-base">{t('onboarding.benefits.step2.streamlinedProcess.step3.title')}</div>
+                  <div className="text-gray-400 text-xs sm:text-sm">{t('onboarding.benefits.step2.streamlinedProcess.step3.description')}</div>
                 </div>
               </div>
               <div className="flex items-center gap-2 sm:gap-3">
                 <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-[#151925] flex items-center justify-center text-white text-xs sm:text-sm">4</div>
                 <div>
-                  <div className="text-white font-medium text-sm sm:text-base">Lead Generation</div>
-                  <div className="text-gray-400 text-xs sm:text-sm">You get leads immediately</div>
+                  <div className="text-white font-medium text-sm sm:text-base">{t('onboarding.benefits.step2.streamlinedProcess.step4.title')}</div>
+                  <div className="text-gray-400 text-xs sm:text-sm">{t('onboarding.benefits.step2.streamlinedProcess.step4.description')}</div>
                 </div>
               </div>
             </div>
             <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-700 text-xs sm:text-sm">
               <div className="flex justify-between items-center">
-                <div className="text-gray-400">Traditional:</div>
-                <div className="text-white">30-60+ min</div>
+                <div className="text-gray-400">{t('onboarding.benefits.step2.streamlinedProcess.traditional')}</div>
+                <div className="text-white">{t('onboarding.benefits.step2.streamlinedProcess.traditionalTime')}</div>
               </div>
               <div className="flex justify-between items-center">
-                <div className="text-gray-400">Reeply AI:</div>
-                <div className="text-[#4BF29C] font-semibold">Under 60 sec</div>
+                <div className="text-gray-400">{t('onboarding.benefits.step2.streamlinedProcess.reeplyAI')}</div>
+                <div className="text-[#4BF29C] font-semibold">{t('onboarding.benefits.step2.streamlinedProcess.reeplyTime')}</div>
               </div>
             </div>
           </div>
@@ -253,20 +254,20 @@ const BenefitsPanel = ({ currentStep }: { currentStep: number }) => {
           <div className="bg-[#1A1D29] rounded-xl border border-gray-700 p-4 sm:p-6">
             <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
               <Globe className="size-4 sm:size-5 text-[#4BF29C]" />
-              <h3 className="text-base sm:text-lg font-semibold text-white">Intelligent Geo-Targeting</h3>
+              <h3 className="text-base sm:text-lg font-semibold text-white">{t('onboarding.benefits.step3.geoTargeting.title')}</h3>
             </div>
             <p className="text-gray-300 text-sm sm:text-base">
-              Reeply AI determines optimal geolocation targeting from your website and profile preferences, ensuring your ads reach the right audience in the right locations.
+              {t('onboarding.benefits.step3.geoTargeting.description')}
             </p>
           </div>
           
           <div className="bg-[#1A1D29] rounded-xl border border-gray-700 p-4 sm:p-6">
             <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
               <Target className="size-4 sm:size-5 text-[#4BF29C]" />
-              <h3 className="text-base sm:text-lg font-semibold text-white">Advanced Audience Targeting</h3>
+              <h3 className="text-base sm:text-lg font-semibold text-white">{t('onboarding.benefits.step3.audienceTargeting.title')}</h3>
             </div>
             <p className="text-gray-300 text-sm sm:text-base">
-              Our AI agent researches the best potential filters on Meta Ads to target your ideal audience, finding hidden opportunities other marketers might miss.
+              {t('onboarding.benefits.step3.audienceTargeting.description')}
             </p>
           </div>
         </div>
@@ -278,27 +279,27 @@ const BenefitsPanel = ({ currentStep }: { currentStep: number }) => {
           <div className="bg-[#1A1D29] rounded-xl border border-gray-700 p-4 sm:p-6">
             <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
               <MapPin className="size-4 sm:size-5 text-[#4BF29C]" />
-              <h3 className="text-base sm:text-lg font-semibold text-white">Targeted Local Advertising</h3>
+              <h3 className="text-base sm:text-lg font-semibold text-white">{t('onboarding.benefits.step4.localAdvertising.title')}</h3>
             </div>
             <p className="text-gray-300 text-sm sm:text-base">
-              By setting your preferred locations, you help our AI target your campaigns more effectively to the regions that matter most to your business.
+              {t('onboarding.benefits.step4.localAdvertising.description')}
             </p>
           </div>
           
           <div className="bg-[#1A1D29] rounded-xl border border-gray-700 p-4 sm:p-6">
             <div className="space-y-3 sm:space-y-4">
-              <h3 className="text-base sm:text-lg font-semibold text-white mb-1">Benefits of Location Targeting</h3>
+              <h3 className="text-base sm:text-lg font-semibold text-white mb-1">{t('onboarding.benefits.step4.locationBenefits.title')}</h3>
               <div className="flex items-center gap-2 sm:gap-3">
                 <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-[#151925] flex items-center justify-center text-[#4BF29C] text-xs sm:text-base">✓</div>
-                <div className="text-gray-300 text-xs sm:text-sm">Higher conversion rates from local audiences</div>
+                <div className="text-gray-300 text-xs sm:text-sm">{t('onboarding.benefits.step4.locationBenefits.benefit1')}</div>
               </div>
               <div className="flex items-center gap-2 sm:gap-3">
                 <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-[#151925] flex items-center justify-center text-[#4BF29C] text-xs sm:text-base">✓</div>
-                <div className="text-gray-300 text-xs sm:text-sm">Reduced ad spend wastage on irrelevant regions</div>
+                <div className="text-gray-300 text-xs sm:text-sm">{t('onboarding.benefits.step4.locationBenefits.benefit2')}</div>
               </div>
               <div className="flex items-center gap-2 sm:gap-3">
                 <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-[#151925] flex items-center justify-center text-[#4BF29C] text-xs sm:text-base">✓</div>
-                <div className="text-gray-300 text-xs sm:text-sm">More relevant messaging for specific geographic areas</div>
+                <div className="text-gray-300 text-xs sm:text-sm">{t('onboarding.benefits.step4.locationBenefits.benefit3')}</div>
               </div>
             </div>
           </div>
@@ -322,31 +323,31 @@ const BenefitsPanel = ({ currentStep }: { currentStep: number }) => {
                   d="M9.198 21.5h4v-8.01h3.604l.396-3.98h-4V7.5a1 1 0 0 1 1-1h3v-4h-3a5 5 0 0 0-5 5v2.01h-2l-.396 3.98h2.396v8.01Z" 
                 />
               </svg>
-              <h3 className="text-base sm:text-lg font-semibold text-white">Seamless Facebook Integration</h3>
+              <h3 className="text-base sm:text-lg font-semibold text-white">{t('onboarding.benefits.step5.facebookIntegration.title')}</h3>
             </div>
             <p className="text-gray-300 text-sm sm:text-base">
-              Connect your Facebook account to unlock the full potential of Reeply AI. Create and manage campaigns directly without switching between platforms.
+              {t('onboarding.benefits.step5.facebookIntegration.description')}
             </p>
           </div>
           
           <div className="bg-[#1A1D29] rounded-xl border border-gray-700 p-4 sm:p-6">
             <div className="space-y-3 sm:space-y-4">
-              <h3 className="text-base sm:text-lg font-semibold text-white mb-1">Why Connect with Facebook?</h3>
+              <h3 className="text-base sm:text-lg font-semibold text-white mb-1">{t('onboarding.benefits.step5.whyConnect.title')}</h3>
               <div className="flex items-center gap-2 sm:gap-3">
                 <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-[#151925] flex items-center justify-center text-[#4BF29C] text-xs sm:text-base">✓</div>
-                <div className="text-gray-300 text-xs sm:text-sm">One-click campaign creation and management</div>
+                <div className="text-gray-300 text-xs sm:text-sm">{t('onboarding.benefits.step5.whyConnect.benefit1')}</div>
               </div>
               <div className="flex items-center gap-2 sm:gap-3">
                 <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-[#151925] flex items-center justify-center text-[#4BF29C] text-xs sm:text-base">✓</div>
-                <div className="text-gray-300 text-xs sm:text-sm">Access detailed analytics and performance metrics</div>
+                <div className="text-gray-300 text-xs sm:text-sm">{t('onboarding.benefits.step5.whyConnect.benefit2')}</div>
               </div>
               <div className="flex items-center gap-2 sm:gap-3">
                 <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-[#151925] flex items-center justify-center text-[#4BF29C] text-xs sm:text-base">✓</div>
-                <div className="text-gray-300 text-xs sm:text-sm">Auto-optimize campaigns based on real-time data</div>
+                <div className="text-gray-300 text-xs sm:text-sm">{t('onboarding.benefits.step5.whyConnect.benefit3')}</div>
               </div>
               <div className="flex items-center gap-2 sm:gap-3">
                 <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-[#151925] flex items-center justify-center text-[#4BF29C] text-xs sm:text-base">✓</div>
-                <div className="text-gray-300 text-xs sm:text-sm">Manage leads directly from within Reeply AI</div>
+                <div className="text-gray-300 text-xs sm:text-sm">{t('onboarding.benefits.step5.whyConnect.benefit4')}</div>
               </div>
             </div>
           </div>
@@ -361,9 +362,9 @@ const BenefitsPanel = ({ currentStep }: { currentStep: number }) => {
               <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-[#4BF29C]/20 flex items-center justify-center">
                 <CheckCheck className="size-6 sm:size-8 text-[#4BF29C]" />
               </div>
-              <h3 className="text-lg sm:text-xl font-semibold text-white">Your Profile is Ready!</h3>
+              <h3 className="text-lg sm:text-xl font-semibold text-white">{t('onboarding.benefits.step6.profileReady.title')}</h3>
               <p className="text-gray-300 text-sm sm:text-base">
-                You&apos;re all set to create your first AI-powered campaign in 60 seconds.
+                {t('onboarding.benefits.step6.profileReady.description')}
               </p>
             </div>
             
@@ -376,13 +377,13 @@ const BenefitsPanel = ({ currentStep }: { currentStep: number }) => {
                 ))}
               </div>
               <p className="text-white italic text-xs sm:text-sm my-2 sm:my-3">
-                &ldquo;I loved working with the Reeply team - dedicated, patient, professional. They are experienced and were able to jump in to problem solve, no matter how big or small the problem. I enjoyed using the Reeply platform to help me get started on my Meta ads journey. It&apos;s simple and easy to use. They helped me to launch my very first lead generation, awareness, and conversion ads. It was easy to see all my campaign results in one handy interface. I managed to gain half a million views on one of my videos in just a few days. I also gained a lot of insights on what kind of ads worked, and what didn&apos;t work. Thank you Reeply.&rdquo;
+                &ldquo;{t('onboarding.benefits.step6.testimonial2.quote')}&rdquo;
               </p>
               <div className="flex items-center gap-2 sm:gap-3">
                 <img src="/lin.png" alt="Lin Loke" className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-cover" />
                 <div>
-                  <div className="text-white text-xs sm:text-sm font-medium">Lin Loke</div>
-                  <div className="text-gray-400 text-[10px] sm:text-xs">Founder of Nuwa Wellness</div>
+                  <div className="text-white text-xs sm:text-sm font-medium">{t('onboarding.benefits.step6.testimonial2.name')}</div>
+                  <div className="text-gray-400 text-[10px] sm:text-xs">{t('onboarding.benefits.step6.testimonial2.title')}</div>
                 </div>
               </div>
             </div>
@@ -401,6 +402,9 @@ function Onboarding({
     setOpen,
     updateOnboardingDetails
 }: OnboardingProps) {
+    const t = useT() // Add translation hook
+    const STEPS = getSteps(t) // Create STEPS with translations
+    
     const [error, setError] = React.useState<string | null>(null)
     const [inputError, setInputError] = React.useState<InputErrors>({
         first_name: "",
@@ -546,7 +550,7 @@ function Onboarding({
         if (STEPS[currentStep].id === 'locations') {
             // Check if at least one location is selected
             if (!locations || locations.length === 0) {
-                errors.locations = "Please select at least one location";
+                errors.locations = t('forms.required'); // Use translation for required field
                 setInputError(errors);
                 return false;
             }
@@ -606,7 +610,7 @@ function Onboarding({
             }
             
             if (!value || value.trim() === "") {
-                errors[field as keyof InputErrors] = "This field is required";
+                errors[field as keyof InputErrors] = t('forms.required'); // Use translation for required field
                 hasErrors = true;
             } else {
                 errors[field as keyof InputErrors] = "";
@@ -697,7 +701,7 @@ function Onboarding({
                 }
                 
                 if (!value || value.trim() === "") {
-                    errors[field as keyof InputErrors] = "This field is required";
+                    errors[field as keyof InputErrors] = t('forms.required'); // Use translation for required field
                     hasErrors = true;
                 } else {
                     errors[field as keyof InputErrors] = "";
@@ -813,7 +817,7 @@ function Onboarding({
                 return (
                     <div className="space-y-2">
                         <label htmlFor="first_name" className="text-sm font-semibold text-white">
-                            First Name
+                            {t('onboarding.fields.firstName')}
                         </label>
                         <input
                             type="text"
@@ -827,7 +831,7 @@ function Onboarding({
                                 "focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4BF29C] dark:focus:ring-offset-[#0F1117]",
                                 "text-white"
                             )}
-                            placeholder="Enter your first name"
+                            placeholder={t('onboarding.placeholders.firstName')}
                             value={value}
                             onChange={(e) => {
                                 if (e.target.value.length > 0) {
@@ -848,7 +852,7 @@ function Onboarding({
                 return (
                     <div className="space-y-2">
                         <label htmlFor="last_name" className="text-sm font-semibold text-white">
-                            Last Name
+                            {t('onboarding.fields.lastName')}
                         </label>
                         <input
                             type="text"
@@ -862,7 +866,7 @@ function Onboarding({
                                 "focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4BF29C] dark:focus:ring-offset-[#0F1117]",
                                 "text-white"
                             )}
-                            placeholder="Enter your last name"
+                            placeholder={t('onboarding.placeholders.lastName')}
                             value={value}
                             onChange={(e) => {
                                 if (e.target.value.length > 0) {
@@ -883,7 +887,7 @@ function Onboarding({
                 return (
                     <div className="space-y-2">
                         <label htmlFor="company_name" className="text-sm font-semibold text-white">
-                            Company Name
+                            {t('onboarding.fields.companyName')}
                         </label>
                         <input
                             type="text"
@@ -897,7 +901,7 @@ function Onboarding({
                                 "focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4BF29C] dark:focus:ring-offset-[#0F1117]",
                                 "text-white"
                             )}
-                            placeholder="Enter your company name"
+                            placeholder={t('onboarding.placeholders.companyName')}
                             value={value}
                             onChange={(e) => {
                                 if (e.target.value.length > 0) {
@@ -921,7 +925,7 @@ function Onboarding({
                             Company Description
                         </label>
                         <p className="text-xs text-gray-400">
-                            Share your company&apos;s advertising goals and unique details that might not be on your website.
+                            {t('onboarding.descriptions.companyGoals')}
                         </p>
                         <textarea
                             id="company_description"
@@ -935,7 +939,7 @@ function Onboarding({
                                 "focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4BF29C] dark:focus:ring-offset-[#0F1117]",
                                 "resize-none text-white"
                             )}
-                            placeholder="Please share your company's advertising goals and any unique details about your company that our AI might not be able to gather from your website."
+                            placeholder={t('onboarding.placeholders.companyDescription')}
                             value={value}
                             onChange={(e) => {
                                 if (e.target.value.length > 0) {
@@ -959,7 +963,7 @@ function Onboarding({
                             Website Link
                         </label>
                         <p className="text-xs text-gray-400">
-                            Our AI will analyze your website to better understand your company and provide more relevant suggestions.
+                            {t('onboarding.descriptions.websiteAnalysis')}
                         </p>
                         <input
                             type="text"
@@ -973,7 +977,7 @@ function Onboarding({
                                 "focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4BF29C] dark:focus:ring-offset-[#0F1117]",
                                 "text-white"
                             )}
-                            placeholder="https://yourwebsite.com"
+                            placeholder={t('onboarding.placeholders.websiteLink')}
                             value={value}
                             onChange={(e) => {
                                 if (e.target.value.length > 0) {
@@ -1022,7 +1026,7 @@ function Onboarding({
                                 "focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4BF29C] dark:focus:ring-offset-[#0F1117]",
                                 "text-white"
                             )}
-                            placeholder="https://yourwebsite.com/privacy-policy"
+                            placeholder={t('onboarding.placeholders.privacyPolicyLink')}
                             value={value}
                             onChange={(e) => {
                                 if (e.target.value.length > 0) {
@@ -1054,10 +1058,10 @@ function Onboarding({
                 return (
                     <div className="space-y-2">
                         <label htmlFor="languages" className="text-sm font-semibold text-white">
-                            Preferred Language
+                            {t('onboarding.fields.preferredLanguage')}
                         </label>
                         <p className="text-xs text-gray-400">
-                            Select the language you prefer for AI-generated content.
+                            {t('onboarding.fields.preferredLanguageDescription')}
                         </p>
                         <select
                             id="languages"
@@ -1099,10 +1103,10 @@ function Onboarding({
                 return (
                     <div className="space-y-2">
                         <label htmlFor="company_segment" className="text-sm font-semibold text-white">
-                            Company Segment
+                            {t('onboarding.fields.companySegment')}
                         </label>
                         <p className="text-xs text-gray-400">
-                            Select the category that best describes your organization.
+                            {t('onboarding.fields.companySegmentDescription')}
                         </p>
                         <select
                             id="company_segment"
@@ -1140,10 +1144,16 @@ function Onboarding({
                                 "text-white"
                             )}
                         >
-                            <option value="">Select a segment</option>
-                            {Object.entries(SEGMENT_OPTIONS).map(([key, value]) => (
-                                <option key={key} value={key}>{value}</option>
-                            ))}
+                            <option value="">{t('forms.selectSegment')}</option>
+                            <option value="FREELANCER">{t('onboarding.segments.freelancer')}</option>
+                            <option value="STARTUP">{t('onboarding.segments.startup')}</option>
+                            <option value="SMALL_BUSINESS">{t('onboarding.segments.smallBusiness')}</option>
+                            <option value="MID_SIZED">{t('onboarding.segments.midSized')}</option>
+                            <option value="ENTERPRISE">{t('onboarding.segments.enterprise')}</option>
+                            <option value="NONPROFIT">{t('onboarding.segments.nonprofit')}</option>
+                            <option value="EDUCATION">{t('onboarding.segments.education')}</option>
+                            <option value="GOVERNMENT">{t('onboarding.segments.government')}</option>
+                            <option value="OTHER">{t('onboarding.segments.other')}</option>
                         </select>
                         {fieldError && (
                             <p className="text-sm text-red-500 flex items-center gap-1">
@@ -1187,24 +1197,24 @@ function Onboarding({
                                         />
                                     </svg>
                                 </div>
-                                <h3 className="text-xl font-semibold text-white">Connect with Facebook</h3>
+                                <h3 className="text-xl font-semibold text-white">{t('onboarding.facebookConnect.title')}</h3>
                             </div>
                             
                             <div className="mb-6">
                                 <p className="text-gray-300 text-sm mb-4">
-                                    To easily create and manage campaigns, you&apos;ll need to connect with Facebook and grant Reeply AI software the following access rights:
+                                    {t('onboarding.facebookConnect.description')}
                                 </p>
                                 <ul className="list-disc list-inside text-gray-300 text-sm space-y-1 mb-4">
-                                    <li>Receive your email address</li>
-                                    <li>Manage ads for ad accounts that you have access to</li>
-                                    <li>Access your Facebook ads and related stats</li>
-                                    <li>Manage your business</li>
-                                    <li>Access leads for your Pages</li>
-                                    <li>Create and manage ads for your Page</li>
-                                    <li>Show a list of the Pages you manage</li>
+                                    <li>{t('onboarding.facebookConnect.permissions.email')}</li>
+                                    <li>{t('onboarding.facebookConnect.permissions.manageAds')}</li>
+                                    <li>{t('onboarding.facebookConnect.permissions.accessStats')}</li>
+                                    <li>{t('onboarding.facebookConnect.permissions.manageBusiness')}</li>
+                                    <li>{t('onboarding.facebookConnect.permissions.accessLeads')}</li>
+                                    <li>{t('onboarding.facebookConnect.permissions.createAds')}</li>
+                                    <li>{t('onboarding.facebookConnect.permissions.showPages')}</li>
                                 </ul>
                                 <p className="text-gray-300 text-sm mb-4">
-                                    You can always connect your Facebook account later if you prefer.
+                                    {t('onboarding.facebookConnect.laterMessage')}
                                 </p>
                             </div>
                             
@@ -1224,55 +1234,55 @@ function Onboarding({
         return (
             <div className="space-y-4 sm:space-y-6">
                 <div className="bg-[#1A1D29] dark:bg-[#1A1D29] p-4 sm:p-6 rounded-xl border border-gray-700">
-                    <h3 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4">Personal Information</h3>
+                    <h3 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4">{t('profile.personalInformation')}</h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                         <div>
-                            <p className="text-xs sm:text-sm text-gray-400">First Name</p>
+                            <p className="text-xs sm:text-sm text-gray-400">{t('onboarding.fields.firstName')}</p>
                             <p className="text-sm sm:text-base text-white">{firstName}</p>
                         </div>
                         <div>
-                            <p className="text-xs sm:text-sm text-gray-400">Last Name</p>
+                            <p className="text-xs sm:text-sm text-gray-400">{t('onboarding.fields.lastName')}</p>
                             <p className="text-sm sm:text-base text-white">{lastName}</p>
                         </div>
                     </div>
                 </div>
                 
                 <div className="bg-[#1A1D29] dark:bg-[#1A1D29] p-4 sm:p-6 rounded-xl border border-gray-700">
-                    <h3 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4">Company Information</h3>
+                    <h3 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4">{t('profile.companyInformation')}</h3>
                     <div className="space-y-3 sm:space-y-4">
                         <div>
-                            <p className="text-xs sm:text-sm text-gray-400">Company Name</p>
+                            <p className="text-xs sm:text-sm text-gray-400">{t('onboarding.fields.companyName')}</p>
                             <p className="text-sm sm:text-base text-white">{companyName}</p>
                         </div>
                         <div>
-                            <p className="text-xs sm:text-sm text-gray-400">Company Segment</p>
+                            <p className="text-xs sm:text-sm text-gray-400">{t('onboarding.fields.companySegment')}</p>
                             <p className="text-sm sm:text-base text-white">{SEGMENT_OPTIONS[companySegment as keyof typeof SEGMENT_OPTIONS] || 'Not specified'}</p>
                         </div>
                         <div>
-                            <p className="text-xs sm:text-sm text-gray-400">Company Description</p>
+                            <p className="text-xs sm:text-sm text-gray-400">{t('onboarding.fields.companyDescription')}</p>
                             <p className="text-sm sm:text-base text-white">{companyDescription}</p>
                         </div>
                     </div>
                 </div>
                 
                 <div className="bg-[#1A1D29] dark:bg-[#1A1D29] p-4 sm:p-6 rounded-xl border border-gray-700">
-                    <h3 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4">Website Details</h3>
+                    <h3 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4">{t('profile.websiteDetails')}</h3>
                     <div className="space-y-3 sm:space-y-4">
                         <div>
-                            <p className="text-xs sm:text-sm text-gray-400">Website Link</p>
+                            <p className="text-xs sm:text-sm text-gray-400">{t('onboarding.fields.websiteLink')}</p>
                             <p className="text-sm sm:text-base text-white break-words">{websiteLink}</p>
                         </div>
                         <div>
-                            <p className="text-xs sm:text-sm text-gray-400">Privacy Policy Link</p>
+                            <p className="text-xs sm:text-sm text-gray-400">{t('onboarding.fields.privacyPolicyLink')}</p>
                             <p className="text-sm sm:text-base text-white break-words">{privacyPolicyLink}</p>
                         </div>
                     </div>
                 </div>
                 
                 <div className="bg-[#1A1D29] dark:bg-[#1A1D29] p-4 sm:p-6 rounded-xl border border-gray-700">
-                    <h3 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4">Preferences</h3>
+                    <h3 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4">{t('profile.preferences')}</h3>
                     <div>
-                        <p className="text-xs sm:text-sm text-gray-400">Preferred Language</p>
+                        <p className="text-xs sm:text-sm text-gray-400">{t('onboarding.fields.preferredLanguage')}</p>
                         <p className="text-sm sm:text-base text-white">{
                             preferredLanguage === 'en' ? 'English' :
                             preferredLanguage === 'nl' ? 'Dutch' :
@@ -1299,25 +1309,25 @@ function Onboarding({
                                     d="M9.198 21.5h4v-8.01h3.604l.396-3.98h-4V7.5a1 1 0 0 1 1-1h3v-4h-3a5 5 0 0 0-5 5v2.01h-2l-.396 3.98h2.396v8.01Z" 
                                 />
                             </svg>
-                            Facebook Connection
+                            {t('onboarding.confirmation.facebookConnection')}
                         </span>
                     </h3>
                     <div>
-                        <p className="text-xs sm:text-sm text-gray-400">Status</p>
+                        <p className="text-xs sm:text-sm text-gray-400">{t('onboarding.confirmation.status')}</p>
                         <p className="text-sm sm:text-base text-white flex items-center gap-2">
                             {userDetails?.fbMarketingApiKey ? (
                                 <>
                                     <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400 border border-green-500/30">
                                         <CheckCircle2 className="w-3 h-3 mr-1" />
-                                        Connected
+                                        {t('onboarding.facebookConnect.connected')}
                                     </span>
                                 </>
                             ) : (
                                 <>
                                     <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
-                                        Not Connected
+                                        {t('onboarding.facebookConnect.notConnected')}
                                     </span>
-                                    <span className="text-xs text-gray-400">(You can connect later in Settings)</span>
+                                    <span className="text-xs text-gray-400">{t('onboarding.facebookConnect.connectLaterNote')}</span>
                                 </>
                             )}
                         </p>
@@ -1329,13 +1339,13 @@ function Onboarding({
                     <h3 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4">
                         <span className="flex items-center gap-2">
                             <MapPin className="h-4 w-4 sm:h-5 sm:w-5 text-[#4BF29C]" />
-                            Preferred Locations
+                            {t('onboarding.fields.preferredLocations')}
                         </span>
                     </h3>
                     
                     {(!locations || locations.length === 0) ? (
                         <div className="py-2 sm:py-3 px-3 sm:px-4 bg-[#151925] rounded-lg">
-                            <p className="text-gray-400 text-xs sm:text-sm">No locations selected</p>
+                            <p className="text-gray-400 text-xs sm:text-sm">{t('onboarding.confirmation.noLocationsSelected')}</p>
                         </div>
                     ) : (
                         <div className="space-y-3 sm:space-y-4">
@@ -1378,7 +1388,7 @@ function Onboarding({
                     "animate-in fade-in-0 duration-300"
                 )}>
                     <CheckCircle2 className="size-3 sm:size-4 shrink-0"/>
-                    <span>Your profile has been updated successfully</span>
+                    <span>{t('messages.success')}</span>
                 </div>
             )}
 
@@ -1390,7 +1400,7 @@ function Onboarding({
                     "animate-in fade-in-0 duration-300"
                 )}>
                     <Loader2 className="size-3 sm:size-4 shrink-0 animate-spin"/>
-                    <span>Updating your profile. This may take a few seconds...</span>
+                    <span>{t('messages.loading')}</span>
                 </div>
             )}
 
@@ -1488,8 +1498,8 @@ function Onboarding({
 
                                 <Dialog.Description className="text-sm sm:text-base lg:text-lg text-gray-400 mb-4 sm:mb-6 lg:mb-8">
                                     {currentStep === STEPS.length - 1 
-                                        ? "Please review your information before saving."
-                                        : "Complete your profile to get the most out of our platform."}
+                                        ? t('onboarding.reviewMessage')
+                                        : t('onboarding.profileCompletionMessage')}
                                 </Dialog.Description>
 
                                 {error && (
@@ -1512,7 +1522,7 @@ function Onboarding({
                                             disabled={currentStep === 0}
                                         >
                                             <ArrowLeft className="w-3 h-3" />
-                                            Back
+                                            {t('actions.back')}
                                         </button>
                                         
                                         {currentStep === STEPS.length - 1 ? (
@@ -1524,11 +1534,11 @@ function Onboarding({
                                                 {isSaving ? (
                                                     <>
                                                         <Loader2 className="w-3 h-3 animate-spin" />
-                                                        Saving...
+                                                        {t('messages.saving')}
                                                     </>
                                                 ) : (
                                                     <>
-                                                        Save
+                                                        {t('actions.save')}
                                                         <CheckCircle2 className="w-3 h-3" />
                                                     </>
                                                 )}
@@ -1538,7 +1548,7 @@ function Onboarding({
                                                 onClick={handleNextStep}
                                                 className="px-3 py-2 rounded-lg flex items-center gap-1 text-sm bg-gradient-to-r from-[#4BF29C] to-[#38A169] hover:brightness-110 text-[#0F1117] font-medium transition-all duration-200"
                                             >
-                                                Next
+                                                {t('actions.next')}
                                                 <ArrowRight className="w-3 h-3" />
                                             </button>
                                         )}
@@ -1570,7 +1580,7 @@ function Onboarding({
                                             disabled={currentStep === 0}
                                         >
                                             <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4" />
-                                            Previous
+                                            {t('actions.previous')}
                                         </button>
                                         
                                         {currentStep === STEPS.length - 1 ? (
@@ -1582,11 +1592,11 @@ function Onboarding({
                                                 {isSaving ? (
                                                     <>
                                                         <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" />
-                                                        Saving...
+                                                        {t('messages.saving')}
                                                     </>
                                                 ) : (
                                                     <>
-                                                        Save Profile
+                                                        {t('actions.saveProfile')}
                                                         <CheckCircle2 className="w-3 h-3 sm:w-4 sm:h-4" />
                                                     </>
                                                 )}
@@ -1596,7 +1606,7 @@ function Onboarding({
                                                 onClick={handleNextStep}
                                                 className="px-3 sm:px-4 lg:px-6 py-2 sm:py-3 rounded-lg flex items-center gap-1 sm:gap-2 text-sm sm:text-base bg-gradient-to-r from-[#4BF29C] to-[#38A169] hover:brightness-110 text-[#0F1117] font-medium transition-all duration-200 hover:scale-[1.02]"
                                             >
-                                                Next
+                                                {t('actions.next')}
                                                 <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4" />
                                             </button>
                                         )}
@@ -1606,7 +1616,7 @@ function Onboarding({
                             
                             {/* Right column - Benefits (hidden on mobile phones, 40% on tablet/desktop) */}
                             <div className="hidden md:block md:w-2/5 h-full bg-[#151925] p-8 border-l border-[#2A2E3A] overflow-y-auto">
-                                <BenefitsPanel currentStep={currentStep} />
+                                <BenefitsPanel currentStep={currentStep} t={t} />
                             </div>
                         </div>
                         
@@ -1617,10 +1627,9 @@ function Onboarding({
                                     <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-[#4BF29C]/20 flex items-center justify-center mb-3 sm:mb-4">
                                         <Loader2 className="w-6 h-6 sm:w-8 sm:h-8 text-[#4BF29C] animate-spin" />
                                     </div>
-                                    <h3 className="text-lg sm:text-xl font-semibold text-white mb-1 sm:mb-2">Saving Your Profile</h3>
+                                    <h3 className="text-lg sm:text-xl font-semibold text-white mb-1 sm:mb-2">{t('messages.savingProfile')}</h3>
                                     <p className="text-gray-400 text-center text-sm sm:text-base mb-4 sm:mb-6">
-                                        Please wait while we save your profile information. 
-                                        This will only take a moment.
+                                        {t('messages.savingProfileDescription')}
                                     </p>
                                     <div className="w-full bg-[#151925] h-1.5 sm:h-2 rounded-full overflow-hidden">
                                         <div className="h-full bg-gradient-to-r from-purple-500 to-[#4BF29C] animate-pulse" style={{ width: '100%' }}></div>

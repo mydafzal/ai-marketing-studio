@@ -1,0 +1,353 @@
+{
+  "navigation": {
+    "aiMarketer": "IA Marketero",
+    "aiCreatives": "IA Creativos",
+    "login": "Iniciar sesión",
+    "signOut": "Cerrar sesión"
+  },
+  "sidebar": {
+    "shareChat": "Compartir chat",
+    "deleteChat": "Eliminar chat",
+    "newChat": "Nuevo Chat",
+    "clearHistory": "Limpiar historial",
+    "sharedChat": "Este es un chat compartido.",
+    "chatHistory": "Historial de Chat",
+    "noChatHistory": "Sin historial de chat",
+    "loadingChats": "Cargando chats..."
+  },
+  "actions": {
+    "save": "Guardar",
+    "saveProfile": "Guardar Perfil",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "share": "Compartir",
+    "create": "Crear",
+    "update": "Actualizar",
+    "confirm": "Confirmar",
+    "back": "Atrás",
+    "previous": "Anterior",
+    "next": "Siguiente",
+    "skip": "Omitir",
+    "continue": "Continuar",
+    "finish": "Finalizar",
+    "tryThis": "Prueba esto"
+  },
+  "onboarding": {
+    "profileCompletionMessage": "Complete su perfil para aprovechar al máximo nuestra plataforma.",
+    "reviewMessage": "Por favor revise su información antes de guardar.",
+    "steps": {
+      "personal": "Información Personal",
+      "company": "Información de la Empresa",
+      "website": "Detalles del Sitio Web",
+      "preferences": "Preferencias",
+      "locations": "Ubicaciones Preferidas",
+      "confirm": "Confirmar y Guardar"
+    },
+    "benefits": {
+      "step0": {
+        "fasterCampaigns": {
+          "title": "Creación de Campañas 30x Más Rápida",
+          "description": "La configuración tradicional de campañas toma 30+ minutos. Reeply AI lo hace todo automáticamente en segundos.",
+          "traditional": "Tradicional:",
+          "traditionalTime": "30+ min",
+          "reeplyAI": "Reeply AI:",
+          "reeplyTime": "60 seg"
+        },
+        "testimonial1": {
+          "quote": "Ahora generamos el 80% de nuestros leads a través de campañas gestionadas con Reeply AI. Gracias al excelente soporte constante, esperamos planificar y ejecutar más proyectos con Max y Reeply AI en el futuro.",
+          "name": "Christian Schmitt",
+          "title": "Propietario de negocio en Boldbrands"
+        }
+      },
+      "step1": {
+        "websiteAnalysis": {
+          "title": "Análisis Inteligente del Sitio Web",
+          "description": "Reeply AI escanea la URL de su sitio web para entender su negocio, audiencia y productos—seleccionando automáticamente el tipo de campaña perfecto para sus objetivos."
+        },
+        "adCopy": {
+          "title": "Texto Publicitario Generado por IA",
+          "description": "Basándose en la descripción de su empresa, nuestra IA escribe textos publicitarios convincentes que resuenan con su audiencia y destacan su propuesta de valor única."
+        }
+      },
+      "step2": {
+        "streamlinedProcess": {
+          "title": "Proceso Optimizado",
+          "step1": {
+            "title": "Enlace del Sitio Web",
+            "description": "Usted proporciona su sitio web"
+          },
+          "step2": {
+            "title": "Análisis Inteligente",
+            "description": "La IA analiza su sitio web"
+          },
+          "step3": {
+            "title": "Creación de Anuncios",
+            "description": "La IA crea su campaña publicitaria"
+          },
+          "step4": {
+            "title": "Generación de Leads",
+            "description": "Obtiene leads inmediatamente"
+          },
+          "traditional": "Tradicional:",
+          "traditionalTime": "30-60+ min",
+          "reeplyAI": "Reeply AI:",
+          "reeplyTime": "Menos de 60 seg"
+        }
+      },
+      "step3": {
+        "geoTargeting": {
+          "title": "Geo-Targeting Inteligente",
+          "description": "Reeply AI determina la segmentación geográfica óptima desde su sitio web y preferencias del perfil, asegurando que sus anuncios lleguen a la audiencia correcta en las ubicaciones correctas."
+        },
+        "audienceTargeting": {
+          "title": "Segmentación de Audiencia Avanzada",
+          "description": "Nuestro agente de IA investiga los mejores filtros potenciales en Meta Ads para dirigirse a su audiencia ideal, encontrando oportunidades ocultas que otros especialistas en marketing podrían pasar por alto."
+        }
+      },
+      "step4": {
+        "localAdvertising": {
+          "title": "Publicidad Local Dirigida",
+          "description": "Al establecer sus ubicaciones preferidas, ayuda a nuestra IA a dirigir sus campañas de manera más efectiva a las regiones que más importan para su negocio."
+        },
+        "locationBenefits": {
+          "title": "Beneficios de la Segmentación por Ubicación",
+          "benefit1": "Tasas de conversión más altas de audiencias locales",
+          "benefit2": "Reducción del desperdicio de gasto en anuncios en regiones irrelevantes",
+          "benefit3": "Mensajes más relevantes para áreas geográficas específicas"
+        }
+      },
+      "step5": {
+        "facebookIntegration": {
+          "title": "Integración Perfecta con Facebook",
+          "description": "Conecte su cuenta de Facebook para desbloquear todo el potencial de Reeply AI. Cree y gestione campañas directamente sin cambiar entre plataformas."
+        },
+        "whyConnect": {
+          "title": "¿Por qué conectar con Facebook?",
+          "benefit1": "Creación y gestión de campañas con un clic",
+          "benefit2": "Acceso a análisis detallados y métricas de rendimiento",
+          "benefit3": "Auto-optimización de campañas basada en datos en tiempo real",
+          "benefit4": "Gestionar leads directamente desde Reeply AI"
+        }
+      },
+      "step6": {
+        "profileReady": {
+          "title": "¡Su Perfil Está Listo!",
+          "description": "Está listo para crear su primera campaña impulsada por IA en 60 segundos."
+        },
+        "testimonial2": {
+          "quote": "Me encantó trabajar con el equipo de Reeply: dedicados, pacientes, profesionales. Son experimentados y pudieron intervenir para resolver problemas, sin importar cuán grande o pequeño fuera el problema. Disfruté usar la plataforma Reeply para ayudarme a comenzar mi viaje con Meta Ads. Es simple y fácil de usar. Me ayudaron a lanzar mis primeros anuncios de generación de leads, conciencia y conversión. Fue fácil ver todos los resultados de mi campaña en una interfaz práctica. Logré obtener medio millón de visualizaciones en uno de mis videos en solo unos días. También obtuve muchos conocimientos sobre qué tipo de anuncios funcionaron y cuáles no. Gracias Reeply.",
+          "name": "Lin Loke",
+          "title": "Fundadora de Nuwa Wellness"
+        }
+      }
+    },
+    "facebookConnect": {
+      "title": "Conectar con Facebook",
+      "description": "Para crear y gestionar campañas fácilmente, necesitará conectarse con Facebook y otorgar al software Reeply AI los siguientes derechos de acceso:",
+      "permissions": {
+        "email": "Recibir su dirección de correo electrónico",
+        "manageAds": "Gestionar anuncios para cuentas publicitarias a las que tiene acceso",
+        "accessStats": "Acceder a sus anuncios de Facebook y estadísticas relacionadas",
+        "manageBusiness": "Gestionar su negocio",
+        "accessLeads": "Acceder a leads para sus Páginas",
+        "createAds": "Crear y gestionar anuncios para su Página",
+        "showPages": "Mostrar una lista de las Páginas que gestiona"
+      },
+      "laterMessage": "Siempre puede conectar su cuenta de Facebook más tarde si lo prefiere.",
+      "connected": "Conectado",
+      "notConnected": "No Conectado",
+      "connectLaterNote": "(Puede conectar más tarde en Configuración)"
+    },
+    "confirmation": {
+      "facebookConnection": "Conexión de Facebook",
+      "status": "Estado",
+      "noLocationsSelected": "No se seleccionaron ubicaciones"
+    },
+    "fields": {
+      "firstName": "Nombre",
+      "lastName": "Apellido",
+      "companyName": "Nombre de la Empresa",
+      "companyDescription": "Descripción de la Empresa",
+      "websiteLink": "Enlace del Sitio Web",
+      "privacyPolicyLink": "Enlace de Política de Privacidad",
+      "preferredLanguage": "Idioma Preferido",
+      "preferredLanguageDescription": "Seleccione el idioma que prefiere para el contenido generado por IA.",
+      "companySegment": "Segmento de la Empresa",
+      "companySegmentDescription": "Seleccione la categoría que mejor describe su organización.",
+      "preferredLocations": "Ubicaciones Preferidas",
+      "preferredLocationsDescription": "Seleccione las ubicaciones donde frecuentemente hace publicidad. Esto ayuda a nuestra IA a crear campañas más dirigidas. Se requiere al menos una ubicación."
+    },
+    "segments": {
+      "freelancer": "Freelancer / Propietario Único",
+      "startup": "Startup (1–10 empleados)",
+      "smallBusiness": "Pequeña Empresa (11–50 empleados)",
+      "midSized": "Empresa Mediana (51–200 empleados)",
+      "enterprise": "Gran Empresa (200+ empleados)",
+      "nonprofit": "Sin Fines de Lucro / ONG",
+      "education": "Institución Educativa",
+      "government": "Gobierno / Sector Público",
+      "other": "Otro"
+    },
+    "goals": {
+      "generateLeads": "Quiero generar más leads",
+      "recruitEmployees": "Quiero reclutar empleados",
+      "increaseConversions": "Quiero aumentar las conversiones"
+    },
+    "placeholders": {
+      "firstName": "Ingrese su nombre",
+      "lastName": "Ingrese su apellido",
+      "companyName": "Ingrese el nombre de su empresa",
+      "companyDescription": "Comparta los objetivos publicitarios de su empresa y detalles únicos que nuestra IA podría no poder recopilar de su sitio web.",
+      "websiteLink": "Ingrese la URL de su sitio web",
+      "privacyPolicyLink": "Ingrese la URL de su política de privacidad"
+    },
+    "descriptions": {
+      "companyGoals": "Comparta los objetivos publicitarios de su empresa y detalles únicos que no estén en su sitio web.",
+      "profileName": "Elija un nombre para ayudarle a recordar este perfil",
+      "profileNameNote": "Generado automáticamente del nombre de la empresa si se deja vacío",
+      "websiteAnalysis": "Nuestra IA analizará su sitio web para comprender mejor su empresa y proporcionar sugerencias más relevantes."
+    }
+  },
+  "dialogs": {
+    "deleteConfirmation": {
+      "title": "¿Está absolutamente seguro?",
+      "description": "Esto eliminará permanentemente su mensaje de chat y removerá sus datos de nuestros servidores.",
+      "confirmDelete": "Eliminar"
+    },
+    "clearHistory": {
+      "title": "¿Está absolutamente seguro?",
+      "description": "Esto eliminará permanentemente su historial de chat y removerá sus datos de nuestros servidores."
+    },
+    "shareChat": {
+      "title": "Compartir enlace al chat",
+      "description": "Cualquiera con la URL podrá ver el chat compartido.",
+      "copyError": "No se pudo copiar el enlace para compartir al portapapeles",
+      "copySuccess": "Enlace para compartir copiado al portapapeles"
+    }
+  },
+  "messages": {
+    "chatDeleted": "Chat eliminado",
+    "error": "Error",
+    "success": "Éxito",
+    "loading": "Cargando...",
+    "saving": "Guardando...",
+    "savingProfile": "Guardando Su Perfil",
+    "savingProfileDescription": "Por favor espere mientras guardamos la información de su perfil. Esto solo tomará un momento."
+  },
+  "profile": {
+    "personalInformation": "Información Personal",
+    "companyInformation": "Información de la Empresa",
+    "websiteDetails": "Detalles del Sitio Web",
+    "preferences": "Preferencias"
+  },
+  "forms": {
+    "required": "Este campo es obligatorio",
+    "selectLanguage": "Seleccionar idioma",
+    "selectSegment": "Seleccionar segmento",
+    "searchLocations": "Buscar Ubicaciones",
+    "searchPlaceholder": "Buscar países, regiones o ciudades...",
+    "validation": {
+      "companyNameRequired": "El nombre de la empresa es obligatorio",
+      "companyDescriptionRequired": "La descripción de la empresa es obligatoria",
+      "languageRequired": "La selección de idioma es obligatoria",
+      "invalidUrl": "Por favor ingrese una URL válida",
+      "noCommasAllowed": "Los formularios de leads de Facebook no permiten comas en este campo"
+    }
+  },
+  "emptyScreen": {
+    "title": "¿Cómo puedo ayudarte hoy?",
+    "actions": {
+      "createCampaign": {
+        "title": "Crear una Campaña",
+        "description": "Puedo ayudarte a configurar una nueva campaña publicitaria."
+      },
+      "viewResults": {
+        "title": "Ver Resultados de Campaña",
+        "description": "Puedo mostrarte las métricas de rendimiento de tu campaña."
+      },
+      "analyzeResults": {
+        "title": "Analizar Resultados de Campaña",
+        "description": "Puedo proporcionar un análisis del rendimiento de tu campaña."
+      },
+      "downloadLeads": {
+        "title": "Descargar Leads",
+        "description": "Puedo ayudarte a descargar leads de tu campaña."
+      },
+      "changeBudget": {
+        "title": "Cambiar Presupuesto de Campaña",
+        "description": "Puedo ayudar a ajustar el presupuesto de tu campaña."
+      },
+      "toggleCampaigns": {
+        "title": "Activar/Desactivar Campañas",
+        "description": "Puedo ayudarte a gestionar el estado de tus campañas."
+      },
+      "leadNotifications": {
+        "title": "Notificaciones de Leads",
+        "description": "Recibe notificaciones para resultados de campaña de ayer."
+      }
+    }
+  },
+  "prompts": {
+    "createCampaign": "Quiero crear una campaña",
+    "viewResults": "¿Cuáles son los resultados de mi campaña para hoy?",
+    "analyzePerformance": "Analiza el rendimiento de mi campaña",
+    "downloadLeads": "Quiero descargar leads de mi campaña",
+    "changeBudget": "Me gustaría cambiar el presupuesto de mi campaña",
+    "toggleCampaign": "Quiero activar/desactivar mi campaña",
+    "manageNotifications": "Quiero gestionar mis notificaciones de leads"
+  },
+  "footer": {
+    "marketingExpertise": "Las decisiones de Reeply AI sobre campañas de marketing son revisadas y supervisadas por expertos en marketing para garantizar resultados de alta calidad."
+  },
+  "quickActions": {
+    "title": "Acciones Rápidas",
+    "createCampaign": "Crear una campaña",
+    "viewResults": "Ver Resultados de Campaña",
+    "analyzeResults": "Analizar Resultados de Campaña",
+    "downloadLeads": "Descargar Leads de mi Campaña",
+    "changeBudget": "Cambiar mi Presupuesto de Campaña",
+    "toggleCampaign": "Activar/Desactivar mi Campaña"
+  },
+  "taskPalette": {
+    "title": "Cosas que puedes preguntar a Reeply AI",
+    "headers": {
+      "action": "Acción",
+      "explanation": "Explicación",
+      "exampleMessage": "Mensaje de Ejemplo",
+      "showMe": "Mostrarme"
+    }
+  },
+  "chat": {
+    "loginPrompt": {
+      "text": "¡Por favor inicia sesión o regístrate para guardar y revisar tu historial de chat!",
+      "logIn": "iniciar sesión",
+      "signUp": "registrarse"
+    },
+    "upload": {
+      "imageError": "Solo puedes seleccionar 1 imagen a la vez. Por favor selecciona 1 imagen.",
+      "imageSizeError": "Esta imagen es demasiado grande. Por favor usa imágenes que sean menores a 4MB.",
+      "videoSizeError": "Este video es demasiado grande. Por favor usa videos que sean menores a 1GB.",
+      "imageUploadStart": "Subiendo tus imágenes, por favor espera...",
+      "videoUploadStart": "Subiendo tus videos, por favor espera...",
+      "imageUploadSuccess": "¡Imágenes subidas exitosamente!",
+      "videoUploadSuccess": "¡Videos subidos exitosamente!",
+      "imageUploadError": "Error al subir la imagen. Por favor intenta de nuevo.",
+      "videoUploadError": "Error al subir el video. Por favor intenta de nuevo."
+    },
+    "shareDialog": {
+      "copyLink": "Copiar enlace",
+      "messages": "mensajes"
+    },
+    "input": {
+      "placeholder": "Envía un mensaje.",
+      "sendMessage": "Enviar mensaje",
+      "supportedActions": "Ver lista de acciones compatibles"
+    },
+    "campaignStatus": {
+      "noCampaignConnected": "Ninguna campaña está conectada a este chat. Siempre debe mostrar la interfaz para conectar una campaña al chat cuando el usuario pregunte sobre \"establecer presupuesto de campaña\", \"cambiar presupuesto de campaña\", \"resultado de campaña\" o \"estado de campaña\".",
+      "campaignConnected": "Campaña está conectada",
+      "noAdsetConnected": "Ningún conjunto de anuncios está seleccionado para este chat. Siempre debe mostrar la interfaz para seleccionar un conjunto de anuncios para el chat cuando el usuario pida sugerencias de anuncios."
+    }
+  }
+} 

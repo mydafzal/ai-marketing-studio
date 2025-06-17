@@ -1,9 +1,12 @@
 import React from 'react'
+import { useT } from '@/lib/i18n/context'
 
 import { cn } from '@/lib/utils'
 import { ExternalLink } from '@/components/external-link'
 
 export function FooterText({ className, ...props }: React.ComponentProps<'p'>) {
+  const t = useT()
+  
   return (
     <p
       className={cn(
@@ -12,7 +15,7 @@ export function FooterText({ className, ...props }: React.ComponentProps<'p'>) {
       )}
       {...props}
     >
-        Reeply AI&apos;s decisions on marketing campaigns are reviewed and overseen by marketing experts to ensure high-quality results.
+        {t('footer.marketingExpertise')}
     </p>
   )
 }

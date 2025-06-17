@@ -5,8 +5,13 @@ import { ThemeProvider as NextThemesProvider } from 'next-themes'
 import { ThemeProviderProps } from 'next-themes/dist/types'
 import { SidebarProvider } from '@/lib/hooks/use-sidebar'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { I18nProvider } from '@/lib/i18n/context'
 
-export function Providers({ children, ...props }: ThemeProviderProps) {
+interface ProvidersProps extends ThemeProviderProps {
+  userLanguage?: string | null; // Add user language prop
+}
+
+export function Providers({ children, userLanguage, ...props }: ProvidersProps) {
   // Override any passed props to force dark theme
   const darkThemeProps: ThemeProviderProps = {
     ...props,
@@ -20,7 +25,11 @@ export function Providers({ children, ...props }: ThemeProviderProps) {
   return (
     <NextThemesProvider {...darkThemeProps}>
       <SidebarProvider>
-        <TooltipProvider>{children}</TooltipProvider>
+        <TooltipProvider>
+          <I18nProvider userLanguage={userLanguage}>
+            {children}
+          </I18nProvider>
+        </TooltipProvider>
       </SidebarProvider>
     </NextThemesProvider>
   )

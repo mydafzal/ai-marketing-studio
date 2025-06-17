@@ -1,0 +1,353 @@
+{
+  "navigation": {
+    "aiMarketer": "AI Marketeer",
+    "aiCreatives": "AI Creatieven",
+    "login": "Inloggen",
+    "signOut": "Uitloggen"
+  },
+  "sidebar": {
+    "shareChat": "Chat delen",
+    "deleteChat": "Chat verwijderen",
+    "newChat": "Nieuwe Chat",
+    "clearHistory": "Geschiedenis wissen",
+    "sharedChat": "Dit is een gedeelde chat.",
+    "chatHistory": "Chatgeschiedenis",
+    "noChatHistory": "Geen chatgeschiedenis",
+    "loadingChats": "Chats laden..."
+  },
+  "actions": {
+    "save": "Opslaan",
+    "saveProfile": "Profiel Opslaan",
+    "cancel": "Annuleren",
+    "delete": "Verwijderen",
+    "edit": "Bewerken",
+    "share": "Delen",
+    "create": "Aanmaken",
+    "update": "Bijwerken",
+    "confirm": "Bevestigen",
+    "back": "Terug",
+    "previous": "Vorige",
+    "next": "Volgende",
+    "skip": "Overslaan",
+    "continue": "Doorgaan",
+    "finish": "Voltooien",
+    "tryThis": "Probeer dit"
+  },
+  "onboarding": {
+    "steps": {
+      "personal": "Persoonlijke Informatie",
+      "company": "Bedrijfsinformatie",
+      "website": "Website Details",
+      "preferences": "Voorkeuren",
+      "locations": "Voorkeurslocaties",
+      "confirm": "Bevestigen & Opslaan"
+    },
+    "fields": {
+      "firstName": "Voornaam",
+      "lastName": "Achternaam",
+      "companyName": "Bedrijfsnaam",
+      "companyDescription": "Bedrijfsomschrijving",
+      "websiteLink": "Website Link",
+      "privacyPolicyLink": "Privacybeleid Link",
+      "preferredLanguage": "Voorkeurstaal",
+      "preferredLanguageDescription": "Selecteer de taal die u prefereert voor AI-gegenereerde content.",
+      "companySegment": "Bedrijfssegment",
+      "companySegmentDescription": "Selecteer de categorie die uw organisatie het beste beschrijft.",
+      "preferredLocations": "Voorkeurslocaties",
+      "preferredLocationsDescription": "Selecteer de locaties waar u vaak adverteert. Dit helpt onze AI om gerichtere campagnes te maken. Minimaal één locatie is vereist."
+    },
+    "segments": {
+      "freelancer": "Freelancer / Eenmanszaak",
+      "startup": "Startup (1–10 werknemers)",
+      "smallBusiness": "Klein Bedrijf (11–50 werknemers)",
+      "midSized": "Middelgroot Bedrijf (51–200 werknemers)",
+      "enterprise": "Grote Onderneming (200+ werknemers)",
+      "nonprofit": "Non-profit / NGO",
+      "education": "Onderwijsinstelling",
+      "government": "Overheid / Publieke Sector",
+      "other": "Anders"
+    },
+    "goals": {
+      "generateLeads": "Ik wil meer leads genereren",
+      "recruitEmployees": "Ik wil werknemers werven",
+      "increaseConversions": "Ik wil conversies verhogen"
+    },
+    "placeholders": {
+      "firstName": "Voer je voornaam in",
+      "lastName": "Voer je achternaam in",
+      "companyName": "Voer je bedrijfsnaam in",
+      "companyDescription": "Deel de advertentiedoelstellingen van je bedrijf en unieke details die onze AI mogelijk niet kan verzamelen van je website.",
+      "websiteLink": "Voer je website URL in",
+      "privacyPolicyLink": "Voer je privacybeleid URL in"
+    },
+    "descriptions": {
+      "companyGoals": "Deel de advertentiedoelstellingen van je bedrijf en unieke details die niet op je website staan.",
+      "profileName": "Kies een naam om je te helpen dit profiel te onthouden",
+      "profileNameNote": "Automatisch gegenereerd van bedrijfsnaam indien leeg gelaten",
+      "websiteAnalysis": "Onze AI zal je website analyseren om je bedrijf beter te begrijpen en meer relevante suggesties te bieden."
+    },
+    "profileCompletionMessage": "Voltooi je profiel om het beste uit ons platform te halen.",
+    "reviewMessage": "Controleer je informatie voordat je opslaat.",
+    "benefits": {
+      "step0": {
+        "fasterCampaigns": {
+          "title": "30x Snellere Campagne Creatie",
+          "description": "Traditionele campagne-opzet duurt 30+ minuten. Reeply AI doet alles automatisch in seconden.",
+          "traditional": "Traditioneel:",
+          "traditionalTime": "30+ min",
+          "reeplyAI": "Reeply AI:",
+          "reeplyTime": "60 sec"
+        },
+        "testimonial1": {
+          "quote": "We genereren nu 80% van onze leads via campagnes beheerd met Reeply AI. Dankzij de consequent uitstekende ondersteuning kijken we uit naar het plannen en uitvoeren van meer projecten met Max en Reeply AI in de toekomst.",
+          "name": "Christian Schmitt",
+          "title": "Bedrijfseigenaar bij Boldbrands"
+        }
+      },
+      "step1": {
+        "websiteAnalysis": {
+          "title": "Slimme Website Analyse",
+          "description": "Reeply AI scant je website URL om je bedrijf, doelgroep en producten te begrijpen—automatisch het perfecte campagnetype selecterend voor je doelen."
+        },
+        "adCopy": {
+          "title": "AI-Gegenereerde Advertentietekst",
+          "description": "Gebaseerd op je bedrijfsbeschrijving schrijft onze AI overtuigende advertentieteksten die resoneren met je doelgroep en je unieke waardepropositie benadrukken."
+        }
+      },
+      "step2": {
+        "streamlinedProcess": {
+          "title": "Gestroomlijnd Proces",
+          "step1": {
+            "title": "Website Link",
+            "description": "Je verstrekt je website"
+          },
+          "step2": {
+            "title": "Slimme Analyse",
+            "description": "AI analyseert je website"
+          },
+          "step3": {
+            "title": "Advertentie Creatie",
+            "description": "AI creëert je advertentiecampagne"
+          },
+          "step4": {
+            "title": "Lead Generatie",
+            "description": "Je krijgt onmiddellijk leads"
+          },
+          "traditional": "Traditioneel:",
+          "traditionalTime": "30-60+ min",
+          "reeplyAI": "Reeply AI:",
+          "reeplyTime": "Onder 60 sec"
+        }
+      },
+      "step3": {
+        "geoTargeting": {
+          "title": "Intelligente Geo-Targeting",
+          "description": "Reeply AI bepaalt optimale geolocatie targeting vanuit je website en profielvoorkeuren, ervoor zorgend dat je advertenties de juiste doelgroep bereiken op de juiste locaties."
+        },
+        "audienceTargeting": {
+          "title": "Geavanceerde Doelgroep Targeting",
+          "description": "Onze AI-agent onderzoekt de beste potentiële filters op Meta Ads om je ideale doelgroep te targeten, verborgen kansen vindend die andere marketeers zouden kunnen missen."
+        }
+      },
+      "step4": {
+        "localAdvertising": {
+          "title": "Gerichte Lokale Reclame",
+          "description": "Door je voorkeurslocaties in te stellen, help je onze AI om je campagnes effectiever te richten op de regio's die het meest belangrijk zijn voor je bedrijf."
+        },
+        "locationBenefits": {
+          "title": "Voordelen van Locatie Targeting",
+          "benefit1": "Hogere conversiepercentages van lokale doelgroepen",
+          "benefit2": "Verminderde verspilling van advertentie-uitgaven aan irrelevante regio's",
+          "benefit3": "Meer relevante berichten voor specifieke geografische gebieden"
+        }
+      },
+      "step5": {
+        "facebookIntegration": {
+          "title": "Naadloze Facebook Integratie",
+          "description": "Verbind je Facebook-account om het volledige potentieel van Reeply AI te ontgrendelen. Creëer en beheer campagnes direct zonder tussen platforms te switchen."
+        },
+        "whyConnect": {
+          "title": "Waarom Verbinden met Facebook?",
+          "benefit1": "Één-klik campagne creatie en beheer",
+          "benefit2": "Toegang tot gedetailleerde analyses en prestatiemetriek",
+          "benefit3": "Auto-optimalisatie van campagnes gebaseerd op real-time data",
+          "benefit4": "Leads direct beheren vanuit Reeply AI"
+        }
+      },
+      "step6": {
+        "profileReady": {
+          "title": "Je Profiel is Klaar!",
+          "description": "Je bent klaar om je eerste AI-aangedreven campagne in 60 seconden te creëren."
+        },
+        "testimonial2": {
+          "quote": "Ik vond het geweldig om met het Reeply-team te werken - toegewijd, geduldig, professioneel. Ze zijn ervaren en konden inspringen om problemen op te lossen, ongeacht hoe groot of klein het probleem was. Ik genoot van het gebruik van het Reeply-platform om me te helpen aan de slag te gaan met mijn Meta Ads-reis. Het is eenvoudig en gemakkelijk te gebruiken. Ze hielpen me bij het lanceren van mijn allereerste leadgeneratie-, awareness- en conversie-advertenties. Het was gemakkelijk om alle resultaten van mijn campagne te zien in één handige interface. Ik slaagde erin om een half miljoen weergaven op een van mijn video's te krijgen in slechts een paar dagen. Ik kreeg ook veel inzichten over welk type advertenties werkten en welke niet. Bedankt Reeply.",
+          "name": "Lin Loke",
+          "title": "Oprichter van Nuwa Wellness"
+        }
+      }
+    },
+    "facebookConnect": {
+      "title": "Verbinden met Facebook",
+      "description": "Om gemakkelijk campagnes te creëren en beheren, moet je verbinden met Facebook en de Reeply AI software de volgende toegangsrechten verlenen:",
+      "permissions": {
+        "email": "Je e-mailadres ontvangen",
+        "manageAds": "Advertenties beheren voor advertentieaccounts waartoe je toegang hebt",
+        "accessStats": "Toegang tot je Facebook-advertenties en gerelateerde statistieken",
+        "manageBusiness": "Je bedrijf beheren",
+        "accessLeads": "Toegang tot leads voor je Pagina's",
+        "createAds": "Advertenties creëren en beheren voor je Pagina",
+        "showPages": "Een lijst tonen van de Pagina's die je beheert"
+      },
+      "laterMessage": "Je kunt je Facebook-account altijd later verbinden als je dat liever hebt.",
+      "connected": "Verbonden",
+      "notConnected": "Niet Verbonden",
+      "connectLaterNote": "(Je kunt later verbinden in Instellingen)"
+    },
+    "confirmation": {
+      "facebookConnection": "Facebook Verbinding",
+      "status": "Status",
+      "noLocationsSelected": "Geen locaties geselecteerd"
+    }
+  },
+  "dialogs": {
+    "deleteConfirmation": {
+      "title": "Weet u het zeker?",
+      "description": "Dit zal uw chatbericht permanent verwijderen en uw gegevens van onze servers verwijderen.",
+      "confirmDelete": "Verwijderen"
+    },
+    "clearHistory": {
+      "title": "Weet je het zeker?",
+      "description": "Dit zal je chatgeschiedenis permanent verwijderen en je gegevens van onze servers verwijderen."
+    },
+    "shareChat": {
+      "title": "Chat-link delen",
+      "description": "Iedereen met de URL kan de gedeelde chat bekijken.",
+      "copyError": "Kon de deel-link niet naar het klembord kopiëren",
+      "copySuccess": "Deel-link gekopieerd naar klembord"
+    }
+  },
+  "messages": {
+    "chatDeleted": "Chat verwijderd",
+    "error": "Fout",
+    "success": "Succes",
+    "loading": "Laden...",
+    "saving": "Opslaan...",
+    "savingProfile": "Je Profiel Opslaan",
+    "savingProfileDescription": "Wacht even terwijl we je profielinformatie opslaan. Dit duurt slechts een moment."
+  },
+  "profile": {
+    "personalInformation": "Persoonlijke Informatie",
+    "companyInformation": "Bedrijfsinformatie",
+    "websiteDetails": "Website Details",
+    "preferences": "Voorkeuren"
+  },
+  "forms": {
+    "required": "Dit veld is verplicht",
+    "selectLanguage": "Selecteer taal",
+    "selectSegment": "Selecteer segment",
+    "searchLocations": "Zoek Locaties",
+    "searchPlaceholder": "Zoek naar landen, regio's of steden...",
+    "validation": {
+      "companyNameRequired": "Bedrijfsnaam is verplicht",
+      "companyDescriptionRequired": "Bedrijfsomschrijving is verplicht",
+      "languageRequired": "Taalselectie is verplicht",
+      "invalidUrl": "Voer een geldige URL in",
+      "noCommasAllowed": "Facebook leadformulieren staan geen komma's toe in dit veld"
+    }
+  },
+  "emptyScreen": {
+    "title": "Hoe kan ik je vandaag helpen?",
+    "actions": {
+      "createCampaign": {
+        "title": "Campagne Aanmaken",
+        "description": "Ik kan je helpen een nieuwe advertentiecampagne op te zetten."
+      },
+      "viewResults": {
+        "title": "Campagneresultaten Bekijken",
+        "description": "Ik kan je de prestatiemetriek van je campagne laten zien."
+      },
+      "analyzeResults": {
+        "title": "Campagneresultaten Analyseren",
+        "description": "Ik kan een analyse van je campagneprestaties leveren."
+      },
+      "downloadLeads": {
+        "title": "Leads Downloaden",
+        "description": "Ik kan je helpen leads van je campagne te downloaden."
+      },
+      "changeBudget": {
+        "title": "Campagnebudget Wijzigen",
+        "description": "Ik kan helpen het budget van je campagne aan te passen."
+      },
+      "toggleCampaigns": {
+        "title": "Campagnes Aan/Uitzetten",
+        "description": "Ik kan je helpen de status van je campagnes te beheren."
+      },
+      "leadNotifications": {
+        "title": "Lead Meldingen",
+        "description": "Ontvang meldingen voor campagneresultaten van gisteren."
+      }
+    }
+  },
+  "prompts": {
+    "createCampaign": "Ik wil een campagne aanmaken",
+    "viewResults": "Wat zijn de resultaten van mijn campagne voor vandaag?",
+    "analyzePerformance": "Analyseer mijn campagneprestaties",
+    "downloadLeads": "Ik wil leads van mijn campagne downloaden",
+    "changeBudget": "Ik wil mijn campagnebudget wijzigen",
+    "toggleCampaign": "Ik wil mijn campagne aan/uitzetten",
+    "manageNotifications": "Ik wil mijn lead-meldingen beheren"
+  },
+  "footer": {
+    "marketingExpertise": "Reeply AI's beslissingen over marketingcampagnes worden beoordeeld en gecontroleerd door marketingexperts om resultaten van hoge kwaliteit te garanderen."
+  },
+  "quickActions": {
+    "title": "Snelle Acties",
+    "createCampaign": "Een campagne maken",
+    "viewResults": "Campagneresultaten Bekijken",
+    "analyzeResults": "Campagneresultaten Analyseren",
+    "downloadLeads": "Leads van mijn Campagne Downloaden",
+    "changeBudget": "Mijn Campagnebudget Wijzigen",
+    "toggleCampaign": "Mijn Campagne Aan/Uitzetten"
+  },
+  "taskPalette": {
+    "title": "Dingen om aan Reeply AI te vragen",
+    "headers": {
+      "action": "Actie",
+      "explanation": "Uitleg",
+      "exampleMessage": "Voorbeeldbericht",
+      "showMe": "Laat me zien"
+    }
+  },
+  "chat": {
+    "loginPrompt": {
+      "text": "Log in of meld je aan om je chatgeschiedenis op te slaan en opnieuw te bezoeken!",
+      "logIn": "inloggen",
+      "signUp": "aanmelden"
+    },
+    "upload": {
+      "imageError": "Je kunt slechts 1 afbeelding tegelijk selecteren. Selecteer alsjeblieft 1 afbeelding.",
+      "imageSizeError": "Deze afbeelding is te groot. Gebruik alsjeblieft afbeeldingen kleiner dan 4MB.",
+      "videoSizeError": "Deze video is te groot. Gebruik alsjeblieft video's kleiner dan 1GB.",
+      "imageUploadStart": "Je afbeeldingen worden geüpload, even geduld...",
+      "videoUploadStart": "Je video's worden geüpload, even geduld...",
+      "imageUploadSuccess": "Afbeeldingen succesvol geüpload!",
+      "videoUploadSuccess": "Video's succesvol geüpload!",
+      "imageUploadError": "Uploaden van afbeelding mislukt. Probeer het opnieuw.",
+      "videoUploadError": "Uploaden van video mislukt. Probeer het opnieuw."
+    },
+    "shareDialog": {
+      "copyLink": "Link kopiëren",
+      "messages": "berichten"
+    },
+    "input": {
+      "placeholder": "Stuur een bericht.",
+      "sendMessage": "Bericht verzenden",
+      "supportedActions": "Bekijk lijst met ondersteunde acties"
+    },
+    "campaignStatus": {
+      "noCampaignConnected": "Er is geen campagne verbonden met deze chat. Je moet altijd een interface tonen om een campagne met de chat te verbinden wanneer de gebruiker vraagt over \"campagnebudget instellen\", \"campagnebudget wijzigen\", \"campagne resultaat\" of \"campagne status\".",
+      "campaignConnected": "Campagne is verbonden",
+      "noAdsetConnected": "Er is geen advertentieset geselecteerd voor deze chat. Je moet altijd een interface tonen om een advertentieset voor de chat te selecteren wanneer de gebruiker om advertentiesuggesties vraagt."
+    }
+  }
+} 

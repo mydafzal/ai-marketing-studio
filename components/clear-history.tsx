@@ -3,6 +3,7 @@
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
+import { useT } from '@/lib/i18n/context'
 
 import { ServerActionResult } from '@/lib/types'
 import { Button } from '@/components/ui/button'
@@ -31,6 +32,7 @@ export function ClearHistory({
   const [open, setOpen] = React.useState(false)
   const [isPending, startTransition] = React.useTransition()
   const router = useRouter()
+  const t = useT()
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
@@ -41,56 +43,42 @@ export function ClearHistory({
           className="text-[#8A8F99] hover:text-white hover:bg-[#212534] transition-colors"
         >
           {isPending && <IconSpinner className="mr-2" />}
-          Clear history
+          {t('sidebar.clearHistory')}
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent className="bg-[#1A1D29] border border-[#2A2E3A] text-white">
         <AlertDialogHeader>
           <AlertDialogTitle className="text-white">
-            Are you absolutely sure?
+            {t('dialogs.clearHistory.title')}
           </AlertDialogTitle>
           <AlertDialogDescription className="text-[#ADB0B8]">
-            This will permanently delete your chat history and remove your data
-            from our servers.
+            {t('dialogs.clearHistory.description')}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel
-            disabled={isPending}
-            className="bg-[#151925] text-white border-[#2A2E3A] hover:bg-[#212534] hover:text-white"
-          >
-            Cancel
+          <AlertDialogCancel disabled={isPending} className="bg-[#151925] text-white border-[#2A2E3A] hover:bg-[#212534] hover:text-white">
+            {t('actions.cancel')}
           </AlertDialogCancel>
           <AlertDialogAction
             disabled={isPending}
-            className="bg-[#4BF29C] text-[#0A0C14] hover:bg-[#5cffad]"
-            onClick={event => {
+            onClick={(event) => {
               event.preventDefault()
               startTransition(async () => {
-                try {
-                  const result = await clearChats()
-                  
-                  if (result && 'error' in result) {
-                    toast.error(result.error)
-                    return
-                  }
-                  
-                  // Success feedback
-                  toast.success('Chat history cleared')
-                  setOpen(false)
-                  
-                  // Force a complete page reload after a short delay to allow toast to show
-                  setTimeout(() => {
-                    window.location.href = '/'
-                  }, 300)
-                } catch (error: any) {
-                  toast.error(error.message || 'Failed to clear chat history')
+                const result = await clearChats()
+
+                if (result && 'error' in result) {
+                  toast.error(result.error)
+                  return
                 }
+
+                setOpen(false)
+                router.push('/')
               })
             }}
+            className="bg-red-600 text-white hover:bg-red-700"
           >
-            {isPending && <IconSpinner className="mr-2 animate-spin" />}
-            Delete
+            {isPending && <IconSpinner className="mr-2" />}
+            {t('actions.delete')}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

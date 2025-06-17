@@ -4,10 +4,12 @@ import * as React from 'react'
 import { Button } from '@/components/ui/button'
 import { HelpCircle, History } from 'lucide-react'
 import { usePathname, useRouter } from 'next/navigation'
+import { useT } from '@/lib/i18n/context'
 
 export function ChatHistoryHeader() {
   const router = useRouter()
   const pathname = usePathname()
+  const t = useT()
   
   const handleSupportClick = () => {
     // Extract the chat ID from the current path if we're in a chat
@@ -38,7 +40,7 @@ export function ChatHistoryHeader() {
       <div className="flex items-center gap-2">
         <History className="size-5 text-[#8A8F99]" />
         <h2 className="text-base font-semibold text-white">
-          Chat History
+          {t('sidebar.chatHistory')}
         </h2>
       </div>
       {/* Support button removed - now using Crisp chat in the navbar */}

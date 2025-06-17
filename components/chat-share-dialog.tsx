@@ -1,8 +1,8 @@
 'use client'
 
 import * as React from 'react'
-import { type DialogProps } from '@radix-ui/react-dialog'
 import { toast } from 'sonner'
+import { useT } from '@/lib/i18n/context'
 
 import { ServerActionResult, type Chat } from '@/lib/types'
 import { Button } from '@/components/ui/button'
@@ -17,7 +17,7 @@ import {
 import { IconSpinner } from '@/components/ui/icons'
 import { useCopyToClipboard } from '@/lib/hooks/use-copy-to-clipboard'
 
-interface ChatShareDialogProps extends DialogProps {
+interface ChatShareDialogProps extends React.ComponentPropsWithoutRef<typeof Dialog> {
   chat: Pick<Chat, 'id' | 'title' | 'messages'>
   shareChat: (id: string) => ServerActionResult<Chat>
   onCopy: () => void
@@ -31,35 +31,35 @@ export function ChatShareDialog({
 }: ChatShareDialogProps) {
   const { copyToClipboard } = useCopyToClipboard({ timeout: 1000 })
   const [isSharePending, startShareTransition] = React.useTransition()
+  const t = useT()
 
   const copyShareLink = React.useCallback(
     async (chat: Chat) => {
       if (!chat.sharePath) {
-        return toast.error('Could not copy share link to clipboard')
+        return toast.error(t('dialogs.shareChat.copyError'))
       }
 
       const url = new URL(window.location.href)
       url.pathname = chat.sharePath
       copyToClipboard(url.toString())
-      onCopy()
-      toast.success('Share link copied to clipboard')
+      toast.success(t('dialogs.shareChat.copySuccess'))
     },
-    [copyToClipboard, onCopy]
+    [copyToClipboard, t]
   )
 
   return (
     <Dialog {...props}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Share link to chat</DialogTitle>
+          <DialogTitle>{t('dialogs.shareChat.title')}</DialogTitle>
           <DialogDescription>
-            Anyone with the URL will be able to view the shared chat.
+            {t('dialogs.shareChat.description')}
           </DialogDescription>
         </DialogHeader>
-        <div className="p-4 space-y-1 text-sm border rounded-md">
+        <div className="space-y-1 rounded-md border p-4 text-sm">
           <div className="font-medium">{chat.title}</div>
           <div className="text-muted-foreground">
-            {chat.messages.length} messages
+            {chat.messages.length} {t('chat.shareDialog.messages')}
           </div>
         </div>
         <DialogFooter className="items-center">
@@ -74,18 +74,18 @@ export function ChatShareDialog({
                   return
                 }
 
-                // Fix: Type cast result to Chat since we've already checked it's not an error
                 copyShareLink(result as Chat)
+                onCopy()
               })
             }}
           >
             {isSharePending ? (
               <>
                 <IconSpinner className="mr-2 animate-spin" />
-                Copying...
+                {t('actions.share')}...
               </>
             ) : (
-              <>Copy link</>
+              <>{t('chat.shareDialog.copyLink')}</>
             )}
           </Button>
         </DialogFooter>

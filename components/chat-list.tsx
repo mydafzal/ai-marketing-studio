@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Card, CardContent } from '@/components/ui/card'
+import { useT } from '@/lib/i18n/context'
 
 export interface ChatList {
   messages: UIState
@@ -13,6 +14,8 @@ export interface ChatList {
 }
 
 export function LoginPrompt() {
+  const t = useT()
+  
   return (
     <Card className="bg-[#1A1D29] border-[#2A2E3A] mb-6 rounded-xl shadow-md">
       <CardContent className="p-4">
@@ -27,14 +30,14 @@ export function LoginPrompt() {
                 href="/login" 
                 className="text-[#4BF29C] hover:text-[#5cffad] hover:underline transition-colors font-medium"
               >
-                log in
+                {t('chat.loginPrompt.logIn')}
               </Link>
               {' '}or{' '}
               <Link 
                 href="/signup"
                 className="text-[#4BF29C] hover:text-[#5cffad] hover:underline transition-colors font-medium"
               >
-                sign up
+                {t('chat.loginPrompt.signUp')}
               </Link>
               {' '}to save and revisit your chat history!
             </p>

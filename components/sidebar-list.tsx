@@ -5,6 +5,7 @@ import { ClearHistory } from '@/components/clear-history'
 import { SidebarItems } from '@/components/sidebar-items'
 import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
+import { useT } from '@/lib/i18n/context'
 
 interface SidebarListProps {
   userId?: string
@@ -15,6 +16,7 @@ export function SidebarList({ userId }: SidebarListProps) {
   const [chats, setChats] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const pathname = usePathname()
+  const t = useT()
 
   const fetchChats = async () => {
     if (!userId) return
@@ -54,7 +56,7 @@ export function SidebarList({ userId }: SidebarListProps) {
       <div className="flex-1 overflow-auto px-2 pt-2">
         {isLoading ? (
           <div className="p-8 text-center mt-4">
-            <p className="text-sm text-text-light-gray">Loading chats...</p>
+            <p className="text-sm text-text-light-gray">{t('sidebar.loadingChats')}</p>
           </div>
         ) : chats?.length ? (
           <div className="space-y-1">
@@ -62,7 +64,7 @@ export function SidebarList({ userId }: SidebarListProps) {
           </div>
         ) : (
           <div className="p-8 text-center mt-4">
-            <p className="text-sm text-text-light-gray">No chat history</p>
+            <p className="text-sm text-text-light-gray">{t('sidebar.noChatHistory')}</p>
           </div>
         )}
       </div>

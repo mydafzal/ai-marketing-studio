@@ -23,6 +23,7 @@ import FacebookAccountSettings from '@/components/facebook-account-settings'
 import { isFeatureToggleEnabled } from '@/lib/helpers/feature-toggle/feature-toggle-manager'
 import ProfileSettings from '@/components/profile-settings'
 import { ThemeToggle } from './theme-toggle'
+import { serverT } from '@/lib/i18n/server'
 import dynamic from 'next/dynamic'
 
 // Dynamic import for the mobile Crisp launcher
@@ -46,6 +47,11 @@ async function UserOrLogin() {
   } else {
     console.log(response.error)
   }
+
+  // Get translated strings
+  const aiMarketerText = await serverT('navigation.aiMarketer')
+  const aiCreativesText = await serverT('navigation.aiCreatives')
+  const loginText = await serverT('navigation.login')
 
   return (
     <>
@@ -89,13 +95,13 @@ async function UserOrLogin() {
             
             <div className="flex items-center">
               <Link href="/" className={cn(buttonVariants({ variant: 'ghost' }), 'ml-1 sm:ml-4 text-xs sm:text-sm text-text-white hover:text-primary-green hover:bg-dark-bg')}>
-                AI Marketer
+                {aiMarketerText}
               </Link>
               <Link
                 href="/ai-content"
                 className={cn(buttonVariants({ variant: 'ghost' }), 'ml-1 sm:ml-4 text-xs sm:text-sm text-text-white hover:text-primary-green hover:bg-dark-bg')}
               >
-                AI Creatives
+                {aiCreativesText}
               </Link>
               
               <ProfileSettings
@@ -112,7 +118,7 @@ async function UserOrLogin() {
           </div>
         ) : (
           <Link href="/login" className={cn(buttonVariants({ variant: 'link' }), '-ml-2 text-primary-green hover:text-primary-green/90')}>
-            Login
+            {loginText}
           </Link>
         )}
       </div>

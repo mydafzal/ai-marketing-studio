@@ -1,6 +1,7 @@
 import * as React from 'react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
+import { useT } from '@/lib/i18n/context'
 import { SidebarList } from '@/components/sidebar-list'
 import { buttonVariants } from '@/components/ui/button'
 import { IconPlus } from '@/components/ui/icons'
@@ -30,6 +31,8 @@ function ChatHistorySkeleton() {
 }
 
 function ChatHistoryContent({ userId }: { userId?: string }) {
+  const t = useT();
+  
   return (
     <div className="flex flex-col h-full">
       {/* Use the client component for the header */}
@@ -49,7 +52,7 @@ function ChatHistoryContent({ userId }: { userId?: string }) {
           )}
         >
           <MessageSquarePlus className="size-5" />
-          New Chat
+          {t('sidebar.newChat')}
         </Link>
       </div>
       {/* Client component SidebarList doesn't need a Suspense boundary */}

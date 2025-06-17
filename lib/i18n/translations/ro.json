@@ -1,0 +1,353 @@
+{
+  "navigation": {
+    "aiMarketer": "IA Marketeer",
+    "aiCreatives": "IA Creative",
+    "login": "Conectare",
+    "signOut": "Deconectare"
+  },
+  "sidebar": {
+    "shareChat": "Partajează chat-ul",
+    "deleteChat": "Șterge chat-ul",
+    "newChat": "Chat Nou",
+    "clearHistory": "Șterge istoricul",
+    "sharedChat": "Acesta este un chat partajat.",
+    "chatHistory": "Istoricul Chat-urilor",
+    "noChatHistory": "Fără istoric de chat",
+    "loadingChats": "Se încarcă chat-urile..."
+  },
+  "actions": {
+    "save": "Salvează",
+    "saveProfile": "Salvează Profil",
+    "cancel": "Anulează",
+    "delete": "Șterge",
+    "edit": "Editează",
+    "share": "Partajează",
+    "create": "Creează",
+    "update": "Actualizează",
+    "confirm": "Confirmă",
+    "back": "Înapoi",
+    "previous": "Anterior",
+    "next": "Următorul",
+    "skip": "Omite",
+    "continue": "Continuă",
+    "finish": "Finalizează",
+    "tryThis": "Încearcă asta"
+  },
+  "onboarding": {
+    "steps": {
+      "personal": "Informații Personale",
+      "company": "Informații Companie",
+      "website": "Detalii Website",
+      "preferences": "Preferințe",
+      "locations": "Locații Preferate",
+      "confirm": "Confirmă și Salvează"
+    },
+    "fields": {
+      "firstName": "Prenume",
+      "lastName": "Nume",
+      "companyName": "Numele Companiei",
+      "companyDescription": "Descrierea Companiei",
+      "websiteLink": "Link Website",
+      "privacyPolicyLink": "Link Politica de Confidențialitate",
+      "preferredLanguage": "Limba Preferată",
+      "preferredLanguageDescription": "Selectează limba pe care o preferi pentru conținutul generat de IA.",
+      "companySegment": "Segmentul Companiei",
+      "companySegmentDescription": "Selectează categoria care descrie cel mai bine organizația ta.",
+      "preferredLocations": "Locații Preferate",
+      "preferredLocationsDescription": "Selectează locațiile unde faci reclamă frecvent. Acest lucru ajută IA noastră să creeze campanii mai țintite. Este necesară cel puțin o locație."
+    },
+    "segments": {
+      "freelancer": "Freelancer / Proprietar Unic",
+      "startup": "Startup (1–10 angajați)",
+      "smallBusiness": "Afacere Mică (11–50 angajați)",
+      "midSized": "Companie Medie (51–200 angajați)",
+      "enterprise": "Întreprindere Mare (200+ angajați)",
+      "nonprofit": "Non-profit / ONG",
+      "education": "Instituție Educațională",
+      "government": "Guvern / Sector Public",
+      "other": "Altele"
+    },
+    "goals": {
+      "generateLeads": "Vreau să generez mai multe lead-uri",
+      "recruitEmployees": "Vreau să recrutez angajați",
+      "increaseConversions": "Vreau să cresc conversiile"
+    },
+    "placeholders": {
+      "firstName": "Introduceți prenumele",
+      "lastName": "Introduceți numele",
+      "companyName": "Introduceți numele companiei",
+      "companyDescription": "Împărtășiți obiectivele publicitare ale companiei și detalii unice pe care AI-ul nostru ar putea să nu le poată colecta de pe site-ul web.",
+      "websiteLink": "Introduceți URL-ul site-ului web",
+      "privacyPolicyLink": "Introduceți URL-ul politicii de confidențialitate"
+    },
+    "descriptions": {
+      "companyGoals": "Împărtășiți obiectivele publicitare ale companiei și detalii unice care nu sunt pe site-ul web.",
+      "profileName": "Alegeți un nume pentru a vă ajuta să vă amintiți acest profil",
+      "profileNameNote": "Generat automat din numele companiei dacă este lăsat gol",
+      "websiteAnalysis": "AI-ul nostru va analiza site-ul web pentru a înțelege mai bine compania și a oferi sugestii mai relevante."
+    },
+    "profileCompletionMessage": "Completează-ți profilul pentru a obține cel mai mult din platforma noastră.",
+    "reviewMessage": "Te rugăm să îți revizuiești informațiile înainte de salvare.",
+    "benefits": {
+      "step0": {
+        "fasterCampaigns": {
+          "title": "Crearea de Campanii de 30x Mai Rapidă",
+          "description": "Configurarea tradițională a campaniilor durează 30+ minute. Reeply AI face totul automat în secunde.",
+          "traditional": "Tradițional:",
+          "traditionalTime": "30+ min",
+          "reeplyAI": "Reeply AI:",
+          "reeplyTime": "60 sec"
+        },
+        "testimonial1": {
+          "quote": "Acum generăm 80% din lead-urile noastre prin campanii gestionate cu Reeply AI. Datorită suportului constant excelent, așteptăm cu nerăbdare să planificăm și să executăm mai multe proiecte cu Max și Reeply AI în viitor.",
+          "name": "Christian Schmitt",
+          "title": "Proprietar de afacere la Boldbrands"
+        }
+      },
+      "step1": {
+        "websiteAnalysis": {
+          "title": "Analiză Inteligentă a Site-ului Web",
+          "description": "Reeply AI scanează URL-ul site-ului tău pentru a înțelege afacerea, audiența și produsele tale—selectând automat tipul perfect de campanie pentru obiectivele tale."
+        },
+        "adCopy": {
+          "title": "Text Publicitar Generat de IA",
+          "description": "Bazându-se pe descrierea companiei tale, IA noastră scrie texte publicitare convingătoare care rezonează cu audiența ta și evidențiază propunerea ta de valoare unică."
+        }
+      },
+      "step2": {
+        "streamlinedProcess": {
+          "title": "Proces Optimizat",
+          "step1": {
+            "title": "Link Site Web",
+            "description": "Furnizezi site-ul tău web"
+          },
+          "step2": {
+            "title": "Analiză Inteligentă",
+            "description": "IA analizează site-ul tău web"
+          },
+          "step3": {
+            "title": "Crearea Anunțurilor",
+            "description": "IA creează campania ta publicitară"
+          },
+          "step4": {
+            "title": "Generarea de Lead-uri",
+            "description": "Obții lead-uri imediat"
+          },
+          "traditional": "Tradițional:",
+          "traditionalTime": "30-60+ min",
+          "reeplyAI": "Reeply AI:",
+          "reeplyTime": "Sub 60 sec"
+        }
+      },
+      "step3": {
+        "geoTargeting": {
+          "title": "Geo-Targeting Inteligent",
+          "description": "Reeply AI determină targeting-ul geografic optim din site-ul tău web și preferințele profilului, asigurându-se că anunțurile tale ajung la audiența potrivită în locațiile potrivite."
+        },
+        "audienceTargeting": {
+          "title": "Targeting Avansat al Audienței",
+          "description": "Agentul nostru IA cercetează cele mai bune filtre potențiale pe Meta Ads pentru a viza audiența ta ideală, găsind oportunități ascunse pe care alți marketeeri le-ar putea rata."
+        }
+      },
+      "step4": {
+        "localAdvertising": {
+          "title": "Publicitate Locală Țintită",
+          "description": "Prin stabilirea locațiilor tale preferate, îi ajuți pe IA noastră să vizeze campaniile tale mai eficient către regiunile care contează cel mai mult pentru afacerea ta."
+        },
+        "locationBenefits": {
+          "title": "Beneficiile Targeting-ului pe Locație",
+          "benefit1": "Rate de conversie mai mari de la audiențele locale",
+          "benefit2": "Reducerea risipei de cheltuieli cu anunțurile în regiuni irelevante",
+          "benefit3": "Mesaje mai relevante pentru zone geografice specifice"
+        }
+      },
+      "step5": {
+        "facebookIntegration": {
+          "title": "Integrare Facebook Perfectă",
+          "description": "Conectează-ți contul Facebook pentru a debloca întregul potențial al Reeply AI. Creează și gestionează campanii direct fără să schimbi între platforme."
+        },
+        "whyConnect": {
+          "title": "De Ce să te Conectezi cu Facebook?",
+          "benefit1": "Crearea și gestionarea campaniilor cu un clic",
+          "benefit2": "Acces la analize detaliate și metrici de performanță",
+          "benefit3": "Auto-optimizarea campaniilor bazată pe date în timp real",
+          "benefit4": "Gestionarea lead-urilor direct din Reeply AI"
+        }
+      },
+      "step6": {
+        "profileReady": {
+          "title": "Profilul Tău Este Gata!",
+          "description": "Ești gata să îți creezi prima campanie alimentată de IA în 60 de secunde."
+        },
+        "testimonial2": {
+          "quote": "Mi-a plăcut să lucrez cu echipa Reeply - dedicați, răbdători, profesioniști. Sunt experimentați și au putut să intervină pentru a rezolva probleme, indiferent de cât de mari sau mici erau problemele. Mi-a plăcut să folosesc platforma Reeply pentru a mă ajuta să încep călătoria mea cu Meta Ads. Este simplă și ușor de folosit. M-au ajutat să lansez primele mele anunțuri de generare de lead-uri, conștientizare și conversie. A fost ușor să văd toate rezultatele campaniei mele într-o interfață convenabilă. Am reușit să obțin jumătate de milion de vizualizări pe unul dintre videoclipurile mele în doar câteva zile. Am obținut, de asemenea, multe perspective despre ce tip de anunțuri funcționau și care nu funcționau. Mulțumesc Reeply.",
+          "name": "Lin Loke",
+          "title": "Fondatoarea Nuwa Wellness"
+        }
+      }
+    },
+    "facebookConnect": {
+      "title": "Conectează cu Facebook",
+      "description": "Pentru a crea și gestiona ușor campaniile, va trebui să te conectezi cu Facebook și să acorzi software-ului Reeply AI următoarele drepturi de acces:",
+      "permissions": {
+        "email": "Să primească adresa ta de e-mail",
+        "manageAds": "Să gestioneze anunțurile pentru conturile publicitare la care ai acces",
+        "accessStats": "Să acceseze anunțurile tale Facebook și statisticile asociate",
+        "manageBusiness": "Să îți gestioneze afacerea",
+        "accessLeads": "Să acceseze lead-urile pentru Paginile tale",
+        "createAds": "Să creeze și să gestioneze anunțuri pentru Pagina ta",
+        "showPages": "Să afișeze o listă a Paginilor pe care le gestionezi"
+      },
+      "laterMessage": "Poți conecta întotdeauna contul tău Facebook mai târziu dacă preferi.",
+      "connected": "Conectat",
+      "notConnected": "Neconectat",
+      "connectLaterNote": "(Poți conecta mai târziu în Setări)"
+    },
+    "confirmation": {
+      "facebookConnection": "Conexiune Facebook",
+      "status": "Status",
+      "noLocationsSelected": "Nicio locație selectată"
+    }
+  },
+  "dialogs": {
+    "deleteConfirmation": {
+      "title": "Ești absolut sigur?",
+      "description": "Acest lucru va șterge permanent mesajul tău de chat și va elimina datele tale de pe serverele noastre.",
+      "confirmDelete": "Șterge"
+    },
+    "clearHistory": {
+      "title": "Ești absolut sigur?",
+      "description": "Acest lucru va șterge permanent istoricul chat-ului și va elimina datele de pe serverele noastre."
+    },
+    "shareChat": {
+      "title": "Partajează link-ul către chat",
+      "description": "Oricine cu URL-ul va putea vedea chat-ul partajat.",
+      "copyError": "Nu s-a putut copia link-ul de partajare în clipboard",
+      "copySuccess": "Link-ul de partajare a fost copiat în clipboard"
+    }
+  },
+  "messages": {
+    "chatDeleted": "Chat șters",
+    "error": "Eroare",
+    "success": "Succes",
+    "loading": "Se încarcă...",
+    "saving": "Se salvează...",
+    "savingProfile": "Se Salvează Profilul Tău",
+    "savingProfileDescription": "Te rugăm să aștepți în timp ce salvăm informațiile profilului tău. Aceasta va dura doar un moment."
+  },
+  "profile": {
+    "personalInformation": "Informații Personale",
+    "companyInformation": "Informații Companie",
+    "websiteDetails": "Detalii Website",
+    "preferences": "Preferințe"
+  },
+  "forms": {
+    "required": "Acest câmp este obligatoriu",
+    "selectLanguage": "Selectează limba",
+    "selectSegment": "Selectează segmentul",
+    "searchLocations": "Caută Locații",
+    "searchPlaceholder": "Caută țări, regiuni sau orașe...",
+    "validation": {
+      "companyNameRequired": "Numele companiei este obligatoriu",
+      "companyDescriptionRequired": "Descrierea companiei este obligatorie",
+      "languageRequired": "Selectarea limbii este obligatorie",
+      "invalidUrl": "Vă rugăm să introduceți un URL valid",
+      "noCommasAllowed": "Formularele de lead-uri Facebook nu permit virgule în acest câmp"
+    }
+  },
+  "footer": {
+    "marketingExpertise": "Deciziile Reeply AI privind campaniile de marketing sunt revizuite și supravegheate de experți în marketing pentru a asigura rezultate de înaltă calitate."
+  },
+  "quickActions": {
+    "title": "Acțiuni Rapide",
+    "createCampaign": "Creează o campanie",
+    "viewResults": "Vezi Rezultatele Campaniei",
+    "analyzeResults": "Analizează Rezultatele Campaniei",
+    "downloadLeads": "Descarcă Lead-urile Campaniei Mele",
+    "changeBudget": "Schimbă Bugetul Campaniei Mele",
+    "toggleCampaign": "Activează/Dezactivează Campania Mea"
+  },
+  "taskPalette": {
+    "title": "Lucruri de întrebat Reeply AI",
+    "headers": {
+      "action": "Acțiune",
+      "explanation": "Explicație",
+      "exampleMessage": "Mesaj Exemplu",
+      "showMe": "Arată-mi"
+    }
+  },
+  "chat": {
+    "loginPrompt": {
+      "text": "Te rugăm să te conectezi sau să te înregistrezi pentru a salva și reviziți istoricul chat-ului!",
+      "logIn": "conectează-te",
+      "signUp": "înregistrează-te"
+    },
+    "upload": {
+      "imageError": "Poți selecta doar 1 imagine odată. Te rugăm să selectezi 1 imagine.",
+      "imageSizeError": "Această imagine este prea mare. Te rugăm să folosești imagini mai mici de 4MB.",
+      "videoSizeError": "Acest video este prea mare. Te rugăm să folosești video-uri mai mici de 1GB.",
+      "imageUploadStart": "Se încarcă imaginile tale, te rugăm să aștepți...",
+      "videoUploadStart": "Se încarcă video-urile tale, te rugăm să aștepți...",
+      "imageUploadSuccess": "Imagini încărcate cu succes!",
+      "videoUploadSuccess": "Video-uri încărcate cu succes!",
+      "imageUploadError": "Eșec la încărcarea imaginii. Te rugăm să încerci din nou.",
+      "videoUploadError": "Eșec la încărcarea video-ului. Te rugăm să încerci din nou."
+    },
+    "shareDialog": {
+      "copyLink": "Copiază link-ul",
+      "messages": "mesaje"
+    },
+    "input": {
+      "placeholder": "Trimite un mesaj.",
+      "sendMessage": "Trimite mesaj",
+      "supportedActions": "Vezi lista acțiunilor suportate"
+    },
+    "campaignStatus": {
+      "noCampaignConnected": "Nicio campanie nu este conectată la acest chat. Trebuie să afișezi întotdeauna interfața pentru a conecta o campanie la chat când utilizatorul întreabă despre \"setarea bugetului campaniei\", \"schimbarea bugetului campaniei\", \"rezultatul campaniei\" sau \"statusul campaniei\".",
+      "campaignConnected": "Campania este conectată",
+      "noAdsetConnected": "Niciun set de anunțuri nu este selectat pentru acest chat. Trebuie să afișezi întotdeauna interfața pentru a selecta un set de anunțuri pentru chat când utilizatorul cere sugestii de anunțuri."
+    }
+  },
+  "emptyScreen": {
+    "title": "Cum te pot ajuta astăzi?",
+    "actions": {
+      "createCampaign": {
+        "title": "Creează o Campanie",
+        "description": "Te pot ajuta să configurezi o nouă campanie publicitară."
+      },
+      "viewResults": {
+        "title": "Vezi Rezultatele Campaniei",
+        "description": "Îți pot arăta metricile de performanță ale campaniei tale."
+      },
+      "analyzeResults": {
+        "title": "Analizează Rezultatele Campaniei",
+        "description": "Pot oferi o analiză a performanței campaniei tale."
+      },
+      "downloadLeads": {
+        "title": "Descarcă Lead-uri",
+        "description": "Te pot ajuta să descarci lead-uri din campania ta."
+      },
+      "changeBudget": {
+        "title": "Schimbă Bugetul Campaniei",
+        "description": "Pot ajuta la ajustarea bugetului campaniei tale."
+      },
+      "toggleCampaigns": {
+        "title": "Activează/Dezactivează Campaniile",
+        "description": "Te pot ajuta să gestionezi statusul campaniilor tale."
+      },
+      "leadNotifications": {
+        "title": "Notificări Lead-uri",
+        "description": "Primește notificări pentru rezultatele campaniei de ieri."
+      }
+    }
+  },
+  "prompts": {
+    "createCampaign": "Vreau să creez o campanie",
+    "viewResults": "Care sunt rezultatele campaniei mele pentru astăzi?",
+    "analyzePerformance": "Analizează performanța campaniei mele",
+    "downloadLeads": "Vreau să descarc lead-uri din campania mea",
+    "changeBudget": "Aș vrea să schimb bugetul campaniei mele",
+    "toggleCampaign": "Vreau să activez/dezactivez campania mea",
+    "manageNotifications": "Vreau să gestionez notificările mele de lead-uri"
+  }
+} 

@@ -1,4 +1,8 @@
+'use client'
+
 import { type Session } from '@/lib/types'
+import { useT } from '@/lib/i18n/context'
+import { handleSignOut } from '@/app/auth-actions'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -8,7 +12,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
-import { signOut } from '@/auth'
 
 export interface UserMenuProps {
   user: Session['user']
@@ -20,6 +23,8 @@ function getUserInitials(name: string) {
 }
 
 export function UserMenu({ user }: UserMenuProps) {
+  const t = useT()
+
   return (
     <div className="flex items-center justify-between">
       <DropdownMenu>
@@ -36,14 +41,9 @@ export function UserMenu({ user }: UserMenuProps) {
             <div className="text-xs text-[#ADB0B8]">{user.email}</div>
           </DropdownMenuItem>
           <DropdownMenuSeparator className="bg-[#2A2E3A]" />
-          <form
-            action={async () => {
-              'use server'
-              await signOut()
-            }}
-          >
+          <form action={handleSignOut}>
             <button className="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none transition-colors text-white hover:bg-red-500 hover:text-white focus:bg-[#212534] focus:text-white data-[disabled]:pointer-events-none data-[disabled]:opacity-50">
-              Sign Out
+              {t('navigation.signOut')}
             </button>
           </form>
         </DropdownMenuContent>
