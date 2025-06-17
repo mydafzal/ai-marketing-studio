@@ -108,6 +108,7 @@ import LeadsCountUI from "@/components/campaign-leads-count";
 
 import showAiVideoGenerator from "@/components/stocks/ai-video-generator/server"
 import leadNotificationsModule from "@/lib/ui-magic/modules/leadNotificationsModule"
+import campaignOptimizationModule from "@/lib/ui-magic/modules/campaignOptimizationModule"
 // Browser research component will be imported dynamically in the tool handler
 
 interface ExtractedMessage {
@@ -2692,6 +2693,70 @@ export async function submitUserMessage(content: string, contentImages?: Array<T
                             <LeadNotificationsComponent />
                             <BotCard>
                                 <p>Lead notification preferences are now available in the sidebar. You can select which campaigns you want to receive notifications for.</p>
+                            </BotCard>
+                        </>
+                    )
+                }
+            },
+            
+            showCampaignOptimization: {
+                description: campaignOptimizationModule.description,
+                parameters: campaignOptimizationModule.parameters,
+                generate: async function* ({toolCallId}) {
+                    console.log("tool call showCampaignOptimization")
+                    
+                    yield (
+                        <BotCard>
+                            <SpinnerMessage />
+                        </BotCard>
+                    )
+                    
+                    await sleep(1000)
+                    
+                    const generatedToolCallId = toolCallId || nanoid()
+                    const timestamp: string = new Date().toISOString()
+                    
+                    pushMessages([
+                        {
+                            id: nanoid(),
+                            role: "assistant",
+                            content: [
+                                {
+                                    type: "tool-call",
+                                    toolName: "showCampaignOptimization",
+                                    toolCallId: generatedToolCallId,
+                                    args: { toolCallId: generatedToolCallId }
+                                }
+                            ],
+                            timestamp
+                        },
+                        {
+                            id: nanoid(),
+                            role: "tool",
+                            content: [
+                                {
+                                    type: "tool-result",
+                                    toolName: "showCampaignOptimization",
+                                    toolCallId: generatedToolCallId,
+                                    result: { toolCallId: generatedToolCallId }
+                                }
+                            ],
+                            timestamp
+                        }
+                    ])
+                    
+                    // Create dynamic import for the sidebar component
+                    const CampaignOptimizationComponent = dynamic(() => 
+                        import('@/lib/ui-magic/modules/showCampaignOptimizationModule'), 
+                        { ssr: false }
+                    );
+                    
+                    // Return the sidebar component and a simple message in chat
+                    return (
+                        <>
+                            <CampaignOptimizationComponent />
+                            <BotCard>
+                                <p>Campaign optimization settings are now available in the sidebar. You can select which campaigns you want to enable automatic optimization for.</p>
                             </BotCard>
                         </>
                     )

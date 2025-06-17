@@ -6,7 +6,7 @@ import { useT } from '@/lib/i18n/context'
 
 import { Button } from '@/components/ui/button'
 import { ExternalLink } from '@/components/external-link'
-import { IconArrowRight, IconBell, IconBolt, IconChartBar, IconCog, IconDownload, IconMessage, IconPower } from '@/components/ui/icons'
+import { IconArrowRight, IconBell, IconBolt, IconChartBar, IconCog, IconDownload, IconMessage, IconPower, IconRefresh } from '@/components/ui/icons'
 import { UpgradeModal } from '@/components/upgrade-modal'
 import { Zap, BarChart, PieChart, Download, DollarSign, Power, Plus } from 'lucide-react'
 
@@ -57,6 +57,12 @@ export function EmptyScreen() {
       description: t('emptyScreen.actions.leadNotifications.description'),
       icon: <IconBell className="h-6 w-6" />,
       prompt: t('prompts.manageNotifications')
+    },
+    {
+      title: 'Auto Optimize Campaigns',
+      description: 'Enable automatic optimization of ad creatives for your campaigns.',
+      icon: <IconRefresh className="h-6 w-6" />,
+      prompt: 'I want to manage auto optimization for my campaigns'
     }
   ]
 

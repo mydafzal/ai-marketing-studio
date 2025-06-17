@@ -96,6 +96,9 @@ export function getSimplifiedDefaultChatPrompt(campaignId: string, adsetId: stri
         <LeadNotifications>
             <Command>Call ('showLeadNotifications').</Command>
         </LeadNotifications>
+        <AutoOptimizeCampaigns>
+            <Command>Call ('showCampaignOptimization').</Command>
+        </AutoOptimizeCampaigns>
         <CampaignDuplication>
             <Command>Call ('show_supervised_task_ui').</Command>
         </CampaignDuplication>

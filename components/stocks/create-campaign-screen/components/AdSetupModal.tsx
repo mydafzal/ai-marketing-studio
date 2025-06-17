@@ -16,6 +16,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Gender, MasterFlowResponse, AdPlacements, LocationsFullDetails, AudienceFilters as OldAudienceFilters, AudienceFilterData } from '../types'; // Renamed imported AudienceFilters
 import AudienceLocationSelector from '@/components/audience-locations-selector';
 import AudienceTargetingSelector, { AudienceTargeting, TargetingFilters, FilterDetail } from './AudienceTargetingSelector'; // Import new types
+import { DemographicEditor } from './ad-setup';
 
 // Extended interface with union from both LibCreative and our additional fields
 interface ExtendedCreative extends Partial<LibCreative> {
@@ -33,6 +34,7 @@ interface AdSetupModalProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   masterFlowData?: MasterFlowResponse | null;
+  onMasterFlowDataUpdated?: (updatedData: MasterFlowResponse) => void;
   adHeadline: string;
   adText: string;
   campaignName?: string;
@@ -56,6 +58,7 @@ export function AdSetupModal({
                                isOpen,
                                onOpenChange,
                                masterFlowData,
+                               onMasterFlowDataUpdated,
                                adHeadline,
                                adText,
                                campaignName,
@@ -1741,23 +1744,30 @@ export function AdSetupModal({
                         </div>
                       </div>
 
-                      <div className="flex items-start mb-3">
-                        <Users className="size-5 text-coral mr-3 mt-1" />
-                        <div>
-                          <h4 className="font-medium text-text-white">Demographics</h4>
-                          <p className="text-text-light-gray">
-                            Age: {masterFlowData?.suggested_age_min || ageRange[0]} -{' '}
-                            {masterFlowData?.suggested_age_max || ageRange[1]}
-                            <br />
-                            Gender:{' '}
-                            {masterFlowData
-                                ? `${
-                                    masterFlowData.include_male_gender ? 'Male ' : ''
-                                }${masterFlowData.include_female_gender ? 'Female' : ''}`
-                                : gender}
-                          </p>
-                        </div>
-                      </div>
+                      <DemographicEditor 
+                        masterFlowData={masterFlowData ?? null}
+                        isRecruitmentCampaign={masterFlowData?.campaign_objective?.toLowerCase() === 'recruitment'}
+                        ageRange={ageRange}
+                        gender={gender}
+                        onSave={(data) => {
+                          console.log('Demographics updated:', data);
+                          
+                          // Update parent component state if we have masterFlowData and the callback
+                          if (masterFlowData && onMasterFlowDataUpdated) {
+                            // Create a new object with updated values
+                            const updatedMasterFlowData = {
+                              ...masterFlowData,
+                              suggested_age_min: data.minAge,
+                              suggested_age_max: data.maxAge,
+                              include_male_gender: data.includeMale,
+                              include_female_gender: data.includeFemale
+                            };
+                            
+                            // Call the callback to update parent state
+                            onMasterFlowDataUpdated(updatedMasterFlowData);
+                          }
+                        }}
+                      />
                     </div>
 
                     <AudienceTargetingSelector 

@@ -11,6 +11,10 @@
     {
       "path": "/api/ruleset-cron",
       "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/cron-auto-optimize-ad-creatives",
+      "schedule": "0 11 * * *"
     }
   ]
 }

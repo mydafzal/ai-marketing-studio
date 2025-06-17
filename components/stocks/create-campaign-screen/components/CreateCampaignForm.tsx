@@ -929,6 +929,7 @@ export function CreateCampaignForm() {
             openEditModal={openEditModal}
             handlePublish={handlePublish}
             masterFlowData={masterFlowData}
+            onMasterFlowDataUpdated={(updatedData) => setMasterFlowData(updatedData)}
           />
         )
       )}
