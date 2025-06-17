@@ -299,6 +299,25 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                         </BotCard>
                                     </>
                                 );
+                            case 'showCampaignOptimization':
+                                // Create a dynamic component for the UI
+                                const CampaignOptimizationComponent = dynamic(() => 
+                                    import('@/lib/ui-magic/modules/showCampaignOptimizationModule'), 
+                                    { ssr: false }
+                                );
+                                
+                                // Display only in sidebar
+                                return (
+                                    <>
+                                        {/* This component handles showing in the sidebar */}
+                                        <CampaignOptimizationComponent />
+                                        
+                                        {/* Just show a message in the chat */}
+                                        <BotCard key={tool.toolCallId}>
+                                            <p>Campaign optimization settings are now available in the sidebar. You can select which campaigns you want to enable automatic optimization for.</p>
+                                        </BotCard>
+                                    </>
+                                );
                             default:
                                 return null;
                         }
