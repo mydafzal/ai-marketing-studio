@@ -27,10 +27,30 @@ export async function POST(request: NextRequest) {
     // Update user data in Redis
     const userKey = `user:${userEmail}`
     
-    // Store the subscribed campaigns as a JSON string
-    await kv.hset(userKey, {
-      subscribed_campaigns_for_creative_optimizations: JSON.stringify(subscribedCampaigns)
-    })
+    console.log(`Saving optimization subscriptions for ${userEmail}:`, subscribedCampaigns)
+    
+    // If array is empty, remove the key entirely
+    if (subscribedCampaigns.length === 0) {
+      try {
+        await kv.hdel(userKey, 'subscribed_campaigns_for_creative_optimizations')
+        console.log(`Successfully removed optimization subscriptions for ${userEmail}`)
+      } catch (deleteError) {
+        console.error(`Error removing optimization subscriptions for ${userEmail}:`, deleteError)
+        throw deleteError // Rethrow to be caught by the outer try/catch
+      }
+    } else {
+      // If we have campaigns to store, directly set the new value
+      // This overwrites any existing value automatically
+      try {
+        await kv.hset(userKey, {
+          subscribed_campaigns_for_creative_optimizations: JSON.stringify(subscribedCampaigns)
+        })
+        console.log(`Stored ${subscribedCampaigns.length} campaign IDs for ${userEmail}`)
+      } catch (setError) {
+        console.error(`Error storing campaign IDs for ${userEmail}:`, setError)
+        throw setError // Rethrow to be caught by the outer try/catch
+      }
+    }
     
     return NextResponse.json({ 
       success: true,

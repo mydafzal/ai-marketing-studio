@@ -63,22 +63,27 @@ export default function AutoOptimizeCampaignSubscription({ userEmail, initialSub
   async function saveSubscriptions() {
     setIsSaving(true)
     try {
+      console.log("Saving campaign optimization subscriptions:", subscribedCampaigns)
+      
       const response = await fetch('/api/user/update-campaign-optimization-subscriptions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email: userEmail,
           subscribedCampaigns,
         }),
       })
 
       if (!response.ok) throw new Error('Failed to save subscriptions')
-
+      
+      const message = subscribedCampaigns.length === 0
+        ? 'All campaign optimizations have been disabled.'
+        : `Campaign optimization enabled for ${subscribedCampaigns.length} campaign(s).`
+      
       toast({
         title: 'Success',
-        description: 'Campaign optimization preferences saved successfully.',
+        description: message,
       })
     } catch (error) {
       console.error('Error saving subscriptions:', error)

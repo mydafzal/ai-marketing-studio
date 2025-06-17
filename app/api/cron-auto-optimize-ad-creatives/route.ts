@@ -34,9 +34,24 @@ export async function GET(request: NextRequest) {
           'subscribed_campaigns_for_creative_optimizations'
         )
 
+        console.log(`Cron job - Raw subscriptions for ${userEmail}:`, subscribedCampaignsraw)
+        
+        // Skip this user if they have no subscriptions
+        if (subscribedCampaignsraw === null) {
+          console.log(`No optimization subscriptions found for ${userEmail} - skipping`)
+          continue
+        }
+
         let subscribedCampaigns = []
         try {
           subscribedCampaigns = parseSubscribedCampaigns(subscribedCampaignsraw)
+          console.log(`Cron job - Parsed subscriptions for ${userEmail}:`, subscribedCampaigns)
+          
+          // Skip if the parsed result is an empty array
+          if (subscribedCampaigns.length === 0) {
+            console.log(`Empty optimization subscriptions array for ${userEmail} - skipping`)
+            continue
+          }
         } catch (e) {
           console.error(
             `Error parsing subscribed campaigns for ${userEmail}:`,
