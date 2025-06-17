@@ -23,6 +23,7 @@ import {
   searchFormsLocally
 } from './lead-form';
 import { CustomerProfileSelector } from './customer-profile';
+import { useT } from '@/lib/i18n/context';
 
 interface CreateTabProps {
   mediaItems: MediaItem[];
@@ -71,6 +72,8 @@ export function CreateTab({
   selectedCustomerProfileId = '',
   setSelectedCustomerProfileId = () => {},
 }: CreateTabProps) {
+  const t = useT();
+  
   // Add state for showing/hiding lead form dropdown
   const [showLeadFormModal, setShowLeadFormModal] = useState<boolean>(false);
   // Add state for lead form behavior
@@ -107,23 +110,23 @@ export function CreateTab({
   const objectives = [
     {
       value: "awareness",
-      label: "Awareness",
-      description: "Increase awareness of your brand, products, or services."
+      label: t('createCampaign.advancedSettings.objectives.awareness.label'),
+      description: t('createCampaign.advancedSettings.objectives.awareness.description')
     },
     {
       value: "recruitment",
-      label: "Recruitment",
-      description: "Find potential candidates for job opportunities."
+      label: t('createCampaign.advancedSettings.objectives.recruitment.label'),
+      description: t('createCampaign.advancedSettings.objectives.recruitment.description')
     },
     {
       value: "conversions",
-      label: "Conversions",
-      description: "Drive valuable actions on your website or app."
+      label: t('createCampaign.advancedSettings.objectives.conversions.label'),
+      description: t('createCampaign.advancedSettings.objectives.conversions.description')
     },
     {
       value: "lead_generation",
-      label: "Lead Generation",
-      description: "Collect lead information from people interested in your business."
+      label: t('createCampaign.advancedSettings.objectives.leadGeneration.label'),
+      description: t('createCampaign.advancedSettings.objectives.leadGeneration.description')
     }
   ];
 
@@ -392,9 +395,9 @@ export function CreateTab({
             <div className="absolute inset-0 bg-dark-bg/90 rounded-lg flex items-center justify-center z-10">
               <div className="flex flex-col items-center text-amber-500">
                 <Clock className="mb-2" size={24} />
-                <span className="text-sm font-medium">Thank you! Let me take a moment to review this.</span>
+                <span className="text-sm font-medium">{t('createCampaign.mediaUpload.cooldownMessage')}</span>
                 <span className="text-xs mt-1 text-text-light-gray">
-                  Please wait {cooldownTimeRemaining} seconds before uploading the next creative
+                  {t('createCampaign.mediaUpload.cooldownWait').replace('{seconds}', cooldownTimeRemaining.toString())}
                 </span>
               </div>
             </div>
@@ -405,7 +408,7 @@ export function CreateTab({
             <div className="absolute top-0 inset-x-0 bg-amber-500/20 border-b border-amber-500 p-1 rounded-t-lg text-center">
               <div className="flex items-center justify-center text-amber-500 text-xs">
                 <Loader2 className="animate-spin mr-1" size={12} />
-                <span>Upload in progress - please wait</span>
+                <span>{t('createCampaign.mediaUpload.uploadInProgress')}</span>
               </div>
             </div>
           )}
@@ -413,7 +416,7 @@ export function CreateTab({
           {mediaItems.length === 0 ? (
             <div className="flex flex-col items-center text-text-light-gray mx-auto">
               <Upload className="mb-1" size={20} />
-              <span className="text-xs">Upload Media</span>
+              <span className="text-xs">{t('createCampaign.mediaUpload.uploadMedia')}</span>
             </div>
           ) : (
             <>
@@ -439,8 +442,8 @@ export function CreateTab({
                     {item.type.toUpperCase()} ({item.aspectRatio})
                   </span>
                   <span className="text-xs text-text-light-gray">
-                    {item.progress === -1 ? 'Failed' : 
-                     item.progress === -2 ? (item.error || 'Retrying...') : 
+                    {item.progress === -1 ? t('createCampaign.mediaUpload.failed') : 
+                     item.progress === -2 ? (item.error || t('createCampaign.mediaUpload.retrying')) : 
                      `${item.progress ?? 0}%`}
                   </span>
                   <button
@@ -460,7 +463,7 @@ export function CreateTab({
               {!isUploading && !cooldownActive && (
                 <div className="flex items-center space-x-2 bg-dark-bg rounded-lg p-2 border border-border-dark hover:border-primary-green transition-all duration-200">
                   <Plus size={16} className="text-text-light-gray" />
-                  <span className="text-sm text-text-light-gray">Add more media</span>
+                  <span className="text-sm text-text-light-gray">{t('createCampaign.mediaUpload.addMoreMedia')}</span>
                 </div>
               )}
             </>
@@ -476,7 +479,7 @@ export function CreateTab({
         
         {/* Upload instructions */}
         <div className="mt-2 text-xs text-text-light-gray">
-          <p>• Images must be under 4MB. Videos: recommended under 80MB, max 300MB.</p>
+          <p>{t('createCampaign.mediaUpload.uploadInstructions')}</p>
         </div>
       </div>
 
@@ -484,7 +487,7 @@ export function CreateTab({
       <div className="space-y-2 mt-5">
         <div className="flex items-center justify-between">
           <label className="text-sm font-medium text-text-white flex items-center">
-            Link
+            {t('createCampaign.link.label')}
             <Info size={16} className="ml-2 text-text-light-gray" />
           </label>
         </div>
@@ -530,7 +533,7 @@ export function CreateTab({
               }
             }
           }}
-          placeholder="Enter the link to what you'd like to advertise"
+          placeholder={t('createCampaign.link.placeholder')}
           className="w-full px-3 py-2.5 bg-dark-bg border border-border-dark text-text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-green focus:border-primary-green placeholder:text-text-light-gray transition-all duration-200"
         />
       </div>
@@ -539,7 +542,7 @@ export function CreateTab({
       <div className="space-y-2 mt-5">
         <div className="flex items-center justify-between">
           <label className="text-sm font-medium text-text-white flex items-center">
-            Ad Budget (Daily)
+            {t('createCampaign.budget.label')}
             <Info size={16} className="ml-2 text-text-light-gray" />
           </label>
         </div>
@@ -554,17 +557,17 @@ export function CreateTab({
               className="flex items-center text-sm font-medium text-text-white hover:text-primary-green transition-colors"
             >
               <Settings className="mr-1" size={16} />
-              Advanced Settings
+              {t('createCampaign.advancedSettings.title')}
             </button>
           </DialogTrigger>
           <DialogContent className="bg-dark-bg border border-border-dark text-text-white">
             <DialogHeader>
-              <DialogTitle className="text-text-white">Advanced Settings</DialogTitle>
+              <DialogTitle className="text-text-white">{t('createCampaign.advancedSettings.title')}</DialogTitle>
             </DialogHeader>
             
             <div className="mt-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-text-white">Campaign Objective</label>
+                <label className="text-sm font-medium text-text-white">{t('createCampaign.advancedSettings.campaignObjective')}</label>
                 
                 <div className="space-y-3 mt-2">
                   {/* Auto Option */}
@@ -581,10 +584,10 @@ export function CreateTab({
                     </div>
                     <div className="flex flex-col">
                       <label htmlFor="objective-auto" className="text-sm font-medium text-text-white">
-                        Auto
+                        {t('createCampaign.advancedSettings.objectiveAuto.label')}
                       </label>
                       <span className="text-xs text-text-light-gray">
-                        Let AI automatically select the best objective for your campaign.
+                        {t('createCampaign.advancedSettings.objectiveAuto.description')}
                       </span>
                     </div>
                   </div>
@@ -617,10 +620,10 @@ export function CreateTab({
               
               <div className="mt-6 pt-2 border-t border-border-dark">
                 <h4 className="text-sm font-medium text-text-white mb-2">
-                  Lead Form Behavior
+                  {t('createCampaign.advancedSettings.leadFormBehavior.title')}
                 </h4>
                 <p className="text-xs text-text-light-gray mb-3">
-                  Use this if you would like to use an existing lead form instead of the AI generating a new one for your lead generation/recruiting campaign.
+                  {t('createCampaign.advancedSettings.leadFormBehavior.description')}
                 </p>
                 
                 <div className="space-y-3">
@@ -645,10 +648,10 @@ export function CreateTab({
                     </div>
                     <div className="flex flex-col">
                       <label htmlFor="automatic" className="text-sm font-medium text-text-white">
-                        Automatic - Create as needed
+                        {t('createCampaign.advancedSettings.leadFormBehavior.automatic.label')}
                       </label>
                       <span className="text-xs text-text-light-gray">
-                        Let AI create a lead form automatically.
+                        {t('createCampaign.advancedSettings.leadFormBehavior.automatic.description')}
                       </span>
                     </div>
                   </div>
@@ -667,7 +670,7 @@ export function CreateTab({
                     </div>
                     <div className="flex flex-col w-full">
                       <label htmlFor="existing" className="text-sm font-medium text-text-white mb-1">
-                        Attach existing lead form
+                        {t('createCampaign.advancedSettings.leadFormBehavior.existing.label')}
                       </label>
                       
                       <button
@@ -686,7 +689,7 @@ export function CreateTab({
                         {selectedLeadFormId ? (
                           <span className="truncate">{selectedFormName}</span>
                         ) : (
-                          <span>Select a lead form...</span>
+                          <span>{t('createCampaign.advancedSettings.leadFormBehavior.existing.selectPlaceholder')}</span>
                         )}
                         <ChevronDown size={16} className="text-text-light-gray ml-2 flex-shrink-0" />
                       </button>
@@ -705,7 +708,7 @@ export function CreateTab({
             <div className="mt-6 flex justify-end">
               <DialogClose asChild>
                 <button className="px-4 py-2 bg-primary-green text-deep-black font-medium rounded-md hover:bg-primary-green/90 transition-colors">
-                  Done
+                  {t('createCampaign.advancedSettings.done')}
                 </button>
               </DialogClose>
             </div>
@@ -720,7 +723,7 @@ export function CreateTab({
           onClick={() => handleReviewTransition()}
           disabled={mediaItems.length === 0 || !link || !budget || isLoading}
         >
-          Preview &amp; Review
+          {t('createCampaign.buttons.previewReview')}
         </button>
       </div>
 
@@ -728,7 +731,7 @@ export function CreateTab({
       <Dialog open={showLeadFormModal} onOpenChange={setShowLeadFormModal}>
         <DialogContent className="bg-dark-bg border border-border-dark text-text-white max-w-lg">
           <DialogHeader>
-            <DialogTitle className="text-text-white">Select a Lead Form</DialogTitle>
+            <DialogTitle className="text-text-white">{t('createCampaign.leadFormModal.title')}</DialogTitle>
           </DialogHeader>
           
           <div className="mt-2">
@@ -737,7 +740,7 @@ export function CreateTab({
               <div className="flex items-center space-x-2">
                 <input
                   type="text"
-                  placeholder="Search lead forms..."
+                  placeholder={t('createCampaign.leadFormModal.searchPlaceholder')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="flex-1 px-3 py-1.5 text-sm bg-dark-bg border border-border-dark text-text-white rounded-md focus:outline-none focus:ring-1 focus:ring-primary-green"

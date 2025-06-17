@@ -653,5 +653,79 @@
     "billing": "Facturare",
     "facebookSettings": "Setări Facebook",
     "profile": "Profil"
+  },
+  "createCampaign": {
+    "mediaUpload": {
+      "uploadMedia": "Încărcați media",
+      "addMoreMedia": "Adăugați mai multe media",
+      "cooldownMessage": "Mulțumesc! Lăsați-mă să-mi iau un moment să analizez acest lucru.",
+      "cooldownWait": "Vă rugăm să așteptați {seconds} secunde înainte de a încărca următorul creativ",
+      "uploadInProgress": "Încărcare în curs - vă rugăm să așteptați",
+      "uploadInstructions": "• Imaginile trebuie să fie sub 4MB. Videoclipuri: recomandat sub 80MB, maxim 300MB.",
+      "failed": "Eșuat",
+      "retrying": "Se încearcă din nou..."
+    },
+    "link": {
+      "label": "Link",
+      "placeholder": "Introduceți linkul pentru ceea ce ați dori să promovați"
+    },
+    "budget": {
+      "label": "Buget Publicitate (Zilnic)"
+    },
+    "budgetSettings": {
+      "currencyFetchError": "Nu s-au putut obține informații despre monedă. Se folosește bugetul minim implicit: {minBudget} {currency}",
+      "minimumBudget": "Buget minim: {minBudget} {currency}",
+      "loadingPlaceholder": "Se încarcă...",
+      "enterBudgetPlaceholder": "Introduceți bugetul zilnic",
+      "checkingCurrency": "Se verifică moneda...",
+      "invalidNumber": "Vă rugăm să introduceți un număr valid",
+      "minimumBudgetError": "Bugetul minim permis este {minBudget} {currency}"
+    },
+    "advancedSettings": {
+      "title": "Setări Avansate",
+      "campaignObjective": "Obiectivul Campaniei",
+      "objectiveAuto": {
+        "label": "Automat",
+        "description": "Lăsați AI să selecteze automat cel mai bun obiectiv pentru campania dumneavoastră."
+      },
+      "objectives": {
+        "awareness": {
+          "label": "Conștientizare",
+          "description": "Creșteți conștientizarea mărcii, produselor sau serviciilor dumneavoastră."
+        },
+        "recruitment": {
+          "label": "Recrutare",
+          "description": "Găsiți candidați potențiali pentru oportunități de muncă."
+        },
+        "conversions": {
+          "label": "Conversii",
+          "description": "Generați acțiuni valoroase pe site-ul sau aplicația dumneavoastră."
+        },
+        "leadGeneration": {
+          "label": "Generare de Lead-uri",
+          "description": "Colectați informații de lead de la persoane interesate în afacerea dumneavoastră."
+        }
+      },
+      "leadFormBehavior": {
+        "title": "Comportamentul Formularului de Lead",
+        "description": "Folosiți acest lucru dacă doriți să utilizați un formular de lead existent în loc să lăsați AI să genereze unul nou pentru campania dumneavoastră de generare de lead-uri/recrutare.",
+        "automatic": {
+          "label": "Automat - Creați dacă este necesar",
+          "description": "Lăsați AI să creeze automat un formular de lead."
+        },
+        "existing": {
+          "label": "Atașați formularul de lead existent",
+          "selectPlaceholder": "Selectați un formular de lead..."
+        }
+      },
+      "done": "Terminat"
+    },
+    "buttons": {
+      "previewReview": "Previzualizare și Revizuire"
+    },
+    "leadFormModal": {
+      "title": "Selectați un Formular de Lead",
+      "searchPlaceholder": "Căutați formulare de lead..."
+    }
   }
 } 

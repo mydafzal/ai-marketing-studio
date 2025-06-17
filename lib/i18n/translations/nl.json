@@ -653,5 +653,79 @@
     "billing": "Facturering",
     "facebookSettings": "Facebook Instellingen",
     "profile": "Profiel"
+  },
+  "createCampaign": {
+    "mediaUpload": {
+      "uploadMedia": "Media uploaden",
+      "addMoreMedia": "Meer media toevoegen",
+      "cooldownMessage": "Dank je! Laat me even tijd nemen om dit te bekijken.",
+      "cooldownWait": "Wacht {seconds} seconden voordat je de volgende creatieve upload",
+      "uploadInProgress": "Upload bezig - even geduld",
+      "uploadInstructions": "• Afbeeldingen moeten onder de 4MB zijn. Video's: aanbevolen onder 80MB, maximum 300MB.",
+      "failed": "Mislukt",
+      "retrying": "Opnieuw proberen..."
+    },
+    "link": {
+      "label": "Link",
+      "placeholder": "Voer de link in van wat je zou willen adverteren"
+    },
+    "budget": {
+      "label": "Advertentiebudget (Dagelijks)"
+    },
+    "budgetSettings": {
+      "currencyFetchError": "Kon valuta-informatie niet ophalen. Gebruik standaard minimumbudget: {minBudget} {currency}",
+      "minimumBudget": "Minimumbudget: {minBudget} {currency}",
+      "loadingPlaceholder": "Laden...",
+      "enterBudgetPlaceholder": "Voer dagelijks budget in",
+      "checkingCurrency": "Valuta controleren...",
+      "invalidNumber": "Voer een geldig getal in",
+      "minimumBudgetError": "Het toegestane minimumbudget is {minBudget} {currency}"
+    },
+    "advancedSettings": {
+      "title": "Geavanceerde Instellingen",
+      "campaignObjective": "Campagnedoel",
+      "objectiveAuto": {
+        "label": "Automatisch",
+        "description": "Laat AI automatisch het beste doel voor je campagne selecteren."
+      },
+      "objectives": {
+        "awareness": {
+          "label": "Bewustzijn",
+          "description": "Verhoog het bewustzijn van je merk, producten of diensten."
+        },
+        "recruitment": {
+          "label": "Werving",
+          "description": "Vind potentiële kandidaten voor vacatures."
+        },
+        "conversions": {
+          "label": "Conversies",
+          "description": "Genereer waardevolle acties op je website of app."
+        },
+        "leadGeneration": {
+          "label": "Lead Generatie",
+          "description": "Verzamel lead-informatie van mensen die geïnteresseerd zijn in je bedrijf."
+        }
+      },
+      "leadFormBehavior": {
+        "title": "Lead Formulier Gedrag",
+        "description": "Gebruik dit als je een bestaand lead formulier wilt gebruiken in plaats van dat AI er een nieuwe genereert voor je lead generatie/wervingscampagne.",
+        "automatic": {
+          "label": "Automatisch - Maak indien nodig",
+          "description": "Laat AI automatisch een lead formulier maken."
+        },
+        "existing": {
+          "label": "Bestaand lead formulier bijvoegen",
+          "selectPlaceholder": "Selecteer een lead formulier..."
+        }
+      },
+      "done": "Klaar"
+    },
+    "buttons": {
+      "previewReview": "Voorvertoning en Beoordeling"
+    },
+    "leadFormModal": {
+      "title": "Selecteer een Lead Formulier",
+      "searchPlaceholder": "Zoek lead formulieren..."
+    }
   }
 } 

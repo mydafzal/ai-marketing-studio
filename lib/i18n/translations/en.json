@@ -653,5 +653,79 @@
     "billing": "Billing",
     "facebookSettings": "Facebook Settings",
     "profile": "Profile"
+  },
+  "createCampaign": {
+    "mediaUpload": {
+      "uploadMedia": "Upload Media",
+      "addMoreMedia": "Add more media",
+      "cooldownMessage": "Thank you! Let me take a moment to review this.",
+      "cooldownWait": "Please wait {seconds} seconds before uploading the next creative",
+      "uploadInProgress": "Upload in progress - please wait",
+      "uploadInstructions": "• Images must be under 4MB. Videos: recommended under 80MB, max 300MB.",
+      "failed": "Failed",
+      "retrying": "Retrying..."
+    },
+    "link": {
+      "label": "Link",
+      "placeholder": "Enter the link to what you'd like to advertise"
+    },
+    "budget": {
+      "label": "Ad Budget (Daily)"
+    },
+    "budgetSettings": {
+      "currencyFetchError": "Could not fetch currency info. Using default minimum budget: {minBudget} {currency}",
+      "minimumBudget": "Minimum budget: {minBudget} {currency}",
+      "loadingPlaceholder": "Loading...",
+      "enterBudgetPlaceholder": "Enter daily budget",
+      "checkingCurrency": "Checking Currency...",
+      "invalidNumber": "Please enter a valid number",
+      "minimumBudgetError": "The minimum budget allowed is {minBudget} {currency}"
+    },
+    "advancedSettings": {
+      "title": "Advanced Settings",
+      "campaignObjective": "Campaign Objective",
+      "objectiveAuto": {
+        "label": "Auto",
+        "description": "Let AI automatically select the best objective for your campaign."
+      },
+      "objectives": {
+        "awareness": {
+          "label": "Awareness",
+          "description": "Increase awareness of your brand, products, or services."
+        },
+        "recruitment": {
+          "label": "Recruitment", 
+          "description": "Find potential candidates for job opportunities."
+        },
+        "conversions": {
+          "label": "Conversions",
+          "description": "Drive valuable actions on your website or app."
+        },
+        "leadGeneration": {
+          "label": "Lead Generation",
+          "description": "Collect lead information from people interested in your business."
+        }
+      },
+      "leadFormBehavior": {
+        "title": "Lead Form Behavior",
+        "description": "Use this if you would like to use an existing lead form instead of the AI generating a new one for your lead generation/recruiting campaign.",
+        "automatic": {
+          "label": "Automatic - Create as needed",
+          "description": "Let AI create a lead form automatically."
+        },
+        "existing": {
+          "label": "Attach existing lead form",
+          "selectPlaceholder": "Select a lead form..."
+        }
+      },
+      "done": "Done"
+    },
+    "buttons": {
+      "previewReview": "Preview & Review"
+    },
+    "leadFormModal": {
+      "title": "Select a Lead Form",
+      "searchPlaceholder": "Search lead forms..."
+    }
   }
 } 

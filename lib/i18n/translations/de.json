@@ -646,5 +646,79 @@
     "billing": "Abrechnung",
     "facebookSettings": "Facebook-Einstellungen",
     "profile": "Profil"
+  },
+  "createCampaign": {
+    "mediaUpload": {
+      "uploadMedia": "Medien hochladen",
+      "addMoreMedia": "Weitere Medien hinzufügen",
+      "cooldownMessage": "Vielen Dank! Lassen Sie mich einen Moment Zeit nehmen, um dies zu überprüfen.",
+      "cooldownWait": "Bitte warten Sie {seconds} Sekunden, bevor Sie das nächste Creative hochladen",
+      "uploadInProgress": "Upload läuft - bitte warten",
+      "uploadInstructions": "• Bilder müssen unter 4MB sein. Videos: empfohlen unter 80MB, maximal 300MB.",
+      "failed": "Fehlgeschlagen",
+      "retrying": "Wird erneut versucht..."
+    },
+    "link": {
+      "label": "Link",
+      "placeholder": "Geben Sie den Link zu dem ein, was Sie bewerben möchten"
+    },
+    "budget": {
+      "label": "Anzeigenbudget (Täglich)"
+    },
+    "budgetSettings": {
+      "currencyFetchError": "Währungsinformationen konnten nicht abgerufen werden. Verwende Standard-Mindestbudget: {minBudget} {currency}",
+      "minimumBudget": "Mindestbudget: {minBudget} {currency}",
+      "loadingPlaceholder": "Wird geladen...",
+      "enterBudgetPlaceholder": "Tägliches Budget eingeben",
+      "checkingCurrency": "Währung wird überprüft...",
+      "invalidNumber": "Bitte geben Sie eine gültige Zahl ein",
+      "minimumBudgetError": "Das erlaubte Mindestbudget beträgt {minBudget} {currency}"
+    },
+    "advancedSettings": {
+      "title": "Erweiterte Einstellungen",
+      "campaignObjective": "Kampagnenziel",
+      "objectiveAuto": {
+        "label": "Automatisch",
+        "description": "Lassen Sie die KI automatisch das beste Ziel für Ihre Kampagne auswählen."
+      },
+      "objectives": {
+        "awareness": {
+          "label": "Bekanntheit",
+          "description": "Erhöhen Sie die Bekanntheit Ihrer Marke, Produkte oder Dienstleistungen."
+        },
+        "recruitment": {
+          "label": "Rekrutierung",
+          "description": "Finden Sie potenzielle Kandidaten für Stellenangebote."
+        },
+        "conversions": {
+          "label": "Conversions",
+          "description": "Fördern Sie wertvolle Aktionen auf Ihrer Website oder App."
+        },
+        "leadGeneration": {
+          "label": "Lead-Generierung",
+          "description": "Sammeln Sie Lead-Informationen von Personen, die sich für Ihr Unternehmen interessieren."
+        }
+      },
+      "leadFormBehavior": {
+        "title": "Lead-Formular-Verhalten",
+        "description": "Verwenden Sie dies, wenn Sie ein vorhandenes Lead-Formular verwenden möchten, anstatt dass die KI ein neues für Ihre Lead-Generierungs-/Rekrutierungskampagne erstellt.",
+        "automatic": {
+          "label": "Automatisch - Bei Bedarf erstellen",
+          "description": "Lassen Sie die KI automatisch ein Lead-Formular erstellen."
+        },
+        "existing": {
+          "label": "Vorhandenes Lead-Formular anhängen",
+          "selectPlaceholder": "Wählen Sie ein Lead-Formular..."
+        }
+      },
+      "done": "Fertig"
+    },
+    "buttons": {
+      "previewReview": "Vorschau & Überprüfung"
+    },
+    "leadFormModal": {
+      "title": "Lead-Formular auswählen",
+      "searchPlaceholder": "Lead-Formulare suchen..."
+    }
   }
 } 

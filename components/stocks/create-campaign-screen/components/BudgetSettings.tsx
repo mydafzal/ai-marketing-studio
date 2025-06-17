@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useT } from '@/lib/i18n/context';
 
 interface BudgetSettingsProps {
   budget: string;
@@ -13,6 +14,7 @@ interface CurrencyBudgetData {
 }
 
 export function BudgetSettings({ budget, setBudget }: BudgetSettingsProps) {
+  const t = useT();
   const [currencyData, setCurrencyData] = useState<CurrencyBudgetData | null>(null);
   const [fetchError, setFetchError] = useState<boolean>(false);
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -61,9 +63,11 @@ export function BudgetSettings({ budget, setBudget }: BudgetSettingsProps) {
     const currencyCode = currencyData?.code || DEFAULT_CURRENCY;
     
     if (isNaN(budgetValue)) {
-      setValidationError('Please enter a valid number');
+      setValidationError(t('createCampaign.budgetSettings.invalidNumber'));
     } else if (budgetValue < minBudget) {
-      setValidationError(`The minimum budget allowed is ${minBudget} ${currencyCode}`);
+      setValidationError(t('createCampaign.budgetSettings.minimumBudgetError')
+        .replace('{minBudget}', minBudget.toString())
+        .replace('{currency}', currencyCode));
     } else {
       setValidationError(null);
     }
@@ -82,7 +86,9 @@ export function BudgetSettings({ budget, setBudget }: BudgetSettingsProps) {
     if (fetchError) {
       return (
         <div className="text-xs text-text-light-gray mb-1">
-          Could not fetch currency info. Using default minimum budget: {DEFAULT_MIN_BUDGET} {DEFAULT_CURRENCY}
+          {t('createCampaign.budgetSettings.currencyFetchError')
+            .replace('{minBudget}', DEFAULT_MIN_BUDGET.toString())
+            .replace('{currency}', DEFAULT_CURRENCY)}
         </div>
       );
     }
@@ -90,7 +96,9 @@ export function BudgetSettings({ budget, setBudget }: BudgetSettingsProps) {
     if (currencyData) {
       return (
         <div className="text-xs text-text-light-gray mb-1">
-          Minimum budget: {currencyData.min_daily_budget_without_offset_closest_int} {currencyData.code}
+          {t('createCampaign.budgetSettings.minimumBudget')
+            .replace('{minBudget}', currencyData.min_daily_budget_without_offset_closest_int.toString())
+            .replace('{currency}', currencyData.code)}
         </div>
       );
     }
@@ -106,11 +114,11 @@ export function BudgetSettings({ budget, setBudget }: BudgetSettingsProps) {
           type="text"
           value={budget}
           onChange={handleBudgetChange}
-          placeholder={isLoading ? "Loading..." : "Enter daily budget"}
+          placeholder={isLoading ? t('createCampaign.budgetSettings.loadingPlaceholder') : t('createCampaign.budgetSettings.enterBudgetPlaceholder')}
           className={`w-full px-3 py-2.5 bg-dark-bg border ${validationError ? 'border-red-500' : 'border-border-dark'} text-text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-green focus:border-primary-green placeholder:text-text-light-gray transition-all duration-200 pr-16`}
         />
         <div className="absolute inset-y-0 right-0 flex items-center pr-3 text-text-light-gray pointer-events-none">
-          <span>{isLoading ? 'Checking Currency...' : (currencyData?.code || DEFAULT_CURRENCY)}</span>
+          <span>{isLoading ? t('createCampaign.budgetSettings.checkingCurrency') : (currencyData?.code || DEFAULT_CURRENCY)}</span>
         </div>
       </div>
       {validationError && <div className="text-red-500 text-xs mt-1">{validationError}</div>}

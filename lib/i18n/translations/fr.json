@@ -653,5 +653,79 @@
     "billing": "Facturation",
     "facebookSettings": "Paramètres Facebook",
     "profile": "Profil"
+  },
+  "createCampaign": {
+    "mediaUpload": {
+      "uploadMedia": "Télécharger des médias",
+      "addMoreMedia": "Ajouter plus de médias",
+      "cooldownMessage": "Merci ! Laissez-moi prendre un moment pour examiner ceci.",
+      "cooldownWait": "Veuillez attendre {seconds} secondes avant de télécharger le prochain créatif",
+      "uploadInProgress": "Téléchargement en cours - veuillez patienter",
+      "uploadInstructions": "• Les images doivent faire moins de 4MB. Vidéos : recommandé moins de 80MB, maximum 300MB.",
+      "failed": "Échoué",
+      "retrying": "Nouvelle tentative..."
+    },
+    "link": {
+      "label": "Lien",
+      "placeholder": "Entrez le lien de ce que vous souhaitez annoncer"
+    },
+    "budget": {
+      "label": "Budget Publicitaire (Quotidien)"
+    },
+    "budgetSettings": {
+      "currencyFetchError": "Impossible de récupérer les informations de devise. Utilisation du budget minimum par défaut : {minBudget} {currency}",
+      "minimumBudget": "Budget minimum : {minBudget} {currency}",
+      "loadingPlaceholder": "Chargement...",
+      "enterBudgetPlaceholder": "Entrez le budget quotidien",
+      "checkingCurrency": "Vérification de la devise...",
+      "invalidNumber": "Veuillez entrer un nombre valide",
+      "minimumBudgetError": "Le budget minimum autorisé est {minBudget} {currency}"
+    },
+    "advancedSettings": {
+      "title": "Paramètres Avancés",
+      "campaignObjective": "Objectif de Campagne",
+      "objectiveAuto": {
+        "label": "Automatique",
+        "description": "Laissez l'IA sélectionner automatiquement le meilleur objectif pour votre campagne."
+      },
+      "objectives": {
+        "awareness": {
+          "label": "Notoriété",
+          "description": "Augmentez la notoriété de votre marque, produits ou services."
+        },
+        "recruitment": {
+          "label": "Recrutement",
+          "description": "Trouvez des candidats potentiels pour des opportunités d'emploi."
+        },
+        "conversions": {
+          "label": "Conversions",
+          "description": "Générez des actions précieuses sur votre site web ou application."
+        },
+        "leadGeneration": {
+          "label": "Génération de Prospects",
+          "description": "Collectez des informations de prospects de personnes intéressées par votre entreprise."
+        }
+      },
+      "leadFormBehavior": {
+        "title": "Comportement du Formulaire de Prospects",
+        "description": "Utilisez ceci si vous souhaitez utiliser un formulaire de prospects existant au lieu que l'IA en génère un nouveau pour votre campagne de génération de prospects/recrutement.",
+        "automatic": {
+          "label": "Automatique - Créer au besoin",
+          "description": "Laissez l'IA créer automatiquement un formulaire de prospects."
+        },
+        "existing": {
+          "label": "Joindre un formulaire de prospects existant",
+          "selectPlaceholder": "Sélectionnez un formulaire de prospects..."
+        }
+      },
+      "done": "Terminé"
+    },
+    "buttons": {
+      "previewReview": "Aperçu et Révision"
+    },
+    "leadFormModal": {
+      "title": "Sélectionner un Formulaire de Prospects",
+      "searchPlaceholder": "Rechercher des formulaires de prospects..."
+    }
   }
 } 

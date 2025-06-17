@@ -653,5 +653,79 @@
     "billing": "Fatturazione",
     "facebookSettings": "Impostazioni Facebook",
     "profile": "Profilo"
+  },
+  "createCampaign": {
+    "mediaUpload": {
+      "uploadMedia": "Carica media",
+      "addMoreMedia": "Aggiungi altri media",
+      "cooldownMessage": "Grazie! Lasciami un momento per rivedere questo.",
+      "cooldownWait": "Attendi {seconds} secondi prima di caricare il prossimo creativo",
+      "uploadInProgress": "Caricamento in corso - attendere prego",
+      "uploadInstructions": "• Le immagini devono essere sotto i 4MB. Video: consigliato sotto gli 80MB, massimo 300MB.",
+      "failed": "Fallito",
+      "retrying": "Riprovando..."
+    },
+    "link": {
+      "label": "Link",
+      "placeholder": "Inserisci il link di ciò che vorresti pubblicizzare"
+    },
+    "budget": {
+      "label": "Budget Pubblicitario (Giornaliero)"
+    },
+    "budgetSettings": {
+      "currencyFetchError": "Impossibile ottenere informazioni sulla valuta. Utilizzo del budget minimo predefinito: {minBudget} {currency}",
+      "minimumBudget": "Budget minimo: {minBudget} {currency}",
+      "loadingPlaceholder": "Caricamento...",
+      "enterBudgetPlaceholder": "Inserisci budget giornaliero",
+      "checkingCurrency": "Controllo Valuta...",
+      "invalidNumber": "Inserisci un numero valido",
+      "minimumBudgetError": "Il budget minimo consentito è {minBudget} {currency}"
+    },
+    "advancedSettings": {
+      "title": "Impostazioni Avanzate",
+      "campaignObjective": "Obiettivo della Campagna",
+      "objectiveAuto": {
+        "label": "Automatico",
+        "description": "Lascia che l'IA selezioni automaticamente il miglior obiettivo per la tua campagna."
+      },
+      "objectives": {
+        "awareness": {
+          "label": "Consapevolezza",
+          "description": "Aumenta la consapevolezza del tuo brand, prodotti o servizi."
+        },
+        "recruitment": {
+          "label": "Reclutamento",
+          "description": "Trova candidati potenziali per opportunità lavorative."
+        },
+        "conversions": {
+          "label": "Conversioni",
+          "description": "Genera azioni preziose sul tuo sito web o app."
+        },
+        "leadGeneration": {
+          "label": "Generazione di Lead",
+          "description": "Raccogli informazioni sui lead da persone interessate al tuo business."
+        }
+      },
+      "leadFormBehavior": {
+        "title": "Comportamento del Modulo Lead",
+        "description": "Usa questo se desideri utilizzare un modulo lead esistente invece che l'IA ne generi uno nuovo per la tua campagna di generazione lead/reclutamento.",
+        "automatic": {
+          "label": "Automatico - Crea quando necessario",
+          "description": "Lascia che l'IA crei automaticamente un modulo lead."
+        },
+        "existing": {
+          "label": "Allega modulo lead esistente",
+          "selectPlaceholder": "Seleziona un modulo lead..."
+        }
+      },
+      "done": "Fatto"
+    },
+    "buttons": {
+      "previewReview": "Anteprima e Revisione"
+    },
+    "leadFormModal": {
+      "title": "Seleziona un Modulo Lead",
+      "searchPlaceholder": "Cerca moduli lead..."
+    }
   }
 } 
