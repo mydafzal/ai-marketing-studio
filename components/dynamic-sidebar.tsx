@@ -69,7 +69,8 @@ export function DynamicSidebar() {
       <div className="flex h-full flex-col pointer-events-auto">
         <div className="flex items-center justify-between border-b border-[#2A2E3A] p-4">
           <h2 className="text-lg font-semibold text-white truncate max-w-[200px] sm:max-w-full">{effectiveTitle}</h2>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
+            {activeUI?.headerActions}
             <Button 
               variant="ghost" 
               size="sm" 

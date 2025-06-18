@@ -4,11 +4,12 @@ import React, { createContext, useContext, useState, useCallback } from 'react';
 
 // Define the shape of our active UI state
 type ActiveUIContextType = {
-  setActiveUI: (component: React.ReactNode, type: string, title?: string) => void;
+  setActiveUI: (component: React.ReactNode, type: string, title?: string, headerActions?: React.ReactNode) => void;
   activeUI: { 
     component: React.ReactNode; 
     type: string;
     title?: string;
+    headerActions?: React.ReactNode;
   } | null;
   clearActiveUI: () => void;
 };
@@ -22,10 +23,11 @@ export function ActiveUIProvider({ children }: { children: React.ReactNode }) {
     component: React.ReactNode; 
     type: string;
     title?: string;
+    headerActions?: React.ReactNode;
   } | null>(null);
   
-  const setActiveUI = useCallback((component: React.ReactNode, type: string, title?: string) => {
-    setActiveUIState({ component, type, title });
+  const setActiveUI = useCallback((component: React.ReactNode, type: string, title?: string, headerActions?: React.ReactNode) => {
+    setActiveUIState({ component, type, title, headerActions });
   }, []);
   
   const clearActiveUI = useCallback(() => {

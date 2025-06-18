@@ -22,7 +22,8 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
-import { Award, ChevronLeft, ChevronRight, ThumbsUp, Eye, Clock, DollarSign, Target, Brain, Users, Sparkles, BarChart3, Zap } from "lucide-react"
+import { jsPDF } from "jspdf"
+import { Award, ChevronLeft, ChevronRight, ThumbsUp, Eye, Clock, DollarSign, Target, Brain, Users, Sparkles, BarChart3, Zap, Download } from "lucide-react"
 import { CampaignContext } from "@/components/contexts/campaign-context"
 import { VideoPlayer } from "@/components/stocks/video-player"
 
@@ -321,6 +322,187 @@ const AdCreativesComparison: React.FC<{ campaignId?: string, skipAiThoughts?: bo
     const intervalId = setInterval(fetchMetrics, CACHE_DURATION)
     return () => clearInterval(intervalId)
   }, [effectiveCampaignId, fetchMetrics, CACHE_DURATION])
+  
+  // Reference to handleDownloadPDF function for event listener
+  const pdfDownloadRef = useRef<(() => void) | null>(null);
+  
+  // Listen for custom PDF download event from sidebar header
+  useEffect(() => {
+    // Update the ref whenever adCreatives changes
+    pdfDownloadRef.current = () => {
+      try {
+        const doc = new jsPDF();
+        const fontSize = 12;
+        const lineHeight = 8;
+        const margin = 20;
+        let yPos = margin;
+        
+        // Set font
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(18);
+        
+        // Add title
+        doc.text("Ad Creative Performance Report", margin, yPos);
+        yPos += lineHeight * 2;
+        
+        // Campaign info
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(14);
+        doc.text("Campaign Information", margin, yPos);
+        yPos += lineHeight;
+        
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(fontSize);
+        
+        const campaignName = adCreatives[0]?.name?.split(' - ')[0] || "Unknown Campaign";
+        doc.text(`Campaign Name: ${campaignName}`, margin, yPos);
+        yPos += lineHeight;
+        
+        doc.text(`Report Date: ${new Date().toLocaleDateString()}`, margin, yPos);
+        yPos += lineHeight;
+        
+        doc.text(`Number of Creatives: ${adCreatives.length}`, margin, yPos);
+        yPos += lineHeight * 2;
+        
+        // Combined metrics section
+        if (adCreatives.length > 0) {
+          const combinedMetrics = getCombinedMetrics(adCreatives);
+          
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(14);
+          doc.text("Combined Campaign Performance", margin, yPos);
+          yPos += lineHeight;
+          
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(fontSize);
+          
+          // Performance metrics
+          doc.text("Performance Metrics:", margin, yPos);
+          yPos += lineHeight;
+          
+          doc.text(`Impressions: ${combinedMetrics.impressions.toLocaleString()}`, margin + 10, yPos);
+          yPos += lineHeight;
+          
+          doc.text(`Reach: ${combinedMetrics.reach.toLocaleString()}`, margin + 10, yPos);
+          yPos += lineHeight;
+          
+          doc.text(`Frequency: ${combinedMetrics.frequency.toFixed(2)}`, margin + 10, yPos);
+          yPos += lineHeight;
+          
+          doc.text(`Clicks: ${combinedMetrics.inlineLinkClicks.toLocaleString()}`, margin + 10, yPos);
+          yPos += lineHeight;
+          
+          doc.text(`CTR: ${combinedMetrics.clickThroughRate.toFixed(2)}%`, margin + 10, yPos);
+          yPos += lineHeight;
+          
+          doc.text(`Cost Per Click: $${combinedMetrics.costPerClick.toFixed(2)}`, margin + 10, yPos);
+          yPos += lineHeight * 2;
+          
+          // Conversion metrics
+          doc.text("Conversion Metrics:", margin, yPos);
+          yPos += lineHeight;
+          
+          doc.text(`Total Leads: ${combinedMetrics.leads.toLocaleString()}`, margin + 10, yPos);
+          yPos += lineHeight;
+          
+          doc.text(`Total Spend: $${combinedMetrics.spend.toFixed(2)}`, margin + 10, yPos);
+          yPos += lineHeight;
+          
+          doc.text(`Conversions: ${combinedMetrics.conversions.toLocaleString()}`, margin + 10, yPos);
+          yPos += lineHeight;
+          
+          doc.text(`Conversion Rate: ${combinedMetrics.conversionRate.toFixed(2)}%`, margin + 10, yPos);
+          yPos += lineHeight;
+          
+          doc.text(`Cost Per Lead: $${combinedMetrics.costPerLead.toFixed(2)}`, margin + 10, yPos);
+          yPos += lineHeight;
+          
+          doc.text(`Cost Per Conversion: $${combinedMetrics.costPerConversion.toFixed(2)}`, margin + 10, yPos);
+          yPos += lineHeight * 2;
+        }
+        
+        // Individual creatives
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(14);
+        doc.text("Individual Creative Performance", margin, yPos);
+        yPos += lineHeight * 1.5;
+        
+        // Sort creatives by performance
+        const sortedCreatives = [...adCreatives].sort((a, b) => getPerformanceScore(b) - getPerformanceScore(a));
+        
+        // Add each creative's data
+        sortedCreatives.forEach((creative, index) => {
+          // Check if we need a new page (leaving some margin at the bottom)
+          if (yPos > doc.internal.pageSize.height - 40) {
+            doc.addPage();
+            yPos = margin;
+          }
+          
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(12);
+          doc.text(`Creative ${index + 1}: ${creative.name.substring(0, 50)}${creative.name.length > 50 ? '...' : ''}`, margin, yPos);
+          yPos += lineHeight;
+          
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(fontSize);
+          
+          doc.text(`Type: ${creative.type.charAt(0).toUpperCase() + creative.type.slice(1)}`, margin + 10, yPos);
+          yPos += lineHeight;
+          
+          doc.text(`Status: ${creative.status}`, margin + 10, yPos);
+          yPos += lineHeight;
+          
+          doc.text(`Impressions: ${creative.metrics.impressions.toLocaleString()}`, margin + 10, yPos);
+          yPos += lineHeight;
+          
+          doc.text(`Clicks: ${creative.metrics.inlineLinkClicks.toLocaleString()}`, margin + 10, yPos);
+          yPos += lineHeight;
+          
+          doc.text(`CTR: ${creative.metrics.clickThroughRate.toFixed(2)}%`, margin + 10, yPos);
+          yPos += lineHeight;
+          
+          doc.text(`Spend: $${creative.metrics.spend.toFixed(2)}`, margin + 10, yPos);
+          yPos += lineHeight;
+          
+          doc.text(`Cost Per Click: $${creative.metrics.costPerClick.toFixed(2)}`, margin + 10, yPos);
+          yPos += lineHeight;
+          
+          doc.text(`Leads: ${creative.metrics.leads.toLocaleString()}`, margin + 10, yPos);
+          yPos += lineHeight;
+          
+          // Add some space between creatives
+          yPos += lineHeight;
+        });
+        
+        // Footer
+        const pageCount = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+          doc.setPage(i);
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(10);
+          doc.text(`Page ${i} of ${pageCount}`, doc.internal.pageSize.width / 2, doc.internal.pageSize.height - 10, { align: "center" });
+          doc.text("Generated with Reeply AI Marketing Manager", margin, doc.internal.pageSize.height - 10);
+        }
+        
+        // Save the PDF
+        doc.save(`${campaignName.replace(/\s+/g, '_')}_Performance_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+      } catch (error) {
+        console.error("Error generating PDF:", error);
+      }
+    };
+    
+    const handleCustomPDFDownload = () => {
+      if (pdfDownloadRef.current) {
+        pdfDownloadRef.current();
+      }
+    };
+    
+    document.addEventListener('download-pdf-report', handleCustomPDFDownload);
+    
+    return () => {
+      document.removeEventListener('download-pdf-report', handleCustomPDFDownload);
+    };
+  }, [adCreatives])
 
   // 5) Slider logic
   const [sliderIndex, setSliderIndex] = useState(0)
@@ -465,6 +647,169 @@ const AdCreativesComparison: React.FC<{ campaignId?: string, skipAiThoughts?: bo
       console.error("Error toggling publish status:", error);
     }
   }
+  
+  // Handle PDF download
+  const handleDownloadPDF = () => {
+    try {
+      const doc = new jsPDF();
+      const fontSize = 12;
+      const lineHeight = 8;
+      const margin = 20;
+      let yPos = margin;
+      
+      // Set font
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(18);
+      
+      // Add title
+      doc.text("Ad Creative Performance Report", margin, yPos);
+      yPos += lineHeight * 2;
+      
+      // Campaign info
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(14);
+      doc.text("Campaign Information", margin, yPos);
+      yPos += lineHeight;
+      
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(fontSize);
+      
+      const campaignName = adCreatives[0]?.name?.split(' - ')[0] || "Unknown Campaign";
+      doc.text(`Campaign Name: ${campaignName}`, margin, yPos);
+      yPos += lineHeight;
+      
+      doc.text(`Report Date: ${new Date().toLocaleDateString()}`, margin, yPos);
+      yPos += lineHeight;
+      
+      doc.text(`Number of Creatives: ${adCreatives.length}`, margin, yPos);
+      yPos += lineHeight * 2;
+      
+      // Combined metrics section
+      if (adCreatives.length > 0) {
+        const combinedMetrics = getCombinedMetrics(adCreatives);
+        
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(14);
+        doc.text("Combined Campaign Performance", margin, yPos);
+        yPos += lineHeight;
+        
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(fontSize);
+        
+        // Performance metrics
+        doc.text("Performance Metrics:", margin, yPos);
+        yPos += lineHeight;
+        
+        doc.text(`Impressions: ${combinedMetrics.impressions.toLocaleString()}`, margin + 10, yPos);
+        yPos += lineHeight;
+        
+        doc.text(`Reach: ${combinedMetrics.reach.toLocaleString()}`, margin + 10, yPos);
+        yPos += lineHeight;
+        
+        doc.text(`Frequency: ${combinedMetrics.frequency.toFixed(2)}`, margin + 10, yPos);
+        yPos += lineHeight;
+        
+        doc.text(`Clicks: ${combinedMetrics.inlineLinkClicks.toLocaleString()}`, margin + 10, yPos);
+        yPos += lineHeight;
+        
+        doc.text(`CTR: ${combinedMetrics.clickThroughRate.toFixed(2)}%`, margin + 10, yPos);
+        yPos += lineHeight;
+        
+        doc.text(`Cost Per Click: $${combinedMetrics.costPerClick.toFixed(2)}`, margin + 10, yPos);
+        yPos += lineHeight * 2;
+        
+        // Conversion metrics
+        doc.text("Conversion Metrics:", margin, yPos);
+        yPos += lineHeight;
+        
+        doc.text(`Total Leads: ${combinedMetrics.leads.toLocaleString()}`, margin + 10, yPos);
+        yPos += lineHeight;
+        
+        doc.text(`Total Spend: $${combinedMetrics.spend.toFixed(2)}`, margin + 10, yPos);
+        yPos += lineHeight;
+        
+        doc.text(`Conversions: ${combinedMetrics.conversions.toLocaleString()}`, margin + 10, yPos);
+        yPos += lineHeight;
+        
+        doc.text(`Conversion Rate: ${combinedMetrics.conversionRate.toFixed(2)}%`, margin + 10, yPos);
+        yPos += lineHeight;
+        
+        doc.text(`Cost Per Lead: $${combinedMetrics.costPerLead.toFixed(2)}`, margin + 10, yPos);
+        yPos += lineHeight;
+        
+        doc.text(`Cost Per Conversion: $${combinedMetrics.costPerConversion.toFixed(2)}`, margin + 10, yPos);
+        yPos += lineHeight * 2;
+      }
+      
+      // Individual creatives
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(14);
+      doc.text("Individual Creative Performance", margin, yPos);
+      yPos += lineHeight * 1.5;
+      
+      // Sort creatives by performance
+      const sortedCreatives = [...adCreatives].sort((a, b) => getPerformanceScore(b) - getPerformanceScore(a));
+      
+      // Add each creative's data
+      sortedCreatives.forEach((creative, index) => {
+        // Check if we need a new page (leaving some margin at the bottom)
+        if (yPos > doc.internal.pageSize.height - 40) {
+          doc.addPage();
+          yPos = margin;
+        }
+        
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(12);
+        doc.text(`Creative ${index + 1}: ${creative.name.substring(0, 50)}${creative.name.length > 50 ? '...' : ''}`, margin, yPos);
+        yPos += lineHeight;
+        
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(fontSize);
+        
+        doc.text(`Type: ${creative.type.charAt(0).toUpperCase() + creative.type.slice(1)}`, margin + 10, yPos);
+        yPos += lineHeight;
+        
+        doc.text(`Status: ${creative.status}`, margin + 10, yPos);
+        yPos += lineHeight;
+        
+        doc.text(`Impressions: ${creative.metrics.impressions.toLocaleString()}`, margin + 10, yPos);
+        yPos += lineHeight;
+        
+        doc.text(`Clicks: ${creative.metrics.inlineLinkClicks.toLocaleString()}`, margin + 10, yPos);
+        yPos += lineHeight;
+        
+        doc.text(`CTR: ${creative.metrics.clickThroughRate.toFixed(2)}%`, margin + 10, yPos);
+        yPos += lineHeight;
+        
+        doc.text(`Spend: $${creative.metrics.spend.toFixed(2)}`, margin + 10, yPos);
+        yPos += lineHeight;
+        
+        doc.text(`Cost Per Click: $${creative.metrics.costPerClick.toFixed(2)}`, margin + 10, yPos);
+        yPos += lineHeight;
+        
+        doc.text(`Leads: ${creative.metrics.leads.toLocaleString()}`, margin + 10, yPos);
+        yPos += lineHeight;
+        
+        // Add some space between creatives
+        yPos += lineHeight;
+      });
+      
+      // Footer
+      const pageCount = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        doc.text(`Page ${i} of ${pageCount}`, doc.internal.pageSize.width / 2, doc.internal.pageSize.height - 10, { align: "center" });
+        doc.text("Generated with Reeply AI Marketing Manager", margin, doc.internal.pageSize.height - 10);
+      }
+      
+      // Save the PDF
+      doc.save(`${campaignName.replace(/\s+/g, '_')}_Performance_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+    }
+  }
 
   return (
     <div className="flex h-full flex-col bg-[#0A0C14] shadow-lg">
@@ -513,6 +858,18 @@ const AdCreativesComparison: React.FC<{ campaignId?: string, skipAiThoughts?: bo
               Compare and analyze your ad performance metrics
             </p>
           </div>
+        </div>
+        
+        <div className="z-10 flex items-center">
+          <Button
+            onClick={handleDownloadPDF}
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-2 text-[#ADB0B8] hover:text-white bg-[#151925] hover:bg-[#1A1D29] border-[#2A2E3A]"
+          >
+            <Download className="h-4 w-4" />
+            <span className="hidden sm:inline">Download PDF</span>
+          </Button>
         </div>
       </header>
 
