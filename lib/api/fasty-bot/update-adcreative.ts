@@ -25,8 +25,6 @@ export async function updateAdCreative(
       token = token_resp.token;
     }
 
-
-
     const data: AdCreativeUpdateRequest = {
         ...payload,
         fb_account_id: userDetail?.user?.fbAccountId || '0',

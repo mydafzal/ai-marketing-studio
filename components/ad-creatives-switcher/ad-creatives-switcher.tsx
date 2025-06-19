@@ -1011,36 +1011,15 @@ const CampaignEditor = () => {
                       </div>
                       
                       {/* Actions */}
-                      <div className="px-3 pb-3 flex justify-between items-center">
-                        <Button 
-                          variant={creative.status === 'ACTIVE' ? 'destructive' : 'default'}
-                          size="sm"
-                          onClick={() => togglePublish(creative.id)}
-                          className={cn(
-                            "h-8 text-xs px-2",
-                            creative.status !== 'ACTIVE' && "bg-green-600 hover:bg-green-700"
-                          )}
-                        >
-                          {creative.status === 'ACTIVE' ? (
-                            <>
-                              <EyeOff className="w-3 h-3 mr-1" />
-                              Pause
-                            </>
-                          ) : (
-                            <>
-                              <Eye className="w-3 h-3 mr-1" />
-                              Activate
-                            </>
-                          )}
-                        </Button>
+                      <div className="px-3 pb-3 flex justify-center items-center">
                         <Button 
                           variant="outline" 
                           size="sm"
                           onClick={() => handleEdit(creative)}
-                          className="h-8 text-xs px-2"
+                          className="h-8 text-xs px-4"
                         >
-                          <Edit2 className="w-3 h-3 mr-1" />
-                          Edit
+                          <Eye className="w-3 h-3 mr-1" />
+                          View
                         </Button>
                       </div>
                     </div>
@@ -1064,7 +1043,7 @@ const CampaignEditor = () => {
       >
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-xl">Edit Ad Creative</DialogTitle>
+            <DialogTitle className="text-xl">Creative Details</DialogTitle>
           </DialogHeader>
           
           <div className="grid md:grid-cols-5 gap-6 py-4">
@@ -1104,36 +1083,22 @@ const CampaignEditor = () => {
             
             <div className="md:col-span-3 space-y-6">
               <div className="space-y-2">
-                <label htmlFor="name" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                <h3 className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
                   Creative Name
-                </label>
-                <Input
-                  id="name"
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  className="w-full"
-                  placeholder="Enter creative name"
-                />
+                </h3>
+                <div className="p-3 bg-zinc-50 dark:bg-zinc-800 rounded-md border border-zinc-200 dark:border-zinc-700 text-sm text-zinc-700 dark:text-zinc-300">
+                  {editName}
+                </div>
               </div>
               
               <div className="space-y-2">
-                <label htmlFor="message" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                <h3 className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
                   Ad Message
-                </label>
-                <Textarea
-                  id="message"
-                  value={editMessage}
-                  onChange={(e) => setEditMessage(e.target.value)}
-                  className="w-full min-h-[150px]"
-                  placeholder="Enter your ad copy here..."
-                />
-              </div>
-              
-              {editError && (
-                <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md text-red-600 dark:text-red-400 text-sm">
-                  {editError}
+                </h3>
+                <div className="p-3 bg-zinc-50 dark:bg-zinc-800 rounded-md border border-zinc-200 dark:border-zinc-700 text-sm text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap min-h-[100px]">
+                  {editMessage}
                 </div>
-              )}
+              </div>
             </div>
           </div>
           
@@ -1141,19 +1106,8 @@ const CampaignEditor = () => {
             <Button 
               variant="outline" 
               onClick={() => setEditingCreative(null)}
-              disabled={isEditing}
             >
-              Cancel
-            </Button>
-            <Button onClick={handleSubmitEdit} disabled={isEditing} className="ml-2">
-              {isEditing ? (
-                <div className="flex items-center gap-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                  <span>Saving...</span>
-                </div>
-              ) : (
-                'Save Changes'
-              )}
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1317,13 +1271,9 @@ const CampaignEditor = () => {
               <label htmlFor="adText" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
                 Ad Message
               </label>
-              <Textarea
-                id="adText"
-                value={adText}
-                onChange={(e) => setAdText(e.target.value)}
-                className="w-full min-h-[100px]"
-                placeholder="Enter your ad copy here..."
-              />
+              <div className="p-3 bg-zinc-50 dark:bg-zinc-800 rounded-md border border-zinc-200 dark:border-zinc-700 text-sm text-zinc-500 dark:text-zinc-400 min-h-[100px]">
+                Ad text of another creative will be used for this image.
+              </div>
             </div>
             
             {/* Upload Now Button */}
