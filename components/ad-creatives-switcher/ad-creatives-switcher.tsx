@@ -1,19 +1,19 @@
 'use client'
 
-import React, { useState, useEffect, useContext, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useActions, useUIState } from 'ai/rsc'
 import { type AI } from '@/lib/chat/AIManager'
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { CampaignContext } from '@/components/contexts/campaign-context'
 import { Settings2, PlusCircle, Edit2, EyeOff, Eye, ImageIcon, Film, X, Upload, Check } from 'lucide-react';
-import { getCampaignIdFromUrl } from "@/lib/api/fasty-bot/helpers/campaign-id-from-url-helper";
 import { Badge } from '@/components/ui/badge';
 import { nanoid } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FbCampaign } from '@/lib/types';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 
 // Enhanced VideoPlayer component that supports aspect ratio detection
 const EnhancedVideoPlayer = ({ 
@@ -119,67 +119,95 @@ type AdsetWithCreatives = {
   creatives: Creative[];
 }
 
-const AdCreativesSwitcher = () => {
-  const { submitUserMessage } = useActions()
-  const [_, setMessages] = useUIState<typeof AI>()
+// Main component
+const CampaignEditor = () => {
+  const { submitUserMessage } = useActions();
+  const [_, setMessages] = useUIState<typeof AI>();
+  
+  // Campaign state
+  const [campaigns, setCampaigns] = useState<FbCampaign[]>([]);
+  const [isLoadingCampaigns, setIsLoadingCampaigns] = useState(true);
+  const [selectedCampaign, setSelectedCampaign] = useState<FbCampaign | null>(null);
+  const [campaignError, setCampaignError] = useState<string | null>(null);
+  
+  // Creatives state
   const [creatives, setCreatives] = useState<AdsetWithCreatives[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [isLoadingCreatives, setIsLoadingCreatives] = useState(false);
+  const [creativesError, setCreativesError] = useState<string | null>(null);
+  const [flatCreatives, setFlatCreatives] = useState<Creative[]>([]);
+  
+  // Add new creative dialog state
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [uploadedImages, setUploadedImages] = useState<Array<{
+    id: string;
+    preview: string;
+    file?: File;
+    s3Url?: string;
+    status: 'pending' | 'uploading' | 'success' | 'error';
+    progress: number;
+    error?: string;
+  }>>([]); 
+  const [adText, setAdText] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Edit creative state
   const [editingCreative, setEditingCreative] = useState<Creative | null>(null);
   const [imagePermalinkUrl, setImagePermalinkUrl] = useState<string>('');
   const [editName, setEditName] = useState('');
   const [editMessage, setEditMessage] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
-  const { campaign, adset: selectedAdset } = useContext(CampaignContext)
   
-  // Current creative index state
+  // Campaign view state
   const [currentCreativeIndex, setCurrentCreativeIndex] = useState<number>(0);
-  // All creatives flattened
-  const [flatCreatives, setFlatCreatives] = useState<Creative[]>([]);
   
-  const getImageDetail = (imageHash: string) => {
-    fetch(`/api/fasty-bot/proxy-get-image-detail?image_hash=${imageHash}`)
-      .then(response => response.json())
-      .then(imageDetail => {
-        if(editingCreative){
-          setImagePermalinkUrl(imageDetail?.permalink_url)
-        }
-      })
-      .catch(error => {
-        console.error('Error fetching image detail:', error)
-      })
-  }
-
+  // Fetch list of campaigns
   useEffect(() => {
-    if (
-      editingCreative &&
-      editingCreative.object_story_spec?.link_data?.image_hash
-    ) {
-      getImageDetail(editingCreative.object_story_spec?.link_data?.image_hash)
-    }
-    if(!editingCreative){
-      setImagePermalinkUrl('');
-    }
-  }, [editingCreative])
-
-  useEffect(() => {
-    const fetchCreatives = async () => {
-      setIsLoading(true);
+    const fetchCampaigns = async () => {
+      setIsLoadingCampaigns(true);
+      setCampaignError(null);
       try {
-        let fetchedCampaignId;
-        try {
-            fetchedCampaignId = await getCampaignIdFromUrl();
-            console.log("Fetched Campaign ID:", fetchedCampaignId);
-          } catch (error) {
-              console.error("Error fetching campaign ID:", error);
-          }
-        const response = await fetch('/api/fasty-bot/proxy-get-adcreatives?campaignId='+fetchedCampaignId);
+        const response = await fetch('/api/user/get-user-campaigns');
+        if (!response.ok) {
+          throw new Error(`Failed to fetch campaigns: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        if (data.campaigns && Array.isArray(data.campaigns)) {
+          setCampaigns(data.campaigns);
+          // Don't auto-select a campaign
+        } else {
+          setCampaigns([]);
+        }
+      } catch (error) {
+        console.error('Error fetching campaigns:', error);
+        setCampaignError('Failed to load campaigns. Please try again.');
+      } finally {
+        setIsLoadingCampaigns(false);
+      }
+    };
+
+    fetchCampaigns();
+  }, []);
+
+  // Fetch creatives when a campaign is selected
+  useEffect(() => {
+    if (!selectedCampaign) return;
+    
+    const fetchCreatives = async () => {
+      setIsLoadingCreatives(true);
+      setCreativesError(null);
+      
+      try {
+        const response = await fetch(`/api/fasty-bot/proxy-get-adcreatives?campaignId=${selectedCampaign.id}`);
         if (!response.ok) {
           throw new Error('Failed to fetch creatives');
         }
+        
         const data = await response.json();
-
+        
+        // Group data by adset_id
         const groupedData: Record<string, Creative[]> = data?.data?.data.reduce((acc: Record<string, Creative[]>, item: any) => {
           const { adset_id, creative } = item;
           if (!acc[adset_id]) {
@@ -196,7 +224,7 @@ const AdCreativesSwitcher = () => {
           return acc;
         }, {});
       
-        // Convert grouped data to the desired array format
+        // Convert grouped data to array format
         const adsetWithCreatives: AdsetWithCreatives[] = Object.entries(groupedData).map(([adset_id, creatives]) => ({
           adset_id,
           creatives,
@@ -207,17 +235,49 @@ const AdCreativesSwitcher = () => {
         // Flatten all creatives for the carousel view
         const allCreatives = adsetWithCreatives.flatMap(adset => adset.creatives);
         setFlatCreatives(allCreatives);
+        
+        // Reset current creative index
+        setCurrentCreativeIndex(0);
       } catch (err) {
-        setError('Error fetching creatives. Please try again later.');
         console.error('Error fetching creatives:', err);
+        setCreativesError('Failed to fetch creatives for this campaign.');
+        setCreatives([]);
+        setFlatCreatives([]);
       } finally {
-        setIsLoading(false);
+        setIsLoadingCreatives(false);
       }
     };
 
     fetchCreatives();
-  }, []);
+  }, [selectedCampaign]);
 
+  // Handle fetching image details when editing a creative
+  useEffect(() => {
+    if (
+      editingCreative &&
+      editingCreative.object_story_spec?.link_data?.image_hash
+    ) {
+      getImageDetail(editingCreative.object_story_spec?.link_data?.image_hash);
+    }
+    if(!editingCreative) {
+      setImagePermalinkUrl('');
+    }
+  }, [editingCreative]);
+
+  const getImageDetail = (imageHash: string) => {
+    fetch(`/api/fasty-bot/proxy-get-image-detail?image_hash=${imageHash}`)
+      .then(response => response.json())
+      .then(imageDetail => {
+        if(editingCreative){
+          setImagePermalinkUrl(imageDetail?.permalink_url);
+        }
+      })
+      .catch(error => {
+        console.error('Error fetching image detail:', error);
+      });
+  };
+
+  // Toggle active/inactive status of a creative
   const togglePublish = async (id: number) => {
     try {
       const creative = flatCreatives.find(creative => creative.id === id);
@@ -267,12 +327,16 @@ const AdCreativesSwitcher = () => {
     }
   };
 
+  // Start editing a creative
   const handleEdit = (creative: Creative) => {
     setEditingCreative(creative);
     setEditName(creative.name);
-    setEditMessage((creative.object_type === 'VIDEO' ? creative.object_story_spec.video_data?.message : creative.object_story_spec.link_data?.message) || '');
+    setEditMessage((creative.object_type === 'VIDEO' ? 
+      creative.object_story_spec.video_data?.message : 
+      creative.object_story_spec.link_data?.message) || '');
   };
 
+  // Submit creative edits
   const handleSubmitEdit = async () => {
     if (!editingCreative) return;
     setIsEditing(true);
@@ -360,52 +424,6 @@ const AdCreativesSwitcher = () => {
     }
   };
 
-  // State for the create new creative popup
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [selectedCampaign, setSelectedCampaign] = useState<string>('');
-  const [availableCampaigns, setAvailableCampaigns] = useState<Array<{ id: string; name: string }>>([]);
-  const [isLoadingCampaigns, setIsLoadingCampaigns] = useState(false);
-  const [uploadedImages, setUploadedImages] = useState<Array<{
-    id: string;
-    preview: string;
-    file?: File;
-    s3Url?: string;
-    status: 'pending' | 'uploading' | 'success' | 'error';
-    progress: number;
-    error?: string;
-  }>>([]); 
-  const [adText, setAdText] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Fetch available campaigns for the dropdown
-  useEffect(() => {
-    const fetchCampaigns = async () => {
-      setIsLoadingCampaigns(true);
-      try {
-        const response = await fetch('/api/user/get-user-campaigns');
-        if (response.ok) {
-          const data = await response.json();
-          if (data.campaigns && Array.isArray(data.campaigns)) {
-            setAvailableCampaigns(data.campaigns);
-            if (data.campaigns.length > 0) {
-              setSelectedCampaign(data.campaigns[0].id);
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching campaigns:', error);
-      } finally {
-        setIsLoadingCampaigns(false);
-      }
-    };
-
-    // Only fetch campaigns when the dialog opens
-    if (isCreateDialogOpen) {
-      fetchCampaigns();
-    }
-  }, [isCreateDialogOpen]);
-
   // Handle image selection
   const handleImageSelection = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -417,10 +435,7 @@ const AdCreativesSwitcher = () => {
     Array.from(files).forEach(file => {
       // Check file size
       if (file.size > MAX_FILE_SIZE) {
-        // Show error toast or message
         console.error(`File ${file.name} is too large. Maximum size is 3MB.`);
-        
-        // You could add a toast notification here if you have a toast system
         return;
       }
       
@@ -443,7 +458,7 @@ const AdCreativesSwitcher = () => {
     }
   };
 
-  // Upload a single image to S3
+  // Upload image to S3
   const uploadImageToS3 = async (imageId: string) => {
     // Find the image in our state
     const imageToUpload = uploadedImages.find(img => img.id === imageId);
@@ -469,7 +484,7 @@ const AdCreativesSwitcher = () => {
       
       // The campaign ID serves as a folder name in S3
       // Make sure it's a string and doesn't contain special characters
-      const safeId = selectedCampaign.toString().replace(/[^a-zA-Z0-9-_]/g, '');
+      const safeId = selectedCampaign?.id.toString().replace(/[^a-zA-Z0-9-_]/g, '') || '';
       formData.append('id', safeId);
       
       // The type defines a subfolder in S3
@@ -500,7 +515,6 @@ const AdCreativesSwitcher = () => {
       
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Upload API error response:', errorText);
         throw new Error(`Failed to upload image: ${response.status} ${response.statusText}. ${errorText || ''}`);
       }
       
@@ -547,7 +561,7 @@ const AdCreativesSwitcher = () => {
     }
   };
 
-  // Process uploads one by one
+  // Process all uploads
   const processUploads = async () => {
     const pendingImages = uploadedImages.filter(img => img.status === 'pending');
     
@@ -577,8 +591,6 @@ const AdCreativesSwitcher = () => {
       return;
     }
     
-    // Begin uploads
-    
     // Upload images one by one
     for (const image of pendingImages) {
       await uploadImageToS3(image.id);
@@ -599,14 +611,19 @@ const AdCreativesSwitcher = () => {
     });
   };
 
-  // Handle create new creative
+  // Open dialog to add a new creative
   const addNewCreative = () => {
+    if (!selectedCampaign) {
+      alert('Please select a campaign first');
+      return;
+    }
+    
     setIsCreateDialogOpen(true);
     setAdText('');
     setUploadedImages([]);
   };
 
-  // Submit the new creative
+  // Submit new creative
   const submitNewCreative = async () => {
     if (!selectedCampaign || uploadedImages.length === 0) return;
     
@@ -627,10 +644,6 @@ const AdCreativesSwitcher = () => {
         .filter(img => img.status === 'success' && img.s3Url)
         .map(img => img.s3Url as string);
       
-      console.log('Creating ad creative with images:', s3Urls);
-      console.log('Ad text:', adText);
-      console.log('Campaign ID:', selectedCampaign);
-
       // Variable to store API response result
       let apiResult = { success: false, error: 'Not attempted' };
       
@@ -643,7 +656,7 @@ const AdCreativesSwitcher = () => {
           },
           body: JSON.stringify({
             imageUrl: s3Urls[0],
-            campaignId: selectedCampaign
+            campaignId: selectedCampaign.id
           }),
         });
 
@@ -653,17 +666,10 @@ const AdCreativesSwitcher = () => {
           alert(`Image successfully uploaded and applied to campaign!`);
         } else {
           alert(`Image was uploaded to S3 but could not be applied to campaign: ${apiResult.error}`);
-          // Still show the URLs even if applying to campaign failed
-          const urlsList = s3Urls.join('\n');
-          console.log(`Image URLs:\n${urlsList}`);
         }
       } catch (error) {
         console.error('Error applying image to campaign:', error);
         alert('Image was uploaded but could not be applied to campaign due to an error');
-        
-        // Still show the URLs even if there was an error
-        const urlsList = s3Urls.join('\n');
-        console.log(`Image URLs:\n${urlsList}`);
       }
       
       // Close the dialog
@@ -683,19 +689,53 @@ const AdCreativesSwitcher = () => {
       let responseMessage;
       if (apiResult?.success) {
         responseMessage = await submitUserMessage(
-          `I successfully uploaded a new image to S3 and applied it to campaign ID ${selectedCampaign}. The S3 URL is: ${s3Urls[0]}`,
+          `I successfully uploaded a new image to S3 and applied it to campaign "${selectedCampaign.name}" (ID: ${selectedCampaign.id}). The S3 URL is: ${s3Urls[0]}`,
           [],
           true
         );
       } else {
         responseMessage = await submitUserMessage(
-          `I uploaded a new image to S3, but could not apply it to the campaign. The S3 URL is: ${s3Urls[0]}`,
+          `I uploaded a new image to S3, but could not apply it to the campaign "${selectedCampaign.name}". The S3 URL is: ${s3Urls[0]}`,
           [],
           true
         );
       }
       setMessages(currentMessages => [...currentMessages, responseMessage]);
       
+      // Refresh creatives
+      const response = await fetch(`/api/fasty-bot/proxy-get-adcreatives?campaignId=${selectedCampaign.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Group data by adset_id
+        const groupedData: Record<string, Creative[]> = data?.data?.data.reduce((acc: Record<string, Creative[]>, item: any) => {
+          const { adset_id, creative } = item;
+          if (!acc[adset_id]) {
+            acc[adset_id] = [];
+          }
+          acc[adset_id].push({
+            id: creative.id,
+            name: creative.name,
+            thumbnail_url: creative.thumbnail_url,
+            object_type: creative.object_type,
+            status: creative.status,
+            object_story_spec: creative.object_story_spec,
+          });
+          return acc;
+        }, {});
+      
+        // Convert grouped data to array format
+        const adsetWithCreatives: AdsetWithCreatives[] = Object.entries(groupedData).map(([adset_id, creatives]) => ({
+          adset_id,
+          creatives,
+        }));
+
+        setCreatives(adsetWithCreatives);
+        
+        // Flatten all creatives for the carousel view
+        const allCreatives = adsetWithCreatives.flatMap(adset => adset.creatives);
+        setFlatCreatives(allCreatives);
+      }
     } catch (error) {
       console.error('Error creating ad creative:', error);
       alert(`Error: ${error instanceof Error ? error.message : 'Failed to create ad creative'}`);
@@ -703,8 +743,8 @@ const AdCreativesSwitcher = () => {
       setIsSubmitting(false);
     }
   };
-  
-  // Check S3 configuration before uploading
+
+  // Check S3 configuration
   const checkS3Config = async () => {
     try {
       const response = await fetch('/api/upload/check-config', {
@@ -728,7 +768,7 @@ const AdCreativesSwitcher = () => {
     }
   };
 
-  // Navigation functions
+  // Navigation functions for creative carousel
   const nextCreative = () => {
     if (flatCreatives.length === 0) return;
     setCurrentCreativeIndex((prevIndex) => 
@@ -743,43 +783,13 @@ const AdCreativesSwitcher = () => {
     );
   };
   
-  // Extract the clean creative name (removing IDs)
+  // Helper to extract clean creative name
   const getCleanCreativeName = (name: string): string => {
     // Remove any ID-like patterns from the name
     return name.replace(/\s*\(?\d{5,}\)?/g, '').replace(/\s*ID:\s*\d+/gi, '').trim();
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[300px] w-full bg-white dark:bg-zinc-800 rounded-lg shadow p-6">
-        <div className="flex flex-col items-center gap-3">
-          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-          <p className="text-zinc-600 dark:text-zinc-300 font-medium">Loading creatives...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-[300px] w-full bg-white dark:bg-zinc-800 rounded-lg shadow p-6">
-        <div className="flex flex-col items-center gap-3 text-center max-w-md">
-          <div className="rounded-full h-12 w-12 bg-red-100 dark:bg-red-900/30 flex items-center justify-center text-red-500">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          </div>
-          <h3 className="text-lg font-medium text-zinc-800 dark:text-zinc-200">Failed to Load Creatives</h3>
-          <p className="text-zinc-600 dark:text-zinc-400">{error}</p>
-          <Button onClick={() => window.location.reload()} className="mt-2">
-            Try Again
-          </Button>
-        </div>
-      </div>
-    );
-  }
-  
-  // Single creative carousel view
-  const currentCreative = flatCreatives[currentCreativeIndex];
-
+  // Main render
   return (
     <div className="flex flex-col h-full bg-white dark:bg-zinc-900 shadow-lg rounded-xl overflow-hidden">
       <header className="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 border-b border-zinc-200 dark:border-zinc-800">
@@ -788,147 +798,279 @@ const AdCreativesSwitcher = () => {
             <Settings2 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
           </div>
           <div>
-            <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">Ad Creative Gallery</h1>
+            <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">Ad Creatives Manager</h1>
             <p className="text-sm text-zinc-500 dark:text-zinc-400">
-              {flatCreatives.length > 0 
-                ? `${currentCreativeIndex + 1} of ${flatCreatives.length} creatives` 
-                : "No creatives found"}
+              {selectedCampaign 
+                ? `${selectedCampaign.name}` 
+                : "Select a campaign to manage its creatives"}
             </p>
           </div>
         </div>
-        <Button 
-          onClick={addNewCreative} 
-          className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white"
-        >
-          <PlusCircle className="w-4 h-4 mr-2" />
-          Create New
-        </Button>
       </header>
 
       <main className="flex-grow p-6 overflow-y-auto bg-zinc-50 dark:bg-zinc-900">
-        {flatCreatives.length === 0 ? (
-          <div className="text-center py-12 bg-white dark:bg-zinc-800 rounded-lg shadow-sm">
-            <div className="mx-auto w-16 h-16 bg-zinc-100 dark:bg-zinc-700 rounded-full flex items-center justify-center mb-4">
-              <ImageIcon className="w-8 h-8 text-zinc-400" />
-            </div>
-            <h3 className="text-lg font-medium text-zinc-800 dark:text-zinc-200">No Creatives Found</h3>
-            <p className="text-zinc-500 dark:text-zinc-400 mt-2 max-w-md mx-auto">
-              Create your first ad creative to get started with your campaign.
-            </p>
-            <Button 
-              onClick={addNewCreative} 
-              className="mt-4"
-            >
-              Create Your First Creative
-            </Button>
+        {/* Campaign Selection Dropdown */}
+        <div className="mb-6">
+          <div className="flex justify-between items-center mb-3">
+            <h2 className="text-lg font-medium text-zinc-800 dark:text-zinc-200">
+              {selectedCampaign ? "Current Campaign" : "Select Campaign"}
+            </h2>
+            
+            {selectedCampaign && (
+              <Button 
+                onClick={addNewCreative} 
+                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white"
+                size="sm"
+              >
+                <PlusCircle className="w-4 h-4 mr-2" />
+                Add New Creative
+              </Button>
+            )}
           </div>
-        ) : (
-          <div className="max-w-3xl mx-auto">
-            {/* Navigation buttons */}
-            <div className="flex justify-between mb-6">
+          
+          {isLoadingCampaigns ? (
+            <div className="h-10 bg-zinc-100 dark:bg-zinc-800 animate-pulse rounded-md mb-4"></div>
+          ) : campaignError ? (
+            <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-600 dark:text-red-400 text-sm mb-4">
+              <p>{campaignError}</p>
               <Button 
+                onClick={() => window.location.reload()} 
                 variant="outline" 
-                onClick={prevCreative} 
-                className="rounded-full w-10 h-10 p-0 flex items-center justify-center"
+                className="mt-2"
+                size="sm"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                Try Again
               </Button>
-              
-              <div className="flex items-center gap-2">
-                <Badge 
-                  className={
-                    currentCreative?.status === 'ACTIVE' 
-                      ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" 
-                      : "bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300"
-                  }
-                >
-                  {currentCreative?.status === 'ACTIVE' ? 'Active' : 'Inactive'}
-                </Badge>
-                <Button 
-                  variant={currentCreative?.status === 'ACTIVE' ? 'destructive' : 'default'}
-                  size="sm"
-                  onClick={() => togglePublish(currentCreative?.id)}
-                  className={cn(
-                    currentCreative?.status !== 'ACTIVE' && "bg-green-600 hover:bg-green-700"
-                  )}
-                >
-                  {currentCreative?.status === 'ACTIVE' ? (
-                    <>
-                      <EyeOff className="w-3.5 h-3.5 mr-1.5" />
-                      Pause
-                    </>
-                  ) : (
-                    <>
-                      <Eye className="w-3.5 h-3.5 mr-1.5" />
-                      Activate
-                    </>
-                  )}
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => handleEdit(currentCreative)}
-                >
-                  <Edit2 className="w-3.5 h-3.5 mr-1.5" />
-                  Edit
-                </Button>
+            </div>
+          ) : campaigns.length === 0 ? (
+            <div className="text-center py-6 bg-white dark:bg-zinc-800 rounded-lg shadow-sm mb-4">
+              <div className="mx-auto w-12 h-12 bg-zinc-100 dark:bg-zinc-700 rounded-full flex items-center justify-center mb-3">
+                <Settings2 className="w-6 h-6 text-zinc-400" />
               </div>
-              
-              <Button 
-                variant="outline" 
-                onClick={nextCreative} 
-                className="rounded-full w-10 h-10 p-0 flex items-center justify-center"
+              <h3 className="text-base font-medium text-zinc-800 dark:text-zinc-200">No Campaigns Found</h3>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1 max-w-md mx-auto">
+                You don't have any active campaigns. Create a campaign first.
+              </p>
+            </div>
+          ) : (
+            <div className="relative mb-6">
+              <Select
+                value={selectedCampaign?.id.toString() || ""}
+                onValueChange={(value) => {
+                  const campaign = campaigns.find((c) => c.id.toString() === value);
+                  if (campaign) setSelectedCampaign(campaign);
+                }}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-              </Button>
+                <SelectTrigger className="w-full bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700">
+                  <SelectValue placeholder="Select a campaign" />
+                </SelectTrigger>
+                <SelectContent>
+                  {campaigns.map((campaign) => (
+                    <SelectItem key={campaign.id} value={campaign.id.toString()}>
+                      {campaign.name} - ${Number(campaign.daily_budget).toFixed(2)}/day
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        </div>
+        
+        {/* Creatives View */}
+        {selectedCampaign && (
+          <>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-medium text-zinc-800 dark:text-zinc-200">
+                Ad Creatives
+              </h2>
             </div>
             
-            {/* Creative content */}
-            <div className="bg-white dark:bg-zinc-800 rounded-xl overflow-hidden shadow-sm border border-zinc-200 dark:border-zinc-700">
-              <div className="relative">
-                {currentCreative?.object_type === 'VIDEO' ? (
-                  <EnhancedVideoPlayer 
-                    videoId={currentCreative?.object_story_spec?.video_data?.video_id || ''}
-                    autoPlay={true}
-                  />
-                ) : (
-                  <div className="aspect-video bg-zinc-100 dark:bg-zinc-800 relative overflow-hidden">
-                    {currentCreative?.thumbnail_url ? (
-                      <img
-                        src={currentCreative?.thumbnail_url}
-                        alt={getCleanCreativeName(currentCreative?.name || '')}
-                        className="w-full h-full object-contain"
-                      />
-                    ) : (
-                      <div className="flex items-center justify-center h-full">
-                        <ImageIcon className="w-8 h-8 text-zinc-400" />
-                      </div>
-                    )}
-                  </div>
-                )}
+            {isLoadingCreatives ? (
+              <div className="h-64 bg-zinc-100 dark:bg-zinc-800 animate-pulse rounded-xl"></div>
+            ) : creativesError ? (
+              <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-600 dark:text-red-400 text-sm">
+                <p>{creativesError}</p>
+                <Button 
+                  onClick={() => {
+                    // Refresh creatives
+                    setIsLoadingCreatives(true);
+                    setCreativesError(null);
+                    
+                    fetch(`/api/fasty-bot/proxy-get-adcreatives?campaignId=${selectedCampaign.id}`)
+                      .then(response => {
+                        if (!response.ok) throw new Error('Failed to fetch creatives');
+                        return response.json();
+                      })
+                      .then(data => {
+                        const groupedData: Record<string, Creative[]> = data?.data?.data.reduce((acc: Record<string, Creative[]>, item: any) => {
+                          const { adset_id, creative } = item;
+                          if (!acc[adset_id]) {
+                            acc[adset_id] = [];
+                          }
+                          acc[adset_id].push({
+                            id: creative.id,
+                            name: creative.name,
+                            thumbnail_url: creative.thumbnail_url,
+                            object_type: creative.object_type,
+                            status: creative.status,
+                            object_story_spec: creative.object_story_spec,
+                          });
+                          return acc;
+                        }, {});
+                      
+                        // Convert grouped data to array format
+                        const adsetWithCreatives: AdsetWithCreatives[] = Object.entries(groupedData).map(([adset_id, creatives]) => ({
+                          adset_id,
+                          creatives,
+                        }));
                 
-                {/* Type indicator */}
-                <div className="absolute top-3 right-3">
-                  <Badge 
-                    variant="outline" 
-                    className="bg-white/80 dark:bg-black/50 backdrop-blur-sm text-xs font-medium"
-                  >
-                    {currentCreative?.object_type === 'VIDEO' ? 'Video' : 'Image'}
-                  </Badge>
+                        setCreatives(adsetWithCreatives);
+                        
+                        // Flatten all creatives for the carousel view
+                        const allCreatives = adsetWithCreatives.flatMap(adset => adset.creatives);
+                        setFlatCreatives(allCreatives);
+                        setCurrentCreativeIndex(0);
+                      })
+                      .catch(err => {
+                        console.error('Error fetching creatives:', err);
+                        setCreativesError('Failed to fetch creatives for this campaign.');
+                      })
+                      .finally(() => {
+                        setIsLoadingCreatives(false);
+                      });
+                  }} 
+                  variant="outline" 
+                  className="mt-2"
+                  size="sm"
+                >
+                  Try Again
+                </Button>
+              </div>
+            ) : flatCreatives.length === 0 ? (
+              <div className="text-center py-8 bg-white dark:bg-zinc-800 rounded-lg shadow-sm">
+                <div className="mx-auto w-12 h-12 bg-zinc-100 dark:bg-zinc-700 rounded-full flex items-center justify-center mb-3">
+                  <ImageIcon className="w-6 h-6 text-zinc-400" />
                 </div>
-              </div>
-              
-              <div className="p-5">
-                <h3 className="text-lg font-medium text-zinc-800 dark:text-zinc-200 mb-2">
-                  {getCleanCreativeName(currentCreative?.name || '')}
-                </h3>
-                <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-4">
-                  {currentCreative?.object_type === 'VIDEO' && currentCreative?.object_story_spec?.video_data?.message}
-                  {currentCreative?.object_type === 'SHARE' && currentCreative?.object_story_spec?.link_data?.message}
+                <h3 className="text-base font-medium text-zinc-800 dark:text-zinc-200">No Creatives Found</h3>
+                <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1 max-w-md mx-auto">
+                  Add your first ad creative to get started with this campaign.
                 </p>
+                <Button 
+                  onClick={addNewCreative} 
+                  className="mt-4"
+                  size="sm"
+                >
+                  Add Your First Creative
+                </Button>
               </div>
-            </div>
-          </div>
+            ) : (
+              <>
+                {/* Add New Creative Button at the top */}
+                <div className="flex justify-end mb-4">
+                  <Button 
+                    onClick={addNewCreative}
+                    variant="outline"
+                    className="text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800/50 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                    size="sm"
+                  >
+                    <PlusCircle className="w-4 h-4 mr-2" />
+                    Add New Creative
+                  </Button>
+                </div>
+                
+                {/* Creative grid instead of carousel */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {flatCreatives.map((creative, index) => (
+                    <div 
+                      key={creative.id}
+                      className="bg-white dark:bg-zinc-800 rounded-lg overflow-hidden shadow-sm border border-zinc-200 dark:border-zinc-700 flex flex-col h-full hover:shadow-md transition-shadow"
+                    >
+                      {/* Thumbnail */}
+                      <div className="relative h-32 bg-zinc-100 dark:bg-zinc-900/50 overflow-hidden">
+                        {creative.object_type === 'VIDEO' ? (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Film className="w-8 h-8 text-zinc-400" />
+                            <span className="ml-2 text-sm text-zinc-500">Video</span>
+                          </div>
+                        ) : (
+                          creative.thumbnail_url ? (
+                            <img
+                              src={creative.thumbnail_url}
+                              alt={getCleanCreativeName(creative.name || '')}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <ImageIcon className="w-8 h-8 text-zinc-400" />
+                            </div>
+                          )
+                        )}
+                        
+                        {/* Status badge */}
+                        <div className="absolute top-2 right-2">
+                          <Badge 
+                            className={
+                              creative.status === 'ACTIVE' 
+                                ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" 
+                                : "bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300"
+                            }
+                            variant="outline"
+                          >
+                            {creative.status === 'ACTIVE' ? 'Active' : 'Inactive'}
+                          </Badge>
+                        </div>
+                      </div>
+                      
+                      {/* Content */}
+                      <div className="p-3 flex-grow">
+                        <h3 className="text-sm font-medium text-zinc-800 dark:text-zinc-200 mb-1 truncate">
+                          {getCleanCreativeName(creative.name || '')}
+                        </h3>
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-2 line-clamp-2 h-8">
+                          {creative.object_type === 'VIDEO' && creative.object_story_spec?.video_data?.message}
+                          {creative.object_type === 'SHARE' && creative.object_story_spec?.link_data?.message}
+                        </p>
+                      </div>
+                      
+                      {/* Actions */}
+                      <div className="px-3 pb-3 flex justify-between items-center">
+                        <Button 
+                          variant={creative.status === 'ACTIVE' ? 'destructive' : 'default'}
+                          size="sm"
+                          onClick={() => togglePublish(creative.id)}
+                          className={cn(
+                            "h-8 text-xs px-2",
+                            creative.status !== 'ACTIVE' && "bg-green-600 hover:bg-green-700"
+                          )}
+                        >
+                          {creative.status === 'ACTIVE' ? (
+                            <>
+                              <EyeOff className="w-3 h-3 mr-1" />
+                              Pause
+                            </>
+                          ) : (
+                            <>
+                              <Eye className="w-3 h-3 mr-1" />
+                              Activate
+                            </>
+                          )}
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleEdit(creative)}
+                          className="h-8 text-xs px-2"
+                        >
+                          <Edit2 className="w-3 h-3 mr-1" />
+                          Edit
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </>
         )}
       </main>
 
@@ -1055,35 +1197,12 @@ const AdCreativesSwitcher = () => {
           </DialogHeader>
           
           <div className="space-y-6 py-4">
-            {/* Campaign Selector */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                Select Campaign
-              </label>
-              {isLoadingCampaigns ? (
-                <div className="h-10 bg-zinc-100 dark:bg-zinc-800 animate-pulse rounded-md"></div>
-              ) : (
-                <Select 
-                  value={selectedCampaign} 
-                  onValueChange={setSelectedCampaign}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select a campaign" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableCampaigns.map((campaign) => (
-                      <SelectItem key={campaign.id} value={campaign.id}>
-                        {campaign.name}
-                      </SelectItem>
-                    ))}
-                    {availableCampaigns.length === 0 && (
-                      <SelectItem value="no-campaigns" disabled>
-                        No campaigns available
-                      </SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
-              )}
+            {/* Campaign Information */}
+            <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+              <h3 className="font-medium text-blue-800 dark:text-blue-300 mb-1">Campaign Information</h3>
+              <p className="text-sm text-blue-700 dark:text-blue-400">
+                {selectedCampaign?.name} (ID: {selectedCampaign?.id})
+              </p>
             </div>
             
             {/* Image Upload Area */}
@@ -1168,7 +1287,6 @@ const AdCreativesSwitcher = () => {
                                 className="h-6 w-6 p-0"
                                 onClick={() => {
                                   navigator.clipboard.writeText(image.s3Url || '');
-                                  // Could add a toast notification here
                                 }}
                               >
                                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
@@ -1256,7 +1374,7 @@ const AdCreativesSwitcher = () => {
             </Button>
             <Button 
               onClick={submitNewCreative} 
-              disabled={isSubmitting || !selectedCampaign || uploadedImages.length === 0}
+              disabled={isSubmitting || uploadedImages.length === 0}
               className="ml-2"
             >
               {isSubmitting ? (
@@ -1278,4 +1396,4 @@ const AdCreativesSwitcher = () => {
   );
 };
 
-export default AdCreativesSwitcher;
+export default CampaignEditor;
