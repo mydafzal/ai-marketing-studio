@@ -811,21 +811,10 @@ const CampaignEditor = () => {
       <main className="flex-grow p-6 overflow-y-auto bg-zinc-50 dark:bg-zinc-900">
         {/* Campaign Selection Dropdown */}
         <div className="mb-6">
-          <div className="flex justify-between items-center mb-3">
+          <div className="mb-3">
             <h2 className="text-lg font-medium text-zinc-800 dark:text-zinc-200">
               {selectedCampaign ? "Current Campaign" : "Select Campaign"}
             </h2>
-            
-            {selectedCampaign && (
-              <Button 
-                onClick={addNewCreative} 
-                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white"
-                size="sm"
-              >
-                <PlusCircle className="w-4 h-4 mr-2" />
-                Add New Creative
-              </Button>
-            )}
           </div>
           
           {isLoadingCampaigns ? (
