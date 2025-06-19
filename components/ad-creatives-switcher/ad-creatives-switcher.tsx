@@ -8,10 +8,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { CampaignContext } from '@/components/contexts/campaign-context'
-import { Settings2, PlusCircle, Edit2, EyeOff, Eye, ImageIcon, Film } from 'lucide-react';
+import { Settings2, PlusCircle, Edit2, EyeOff, Eye, ImageIcon, Film, X, Upload, Check } from 'lucide-react';
 import { getCampaignIdFromUrl } from "@/lib/api/fasty-bot/helpers/campaign-id-from-url-helper";
 import { Badge } from '@/components/ui/badge';
+import { nanoid } from '@/lib/utils';
 import { cn } from '@/lib/utils';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 // Enhanced VideoPlayer component that supports aspect ratio detection
 const EnhancedVideoPlayer = ({ 
@@ -358,13 +360,86 @@ const AdCreativesSwitcher = () => {
     }
   };
 
-  const addNewCreative = async () => {
+  // State for the create new creative popup
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [selectedCampaign, setSelectedCampaign] = useState<string>('');
+  const [availableCampaigns, setAvailableCampaigns] = useState<Array<{ id: string; name: string }>>([]);
+  const [isLoadingCampaigns, setIsLoadingCampaigns] = useState(false);
+  const [uploadedImages, setUploadedImages] = useState<Array<{ id: string; preview: string }>>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Fetch available campaigns for the dropdown
+  useEffect(() => {
+    const fetchCampaigns = async () => {
+      setIsLoadingCampaigns(true);
+      try {
+        const response = await fetch('/api/user/get-user-campaigns');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.campaigns && Array.isArray(data.campaigns)) {
+            setAvailableCampaigns(data.campaigns);
+            if (data.campaigns.length > 0) {
+              setSelectedCampaign(data.campaigns[0].id);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching campaigns:', error);
+      } finally {
+        setIsLoadingCampaigns(false);
+      }
+    };
+
+    // Only fetch campaigns when the dialog opens
+    if (isCreateDialogOpen) {
+      fetchCampaigns();
+    }
+  }, [isCreateDialogOpen]);
+
+  // Handle image selection
+  const handleImageSelection = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const newImages = Array.from(files).map(file => {
+      const previewUrl = URL.createObjectURL(file);
+      return {
+        id: nanoid(),
+        preview: previewUrl,
+        file
+      };
+    });
+
+    setUploadedImages(prev => [...prev, ...newImages]);
+  };
+
+  // Remove an uploaded image
+  const removeImage = (id: string) => {
+    setUploadedImages(prev => {
+      const filtered = prev.filter(img => img.id !== id);
+      return filtered;
+    });
+  };
+
+  // Handle create new creative
+  const addNewCreative = () => {
+    setIsCreateDialogOpen(true);
+  };
+
+  // Submit the new creative
+  const submitNewCreative = async () => {
+    // Here we would normally upload the images and create the ad
+    // For now, we'll just close the dialog
+    setIsCreateDialogOpen(false);
+    setUploadedImages([]);
+    
+    // Inform the user that this is just a UI preview
     const responseMessage = await submitUserMessage(
       'I want to create new ad creative',
       [],
       true
-    )
-    setMessages(currentMessages => [...currentMessages, responseMessage])
+    );
+    setMessages(currentMessages => [...currentMessages, responseMessage]);
   };
   
   // Navigation functions
@@ -571,6 +646,7 @@ const AdCreativesSwitcher = () => {
         )}
       </main>
 
+      {/* Edit Creative Dialog */}
       <Dialog 
         open={!!editingCreative} 
         onOpenChange={(open) => {
@@ -672,6 +748,145 @@ const AdCreativesSwitcher = () => {
               ) : (
                 'Save Changes'
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Create New Creative Dialog */}
+      <Dialog
+        open={isCreateDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setIsCreateDialogOpen(false);
+            setUploadedImages([]);
+          }
+        }}
+      >
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl">Create New Ad Creative</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-6 py-4">
+            {/* Campaign Selector */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                Select Campaign
+              </label>
+              {isLoadingCampaigns ? (
+                <div className="h-10 bg-zinc-100 dark:bg-zinc-800 animate-pulse rounded-md"></div>
+              ) : (
+                <Select 
+                  value={selectedCampaign} 
+                  onValueChange={setSelectedCampaign}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select a campaign" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableCampaigns.map((campaign) => (
+                      <SelectItem key={campaign.id} value={campaign.id}>
+                        {campaign.name}
+                      </SelectItem>
+                    ))}
+                    {availableCampaigns.length === 0 && (
+                      <SelectItem value="no-campaigns" disabled>
+                        No campaigns available
+                      </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+            
+            {/* Image Upload Area */}
+            <div className="space-y-3">
+              <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                Upload Images
+              </label>
+              
+              {/* Uploaded Images Preview */}
+              {uploadedImages.length > 0 && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
+                  {uploadedImages.map((image) => (
+                    <div 
+                      key={image.id} 
+                      className="relative aspect-square bg-zinc-50 dark:bg-zinc-800 rounded-md overflow-hidden border border-zinc-200 dark:border-zinc-700"
+                    >
+                      <img 
+                        src={image.preview} 
+                        alt="Upload preview" 
+                        className="w-full h-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(image.id)}
+                        className="absolute top-1 right-1 bg-white dark:bg-zinc-900 rounded-full p-1 shadow-md hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
+                      >
+                        <X className="h-4 w-4 text-red-500" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {/* Upload Button */}
+              <div className="flex flex-col items-center justify-center border-2 border-dashed border-zinc-300 dark:border-zinc-700 rounded-lg p-6 bg-zinc-50 dark:bg-zinc-800/50 transition-colors hover:border-blue-400 dark:hover:border-blue-600">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleImageSelection}
+                  className="hidden"
+                  accept="image/*"
+                  multiple
+                />
+                
+                <Button 
+                  type="button" 
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="mb-2"
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  Upload Images
+                </Button>
+                
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 text-center">
+                  Supported formats: JPG, PNG, GIF
+                  <br />
+                  Max size: 3MB per image
+                </p>
+              </div>
+            </div>
+            
+            {/* Ad Text */}
+            <div className="space-y-2">
+              <label htmlFor="adText" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                Ad Message
+              </label>
+              <Textarea
+                id="adText"
+                className="w-full min-h-[100px]"
+                placeholder="Enter your ad copy here..."
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsCreateDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={submitNewCreative} 
+              disabled={!selectedCampaign || uploadedImages.length === 0}
+              className="ml-2"
+            >
+              <Check className="mr-2 h-4 w-4" />
+              Create Ad Creative
             </Button>
           </DialogFooter>
         </DialogContent>
