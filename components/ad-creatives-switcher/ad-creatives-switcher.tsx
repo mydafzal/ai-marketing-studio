@@ -460,7 +460,6 @@ const AdCreativesSwitcher = () => {
     
     try {
       const file = imageToUpload.file;
-      console.log(`Uploading file: ${file.name}, type: ${file.type}, size: ${file.size}`);
       
       // Create a FormData object to send the file
       const formData = new FormData();
@@ -475,8 +474,6 @@ const AdCreativesSwitcher = () => {
       
       // The type defines a subfolder in S3
       formData.append('type', 'adcreative');
-      
-      console.log(`Upload parameters: id=${safeId}, type=adcreative`);
       
       // Update progress handler
       const updateProgress = (progress: number) => {
@@ -493,7 +490,6 @@ const AdCreativesSwitcher = () => {
       updateProgress(20);
       
       // Upload to S3 via our API
-      console.log('Starting upload to /api/upload');
       const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
@@ -509,14 +505,12 @@ const AdCreativesSwitcher = () => {
       }
       
       const data = await response.json();
-      console.log('Upload API response:', data);
       
       if (!data.urls || !data.urls.length) {
         throw new Error('No URLs returned from upload API');
       }
       
       const s3Url = data.urls[0]; // Get the first URL from the response
-      console.log('Successful upload, S3 URL:', s3Url);
       
       // Update state with success status and S3 URL
       setUploadedImages(prev => 
@@ -583,8 +577,7 @@ const AdCreativesSwitcher = () => {
       return;
     }
     
-    // Log upload attempt
-    console.log(`Starting upload of ${pendingImages.length} images to S3`);
+    // Begin uploads
     
     // Upload images one by one
     for (const image of pendingImages) {

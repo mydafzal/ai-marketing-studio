@@ -47,16 +47,11 @@ export async function POST(req: Request) {
       );
     }
 
-    console.log(`Uploading ${files.length} files to S3 bucket ${process.env.AWS_BUCKET} in folder public/${id}/${type || 'image'}/`);
-
     const fileUploadPromises = Object.values(files).map(async file => {
       const currentFile = Array.isArray(file) ? file[0] : file;
       if (!currentFile) {
         throw new Error('Invalid file object received');
       }
-
-      // Log file details
-      console.log(`Processing file: name=${currentFile.name}, type=${currentFile.type}, size=${currentFile.size} bytes`);
 
       const buffer = Buffer.from(await currentFile.arrayBuffer());
       const timestamp = Date.now();
@@ -69,18 +64,15 @@ export async function POST(req: Request) {
         ContentType: currentFile.type as string
       };
 
-      console.log(`Uploading to S3 with key: ${uploadParams.Key}`);
       const command = new PutObjectCommand(uploadParams);
       await s3Client.send(command);
       
       const fileUrl = `https://${process.env.AWS_BUCKET}.s3.amazonaws.com/${uploadParams.Key}`;
-      console.log(`File uploaded successfully, URL: ${fileUrl}`);
       
       return fileUrl;
     });
 
     const urls = await Promise.all(fileUploadPromises);
-    console.log(`Successfully uploaded ${urls.length} files`);
     
     return NextResponse.json({ urls }, { status: 200 });
   } catch (error) {
