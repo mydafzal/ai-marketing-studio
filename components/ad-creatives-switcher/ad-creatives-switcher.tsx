@@ -867,7 +867,7 @@ const CampaignEditor = () => {
                 <SelectContent>
                   {campaigns.map((campaign) => (
                     <SelectItem key={campaign.id} value={campaign.id.toString()}>
-                      {campaign.name} - ${Number(campaign.daily_budget).toFixed(2)}/day
+                      {campaign.name} - {campaign.status || 'Unknown'}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -883,6 +883,14 @@ const CampaignEditor = () => {
               <h2 className="text-lg font-medium text-zinc-800 dark:text-zinc-200">
                 Ad Creatives
               </h2>
+              <Button 
+                onClick={addNewCreative} 
+                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white"
+                size="sm"
+              >
+                <PlusCircle className="w-4 h-4 mr-2" />
+                Add New Creative
+              </Button>
             </div>
             
             {isLoadingCreatives ? (
@@ -953,30 +961,11 @@ const CampaignEditor = () => {
                 </div>
                 <h3 className="text-base font-medium text-zinc-800 dark:text-zinc-200">No Creatives Found</h3>
                 <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1 max-w-md mx-auto">
-                  Add your first ad creative to get started with this campaign.
+                  No creatives found on this campaign. Choose another campaign to edit.
                 </p>
-                <Button 
-                  onClick={addNewCreative} 
-                  className="mt-4"
-                  size="sm"
-                >
-                  Add Your First Creative
-                </Button>
               </div>
             ) : (
               <>
-                {/* Add New Creative Button at the top */}
-                <div className="flex justify-end mb-4">
-                  <Button 
-                    onClick={addNewCreative}
-                    variant="outline"
-                    className="text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800/50 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                    size="sm"
-                  >
-                    <PlusCircle className="w-4 h-4 mr-2" />
-                    Add New Creative
-                  </Button>
-                </div>
                 
                 {/* Creative grid instead of carousel */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
