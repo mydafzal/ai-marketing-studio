@@ -631,12 +631,40 @@ const AdCreativesSwitcher = () => {
       console.log('Ad text:', adText);
       console.log('Campaign ID:', selectedCampaign);
 
-      // Here you would normally create the ad creative using the S3 URLs through Facebook API
-      // This is placeholder for the actual ad creative creation API call
+      // Variable to store API response result
+      let apiResult = { success: false, error: 'Not attempted' };
       
-      // Display the S3 URLs
-      const urlsList = s3Urls.join('\n');
-      alert(`Images successfully uploaded to S3!\n\nImage URLs:\n${urlsList}`);
+      try {
+        // Update campaign with the new image - use the first S3 URL
+        const response = await fetch('/api/fasty-bot/edit-campaign-add-image', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            imageUrl: s3Urls[0],
+            campaignId: selectedCampaign
+          }),
+        });
+
+        apiResult = await response.json();
+        
+        if (apiResult.success) {
+          alert(`Image successfully uploaded and applied to campaign!`);
+        } else {
+          alert(`Image was uploaded to S3 but could not be applied to campaign: ${apiResult.error}`);
+          // Still show the URLs even if applying to campaign failed
+          const urlsList = s3Urls.join('\n');
+          console.log(`Image URLs:\n${urlsList}`);
+        }
+      } catch (error) {
+        console.error('Error applying image to campaign:', error);
+        alert('Image was uploaded but could not be applied to campaign due to an error');
+        
+        // Still show the URLs even if there was an error
+        const urlsList = s3Urls.join('\n');
+        console.log(`Image URLs:\n${urlsList}`);
+      }
       
       // Close the dialog
       setIsCreateDialogOpen(false);
@@ -651,12 +679,21 @@ const AdCreativesSwitcher = () => {
       setUploadedImages([]);
       setAdText('');
       
-      // Inform the user that the creative was created
-      const responseMessage = await submitUserMessage(
-        `I created a new ad creative with the uploaded images. The S3 URLs are: ${s3Urls.join(', ')}`,
-        [],
-        true
-      );
+      // Inform the user that the creative was created with campaign update status
+      let responseMessage;
+      if (apiResult?.success) {
+        responseMessage = await submitUserMessage(
+          `I successfully uploaded a new image to S3 and applied it to campaign ID ${selectedCampaign}. The S3 URL is: ${s3Urls[0]}`,
+          [],
+          true
+        );
+      } else {
+        responseMessage = await submitUserMessage(
+          `I uploaded a new image to S3, but could not apply it to the campaign. The S3 URL is: ${s3Urls[0]}`,
+          [],
+          true
+        );
+      }
       setMessages(currentMessages => [...currentMessages, responseMessage]);
       
     } catch (error) {
