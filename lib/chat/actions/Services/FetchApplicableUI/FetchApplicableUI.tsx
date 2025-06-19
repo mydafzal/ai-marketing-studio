@@ -9,7 +9,7 @@ import {ConnectAdset} from "@/components/connect-adset";
 import {PlacementTargeting} from "@/components/placement-targeting";
 import FormBuilder from "@/components/form-builder";
 import SupervisedTaskMessage from "@/components/supervised-task-message";
-import AdCreativesSwitcher from "@/components/ad-creatives-switcher";
+import AdCreativesSwitcher from "@/components/ad-creatives-switcher/index";
 import {UserMessage} from "@/components/stocks/message";
 import {TextPart} from "ai";
 import {AdTextSuggestion} from '@/components/stocks/ad-text-suggestion'
@@ -253,11 +253,12 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                                     </>
                                 );
                             case 'showAdCreativesSwitcher':
-                                // Only render the BotCard message in the chat
-                                // Avoid auto-mounting
+                                // Show directly in chat instead of sidebar
                                 return (
                                     <BotCard key={tool.toolCallId}>
-                                        <p>The ad creatives manager is now available in the sidebar. You can manage your campaign&apos;s ad creatives from there.</p>
+                                        <div className="w-full max-h-[80vh] overflow-auto rounded-lg border border-gray-200 dark:border-gray-800 shadow-md">
+                                            <AdCreativesSwitcher />
+                                        </div>
                                     </BotCard>
                                 );
                             case 'showLeadsCountUI':

@@ -20,7 +20,7 @@ import { updateCampaignInfo } from "@/lib/chat/actions/Services/AIDoneStateCampa
 import { buildChatObject } from "@/lib/chat/actions/Services/ChatObjectBuilder/ChatObjectBuilder"
 
 // Existing UI tool
-import showAdCreativesSwitcher from "@/components/ad-creatives-switcher"
+import showAdCreativesSwitcher from "@/components/ad-creatives-switcher/server"
 
 // NEW: import our tools
 import showAiVideoGenerator from "@/components/stocks/ai-video-generator/server"

@@ -86,7 +86,7 @@ import DownloadLeadsModule from "@/lib/ui-magic/modules/downloadLeadsModule";
 
 import {z} from "zod";
 
-import AdCreativesSwitcher from "@/components/ad-creatives-switcher";
+import AdCreativesSwitcher from "@/components/ad-creatives-switcher/index";
 
 import {AI} from "@/lib/chat/AIManager";
 
@@ -2456,24 +2456,13 @@ export async function submitUserMessage(content: string, contentImages?: Array<T
 
                     })
                     
-                    // Create sidebar content without auto-opening
-                    const sidebarContent = (
-                        <div className="flex flex-col h-full">
-                            <AdCreativesSwitcher/>
-                        </div>
-                    );
-                    
+                    // Show directly in chat instead of sidebar
                     return (
-                        <>
-                            <SidebarContentWrapper 
-                                content={sidebarContent}
-                                title="Manage Ad Creatives"
-                                onMount={false}
-                            />
-                            <BotCard>
-                                <p>The ad creatives manager is now available in the sidebar. You can manage your campaign ad creatives from there.</p>
-                            </BotCard>
-                        </>
+                        <BotCard>
+                            <div className="w-full max-h-[80vh] overflow-auto rounded-lg border border-gray-200 dark:border-gray-800 shadow-md">
+                                <AdCreativesSwitcher />
+                            </div>
+                        </BotCard>
                     )
 
                 }

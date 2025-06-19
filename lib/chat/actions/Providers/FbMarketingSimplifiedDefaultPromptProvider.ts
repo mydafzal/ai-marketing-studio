@@ -99,6 +99,9 @@ export function getSimplifiedDefaultChatPrompt(campaignId: string, adsetId: stri
         <AutoOptimizeCampaigns>
             <Command>Call ('showCampaignOptimization').</Command>
         </AutoOptimizeCampaigns>
+        <AdCreativeSwitcher>
+            <Command>Call ('showAdCreativesSwitcher'). This will show the ad creatives manager directly in the chat.</Command>
+        </AdCreativeSwitcher>
         <CampaignDuplication>
             <Command>Call ('show_supervised_task_ui').</Command>
         </CampaignDuplication>
