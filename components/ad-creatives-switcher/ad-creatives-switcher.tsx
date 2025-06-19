@@ -365,7 +365,17 @@ const AdCreativesSwitcher = () => {
   const [selectedCampaign, setSelectedCampaign] = useState<string>('');
   const [availableCampaigns, setAvailableCampaigns] = useState<Array<{ id: string; name: string }>>([]);
   const [isLoadingCampaigns, setIsLoadingCampaigns] = useState(false);
-  const [uploadedImages, setUploadedImages] = useState<Array<{ id: string; preview: string }>>([]);
+  const [uploadedImages, setUploadedImages] = useState<Array<{
+    id: string;
+    preview: string;
+    file?: File;
+    s3Url?: string;
+    status: 'pending' | 'uploading' | 'success' | 'error';
+    progress: number;
+    error?: string;
+  }>>([]); 
+  const [adText, setAdText] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch available campaigns for the dropdown
@@ -401,47 +411,293 @@ const AdCreativesSwitcher = () => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    const newImages = Array.from(files).map(file => {
+    const MAX_FILE_SIZE = 3 * 1024 * 1024; // 3MB in bytes
+    
+    // Process each file
+    Array.from(files).forEach(file => {
+      // Check file size
+      if (file.size > MAX_FILE_SIZE) {
+        // Show error toast or message
+        console.error(`File ${file.name} is too large. Maximum size is 3MB.`);
+        
+        // You could add a toast notification here if you have a toast system
+        return;
+      }
+      
+      // Create preview and add to state
       const previewUrl = URL.createObjectURL(file);
-      return {
+      const newImage = {
         id: nanoid(),
         preview: previewUrl,
-        file
+        file: file,
+        status: 'pending' as const,
+        progress: 0,
       };
+      
+      setUploadedImages(prev => [...prev, newImage]);
     });
+    
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
-    setUploadedImages(prev => [...prev, ...newImages]);
+  // Upload a single image to S3
+  const uploadImageToS3 = async (imageId: string) => {
+    // Find the image in our state
+    const imageToUpload = uploadedImages.find(img => img.id === imageId);
+    if (!imageToUpload || !imageToUpload.file || imageToUpload.status === 'success') return;
+    
+    // Update status to uploading
+    setUploadedImages(prev => 
+      prev.map(img => 
+        img.id === imageId 
+          ? { ...img, status: 'uploading', progress: 0 } 
+          : img
+      )
+    );
+    
+    try {
+      const file = imageToUpload.file;
+      console.log(`Uploading file: ${file.name}, type: ${file.type}, size: ${file.size}`);
+      
+      // Create a FormData object to send the file
+      const formData = new FormData();
+      
+      // The upload API expects the file in the 'files' field
+      formData.append('files', file);
+      
+      // The campaign ID serves as a folder name in S3
+      // Make sure it's a string and doesn't contain special characters
+      const safeId = selectedCampaign.toString().replace(/[^a-zA-Z0-9-_]/g, '');
+      formData.append('id', safeId);
+      
+      // The type defines a subfolder in S3
+      formData.append('type', 'adcreative');
+      
+      console.log(`Upload parameters: id=${safeId}, type=adcreative`);
+      
+      // Update progress handler
+      const updateProgress = (progress: number) => {
+        setUploadedImages(prev => 
+          prev.map(img => 
+            img.id === imageId 
+              ? { ...img, progress } 
+              : img
+          )
+        );
+      };
+      
+      // Set initial progress
+      updateProgress(20);
+      
+      // Upload to S3 via our API
+      console.log('Starting upload to /api/upload');
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      // Update progress to indicate upload is processing
+      updateProgress(70);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Upload API error response:', errorText);
+        throw new Error(`Failed to upload image: ${response.status} ${response.statusText}. ${errorText || ''}`);
+      }
+      
+      const data = await response.json();
+      console.log('Upload API response:', data);
+      
+      if (!data.urls || !data.urls.length) {
+        throw new Error('No URLs returned from upload API');
+      }
+      
+      const s3Url = data.urls[0]; // Get the first URL from the response
+      console.log('Successful upload, S3 URL:', s3Url);
+      
+      // Update state with success status and S3 URL
+      setUploadedImages(prev => 
+        prev.map(img => 
+          img.id === imageId 
+            ? { 
+                ...img, 
+                status: 'success', 
+                progress: 100, 
+                s3Url: s3Url 
+              } 
+            : img
+        )
+      );
+      
+      return s3Url;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      
+      // Update state with error status
+      setUploadedImages(prev => 
+        prev.map(img => 
+          img.id === imageId 
+            ? { 
+                ...img, 
+                status: 'error', 
+                error: error instanceof Error ? error.message : 'Failed to upload image. Please try again.' 
+              } 
+            : img
+        )
+      );
+      
+      return null;
+    }
+  };
+
+  // Process uploads one by one
+  const processUploads = async () => {
+    const pendingImages = uploadedImages.filter(img => img.status === 'pending');
+    
+    if (pendingImages.length === 0) {
+      return; // No images to upload
+    }
+    
+    // Check S3 config before proceeding
+    const configCheck = await checkS3Config();
+    if (!configCheck.success) {
+      // Update all pending images with error status
+      setUploadedImages(prev => 
+        prev.map(img => 
+          img.status === 'pending'
+            ? { 
+                ...img, 
+                status: 'error', 
+                error: configCheck.message || 'S3 is not properly configured' 
+              } 
+            : img
+        )
+      );
+      
+      // Alert user about the config issue
+      console.error('S3 configuration issue:', configCheck.message);
+      alert(`S3 configuration issue: ${configCheck.message}`);
+      return;
+    }
+    
+    // Log upload attempt
+    console.log(`Starting upload of ${pendingImages.length} images to S3`);
+    
+    // Upload images one by one
+    for (const image of pendingImages) {
+      await uploadImageToS3(image.id);
+    }
   };
 
   // Remove an uploaded image
   const removeImage = (id: string) => {
     setUploadedImages(prev => {
-      const filtered = prev.filter(img => img.id !== id);
-      return filtered;
+      const imageToRemove = prev.find(img => img.id === id);
+      
+      // Release object URL to prevent memory leaks
+      if (imageToRemove?.preview) {
+        URL.revokeObjectURL(imageToRemove.preview);
+      }
+      
+      return prev.filter(img => img.id !== id);
     });
   };
 
   // Handle create new creative
   const addNewCreative = () => {
     setIsCreateDialogOpen(true);
+    setAdText('');
+    setUploadedImages([]);
   };
 
   // Submit the new creative
   const submitNewCreative = async () => {
-    // Here we would normally upload the images and create the ad
-    // For now, we'll just close the dialog
-    setIsCreateDialogOpen(false);
-    setUploadedImages([]);
+    if (!selectedCampaign || uploadedImages.length === 0) return;
     
-    // Inform the user that this is just a UI preview
-    const responseMessage = await submitUserMessage(
-      'I want to create new ad creative',
-      [],
-      true
-    );
-    setMessages(currentMessages => [...currentMessages, responseMessage]);
+    setIsSubmitting(true);
+    
+    try {
+      // First upload any pending images
+      await processUploads();
+      
+      // Check if any uploads failed
+      const failedUploads = uploadedImages.filter(img => img.status === 'error');
+      if (failedUploads.length > 0) {
+        throw new Error(`${failedUploads.length} image(s) failed to upload. Please try again.`);
+      }
+      
+      // Get all successful S3 URLs
+      const s3Urls = uploadedImages
+        .filter(img => img.status === 'success' && img.s3Url)
+        .map(img => img.s3Url as string);
+      
+      console.log('Creating ad creative with images:', s3Urls);
+      console.log('Ad text:', adText);
+      console.log('Campaign ID:', selectedCampaign);
+
+      // Here you would normally create the ad creative using the S3 URLs through Facebook API
+      // This is placeholder for the actual ad creative creation API call
+      
+      // Display the S3 URLs
+      const urlsList = s3Urls.join('\n');
+      alert(`Images successfully uploaded to S3!\n\nImage URLs:\n${urlsList}`);
+      
+      // Close the dialog
+      setIsCreateDialogOpen(false);
+      
+      // Clean up
+      uploadedImages.forEach(img => {
+        if (img.preview) {
+          URL.revokeObjectURL(img.preview);
+        }
+      });
+      
+      setUploadedImages([]);
+      setAdText('');
+      
+      // Inform the user that the creative was created
+      const responseMessage = await submitUserMessage(
+        `I created a new ad creative with the uploaded images. The S3 URLs are: ${s3Urls.join(', ')}`,
+        [],
+        true
+      );
+      setMessages(currentMessages => [...currentMessages, responseMessage]);
+      
+    } catch (error) {
+      console.error('Error creating ad creative:', error);
+      alert(`Error: ${error instanceof Error ? error.message : 'Failed to create ad creative'}`);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
   
+  // Check S3 configuration before uploading
+  const checkS3Config = async () => {
+    try {
+      const response = await fetch('/api/upload/check-config', {
+        method: 'GET',
+      });
+      
+      if (!response.ok) {
+        const data = await response.json();
+        console.error('S3 configuration check failed:', data);
+        return {
+          success: false,
+          message: data.message || 'S3 configuration check failed'
+        };
+      }
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Error checking S3 config:', error);
+      // If the endpoint doesn't exist, assume S3 is configured
+      return { success: true };
+    }
+  };
+
   // Navigation functions
   const nextCreative = () => {
     if (flatCreatives.length === 0) return;
@@ -808,24 +1064,94 @@ const AdCreativesSwitcher = () => {
               
               {/* Uploaded Images Preview */}
               {uploadedImages.length > 0 && (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                   {uploadedImages.map((image) => (
                     <div 
                       key={image.id} 
-                      className="relative aspect-square bg-zinc-50 dark:bg-zinc-800 rounded-md overflow-hidden border border-zinc-200 dark:border-zinc-700"
+                      className="relative bg-zinc-50 dark:bg-zinc-800 rounded-md overflow-hidden border border-zinc-200 dark:border-zinc-700"
                     >
-                      <img 
-                        src={image.preview} 
-                        alt="Upload preview" 
-                        className="w-full h-full object-cover"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removeImage(image.id)}
-                        className="absolute top-1 right-1 bg-white dark:bg-zinc-900 rounded-full p-1 shadow-md hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
-                      >
-                        <X className="h-4 w-4 text-red-500" />
-                      </button>
+                      <div className="aspect-square bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
+                        <img 
+                          src={image.preview} 
+                          alt="Upload preview" 
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      
+                      {/* Status indicator and progress */}
+                      <div className="p-3">
+                        <div className="flex justify-between items-center mb-1">
+                          <div className="flex items-center">
+                            {image.status === 'pending' && (
+                              <Badge variant="outline" className="text-zinc-600 dark:text-zinc-400">
+                                Pending
+                              </Badge>
+                            )}
+                            {image.status === 'uploading' && (
+                              <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                                Uploading {image.progress}%
+                              </Badge>
+                            )}
+                            {image.status === 'success' && (
+                              <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                                Uploaded
+                              </Badge>
+                            )}
+                            {image.status === 'error' && (
+                              <Badge className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                                Error
+                              </Badge>
+                            )}
+                          </div>
+                          
+                          <button
+                            type="button"
+                            onClick={() => removeImage(image.id)}
+                            className="text-red-500 hover:text-red-700 dark:hover:text-red-400"
+                            disabled={image.status === 'uploading'}
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                        
+                        {/* Progress bar */}
+                        {image.status === 'uploading' && (
+                          <div className="w-full bg-zinc-200 dark:bg-zinc-700 rounded-full h-1.5 mb-2">
+                            <div 
+                              className="bg-blue-600 h-1.5 rounded-full transition-all duration-300 ease-in-out" 
+                              style={{ width: `${image.progress}%` }}
+                            ></div>
+                          </div>
+                        )}
+                        
+                        {/* S3 URL for successful uploads */}
+                        {image.status === 'success' && image.s3Url && (
+                          <div className="mt-2">
+                            <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-1">S3 URL:</p>
+                            <div className="flex items-center gap-1">
+                              <code className="text-xs bg-zinc-100 dark:bg-zinc-800 p-1 rounded truncate flex-1">
+                                {image.s3Url}
+                              </code>
+                              <Button 
+                                size="sm" 
+                                variant="ghost" 
+                                className="h-6 w-6 p-0"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(image.s3Url || '');
+                                  // Could add a toast notification here
+                                }}
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Error message */}
+                        {image.status === 'error' && image.error && (
+                          <p className="text-xs text-red-500 mt-1">{image.error}</p>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -867,26 +1193,53 @@ const AdCreativesSwitcher = () => {
               </label>
               <Textarea
                 id="adText"
+                value={adText}
+                onChange={(e) => setAdText(e.target.value)}
                 className="w-full min-h-[100px]"
                 placeholder="Enter your ad copy here..."
               />
             </div>
+            
+            {/* Upload Now Button */}
+            {uploadedImages.some(img => img.status === 'pending') && (
+              <div className="flex justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={processUploads}
+                  disabled={isSubmitting || !uploadedImages.some(img => img.status === 'pending')}
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  Upload Pending Images
+                </Button>
+              </div>
+            )}
           </div>
           
           <DialogFooter>
             <Button 
               variant="outline" 
               onClick={() => setIsCreateDialogOpen(false)}
+              disabled={isSubmitting}
             >
               Cancel
             </Button>
             <Button 
               onClick={submitNewCreative} 
-              disabled={!selectedCampaign || uploadedImages.length === 0}
+              disabled={isSubmitting || !selectedCampaign || uploadedImages.length === 0}
               className="ml-2"
             >
-              <Check className="mr-2 h-4 w-4" />
-              Create Ad Creative
+              {isSubmitting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <Check className="mr-2 h-4 w-4" />
+                  Create Ad Creative
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

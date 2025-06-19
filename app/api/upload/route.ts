@@ -15,33 +15,84 @@ const s3Client = new S3Client(s3Config)
 
 export async function POST(req: Request) {
   try {
-    const formData = await req.formData()
+    // Validate if S3 credentials are configured
+    if (!process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY || 
+        !process.env.AWS_DEFAULT_REGION || !process.env.AWS_BUCKET) {
+      console.error('Missing S3 configuration environment variables');
+      return NextResponse.json(
+        { error: 'S3 is not properly configured. Check environment variables.' },
+        { status: 500 }
+      );
+    }
+
+    const formData = await req.formData();
     const id = formData.get('id');
     const type = formData.get('type');
 
-    const files = formData.getAll('files')
+    // Validate required parameters
+    if (!id) {
+      console.error('Missing required parameter: id');
+      return NextResponse.json(
+        { error: 'Missing required parameter: id' },
+        { status: 400 }
+      );
+    }
+
+    const files = formData.getAll('files');
+    if (!files || files.length === 0) {
+      console.error('No files provided for upload');
+      return NextResponse.json(
+        { error: 'No files provided for upload' },
+        { status: 400 }
+      );
+    }
+
+    console.log(`Uploading ${files.length} files to S3 bucket ${process.env.AWS_BUCKET} in folder public/${id}/${type || 'image'}/`);
+
     const fileUploadPromises = Object.values(files).map(async file => {
-      const currentFile = Array.isArray(file) ? file[0] : file
-      const buffer = Buffer.from(await currentFile.arrayBuffer())
-      const uploadParams = {
-        Bucket: process.env.AWS_BUCKET as string,
-        Key: `public/${id}/${type || 'image'}/${Date.now()}_${sanitizeFileNameForUrl(currentFile?.name) || ''}`,
-        Body: buffer,
-        ContentType: currentFile.type as string
+      const currentFile = Array.isArray(file) ? file[0] : file;
+      if (!currentFile) {
+        throw new Error('Invalid file object received');
       }
 
-      const command = new PutObjectCommand(uploadParams)
-      await s3Client.send(command)
-      return `https://${process.env.AWS_BUCKET}.s3.amazonaws.com/${uploadParams.Key}`
-    })
+      // Log file details
+      console.log(`Processing file: name=${currentFile.name}, type=${currentFile.type}, size=${currentFile.size} bytes`);
 
-    const urls = await Promise.all(fileUploadPromises)
-    return NextResponse.json({ urls }, { status: 200 })
+      const buffer = Buffer.from(await currentFile.arrayBuffer());
+      const timestamp = Date.now();
+      const safeName = sanitizeFileNameForUrl(currentFile?.name) || timestamp.toString();
+      
+      const uploadParams = {
+        Bucket: process.env.AWS_BUCKET as string,
+        Key: `public/${id}/${type || 'image'}/${timestamp}_${safeName}`,
+        Body: buffer,
+        ContentType: currentFile.type as string
+      };
+
+      console.log(`Uploading to S3 with key: ${uploadParams.Key}`);
+      const command = new PutObjectCommand(uploadParams);
+      await s3Client.send(command);
+      
+      const fileUrl = `https://${process.env.AWS_BUCKET}.s3.amazonaws.com/${uploadParams.Key}`;
+      console.log(`File uploaded successfully, URL: ${fileUrl}`);
+      
+      return fileUrl;
+    });
+
+    const urls = await Promise.all(fileUploadPromises);
+    console.log(`Successfully uploaded ${urls.length} files`);
+    
+    return NextResponse.json({ urls }, { status: 200 });
   } catch (error) {
-    console.error('Upload error:', error)
+    console.error('Upload error:', error);
+    // Provide more specific error message when possible
+    const errorMessage = error instanceof Error 
+      ? `Error uploading files: ${error.message}` 
+      : 'Unknown error uploading files';
+      
     return NextResponse.json(
-      { error: 'Error uploading files' },
+      { error: errorMessage },
       { status: 500 }
-    )
+    );
   }
 }
