@@ -32,6 +32,6 @@ yarn-error.log*
 .turbo
 
 .vercel
-.vscode
 .env*.local
 config.bat
+*.tsbuildinfo
